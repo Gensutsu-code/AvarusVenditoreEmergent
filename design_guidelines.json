@@ -1,0 +1,168 @@
+{
+  "identity": {
+    "name": "E1: The Anti-AI Designer",
+    "archetype": "The Performance Pro (Industrial Variant)",
+    "core_philosophy": "Fusion over Imitation. Function is Beauty.",
+    "tone": "Utilitarian, Precise, Reliable, Industrial"
+  },
+  "theme_strategy": {
+    "mode": "light",
+    "justification": "User requested light theme. Fits the 'clean workshop' aesthetic better than dark mode for this specific B2B/utilitarian context."
+  },
+  "colors": {
+    "palette": {
+      "background": {
+        "default": "#FFFFFF",
+        "subtle": "#F4F4F5",
+        "active": "#E4E4E7"
+      },
+      "foreground": {
+        "default": "#09090B",
+        "muted": "#71717A",
+        "inverse": "#FFFFFF"
+      },
+      "primary": {
+        "default": "#F97316",
+        "foreground": "#FFFFFF",
+        "hover": "#EA580C"
+      },
+      "border": {
+        "default": "#E4E4E7",
+        "strong": "#A1A1AA"
+      },
+      "destructive": {
+        "default": "#EF4444",
+        "foreground": "#FFFFFF"
+      }
+    },
+    "rules": [
+      "NO GRADIENTS. Flat, solid colors only.",
+      "Use 'Zinc' scale from Tailwind for all greys.",
+      "Primary color (Orange) is for ACTIONS only (Buttons, Links). Never for decoration.",
+      "Borders are essential. Use them to define structure (Grid Borders)."
+    ]
+  },
+  "typography": {
+    "font_family": {
+      "headings": "system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif",
+      "body": "system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif",
+      "mono": "ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace"
+    },
+    "styles": {
+      "h1": "text-4xl md:text-5xl font-bold tracking-tighter uppercase text-zinc-950",
+      "h2": "text-2xl md:text-3xl font-bold tracking-tight uppercase text-zinc-900",
+      "h3": "text-xl font-semibold tracking-tight text-zinc-900",
+      "body": "text-base font-normal text-zinc-700 leading-relaxed",
+      "label": "text-xs font-bold uppercase tracking-widest text-zinc-500",
+      "price": "font-mono text-lg font-bold tracking-tight text-zinc-900"
+    }
+  },
+  "layout": {
+    "grid_system": "Bento Grid Mode B (High Density)",
+    "container": "max-w-7xl mx-auto px-4 sm:px-6 lg:px-8",
+    "spacing": {
+      "section": "py-16 md:py-24",
+      "element": "gap-4 md:gap-6"
+    },
+    "rules": [
+      "Use 'border-collapse' style grids for catalogs.",
+      "Visible borders between grid items (border-r border-b).",
+      "Dense layouts. Avoid excessive whitespace in data-heavy areas (tables, lists).",
+      "Mobile-first: Stack columns on mobile, expand to 3-4 columns on desktop."
+    ]
+  },
+  "components": {
+    "style_guide": {
+      "radius": "rounded-none",
+      "shadows": "none",
+      "borders": "border border-zinc-200",
+      "animation": "transition-colors duration-200 ease-out"
+    },
+    "specifics": {
+      "buttons": "uppercase font-bold tracking-wide rounded-none h-12 px-8 hover:translate-y-[-1px] active:translate-y-[1px] transition-transform",
+      "cards": "bg-white border border-zinc-200 p-6 hover:border-zinc-400 transition-colors rounded-none",
+      "inputs": "rounded-none border-zinc-300 focus:ring-2 focus:ring-orange-500 focus:border-transparent h-12 bg-zinc-50",
+      "badges": "rounded-none uppercase tracking-wider font-bold text-[10px] px-2 py-1"
+    }
+  },
+  "visual_enhancers": {
+    "textures": "Subtle noise overlay (opacity 0.02) on backgrounds to reduce digital sterility.",
+    "icons": "Lucide React (Stroke width 1.5px for elegance, 2px for bold actions).",
+    "micro_interactions": "Buttons scale slightly down on click. Links have a heavy underline on hover."
+  },
+  "media": {
+    "image_style": "High contrast, desaturated or black & white for atmospheric shots. Product shots on pure white or light grey backgrounds.",
+    "aspect_ratios": {
+      "product": "aspect-square object-contain p-4 bg-white",
+      "hero": "aspect-[21/9] object-cover grayscale hover:grayscale-0 transition-all duration-700"
+    }
+  },
+  "image_urls": {
+    "hero": [
+      {
+        "url": "https://images.unsplash.com/photo-1541659141637-92ac0cf3819b",
+        "description": "Front of heavy duty truck",
+        "category": "hero"
+      }
+    ],
+    "categories": [
+      {
+        "name": "Engine",
+        "url": "https://images.unsplash.com/photo-1695597802538-bcb2bd533d19",
+        "description": "Truck engine parts"
+      },
+      {
+        "name": "Transmission",
+        "url": "https://images.unsplash.com/photo-1763738173457-2a874a207215",
+        "description": "Gearbox transmission"
+      },
+      {
+        "name": "Brakes",
+        "url": "https://images.unsplash.com/photo-1629220640507-6548fe7ee769",
+        "description": "Brake disc/caliper"
+      },
+      {
+        "name": "Suspension",
+        "url": "https://images.unsplash.com/photo-1666508330099-0c7c6ab0e332",
+        "description": "Suspension undercarriage"
+      },
+      {
+        "name": "Electric",
+        "url": "https://images.unsplash.com/photo-1661463678303-dfb9e5f0929c",
+        "description": "Tail lights/Electric"
+      },
+      {
+        "name": "Body",
+        "url": "https://images.unsplash.com/photo-1594920687401-e70050947ea5",
+        "description": "Bumper/Body parts"
+      }
+    ]
+  },
+  "instructions_to_main_agent": [
+    "IMPLEMENTATION PRIORITY: Functionality > Aesthetics. This is a tool for mechanics.",
+    "Use the 'Zinc' color scale from Tailwind for a neutral, industrial look.",
+    "Avoid rounded corners. Use 'rounded-none' or 'rounded-sm' for a sharp, precise feel.",
+    "Ensure high contrast for all text. Accessibility is key for this audience.",
+    "Use the provided image URLs for the respective categories.",
+    "For the 'Catalog' page, use a dense grid layout (Mode B).",
+    "For the 'Product' page, focus on the image and the 'Add to Cart' button.",
+    "Do not use 'About Us' or other fluff pages. Stick to the requested functionality.",
+    "Add 'data-testid' to all interactive elements."
+  ],
+  "universal_guidelines": [
+    "Dark colors look good when used independently without gradients. DO NOT use dark colors as gradients",
+    "Don't make generic centered layouts, simplistic gradients, and uniform styling.",
+    "Create depth through layered design elements with z-index hierarchy",
+    "Use glass-morphism effects with backdrop filters (12-24px blur) sparingly, only for sticky headers.",
+    "You MUST NOT apply universal transition. Eg: `transition: all`. This results in breaking transforms.",
+    "You MUST NOT center align the app container.",
+    "Always use modern button styles like pill-shaped, or sharp button with interaction animations & color relevant to the app style",
+    "NEVER: use AI assistant Emoji characters like 🤖🧠 etc for icons.",
+    "Every interaction needs micro-animations - hover states, transitions.",
+    "Use 2-3x more spacing than feels comfortable. Cramped designs look cheap.",
+    "Prioritize using pre-existing components from src/components/ui when applicable",
+    "Components MUST use named exports",
+    "Pages MUST use default exports",
+    "Use `sonner` for toasts"
+  ]
+}
