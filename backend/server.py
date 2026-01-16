@@ -372,36 +372,25 @@ async def seed_data():
         return {"message": "Data already seeded"}
     
     products = [
-        # Двигатель
-        {"id": str(uuid.uuid4()), "name": "Поршневая группа MAN TGA", "article": "MAN-PG-001", "category": "engine", "price": 45000, "stock": 10, "image_url": "https://images.unsplash.com/photo-1695597802538-bcb2bd533d19?w=400", "description": "Комплект поршневой группы для MAN TGA"},
-        {"id": str(uuid.uuid4()), "name": "Турбина Volvo FH", "article": "VLV-TB-002", "category": "engine", "price": 85000, "stock": 5, "image_url": "https://images.unsplash.com/photo-1695597802538-bcb2bd533d19?w=400", "description": "Турбокомпрессор для Volvo FH12/FH16"},
-        {"id": str(uuid.uuid4()), "name": "Масляный насос Scania", "article": "SCN-ON-003", "category": "engine", "price": 28000, "stock": 8, "image_url": "https://images.unsplash.com/photo-1695597802538-bcb2bd533d19?w=400", "description": "Масляный насос для Scania R-series"},
-        {"id": str(uuid.uuid4()), "name": "Прокладка ГБЦ DAF", "article": "DAF-GS-004", "category": "engine", "price": 12000, "stock": 15, "image_url": "https://images.unsplash.com/photo-1695597802538-bcb2bd533d19?w=400", "description": "Прокладка головки блока DAF XF"},
-        
-        # Трансмиссия
-        {"id": str(uuid.uuid4()), "name": "Сцепление комплект Mercedes", "article": "MRC-CL-001", "category": "transmission", "price": 65000, "stock": 6, "image_url": "https://images.unsplash.com/photo-1763738173457-2a874a207215?w=400", "description": "Комплект сцепления Mercedes Actros"},
-        {"id": str(uuid.uuid4()), "name": "КПП ZF 16S", "article": "ZF-GB-002", "category": "transmission", "price": 280000, "stock": 2, "image_url": "https://images.unsplash.com/photo-1763738173457-2a874a207215?w=400", "description": "Коробка передач ZF 16S 2220"},
-        {"id": str(uuid.uuid4()), "name": "Кардан IVECO", "article": "IVC-CD-003", "category": "transmission", "price": 42000, "stock": 4, "image_url": "https://images.unsplash.com/photo-1763738173457-2a874a207215?w=400", "description": "Карданный вал IVECO Stralis"},
-        
-        # Тормозная система
-        {"id": str(uuid.uuid4()), "name": "Тормозные колодки SAF", "article": "SAF-BP-001", "category": "brakes", "price": 8500, "stock": 20, "image_url": "https://images.unsplash.com/photo-1629220640507-6548fe7ee769?w=400", "description": "Колодки тормозные для полуприцепа SAF"},
-        {"id": str(uuid.uuid4()), "name": "Тормозной диск BPW", "article": "BPW-BD-002", "category": "brakes", "price": 15000, "stock": 12, "image_url": "https://images.unsplash.com/photo-1629220640507-6548fe7ee769?w=400", "description": "Тормозной диск BPW ECO Plus"},
-        {"id": str(uuid.uuid4()), "name": "Главный тормозной цилиндр", "article": "WBK-MC-003", "category": "brakes", "price": 32000, "stock": 7, "image_url": "https://images.unsplash.com/photo-1629220640507-6548fe7ee769?w=400", "description": "Главный тормозной цилиндр Wabco"},
-        
-        # Электрика
-        {"id": str(uuid.uuid4()), "name": "Генератор Bosch 28V", "article": "BSH-GN-001", "category": "electric", "price": 45000, "stock": 5, "image_url": "https://images.unsplash.com/photo-1661463678303-dfb9e5f0929c?w=400", "description": "Генератор Bosch 28V 80A"},
-        {"id": str(uuid.uuid4()), "name": "Стартер Prestolite", "article": "PRS-ST-002", "category": "electric", "price": 38000, "stock": 6, "image_url": "https://images.unsplash.com/photo-1661463678303-dfb9e5f0929c?w=400", "description": "Стартер Prestolite 24V"},
-        {"id": str(uuid.uuid4()), "name": "Фара головного света LED", "article": "LED-HL-003", "category": "electric", "price": 22000, "stock": 10, "image_url": "https://images.unsplash.com/photo-1661463678303-dfb9e5f0929c?w=400", "description": "LED фара для грузовиков"},
-        
-        # Подвеска
-        {"id": str(uuid.uuid4()), "name": "Пневмоподушка SAF", "article": "SAF-AB-001", "category": "suspension", "price": 18000, "stock": 15, "image_url": "https://images.unsplash.com/photo-1666508330099-0c7c6ab0e332?w=400", "description": "Пневмоподушка для оси SAF"},
-        {"id": str(uuid.uuid4()), "name": "Амортизатор кабины", "article": "MNR-SA-002", "category": "suspension", "price": 12000, "stock": 8, "image_url": "https://images.unsplash.com/photo-1666508330099-0c7c6ab0e332?w=400", "description": "Амортизатор кабины Monroe"},
-        {"id": str(uuid.uuid4()), "name": "Рессора передняя MAN", "article": "MAN-LS-003", "category": "suspension", "price": 25000, "stock": 6, "image_url": "https://images.unsplash.com/photo-1666508330099-0c7c6ab0e332?w=400", "description": "Рессора передняя MAN TGX"},
-        
-        # Кузовные детали
-        {"id": str(uuid.uuid4()), "name": "Бампер передний Volvo", "article": "VLV-FB-001", "category": "body", "price": 55000, "stock": 3, "image_url": "https://images.unsplash.com/photo-1594920687401-e70050947ea5?w=400", "description": "Бампер передний Volvo FH4"},
-        {"id": str(uuid.uuid4()), "name": "Зеркало заднего вида", "article": "MRC-MR-002", "category": "body", "price": 28000, "stock": 8, "image_url": "https://images.unsplash.com/photo-1594920687401-e70050947ea5?w=400", "description": "Зеркало с подогревом Mercedes"},
-        {"id": str(uuid.uuid4()), "name": "Капот Scania", "article": "SCN-HD-003", "category": "body", "price": 120000, "stock": 2, "image_url": "https://images.unsplash.com/photo-1594920687401-e70050947ea5?w=400", "description": "Капот Scania R-series"},
+        {"id": str(uuid.uuid4()), "name": "Поршневая группа MAN TGA", "article": "MAN-PG-001", "price": 45000, "stock": 10, "delivery_days": 3, "image_url": "https://images.unsplash.com/photo-1695597802538-bcb2bd533d19?w=400", "description": "Комплект поршневой группы для MAN TGA"},
+        {"id": str(uuid.uuid4()), "name": "Турбина Volvo FH", "article": "VLV-TB-002", "price": 85000, "stock": 5, "delivery_days": 5, "image_url": "https://images.unsplash.com/photo-1695597802538-bcb2bd533d19?w=400", "description": "Турбокомпрессор для Volvo FH12/FH16"},
+        {"id": str(uuid.uuid4()), "name": "Масляный насос Scania", "article": "SCN-ON-003", "price": 28000, "stock": 8, "delivery_days": 2, "image_url": "https://images.unsplash.com/photo-1695597802538-bcb2bd533d19?w=400", "description": "Масляный насос для Scania R-series"},
+        {"id": str(uuid.uuid4()), "name": "Прокладка ГБЦ DAF", "article": "DAF-GS-004", "price": 12000, "stock": 15, "delivery_days": 2, "image_url": "https://images.unsplash.com/photo-1695597802538-bcb2bd533d19?w=400", "description": "Прокладка головки блока DAF XF"},
+        {"id": str(uuid.uuid4()), "name": "Сцепление комплект Mercedes", "article": "MRC-CL-001", "price": 65000, "stock": 6, "delivery_days": 4, "image_url": "https://images.unsplash.com/photo-1763738173457-2a874a207215?w=400", "description": "Комплект сцепления Mercedes Actros"},
+        {"id": str(uuid.uuid4()), "name": "КПП ZF 16S", "article": "ZF-GB-002", "price": 280000, "stock": 2, "delivery_days": 7, "image_url": "https://images.unsplash.com/photo-1763738173457-2a874a207215?w=400", "description": "Коробка передач ZF 16S 2220"},
+        {"id": str(uuid.uuid4()), "name": "Кардан IVECO", "article": "IVC-CD-003", "price": 42000, "stock": 4, "delivery_days": 5, "image_url": "https://images.unsplash.com/photo-1763738173457-2a874a207215?w=400", "description": "Карданный вал IVECO Stralis"},
+        {"id": str(uuid.uuid4()), "name": "Тормозные колодки SAF", "article": "SAF-BP-001", "price": 8500, "stock": 20, "delivery_days": 1, "image_url": "https://images.unsplash.com/photo-1629220640507-6548fe7ee769?w=400", "description": "Колодки тормозные для полуприцепа SAF"},
+        {"id": str(uuid.uuid4()), "name": "Тормозной диск BPW", "article": "BPW-BD-002", "price": 15000, "stock": 12, "delivery_days": 2, "image_url": "https://images.unsplash.com/photo-1629220640507-6548fe7ee769?w=400", "description": "Тормозной диск BPW ECO Plus"},
+        {"id": str(uuid.uuid4()), "name": "Главный тормозной цилиндр", "article": "WBK-MC-003", "price": 32000, "stock": 7, "delivery_days": 3, "image_url": "https://images.unsplash.com/photo-1629220640507-6548fe7ee769?w=400", "description": "Главный тормозной цилиндр Wabco"},
+        {"id": str(uuid.uuid4()), "name": "Генератор Bosch 28V", "article": "BSH-GN-001", "price": 45000, "stock": 5, "delivery_days": 3, "image_url": "https://images.unsplash.com/photo-1661463678303-dfb9e5f0929c?w=400", "description": "Генератор Bosch 28V 80A"},
+        {"id": str(uuid.uuid4()), "name": "Стартер Prestolite", "article": "PRS-ST-002", "price": 38000, "stock": 6, "delivery_days": 4, "image_url": "https://images.unsplash.com/photo-1661463678303-dfb9e5f0929c?w=400", "description": "Стартер Prestolite 24V"},
+        {"id": str(uuid.uuid4()), "name": "Фара головного света LED", "article": "LED-HL-003", "price": 22000, "stock": 10, "delivery_days": 2, "image_url": "https://images.unsplash.com/photo-1661463678303-dfb9e5f0929c?w=400", "description": "LED фара для грузовиков"},
+        {"id": str(uuid.uuid4()), "name": "Пневмоподушка SAF", "article": "SAF-AB-001", "price": 18000, "stock": 15, "delivery_days": 2, "image_url": "https://images.unsplash.com/photo-1666508330099-0c7c6ab0e332?w=400", "description": "Пневмоподушка для оси SAF"},
+        {"id": str(uuid.uuid4()), "name": "Амортизатор кабины", "article": "MNR-SA-002", "price": 12000, "stock": 8, "delivery_days": 3, "image_url": "https://images.unsplash.com/photo-1666508330099-0c7c6ab0e332?w=400", "description": "Амортизатор кабины Monroe"},
+        {"id": str(uuid.uuid4()), "name": "Рессора передняя MAN", "article": "MAN-LS-003", "price": 25000, "stock": 6, "delivery_days": 4, "image_url": "https://images.unsplash.com/photo-1666508330099-0c7c6ab0e332?w=400", "description": "Рессора передняя MAN TGX"},
+        {"id": str(uuid.uuid4()), "name": "Бампер передний Volvo", "article": "VLV-FB-001", "price": 55000, "stock": 3, "delivery_days": 7, "image_url": "https://images.unsplash.com/photo-1594920687401-e70050947ea5?w=400", "description": "Бампер передний Volvo FH4"},
+        {"id": str(uuid.uuid4()), "name": "Зеркало заднего вида", "article": "MRC-MR-002", "price": 28000, "stock": 8, "delivery_days": 3, "image_url": "https://images.unsplash.com/photo-1594920687401-e70050947ea5?w=400", "description": "Зеркало с подогревом Mercedes"},
+        {"id": str(uuid.uuid4()), "name": "Капот Scania", "article": "SCN-HD-003", "price": 120000, "stock": 2, "delivery_days": 10, "image_url": "https://images.unsplash.com/photo-1594920687401-e70050947ea5?w=400", "description": "Капот Scania R-series"},
     ]
     
     await db.products.insert_many(products)
