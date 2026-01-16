@@ -1,5 +1,5 @@
 import { Link, useNavigate } from 'react-router-dom';
-import { ShoppingCart, User, Search, LogOut } from 'lucide-react';
+import { ShoppingCart, User, Search, LogOut, Settings } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { useCart } from '../context/CartContext';
 import { Button } from './ui/button';
@@ -35,6 +35,13 @@ export const Header = () => {
           <div className="flex items-center gap-2">
             {user ? (
               <>
+                {user.role === 'admin' && (
+                  <Link to="/admin" data-testid="admin-link">
+                    <Button variant="ghost" className="text-purple-600">
+                      <Settings className="w-5 h-5" />
+                    </Button>
+                  </Link>
+                )}
                 <Link to="/cart" data-testid="cart-link">
                   <Button variant="ghost" className="relative">
                     <ShoppingCart className="w-5 h-5" />
