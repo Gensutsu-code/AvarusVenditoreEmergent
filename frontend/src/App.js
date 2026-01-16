@@ -8,12 +8,12 @@ import { Header } from "./components/Header";
 // Pages
 import HomePage from "./pages/HomePage";
 import CatalogPage from "./pages/CatalogPage";
-import ProductPage from "./pages/ProductPage";
 import CartPage from "./pages/CartPage";
 import CheckoutPage from "./pages/CheckoutPage";
 import LoginPage from "./pages/LoginPage";
 import RegisterPage from "./pages/RegisterPage";
 import AccountPage from "./pages/AccountPage";
+import AdminPage from "./pages/AdminPage";
 
 function AppContent() {
   return (
@@ -23,12 +23,12 @@ function AppContent() {
         <Routes>
           <Route path="/" element={<HomePage />} />
           <Route path="/catalog" element={<CatalogPage />} />
-          <Route path="/product/:id" element={<ProductPage />} />
           <Route path="/cart" element={<CartPage />} />
           <Route path="/checkout" element={<CheckoutPage />} />
           <Route path="/login" element={<LoginPage />} />
           <Route path="/register" element={<RegisterPage />} />
           <Route path="/account" element={<AccountPage />} />
+          <Route path="/admin" element={<AdminPage />} />
         </Routes>
       </main>
       <Toaster position="top-center" />
