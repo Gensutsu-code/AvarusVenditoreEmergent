@@ -413,6 +413,87 @@ async def seed_data():
 async def root():
     return {"message": "Truck Parts API"}
 
+# ==================== ADMIN ROUTES ====================
+
+@api_router.get("/admin/stats")
+async def get_admin_stats(user=Depends(get_current_user)):
+    if user.get("role") != "admin":
+        raise HTTPException(status_code=403, detail="Admin access required")
+    
+    total_users = await db.users.count_documents({})
+    total_products = await db.products.count_documents({})
+    total_orders = await db.orders.count_documents({})
+    
+    # Orders by status
+    pending_orders = await db.orders.count_documents({"status": "pending"})
+    completed_orders = await db.orders.count_documents({"status": "delivered"})
+    
+    # Revenue
+    orders = await db.orders.find({}, {"_id": 0, "total": 1}).to_list(1000)
+    total_revenue = sum(o.get("total", 0) for o in orders)
+    
+    return {
+        "total_users": total_users,
+        "total_products": total_products,
+        "total_orders": total_orders,
+        "pending_orders": pending_orders,
+        "completed_orders": completed_orders,
+        "total_revenue": total_revenue
+    }
+
+@api_router.get("/admin/users")
+async def get_admin_users(user=Depends(get_current_user)):
+    if user.get("role") != "admin":
+        raise HTTPException(status_code=403, detail="Admin access required")
+    
+    users = await db.users.find({}, {"_id": 0, "password": 0}).to_list(1000)
+    return users
+
+@api_router.get("/admin/orders")
+async def get_admin_orders(user=Depends(get_current_user)):
+    if user.get("role") != "admin":
+        raise HTTPException(status_code=403, detail="Admin access required")
+    
+    orders = await db.orders.find({}, {"_id": 0}).sort("created_at", -1).to_list(1000)
+    return orders
+
+@api_router.put("/admin/orders/{order_id}/status")
+async def update_order_status(order_id: str, status: str, user=Depends(get_current_user)):
+    if user.get("role") != "admin":
+        raise HTTPException(status_code=403, detail="Admin access required")
+    
+    valid_statuses = ["pending", "processing", "shipped", "delivered", "cancelled"]
+    if status not in valid_statuses:
+        raise HTTPException(status_code=400, detail="Invalid status")
+    
+    result = await db.orders.update_one({"id": order_id}, {"$set": {"status": status}})
+    if result.matched_count == 0:
+        raise HTTPException(status_code=404, detail="Order not found")
+    
+    return {"message": "Status updated"}
+
+@api_router.post("/admin/create-admin")
+async def create_admin_user():
+    """Create default admin user if not exists"""
+    existing = await db.users.find_one({"email": "admin@avarus.ru"})
+    if existing:
+        return {"message": "Admin already exists", "email": "admin@avarus.ru"}
+    
+    admin_id = str(uuid.uuid4())
+    admin = {
+        "id": admin_id,
+        "email": "admin@avarus.ru",
+        "password": hash_password("admin123"),
+        "name": "Администратор",
+        "phone": "",
+        "role": "admin",
+        "created_at": datetime.now(timezone.utc).isoformat()
+    }
+    await db.users.insert_one(admin)
+    await db.carts.insert_one({"user_id": admin_id, "items": []})
+    
+    return {"message": "Admin created", "email": "admin@avarus.ru", "password": "admin123"}
+
 app.include_router(api_router)
 
 app.add_middleware(
