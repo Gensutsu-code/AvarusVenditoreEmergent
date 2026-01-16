@@ -143,7 +143,7 @@ export default function AdminPage() {
     { value: 'cancelled', label: 'Отменён', color: 'bg-red-100 text-red-800' }
   ];
 
-  if (loading) {
+  if (loading || authLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div className="text-zinc-500">Загрузка...</div>
