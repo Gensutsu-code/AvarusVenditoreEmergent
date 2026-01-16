@@ -180,7 +180,7 @@ async def get_me(user=Depends(get_current_user)):
 # ==================== PRODUCTS ROUTES ====================
 
 @api_router.get("/products", response_model=List[ProductResponse])
-async def get_products(search: Optional[str] = None):
+async def get_products(search: Optional[str] = None, limit: int = 100, skip: int = 0):
     query = {}
     if search:
         query["$or"] = [
@@ -188,7 +188,7 @@ async def get_products(search: Optional[str] = None):
             {"article": {"$regex": search, "$options": "i"}}
         ]
     
-    products = await db.products.find(query, {"_id": 0}).to_list(1000)
+    products = await db.products.find(query, {"_id": 0}).skip(skip).limit(min(limit, 100)).to_list(100)
     return products
 
 @api_router.get("/products/{product_id}", response_model=ProductResponse)
