@@ -83,9 +83,9 @@ class CartItemResponse(BaseModel):
     image_url: Optional[str] = None
 
 class OrderCreate(BaseModel):
+    full_name: str
     address: str
     phone: str
-    comment: Optional[str] = None
 
 class OrderResponse(BaseModel):
     id: str
@@ -93,9 +93,9 @@ class OrderResponse(BaseModel):
     items: List[CartItemResponse]
     total: float
     status: str
+    full_name: str
     address: str
     phone: str
-    comment: Optional[str] = None
     created_at: str
 
 # ==================== AUTH HELPERS ====================
@@ -306,9 +306,10 @@ async def create_order(data: OrderCreate, user=Depends(get_current_user)):
         "items": items,
         "total": total,
         "status": "pending",
+        "full_name": data.full_name,
         "address": data.address,
         "phone": data.phone,
-        "comment": data.comment,
+        "payment_method": "cash",
         "created_at": datetime.now(timezone.utc).isoformat()
     }
     await db.orders.insert_one(order)

@@ -1,11 +1,10 @@
 import { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import axios from 'axios';
-import { ArrowLeft, CheckCircle } from 'lucide-react';
+import { ArrowLeft, CheckCircle, Banknote } from 'lucide-react';
 import { Button } from '../components/ui/button';
 import { Input } from '../components/ui/input';
 import { Label } from '../components/ui/label';
-import { Textarea } from '../components/ui/textarea';
 import { useCart } from '../context/CartContext';
 import { useAuth } from '../context/AuthContext';
 import { toast } from 'sonner';
@@ -20,9 +19,9 @@ export default function CheckoutPage() {
   const [success, setSuccess] = useState(false);
   const [orderId, setOrderId] = useState(null);
   const [form, setForm] = useState({
+    full_name: '',
     address: '',
-    phone: user?.phone || '',
-    comment: ''
+    phone: user?.phone || ''
   });
 
   const formatPrice = (price) => {
@@ -32,8 +31,8 @@ export default function CheckoutPage() {
   const handleSubmit = async (e) => {
     e.preventDefault();
     
-    if (!form.address.trim() || !form.phone.trim()) {
-      toast.error('Заполните обязательные поля');
+    if (!form.full_name.trim() || !form.address.trim() || !form.phone.trim()) {
+      toast.error('Заполните все обязательные поля');
       return;
     }
 
@@ -64,14 +63,14 @@ export default function CheckoutPage() {
   if (success) {
     return (
       <div className="min-h-screen flex items-center justify-center" data-testid="checkout-success">
-        <div className="text-center max-w-md">
+        <div className="text-center max-w-md px-4">
           <CheckCircle className="w-16 h-16 mx-auto text-green-500 mb-4" />
           <h1 className="text-2xl font-bold text-zinc-900 mb-2">Заказ оформлен!</h1>
           <p className="text-zinc-500 mb-2">
             Номер заказа: <span className="font-mono font-semibold">{orderId?.slice(0, 8)}</span>
           </p>
           <p className="text-zinc-500 mb-6">
-            Мы свяжемся с вами для подтверждения
+            Мы свяжемся с вами для подтверждения. Оплата наличными при получении.
           </p>
           <div className="flex gap-4 justify-center">
             <Link to="/account">
@@ -109,6 +108,21 @@ export default function CheckoutPage() {
           {/* Form */}
           <form onSubmit={handleSubmit} className="space-y-6">
             <div>
+              <Label htmlFor="full_name" className="text-xs font-bold uppercase tracking-widest text-zinc-500">
+                ФИО получателя *
+              </Label>
+              <Input
+                id="full_name"
+                value={form.full_name}
+                onChange={(e) => setForm({ ...form, full_name: e.target.value })}
+                placeholder="Иванов Иван Иванович"
+                className="mt-2 h-12 bg-zinc-50"
+                required
+                data-testid="checkout-fullname"
+              />
+            </div>
+
+            <div>
               <Label htmlFor="address" className="text-xs font-bold uppercase tracking-widest text-zinc-500">
                 Адрес доставки *
               </Label>
@@ -139,18 +153,15 @@ export default function CheckoutPage() {
               />
             </div>
 
-            <div>
-              <Label htmlFor="comment" className="text-xs font-bold uppercase tracking-widest text-zinc-500">
-                Комментарий
-              </Label>
-              <Textarea
-                id="comment"
-                value={form.comment}
-                onChange={(e) => setForm({ ...form, comment: e.target.value })}
-                placeholder="Дополнительная информация к заказу"
-                className="mt-2 bg-zinc-50 min-h-[100px]"
-                data-testid="checkout-comment"
-              />
+            {/* Payment info */}
+            <div className="bg-zinc-50 border border-zinc-200 p-4">
+              <div className="flex items-center gap-3 mb-2">
+                <Banknote className="w-5 h-5 text-green-600" />
+                <span className="font-semibold text-zinc-900">Способ оплаты</span>
+              </div>
+              <p className="text-zinc-600 text-sm">
+                Оплата наличными при получении товара
+              </p>
             </div>
 
             <Button 
@@ -189,6 +200,9 @@ export default function CheckoutPage() {
                   {formatPrice(cartTotal)} ₽
                 </span>
               </div>
+              <p className="text-xs text-zinc-500 mt-2">
+                Оплата наличными при получении
+              </p>
             </div>
           </div>
         </div>

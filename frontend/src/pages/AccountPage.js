@@ -148,9 +148,10 @@ export default function AccountPage() {
                   </div>
 
                   <div className="mt-4 text-sm text-zinc-500">
+                    <p>Получатель: {order.full_name}</p>
                     <p>Адрес: {order.address}</p>
                     <p>Телефон: {order.phone}</p>
-                    {order.comment && <p>Комментарий: {order.comment}</p>}
+                    <p>Оплата: наличными при получении</p>
                   </div>
                 </div>
               ))}
