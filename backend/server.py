@@ -178,10 +178,8 @@ async def get_me(user=Depends(get_current_user)):
 # ==================== PRODUCTS ROUTES ====================
 
 @api_router.get("/products", response_model=List[ProductResponse])
-async def get_products(category: Optional[str] = None, search: Optional[str] = None):
+async def get_products(search: Optional[str] = None):
     query = {}
-    if category:
-        query["category"] = category
     if search:
         query["$or"] = [
             {"name": {"$regex": search, "$options": "i"}},
@@ -199,7 +197,10 @@ async def get_product(product_id: str):
     return product
 
 @api_router.post("/products", response_model=ProductResponse)
-async def create_product(data: ProductCreate):
+async def create_product(data: ProductCreate, user=Depends(get_current_user)):
+    if user.get("role") != "admin":
+        raise HTTPException(status_code=403, detail="Admin access required")
+    
     product_id = str(uuid.uuid4())
     product = {
         "id": product_id,
@@ -208,16 +209,35 @@ async def create_product(data: ProductCreate):
     await db.products.insert_one(product)
     return product
 
+@api_router.put("/products/{product_id}", response_model=ProductResponse)
+async def update_product(product_id: str, data: ProductUpdate, user=Depends(get_current_user)):
+    if user.get("role") != "admin":
+        raise HTTPException(status_code=403, detail="Admin access required")
+    
+    update_data = {k: v for k, v in data.model_dump().items() if v is not None}
+    if not update_data:
+        raise HTTPException(status_code=400, detail="No data to update")
+    
+    result = await db.products.update_one({"id": product_id}, {"$set": update_data})
+    if result.matched_count == 0:
+        raise HTTPException(status_code=404, detail="Product not found")
+    
+    product = await db.products.find_one({"id": product_id}, {"_id": 0})
+    return product
+
+@api_router.delete("/products/{product_id}")
+async def delete_product(product_id: str, user=Depends(get_current_user)):
+    if user.get("role") != "admin":
+        raise HTTPException(status_code=403, detail="Admin access required")
+    
+    result = await db.products.delete_one({"id": product_id})
+    if result.deleted_count == 0:
+        raise HTTPException(status_code=404, detail="Product not found")
+    return {"message": "Product deleted"}
+
 @api_router.get("/categories")
 async def get_categories():
-    return [
-        {"id": "engine", "name": "Двигатель и комплектующие", "image": "https://images.unsplash.com/photo-1695597802538-bcb2bd533d19?w=400"},
-        {"id": "transmission", "name": "Трансмиссия", "image": "https://images.unsplash.com/photo-1763738173457-2a874a207215?w=400"},
-        {"id": "brakes", "name": "Тормозная система", "image": "https://images.unsplash.com/photo-1629220640507-6548fe7ee769?w=400"},
-        {"id": "electric", "name": "Электрика", "image": "https://images.unsplash.com/photo-1661463678303-dfb9e5f0929c?w=400"},
-        {"id": "suspension", "name": "Подвеска", "image": "https://images.unsplash.com/photo-1666508330099-0c7c6ab0e332?w=400"},
-        {"id": "body", "name": "Кузовные детали", "image": "https://images.unsplash.com/photo-1594920687401-e70050947ea5?w=400"}
-    ]
+    return []
 
 # ==================== CART ROUTES ====================
 
