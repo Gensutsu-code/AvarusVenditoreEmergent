@@ -1,15 +1,17 @@
-from fastapi import FastAPI, APIRouter
+from fastapi import FastAPI, APIRouter, HTTPException, Depends
+from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from dotenv import load_dotenv
 from starlette.middleware.cors import CORSMiddleware
 from motor.motor_asyncio import AsyncIOMotorClient
 import os
 import logging
 from pathlib import Path
-from pydantic import BaseModel, Field, ConfigDict
-from typing import List
+from pydantic import BaseModel, Field
+from typing import List, Optional
 import uuid
 from datetime import datetime, timezone
-
+import bcrypt
+import jwt
 
 ROOT_DIR = Path(__file__).parent
 load_dotenv(ROOT_DIR / '.env')
@@ -19,54 +21,366 @@ mongo_url = os.environ['MONGO_URL']
 client = AsyncIOMotorClient(mongo_url)
 db = client[os.environ['DB_NAME']]
 
-# Create the main app without a prefix
+# JWT settings
+JWT_SECRET = os.environ.get('JWT_SECRET', 'truck-parts-secret-key-2024')
+JWT_ALGORITHM = "HS256"
+
 app = FastAPI()
-
-# Create a router with the /api prefix
 api_router = APIRouter(prefix="/api")
+security = HTTPBearer()
 
+# Configure logging
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
 
-# Define Models
-class StatusCheck(BaseModel):
-    model_config = ConfigDict(extra="ignore")  # Ignore MongoDB's _id field
+# ==================== MODELS ====================
+
+class UserRegister(BaseModel):
+    email: str
+    password: str
+    name: str
+    phone: Optional[str] = None
+
+class UserLogin(BaseModel):
+    email: str
+    password: str
+
+class UserResponse(BaseModel):
+    id: str
+    email: str
+    name: str
+    phone: Optional[str] = None
+
+class ProductCreate(BaseModel):
+    name: str
+    article: str
+    category: str
+    price: float
+    description: Optional[str] = None
+    image_url: Optional[str] = None
+    stock: int = 0
+
+class ProductResponse(BaseModel):
+    id: str
+    name: str
+    article: str
+    category: str
+    price: float
+    description: Optional[str] = None
+    image_url: Optional[str] = None
+    stock: int
+
+class CartItem(BaseModel):
+    product_id: str
+    quantity: int
+
+class CartItemResponse(BaseModel):
+    product_id: str
+    name: str
+    article: str
+    price: float
+    quantity: int
+    image_url: Optional[str] = None
+
+class OrderCreate(BaseModel):
+    address: str
+    phone: str
+    comment: Optional[str] = None
+
+class OrderResponse(BaseModel):
+    id: str
+    user_id: str
+    items: List[CartItemResponse]
+    total: float
+    status: str
+    address: str
+    phone: str
+    comment: Optional[str] = None
+    created_at: str
+
+# ==================== AUTH HELPERS ====================
+
+def hash_password(password: str) -> str:
+    return bcrypt.hashpw(password.encode(), bcrypt.gensalt()).decode()
+
+def verify_password(password: str, hashed: str) -> bool:
+    return bcrypt.checkpw(password.encode(), hashed.encode())
+
+def create_token(user_id: str) -> str:
+    payload = {
+        "user_id": user_id,
+        "exp": datetime.now(timezone.utc).timestamp() + 86400 * 7  # 7 days
+    }
+    return jwt.encode(payload, JWT_SECRET, algorithm=JWT_ALGORITHM)
+
+async def get_current_user(credentials: HTTPAuthorizationCredentials = Depends(security)):
+    try:
+        payload = jwt.decode(credentials.credentials, JWT_SECRET, algorithms=[JWT_ALGORITHM])
+        user_id = payload.get("user_id")
+        user = await db.users.find_one({"id": user_id}, {"_id": 0, "password": 0})
+        if not user:
+            raise HTTPException(status_code=401, detail="User not found")
+        return user
+    except jwt.ExpiredSignatureError:
+        raise HTTPException(status_code=401, detail="Token expired")
+    except jwt.InvalidTokenError:
+        raise HTTPException(status_code=401, detail="Invalid token")
+
+# ==================== AUTH ROUTES ====================
+
+@api_router.post("/auth/register")
+async def register(data: UserRegister):
+    existing = await db.users.find_one({"email": data.email})
+    if existing:
+        raise HTTPException(status_code=400, detail="Email already registered")
     
-    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
-    client_name: str
-    timestamp: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+    user_id = str(uuid.uuid4())
+    user = {
+        "id": user_id,
+        "email": data.email,
+        "password": hash_password(data.password),
+        "name": data.name,
+        "phone": data.phone,
+        "created_at": datetime.now(timezone.utc).isoformat()
+    }
+    await db.users.insert_one(user)
+    
+    # Create empty cart
+    await db.carts.insert_one({"user_id": user_id, "items": []})
+    
+    token = create_token(user_id)
+    return {"token": token, "user": {"id": user_id, "email": data.email, "name": data.name, "phone": data.phone}}
 
-class StatusCheckCreate(BaseModel):
-    client_name: str
+@api_router.post("/auth/login")
+async def login(data: UserLogin):
+    user = await db.users.find_one({"email": data.email})
+    if not user or not verify_password(data.password, user["password"]):
+        raise HTTPException(status_code=401, detail="Invalid credentials")
+    
+    token = create_token(user["id"])
+    return {"token": token, "user": {"id": user["id"], "email": user["email"], "name": user["name"], "phone": user.get("phone")}}
 
-# Add your routes to the router instead of directly to app
+@api_router.get("/auth/me", response_model=UserResponse)
+async def get_me(user=Depends(get_current_user)):
+    return user
+
+# ==================== PRODUCTS ROUTES ====================
+
+@api_router.get("/products", response_model=List[ProductResponse])
+async def get_products(category: Optional[str] = None, search: Optional[str] = None):
+    query = {}
+    if category:
+        query["category"] = category
+    if search:
+        query["$or"] = [
+            {"name": {"$regex": search, "$options": "i"}},
+            {"article": {"$regex": search, "$options": "i"}}
+        ]
+    
+    products = await db.products.find(query, {"_id": 0}).to_list(1000)
+    return products
+
+@api_router.get("/products/{product_id}", response_model=ProductResponse)
+async def get_product(product_id: str):
+    product = await db.products.find_one({"id": product_id}, {"_id": 0})
+    if not product:
+        raise HTTPException(status_code=404, detail="Product not found")
+    return product
+
+@api_router.post("/products", response_model=ProductResponse)
+async def create_product(data: ProductCreate):
+    product_id = str(uuid.uuid4())
+    product = {
+        "id": product_id,
+        **data.model_dump()
+    }
+    await db.products.insert_one(product)
+    return product
+
+@api_router.get("/categories")
+async def get_categories():
+    return [
+        {"id": "engine", "name": "Двигатель и комплектующие", "image": "https://images.unsplash.com/photo-1695597802538-bcb2bd533d19?w=400"},
+        {"id": "transmission", "name": "Трансмиссия", "image": "https://images.unsplash.com/photo-1763738173457-2a874a207215?w=400"},
+        {"id": "brakes", "name": "Тормозная система", "image": "https://images.unsplash.com/photo-1629220640507-6548fe7ee769?w=400"},
+        {"id": "electric", "name": "Электрика", "image": "https://images.unsplash.com/photo-1661463678303-dfb9e5f0929c?w=400"},
+        {"id": "suspension", "name": "Подвеска", "image": "https://images.unsplash.com/photo-1666508330099-0c7c6ab0e332?w=400"},
+        {"id": "body", "name": "Кузовные детали", "image": "https://images.unsplash.com/photo-1594920687401-e70050947ea5?w=400"}
+    ]
+
+# ==================== CART ROUTES ====================
+
+@api_router.get("/cart")
+async def get_cart(user=Depends(get_current_user)):
+    cart = await db.carts.find_one({"user_id": user["id"]}, {"_id": 0})
+    if not cart:
+        cart = {"user_id": user["id"], "items": []}
+        await db.carts.insert_one(cart)
+    
+    # Populate product details
+    items_with_details = []
+    for item in cart.get("items", []):
+        product = await db.products.find_one({"id": item["product_id"]}, {"_id": 0})
+        if product:
+            items_with_details.append({
+                "product_id": item["product_id"],
+                "name": product["name"],
+                "article": product["article"],
+                "price": product["price"],
+                "quantity": item["quantity"],
+                "image_url": product.get("image_url")
+            })
+    
+    return {"items": items_with_details}
+
+@api_router.post("/cart/add")
+async def add_to_cart(item: CartItem, user=Depends(get_current_user)):
+    cart = await db.carts.find_one({"user_id": user["id"]})
+    if not cart:
+        await db.carts.insert_one({"user_id": user["id"], "items": [item.model_dump()]})
+    else:
+        items = cart.get("items", [])
+        existing = next((i for i in items if i["product_id"] == item.product_id), None)
+        if existing:
+            existing["quantity"] += item.quantity
+        else:
+            items.append(item.model_dump())
+        await db.carts.update_one({"user_id": user["id"]}, {"$set": {"items": items}})
+    
+    return {"message": "Added to cart"}
+
+@api_router.post("/cart/update")
+async def update_cart_item(item: CartItem, user=Depends(get_current_user)):
+    cart = await db.carts.find_one({"user_id": user["id"]})
+    if cart:
+        items = cart.get("items", [])
+        for i in items:
+            if i["product_id"] == item.product_id:
+                i["quantity"] = item.quantity
+                break
+        await db.carts.update_one({"user_id": user["id"]}, {"$set": {"items": items}})
+    return {"message": "Cart updated"}
+
+@api_router.delete("/cart/{product_id}")
+async def remove_from_cart(product_id: str, user=Depends(get_current_user)):
+    await db.carts.update_one(
+        {"user_id": user["id"]},
+        {"$pull": {"items": {"product_id": product_id}}}
+    )
+    return {"message": "Removed from cart"}
+
+@api_router.delete("/cart")
+async def clear_cart(user=Depends(get_current_user)):
+    await db.carts.update_one({"user_id": user["id"]}, {"$set": {"items": []}})
+    return {"message": "Cart cleared"}
+
+# ==================== ORDERS ROUTES ====================
+
+@api_router.post("/orders", response_model=OrderResponse)
+async def create_order(data: OrderCreate, user=Depends(get_current_user)):
+    cart = await db.carts.find_one({"user_id": user["id"]})
+    if not cart or not cart.get("items"):
+        raise HTTPException(status_code=400, detail="Cart is empty")
+    
+    # Build order items
+    items = []
+    total = 0
+    for cart_item in cart["items"]:
+        product = await db.products.find_one({"id": cart_item["product_id"]}, {"_id": 0})
+        if product:
+            item_data = {
+                "product_id": cart_item["product_id"],
+                "name": product["name"],
+                "article": product["article"],
+                "price": product["price"],
+                "quantity": cart_item["quantity"],
+                "image_url": product.get("image_url")
+            }
+            items.append(item_data)
+            total += product["price"] * cart_item["quantity"]
+    
+    order_id = str(uuid.uuid4())
+    order = {
+        "id": order_id,
+        "user_id": user["id"],
+        "items": items,
+        "total": total,
+        "status": "pending",
+        "address": data.address,
+        "phone": data.phone,
+        "comment": data.comment,
+        "created_at": datetime.now(timezone.utc).isoformat()
+    }
+    await db.orders.insert_one(order)
+    
+    # Clear cart
+    await db.carts.update_one({"user_id": user["id"]}, {"$set": {"items": []}})
+    
+    return order
+
+@api_router.get("/orders", response_model=List[OrderResponse])
+async def get_orders(user=Depends(get_current_user)):
+    orders = await db.orders.find({"user_id": user["id"]}, {"_id": 0}).sort("created_at", -1).to_list(100)
+    return orders
+
+@api_router.get("/orders/{order_id}", response_model=OrderResponse)
+async def get_order(order_id: str, user=Depends(get_current_user)):
+    order = await db.orders.find_one({"id": order_id, "user_id": user["id"]}, {"_id": 0})
+    if not order:
+        raise HTTPException(status_code=404, detail="Order not found")
+    return order
+
+# ==================== SEED DATA ====================
+
+@api_router.post("/seed")
+async def seed_data():
+    # Check if already seeded
+    count = await db.products.count_documents({})
+    if count > 0:
+        return {"message": "Data already seeded"}
+    
+    products = [
+        # Двигатель
+        {"id": str(uuid.uuid4()), "name": "Поршневая группа MAN TGA", "article": "MAN-PG-001", "category": "engine", "price": 45000, "stock": 10, "image_url": "https://images.unsplash.com/photo-1695597802538-bcb2bd533d19?w=400", "description": "Комплект поршневой группы для MAN TGA"},
+        {"id": str(uuid.uuid4()), "name": "Турбина Volvo FH", "article": "VLV-TB-002", "category": "engine", "price": 85000, "stock": 5, "image_url": "https://images.unsplash.com/photo-1695597802538-bcb2bd533d19?w=400", "description": "Турбокомпрессор для Volvo FH12/FH16"},
+        {"id": str(uuid.uuid4()), "name": "Масляный насос Scania", "article": "SCN-ON-003", "category": "engine", "price": 28000, "stock": 8, "image_url": "https://images.unsplash.com/photo-1695597802538-bcb2bd533d19?w=400", "description": "Масляный насос для Scania R-series"},
+        {"id": str(uuid.uuid4()), "name": "Прокладка ГБЦ DAF", "article": "DAF-GS-004", "category": "engine", "price": 12000, "stock": 15, "image_url": "https://images.unsplash.com/photo-1695597802538-bcb2bd533d19?w=400", "description": "Прокладка головки блока DAF XF"},
+        
+        # Трансмиссия
+        {"id": str(uuid.uuid4()), "name": "Сцепление комплект Mercedes", "article": "MRC-CL-001", "category": "transmission", "price": 65000, "stock": 6, "image_url": "https://images.unsplash.com/photo-1763738173457-2a874a207215?w=400", "description": "Комплект сцепления Mercedes Actros"},
+        {"id": str(uuid.uuid4()), "name": "КПП ZF 16S", "article": "ZF-GB-002", "category": "transmission", "price": 280000, "stock": 2, "image_url": "https://images.unsplash.com/photo-1763738173457-2a874a207215?w=400", "description": "Коробка передач ZF 16S 2220"},
+        {"id": str(uuid.uuid4()), "name": "Кардан IVECO", "article": "IVC-CD-003", "category": "transmission", "price": 42000, "stock": 4, "image_url": "https://images.unsplash.com/photo-1763738173457-2a874a207215?w=400", "description": "Карданный вал IVECO Stralis"},
+        
+        # Тормозная система
+        {"id": str(uuid.uuid4()), "name": "Тормозные колодки SAF", "article": "SAF-BP-001", "category": "brakes", "price": 8500, "stock": 20, "image_url": "https://images.unsplash.com/photo-1629220640507-6548fe7ee769?w=400", "description": "Колодки тормозные для полуприцепа SAF"},
+        {"id": str(uuid.uuid4()), "name": "Тормозной диск BPW", "article": "BPW-BD-002", "category": "brakes", "price": 15000, "stock": 12, "image_url": "https://images.unsplash.com/photo-1629220640507-6548fe7ee769?w=400", "description": "Тормозной диск BPW ECO Plus"},
+        {"id": str(uuid.uuid4()), "name": "Главный тормозной цилиндр", "article": "WBK-MC-003", "category": "brakes", "price": 32000, "stock": 7, "image_url": "https://images.unsplash.com/photo-1629220640507-6548fe7ee769?w=400", "description": "Главный тормозной цилиндр Wabco"},
+        
+        # Электрика
+        {"id": str(uuid.uuid4()), "name": "Генератор Bosch 28V", "article": "BSH-GN-001", "category": "electric", "price": 45000, "stock": 5, "image_url": "https://images.unsplash.com/photo-1661463678303-dfb9e5f0929c?w=400", "description": "Генератор Bosch 28V 80A"},
+        {"id": str(uuid.uuid4()), "name": "Стартер Prestolite", "article": "PRS-ST-002", "category": "electric", "price": 38000, "stock": 6, "image_url": "https://images.unsplash.com/photo-1661463678303-dfb9e5f0929c?w=400", "description": "Стартер Prestolite 24V"},
+        {"id": str(uuid.uuid4()), "name": "Фара головного света LED", "article": "LED-HL-003", "category": "electric", "price": 22000, "stock": 10, "image_url": "https://images.unsplash.com/photo-1661463678303-dfb9e5f0929c?w=400", "description": "LED фара для грузовиков"},
+        
+        # Подвеска
+        {"id": str(uuid.uuid4()), "name": "Пневмоподушка SAF", "article": "SAF-AB-001", "category": "suspension", "price": 18000, "stock": 15, "image_url": "https://images.unsplash.com/photo-1666508330099-0c7c6ab0e332?w=400", "description": "Пневмоподушка для оси SAF"},
+        {"id": str(uuid.uuid4()), "name": "Амортизатор кабины", "article": "MNR-SA-002", "category": "suspension", "price": 12000, "stock": 8, "image_url": "https://images.unsplash.com/photo-1666508330099-0c7c6ab0e332?w=400", "description": "Амортизатор кабины Monroe"},
+        {"id": str(uuid.uuid4()), "name": "Рессора передняя MAN", "article": "MAN-LS-003", "category": "suspension", "price": 25000, "stock": 6, "image_url": "https://images.unsplash.com/photo-1666508330099-0c7c6ab0e332?w=400", "description": "Рессора передняя MAN TGX"},
+        
+        # Кузовные детали
+        {"id": str(uuid.uuid4()), "name": "Бампер передний Volvo", "article": "VLV-FB-001", "category": "body", "price": 55000, "stock": 3, "image_url": "https://images.unsplash.com/photo-1594920687401-e70050947ea5?w=400", "description": "Бампер передний Volvo FH4"},
+        {"id": str(uuid.uuid4()), "name": "Зеркало заднего вида", "article": "MRC-MR-002", "category": "body", "price": 28000, "stock": 8, "image_url": "https://images.unsplash.com/photo-1594920687401-e70050947ea5?w=400", "description": "Зеркало с подогревом Mercedes"},
+        {"id": str(uuid.uuid4()), "name": "Капот Scania", "article": "SCN-HD-003", "category": "body", "price": 120000, "stock": 2, "image_url": "https://images.unsplash.com/photo-1594920687401-e70050947ea5?w=400", "description": "Капот Scania R-series"},
+    ]
+    
+    await db.products.insert_many(products)
+    return {"message": f"Seeded {len(products)} products"}
+
+# ==================== ROOT ====================
+
 @api_router.get("/")
 async def root():
-    return {"message": "Hello World"}
+    return {"message": "Truck Parts API"}
 
-@api_router.post("/status", response_model=StatusCheck)
-async def create_status_check(input: StatusCheckCreate):
-    status_dict = input.model_dump()
-    status_obj = StatusCheck(**status_dict)
-    
-    # Convert to dict and serialize datetime to ISO string for MongoDB
-    doc = status_obj.model_dump()
-    doc['timestamp'] = doc['timestamp'].isoformat()
-    
-    _ = await db.status_checks.insert_one(doc)
-    return status_obj
-
-@api_router.get("/status", response_model=List[StatusCheck])
-async def get_status_checks():
-    # Exclude MongoDB's _id field from the query results
-    status_checks = await db.status_checks.find({}, {"_id": 0}).to_list(1000)
-    
-    # Convert ISO string timestamps back to datetime objects
-    for check in status_checks:
-        if isinstance(check['timestamp'], str):
-            check['timestamp'] = datetime.fromisoformat(check['timestamp'])
-    
-    return status_checks
-
-# Include the router in the main app
 app.include_router(api_router)
 
 app.add_middleware(
@@ -76,13 +390,6 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
-
-# Configure logging
-logging.basicConfig(
-    level=logging.INFO,
-    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
-)
-logger = logging.getLogger(__name__)
 
 @app.on_event("shutdown")
 async def shutdown_db_client():
