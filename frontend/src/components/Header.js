@@ -1,23 +1,12 @@
 import { Link, useNavigate } from 'react-router-dom';
-import { ShoppingCart, User, Search, LogOut, Package } from 'lucide-react';
+import { ShoppingCart, User, Search, LogOut } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { useCart } from '../context/CartContext';
 import { Button } from './ui/button';
-import { Input } from './ui/input';
-import { useState } from 'react';
 
 export const Header = () => {
   const { user, logout } = useAuth();
   const { cartCount } = useCart();
-  const navigate = useNavigate();
-  const [searchQuery, setSearchQuery] = useState('');
-
-  const handleSearch = (e) => {
-    e.preventDefault();
-    if (searchQuery.trim()) {
-      navigate(`/catalog?search=${encodeURIComponent(searchQuery.trim())}`);
-    }
-  };
 
   return (
     <header className="sticky top-0 z-50 bg-white border-b border-zinc-200" data-testid="header">
@@ -25,31 +14,22 @@ export const Header = () => {
         <div className="flex items-center justify-between h-16 gap-4">
           {/* Logo */}
           <Link to="/" className="flex-shrink-0" data-testid="logo-link">
-            <h1 className="text-xl font-bold uppercase tracking-tight text-zinc-900">
-              ГрузАвтоЗапчасти
+            <h1 className="text-lg font-bold uppercase tracking-tight text-zinc-900">
+              avarus-Venditore
             </h1>
           </Link>
 
-          {/* Search */}
-          <form onSubmit={handleSearch} className="flex-1 max-w-xl hidden sm:block">
-            <div className="relative">
-              <Input
-                type="text"
-                placeholder="Поиск по названию или артикулу..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className="pr-10 h-10 bg-zinc-50 border-zinc-200"
-                data-testid="search-input"
-              />
-              <button 
-                type="submit" 
-                className="absolute right-2 top-1/2 -translate-y-1/2 text-zinc-400 hover:text-zinc-600"
-                data-testid="search-button"
-              >
-                <Search className="w-5 h-5" />
-              </button>
-            </div>
-          </form>
+          {/* Navigation */}
+          <nav className="hidden sm:flex items-center gap-6">
+            <Link 
+              to="/catalog" 
+              className="text-sm font-medium text-zinc-600 hover:text-zinc-900 transition-colors flex items-center gap-2"
+              data-testid="nav-search"
+            >
+              <Search className="w-4 h-4" />
+              Поиск запчастей
+            </Link>
+          </nav>
 
           {/* Actions */}
           <div className="flex items-center gap-2">
@@ -83,26 +63,6 @@ export const Header = () => {
             )}
           </div>
         </div>
-
-        {/* Mobile search */}
-        <form onSubmit={handleSearch} className="sm:hidden pb-3">
-          <div className="relative">
-            <Input
-              type="text"
-              placeholder="Поиск..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="pr-10 h-10 bg-zinc-50 border-zinc-200"
-              data-testid="search-input-mobile"
-            />
-            <button 
-              type="submit" 
-              className="absolute right-2 top-1/2 -translate-y-1/2 text-zinc-400 hover:text-zinc-600"
-            >
-              <Search className="w-5 h-5" />
-            </button>
-          </div>
-        </form>
       </div>
     </header>
   );
