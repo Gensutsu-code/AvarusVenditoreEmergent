@@ -50,25 +50,35 @@ class UserResponse(BaseModel):
     email: str
     name: str
     phone: Optional[str] = None
+    role: str = "user"
 
 class ProductCreate(BaseModel):
     name: str
     article: str
-    category: str
     price: float
     description: Optional[str] = None
     image_url: Optional[str] = None
     stock: int = 0
+    delivery_days: int = 3
+
+class ProductUpdate(BaseModel):
+    name: Optional[str] = None
+    article: Optional[str] = None
+    price: Optional[float] = None
+    description: Optional[str] = None
+    image_url: Optional[str] = None
+    stock: Optional[int] = None
+    delivery_days: Optional[int] = None
 
 class ProductResponse(BaseModel):
     id: str
     name: str
     article: str
-    category: str
     price: float
     description: Optional[str] = None
     image_url: Optional[str] = None
     stock: int
+    delivery_days: int = 3
 
 class CartItem(BaseModel):
     product_id: str
@@ -141,6 +151,7 @@ async def register(data: UserRegister):
         "password": hash_password(data.password),
         "name": data.name,
         "phone": data.phone,
+        "role": "user",
         "created_at": datetime.now(timezone.utc).isoformat()
     }
     await db.users.insert_one(user)
@@ -149,7 +160,7 @@ async def register(data: UserRegister):
     await db.carts.insert_one({"user_id": user_id, "items": []})
     
     token = create_token(user_id)
-    return {"token": token, "user": {"id": user_id, "email": data.email, "name": data.name, "phone": data.phone}}
+    return {"token": token, "user": {"id": user_id, "email": data.email, "name": data.name, "phone": data.phone, "role": "user"}}
 
 @api_router.post("/auth/login")
 async def login(data: UserLogin):
@@ -158,7 +169,7 @@ async def login(data: UserLogin):
         raise HTTPException(status_code=401, detail="Invalid credentials")
     
     token = create_token(user["id"])
-    return {"token": token, "user": {"id": user["id"], "email": user["email"], "name": user["name"], "phone": user.get("phone")}}
+    return {"token": token, "user": {"id": user["id"], "email": user["email"], "name": user["name"], "phone": user.get("phone"), "role": user.get("role", "user")}}
 
 @api_router.get("/auth/me", response_model=UserResponse)
 async def get_me(user=Depends(get_current_user)):
