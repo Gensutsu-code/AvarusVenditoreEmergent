@@ -223,9 +223,9 @@ class TruckPartsAPITester:
         
         # Create order
         order_data = {
+            "full_name": "Иванов Иван Иванович",
             "address": "Москва, ул. Тестовая, д. 1",
-            "phone": "+7 (999) 123-45-67",
-            "comment": "Test order"
+            "phone": "+7 (999) 123-45-67"
         }
         
         success, order = self.run_test("Create Order", "POST", "orders", 200, order_data)
