@@ -29,6 +29,9 @@ export default function AdminPage() {
   const [viewingOrder, setViewingOrder] = useState(null);
 
   useEffect(() => {
+    if (authLoading) {
+      return; // Wait for auth to load
+    }
     if (!user) {
       navigate('/login');
       return;
@@ -39,7 +42,7 @@ export default function AdminPage() {
       return;
     }
     fetchData();
-  }, [user, navigate]);
+  }, [user, navigate, authLoading]);
 
   const fetchData = async () => {
     setLoading(true);
