@@ -431,9 +431,10 @@ async def get_admin_stats(user=Depends(get_current_user)):
     pending_orders = await db.orders.count_documents({"status": "pending"})
     completed_orders = await db.orders.count_documents({"status": "delivered"})
     
-    # Revenue
-    orders = await db.orders.find({}, {"_id": 0, "total": 1}).to_list(1000)
-    total_revenue = sum(o.get("total", 0) for o in orders)
+    # Revenue using aggregation
+    pipeline = [{"$group": {"_id": None, "total_revenue": {"$sum": "$total"}}}]
+    result = await db.orders.aggregate(pipeline).to_list(1)
+    total_revenue = result[0]["total_revenue"] if result else 0
     
     return {
         "total_users": total_users,
