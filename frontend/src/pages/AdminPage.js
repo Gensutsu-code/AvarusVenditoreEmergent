@@ -116,6 +116,51 @@ export default function AdminPage() {
     }
   };
 
+  // File upload handler
+  const handleFileUpload = async (file, type) => {
+    if (!file) return null;
+    
+    setUploading(true);
+    try {
+      const formData = new FormData();
+      formData.append('file', file);
+      
+      const res = await axios.post(`${API}/upload`, formData, {
+        headers: { 'Content-Type': 'multipart/form-data' }
+      });
+      
+      // Return full URL
+      const url = `${BACKEND_URL}${res.data.url}`;
+      toast.success('Изображение загружено');
+      return url;
+    } catch (err) {
+      toast.error('Ошибка загрузки: ' + (err.response?.data?.detail || 'Неизвестная ошибка'));
+      return null;
+    } finally {
+      setUploading(false);
+    }
+  };
+
+  const handleProductImageUpload = async (e) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      const url = await handleFileUpload(file, 'product');
+      if (url) {
+        setEditingProduct({ ...editingProduct, image_url: url });
+      }
+    }
+  };
+
+  const handleCategoryImageUpload = async (e) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      const url = await handleFileUpload(file, 'category');
+      if (url) {
+        setEditingCategory({ ...editingCategory, image_url: url });
+      }
+    }
+  };
+
   const openNewProduct = () => {
     setIsNewProduct(true);
     setEditingProduct({
