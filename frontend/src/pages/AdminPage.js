@@ -847,6 +847,354 @@ export default function AdminPage() {
               </Button>
             </div>
           </TabsContent>
+
+          {/* Extended Statistics Tab */}
+          <TabsContent value="stats" className="p-6">
+            <div className="space-y-6">
+              <div className="flex items-center justify-between">
+                <h2 className="text-lg font-semibold">Расширенная статистика</h2>
+                <select
+                  value={statsPeriod}
+                  onChange={(e) => setStatsPeriod(e.target.value)}
+                  className="h-10 px-3 border border-zinc-200 bg-white"
+                >
+                  <option value="day">За день</option>
+                  <option value="week">За неделю</option>
+                  <option value="month">За месяц</option>
+                  <option value="year">За год</option>
+                </select>
+              </div>
+
+              {extendedStats && (
+                <>
+                  {/* Summary cards */}
+                  <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                    <div className="bg-zinc-50 border border-zinc-200 p-4">
+                      <p className="text-sm text-zinc-500">Заказов</p>
+                      <p className="text-2xl font-bold">{extendedStats.total_orders}</p>
+                    </div>
+                    <div className="bg-zinc-50 border border-zinc-200 p-4">
+                      <p className="text-sm text-zinc-500">Выручка</p>
+                      <p className="text-2xl font-bold">{formatPrice(extendedStats.total_revenue)} ₽</p>
+                    </div>
+                    <div className="bg-zinc-50 border border-zinc-200 p-4">
+                      <p className="text-sm text-zinc-500">Средний чек</p>
+                      <p className="text-2xl font-bold">{formatPrice(extendedStats.avg_order_value)} ₽</p>
+                    </div>
+                    <div className="bg-zinc-50 border border-zinc-200 p-4">
+                      <p className="text-sm text-zinc-500">Статусы</p>
+                      <div className="text-xs space-y-1 mt-1">
+                        {Object.entries(extendedStats.status_distribution || {}).map(([status, count]) => (
+                          <div key={status} className="flex justify-between">
+                            <span>{STATUS_OPTIONS.find(s => s.value === status)?.label || status}</span>
+                            <span className="font-semibold">{count}</span>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Daily sales chart */}
+                  {extendedStats.daily_sales?.length > 0 && (
+                    <div className="border border-zinc-200 p-4">
+                      <h3 className="font-semibold mb-4">Продажи по дням</h3>
+                      <div className="overflow-x-auto">
+                        <div className="flex items-end gap-2 h-40 min-w-max">
+                          {extendedStats.daily_sales.map((day, idx) => {
+                            const maxValue = Math.max(...extendedStats.daily_sales.map(d => d.total));
+                            const height = maxValue > 0 ? (day.total / maxValue) * 100 : 0;
+                            return (
+                              <div key={idx} className="flex flex-col items-center gap-1">
+                                <div 
+                                  className="w-8 bg-orange-500 hover:bg-orange-600 transition-colors"
+                                  style={{ height: `${Math.max(height, 2)}%` }}
+                                  title={`${formatPrice(day.total)} ₽`}
+                                />
+                                <span className="text-[10px] text-zinc-500 transform -rotate-45 origin-top-left whitespace-nowrap">
+                                  {day.date.slice(5)}
+                                </span>
+                              </div>
+                            );
+                          })}
+                        </div>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Top products */}
+                  {extendedStats.top_products?.length > 0 && (
+                    <div className="border border-zinc-200 p-4">
+                      <h3 className="font-semibold mb-3">Топ товаров</h3>
+                      <div className="space-y-2">
+                        {extendedStats.top_products.map((product, idx) => (
+                          <div key={idx} className="flex items-center justify-between text-sm">
+                            <span className="flex items-center gap-2">
+                              <span className="w-6 h-6 bg-orange-100 text-orange-600 flex items-center justify-center text-xs font-bold">
+                                {idx + 1}
+                              </span>
+                              <span className="line-clamp-1">{product.name}</span>
+                            </span>
+                            <span className="font-semibold">{product.count} шт.</span>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Top customers */}
+                  {extendedStats.top_customers?.length > 0 && (
+                    <div className="border border-zinc-200 p-4">
+                      <h3 className="font-semibold mb-3">Топ клиентов</h3>
+                      <div className="space-y-2">
+                        {extendedStats.top_customers.map((customer, idx) => (
+                          <div key={idx} className="flex items-center justify-between text-sm">
+                            <span className="flex items-center gap-2">
+                              <span className="w-6 h-6 bg-blue-100 text-blue-600 flex items-center justify-center text-xs font-bold">
+                                {idx + 1}
+                              </span>
+                              <span>{customer.name}</span>
+                              <span className="text-zinc-400 text-xs">{customer.email}</span>
+                            </span>
+                            <span className="font-semibold">{customer.order_count} заказов</span>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                </>
+              )}
+            </div>
+          </TabsContent>
+
+          {/* Chat Tab */}
+          <TabsContent value="chat" className="p-6">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 h-[500px]">
+              {/* Chat list */}
+              <div className="border border-zinc-200 overflow-hidden flex flex-col">
+                <div className="bg-zinc-50 px-4 py-3 border-b border-zinc-200 font-semibold text-sm">
+                  Диалоги ({chats.length})
+                </div>
+                <div className="flex-1 overflow-y-auto">
+                  {chats.length === 0 ? (
+                    <p className="text-center text-zinc-400 text-sm py-8">Нет диалогов</p>
+                  ) : (
+                    chats.map((chat) => (
+                      <button
+                        key={chat.id}
+                        onClick={() => handleSelectChat(chat)}
+                        className={`w-full text-left p-3 border-b border-zinc-100 hover:bg-zinc-50 transition-colors ${
+                          selectedChat?.id === chat.id ? 'bg-orange-50' : ''
+                        }`}
+                      >
+                        <div className="flex items-center justify-between">
+                          <span className="font-medium text-sm">{chat.user_name}</span>
+                          {chat.unread_count > 0 && (
+                            <span className="bg-red-500 text-white text-xs px-1.5 py-0.5 rounded-full">
+                              {chat.unread_count}
+                            </span>
+                          )}
+                        </div>
+                        <p className="text-xs text-zinc-400">{chat.user_email}</p>
+                      </button>
+                    ))
+                  )}
+                </div>
+              </div>
+
+              {/* Chat messages */}
+              <div className="md:col-span-2 border border-zinc-200 overflow-hidden flex flex-col">
+                {selectedChat ? (
+                  <>
+                    <div className="bg-zinc-50 px-4 py-3 border-b border-zinc-200">
+                      <span className="font-semibold text-sm">{selectedChat.user_name}</span>
+                      <span className="text-xs text-zinc-400 ml-2">{selectedChat.user_email}</span>
+                    </div>
+                    <div className="flex-1 overflow-y-auto p-4 space-y-3 bg-zinc-50">
+                      {chatMessages.map((msg) => (
+                        <div
+                          key={msg.id}
+                          className={`flex ${msg.sender_type === 'admin' ? 'justify-end' : 'justify-start'}`}
+                        >
+                          <div
+                            className={`max-w-[70%] px-3 py-2 rounded-lg text-sm ${
+                              msg.sender_type === 'admin'
+                                ? 'bg-orange-500 text-white'
+                                : 'bg-white border border-zinc-200'
+                            }`}
+                          >
+                            <p className="whitespace-pre-wrap">{msg.text}</p>
+                            <p className={`text-[10px] mt-1 ${msg.sender_type === 'admin' ? 'text-orange-200' : 'text-zinc-400'}`}>
+                              {new Date(msg.created_at).toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' })}
+                            </p>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                    <div className="p-3 border-t border-zinc-200 bg-white">
+                      <div className="flex gap-2">
+                        <Input
+                          value={newAdminMessage}
+                          onChange={(e) => setNewAdminMessage(e.target.value)}
+                          placeholder="Введите ответ..."
+                          onKeyPress={(e) => e.key === 'Enter' && handleSendAdminMessage()}
+                        />
+                        <Button onClick={handleSendAdminMessage} className="bg-orange-500 hover:bg-orange-600">
+                          <Send className="w-4 h-4" />
+                        </Button>
+                      </div>
+                    </div>
+                  </>
+                ) : (
+                  <div className="flex-1 flex items-center justify-center text-zinc-400">
+                    <div className="text-center">
+                      <MessageCircle className="w-12 h-12 mx-auto mb-2 opacity-50" />
+                      <p>Выберите диалог</p>
+                    </div>
+                  </div>
+                )}
+              </div>
+            </div>
+          </TabsContent>
+
+          {/* Telegram Tab */}
+          <TabsContent value="telegram" className="p-6">
+            <div className="max-w-xl space-y-6">
+              <div>
+                <h2 className="text-lg font-semibold mb-2">Уведомления в Telegram</h2>
+                <p className="text-sm text-zinc-500 mb-4">
+                  Получайте уведомления о новых заказах в Telegram. Создайте бота через @BotFather и получите токен.
+                </p>
+              </div>
+
+              <div className="flex items-center gap-3">
+                <Switch
+                  checked={telegramSettings.enabled}
+                  onCheckedChange={(checked) => setTelegramSettings({ ...telegramSettings, enabled: checked })}
+                />
+                <Label>Включить уведомления</Label>
+              </div>
+
+              <div>
+                <Label className="text-xs font-bold uppercase text-zinc-500">Bot Token</Label>
+                <Input
+                  value={telegramSettings.bot_token}
+                  onChange={(e) => setTelegramSettings({ ...telegramSettings, bot_token: e.target.value })}
+                  placeholder="123456:ABC-DEF1234ghIkl-zyx57W2v1u123ew11"
+                  className="mt-1 font-mono text-sm"
+                />
+                <p className="text-xs text-zinc-400 mt-1">Получите токен у @BotFather в Telegram</p>
+              </div>
+
+              <div>
+                <Label className="text-xs font-bold uppercase text-zinc-500">Chat ID</Label>
+                <Input
+                  value={telegramSettings.chat_id}
+                  onChange={(e) => setTelegramSettings({ ...telegramSettings, chat_id: e.target.value })}
+                  placeholder="-1001234567890"
+                  className="mt-1 font-mono text-sm"
+                />
+                <p className="text-xs text-zinc-400 mt-1">ID чата или канала для уведомлений. Узнайте его через @userinfobot</p>
+              </div>
+
+              <div className="flex gap-3">
+                <Button onClick={handleSaveTelegram} className="bg-orange-500 hover:bg-orange-600">
+                  <Save className="w-4 h-4 mr-2" />
+                  Сохранить
+                </Button>
+                <Button 
+                  variant="outline" 
+                  onClick={handleTestTelegram}
+                  disabled={!telegramSettings.enabled || !telegramSettings.bot_token || !telegramSettings.chat_id}
+                >
+                  <Send className="w-4 h-4 mr-2" />
+                  Тест
+                </Button>
+              </div>
+            </div>
+          </TabsContent>
+
+          {/* Import Tab */}
+          <TabsContent value="import" className="p-6">
+            <div className="max-w-2xl space-y-6">
+              <div>
+                <h2 className="text-lg font-semibold mb-2">Импорт/Экспорт товаров</h2>
+                <p className="text-sm text-zinc-500">
+                  Загружайте товары из CSV файла или экспортируйте текущий каталог.
+                </p>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                {/* Import */}
+                <div className="border border-zinc-200 p-4">
+                  <h3 className="font-semibold mb-3 flex items-center gap-2">
+                    <Upload className="w-5 h-5" />
+                    Импорт товаров
+                  </h3>
+                  <p className="text-sm text-zinc-500 mb-4">
+                    CSV файл с разделителем ; (точка с запятой)
+                  </p>
+                  <input
+                    type="file"
+                    ref={importFileRef}
+                    onChange={handleImportProducts}
+                    accept=".csv"
+                    className="hidden"
+                  />
+                  <Button 
+                    onClick={() => importFileRef.current?.click()}
+                    disabled={uploading}
+                    className="w-full"
+                    variant="outline"
+                  >
+                    <Upload className="w-4 h-4 mr-2" />
+                    {uploading ? 'Загрузка...' : 'Выбрать CSV файл'}
+                  </Button>
+
+                  {importResult && (
+                    <div className="mt-4 p-3 bg-zinc-50 border border-zinc-200 text-sm">
+                      <p className="text-green-600">✓ Импортировано: {importResult.imported}</p>
+                      <p className="text-blue-600">↻ Обновлено: {importResult.updated}</p>
+                      {importResult.total_errors > 0 && (
+                        <>
+                          <p className="text-red-600 mt-2">✕ Ошибок: {importResult.total_errors}</p>
+                          <ul className="text-xs text-red-500 mt-1">
+                            {importResult.errors.slice(0, 5).map((err, i) => (
+                              <li key={i}>{err}</li>
+                            ))}
+                          </ul>
+                        </>
+                      )}
+                    </div>
+                  )}
+                </div>
+
+                {/* Export */}
+                <div className="border border-zinc-200 p-4">
+                  <h3 className="font-semibold mb-3 flex items-center gap-2">
+                    <Download className="w-5 h-5" />
+                    Экспорт товаров
+                  </h3>
+                  <p className="text-sm text-zinc-500 mb-4">
+                    Скачать все товары в формате CSV
+                  </p>
+                  <Button onClick={handleExportProducts} variant="outline" className="w-full">
+                    <Download className="w-4 h-4 mr-2" />
+                    Скачать CSV ({products.length} товаров)
+                  </Button>
+                </div>
+              </div>
+
+              {/* CSV format help */}
+              <div className="border border-zinc-200 p-4 bg-zinc-50">
+                <h3 className="font-semibold mb-2">Формат CSV файла</h3>
+                <p className="text-xs text-zinc-500 mb-2">Обязательные колонки: article, name. Разделитель: ; (точка с запятой)</p>
+                <div className="bg-white border border-zinc-200 p-2 font-mono text-xs overflow-x-auto">
+                  <p>article;name;price;stock;delivery_days;description;category_id;image_url</p>
+                  <p className="text-zinc-400">MAN-PG-001;Поршневая группа MAN;45000;10;3;Описание;id-категории;https://...</p>
+                </div>
+              </div>
+            </div>
+          </TabsContent>
         </Tabs>
       </div>
 
