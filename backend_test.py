@@ -405,6 +405,17 @@ class TruckPartsAPITester:
                 self.test_cart_operations(product_id)
                 self.test_order_operations(product_id)
         
+        # Admin tests
+        admin_success, admin_data = self.test_admin_login()
+        if admin_success:
+            self.test_admin_endpoints()
+            
+            # File upload tests (require admin auth)
+            upload_success, upload_data = self.test_file_upload()
+            if upload_success and upload_data:
+                file_url = upload_data.get('url')
+                self.test_uploaded_file_access(file_url)
+        
         # Print summary
         print("\n" + "=" * 50)
         print(f"📊 Test Results: {self.tests_passed}/{self.tests_run} passed")
