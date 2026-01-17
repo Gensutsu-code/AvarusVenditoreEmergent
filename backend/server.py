@@ -149,6 +149,31 @@ class OrderResponse(BaseModel):
     phone: str
     created_at: str
 
+# Favorites model
+class FavoriteItem(BaseModel):
+    product_id: str
+
+# Telegram settings model
+class TelegramSettings(BaseModel):
+    enabled: bool = False
+    bot_token: str = ""
+    chat_id: str = ""
+
+# Chat models
+class ChatMessage(BaseModel):
+    text: str
+    sender_type: str = "user"  # "user" or "admin"
+
+class ChatMessageResponse(BaseModel):
+    id: str
+    chat_id: str
+    user_id: str
+    user_name: str
+    text: str
+    sender_type: str
+    created_at: str
+    read: bool = False
+
 # ==================== AUTH HELPERS ====================
 
 def hash_password(password: str) -> str:
