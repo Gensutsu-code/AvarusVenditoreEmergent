@@ -308,7 +308,7 @@ async def upload_file(file: UploadFile = File(...), user=Depends(get_current_use
         f.write(content)
     
     # Return URL
-    return {"url": f"/uploads/{unique_filename}", "filename": unique_filename}
+    return {"url": f"/api/uploads/{unique_filename}", "filename": unique_filename}
 
 # ==================== PRODUCTS ROUTES ====================
 
