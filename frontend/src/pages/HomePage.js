@@ -5,14 +5,33 @@ import { Search } from 'lucide-react';
 
 const API = `${process.env.REACT_APP_BACKEND_URL}/api`;
 
-// Brand logos data
+// Brand logos data with uploaded images
 const BRANDS = [
-  { name: 'FAG', desc: 'Подшипники' },
-  { name: 'HENGST', desc: 'Фильтры' },
-  { name: 'MANN+HUMMEL', desc: 'Фильтрация' },
-  { name: 'PACCAR', desc: 'Комплектующие' },
-  { name: 'SAF', desc: 'Оси и подвеска' },
-  { name: 'BPW', desc: 'Ходовая часть' },
+  { 
+    name: 'FAG', 
+    desc: 'Подшипники',
+    image: 'https://customer-assets.emergentagent.com/job_heavy-vehicle/artifacts/se4069qi_Screenshot%20%281%29.png'
+  },
+  { 
+    name: 'HENGST', 
+    desc: 'Фильтры',
+    image: 'https://customer-assets.emergentagent.com/job_heavy-vehicle/artifacts/k3fl5886_Screenshot%20%282%29.png'
+  },
+  { 
+    name: 'MANN+HUMMEL', 
+    desc: 'Фильтрация',
+    image: 'https://customer-assets.emergentagent.com/job_heavy-vehicle/artifacts/8hwi685y_Screenshot%20%283%29.png'
+  },
+  { 
+    name: 'PACCAR', 
+    desc: 'Комплектующие',
+    image: 'https://customer-assets.emergentagent.com/job_heavy-vehicle/artifacts/lxmklmq6_Screenshot%20%284%29.png'
+  },
+  { 
+    name: 'SAF', 
+    desc: 'Оси и подвеска',
+    image: 'https://customer-assets.emergentagent.com/job_heavy-vehicle/artifacts/54osguxt_Screenshot%20%285%29.png'
+  },
 ];
 
 export default function HomePage() {
@@ -48,20 +67,31 @@ export default function HomePage() {
             {/* Right side - brands showcase */}
             <div className="hidden lg:block">
               <div className="bg-zinc-800/50 border border-zinc-700 p-6 rounded-sm">
-                <p className="text-xs uppercase tracking-widest text-zinc-500 mb-4">
+                <p className="text-xs uppercase tracking-widest text-zinc-500 mb-4 text-center">
                   Работаем с ведущими производителями
                 </p>
-                <div className="grid grid-cols-3 gap-4">
+                <div className="grid grid-cols-3 gap-3">
                   {BRANDS.map((brand) => (
                     <div 
                       key={brand.name}
-                      className="bg-zinc-800 border border-zinc-700 p-4 text-center hover:border-orange-500/50 transition-colors group"
+                      className="bg-zinc-800 border border-zinc-700 p-3 hover:border-orange-500/50 transition-colors group overflow-hidden"
                     >
-                      <div className="text-xl font-bold text-white group-hover:text-orange-500 transition-colors mb-1">
-                        {brand.name}
-                      </div>
-                      <div className="text-xs text-zinc-500">
-                        {brand.desc}
+                      {brand.image && (
+                        <div className="w-full h-12 mb-2 flex items-center justify-center">
+                          <img 
+                            src={brand.image} 
+                            alt={brand.name}
+                            className="max-w-full max-h-full object-contain"
+                          />
+                        </div>
+                      )}
+                      <div className="text-center">
+                        <div className="text-xs font-medium text-white truncate">
+                          {brand.name}
+                        </div>
+                        <div className="text-[10px] text-zinc-500 truncate">
+                          {brand.desc}
+                        </div>
                       </div>
                     </div>
                   ))}
@@ -79,10 +109,19 @@ export default function HomePage() {
               {BRANDS.map((brand) => (
                 <div 
                   key={brand.name}
-                  className="flex-shrink-0 bg-zinc-800 border border-zinc-700 px-4 py-2 text-center"
+                  className="flex-shrink-0 bg-zinc-800 border border-zinc-700 p-3 text-center min-w-[100px]"
                 >
-                  <div className="text-sm font-bold text-white">{brand.name}</div>
-                  <div className="text-xs text-zinc-500">{brand.desc}</div>
+                  {brand.image && (
+                    <div className="w-full h-10 mb-2 flex items-center justify-center">
+                      <img 
+                        src={brand.image} 
+                        alt={brand.name}
+                        className="max-w-full max-h-full object-contain"
+                      />
+                    </div>
+                  )}
+                  <div className="text-xs font-medium text-white truncate">{brand.name}</div>
+                  <div className="text-[10px] text-zinc-500 truncate">{brand.desc}</div>
                 </div>
               ))}
             </div>
