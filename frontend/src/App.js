@@ -5,6 +5,7 @@ import { AuthProvider } from "./context/AuthContext";
 import { CartProvider } from "./context/CartContext";
 import { Header } from "./components/Header";
 import { PromoBanner } from "./components/PromoBanner";
+import { ChatWidget } from "./components/ChatWidget";
 
 // Pages
 import HomePage from "./pages/HomePage";
@@ -15,6 +16,7 @@ import LoginPage from "./pages/LoginPage";
 import RegisterPage from "./pages/RegisterPage";
 import AccountPage from "./pages/AccountPage";
 import AdminPage from "./pages/AdminPage";
+import FavoritesPage from "./pages/FavoritesPage";
 
 function AppContent() {
   return (
@@ -31,8 +33,10 @@ function AppContent() {
           <Route path="/register" element={<RegisterPage />} />
           <Route path="/account" element={<AccountPage />} />
           <Route path="/admin" element={<AdminPage />} />
+          <Route path="/favorites" element={<FavoritesPage />} />
         </Routes>
       </main>
+      <ChatWidget />
       <Toaster position="top-center" />
     </div>
   );
