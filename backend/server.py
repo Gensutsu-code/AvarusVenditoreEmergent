@@ -54,9 +54,31 @@ class UserResponse(BaseModel):
     phone: Optional[str] = None
     role: str = "user"
 
+# Category models
+class CategoryCreate(BaseModel):
+    name: str
+    image_url: Optional[str] = None
+
+class CategoryUpdate(BaseModel):
+    name: Optional[str] = None
+    image_url: Optional[str] = None
+
+class CategoryResponse(BaseModel):
+    id: str
+    name: str
+    image_url: Optional[str] = None
+
+# Promo banner model
+class PromoBannerUpdate(BaseModel):
+    enabled: bool
+    text: str
+    link: Optional[str] = None
+    bg_color: Optional[str] = "#f97316"
+
 class ProductCreate(BaseModel):
     name: str
     article: str
+    category_id: Optional[str] = None
     price: float
     description: Optional[str] = None
     image_url: Optional[str] = None
@@ -66,6 +88,7 @@ class ProductCreate(BaseModel):
 class ProductUpdate(BaseModel):
     name: Optional[str] = None
     article: Optional[str] = None
+    category_id: Optional[str] = None
     price: Optional[float] = None
     description: Optional[str] = None
     image_url: Optional[str] = None
@@ -76,6 +99,7 @@ class ProductResponse(BaseModel):
     id: str
     name: str
     article: str
+    category_id: Optional[str] = None
     price: float
     description: Optional[str] = None
     image_url: Optional[str] = None
