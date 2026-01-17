@@ -475,6 +475,26 @@ export default function AdminPage() {
               <Megaphone className="w-4 h-4 mr-2" />
               Акции
             </TabsTrigger>
+            <TabsTrigger value="stats" className="rounded-none data-[state=active]:bg-white data-[state=active]:border-b-2 data-[state=active]:border-orange-500 px-4 py-3">
+              <BarChart3 className="w-4 h-4 mr-2" />
+              Статистика
+            </TabsTrigger>
+            <TabsTrigger value="chat" className="rounded-none data-[state=active]:bg-white data-[state=active]:border-b-2 data-[state=active]:border-orange-500 px-4 py-3">
+              <MessageCircle className="w-4 h-4 mr-2" />
+              Чаты {chats.filter(c => c.unread_count > 0).length > 0 && (
+                <span className="ml-1 bg-red-500 text-white text-xs px-1.5 py-0.5 rounded-full">
+                  {chats.reduce((sum, c) => sum + (c.unread_count || 0), 0)}
+                </span>
+              )}
+            </TabsTrigger>
+            <TabsTrigger value="telegram" className="rounded-none data-[state=active]:bg-white data-[state=active]:border-b-2 data-[state=active]:border-orange-500 px-4 py-3">
+              <Send className="w-4 h-4 mr-2" />
+              Telegram
+            </TabsTrigger>
+            <TabsTrigger value="import" className="rounded-none data-[state=active]:bg-white data-[state=active]:border-b-2 data-[state=active]:border-orange-500 px-4 py-3">
+              <FileSpreadsheet className="w-4 h-4 mr-2" />
+              Импорт
+            </TabsTrigger>
           </TabsList>
 
           {/* Products Tab */}
