@@ -2,6 +2,7 @@ import { useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import axios from 'axios';
 import { Search } from 'lucide-react';
+import { PopularProducts } from '../components/PopularProducts';
 
 const API = `${process.env.REACT_APP_BACKEND_URL}/api`;
 
