@@ -1,9 +1,9 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import { 
   Users, Package, ShoppingBag, TrendingUp, 
-  Plus, Pencil, Trash2, Save, Eye, FolderOpen, Megaphone
+  Plus, Pencil, Trash2, Save, Eye, FolderOpen, Megaphone, Upload, Image
 } from 'lucide-react';
 import { Button } from '../components/ui/button';
 import { Input } from '../components/ui/input';
@@ -16,6 +16,7 @@ import { useAuth } from '../context/AuthContext';
 import { toast } from 'sonner';
 
 const API = `${process.env.REACT_APP_BACKEND_URL}/api`;
+const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
 
 export default function AdminPage() {
   const { user, loading: authLoading } = useAuth();
@@ -27,7 +28,10 @@ export default function AdminPage() {
   const [orders, setOrders] = useState([]);
   const [promoBanner, setPromoBanner] = useState({ enabled: false, text: '', link: '', bg_color: '#f97316' });
   const [loading, setLoading] = useState(true);
+  const [uploading, setUploading] = useState(false);
   const [editingProduct, setEditingProduct] = useState(null);
+  const productFileRef = useRef(null);
+  const categoryFileRef = useRef(null);
   const [editingCategory, setEditingCategory] = useState(null);
   const [isNewProduct, setIsNewProduct] = useState(false);
   const [isNewCategory, setIsNewCategory] = useState(false);
