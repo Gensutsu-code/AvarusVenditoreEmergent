@@ -4,11 +4,13 @@ import axios from 'axios';
 import { Button } from '../components/ui/button';
 import { Input } from '../components/ui/input';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '../components/ui/dialog';
-import { Search, X, ShoppingCart, Package, Truck, Minus, Plus, ArrowRight } from 'lucide-react';
+import { Search, X, ShoppingCart, Package, Truck, Minus, Plus, ArrowRight, Heart } from 'lucide-react';
 import { useCart } from '../context/CartContext';
 import { useAuth } from '../context/AuthContext';
 import { toast } from 'sonner';
 import { useNavigate } from 'react-router-dom';
+import { FavoritesButton } from '../components/FavoritesButton';
+import { RelatedProducts } from '../components/RelatedProducts';
 
 const API = `${process.env.REACT_APP_BACKEND_URL}/api`;
 
