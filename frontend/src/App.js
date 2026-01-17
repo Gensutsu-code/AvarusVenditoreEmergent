@@ -4,6 +4,7 @@ import { Toaster } from "./components/ui/sonner";
 import { AuthProvider } from "./context/AuthContext";
 import { CartProvider } from "./context/CartContext";
 import { Header } from "./components/Header";
+import { PromoBanner } from "./components/PromoBanner";
 
 // Pages
 import HomePage from "./pages/HomePage";
