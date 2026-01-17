@@ -279,6 +279,37 @@ async def update_promo_banner(data: PromoBannerUpdate, user=Depends(get_current_
     )
     return data.model_dump()
 
+# ==================== FILE UPLOAD ====================
+
+ALLOWED_EXTENSIONS = {'.jpg', '.jpeg', '.png', '.gif', '.webp'}
+MAX_FILE_SIZE = 5 * 1024 * 1024  # 5MB
+
+@api_router.post("/upload")
+async def upload_file(file: UploadFile = File(...), user=Depends(get_current_user)):
+    if user.get("role") != "admin":
+        raise HTTPException(status_code=403, detail="Admin access required")
+    
+    # Check file extension
+    ext = Path(file.filename).suffix.lower()
+    if ext not in ALLOWED_EXTENSIONS:
+        raise HTTPException(status_code=400, detail=f"File type not allowed. Allowed: {', '.join(ALLOWED_EXTENSIONS)}")
+    
+    # Read file content
+    content = await file.read()
+    if len(content) > MAX_FILE_SIZE:
+        raise HTTPException(status_code=400, detail="File too large. Max 5MB")
+    
+    # Generate unique filename
+    unique_filename = f"{uuid.uuid4()}{ext}"
+    file_path = UPLOADS_DIR / unique_filename
+    
+    # Save file
+    with open(file_path, "wb") as f:
+        f.write(content)
+    
+    # Return URL
+    return {"url": f"/uploads/{unique_filename}", "filename": unique_filename}
+
 # ==================== PRODUCTS ROUTES ====================
 
 @api_router.get("/products", response_model=List[ProductResponse])
