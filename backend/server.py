@@ -201,16 +201,88 @@ async def login(data: UserLogin):
 async def get_me(user=Depends(get_current_user)):
     return user
 
+# ==================== CATEGORIES ROUTES ====================
+
+@api_router.get("/categories", response_model=List[CategoryResponse])
+async def get_categories():
+    categories = await db.categories.find({}, {"_id": 0}).to_list(100)
+    return categories
+
+@api_router.post("/categories", response_model=CategoryResponse)
+async def create_category(data: CategoryCreate, user=Depends(get_current_user)):
+    if user.get("role") != "admin":
+        raise HTTPException(status_code=403, detail="Admin access required")
+    
+    category_id = str(uuid.uuid4())
+    category = {
+        "id": category_id,
+        **data.model_dump()
+    }
+    await db.categories.insert_one(category)
+    return category
+
+@api_router.put("/categories/{category_id}", response_model=CategoryResponse)
+async def update_category(category_id: str, data: CategoryUpdate, user=Depends(get_current_user)):
+    if user.get("role") != "admin":
+        raise HTTPException(status_code=403, detail="Admin access required")
+    
+    update_data = {k: v for k, v in data.model_dump().items() if v is not None}
+    if not update_data:
+        raise HTTPException(status_code=400, detail="No data to update")
+    
+    result = await db.categories.update_one({"id": category_id}, {"$set": update_data})
+    if result.matched_count == 0:
+        raise HTTPException(status_code=404, detail="Category not found")
+    
+    category = await db.categories.find_one({"id": category_id}, {"_id": 0})
+    return category
+
+@api_router.delete("/categories/{category_id}")
+async def delete_category(category_id: str, user=Depends(get_current_user)):
+    if user.get("role") != "admin":
+        raise HTTPException(status_code=403, detail="Admin access required")
+    
+    result = await db.categories.delete_one({"id": category_id})
+    if result.deleted_count == 0:
+        raise HTTPException(status_code=404, detail="Category not found")
+    
+    # Remove category from products
+    await db.products.update_many({"category_id": category_id}, {"$set": {"category_id": None}})
+    return {"message": "Category deleted"}
+
+# ==================== PROMO BANNER ROUTES ====================
+
+@api_router.get("/promo-banner")
+async def get_promo_banner():
+    banner = await db.settings.find_one({"key": "promo_banner"}, {"_id": 0})
+    if not banner:
+        return {"enabled": False, "text": "", "link": None, "bg_color": "#f97316"}
+    return banner.get("value", {"enabled": False, "text": "", "link": None, "bg_color": "#f97316"})
+
+@api_router.put("/promo-banner")
+async def update_promo_banner(data: PromoBannerUpdate, user=Depends(get_current_user)):
+    if user.get("role") != "admin":
+        raise HTTPException(status_code=403, detail="Admin access required")
+    
+    await db.settings.update_one(
+        {"key": "promo_banner"},
+        {"$set": {"key": "promo_banner", "value": data.model_dump()}},
+        upsert=True
+    )
+    return data.model_dump()
+
 # ==================== PRODUCTS ROUTES ====================
 
 @api_router.get("/products", response_model=List[ProductResponse])
-async def get_products(search: Optional[str] = None, limit: int = 100, skip: int = 0):
+async def get_products(search: Optional[str] = None, category_id: Optional[str] = None, limit: int = 100, skip: int = 0):
     query = {}
     if search:
         query["$or"] = [
             {"name": {"$regex": search, "$options": "i"}},
             {"article": {"$regex": search, "$options": "i"}}
         ]
+    if category_id:
+        query["category_id"] = category_id
     
     products = await db.products.find(query, {"_id": 0}).skip(skip).limit(min(limit, 100)).to_list(100)
     return products
