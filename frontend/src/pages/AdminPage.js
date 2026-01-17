@@ -672,19 +672,40 @@ export default function AdminPage() {
               </div>
 
               <div>
-                <Label className="text-xs font-bold uppercase text-zinc-500">URL изображения</Label>
-                <Input
-                  value={editingProduct.image_url || ''}
-                  onChange={(e) => setEditingProduct({ ...editingProduct, image_url: e.target.value })}
-                  placeholder="https://..."
-                  className="mt-1"
-                  data-testid="product-image-input"
-                />
-                {editingProduct.image_url && (
-                  <div className="mt-2 w-20 h-20 bg-zinc-100 overflow-hidden">
-                    <img src={editingProduct.image_url} alt="Preview" className="w-full h-full object-cover" />
+                <Label className="text-xs font-bold uppercase text-zinc-500">Изображение</Label>
+                <div className="mt-1 space-y-2">
+                  <input
+                    type="file"
+                    ref={productFileRef}
+                    onChange={handleProductImageUpload}
+                    accept="image/*"
+                    className="hidden"
+                  />
+                  <div className="flex gap-2">
+                    <Button 
+                      type="button" 
+                      variant="outline" 
+                      onClick={() => productFileRef.current?.click()}
+                      disabled={uploading}
+                      className="flex-1"
+                    >
+                      <Upload className="w-4 h-4 mr-2" />
+                      {uploading ? 'Загрузка...' : 'Загрузить изображение'}
+                    </Button>
                   </div>
-                )}
+                  <Input
+                    value={editingProduct.image_url || ''}
+                    onChange={(e) => setEditingProduct({ ...editingProduct, image_url: e.target.value })}
+                    placeholder="Или вставьте URL: https://..."
+                    className="text-sm"
+                    data-testid="product-image-input"
+                  />
+                  {editingProduct.image_url && (
+                    <div className="w-24 h-24 bg-zinc-100 overflow-hidden border">
+                      <img src={editingProduct.image_url} alt="Preview" className="w-full h-full object-cover" />
+                    </div>
+                  )}
+                </div>
               </div>
 
               <div>
