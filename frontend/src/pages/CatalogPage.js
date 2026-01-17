@@ -313,6 +313,8 @@ export default function CatalogPage() {
 
                     {/* Quantity + Cart */}
                     <div className="flex items-center gap-2">
+                      <FavoritesButton productId={product.id} size="sm" />
+                      
                       <div className="flex items-center border border-zinc-200">
                         <button 
                           onClick={() => updateQuantity(product.id, -1)}
