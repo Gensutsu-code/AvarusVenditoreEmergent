@@ -1,4 +1,4 @@
-import { Link, useNavigate } from 'react-router-dom';
+import { Link } from 'react-router-dom';
 import { ShoppingCart, User, Search, LogOut, Settings } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { useCart } from '../context/CartContext';
@@ -19,31 +19,24 @@ export const Header = () => {
             </h1>
           </Link>
 
-          {/* Navigation */}
-          <nav className="hidden sm:flex items-center gap-6">
-            <Link 
-              to="/catalog" 
-              className="text-sm font-medium text-zinc-600 hover:text-zinc-900 transition-colors flex items-center gap-2"
-              data-testid="nav-search"
-            >
-              <Search className="w-4 h-4" />
-              Поиск запчастей
-            </Link>
-          </nav>
-
           {/* Actions */}
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-1">
             {user ? (
               <>
                 {user.role === 'admin' && (
                   <Link to="/admin" data-testid="admin-link">
-                    <Button variant="ghost" className="text-purple-600">
+                    <Button variant="ghost" size="sm" className="text-purple-600">
                       <Settings className="w-5 h-5" />
                     </Button>
                   </Link>
                 )}
+                <Link to="/catalog" data-testid="search-link">
+                  <Button variant="ghost" size="sm">
+                    <Search className="w-5 h-5" />
+                  </Button>
+                </Link>
                 <Link to="/cart" data-testid="cart-link">
-                  <Button variant="ghost" className="relative">
+                  <Button variant="ghost" size="sm" className="relative">
                     <ShoppingCart className="w-5 h-5" />
                     {cartCount > 0 && (
                       <span className="absolute -top-1 -right-1 bg-orange-500 text-white text-xs w-5 h-5 flex items-center justify-center font-bold">
@@ -53,11 +46,11 @@ export const Header = () => {
                   </Button>
                 </Link>
                 <Link to="/account" data-testid="account-link">
-                  <Button variant="ghost">
+                  <Button variant="ghost" size="sm">
                     <User className="w-5 h-5" />
                   </Button>
                 </Link>
-                <Button variant="ghost" onClick={logout} data-testid="logout-button">
+                <Button variant="ghost" size="sm" onClick={logout} data-testid="logout-button">
                   <LogOut className="w-5 h-5" />
                 </Button>
               </>
