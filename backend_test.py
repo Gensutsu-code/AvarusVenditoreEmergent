@@ -244,6 +244,138 @@ class TruckPartsAPITester:
         
         return False
 
+    def test_admin_login(self):
+        """Test admin login"""
+        admin_data = {
+            "email": "admin@avarus.ru",
+            "password": "admin123"
+        }
+        
+        success, response = self.run_test("Admin Login", "POST", "auth/login", 200, admin_data)
+        if success and response.get('token'):
+            self.token = response['token']
+            self.user_id = response['user']['id']
+            user_role = response['user'].get('role', 'user')
+            if user_role == 'admin':
+                self.log_test("Admin Role Check", True, "Admin role confirmed")
+                return True, response
+            else:
+                self.log_test("Admin Role Check", False, f"Expected admin role, got {user_role}")
+        elif success:
+            self.log_test("Admin Login Token", False, "No token in response")
+        
+        return success, response
+
+    def test_file_upload(self):
+        """Test file upload endpoint"""
+        if not self.token:
+            self.log_test("File Upload", False, "No admin token available")
+            return False, None
+        
+        # Create a small test image (1x1 PNG)
+        import io
+        import base64
+        
+        # Minimal 1x1 PNG image in base64
+        png_data = base64.b64decode(
+            'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChAI9jU77yQAAAABJRU5ErkJggg=='
+        )
+        
+        try:
+            url = f"{self.base_url}/upload"
+            headers = {'Authorization': f'Bearer {self.token}'}
+            
+            files = {'file': ('test.png', io.BytesIO(png_data), 'image/png')}
+            
+            response = requests.post(url, files=files, headers=headers)
+            
+            success = response.status_code == 200
+            details = f"Status: {response.status_code}"
+            
+            if success:
+                try:
+                    data = response.json()
+                    if 'url' in data and 'filename' in data:
+                        self.log_test("File Upload", True, f"File uploaded: {data['filename']}")
+                        return True, data
+                    else:
+                        self.log_test("File Upload", False, "Missing url or filename in response")
+                        return False, None
+                except:
+                    self.log_test("File Upload", False, "Invalid JSON response")
+                    return False, None
+            else:
+                try:
+                    error_data = response.json()
+                    details += f", Response: {error_data}"
+                except:
+                    details += f", Response: {response.text[:200]}"
+                self.log_test("File Upload", False, details)
+                return False, None
+                
+        except Exception as e:
+            self.log_test("File Upload", False, f"Exception: {str(e)}")
+            return False, None
+
+    def test_uploaded_file_access(self, file_url):
+        """Test accessing uploaded file"""
+        if not file_url:
+            self.log_test("File Access", False, "No file URL provided")
+            return False
+        
+        try:
+            # Convert relative URL to full URL
+            if file_url.startswith('/uploads/'):
+                full_url = f"https://heavy-vehicle.preview.emergentagent.com{file_url}"
+            else:
+                full_url = file_url
+            
+            response = requests.get(full_url)
+            success = response.status_code == 200
+            
+            if success:
+                content_type = response.headers.get('content-type', '')
+                if 'image' in content_type:
+                    self.log_test("File Access", True, f"File accessible, type: {content_type}")
+                    return True
+                else:
+                    self.log_test("File Access", False, f"Unexpected content type: {content_type}")
+                    return False
+            else:
+                self.log_test("File Access", False, f"Status: {response.status_code}")
+                return False
+                
+        except Exception as e:
+            self.log_test("File Access", False, f"Exception: {str(e)}")
+            return False
+
+    def test_admin_endpoints(self):
+        """Test admin-only endpoints"""
+        if not self.token:
+            self.log_test("Admin Endpoints", False, "No admin token available")
+            return False
+        
+        # Test admin stats
+        success, stats = self.run_test("Admin Stats", "GET", "admin/stats", 200)
+        if success and isinstance(stats, dict):
+            required_keys = ['total_users', 'total_products', 'total_orders', 'total_revenue']
+            if all(key in stats for key in required_keys):
+                self.log_test("Admin Stats Structure", True, "All required stats present")
+            else:
+                self.log_test("Admin Stats Structure", False, f"Missing keys in stats: {stats.keys()}")
+        
+        # Test admin users
+        success, users = self.run_test("Admin Users", "GET", "admin/users", 200)
+        if success and isinstance(users, list):
+            self.log_test("Admin Users List", True, f"Found {len(users)} users")
+        
+        # Test admin orders
+        success, orders = self.run_test("Admin Orders", "GET", "admin/orders", 200)
+        if success and isinstance(orders, list):
+            self.log_test("Admin Orders List", True, f"Found {len(orders)} orders")
+        
+        return True
+
     def run_all_tests(self):
         """Run all API tests"""
         print("🚀 Starting Truck Parts API Tests")
