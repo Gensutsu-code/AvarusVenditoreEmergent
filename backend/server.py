@@ -267,8 +267,8 @@ async def delete_category(category_id: str, user=Depends(get_current_user)):
 async def get_promo_banner():
     banner = await db.settings.find_one({"key": "promo_banner"}, {"_id": 0})
     if not banner:
-        return {"enabled": False, "text": "", "link": None, "bg_color": "#f97316"}
-    return banner.get("value", {"enabled": False, "text": "", "link": None, "bg_color": "#f97316"})
+        return {"enabled": False, "text": "", "link": None, "bg_color": "#f97316", "height": 40, "left_image": None, "right_image": None}
+    return banner.get("value", {"enabled": False, "text": "", "link": None, "bg_color": "#f97316", "height": 40, "left_image": None, "right_image": None})
 
 @api_router.put("/promo-banner")
 async def update_promo_banner(data: PromoBannerUpdate, user=Depends(get_current_user)):
