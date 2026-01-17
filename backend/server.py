@@ -82,6 +82,9 @@ class PromoBannerUpdate(BaseModel):
     text: str
     link: Optional[str] = None
     bg_color: Optional[str] = "#f97316"
+    height: Optional[int] = 40
+    left_image: Optional[str] = None
+    right_image: Optional[str] = None
 
 class ProductCreate(BaseModel):
     name: str
