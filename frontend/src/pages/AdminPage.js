@@ -753,19 +753,38 @@ export default function AdminPage() {
               </div>
 
               <div>
-                <Label className="text-xs font-bold uppercase text-zinc-500">URL изображения</Label>
-                <Input
-                  value={editingCategory.image_url || ''}
-                  onChange={(e) => setEditingCategory({ ...editingCategory, image_url: e.target.value })}
-                  placeholder="https://..."
-                  className="mt-1"
-                  data-testid="category-image-input"
-                />
-                {editingCategory.image_url && (
-                  <div className="mt-2 aspect-video w-full bg-zinc-100 overflow-hidden">
-                    <img src={editingCategory.image_url} alt="Preview" className="w-full h-full object-cover" />
-                  </div>
-                )}
+                <Label className="text-xs font-bold uppercase text-zinc-500">Изображение</Label>
+                <div className="mt-1 space-y-2">
+                  <input
+                    type="file"
+                    ref={categoryFileRef}
+                    onChange={handleCategoryImageUpload}
+                    accept="image/*"
+                    className="hidden"
+                  />
+                  <Button 
+                    type="button" 
+                    variant="outline" 
+                    onClick={() => categoryFileRef.current?.click()}
+                    disabled={uploading}
+                    className="w-full"
+                  >
+                    <Upload className="w-4 h-4 mr-2" />
+                    {uploading ? 'Загрузка...' : 'Загрузить изображение'}
+                  </Button>
+                  <Input
+                    value={editingCategory.image_url || ''}
+                    onChange={(e) => setEditingCategory({ ...editingCategory, image_url: e.target.value })}
+                    placeholder="Или вставьте URL: https://..."
+                    className="text-sm"
+                    data-testid="category-image-input"
+                  />
+                  {editingCategory.image_url && (
+                    <div className="aspect-video w-full bg-zinc-100 overflow-hidden border">
+                      <img src={editingCategory.image_url} alt="Preview" className="w-full h-full object-cover" />
+                    </div>
+                  )}
+                </div>
               </div>
 
               <div className="flex justify-end gap-2 pt-4">
