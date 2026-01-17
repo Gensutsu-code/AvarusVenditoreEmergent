@@ -963,7 +963,6 @@ async def export_products(user=Depends(get_current_user)):
             'image_url': product.get('image_url', '')
         })
     
-    from fastapi.responses import StreamingResponse
     output.seek(0)
     return StreamingResponse(
         iter([output.getvalue()]),
