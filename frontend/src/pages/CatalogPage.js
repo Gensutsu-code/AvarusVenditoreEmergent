@@ -1,10 +1,10 @@
 import { useState, useEffect } from 'react';
-import { useSearchParams } from 'react-router-dom';
+import { useSearchParams, Link } from 'react-router-dom';
 import axios from 'axios';
 import { Button } from '../components/ui/button';
 import { Input } from '../components/ui/input';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '../components/ui/dialog';
-import { Search, X, ShoppingCart, Package, Truck, Minus, Plus } from 'lucide-react';
+import { Search, X, ShoppingCart, Package, Truck, Minus, Plus, ArrowRight } from 'lucide-react';
 import { useCart } from '../context/CartContext';
 import { useAuth } from '../context/AuthContext';
 import { toast } from 'sonner';
@@ -15,6 +15,7 @@ const API = `${process.env.REACT_APP_BACKEND_URL}/api`;
 export default function CatalogPage() {
   const [searchParams, setSearchParams] = useSearchParams();
   const [products, setProducts] = useState([]);
+  const [categories, setCategories] = useState([]);
   const [loading, setLoading] = useState(false);
   const [searchInput, setSearchInput] = useState(searchParams.get('search') || '');
   const [selectedProduct, setSelectedProduct] = useState(null);
@@ -25,19 +26,37 @@ export default function CatalogPage() {
   const navigate = useNavigate();
 
   const searchQuery = searchParams.get('search');
+  const categoryId = searchParams.get('category');
 
   useEffect(() => {
-    if (searchQuery) {
+    fetchCategories();
+  }, []);
+
+  useEffect(() => {
+    if (searchQuery || categoryId) {
       fetchProducts();
     } else {
       setProducts([]);
     }
-  }, [searchQuery]);
+  }, [searchQuery, categoryId]);
+
+  const fetchCategories = async () => {
+    try {
+      const res = await axios.get(`${API}/categories`);
+      setCategories(res.data);
+    } catch (err) {
+      console.error('Failed to fetch categories', err);
+    }
+  };
 
   const fetchProducts = async () => {
     setLoading(true);
     try {
-      const res = await axios.get(`${API}/products?search=${encodeURIComponent(searchQuery)}`);
+      const params = new URLSearchParams();
+      if (searchQuery) params.append('search', searchQuery);
+      if (categoryId) params.append('category_id', categoryId);
+      
+      const res = await axios.get(`${API}/products?${params.toString()}`);
       setProducts(res.data);
       // Initialize quantities
       const q = {};
@@ -53,14 +72,22 @@ export default function CatalogPage() {
   const handleSearch = (e) => {
     e.preventDefault();
     if (searchInput.trim()) {
-      setSearchParams({ search: searchInput.trim() });
+      const params = new URLSearchParams();
+      params.set('search', searchInput.trim());
+      setSearchParams(params);
     }
   };
 
-  const clearSearch = () => {
+  const clearFilters = () => {
     setSearchInput('');
     setSearchParams({});
     setProducts([]);
+  };
+
+  const selectCategory = (catId) => {
+    const params = new URLSearchParams();
+    params.set('category', catId);
+    setSearchParams(params);
   };
 
   const handleAddToCart = async (product) => {
@@ -96,13 +123,15 @@ export default function CatalogPage() {
     return `${days} дней`;
   };
 
+  const currentCategory = categories.find(c => c.id === categoryId);
+
   return (
     <div className="min-h-screen" data-testid="catalog-page">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Header */}
         <div className="mb-8">
           <h1 className="text-2xl md:text-3xl font-bold tracking-tight uppercase text-zinc-900 mb-6">
-            Поиск запчастей
+            {currentCategory ? currentCategory.name : 'Поиск запчастей'}
           </h1>
           
           {/* Search form */}
@@ -136,25 +165,71 @@ export default function CatalogPage() {
             </Button>
           </form>
 
-          {/* Active search */}
-          {searchQuery && (
+          {/* Active filters */}
+          {(searchQuery || categoryId) && (
             <div className="flex items-center gap-2 mt-4">
-              <span className="inline-flex items-center gap-2 bg-zinc-100 px-3 py-2 text-sm">
-                Результаты по запросу: "{searchQuery}"
-                <button onClick={clearSearch} className="hover:text-red-500">
-                  <X className="w-4 h-4" />
-                </button>
-              </span>
+              {searchQuery && (
+                <span className="inline-flex items-center gap-2 bg-zinc-100 px-3 py-2 text-sm">
+                  Поиск: "{searchQuery}"
+                  <button onClick={() => {
+                    const params = new URLSearchParams(searchParams);
+                    params.delete('search');
+                    setSearchParams(params);
+                    setSearchInput('');
+                  }} className="hover:text-red-500">
+                    <X className="w-4 h-4" />
+                  </button>
+                </span>
+              )}
+              {categoryId && currentCategory && (
+                <span className="inline-flex items-center gap-2 bg-zinc-100 px-3 py-2 text-sm">
+                  {currentCategory.name}
+                  <button onClick={clearFilters} className="hover:text-red-500">
+                    <X className="w-4 h-4" />
+                  </button>
+                </span>
+              )}
             </div>
           )}
         </div>
 
+        {/* Categories - show when no search/category selected */}
+        {!searchQuery && !categoryId && categories.length > 0 && (
+          <div className="mb-8">
+            <h2 className="text-lg font-semibold text-zinc-900 mb-4">Категории</h2>
+            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
+              {categories.map((category) => (
+                <button
+                  key={category.id}
+                  onClick={() => selectCategory(category.id)}
+                  className="group border border-zinc-200 bg-white hover:border-zinc-400 transition-colors p-4 text-left"
+                  data-testid={`category-${category.id}`}
+                >
+                  {category.image_url && (
+                    <div className="aspect-video bg-zinc-100 mb-3 overflow-hidden">
+                      <img 
+                        src={category.image_url} 
+                        alt={category.name}
+                        className="w-full h-full object-cover grayscale group-hover:grayscale-0 transition-all"
+                      />
+                    </div>
+                  )}
+                  <h3 className="font-medium text-zinc-900 group-hover:text-orange-500 transition-colors flex items-center justify-between">
+                    {category.name}
+                    <ArrowRight className="w-4 h-4 opacity-0 group-hover:opacity-100 transition-opacity" />
+                  </h3>
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
+
         {/* Content */}
-        {!searchQuery ? (
+        {!searchQuery && !categoryId ? (
           <div className="text-center py-16" data-testid="search-prompt">
             <Search className="w-16 h-16 mx-auto text-zinc-300 mb-4" />
             <p className="text-zinc-500 text-lg">
-              Введите название или артикул запчасти для поиска
+              Введите название или артикул, либо выберите категорию
             </p>
           </div>
         ) : loading ? (
@@ -163,9 +238,9 @@ export default function CatalogPage() {
           </div>
         ) : products.length === 0 ? (
           <div className="text-center py-12" data-testid="no-products">
-            <p className="text-zinc-500 mb-4">По запросу "{searchQuery}" ничего не найдено</p>
-            <Button onClick={clearSearch} variant="outline">
-              Очистить поиск
+            <p className="text-zinc-500 mb-4">Товары не найдены</p>
+            <Button onClick={clearFilters} variant="outline">
+              Сбросить фильтры
             </Button>
           </div>
         ) : (
