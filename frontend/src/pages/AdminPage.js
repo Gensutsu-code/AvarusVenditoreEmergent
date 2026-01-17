@@ -3,12 +3,13 @@ import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import { 
   Users, Package, ShoppingBag, TrendingUp, 
-  Plus, Pencil, Trash2, X, Save, Eye
+  Plus, Pencil, Trash2, Save, Eye, FolderOpen, Megaphone
 } from 'lucide-react';
 import { Button } from '../components/ui/button';
 import { Input } from '../components/ui/input';
 import { Label } from '../components/ui/label';
 import { Textarea } from '../components/ui/textarea';
+import { Switch } from '../components/ui/switch';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '../components/ui/dialog';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '../components/ui/tabs';
 import { useAuth } from '../context/AuthContext';
@@ -21,17 +22,19 @@ export default function AdminPage() {
   const navigate = useNavigate();
   const [stats, setStats] = useState(null);
   const [products, setProducts] = useState([]);
+  const [categories, setCategories] = useState([]);
   const [users, setUsers] = useState([]);
   const [orders, setOrders] = useState([]);
+  const [promoBanner, setPromoBanner] = useState({ enabled: false, text: '', link: '', bg_color: '#f97316' });
   const [loading, setLoading] = useState(true);
   const [editingProduct, setEditingProduct] = useState(null);
+  const [editingCategory, setEditingCategory] = useState(null);
   const [isNewProduct, setIsNewProduct] = useState(false);
+  const [isNewCategory, setIsNewCategory] = useState(false);
   const [viewingOrder, setViewingOrder] = useState(null);
 
   useEffect(() => {
-    if (authLoading) {
-      return; // Wait for auth to load
-    }
+    if (authLoading) return;
     if (!user) {
       navigate('/login');
       return;
@@ -42,21 +45,25 @@ export default function AdminPage() {
       return;
     }
     fetchData();
-  }, [user, navigate, authLoading]);
+  }, [user, authLoading, navigate]);
 
   const fetchData = async () => {
     setLoading(true);
     try {
-      const [statsRes, productsRes, usersRes, ordersRes] = await Promise.all([
+      const [statsRes, productsRes, categoriesRes, usersRes, ordersRes, bannerRes] = await Promise.all([
         axios.get(`${API}/admin/stats`),
         axios.get(`${API}/products`),
+        axios.get(`${API}/categories`),
         axios.get(`${API}/admin/users`),
-        axios.get(`${API}/admin/orders`)
+        axios.get(`${API}/admin/orders`),
+        axios.get(`${API}/promo-banner`)
       ]);
       setStats(statsRes.data);
       setProducts(productsRes.data);
+      setCategories(categoriesRes.data);
       setUsers(usersRes.data);
       setOrders(ordersRes.data);
+      setPromoBanner(bannerRes.data);
     } catch (err) {
       console.error('Failed to fetch admin data', err);
       toast.error('Ошибка загрузки данных');
@@ -71,6 +78,7 @@ export default function AdminPage() {
     day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit'
   });
 
+  // Product handlers
   const handleSaveProduct = async () => {
     if (!editingProduct.name || !editingProduct.article || !editingProduct.price) {
       toast.error('Заполните обязательные поля');
@@ -104,24 +112,12 @@ export default function AdminPage() {
     }
   };
 
-  const handleUpdateOrderStatus = async (orderId, status) => {
-    try {
-      await axios.put(`${API}/admin/orders/${orderId}/status?status=${status}`);
-      toast.success('Статус обновлён');
-      fetchData();
-      if (viewingOrder?.id === orderId) {
-        setViewingOrder({ ...viewingOrder, status });
-      }
-    } catch (err) {
-      toast.error('Ошибка обновления статуса');
-    }
-  };
-
   const openNewProduct = () => {
     setIsNewProduct(true);
     setEditingProduct({
       name: '',
       article: '',
+      category_id: '',
       price: 0,
       stock: 0,
       delivery_days: 3,
@@ -135,6 +131,74 @@ export default function AdminPage() {
     setEditingProduct({ ...product });
   };
 
+  // Category handlers
+  const handleSaveCategory = async () => {
+    if (!editingCategory.name) {
+      toast.error('Введите название категории');
+      return;
+    }
+
+    try {
+      if (isNewCategory) {
+        await axios.post(`${API}/categories`, editingCategory);
+        toast.success('Категория создана');
+      } else {
+        await axios.put(`${API}/categories/${editingCategory.id}`, editingCategory);
+        toast.success('Категория обновлена');
+      }
+      setEditingCategory(null);
+      fetchData();
+    } catch (err) {
+      toast.error('Ошибка сохранения');
+    }
+  };
+
+  const handleDeleteCategory = async (categoryId) => {
+    if (!window.confirm('Удалить категорию? Товары из этой категории останутся без категории.')) return;
+    
+    try {
+      await axios.delete(`${API}/categories/${categoryId}`);
+      toast.success('Категория удалена');
+      fetchData();
+    } catch (err) {
+      toast.error('Ошибка удаления');
+    }
+  };
+
+  const openNewCategory = () => {
+    setIsNewCategory(true);
+    setEditingCategory({ name: '', image_url: '' });
+  };
+
+  const openEditCategory = (category) => {
+    setIsNewCategory(false);
+    setEditingCategory({ ...category });
+  };
+
+  // Promo banner handler
+  const handleSavePromoBanner = async () => {
+    try {
+      await axios.put(`${API}/promo-banner`, promoBanner);
+      toast.success('Баннер обновлён');
+    } catch (err) {
+      toast.error('Ошибка сохранения');
+    }
+  };
+
+  // Order handlers
+  const handleUpdateOrderStatus = async (orderId, status) => {
+    try {
+      await axios.put(`${API}/admin/orders/${orderId}/status?status=${status}`);
+      toast.success('Статус обновлён');
+      fetchData();
+      if (viewingOrder?.id === orderId) {
+        setViewingOrder({ ...viewingOrder, status });
+      }
+    } catch (err) {
+      toast.error('Ошибка обновления статуса');
+    }
+  };
+
   const STATUS_OPTIONS = [
     { value: 'pending', label: 'Ожидает', color: 'bg-yellow-100 text-yellow-800' },
     { value: 'processing', label: 'В обработке', color: 'bg-blue-100 text-blue-800' },
@@ -143,7 +207,12 @@ export default function AdminPage() {
     { value: 'cancelled', label: 'Отменён', color: 'bg-red-100 text-red-800' }
   ];
 
-  if (loading || authLoading) {
+  const getCategoryName = (categoryId) => {
+    const cat = categories.find(c => c.id === categoryId);
+    return cat ? cat.name : '—';
+  };
+
+  if (authLoading || loading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div className="text-zinc-500">Загрузка...</div>
@@ -202,15 +271,26 @@ export default function AdminPage() {
 
         {/* Tabs */}
         <Tabs defaultValue="products" className="bg-white border border-zinc-200">
-          <TabsList className="w-full justify-start border-b border-zinc-200 rounded-none bg-zinc-50 p-0">
-            <TabsTrigger value="products" className="rounded-none data-[state=active]:bg-white data-[state=active]:border-b-2 data-[state=active]:border-orange-500">
+          <TabsList className="w-full justify-start border-b border-zinc-200 rounded-none bg-zinc-50 p-0 h-auto flex-wrap">
+            <TabsTrigger value="products" className="rounded-none data-[state=active]:bg-white data-[state=active]:border-b-2 data-[state=active]:border-orange-500 px-4 py-3">
+              <Package className="w-4 h-4 mr-2" />
               Товары ({products.length})
             </TabsTrigger>
-            <TabsTrigger value="orders" className="rounded-none data-[state=active]:bg-white data-[state=active]:border-b-2 data-[state=active]:border-orange-500">
+            <TabsTrigger value="categories" className="rounded-none data-[state=active]:bg-white data-[state=active]:border-b-2 data-[state=active]:border-orange-500 px-4 py-3">
+              <FolderOpen className="w-4 h-4 mr-2" />
+              Категории ({categories.length})
+            </TabsTrigger>
+            <TabsTrigger value="orders" className="rounded-none data-[state=active]:bg-white data-[state=active]:border-b-2 data-[state=active]:border-orange-500 px-4 py-3">
+              <ShoppingBag className="w-4 h-4 mr-2" />
               Заказы ({orders.length})
             </TabsTrigger>
-            <TabsTrigger value="users" className="rounded-none data-[state=active]:bg-white data-[state=active]:border-b-2 data-[state=active]:border-orange-500">
+            <TabsTrigger value="users" className="rounded-none data-[state=active]:bg-white data-[state=active]:border-b-2 data-[state=active]:border-orange-500 px-4 py-3">
+              <Users className="w-4 h-4 mr-2" />
               Пользователи ({users.length})
+            </TabsTrigger>
+            <TabsTrigger value="promo" className="rounded-none data-[state=active]:bg-white data-[state=active]:border-b-2 data-[state=active]:border-orange-500 px-4 py-3">
+              <Megaphone className="w-4 h-4 mr-2" />
+              Акции
             </TabsTrigger>
           </TabsList>
 
@@ -231,9 +311,9 @@ export default function AdminPage() {
                     <th className="text-left py-3 px-2">Фото</th>
                     <th className="text-left py-3 px-2">Название</th>
                     <th className="text-left py-3 px-2">Артикул</th>
+                    <th className="text-left py-3 px-2">Категория</th>
                     <th className="text-right py-3 px-2">Цена</th>
                     <th className="text-right py-3 px-2">Наличие</th>
-                    <th className="text-right py-3 px-2">Доставка</th>
                     <th className="text-right py-3 px-2">Действия</th>
                   </tr>
                 </thead>
@@ -253,9 +333,9 @@ export default function AdminPage() {
                       </td>
                       <td className="py-2 px-2 font-medium">{product.name}</td>
                       <td className="py-2 px-2 font-mono text-zinc-500">{product.article}</td>
+                      <td className="py-2 px-2 text-zinc-500">{getCategoryName(product.category_id)}</td>
                       <td className="py-2 px-2 text-right font-mono">{formatPrice(product.price)} ₽</td>
                       <td className="py-2 px-2 text-right">{product.stock} шт.</td>
-                      <td className="py-2 px-2 text-right">{product.delivery_days || 3} дн.</td>
                       <td className="py-2 px-2 text-right">
                         <div className="flex justify-end gap-1">
                           <Button variant="ghost" size="sm" onClick={() => openEditProduct(product)} data-testid={`edit-${product.id}`}>
@@ -270,6 +350,43 @@ export default function AdminPage() {
                   ))}
                 </tbody>
               </table>
+            </div>
+          </TabsContent>
+
+          {/* Categories Tab */}
+          <TabsContent value="categories" className="p-6">
+            <div className="flex justify-between items-center mb-4">
+              <h2 className="text-lg font-semibold">Управление категориями</h2>
+              <Button onClick={openNewCategory} className="bg-orange-500 hover:bg-orange-600" data-testid="add-category-btn">
+                <Plus className="w-4 h-4 mr-2" />
+                Добавить категорию
+              </Button>
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+              {categories.map((category) => (
+                <div key={category.id} className="border border-zinc-200 p-4">
+                  {category.image_url && (
+                    <div className="aspect-video bg-zinc-100 mb-3 overflow-hidden">
+                      <img src={category.image_url} alt={category.name} className="w-full h-full object-cover" />
+                    </div>
+                  )}
+                  <div className="flex items-center justify-between">
+                    <h3 className="font-medium">{category.name}</h3>
+                    <div className="flex gap-1">
+                      <Button variant="ghost" size="sm" onClick={() => openEditCategory(category)}>
+                        <Pencil className="w-4 h-4" />
+                      </Button>
+                      <Button variant="ghost" size="sm" onClick={() => handleDeleteCategory(category.id)} className="text-red-500">
+                        <Trash2 className="w-4 h-4" />
+                      </Button>
+                    </div>
+                  </div>
+                  <p className="text-sm text-zinc-500 mt-1">
+                    Товаров: {products.filter(p => p.category_id === category.id).length}
+                  </p>
+                </div>
+              ))}
             </div>
           </TabsContent>
 
@@ -352,6 +469,79 @@ export default function AdminPage() {
               </table>
             </div>
           </TabsContent>
+
+          {/* Promo Banner Tab */}
+          <TabsContent value="promo" className="p-6">
+            <h2 className="text-lg font-semibold mb-4">Баннер акций и скидок</h2>
+            
+            <div className="max-w-xl space-y-4">
+              <div className="flex items-center gap-4">
+                <Switch
+                  checked={promoBanner.enabled}
+                  onCheckedChange={(checked) => setPromoBanner({ ...promoBanner, enabled: checked })}
+                  data-testid="promo-enabled"
+                />
+                <Label>Показывать баннер</Label>
+              </div>
+
+              <div>
+                <Label className="text-xs font-bold uppercase text-zinc-500">Текст баннера</Label>
+                <Input
+                  value={promoBanner.text}
+                  onChange={(e) => setPromoBanner({ ...promoBanner, text: e.target.value })}
+                  placeholder="Скидка 10% на все товары!"
+                  className="mt-1"
+                  data-testid="promo-text"
+                />
+              </div>
+
+              <div>
+                <Label className="text-xs font-bold uppercase text-zinc-500">Ссылка (необязательно)</Label>
+                <Input
+                  value={promoBanner.link || ''}
+                  onChange={(e) => setPromoBanner({ ...promoBanner, link: e.target.value })}
+                  placeholder="/catalog?search=акция"
+                  className="mt-1"
+                  data-testid="promo-link"
+                />
+              </div>
+
+              <div>
+                <Label className="text-xs font-bold uppercase text-zinc-500">Цвет фона</Label>
+                <div className="flex gap-2 mt-1">
+                  <Input
+                    type="color"
+                    value={promoBanner.bg_color || '#f97316'}
+                    onChange={(e) => setPromoBanner({ ...promoBanner, bg_color: e.target.value })}
+                    className="w-16 h-10 p-1"
+                  />
+                  <Input
+                    value={promoBanner.bg_color || '#f97316'}
+                    onChange={(e) => setPromoBanner({ ...promoBanner, bg_color: e.target.value })}
+                    className="flex-1"
+                  />
+                </div>
+              </div>
+
+              {/* Preview */}
+              {promoBanner.text && (
+                <div>
+                  <Label className="text-xs font-bold uppercase text-zinc-500 mb-2 block">Предпросмотр</Label>
+                  <div 
+                    className="py-2 px-4 text-center text-white text-sm font-medium"
+                    style={{ backgroundColor: promoBanner.bg_color || '#f97316' }}
+                  >
+                    {promoBanner.text}
+                  </div>
+                </div>
+              )}
+
+              <Button onClick={handleSavePromoBanner} className="bg-orange-500 hover:bg-orange-600" data-testid="save-promo-btn">
+                <Save className="w-4 h-4 mr-2" />
+                Сохранить баннер
+              </Button>
+            </div>
+          </TabsContent>
         </Tabs>
       </div>
 
@@ -382,6 +572,21 @@ export default function AdminPage() {
                   className="mt-1"
                   data-testid="product-article-input"
                 />
+              </div>
+
+              <div>
+                <Label className="text-xs font-bold uppercase text-zinc-500">Категория</Label>
+                <select
+                  value={editingProduct.category_id || ''}
+                  onChange={(e) => setEditingProduct({ ...editingProduct, category_id: e.target.value || null })}
+                  className="mt-1 w-full h-10 px-3 border border-zinc-200 bg-white"
+                  data-testid="product-category-select"
+                >
+                  <option value="">Без категории</option>
+                  {categories.map(cat => (
+                    <option key={cat.id} value={cat.id}>{cat.name}</option>
+                  ))}
+                </select>
               </div>
 
               <div className="grid grid-cols-3 gap-4">
@@ -449,6 +654,55 @@ export default function AdminPage() {
                   Отмена
                 </Button>
                 <Button onClick={handleSaveProduct} className="bg-orange-500 hover:bg-orange-600" data-testid="save-product-btn">
+                  <Save className="w-4 h-4 mr-2" />
+                  Сохранить
+                </Button>
+              </div>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
+
+      {/* Edit Category Modal */}
+      <Dialog open={!!editingCategory} onOpenChange={() => setEditingCategory(null)}>
+        <DialogContent className="max-w-md" data-testid="category-edit-modal">
+          <DialogHeader>
+            <DialogTitle>{isNewCategory ? 'Добавить категорию' : 'Редактировать категорию'}</DialogTitle>
+          </DialogHeader>
+          
+          {editingCategory && (
+            <div className="space-y-4 mt-4">
+              <div>
+                <Label className="text-xs font-bold uppercase text-zinc-500">Название *</Label>
+                <Input
+                  value={editingCategory.name}
+                  onChange={(e) => setEditingCategory({ ...editingCategory, name: e.target.value })}
+                  className="mt-1"
+                  data-testid="category-name-input"
+                />
+              </div>
+
+              <div>
+                <Label className="text-xs font-bold uppercase text-zinc-500">URL изображения</Label>
+                <Input
+                  value={editingCategory.image_url || ''}
+                  onChange={(e) => setEditingCategory({ ...editingCategory, image_url: e.target.value })}
+                  placeholder="https://..."
+                  className="mt-1"
+                  data-testid="category-image-input"
+                />
+                {editingCategory.image_url && (
+                  <div className="mt-2 aspect-video w-full bg-zinc-100 overflow-hidden">
+                    <img src={editingCategory.image_url} alt="Preview" className="w-full h-full object-cover" />
+                  </div>
+                )}
+              </div>
+
+              <div className="flex justify-end gap-2 pt-4">
+                <Button variant="outline" onClick={() => setEditingCategory(null)}>
+                  Отмена
+                </Button>
+                <Button onClick={handleSaveCategory} className="bg-orange-500 hover:bg-orange-600" data-testid="save-category-btn">
                   <Save className="w-4 h-4 mr-2" />
                   Сохранить
                 </Button>
