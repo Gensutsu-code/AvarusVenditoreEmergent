@@ -594,15 +594,117 @@ export default function AdminPage() {
                 </div>
               </div>
 
+              <div>
+                <Label className="text-xs font-bold uppercase text-zinc-500">Высота баннера (px)</Label>
+                <Input
+                  type="number"
+                  value={promoBanner.height || 40}
+                  onChange={(e) => setPromoBanner({ ...promoBanner, height: parseInt(e.target.value) || 40 })}
+                  min={30}
+                  max={200}
+                  className="mt-1 w-32"
+                  data-testid="promo-height"
+                />
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <Label className="text-xs font-bold uppercase text-zinc-500">Изображение слева</Label>
+                  <div className="mt-1 space-y-2">
+                    <input
+                      type="file"
+                      ref={promoLeftFileRef}
+                      onChange={handlePromoLeftImageUpload}
+                      accept="image/*"
+                      className="hidden"
+                    />
+                    <Button 
+                      type="button" 
+                      variant="outline" 
+                      onClick={() => promoLeftFileRef.current?.click()}
+                      disabled={uploading}
+                      size="sm"
+                      className="w-full"
+                    >
+                      <Upload className="w-4 h-4 mr-2" />
+                      {uploading ? 'Загрузка...' : 'Загрузить'}
+                    </Button>
+                    {promoBanner.left_image && (
+                      <div className="flex items-center gap-2">
+                        <img src={promoBanner.left_image} alt="Left" className="h-10 object-contain" />
+                        <Button 
+                          variant="ghost" 
+                          size="sm"
+                          onClick={() => setPromoBanner({ ...promoBanner, left_image: null })}
+                          className="text-red-500 h-8 px-2"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </Button>
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+                <div>
+                  <Label className="text-xs font-bold uppercase text-zinc-500">Изображение справа</Label>
+                  <div className="mt-1 space-y-2">
+                    <input
+                      type="file"
+                      ref={promoRightFileRef}
+                      onChange={handlePromoRightImageUpload}
+                      accept="image/*"
+                      className="hidden"
+                    />
+                    <Button 
+                      type="button" 
+                      variant="outline" 
+                      onClick={() => promoRightFileRef.current?.click()}
+                      disabled={uploading}
+                      size="sm"
+                      className="w-full"
+                    >
+                      <Upload className="w-4 h-4 mr-2" />
+                      {uploading ? 'Загрузка...' : 'Загрузить'}
+                    </Button>
+                    {promoBanner.right_image && (
+                      <div className="flex items-center gap-2">
+                        <img src={promoBanner.right_image} alt="Right" className="h-10 object-contain" />
+                        <Button 
+                          variant="ghost" 
+                          size="sm"
+                          onClick={() => setPromoBanner({ ...promoBanner, right_image: null })}
+                          className="text-red-500 h-8 px-2"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </Button>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </div>
+
               {/* Preview */}
               {promoBanner.text && (
                 <div>
                   <Label className="text-xs font-bold uppercase text-zinc-500 mb-2 block">Предпросмотр</Label>
                   <div 
-                    className="py-2 px-4 text-center text-white text-sm font-medium"
-                    style={{ backgroundColor: promoBanner.bg_color || '#f97316' }}
+                    className="flex items-center justify-between px-4 text-white text-sm font-medium"
+                    style={{ 
+                      backgroundColor: promoBanner.bg_color || '#f97316',
+                      minHeight: `${promoBanner.height || 40}px`
+                    }}
                   >
-                    {promoBanner.text}
+                    <div className="flex-shrink-0">
+                      {promoBanner.left_image && (
+                        <img src={promoBanner.left_image} alt="" className="object-contain" style={{ maxHeight: `${(promoBanner.height || 40) - 8}px` }} />
+                      )}
+                    </div>
+                    <span className="flex-1 text-center">{promoBanner.text}</span>
+                    <div className="flex-shrink-0">
+                      {promoBanner.right_image && (
+                        <img src={promoBanner.right_image} alt="" className="object-contain" style={{ maxHeight: `${(promoBanner.height || 40) - 8}px` }} />
+                      )}
+                    </div>
                   </div>
                 </div>
               )}
