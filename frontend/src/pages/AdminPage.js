@@ -26,12 +26,14 @@ export default function AdminPage() {
   const [categories, setCategories] = useState([]);
   const [users, setUsers] = useState([]);
   const [orders, setOrders] = useState([]);
-  const [promoBanner, setPromoBanner] = useState({ enabled: false, text: '', link: '', bg_color: '#f97316' });
+  const [promoBanner, setPromoBanner] = useState({ enabled: false, text: '', link: '', bg_color: '#f97316', height: 40, left_image: null, right_image: null });
   const [loading, setLoading] = useState(true);
   const [uploading, setUploading] = useState(false);
   const [editingProduct, setEditingProduct] = useState(null);
   const productFileRef = useRef(null);
   const categoryFileRef = useRef(null);
+  const promoLeftFileRef = useRef(null);
+  const promoRightFileRef = useRef(null);
   const [editingCategory, setEditingCategory] = useState(null);
   const [isNewProduct, setIsNewProduct] = useState(false);
   const [isNewCategory, setIsNewCategory] = useState(false);
