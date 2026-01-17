@@ -529,6 +529,9 @@ async def create_order(data: OrderCreate, user=Depends(get_current_user)):
     # Clear cart
     await db.carts.update_one({"user_id": user["id"]}, {"$set": {"items": []}})
     
+    # Send Telegram notification
+    await send_telegram_order_notification(order, user)
+    
     return order
 
 @api_router.get("/orders", response_model=List[OrderResponse])
