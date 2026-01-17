@@ -3,7 +3,8 @@ import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import { 
   Users, Package, ShoppingBag, TrendingUp, 
-  Plus, Pencil, Trash2, Save, Eye, FolderOpen, Megaphone, Upload, Image
+  Plus, Pencil, Trash2, Save, Eye, FolderOpen, Megaphone, Upload, Image,
+  MessageCircle, Send, BarChart3, Download, FileSpreadsheet
 } from 'lucide-react';
 import { Button } from '../components/ui/button';
 import { Input } from '../components/ui/input';
@@ -34,10 +35,21 @@ export default function AdminPage() {
   const categoryFileRef = useRef(null);
   const promoLeftFileRef = useRef(null);
   const promoRightFileRef = useRef(null);
+  const importFileRef = useRef(null);
   const [editingCategory, setEditingCategory] = useState(null);
   const [isNewProduct, setIsNewProduct] = useState(false);
   const [isNewCategory, setIsNewCategory] = useState(false);
   const [viewingOrder, setViewingOrder] = useState(null);
+  
+  // New states
+  const [telegramSettings, setTelegramSettings] = useState({ enabled: false, bot_token: '', chat_id: '' });
+  const [chats, setChats] = useState([]);
+  const [selectedChat, setSelectedChat] = useState(null);
+  const [chatMessages, setChatMessages] = useState([]);
+  const [newAdminMessage, setNewAdminMessage] = useState('');
+  const [extendedStats, setExtendedStats] = useState(null);
+  const [statsPeriod, setStatsPeriod] = useState('month');
+  const [importResult, setImportResult] = useState(null);
 
   useEffect(() => {
     if (authLoading) return;
