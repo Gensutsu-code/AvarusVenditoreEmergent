@@ -416,10 +416,11 @@ export default function CatalogPage() {
                     </div>
                   </div>
 
-                  <div className="border-t border-zinc-200 pt-4">
+                  <div className="border-t border-zinc-200 pt-4 flex items-center justify-between">
                     <span className="price-tag text-2xl text-zinc-900">
                       {formatPrice(selectedProduct.price)} ₽
                     </span>
+                    <FavoritesButton productId={selectedProduct.id} />
                   </div>
 
                   {/* Quantity + Add to cart */}
@@ -455,6 +456,17 @@ export default function CatalogPage() {
                       В корзину
                     </Button>
                   </div>
+
+                  {/* Related Products */}
+                  <RelatedProducts 
+                    productId={selectedProduct.id} 
+                    onSelectProduct={(product) => {
+                      setSelectedProduct(product);
+                      if (!quantities[product.id]) {
+                        setQuantities(prev => ({ ...prev, [product.id]: 1 }));
+                      }
+                    }}
+                  />
                 </div>
               </div>
             </>
