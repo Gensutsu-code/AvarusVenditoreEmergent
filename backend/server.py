@@ -614,32 +614,6 @@ async def check_favorite(product_id: str, user=Depends(get_current_user)):
     is_favorite = product_id in favorites.get("items", []) if favorites else False
     return {"is_favorite": is_favorite}
 
-# ==================== POPULAR PRODUCTS ====================
-
-@api_router.get("/products/popular", response_model=List[ProductResponse])
-async def get_popular_products(limit: int = 6):
-    """Get popular products based on order count"""
-    # Aggregate order items to find most ordered products
-    pipeline = [
-        {"$unwind": "$items"},
-        {"$group": {"_id": "$items.product_id", "order_count": {"$sum": "$items.quantity"}}},
-        {"$sort": {"order_count": -1}},
-        {"$limit": limit}
-    ]
-    popular_ids = await db.orders.aggregate(pipeline).to_list(limit)
-    
-    if popular_ids:
-        product_ids = [p["_id"] for p in popular_ids]
-        products = await db.products.find({"id": {"$in": product_ids}}, {"_id": 0}).to_list(limit)
-        # Sort by order count
-        id_to_count = {p["_id"]: p["order_count"] for p in popular_ids}
-        products.sort(key=lambda x: id_to_count.get(x["id"], 0), reverse=True)
-    else:
-        # Fallback: return random products if no orders
-        products = await db.products.find({}, {"_id": 0}).limit(limit).to_list(limit)
-    
-    return products
-
 # ==================== RELATED PRODUCTS ====================
 
 @api_router.get("/products/{product_id}/related", response_model=List[ProductResponse])
