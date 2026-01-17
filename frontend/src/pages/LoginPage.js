@@ -35,8 +35,9 @@ export default function LoginPage() {
       <div className="w-full max-w-md">
         <div className="text-center mb-8">
           <Link to="/" className="text-xl font-bold uppercase tracking-tight text-zinc-900">
-            avarus-Venditore
+            avopt.store
           </Link>
+          <p className="text-sm text-zinc-400 mt-1">Avarus-Venditore</p>
           <h1 className="text-2xl font-bold text-zinc-900 mt-6">Вход</h1>
         </div>
 
