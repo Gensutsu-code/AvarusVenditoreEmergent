@@ -36,8 +36,8 @@ app = FastAPI()
 api_router = APIRouter(prefix="/api")
 security = HTTPBearer()
 
-# Mount uploads directory for serving static files
-app.mount("/uploads", StaticFiles(directory=str(UPLOADS_DIR)), name="uploads")
+# Mount uploads directory for serving static files (via /api/uploads for ingress routing)
+app.mount("/api/uploads", StaticFiles(directory=str(UPLOADS_DIR)), name="uploads")
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
