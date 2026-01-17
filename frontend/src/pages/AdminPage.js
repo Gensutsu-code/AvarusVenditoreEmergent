@@ -68,13 +68,15 @@ export default function AdminPage() {
   const fetchData = async () => {
     setLoading(true);
     try {
-      const [statsRes, productsRes, categoriesRes, usersRes, ordersRes, bannerRes] = await Promise.all([
+      const [statsRes, productsRes, categoriesRes, usersRes, ordersRes, bannerRes, telegramRes, chatsRes] = await Promise.all([
         axios.get(`${API}/admin/stats`),
         axios.get(`${API}/products`),
         axios.get(`${API}/categories`),
         axios.get(`${API}/admin/users`),
         axios.get(`${API}/admin/orders`),
-        axios.get(`${API}/promo-banner`)
+        axios.get(`${API}/promo-banner`),
+        axios.get(`${API}/admin/telegram-settings`),
+        axios.get(`${API}/admin/chats`)
       ]);
       setStats(statsRes.data);
       setProducts(productsRes.data);
@@ -82,6 +84,8 @@ export default function AdminPage() {
       setUsers(usersRes.data);
       setOrders(ordersRes.data);
       setPromoBanner(bannerRes.data);
+      setTelegramSettings(telegramRes.data);
+      setChats(chatsRes.data);
     } catch (err) {
       console.error('Failed to fetch admin data', err);
       toast.error('Ошибка загрузки данных');
