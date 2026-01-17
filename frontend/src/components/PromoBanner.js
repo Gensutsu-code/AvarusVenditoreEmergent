@@ -26,16 +26,54 @@ export const PromoBanner = () => {
     return null;
   }
 
+  const height = banner.height || 40;
+
   const content = (
     <div 
-      className="py-2 px-4 text-center text-white text-sm font-medium relative"
-      style={{ backgroundColor: banner.bg_color || '#f97316' }}
+      className="flex items-center justify-between px-4 text-white relative"
+      style={{ 
+        backgroundColor: banner.bg_color || '#f97316',
+        minHeight: `${height}px`
+      }}
       data-testid="promo-banner"
     >
-      <span>{banner.text}</span>
+      {/* Left image */}
+      <div className="flex-shrink-0 h-full flex items-center">
+        {banner.left_image ? (
+          <img 
+            src={banner.left_image} 
+            alt="" 
+            className="object-contain"
+            style={{ maxHeight: `${height - 8}px` }}
+          />
+        ) : (
+          <div className="w-16" />
+        )}
+      </div>
+
+      {/* Center text */}
+      <div className="flex-1 text-center py-2">
+        <span className="text-sm font-medium">{banner.text}</span>
+      </div>
+
+      {/* Right image */}
+      <div className="flex-shrink-0 h-full flex items-center">
+        {banner.right_image ? (
+          <img 
+            src={banner.right_image} 
+            alt="" 
+            className="object-contain"
+            style={{ maxHeight: `${height - 8}px` }}
+          />
+        ) : (
+          <div className="w-16" />
+        )}
+      </div>
+
+      {/* Close button */}
       <button 
         onClick={() => setDismissed(true)}
-        className="absolute right-4 top-1/2 -translate-y-1/2 hover:opacity-70"
+        className="absolute right-2 top-1/2 -translate-y-1/2 hover:opacity-70 p-1"
         data-testid="promo-banner-close"
       >
         <X className="w-4 h-4" />
