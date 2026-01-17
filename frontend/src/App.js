@@ -20,6 +20,7 @@ function AppContent() {
   return (
     <div className="min-h-screen bg-white">
       <Header />
+      <PromoBanner />
       <main>
         <Routes>
           <Route path="/" element={<HomePage />} />
