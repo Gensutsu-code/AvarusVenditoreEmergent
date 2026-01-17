@@ -32,6 +32,11 @@ const BRANDS = [
     desc: 'Оси и подвеска',
     image: 'https://customer-assets.emergentagent.com/job_heavy-vehicle/artifacts/54osguxt_Screenshot%20%285%29.png'
   },
+  { 
+    name: 'BPW', 
+    desc: 'Ходовая часть',
+    image: 'https://customer-assets.emergentagent.com/job_heavy-vehicle/artifacts/qjidmkpu_Screenshot%20%285%29.png'
+  },
 ];
 
 export default function HomePage() {
