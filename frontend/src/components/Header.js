@@ -14,10 +14,17 @@ export const Header = () => {
         <div className="flex items-center justify-between h-16 gap-4">
           {/* Logo */}
           <Link to="/" className="flex-shrink-0" data-testid="logo-link">
-            <h1 className="text-lg font-bold uppercase tracking-tight text-zinc-900">
-              avarus-Venditore
+            <h1 className="text-xl font-bold uppercase tracking-tight text-zinc-900">
+              avopt.store
             </h1>
           </Link>
+
+          {/* Center - Brand name */}
+          <div className="hidden sm:block absolute left-1/2 transform -translate-x-1/2">
+            <span className="text-sm text-zinc-400 tracking-wide">
+              Avarus-Venditore
+            </span>
+          </div>
 
           {/* Actions */}
           <div className="flex items-center gap-1">
