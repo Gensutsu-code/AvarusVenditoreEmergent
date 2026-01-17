@@ -272,6 +272,102 @@ export default function AdminPage() {
     }
   };
 
+  // Telegram handlers
+  const handleSaveTelegram = async () => {
+    try {
+      await axios.put(`${API}/admin/telegram-settings`, telegramSettings);
+      toast.success('Настройки Telegram сохранены');
+    } catch (err) {
+      toast.error('Ошибка сохранения');
+    }
+  };
+
+  const handleTestTelegram = async () => {
+    try {
+      await axios.post(`${API}/admin/telegram-test`);
+      toast.success('Тестовое сообщение отправлено!');
+    } catch (err) {
+      toast.error(err.response?.data?.detail || 'Ошибка отправки');
+    }
+  };
+
+  // Chat handlers
+  const fetchChatMessages = async (chatId) => {
+    try {
+      const res = await axios.get(`${API}/admin/chats/${chatId}/messages`);
+      setChatMessages(res.data.messages || []);
+      // Refresh chats to update unread count
+      const chatsRes = await axios.get(`${API}/admin/chats`);
+      setChats(chatsRes.data);
+    } catch (err) {
+      console.error('Failed to fetch chat messages', err);
+    }
+  };
+
+  const handleSelectChat = (chat) => {
+    setSelectedChat(chat);
+    fetchChatMessages(chat.id);
+  };
+
+  const handleSendAdminMessage = async () => {
+    if (!newAdminMessage.trim() || !selectedChat) return;
+    
+    try {
+      await axios.post(`${API}/admin/chats/${selectedChat.id}/send`, { text: newAdminMessage });
+      setNewAdminMessage('');
+      fetchChatMessages(selectedChat.id);
+    } catch (err) {
+      toast.error('Ошибка отправки');
+    }
+  };
+
+  // Extended stats
+  const fetchExtendedStats = async (period) => {
+    try {
+      const res = await axios.get(`${API}/admin/stats/extended?period=${period}`);
+      setExtendedStats(res.data);
+    } catch (err) {
+      console.error('Failed to fetch extended stats', err);
+    }
+  };
+
+  useEffect(() => {
+    if (user?.role === 'admin' && !authLoading) {
+      fetchExtendedStats(statsPeriod);
+    }
+  }, [statsPeriod, user, authLoading]);
+
+  // Import handlers
+  const handleImportProducts = async (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    setUploading(true);
+    setImportResult(null);
+    
+    try {
+      const formData = new FormData();
+      formData.append('file', file);
+      
+      const res = await axios.post(`${API}/admin/products/import`, formData, {
+        headers: { 'Content-Type': 'multipart/form-data' }
+      });
+      
+      setImportResult(res.data);
+      toast.success(`Импортировано: ${res.data.imported}, Обновлено: ${res.data.updated}`);
+      fetchData();
+    } catch (err) {
+      toast.error(err.response?.data?.detail || 'Ошибка импорта');
+    } finally {
+      setUploading(false);
+      if (importFileRef.current) importFileRef.current.value = '';
+    }
+  };
+
+  const handleExportProducts = () => {
+    window.open(`${API}/admin/products/export`, '_blank');
+  };
+
   // Order handlers
   const handleUpdateOrderStatus = async (orderId, status) => {
     try {
