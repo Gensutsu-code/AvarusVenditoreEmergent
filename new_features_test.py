@@ -4,7 +4,7 @@ from datetime import datetime
 import json
 
 class NewFeaturesAPITester:
-    def __init__(self, base_url="https://heavy-vehicle.preview.emergentagent.com/api"):
+    def __init__(self, base_url="https://autoparts-hub-49.preview.emergentagent.com/api"):
         self.base_url = base_url
         self.token = None
         self.admin_token = None
