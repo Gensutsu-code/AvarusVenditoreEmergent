@@ -248,6 +248,41 @@ async def login(data: UserLogin):
 async def get_me(user=Depends(get_current_user)):
     return user
 
+@api_router.put("/auth/profile")
+async def update_profile(data: UserProfileUpdate, user=Depends(get_current_user)):
+    update_data = {k: v for k, v in data.model_dump().items() if v is not None}
+    if not update_data:
+        raise HTTPException(status_code=400, detail="No data to update")
+    
+    await db.users.update_one({"id": user["id"]}, {"$set": update_data})
+    
+    updated_user = await db.users.find_one({"id": user["id"]}, {"_id": 0, "password": 0})
+    return updated_user
+
+@api_router.get("/user/last-shipping")
+async def get_last_shipping(user=Depends(get_current_user)):
+    """Get user's last shipping info from orders or profile"""
+    # First try to get from last order
+    last_order = await db.orders.find_one(
+        {"user_id": user["id"]},
+        {"_id": 0, "full_name": 1, "address": 1, "phone": 1},
+        sort=[("created_at", -1)]
+    )
+    
+    if last_order:
+        return {
+            "full_name": last_order.get("full_name", ""),
+            "address": last_order.get("address", ""),
+            "phone": last_order.get("phone", "")
+        }
+    
+    # Fallback to user profile
+    return {
+        "full_name": user.get("name", ""),
+        "address": user.get("address", ""),
+        "phone": user.get("phone", "")
+    }
+
 # ==================== CATEGORIES ROUTES ====================
 
 @api_router.get("/categories", response_model=List[CategoryResponse])
