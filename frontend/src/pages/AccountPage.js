@@ -227,49 +227,115 @@ export default function AccountPage() {
               {orders.map((order) => (
                 <div 
                   key={order.id} 
-                  className="border border-zinc-200 p-6"
+                  className="border border-zinc-200 overflow-hidden"
                   data-testid={`order-${order.id}`}
                 >
-                  <div className="flex flex-wrap items-start justify-between gap-4 mb-4">
-                    <div>
-                      <p className="text-sm text-zinc-500">
-                        Заказ от {formatDate(order.created_at)}
-                      </p>
-                      <p className="text-xs font-mono text-zinc-400">
-                        #{order.id.slice(0, 8)}
-                      </p>
-                    </div>
-                    <span className={`px-3 py-1 text-xs font-bold uppercase ${STATUS_COLORS[order.status] || 'bg-zinc-100'}`}>
-                      {STATUS_LABELS[order.status] || order.status}
-                    </span>
-                  </div>
-
-                  <div className="space-y-2 mb-4">
-                    {order.items.map((item, idx) => (
-                      <div key={idx} className="flex justify-between text-sm">
-                        <span className="text-zinc-600">
-                          {item.name} × {item.quantity}
-                        </span>
-                        <span className="font-mono">
-                          {formatPrice(item.price * item.quantity)} ₽
-                        </span>
+                  {/* Order header */}
+                  <div 
+                    className="flex flex-wrap items-center justify-between gap-4 p-4 bg-zinc-50 cursor-pointer hover:bg-zinc-100 transition-colors"
+                    onClick={() => toggleOrderExpanded(order.id)}
+                  >
+                    <div className="flex items-center gap-4">
+                      <div>
+                        <p className="font-semibold text-zinc-900">
+                          Заказ #{order.id.slice(0, 8)}
+                        </p>
+                        <p className="text-sm text-zinc-500">
+                          {formatDate(order.created_at)}
+                        </p>
                       </div>
-                    ))}
+                    </div>
+                    <div className="flex items-center gap-4">
+                      <span className="font-mono font-semibold text-zinc-900">
+                        {formatPrice(order.total)} ₽
+                      </span>
+                      <span className={`px-3 py-1 text-xs font-bold uppercase ${STATUS_COLORS[order.status] || 'bg-zinc-100'}`}>
+                        {STATUS_LABELS[order.status] || order.status}
+                      </span>
+                      {expandedOrders[order.id] ? (
+                        <ChevronUp className="w-5 h-5 text-zinc-400" />
+                      ) : (
+                        <ChevronDown className="w-5 h-5 text-zinc-400" />
+                      )}
+                    </div>
                   </div>
 
-                  <div className="border-t border-zinc-200 pt-4 flex justify-between items-center">
-                    <span className="font-semibold text-zinc-900">Итого:</span>
-                    <span className="price-tag text-lg text-zinc-900">
-                      {formatPrice(order.total)} ₽
-                    </span>
-                  </div>
+                  {/* Expanded order details */}
+                  {expandedOrders[order.id] && (
+                    <div className="p-4 border-t border-zinc-200">
+                      {/* Delivery info */}
+                      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-4 text-sm">
+                        <div>
+                          <p className="text-zinc-500 text-xs uppercase">Получатель</p>
+                          <p className="font-medium">{order.full_name}</p>
+                        </div>
+                        <div>
+                          <p className="text-zinc-500 text-xs uppercase">Телефон</p>
+                          <p className="font-medium">{order.phone}</p>
+                        </div>
+                        <div>
+                          <p className="text-zinc-500 text-xs uppercase">Адрес</p>
+                          <p className="font-medium">{order.address}</p>
+                        </div>
+                      </div>
 
-                  <div className="mt-4 text-sm text-zinc-500">
-                    <p>Получатель: {order.full_name}</p>
-                    <p>Адрес: {order.address}</p>
-                    <p>Телефон: {order.phone}</p>
-                    <p>Оплата: наличными при получении</p>
-                  </div>
+                      {/* Order items with full details */}
+                      <div className="border border-zinc-200 divide-y divide-zinc-100">
+                        {order.items.map((item, idx) => (
+                          <div key={idx} className="flex gap-4 p-3">
+                            {/* Product image */}
+                            <div className="w-16 h-16 flex-shrink-0 bg-zinc-100 overflow-hidden">
+                              {item.image_url ? (
+                                <img 
+                                  src={item.image_url.startsWith('http') ? item.image_url : `${BACKEND_URL}${item.image_url}`} 
+                                  alt={item.name}
+                                  className="w-full h-full object-cover"
+                                />
+                              ) : (
+                                <div className="w-full h-full flex items-center justify-center text-zinc-300">
+                                  <Package className="w-6 h-6" />
+                                </div>
+                              )}
+                            </div>
+                            
+                            {/* Product info */}
+                            <div className="flex-1 min-w-0">
+                              <p className="font-medium text-zinc-900">{item.name}</p>
+                              <div className="flex flex-wrap gap-x-4 gap-y-1 mt-1">
+                                {item.manufacturer && (
+                                  <p className="text-sm font-semibold text-orange-600">{item.manufacturer}</p>
+                                )}
+                                {item.article && (
+                                  <p className="text-sm font-mono font-semibold text-zinc-600">Арт: {item.article}</p>
+                                )}
+                              </div>
+                              <p className="text-sm text-zinc-500 mt-1">
+                                {formatPrice(item.price)} ₽ × {item.quantity} шт.
+                              </p>
+                            </div>
+                            
+                            {/* Item total */}
+                            <div className="text-right">
+                              <p className="font-mono font-semibold">
+                                {formatPrice(item.price * item.quantity)} ₽
+                              </p>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+
+                      {/* Order total */}
+                      <div className="flex justify-between items-center mt-4 pt-4 border-t border-zinc-200">
+                        <span className="text-zinc-500">Оплата: наличными при получении</span>
+                        <div className="text-right">
+                          <span className="text-sm text-zinc-500">Итого: </span>
+                          <span className="font-mono text-xl font-bold text-zinc-900">
+                            {formatPrice(order.total)} ₽
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+                  )}
                 </div>
               ))}
             </div>
