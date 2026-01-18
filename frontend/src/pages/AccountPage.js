@@ -39,6 +39,7 @@ export default function AccountPage() {
     phone: '',
     address: ''
   });
+  const [expandedOrders, setExpandedOrders] = useState({});
 
   useEffect(() => {
     if (!user) {
@@ -52,6 +53,13 @@ export default function AccountPage() {
     });
     fetchOrders();
   }, [user, navigate]);
+
+  const toggleOrderExpanded = (orderId) => {
+    setExpandedOrders(prev => ({
+      ...prev,
+      [orderId]: !prev[orderId]
+    }));
+  };
 
   const fetchOrders = async () => {
     try {
