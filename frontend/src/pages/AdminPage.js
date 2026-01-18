@@ -522,6 +522,7 @@ export default function AdminPage() {
                   <tr className="border-b border-zinc-200">
                     <th className="text-left py-3 px-2">Фото</th>
                     <th className="text-left py-3 px-2">Название</th>
+                    <th className="text-left py-3 px-2">Производитель</th>
                     <th className="text-left py-3 px-2">Артикул</th>
                     <th className="text-left py-3 px-2">Категория</th>
                     <th className="text-right py-3 px-2">Цена</th>
