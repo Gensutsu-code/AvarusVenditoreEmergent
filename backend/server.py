@@ -502,6 +502,7 @@ async def get_cart(user=Depends(get_current_user)):
                 "product_id": item["product_id"],
                 "name": product["name"],
                 "article": product["article"],
+                "manufacturer": product.get("manufacturer"),
                 "price": product["price"],
                 "quantity": item["quantity"],
                 "image_url": product.get("image_url")
