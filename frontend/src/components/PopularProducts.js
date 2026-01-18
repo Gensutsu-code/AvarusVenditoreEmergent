@@ -112,7 +112,10 @@ export const PopularProducts = () => {
 
               {/* Info */}
               <div className="p-3">
-                <p className="text-[10px] font-mono text-zinc-400 mb-1">{product.article}</p>
+                {product.manufacturer && (
+                  <p className="text-xs font-bold text-orange-600 mb-0.5">{product.manufacturer}</p>
+                )}
+                <p className="text-[10px] font-mono font-semibold text-zinc-500 mb-1">Арт: {product.article}</p>
                 <h3 className="text-sm font-medium text-zinc-900 line-clamp-2 mb-2 min-h-[40px] group-hover:text-orange-500 transition-colors">
                   {product.name}
                 </h3>

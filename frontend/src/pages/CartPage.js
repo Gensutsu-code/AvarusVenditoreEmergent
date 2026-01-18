@@ -89,7 +89,10 @@ export default function CartPage() {
 
               {/* Info */}
               <div className="flex-1 min-w-0">
-                <p className="text-xs font-mono text-zinc-400">{item.article}</p>
+                {item.manufacturer && (
+                  <p className="text-sm font-bold text-orange-600">{item.manufacturer}</p>
+                )}
+                <p className="text-sm font-mono font-semibold text-zinc-600">Арт: {item.article}</p>
                 <Link 
                   to={`/product/${item.product_id}`}
                   className="font-semibold text-zinc-900 hover:text-orange-500 transition-colors line-clamp-1"

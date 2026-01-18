@@ -94,7 +94,10 @@ export const RelatedProducts = ({ productId, onSelectProduct }) => {
 
               {/* Info */}
               <div className="flex-1 min-w-0">
-                <p className="text-[9px] font-mono text-zinc-400">{product.article}</p>
+                {product.manufacturer && (
+                  <p className="text-[9px] font-bold text-orange-600">{product.manufacturer}</p>
+                )}
+                <p className="text-[9px] font-mono font-semibold text-zinc-500">Арт: {product.article}</p>
                 <h4 className="text-xs font-medium text-zinc-900 line-clamp-2 group-hover:text-orange-500 transition-colors">
                   {product.name}
                 </h4>

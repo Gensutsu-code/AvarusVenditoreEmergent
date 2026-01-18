@@ -130,7 +130,10 @@ export default function FavoritesPage() {
                       to={`/catalog?search=${encodeURIComponent(product.article)}`}
                       className="flex-1 min-w-0"
                     >
-                      <p className="text-xs font-mono text-zinc-400 mb-1">{product.article}</p>
+                      {product.manufacturer && (
+                        <p className="text-sm font-bold text-orange-600 mb-0.5">{product.manufacturer}</p>
+                      )}
+                      <p className="text-sm font-mono font-semibold text-zinc-600 mb-1">Арт: {product.article}</p>
                       <h3 className="font-semibold text-zinc-900 hover:text-orange-500 transition-colors line-clamp-1">
                         {product.name}
                       </h3>
