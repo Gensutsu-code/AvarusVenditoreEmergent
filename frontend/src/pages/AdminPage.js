@@ -1484,9 +1484,14 @@ export default function AdminPage() {
                       {/* Product info */}
                       <div className="flex-1 min-w-0">
                         <p className="font-medium text-zinc-900 line-clamp-1">{item.name}</p>
-                        {item.article && (
-                          <p className="text-xs font-mono text-zinc-400">Артикул: {item.article}</p>
-                        )}
+                        <div className="flex flex-wrap gap-x-4 gap-y-0.5 mt-1">
+                          {item.manufacturer && (
+                            <p className="text-sm font-bold text-orange-600">{item.manufacturer}</p>
+                          )}
+                          {item.article && (
+                            <p className="text-sm font-mono font-semibold text-zinc-600">Арт: {item.article}</p>
+                          )}
+                        </div>
                         <div className="flex items-center gap-4 mt-1 text-sm">
                           <span className="text-zinc-500">
                             {formatPrice(item.price)} ₽ × {item.quantity} шт.
