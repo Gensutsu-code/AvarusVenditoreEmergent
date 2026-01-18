@@ -100,6 +100,7 @@ class PromoBannerUpdate(BaseModel):
 class ProductCreate(BaseModel):
     name: str
     article: str
+    manufacturer: Optional[str] = None
     category_id: Optional[str] = None
     price: float
     description: Optional[str] = None
@@ -110,6 +111,7 @@ class ProductCreate(BaseModel):
 class ProductUpdate(BaseModel):
     name: Optional[str] = None
     article: Optional[str] = None
+    manufacturer: Optional[str] = None
     category_id: Optional[str] = None
     price: Optional[float] = None
     description: Optional[str] = None
@@ -121,6 +123,7 @@ class ProductResponse(BaseModel):
     id: str
     name: str
     article: str
+    manufacturer: Optional[str] = None
     category_id: Optional[str] = None
     price: float
     description: Optional[str] = None
