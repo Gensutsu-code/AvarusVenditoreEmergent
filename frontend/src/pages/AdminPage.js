@@ -204,6 +204,7 @@ export default function AdminPage() {
     setEditingProduct({
       name: '',
       article: '',
+      manufacturer: '',
       category_id: '',
       price: 0,
       stock: 0,
