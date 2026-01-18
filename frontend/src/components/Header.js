@@ -1,5 +1,5 @@
 import { Link } from 'react-router-dom';
-import { ShoppingCart, User, Search, LogOut, Settings, Heart } from 'lucide-react';
+import { ShoppingCart, User, Search, LogOut, Settings, Heart, Package } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { useCart } from '../context/CartContext';
 import { Button } from './ui/button';
@@ -37,6 +37,15 @@ export const Header = () => {
                     </Button>
                   </Link>
                 )}
+                <Link to="/orders" data-testid="orders-link">
+                  <Button variant="ghost" size="sm" className="hidden sm:flex items-center gap-1">
+                    <Package className="w-5 h-5" />
+                    <span className="text-sm">Заказы</span>
+                  </Button>
+                  <Button variant="ghost" size="sm" className="sm:hidden">
+                    <Package className="w-5 h-5" />
+                  </Button>
+                </Link>
                 <Link to="/catalog" data-testid="search-link">
                   <Button variant="ghost" size="sm">
                     <Search className="w-5 h-5" />
