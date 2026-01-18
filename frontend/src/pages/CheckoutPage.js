@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import axios from 'axios';
 import { ArrowLeft, CheckCircle, Banknote } from 'lucide-react';
@@ -21,8 +21,28 @@ export default function CheckoutPage() {
   const [form, setForm] = useState({
     full_name: '',
     address: '',
-    phone: user?.phone || ''
+    phone: ''
   });
+
+  useEffect(() => {
+    if (user) {
+      fetchLastShipping();
+    }
+  }, [user]);
+
+  const fetchLastShipping = async () => {
+    try {
+      const res = await axios.get(`${API}/user/last-shipping`);
+      const data = res.data;
+      setForm({
+        full_name: data.full_name || '',
+        address: data.address || '',
+        phone: data.phone || ''
+      });
+    } catch (err) {
+      console.error('Failed to fetch last shipping', err);
+    }
+  };
 
   const formatPrice = (price) => {
     return new Intl.NumberFormat('ru-RU').format(price);
