@@ -139,6 +139,7 @@ class CartItemResponse(BaseModel):
     product_id: str
     name: str
     article: str
+    manufacturer: Optional[str] = None
     price: float
     quantity: int
     image_url: Optional[str] = None
