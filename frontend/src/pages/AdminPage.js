@@ -373,7 +373,15 @@ export default function AdminPage() {
     try {
       await axios.put(`${API}/admin/orders/${orderId}/status?status=${status}`);
       toast.success('Статус обновлён');
-      fetchData();
+      
+      // Update local state without full page reload
+      setOrders(prevOrders => 
+        prevOrders.map(order => 
+          order.id === orderId ? { ...order, status } : order
+        )
+      );
+      
+      // Update viewing order if it's open
       if (viewingOrder?.id === orderId) {
         setViewingOrder({ ...viewingOrder, status });
       }
