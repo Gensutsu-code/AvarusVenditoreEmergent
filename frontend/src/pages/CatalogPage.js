@@ -393,9 +393,17 @@ export default function CatalogPage() {
 
                 {/* Details */}
                 <div className="space-y-4">
-                  <p className="text-sm font-mono text-zinc-400">
-                    Артикул: {selectedProduct.article}
-                  </p>
+                  {/* Manufacturer and Article */}
+                  <div className="space-y-1">
+                    {selectedProduct.manufacturer && (
+                      <p className="text-base font-bold text-orange-600">
+                        {selectedProduct.manufacturer}
+                      </p>
+                    )}
+                    <p className="text-base font-mono font-semibold text-zinc-700">
+                      Артикул: {selectedProduct.article}
+                    </p>
+                  </div>
 
                   {selectedProduct.description && (
                     <p className="text-zinc-600">
