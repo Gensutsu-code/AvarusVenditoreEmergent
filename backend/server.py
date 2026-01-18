@@ -1121,6 +1121,42 @@ async def get_extended_stats(
         "status_distribution": status_counts
     }
 
+# ==================== MIGRATION ====================
+
+@api_router.post("/admin/migrate-orders")
+async def migrate_orders(user=Depends(get_current_user)):
+    """Add manufacturer to existing order items"""
+    if user.get("role") != "admin":
+        raise HTTPException(status_code=403, detail="Admin access required")
+    
+    # Get all products
+    products = await db.products.find({}, {"_id": 0}).to_list(10000)
+    products_map = {p["id"]: p for p in products}
+    
+    # Get all orders
+    orders = await db.orders.find({}).to_list(10000)
+    
+    updated_count = 0
+    for order in orders:
+        items = order.get("items", [])
+        updated = False
+        
+        for item in items:
+            product = products_map.get(item.get("product_id"))
+            if product:
+                if "manufacturer" not in item or item.get("manufacturer") is None:
+                    item["manufacturer"] = product.get("manufacturer")
+                    updated = True
+        
+        if updated:
+            await db.orders.update_one(
+                {"_id": order["_id"]},
+                {"$set": {"items": items}}
+            )
+            updated_count += 1
+    
+    return {"message": f"Migrated {updated_count} orders"}
+
 # ==================== SEED DATA ====================
 
 @api_router.post("/seed")
