@@ -99,12 +99,12 @@ export const ChatWidget = () => {
       {/* Chat button */}
       <button
         onClick={() => setIsOpen(true)}
-        className="fixed bottom-6 right-6 bg-orange-500 hover:bg-orange-600 text-white p-4 rounded-full shadow-lg z-40 transition-transform hover:scale-105"
+        className="fixed bottom-6 left-6 bg-orange-500 hover:bg-orange-600 text-white p-5 rounded-full shadow-lg z-40 transition-transform hover:scale-105"
         data-testid="chat-widget-button"
       >
-        <MessageCircle className="w-6 h-6" />
+        <MessageCircle className="w-7 h-7" />
         {unreadCount > 0 && (
-          <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs w-5 h-5 flex items-center justify-center rounded-full font-bold">
+          <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs w-6 h-6 flex items-center justify-center rounded-full font-bold">
             {unreadCount}
           </span>
         )}
@@ -113,7 +113,7 @@ export const ChatWidget = () => {
       {/* Chat window */}
       {isOpen && (
         <div 
-          className="fixed bottom-6 right-6 w-80 sm:w-96 bg-white border border-zinc-200 shadow-xl z-50 flex flex-col"
+          className="fixed bottom-6 left-6 w-80 sm:w-96 bg-white border border-zinc-200 shadow-xl z-50 flex flex-col"
           style={{ height: '450px' }}
           data-testid="chat-widget"
         >
