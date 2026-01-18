@@ -573,6 +573,7 @@ async def create_order(data: OrderCreate, user=Depends(get_current_user)):
                 "product_id": cart_item["product_id"],
                 "name": product["name"],
                 "article": product["article"],
+                "manufacturer": product.get("manufacturer"),
                 "price": product["price"],
                 "quantity": cart_item["quantity"],
                 "image_url": product.get("image_url")
