@@ -1237,6 +1237,17 @@ export default function AdminPage() {
               </div>
 
               <div>
+                <Label className="text-xs font-bold uppercase text-zinc-500">Производитель</Label>
+                <Input
+                  value={editingProduct.manufacturer || ''}
+                  onChange={(e) => setEditingProduct({ ...editingProduct, manufacturer: e.target.value })}
+                  placeholder="Например: SACHS, BPW, MAN"
+                  className="mt-1"
+                  data-testid="product-manufacturer-input"
+                />
+              </div>
+
+              <div>
                 <Label className="text-xs font-bold uppercase text-zinc-500">Категория</Label>
                 <select
                   value={editingProduct.category_id || ''}
