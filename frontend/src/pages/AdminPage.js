@@ -1415,48 +1415,97 @@ export default function AdminPage() {
 
       {/* View Order Modal */}
       <Dialog open={!!viewingOrder} onOpenChange={() => setViewingOrder(null)}>
-        <DialogContent className="max-w-lg">
+        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>Заказ #{viewingOrder?.id.slice(0, 8)}</DialogTitle>
           </DialogHeader>
           
           {viewingOrder && (
             <div className="space-y-4 mt-4">
-              <div className="grid grid-cols-2 gap-4 text-sm">
+              {/* Order info */}
+              <div className="grid grid-cols-2 gap-4 text-sm bg-zinc-50 p-4 border border-zinc-200">
                 <div>
-                  <p className="text-zinc-500">Получатель:</p>
+                  <p className="text-zinc-500 text-xs uppercase">Получатель</p>
                   <p className="font-medium">{viewingOrder.full_name}</p>
                 </div>
                 <div>
-                  <p className="text-zinc-500">Телефон:</p>
+                  <p className="text-zinc-500 text-xs uppercase">Телефон</p>
                   <p className="font-medium">{viewingOrder.phone}</p>
                 </div>
                 <div className="col-span-2">
-                  <p className="text-zinc-500">Адрес:</p>
+                  <p className="text-zinc-500 text-xs uppercase">Адрес доставки</p>
                   <p className="font-medium">{viewingOrder.address}</p>
                 </div>
-              </div>
-
-              <div className="border-t border-zinc-200 pt-4">
-                <p className="text-xs font-bold uppercase text-zinc-500 mb-2">Товары:</p>
-                {viewingOrder.items.map((item, idx) => (
-                  <div key={idx} className="flex justify-between text-sm py-1">
-                    <span>{item.name} × {item.quantity}</span>
-                    <span className="font-mono">{formatPrice(item.price * item.quantity)} ₽</span>
-                  </div>
-                ))}
-                <div className="flex justify-between font-semibold pt-2 border-t border-zinc-100 mt-2">
-                  <span>Итого:</span>
-                  <span className="font-mono">{formatPrice(viewingOrder.total)} ₽</span>
+                <div>
+                  <p className="text-zinc-500 text-xs uppercase">Дата заказа</p>
+                  <p className="font-medium">{formatDate(viewingOrder.created_at)}</p>
+                </div>
+                <div>
+                  <p className="text-zinc-500 text-xs uppercase">Способ оплаты</p>
+                  <p className="font-medium">Наличными при получении</p>
                 </div>
               </div>
 
-              <div className="border-t border-zinc-200 pt-4">
+              {/* Order items with full details */}
+              <div className="border border-zinc-200">
+                <div className="bg-zinc-50 px-4 py-2 border-b border-zinc-200">
+                  <p className="text-xs font-bold uppercase text-zinc-500">Товары в заказе ({viewingOrder.items.length})</p>
+                </div>
+                <div className="divide-y divide-zinc-100">
+                  {viewingOrder.items.map((item, idx) => (
+                    <div key={idx} className="flex gap-4 p-4">
+                      {/* Product image */}
+                      <div className="w-16 h-16 flex-shrink-0 bg-zinc-100 overflow-hidden">
+                        {item.image_url ? (
+                          <img 
+                            src={item.image_url.startsWith('http') ? item.image_url : `${BACKEND_URL}${item.image_url}`} 
+                            alt={item.name}
+                            className="w-full h-full object-cover"
+                          />
+                        ) : (
+                          <div className="w-full h-full flex items-center justify-center text-zinc-300">
+                            <Package className="w-6 h-6" />
+                          </div>
+                        )}
+                      </div>
+                      
+                      {/* Product info */}
+                      <div className="flex-1 min-w-0">
+                        <p className="font-medium text-zinc-900 line-clamp-1">{item.name}</p>
+                        {item.article && (
+                          <p className="text-xs font-mono text-zinc-400">Артикул: {item.article}</p>
+                        )}
+                        <div className="flex items-center gap-4 mt-1 text-sm">
+                          <span className="text-zinc-500">
+                            {formatPrice(item.price)} ₽ × {item.quantity} шт.
+                          </span>
+                        </div>
+                      </div>
+                      
+                      {/* Item total */}
+                      <div className="text-right">
+                        <p className="font-mono font-semibold text-zinc-900">
+                          {formatPrice(item.price * item.quantity)} ₽
+                        </p>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+                
+                {/* Order total */}
+                <div className="bg-zinc-50 px-4 py-3 border-t border-zinc-200 flex justify-between items-center">
+                  <span className="font-semibold">Итого:</span>
+                  <span className="font-mono text-xl font-bold text-zinc-900">{formatPrice(viewingOrder.total)} ₽</span>
+                </div>
+              </div>
+
+              {/* Status update */}
+              <div className="border border-zinc-200 p-4">
                 <Label className="text-xs font-bold uppercase text-zinc-500">Статус заказа</Label>
                 <select
                   value={viewingOrder.status}
                   onChange={(e) => handleUpdateOrderStatus(viewingOrder.id, e.target.value)}
-                  className="w-full mt-1 h-10 px-3 border border-zinc-200 bg-zinc-50"
+                  className={`w-full mt-2 h-10 px-3 border border-zinc-200 font-semibold ${STATUS_OPTIONS.find(s => s.value === viewingOrder.status)?.color || 'bg-zinc-50'}`}
                 >
                   {STATUS_OPTIONS.map(s => (
                     <option key={s.value} value={s.value}>{s.label}</option>
