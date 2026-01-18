@@ -66,6 +66,12 @@ class UserResponse(BaseModel):
     name: str
     phone: Optional[str] = None
     role: str = "user"
+    address: Optional[str] = None
+
+class UserProfileUpdate(BaseModel):
+    name: Optional[str] = None
+    phone: Optional[str] = None
+    address: Optional[str] = None
 
 # Category models
 class CategoryCreate(BaseModel):
