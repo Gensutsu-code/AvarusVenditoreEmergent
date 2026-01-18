@@ -545,7 +545,8 @@ export default function AdminPage() {
                         </div>
                       </td>
                       <td className="py-2 px-2 font-medium">{product.name}</td>
-                      <td className="py-2 px-2 font-mono text-zinc-500">{product.article}</td>
+                      <td className="py-2 px-2 font-semibold text-orange-600">{product.manufacturer || '—'}</td>
+                      <td className="py-2 px-2 font-mono font-semibold text-zinc-600">{product.article}</td>
                       <td className="py-2 px-2 text-zinc-500">{getCategoryName(product.category_id)}</td>
                       <td className="py-2 px-2 text-right font-mono">{formatPrice(product.price)} ₽</td>
                       <td className="py-2 px-2 text-right">{product.stock} шт.</td>
