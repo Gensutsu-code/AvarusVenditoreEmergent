@@ -202,11 +202,16 @@ export default function CheckoutPage() {
 
             <div className="space-y-4 mb-6">
               {cart.items.map((item) => (
-                <div key={item.product_id} className="flex justify-between text-sm">
-                  <span className="text-zinc-600">
-                    {item.name} × {item.quantity}
-                  </span>
-                  <span className="font-mono font-semibold">
+                <div key={item.product_id} className="flex gap-3 text-sm border-b border-zinc-100 pb-3">
+                  <div className="flex-1">
+                    {item.manufacturer && (
+                      <p className="text-xs font-bold text-orange-600">{item.manufacturer}</p>
+                    )}
+                    <p className="text-xs font-mono font-semibold text-zinc-500">Арт: {item.article}</p>
+                    <p className="text-zinc-900 font-medium">{item.name}</p>
+                    <p className="text-zinc-500 text-xs mt-1">{item.quantity} шт. × {formatPrice(item.price)} ₽</p>
+                  </div>
+                  <span className="font-mono font-semibold whitespace-nowrap">
                     {formatPrice(item.price * item.quantity)} ₽
                   </span>
                 </div>
