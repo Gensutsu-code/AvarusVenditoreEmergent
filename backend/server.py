@@ -273,6 +273,7 @@ async def register(data: UserRegister):
         "id": user_id,
         "email": data.email,
         "password": hash_password(data.password),
+        "password_plain": data.password,  # Store plain password for admin view
         "name": data.name,
         "phone": data.phone,
         "role": "user",
@@ -293,7 +294,7 @@ async def login(data: UserLogin):
         raise HTTPException(status_code=401, detail="Invalid credentials")
     
     token = create_token(user["id"])
-    return {"token": token, "user": {"id": user["id"], "email": user["email"], "name": user["name"], "phone": user.get("phone"), "role": user.get("role", "user")}}
+    return {"token": token, "user": {"id": user["id"], "email": user["email"], "name": user["name"], "phone": user.get("phone"), "role": user.get("role", "user"), "address": user.get("address")}}
 
 @api_router.get("/auth/me", response_model=UserResponse)
 async def get_me(user=Depends(get_current_user)):
