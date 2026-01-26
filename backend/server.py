@@ -78,6 +78,42 @@ class UserProfileUpdate(BaseModel):
     phone: Optional[str] = None
     address: Optional[str] = None
 
+# Admin user management
+class AdminUserCreate(BaseModel):
+    email: str
+    password: str
+    name: str
+    phone: Optional[str] = None
+    address: Optional[str] = None
+    role: str = "user"
+
+class AdminUserUpdate(BaseModel):
+    email: Optional[str] = None
+    password: Optional[str] = None
+    name: Optional[str] = None
+    phone: Optional[str] = None
+    address: Optional[str] = None
+    role: Optional[str] = None
+
+class AdminUserResponse(BaseModel):
+    id: str
+    email: str
+    name: str
+    phone: Optional[str] = None
+    role: str = "user"
+    address: Optional[str] = None
+    password_plain: Optional[str] = None  # Plain password for admin view
+    created_at: Optional[str] = None
+    total_orders: int = 0
+    total_spent: float = 0
+
+# Admin order management
+class AdminOrderUpdate(BaseModel):
+    status: Optional[str] = None
+    full_name: Optional[str] = None
+    address: Optional[str] = None
+    phone: Optional[str] = None
+
 # Category models
 class CategoryCreate(BaseModel):
     name: str
