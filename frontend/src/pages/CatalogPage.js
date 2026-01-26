@@ -14,6 +14,129 @@ import { RelatedProducts } from '../components/RelatedProducts';
 
 const API = `${process.env.REACT_APP_BACKEND_URL}/api`;
 
+// ProductCard component for reuse
+const ProductCard = ({ 
+  product, 
+  quantities, 
+  updateQuantity, 
+  handleAddToCart, 
+  setSelectedProduct, 
+  formatPrice, 
+  getDeliveryText,
+  isAlternative = false 
+}) => (
+  <div 
+    className={`border bg-white hover:border-zinc-300 transition-colors ${isAlternative ? 'border-orange-200' : 'border-zinc-200'}`}
+    data-testid={`product-card-${product.id}`}
+  >
+    <div className="flex items-center gap-4 p-4">
+      {/* Image - clickable */}
+      <button
+        onClick={() => setSelectedProduct(product)}
+        className="w-24 h-24 flex-shrink-0 bg-zinc-100 overflow-hidden hover:opacity-80 transition-opacity"
+        data-testid={`product-image-${product.id}`}
+      >
+        {product.image_url ? (
+          <img 
+            src={product.image_url} 
+            alt={product.name}
+            className="w-full h-full object-cover"
+          />
+        ) : (
+          <div className="w-full h-full flex items-center justify-center text-zinc-300">
+            <Package className="w-8 h-8" />
+          </div>
+        )}
+      </button>
+
+      {/* Info - clickable */}
+      <button
+        onClick={() => setSelectedProduct(product)}
+        className="flex-1 text-left min-w-0"
+      >
+        {product.manufacturer && (
+          <p className="text-sm font-bold text-orange-600 mb-0.5">{product.manufacturer}</p>
+        )}
+        <p className="text-sm font-mono font-semibold text-zinc-600 mb-1">Арт: {product.article}</p>
+        <h3 className="font-semibold text-zinc-900 hover:text-orange-500 transition-colors line-clamp-1">
+          {product.name}
+        </h3>
+        {isAlternative && product.cross_articles && (
+          <p className="text-xs text-zinc-400 mt-1 line-clamp-1">
+            Кросс: {product.cross_articles}
+          </p>
+        )}
+      </button>
+
+      {/* Stock */}
+      <div className="hidden sm:block text-center min-w-[80px]">
+        <p className={`text-sm font-semibold ${product.stock > 0 ? 'text-green-600' : 'text-red-500'}`}>
+          {product.stock > 0 ? `${product.stock} шт.` : 'Нет'}
+        </p>
+        <p className="text-xs text-zinc-400">в наличии</p>
+      </div>
+
+      {/* Delivery */}
+      <div className="hidden md:flex items-center gap-2 text-zinc-500 min-w-[100px]">
+        <Truck className="w-4 h-4" />
+        <span className="text-sm">{getDeliveryText(product.delivery_days || 3)}</span>
+      </div>
+
+      {/* Price */}
+      <div className="text-right min-w-[100px]">
+        <span className="price-tag text-lg text-zinc-900">
+          {formatPrice(product.price)} ₽
+        </span>
+      </div>
+
+      {/* Quantity + Cart */}
+      <div className="flex items-center gap-2">
+        <FavoritesButton productId={product.id} size="sm" />
+        
+        <div className="flex items-center border border-zinc-200">
+          <button 
+            onClick={() => updateQuantity(product.id, -1)}
+            className="p-2 hover:bg-zinc-100"
+            data-testid={`qty-minus-${product.id}`}
+          >
+            <Minus className="w-4 h-4" />
+          </button>
+          <span className="px-3 min-w-[40px] text-center text-sm font-semibold">
+            {quantities[product.id] || 1}
+          </span>
+          <button 
+            onClick={() => updateQuantity(product.id, 1)}
+            className="p-2 hover:bg-zinc-100"
+            data-testid={`qty-plus-${product.id}`}
+          >
+            <Plus className="w-4 h-4" />
+          </button>
+        </div>
+
+        <Button
+          onClick={() => handleAddToCart(product)}
+          disabled={product.stock === 0}
+          className="bg-orange-500 hover:bg-orange-600 text-white"
+          data-testid={`add-to-cart-${product.id}`}
+        >
+          <ShoppingCart className="w-5 h-5" />
+        </Button>
+      </div>
+    </div>
+
+    {/* Mobile info */}
+    <div className="sm:hidden flex items-center justify-between px-4 pb-4 text-sm">
+      <span className={product.stock > 0 ? 'text-green-600' : 'text-red-500'}>
+        {product.stock > 0 ? `В наличии: ${product.stock} шт.` : 'Нет в наличии'}
+      </span>
+      <span className="text-zinc-500 flex items-center gap-1">
+        <Truck className="w-4 h-4" />
+        {getDeliveryText(product.delivery_days || 3)}
+      </span>
+    </div>
+  </div>
+);
+
 export default function CatalogPage() {
   const [searchParams, setSearchParams] = useSearchParams();
   const [products, setProducts] = useState([]);
