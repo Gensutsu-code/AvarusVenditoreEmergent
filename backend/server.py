@@ -1420,6 +1420,8 @@ async def get_or_create_bonus_settings():
             "enabled": True
         }
         await db.bonus_settings.insert_one(settings)
+        # Re-fetch without _id
+        settings = await db.bonus_settings.find_one({"type": "global"}, {"_id": 0})
     return settings
 
 # Get user's bonus progress
@@ -1434,6 +1436,8 @@ async def get_user_bonus_progress(user_id: str):
             "created_at": datetime.now(timezone.utc).isoformat()
         }
         await db.bonus_progress.insert_one(progress)
+        # Re-fetch without _id
+        progress = await db.bonus_progress.find_one({"user_id": user_id}, {"_id": 0})
     return progress
 
 # Update bonus progress after order
