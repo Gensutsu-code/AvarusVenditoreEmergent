@@ -1607,6 +1607,231 @@ export default function AdminPage() {
               </div>
             </div>
           </TabsContent>
+
+          {/* Bonus Program Tab */}
+          <TabsContent value="bonus" className="p-6">
+            <div className="space-y-6">
+              {/* Settings Section */}
+              <div className="border border-zinc-200 bg-white">
+                <div className="bg-gradient-to-r from-orange-500 to-orange-600 px-4 py-3 text-white">
+                  <h2 className="font-semibold flex items-center gap-2">
+                    <Gift className="w-5 h-5" />
+                    Настройки бонусной программы
+                  </h2>
+                </div>
+                <div className="p-4 grid grid-cols-1 md:grid-cols-4 gap-4">
+                  <div>
+                    <Label className="text-xs font-bold uppercase text-zinc-500">Цель накопления (₽)</Label>
+                    <Input
+                      type="number"
+                      value={bonusSettings.goal_amount}
+                      onChange={(e) => setBonusSettings({...bonusSettings, goal_amount: parseFloat(e.target.value) || 0})}
+                      className="mt-1"
+                    />
+                  </div>
+                  <div>
+                    <Label className="text-xs font-bold uppercase text-zinc-500">% от заказа</Label>
+                    <Input
+                      type="number"
+                      value={bonusSettings.contribution_percent}
+                      onChange={(e) => setBonusSettings({...bonusSettings, contribution_percent: parseFloat(e.target.value) || 0})}
+                      className="mt-1"
+                    />
+                  </div>
+                  <div>
+                    <Label className="text-xs font-bold uppercase text-zinc-500">Размер бонуса (₽)</Label>
+                    <Input
+                      type="number"
+                      value={bonusSettings.reward_value}
+                      onChange={(e) => setBonusSettings({...bonusSettings, reward_value: parseFloat(e.target.value) || 0})}
+                      className="mt-1"
+                    />
+                  </div>
+                  <div className="flex items-end gap-2">
+                    <div className="flex-1">
+                      <Label className="text-xs font-bold uppercase text-zinc-500">Статус</Label>
+                      <div className="mt-1 flex items-center gap-2">
+                        <Switch
+                          checked={bonusSettings.enabled}
+                          onCheckedChange={(checked) => setBonusSettings({...bonusSettings, enabled: checked})}
+                        />
+                        <span className={`text-sm ${bonusSettings.enabled ? 'text-green-600' : 'text-zinc-400'}`}>
+                          {bonusSettings.enabled ? 'Активна' : 'Отключена'}
+                        </span>
+                      </div>
+                    </div>
+                    <Button
+                      onClick={async () => {
+                        try {
+                          await axios.put(`${API}/admin/bonus/settings`, bonusSettings);
+                          toast.success('Настройки сохранены');
+                        } catch (err) {
+                          toast.error('Ошибка сохранения');
+                        }
+                      }}
+                      className="bg-orange-500 hover:bg-orange-600"
+                    >
+                      <Save className="w-4 h-4 mr-2" />
+                      Сохранить
+                    </Button>
+                  </div>
+                </div>
+              </div>
+
+              {/* Users Progress Section */}
+              <div className="border border-zinc-200 bg-white">
+                <div className="bg-zinc-50 px-4 py-3 border-b border-zinc-200 flex items-center justify-between">
+                  <h3 className="font-semibold flex items-center gap-2">
+                    <Users className="w-5 h-5 text-zinc-500" />
+                    Прогресс пользователей ({bonusUsers.length})
+                  </h3>
+                </div>
+                <div className="overflow-x-auto">
+                  <table className="w-full text-sm">
+                    <thead>
+                      <tr className="border-b border-zinc-200 bg-zinc-50">
+                        <th className="text-left py-3 px-4">Пользователь</th>
+                        <th className="text-left py-3 px-4">Email</th>
+                        <th className="text-center py-3 px-4">Прогресс</th>
+                        <th className="text-right py-3 px-4">Накоплено</th>
+                        <th className="text-right py-3 px-4">Всего заработано</th>
+                        <th className="text-right py-3 px-4">Бонусов</th>
+                        <th className="text-right py-3 px-4">Действия</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {bonusUsers.map((bu) => (
+                        <tr key={bu.id} className="border-b border-zinc-100 hover:bg-zinc-50">
+                          <td className="py-3 px-4 font-medium">{bu.name}</td>
+                          <td className="py-3 px-4 text-zinc-500">{bu.email}</td>
+                          <td className="py-3 px-4">
+                            <div className="flex items-center gap-2">
+                              <div className="flex-1 h-2 bg-zinc-200 rounded-full overflow-hidden">
+                                <div 
+                                  className="h-full bg-gradient-to-r from-orange-400 to-orange-600 rounded-full transition-all"
+                                  style={{width: `${bu.percentage}%`}}
+                                />
+                              </div>
+                              <span className="text-xs font-mono text-zinc-500 w-12 text-right">{bu.percentage.toFixed(0)}%</span>
+                            </div>
+                          </td>
+                          <td className="py-3 px-4 text-right font-mono">
+                            <span className={bu.can_claim ? 'text-green-600 font-bold' : ''}>
+                              {bu.current_amount.toFixed(0)} ₽
+                            </span>
+                          </td>
+                          <td className="py-3 px-4 text-right font-mono text-zinc-500">{bu.total_earned.toFixed(0)} ₽</td>
+                          <td className="py-3 px-4 text-right">
+                            <span className="bg-orange-100 text-orange-600 px-2 py-1 rounded text-xs font-bold">
+                              {bu.rewards_claimed}
+                            </span>
+                          </td>
+                          <td className="py-3 px-4 text-right">
+                            <div className="flex justify-end gap-1">
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={async () => {
+                                  const amount = prompt('Сколько баллов добавить?');
+                                  if (amount && parseFloat(amount) > 0) {
+                                    try {
+                                      await axios.post(`${API}/admin/bonus/add/${bu.id}?amount=${amount}`);
+                                      toast.success('Баллы добавлены');
+                                      fetchData();
+                                    } catch (err) {
+                                      toast.error('Ошибка');
+                                    }
+                                  }
+                                }}
+                                title="Добавить баллы"
+                              >
+                                <Plus className="w-4 h-4" />
+                              </Button>
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={async () => {
+                                  if (window.confirm(`Выдать бонус ${bu.name}?`)) {
+                                    try {
+                                      const res = await axios.post(`${API}/admin/bonus/issue/${bu.id}`);
+                                      toast.success(`Бонус выдан: ${res.data.promo_code}`);
+                                      fetchData();
+                                    } catch (err) {
+                                      toast.error('Ошибка выдачи бонуса');
+                                    }
+                                  }
+                                }}
+                                className="text-orange-500 hover:text-orange-600"
+                                title="Выдать бонус"
+                              >
+                                <Gift className="w-4 h-4" />
+                              </Button>
+                            </div>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+
+              {/* Bonus History Section */}
+              <div className="border border-zinc-200 bg-white">
+                <div className="bg-zinc-50 px-4 py-3 border-b border-zinc-200">
+                  <h3 className="font-semibold flex items-center gap-2">
+                    <Award className="w-5 h-5 text-zinc-500" />
+                    История выдачи бонусов ({bonusHistory.length})
+                  </h3>
+                </div>
+                <div className="overflow-x-auto">
+                  {bonusHistory.length === 0 ? (
+                    <p className="text-center text-zinc-400 py-8">История пуста</p>
+                  ) : (
+                    <table className="w-full text-sm">
+                      <thead>
+                        <tr className="border-b border-zinc-200 bg-zinc-50">
+                          <th className="text-left py-3 px-4">Дата</th>
+                          <th className="text-left py-3 px-4">Пользователь</th>
+                          <th className="text-left py-3 px-4">Тип</th>
+                          <th className="text-left py-3 px-4">Промокод</th>
+                          <th className="text-right py-3 px-4">Сумма</th>
+                          <th className="text-left py-3 px-4">Статус</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {bonusHistory.map((item) => (
+                          <tr key={item.id} className="border-b border-zinc-100 hover:bg-zinc-50">
+                            <td className="py-3 px-4 text-zinc-500 text-xs">
+                              {formatDate(item.created_at)}
+                            </td>
+                            <td className="py-3 px-4 font-medium">{item.user_name}</td>
+                            <td className="py-3 px-4">
+                              <span className={`text-xs px-2 py-1 rounded ${
+                                item.reward_type === 'gift' ? 'bg-purple-100 text-purple-600' : 'bg-green-100 text-green-600'
+                              }`}>
+                                {item.reward_type === 'gift' ? '🎁 Подарок' : '🏆 Накопление'}
+                              </span>
+                            </td>
+                            <td className="py-3 px-4 font-mono text-xs">{item.promo_code}</td>
+                            <td className="py-3 px-4 text-right font-mono font-bold text-green-600">
+                              +{item.reward_value} ₽
+                            </td>
+                            <td className="py-3 px-4">
+                              <span className={`text-xs px-2 py-1 rounded ${
+                                item.status === 'active' ? 'bg-green-100 text-green-600' : 'bg-zinc-100 text-zinc-500'
+                              }`}>
+                                {item.status === 'active' ? 'Активен' : 'Использован'}
+                              </span>
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  )}
+                </div>
+              </div>
+            </div>
+          </TabsContent>
         </Tabs>
       </div>
 
