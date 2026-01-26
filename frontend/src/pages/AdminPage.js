@@ -319,14 +319,17 @@ export default function AdminPage() {
 
     try {
       if (isNewCategory) {
-        await axios.post(`${API}/categories`, editingCategory);
+        const res = await axios.post(`${API}/categories`, editingCategory);
+        // Real-time update: add to local state
+        setCategories(prev => [...prev, res.data]);
         toast.success('Категория создана');
       } else {
-        await axios.put(`${API}/categories/${editingCategory.id}`, editingCategory);
+        const res = await axios.put(`${API}/categories/${editingCategory.id}`, editingCategory);
+        // Real-time update: update in local state
+        setCategories(prev => prev.map(c => c.id === editingCategory.id ? res.data : c));
         toast.success('Категория обновлена');
       }
       setEditingCategory(null);
-      fetchData();
     } catch (err) {
       toast.error('Ошибка сохранения');
     }
@@ -337,8 +340,11 @@ export default function AdminPage() {
     
     try {
       await axios.delete(`${API}/categories/${categoryId}`);
+      // Real-time update: remove from local state
+      setCategories(prev => prev.filter(c => c.id !== categoryId));
+      // Also update products to remove category reference
+      setProducts(prev => prev.map(p => p.category_id === categoryId ? {...p, category_id: null} : p));
       toast.success('Категория удалена');
-      fetchData();
     } catch (err) {
       toast.error('Ошибка удаления');
     }
