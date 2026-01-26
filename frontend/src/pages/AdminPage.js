@@ -116,14 +116,17 @@ export default function AdminPage() {
 
     try {
       if (isNewProduct) {
-        await axios.post(`${API}/products`, editingProduct);
+        const res = await axios.post(`${API}/products`, editingProduct);
+        // Real-time update: add to local state
+        setProducts(prev => [...prev, res.data]);
         toast.success('Товар создан');
       } else {
-        await axios.put(`${API}/products/${editingProduct.id}`, editingProduct);
+        const res = await axios.put(`${API}/products/${editingProduct.id}`, editingProduct);
+        // Real-time update: update in local state
+        setProducts(prev => prev.map(p => p.id === editingProduct.id ? res.data : p));
         toast.success('Товар обновлён');
       }
       setEditingProduct(null);
-      fetchData();
     } catch (err) {
       toast.error('Ошибка сохранения');
     }
@@ -134,8 +137,9 @@ export default function AdminPage() {
     
     try {
       await axios.delete(`${API}/products/${productId}`);
+      // Real-time update: remove from local state
+      setProducts(prev => prev.filter(p => p.id !== productId));
       toast.success('Товар удалён');
-      fetchData();
     } catch (err) {
       toast.error('Ошибка удаления');
     }
