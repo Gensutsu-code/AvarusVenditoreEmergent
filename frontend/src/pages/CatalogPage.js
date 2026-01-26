@@ -147,7 +147,6 @@ const ProductModalContent = ({
   getDeliveryText 
 }) => {
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
-  const [setSelectedProduct] = useState(null);
   
   // Combine main image with additional images
   const allImages = [];
