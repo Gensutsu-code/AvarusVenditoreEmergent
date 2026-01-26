@@ -1673,6 +1673,199 @@ export default function AdminPage() {
                   ))}
                 </select>
               </div>
+
+              {/* Delete order button */}
+              <div className="flex justify-end pt-2">
+                <Button 
+                  variant="outline" 
+                  onClick={() => handleDeleteOrder(viewingOrder.id)}
+                  className="text-red-500 border-red-200 hover:bg-red-50"
+                >
+                  <Trash2 className="w-4 h-4 mr-2" />
+                  Удалить заказ
+                </Button>
+              </div>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
+
+      {/* Edit User Modal */}
+      <Dialog open={!!editingUser} onOpenChange={() => setEditingUser(null)}>
+        <DialogContent className="max-w-lg" data-testid="user-edit-modal">
+          <DialogHeader>
+            <DialogTitle>{isNewUser ? 'Добавить пользователя' : 'Редактировать пользователя'}</DialogTitle>
+          </DialogHeader>
+          
+          {editingUser && (
+            <div className="space-y-4 mt-4">
+              <div>
+                <Label className="text-xs font-bold uppercase text-zinc-500">Имя *</Label>
+                <Input
+                  value={editingUser.name}
+                  onChange={(e) => setEditingUser({ ...editingUser, name: e.target.value })}
+                  className="mt-1"
+                  data-testid="user-name-input"
+                />
+              </div>
+              
+              <div>
+                <Label className="text-xs font-bold uppercase text-zinc-500">Email *</Label>
+                <Input
+                  type="email"
+                  value={editingUser.email}
+                  onChange={(e) => setEditingUser({ ...editingUser, email: e.target.value })}
+                  className="mt-1"
+                  data-testid="user-email-input"
+                />
+              </div>
+
+              <div>
+                <Label className="text-xs font-bold uppercase text-zinc-500">
+                  Пароль {isNewUser ? '*' : '(оставьте пустым, чтобы не менять)'}
+                </Label>
+                <Input
+                  type="text"
+                  value={editingUser.password || ''}
+                  onChange={(e) => setEditingUser({ ...editingUser, password: e.target.value })}
+                  placeholder={isNewUser ? '' : 'Новый пароль...'}
+                  className="mt-1 font-mono"
+                  data-testid="user-password-input"
+                />
+                {!isNewUser && editingUser.password_plain && (
+                  <p className="text-xs text-zinc-500 mt-1">
+                    Текущий пароль: <span className="font-mono font-semibold">{editingUser.password_plain}</span>
+                  </p>
+                )}
+              </div>
+
+              <div>
+                <Label className="text-xs font-bold uppercase text-zinc-500">Телефон</Label>
+                <Input
+                  value={editingUser.phone || ''}
+                  onChange={(e) => setEditingUser({ ...editingUser, phone: e.target.value })}
+                  placeholder="+7 (999) 123-45-67"
+                  className="mt-1"
+                  data-testid="user-phone-input"
+                />
+              </div>
+
+              <div>
+                <Label className="text-xs font-bold uppercase text-zinc-500">Адрес</Label>
+                <Textarea
+                  value={editingUser.address || ''}
+                  onChange={(e) => setEditingUser({ ...editingUser, address: e.target.value })}
+                  placeholder="Адрес доставки"
+                  className="mt-1"
+                  rows={2}
+                  data-testid="user-address-input"
+                />
+              </div>
+
+              <div>
+                <Label className="text-xs font-bold uppercase text-zinc-500">Роль</Label>
+                <select
+                  value={editingUser.role || 'user'}
+                  onChange={(e) => setEditingUser({ ...editingUser, role: e.target.value })}
+                  className="mt-1 w-full h-10 px-3 border border-zinc-200 bg-white"
+                  data-testid="user-role-select"
+                >
+                  <option value="user">Пользователь</option>
+                  <option value="admin">Администратор</option>
+                </select>
+              </div>
+
+              <div className="flex justify-end gap-2 pt-4">
+                <Button variant="outline" onClick={() => setEditingUser(null)}>
+                  Отмена
+                </Button>
+                <Button 
+                  onClick={handleSaveUser} 
+                  className="bg-orange-500 hover:bg-orange-600" 
+                  data-testid="save-user-btn"
+                  disabled={!editingUser.name || !editingUser.email || (isNewUser && !editingUser.password)}
+                >
+                  <Save className="w-4 h-4 mr-2" />
+                  Сохранить
+                </Button>
+              </div>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
+
+      {/* Edit Order Modal */}
+      <Dialog open={!!editingOrder} onOpenChange={() => setEditingOrder(null)}>
+        <DialogContent className="max-w-lg" data-testid="order-edit-modal">
+          <DialogHeader>
+            <DialogTitle>Редактировать заказ #{editingOrder?.id.slice(0, 8)}</DialogTitle>
+          </DialogHeader>
+          
+          {editingOrder && (
+            <div className="space-y-4 mt-4">
+              <div>
+                <Label className="text-xs font-bold uppercase text-zinc-500">Статус</Label>
+                <select
+                  value={editingOrder.status}
+                  onChange={(e) => setEditingOrder({ ...editingOrder, status: e.target.value })}
+                  className={`mt-1 w-full h-10 px-3 border border-zinc-200 font-semibold ${STATUS_OPTIONS.find(s => s.value === editingOrder.status)?.color || 'bg-zinc-50'}`}
+                  data-testid="order-status-select"
+                >
+                  {STATUS_OPTIONS.map(s => (
+                    <option key={s.value} value={s.value}>{s.label}</option>
+                  ))}
+                </select>
+              </div>
+
+              <div>
+                <Label className="text-xs font-bold uppercase text-zinc-500">Получатель</Label>
+                <Input
+                  value={editingOrder.full_name}
+                  onChange={(e) => setEditingOrder({ ...editingOrder, full_name: e.target.value })}
+                  className="mt-1"
+                  data-testid="order-fullname-input"
+                />
+              </div>
+
+              <div>
+                <Label className="text-xs font-bold uppercase text-zinc-500">Телефон</Label>
+                <Input
+                  value={editingOrder.phone}
+                  onChange={(e) => setEditingOrder({ ...editingOrder, phone: e.target.value })}
+                  className="mt-1"
+                  data-testid="order-phone-input"
+                />
+              </div>
+
+              <div>
+                <Label className="text-xs font-bold uppercase text-zinc-500">Адрес доставки</Label>
+                <Textarea
+                  value={editingOrder.address}
+                  onChange={(e) => setEditingOrder({ ...editingOrder, address: e.target.value })}
+                  className="mt-1"
+                  rows={2}
+                  data-testid="order-address-input"
+                />
+              </div>
+
+              <div className="bg-zinc-50 p-3 border border-zinc-200">
+                <p className="text-sm text-zinc-500">Сумма заказа:</p>
+                <p className="text-xl font-bold font-mono">{formatPrice(editingOrder.total)} ₽</p>
+              </div>
+
+              <div className="flex justify-end gap-2 pt-4">
+                <Button variant="outline" onClick={() => setEditingOrder(null)}>
+                  Отмена
+                </Button>
+                <Button 
+                  onClick={handleSaveOrder} 
+                  className="bg-orange-500 hover:bg-orange-600" 
+                  data-testid="save-order-btn"
+                >
+                  <Save className="w-4 h-4 mr-2" />
+                  Сохранить
+                </Button>
+              </div>
             </div>
           )}
         </DialogContent>
