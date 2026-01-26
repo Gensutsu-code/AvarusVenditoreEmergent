@@ -469,60 +469,6 @@ export default function CatalogPage() {
               getDeliveryText={getDeliveryText}
             />
           )}
-                    <span className="price-tag text-2xl text-zinc-900">
-                      {formatPrice(selectedProduct.price)} ₽
-                    </span>
-                    <FavoritesButton productId={selectedProduct.id} />
-                  </div>
-
-                  {/* Quantity + Add to cart */}
-                  <div className="flex items-center gap-3">
-                    <div className="flex items-center border border-zinc-200">
-                      <button 
-                        onClick={() => updateQuantity(selectedProduct.id, -1)}
-                        className="p-3 hover:bg-zinc-100"
-                      >
-                        <Minus className="w-4 h-4" />
-                      </button>
-                      <span className="px-4 min-w-[50px] text-center font-semibold">
-                        {quantities[selectedProduct.id] || 1}
-                      </span>
-                      <button 
-                        onClick={() => updateQuantity(selectedProduct.id, 1)}
-                        className="p-3 hover:bg-zinc-100"
-                      >
-                        <Plus className="w-4 h-4" />
-                      </button>
-                    </div>
-
-                    <Button
-                      onClick={() => {
-                        handleAddToCart(selectedProduct);
-                        setSelectedProduct(null);
-                      }}
-                      disabled={selectedProduct.stock === 0}
-                      className="flex-1 bg-orange-500 hover:bg-orange-600 text-white font-bold uppercase h-12"
-                      data-testid="modal-add-to-cart"
-                    >
-                      <ShoppingCart className="w-5 h-5 mr-2" />
-                      В корзину
-                    </Button>
-                  </div>
-
-                  {/* Related Products */}
-                  <RelatedProducts 
-                    productId={selectedProduct.id} 
-                    onSelectProduct={(product) => {
-                      setSelectedProduct(product);
-                      if (!quantities[product.id]) {
-                        setQuantities(prev => ({ ...prev, [product.id]: 1 }));
-                      }
-                    }}
-                  />
-                </div>
-              </div>
-            </>
-          )}
         </DialogContent>
       </Dialog>
     </div>
