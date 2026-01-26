@@ -468,13 +468,51 @@ async def get_products(search: Optional[str] = None, category_id: Optional[str] 
     if search:
         query["$or"] = [
             {"name": {"$regex": search, "$options": "i"}},
-            {"article": {"$regex": search, "$options": "i"}}
+            {"article": {"$regex": search, "$options": "i"}},
+            {"cross_articles": {"$regex": search, "$options": "i"}}  # Search in cross-articles too
         ]
     if category_id:
         query["category_id"] = category_id
     
     products = await db.products.find(query, {"_id": 0}).skip(skip).limit(min(limit, 100)).to_list(100)
     return products
+
+@api_router.get("/products/search-with-alternatives")
+async def search_products_with_alternatives(search: str, limit: int = 50):
+    """Search products with exact matches first, then alternatives from cross_articles"""
+    if not search:
+        return {"exact": [], "alternatives": []}
+    
+    search_upper = search.upper().strip()
+    
+    # Find exact article match first
+    exact_match = await db.products.find_one(
+        {"article": {"$regex": f"^{search}$", "$options": "i"}},
+        {"_id": 0}
+    )
+    
+    # Find alternatives from cross_articles
+    alternatives = []
+    if search_upper:
+        # Find products where cross_articles contains the search term
+        alt_query = {
+            "$and": [
+                {"cross_articles": {"$regex": search, "$options": "i"}},
+                {"article": {"$not": {"$regex": f"^{search}$", "$options": "i"}}}  # Exclude exact match
+            ]
+        }
+        alternatives = await db.products.find(alt_query, {"_id": 0}).limit(limit).to_list(limit)
+    
+    # Also search by name if no exact article match
+    name_matches = []
+    if not exact_match:
+        name_query = {"name": {"$regex": search, "$options": "i"}}
+        name_matches = await db.products.find(name_query, {"_id": 0}).limit(limit).to_list(limit)
+    
+    return {
+        "exact": [exact_match] if exact_match else name_matches,
+        "alternatives": alternatives
+    }
 
 @api_router.get("/products/{product_id}", response_model=ProductResponse)
 async def get_product(product_id: str):
