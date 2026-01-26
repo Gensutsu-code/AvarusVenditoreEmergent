@@ -1392,6 +1392,291 @@ async def delete_chat_message(chat_id: str, message_id: str, user=Depends(get_cu
     
     return {"message": "Message deleted"}
 
+# ==================== BONUS PROGRAM ====================
+
+class BonusSettings(BaseModel):
+    goal_amount: float = 5000  # Target amount in RUB
+    contribution_percent: float = 5  # Percent of order that counts toward bonus
+    reward_type: str = "promo_code"  # "promo_code" or "discount"
+    reward_value: float = 500  # Promo code value or discount percent
+    enabled: bool = True
+
+class BonusReward(BaseModel):
+    reward_code: str = ""  # For promo codes
+
+# Initialize default bonus settings
+async def get_or_create_bonus_settings():
+    settings = await db.bonus_settings.find_one({"type": "global"}, {"_id": 0})
+    if not settings:
+        settings = {
+            "type": "global",
+            "goal_amount": 5000,
+            "contribution_percent": 5,
+            "reward_type": "promo_code",
+            "reward_value": 500,
+            "enabled": True
+        }
+        await db.bonus_settings.insert_one(settings)
+    return settings
+
+# Get user's bonus progress
+async def get_user_bonus_progress(user_id: str):
+    progress = await db.bonus_progress.find_one({"user_id": user_id}, {"_id": 0})
+    if not progress:
+        progress = {
+            "user_id": user_id,
+            "current_amount": 0,
+            "total_earned": 0,
+            "rewards_claimed": 0,
+            "created_at": datetime.now(timezone.utc).isoformat()
+        }
+        await db.bonus_progress.insert_one(progress)
+    return progress
+
+# Update bonus progress after order
+async def update_bonus_after_order(user_id: str, order_total: float):
+    settings = await get_or_create_bonus_settings()
+    if not settings.get("enabled"):
+        return
+    
+    contribution = order_total * (settings["contribution_percent"] / 100)
+    
+    progress = await get_user_bonus_progress(user_id)
+    new_amount = progress["current_amount"] + contribution
+    
+    await db.bonus_progress.update_one(
+        {"user_id": user_id},
+        {
+            "$set": {"current_amount": new_amount},
+            "$inc": {"total_earned": contribution}
+        }
+    )
+    
+    return {"new_amount": new_amount, "contribution": contribution}
+
+@api_router.get("/bonus/progress")
+async def get_bonus_progress(user=Depends(get_current_user)):
+    """Get current user's bonus progress"""
+    settings = await get_or_create_bonus_settings()
+    progress = await get_user_bonus_progress(user["id"])
+    
+    # Calculate percentage
+    goal = settings["goal_amount"]
+    current = progress["current_amount"]
+    percentage = min(100, (current / goal) * 100) if goal > 0 else 0
+    
+    # Check if can claim
+    can_claim = current >= goal
+    
+    return {
+        "current_amount": round(current, 2),
+        "goal_amount": goal,
+        "percentage": round(percentage, 1),
+        "can_claim": can_claim,
+        "total_earned": round(progress.get("total_earned", 0), 2),
+        "rewards_claimed": progress.get("rewards_claimed", 0),
+        "reward_value": settings["reward_value"],
+        "contribution_percent": settings["contribution_percent"],
+        "enabled": settings["enabled"]
+    }
+
+@api_router.get("/bonus/history")
+async def get_bonus_history(user=Depends(get_current_user)):
+    """Get user's bonus reward history"""
+    history = await db.bonus_history.find(
+        {"user_id": user["id"]}, 
+        {"_id": 0}
+    ).sort("created_at", -1).to_list(50)
+    
+    return {"history": history}
+
+@api_router.post("/bonus/claim")
+async def claim_bonus(user=Depends(get_current_user)):
+    """Claim bonus reward when goal is reached"""
+    settings = await get_or_create_bonus_settings()
+    progress = await get_user_bonus_progress(user["id"])
+    
+    if not settings.get("enabled"):
+        raise HTTPException(status_code=400, detail="Бонусная программа отключена")
+    
+    if progress["current_amount"] < settings["goal_amount"]:
+        raise HTTPException(status_code=400, detail="Недостаточно накоплений для получения бонуса")
+    
+    # Generate promo code
+    promo_code = f"BONUS-{user['id'][:4].upper()}-{uuid.uuid4().hex[:6].upper()}"
+    
+    # Create history record
+    history_record = {
+        "id": str(uuid.uuid4()),
+        "user_id": user["id"],
+        "user_name": user["name"],
+        "reward_type": settings["reward_type"],
+        "reward_value": settings["reward_value"],
+        "promo_code": promo_code,
+        "amount_at_claim": progress["current_amount"],
+        "created_at": datetime.now(timezone.utc).isoformat(),
+        "status": "active"
+    }
+    await db.bonus_history.insert_one(history_record)
+    
+    # Reset progress and increment rewards count
+    await db.bonus_progress.update_one(
+        {"user_id": user["id"]},
+        {
+            "$set": {"current_amount": 0},
+            "$inc": {"rewards_claimed": 1}
+        }
+    )
+    
+    return {
+        "success": True,
+        "promo_code": promo_code,
+        "reward_value": settings["reward_value"],
+        "message": f"Поздравляем! Ваш промокод: {promo_code} на скидку {settings['reward_value']} ₽"
+    }
+
+# Admin bonus endpoints
+@api_router.get("/admin/bonus/settings")
+async def get_admin_bonus_settings(user=Depends(get_current_user)):
+    """Get bonus program settings (admin)"""
+    if user.get("role") != "admin":
+        raise HTTPException(status_code=403, detail="Admin access required")
+    
+    settings = await get_or_create_bonus_settings()
+    return settings
+
+@api_router.put("/admin/bonus/settings")
+async def update_bonus_settings(settings: BonusSettings, user=Depends(get_current_user)):
+    """Update bonus program settings (admin)"""
+    if user.get("role") != "admin":
+        raise HTTPException(status_code=403, detail="Admin access required")
+    
+    update_data = {
+        "goal_amount": settings.goal_amount,
+        "contribution_percent": settings.contribution_percent,
+        "reward_type": settings.reward_type,
+        "reward_value": settings.reward_value,
+        "enabled": settings.enabled,
+        "updated_at": datetime.now(timezone.utc).isoformat()
+    }
+    
+    await db.bonus_settings.update_one(
+        {"type": "global"},
+        {"$set": update_data},
+        upsert=True
+    )
+    
+    return {"message": "Settings updated", **update_data}
+
+@api_router.get("/admin/bonus/users")
+async def get_bonus_users(user=Depends(get_current_user)):
+    """Get all users with bonus progress (admin)"""
+    if user.get("role") != "admin":
+        raise HTTPException(status_code=403, detail="Admin access required")
+    
+    settings = await get_or_create_bonus_settings()
+    
+    # Get all users with their bonus progress
+    users = await db.users.find({}, {"_id": 0, "password_hash": 0}).to_list(1000)
+    
+    result = []
+    for u in users:
+        progress = await db.bonus_progress.find_one({"user_id": u["id"]}, {"_id": 0})
+        if not progress:
+            progress = {"current_amount": 0, "total_earned": 0, "rewards_claimed": 0}
+        
+        percentage = min(100, (progress["current_amount"] / settings["goal_amount"]) * 100) if settings["goal_amount"] > 0 else 0
+        
+        result.append({
+            "id": u["id"],
+            "name": u["name"],
+            "email": u["email"],
+            "current_amount": round(progress.get("current_amount", 0), 2),
+            "total_earned": round(progress.get("total_earned", 0), 2),
+            "rewards_claimed": progress.get("rewards_claimed", 0),
+            "percentage": round(percentage, 1),
+            "can_claim": progress.get("current_amount", 0) >= settings["goal_amount"]
+        })
+    
+    # Sort by current_amount descending
+    result.sort(key=lambda x: x["current_amount"], reverse=True)
+    
+    return {"users": result, "settings": settings}
+
+@api_router.post("/admin/bonus/issue/{user_id}")
+async def issue_bonus_to_user(user_id: str, user=Depends(get_current_user)):
+    """Manually issue bonus to user (admin)"""
+    if user.get("role") != "admin":
+        raise HTTPException(status_code=403, detail="Admin access required")
+    
+    target_user = await db.users.find_one({"id": user_id}, {"_id": 0})
+    if not target_user:
+        raise HTTPException(status_code=404, detail="User not found")
+    
+    settings = await get_or_create_bonus_settings()
+    
+    # Generate promo code
+    promo_code = f"GIFT-{user_id[:4].upper()}-{uuid.uuid4().hex[:6].upper()}"
+    
+    # Create history record
+    history_record = {
+        "id": str(uuid.uuid4()),
+        "user_id": user_id,
+        "user_name": target_user["name"],
+        "reward_type": "gift",
+        "reward_value": settings["reward_value"],
+        "promo_code": promo_code,
+        "amount_at_claim": 0,
+        "issued_by": user["name"],
+        "created_at": datetime.now(timezone.utc).isoformat(),
+        "status": "active"
+    }
+    await db.bonus_history.insert_one(history_record)
+    
+    # Increment rewards count
+    await db.bonus_progress.update_one(
+        {"user_id": user_id},
+        {"$inc": {"rewards_claimed": 1}},
+        upsert=True
+    )
+    
+    return {
+        "success": True,
+        "promo_code": promo_code,
+        "message": f"Бонус выдан пользователю {target_user['name']}"
+    }
+
+@api_router.post("/admin/bonus/add/{user_id}")
+async def add_bonus_points(user_id: str, amount: float = 0, user=Depends(get_current_user)):
+    """Manually add bonus points to user (admin)"""
+    if user.get("role") != "admin":
+        raise HTTPException(status_code=403, detail="Admin access required")
+    
+    if amount <= 0:
+        raise HTTPException(status_code=400, detail="Amount must be positive")
+    
+    progress = await get_user_bonus_progress(user_id)
+    new_amount = progress["current_amount"] + amount
+    
+    await db.bonus_progress.update_one(
+        {"user_id": user_id},
+        {
+            "$set": {"current_amount": new_amount},
+            "$inc": {"total_earned": amount}
+        }
+    )
+    
+    return {"success": True, "new_amount": round(new_amount, 2)}
+
+@api_router.get("/admin/bonus/history")
+async def get_all_bonus_history(user=Depends(get_current_user)):
+    """Get all bonus history (admin)"""
+    if user.get("role") != "admin":
+        raise HTTPException(status_code=403, detail="Admin access required")
+    
+    history = await db.bonus_history.find({}, {"_id": 0}).sort("created_at", -1).to_list(100)
+    return {"history": history}
+
 # ==================== IMPORT/EXPORT ====================
 
 @api_router.post("/admin/products/import")
