@@ -137,6 +137,195 @@ const ProductCard = ({
   </div>
 );
 
+// Product Modal Content with Image Slideshow
+const ProductModalContent = ({ 
+  product, 
+  quantities, 
+  updateQuantity, 
+  handleAddToCart, 
+  formatPrice, 
+  getDeliveryText 
+}) => {
+  const [currentImageIndex, setCurrentImageIndex] = useState(0);
+  const [setSelectedProduct] = useState(null);
+  
+  // Combine main image with additional images
+  const allImages = [];
+  if (product.image_url) allImages.push(product.image_url);
+  if (product.images) {
+    product.images.forEach(img => {
+      if (img !== product.image_url && !allImages.includes(img)) {
+        allImages.push(img);
+      }
+    });
+  }
+  
+  const hasMultipleImages = allImages.length > 1;
+  
+  const nextImage = () => {
+    setCurrentImageIndex(prev => (prev + 1) % allImages.length);
+  };
+  
+  const prevImage = () => {
+    setCurrentImageIndex(prev => (prev - 1 + allImages.length) % allImages.length);
+  };
+  
+  return (
+    <>
+      <DialogHeader>
+        <DialogTitle className="text-xl font-bold">{product.name}</DialogTitle>
+      </DialogHeader>
+      
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-4">
+        {/* Image Gallery with Slideshow */}
+        <div className="space-y-2">
+          <div className="relative aspect-square bg-zinc-100 overflow-hidden group">
+            {allImages.length > 0 ? (
+              <>
+                <img 
+                  src={allImages[currentImageIndex]} 
+                  alt={product.name}
+                  className="w-full h-full object-cover transition-opacity"
+                />
+                
+                {/* Navigation arrows */}
+                {hasMultipleImages && (
+                  <>
+                    <button
+                      onClick={prevImage}
+                      className="absolute left-2 top-1/2 -translate-y-1/2 bg-black/50 hover:bg-black/70 text-white p-2 rounded-full opacity-0 group-hover:opacity-100 transition-opacity"
+                      data-testid="prev-image"
+                    >
+                      <ChevronLeft className="w-5 h-5" />
+                    </button>
+                    <button
+                      onClick={nextImage}
+                      className="absolute right-2 top-1/2 -translate-y-1/2 bg-black/50 hover:bg-black/70 text-white p-2 rounded-full opacity-0 group-hover:opacity-100 transition-opacity"
+                      data-testid="next-image"
+                    >
+                      <ChevronRight className="w-5 h-5" />
+                    </button>
+                    
+                    {/* Image counter */}
+                    <div className="absolute bottom-2 right-2 bg-black/50 text-white text-xs px-2 py-1 rounded">
+                      {currentImageIndex + 1} / {allImages.length}
+                    </div>
+                  </>
+                )}
+              </>
+            ) : (
+              <div className="w-full h-full flex items-center justify-center text-zinc-300">
+                <Package className="w-16 h-16" />
+              </div>
+            )}
+          </div>
+          
+          {/* Thumbnail strip */}
+          {hasMultipleImages && (
+            <div className="flex gap-2 overflow-x-auto py-1">
+              {allImages.map((img, idx) => (
+                <button
+                  key={idx}
+                  onClick={() => setCurrentImageIndex(idx)}
+                  className={`flex-shrink-0 w-16 h-16 border-2 overflow-hidden transition-colors ${
+                    idx === currentImageIndex ? 'border-orange-500' : 'border-zinc-200 hover:border-zinc-400'
+                  }`}
+                >
+                  <img src={img} alt={`${product.name} ${idx + 1}`} className="w-full h-full object-cover" />
+                </button>
+              ))}
+            </div>
+          )}
+        </div>
+
+        {/* Details */}
+        <div className="space-y-4">
+          {/* Manufacturer and Article */}
+          <div className="space-y-1">
+            {product.manufacturer && (
+              <p className="text-base font-bold text-orange-600">
+                {product.manufacturer}
+              </p>
+            )}
+            <p className="text-base font-mono font-semibold text-zinc-700">
+              Артикул: {product.article}
+            </p>
+          </div>
+
+          {product.description && (
+            <p className="text-zinc-600">
+              {product.description}
+            </p>
+          )}
+
+          <div className="space-y-2 text-sm">
+            <div className="flex justify-between">
+              <span className="text-zinc-500">Наличие:</span>
+              <span className={product.stock > 0 ? 'text-green-600 font-semibold' : 'text-red-500'}>
+                {product.stock > 0 ? `${product.stock} шт.` : 'Нет в наличии'}
+              </span>
+            </div>
+            <div className="flex justify-between">
+              <span className="text-zinc-500">Доставка:</span>
+              <span className="flex items-center gap-1">
+                <Truck className="w-4 h-4" />
+                {getDeliveryText(product.delivery_days || 3)}
+              </span>
+            </div>
+          </div>
+
+          <div className="border-t border-zinc-200 pt-4 flex items-center justify-between">
+            <span className="price-tag text-2xl text-zinc-900">
+              {formatPrice(product.price)} ₽
+            </span>
+            <FavoritesButton productId={product.id} />
+          </div>
+
+          {/* Quantity + Add to cart */}
+          <div className="flex items-center gap-3">
+            <div className="flex items-center border border-zinc-200">
+              <button 
+                onClick={() => updateQuantity(product.id, -1)}
+                className="p-3 hover:bg-zinc-100"
+              >
+                <Minus className="w-4 h-4" />
+              </button>
+              <span className="px-4 min-w-[50px] text-center font-semibold">
+                {quantities[product.id] || 1}
+              </span>
+              <button 
+                onClick={() => updateQuantity(product.id, 1)}
+                className="p-3 hover:bg-zinc-100"
+              >
+                <Plus className="w-4 h-4" />
+              </button>
+            </div>
+
+            <Button
+              onClick={() => handleAddToCart(product)}
+              disabled={product.stock === 0}
+              className="flex-1 bg-orange-500 hover:bg-orange-600 text-white font-bold uppercase h-12"
+              data-testid="modal-add-to-cart"
+            >
+              <ShoppingCart className="w-5 h-5 mr-2" />
+              В корзину
+            </Button>
+          </div>
+
+          {/* Related Products */}
+          <RelatedProducts 
+            productId={product.id} 
+            onSelectProduct={(p) => {
+              // This won't work in the same way, but will at least not crash
+              window.location.href = `/catalog?search=${p.article}`;
+            }}
+          />
+        </div>
+      </div>
+    </>
+  );
+};
+
 export default function CatalogPage() {
   const [searchParams, setSearchParams] = useSearchParams();
   const [products, setProducts] = useState([]);
