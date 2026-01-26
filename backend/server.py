@@ -870,6 +870,51 @@ async def test_telegram_notification(user=Depends(get_current_user)):
 
 # ==================== CHAT ROUTES ====================
 
+# Telegram Chat Bot token
+TELEGRAM_CHAT_BOT_TOKEN = os.environ.get('TELEGRAM_CHAT_BOT_TOKEN')
+telegram_chat_id_mapping = {}  # Maps telegram_chat_id -> website_chat_id
+
+async def send_to_telegram_chat(chat_id: str, user_name: str, text: str, message_type: str = "text", file_url: str = None):
+    """Send user message to Telegram for admin to see"""
+    if not TELEGRAM_CHAT_BOT_TOKEN:
+        return
+    
+    # Get admin chat settings to find Telegram chat ID for receiving messages
+    settings = await db.telegram_chat_settings.find_one({"setting_type": "chat_bot"})
+    if not settings or not settings.get("admin_chat_id"):
+        return
+    
+    admin_tg_chat_id = settings["admin_chat_id"]
+    
+    # Format message
+    formatted_text = f"💬 *Новое сообщение в чат*\n\n"
+    formatted_text += f"👤 *От:* {user_name}\n"
+    formatted_text += f"🆔 *Чат:* `{chat_id[:8]}...`\n\n"
+    
+    if message_type == "text":
+        formatted_text += f"📝 {text}"
+    elif message_type == "image":
+        formatted_text += f"🖼 *Изображение*\n{file_url}"
+    elif message_type == "file":
+        formatted_text += f"📎 *Файл*\n{file_url}"
+    
+    # Add reply keyboard with chat_id
+    formatted_text += f"\n\n💡 _Чтобы ответить, используйте команду:_\n`/reply {chat_id} Ваш ответ`"
+    
+    try:
+        async with httpx.AsyncClient() as client:
+            await client.post(
+                f"https://api.telegram.org/bot{TELEGRAM_CHAT_BOT_TOKEN}/sendMessage",
+                json={
+                    "chat_id": admin_tg_chat_id,
+                    "text": formatted_text,
+                    "parse_mode": "Markdown"
+                },
+                timeout=10
+            )
+    except Exception as e:
+        logging.error(f"Failed to send to Telegram chat: {e}")
+
 @api_router.post("/chat/send")
 async def send_chat_message(message: ChatMessage, user=Depends(get_current_user)):
     """Send a chat message"""
@@ -883,7 +928,9 @@ async def send_chat_message(message: ChatMessage, user=Depends(get_current_user)
             "user_name": user["name"],
             "user_email": user["email"],
             "created_at": datetime.now(timezone.utc).isoformat(),
-            "updated_at": datetime.now(timezone.utc).isoformat()
+            "updated_at": datetime.now(timezone.utc).isoformat(),
+            "pinned": False,
+            "labels": []
         })
     else:
         chat_id = chat["id"]
@@ -897,10 +944,15 @@ async def send_chat_message(message: ChatMessage, user=Depends(get_current_user)
         "user_name": user["name"],
         "text": message.text,
         "sender_type": "user",
+        "message_type": "text",
         "created_at": datetime.now(timezone.utc).isoformat(),
-        "read": False
+        "read": False,
+        "edited": False
     }
     await db.chat_messages.insert_one(chat_message)
+    
+    # Send to Telegram
+    await send_to_telegram_chat(chat_id, user["name"], message.text)
     
     return {"id": msg_id, "chat_id": chat_id}
 
