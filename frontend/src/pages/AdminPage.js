@@ -1188,31 +1188,127 @@ export default function AdminPage() {
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4 h-[500px]">
               {/* Chat list */}
               <div className="border border-zinc-200 overflow-hidden flex flex-col">
-                <div className="bg-zinc-50 px-4 py-3 border-b border-zinc-200 font-semibold text-sm">
-                  Диалоги ({chats.length})
+                <div className="bg-zinc-50 px-4 py-3 border-b border-zinc-200 font-semibold text-sm flex items-center justify-between">
+                  <span>Диалоги ({chats.length})</span>
+                  <Button 
+                    variant="ghost" 
+                    size="sm"
+                    onClick={async () => {
+                      try {
+                        await axios.post(`${API}/admin/chat/setup-telegram-webhook`);
+                        toast.success('Telegram webhook установлен');
+                      } catch (err) {
+                        toast.error('Ошибка установки webhook');
+                      }
+                    }}
+                    title="Настроить Telegram бот"
+                  >
+                    <MessageCircle className="w-4 h-4" />
+                  </Button>
                 </div>
                 <div className="flex-1 overflow-y-auto">
                   {chats.length === 0 ? (
                     <p className="text-center text-zinc-400 text-sm py-8">Нет диалогов</p>
                   ) : (
-                    chats.map((chat) => (
-                      <button
+                    [...chats].sort((a, b) => {
+                      // Pinned first
+                      if (a.pinned && !b.pinned) return -1;
+                      if (!a.pinned && b.pinned) return 1;
+                      // Then by update time
+                      return new Date(b.updated_at) - new Date(a.updated_at);
+                    }).map((chat) => (
+                      <div
                         key={chat.id}
-                        onClick={() => handleSelectChat(chat)}
-                        className={`w-full text-left p-3 border-b border-zinc-100 hover:bg-zinc-50 transition-colors ${
-                          selectedChat?.id === chat.id ? 'bg-orange-50' : ''
-                        }`}
+                        className={`relative group ${selectedChat?.id === chat.id ? 'bg-orange-50' : 'hover:bg-zinc-50'}`}
                       >
-                        <div className="flex items-center justify-between">
-                          <span className="font-medium text-sm">{chat.user_name}</span>
-                          {chat.unread_count > 0 && (
-                            <span className="bg-red-500 text-white text-xs px-1.5 py-0.5 rounded-full">
-                              {chat.unread_count}
-                            </span>
-                          )}
+                        <button
+                          onClick={() => handleSelectChat(chat)}
+                          className="w-full text-left p-3 border-b border-zinc-100 transition-colors"
+                        >
+                          <div className="flex items-center justify-between gap-2">
+                            <div className="flex items-center gap-2 min-w-0">
+                              {chat.pinned && <Pin className="w-3 h-3 text-orange-500 flex-shrink-0" />}
+                              <span className="font-medium text-sm truncate">{chat.user_name}</span>
+                            </div>
+                            <div className="flex items-center gap-1 flex-shrink-0">
+                              {chat.labels?.map((label, i) => (
+                                <span key={i} className={`text-[10px] px-1.5 py-0.5 rounded ${
+                                  label === 'важный' ? 'bg-red-100 text-red-600' :
+                                  label === 'vip' ? 'bg-purple-100 text-purple-600' :
+                                  'bg-zinc-100 text-zinc-600'
+                                }`}>{label}</span>
+                              ))}
+                              {chat.unread_count > 0 && (
+                                <span className="bg-red-500 text-white text-xs px-1.5 py-0.5 rounded-full">
+                                  {chat.unread_count}
+                                </span>
+                              )}
+                            </div>
+                          </div>
+                          <p className="text-xs text-zinc-400 truncate">{chat.user_email}</p>
+                        </button>
+                        
+                        {/* Chat actions on hover */}
+                        <div className="absolute right-1 top-1/2 -translate-y-1/2 hidden group-hover:flex items-center gap-0.5 bg-white shadow border border-zinc-200 rounded p-0.5">
+                          <button
+                            onClick={async (e) => {
+                              e.stopPropagation();
+                              try {
+                                const res = await axios.put(`${API}/admin/chats/${chat.id}/pin`);
+                                setChats(prev => prev.map(c => c.id === chat.id ? {...c, pinned: res.data.pinned} : c));
+                                toast.success(res.data.pinned ? 'Закреплено' : 'Откреплено');
+                              } catch (err) {
+                                toast.error('Ошибка');
+                              }
+                            }}
+                            className={`p-1 rounded hover:bg-zinc-100 ${chat.pinned ? 'text-orange-500' : 'text-zinc-400'}`}
+                            title="Закрепить"
+                          >
+                            <Pin className="w-3 h-3" />
+                          </button>
+                          <button
+                            onClick={async (e) => {
+                              e.stopPropagation();
+                              const label = prompt('Введите метку (важный, vip, или другую):');
+                              if (label) {
+                                try {
+                                  const res = await axios.put(`${API}/admin/chats/${chat.id}/label?label=${encodeURIComponent(label)}`);
+                                  setChats(prev => prev.map(c => c.id === chat.id ? {...c, labels: res.data.labels} : c));
+                                  toast.success('Метка обновлена');
+                                } catch (err) {
+                                  toast.error('Ошибка');
+                                }
+                              }
+                            }}
+                            className="p-1 rounded hover:bg-zinc-100 text-zinc-400"
+                            title="Добавить метку"
+                          >
+                            <Tag className="w-3 h-3" />
+                          </button>
+                          <button
+                            onClick={async (e) => {
+                              e.stopPropagation();
+                              if (window.confirm('Удалить диалог?')) {
+                                try {
+                                  await axios.delete(`${API}/admin/chats/${chat.id}`);
+                                  setChats(prev => prev.filter(c => c.id !== chat.id));
+                                  if (selectedChat?.id === chat.id) {
+                                    setSelectedChat(null);
+                                    setChatMessages([]);
+                                  }
+                                  toast.success('Диалог удалён');
+                                } catch (err) {
+                                  toast.error('Ошибка удаления');
+                                }
+                              }
+                            }}
+                            className="p-1 rounded hover:bg-red-100 text-zinc-400 hover:text-red-500"
+                            title="Удалить"
+                          >
+                            <Trash2 className="w-3 h-3" />
+                          </button>
                         </div>
-                        <p className="text-xs text-zinc-400">{chat.user_email}</p>
-                      </button>
+                      </div>
                     ))
                   )}
                 </div>
@@ -1222,27 +1318,108 @@ export default function AdminPage() {
               <div className="md:col-span-2 border border-zinc-200 overflow-hidden flex flex-col">
                 {selectedChat ? (
                   <>
-                    <div className="bg-zinc-50 px-4 py-3 border-b border-zinc-200">
-                      <span className="font-semibold text-sm">{selectedChat.user_name}</span>
-                      <span className="text-xs text-zinc-400 ml-2">{selectedChat.user_email}</span>
+                    <div className="bg-zinc-50 px-4 py-3 border-b border-zinc-200 flex items-center justify-between">
+                      <div>
+                        <span className="font-semibold text-sm">{selectedChat.user_name}</span>
+                        <span className="text-xs text-zinc-400 ml-2">{selectedChat.user_email}</span>
+                        {selectedChat.labels?.length > 0 && (
+                          <div className="flex gap-1 mt-1">
+                            {selectedChat.labels.map((label, i) => (
+                              <span key={i} className="text-[10px] px-1.5 py-0.5 bg-zinc-100 rounded">{label}</span>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+                      <button
+                        onClick={() => {
+                          navigator.clipboard.writeText(selectedChat.id);
+                          toast.success('ID скопирован');
+                        }}
+                        className="text-xs text-zinc-400 hover:text-zinc-600 flex items-center gap-1"
+                        title="Скопировать ID для Telegram"
+                      >
+                        <Copy className="w-3 h-3" />
+                        {selectedChat.id.slice(0, 8)}...
+                      </button>
                     </div>
                     <div className="flex-1 overflow-y-auto p-4 space-y-3 bg-zinc-50">
                       {chatMessages.map((msg) => (
                         <div
                           key={msg.id}
-                          className={`flex ${msg.sender_type === 'admin' ? 'justify-end' : 'justify-start'}`}
+                          className={`flex group ${msg.sender_type === 'admin' ? 'justify-end' : 'justify-start'}`}
                         >
                           <div
-                            className={`max-w-[70%] px-3 py-2 rounded-lg text-sm ${
+                            className={`max-w-[70%] px-3 py-2 rounded-lg text-sm relative ${
                               msg.sender_type === 'admin'
                                 ? 'bg-orange-500 text-white'
                                 : 'bg-white border border-zinc-200'
                             }`}
                           >
+                            {/* Media content */}
+                            {msg.message_type === 'image' && msg.file_url && (
+                              <img 
+                                src={`${BACKEND_URL}${msg.file_url}`} 
+                                alt="Изображение" 
+                                className="max-w-full rounded mb-2 cursor-pointer"
+                                onClick={() => window.open(`${BACKEND_URL}${msg.file_url}`, '_blank')}
+                              />
+                            )}
+                            {msg.message_type === 'file' && msg.file_url && (
+                              <a 
+                                href={`${BACKEND_URL}${msg.file_url}`}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="flex items-center gap-2 p-2 bg-zinc-100 rounded mb-2 hover:bg-zinc-200"
+                              >
+                                <Download className="w-4 h-4" />
+                                <span className="text-xs truncate">{msg.filename || 'Файл'}</span>
+                              </a>
+                            )}
+                            
                             <p className="whitespace-pre-wrap">{msg.text}</p>
-                            <p className={`text-[10px] mt-1 ${msg.sender_type === 'admin' ? 'text-orange-200' : 'text-zinc-400'}`}>
+                            <div className={`flex items-center gap-1 text-[10px] mt-1 ${msg.sender_type === 'admin' ? 'text-orange-200' : 'text-zinc-400'}`}>
                               {new Date(msg.created_at).toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' })}
-                            </p>
+                              {msg.edited && <span>(ред.)</span>}
+                            </div>
+                            
+                            {/* Message actions */}
+                            {msg.sender_type === 'admin' && (
+                              <div className="absolute -left-16 top-1/2 -translate-y-1/2 hidden group-hover:flex gap-1">
+                                <button
+                                  onClick={async () => {
+                                    const newText = prompt('Редактировать сообщение:', msg.text);
+                                    if (newText && newText !== msg.text) {
+                                      try {
+                                        await axios.put(`${API}/admin/chats/${selectedChat.id}/messages/${msg.id}`, { text: newText });
+                                        setChatMessages(prev => prev.map(m => m.id === msg.id ? {...m, text: newText, edited: true} : m));
+                                        toast.success('Сообщение отредактировано');
+                                      } catch (err) {
+                                        toast.error('Ошибка');
+                                      }
+                                    }
+                                  }}
+                                  className="p-1 bg-white border border-zinc-200 rounded text-zinc-400 hover:text-zinc-600"
+                                >
+                                  <Pencil className="w-3 h-3" />
+                                </button>
+                                <button
+                                  onClick={async () => {
+                                    if (window.confirm('Удалить сообщение?')) {
+                                      try {
+                                        await axios.delete(`${API}/admin/chats/${selectedChat.id}/messages/${msg.id}`);
+                                        setChatMessages(prev => prev.filter(m => m.id !== msg.id));
+                                        toast.success('Сообщение удалено');
+                                      } catch (err) {
+                                        toast.error('Ошибка');
+                                      }
+                                    }
+                                  }}
+                                  className="p-1 bg-white border border-zinc-200 rounded text-zinc-400 hover:text-red-500"
+                                >
+                                  <Trash2 className="w-3 h-3" />
+                                </button>
+                              </div>
+                            )}
                           </div>
                         </div>
                       ))}
@@ -1259,6 +1436,9 @@ export default function AdminPage() {
                           <Send className="w-4 h-4" />
                         </Button>
                       </div>
+                      <p className="text-xs text-zinc-400 mt-2">
+                        Или ответьте через Telegram: <code className="bg-zinc-100 px-1 rounded">/reply {selectedChat.id.slice(0, 8)} Ваш ответ</code>
+                      </p>
                     </div>
                   </>
                 ) : (
@@ -1266,6 +1446,7 @@ export default function AdminPage() {
                     <div className="text-center">
                       <MessageCircle className="w-12 h-12 mx-auto mb-2 opacity-50" />
                       <p>Выберите диалог</p>
+                      <p className="text-xs mt-2">Отвечайте через сайт или Telegram</p>
                     </div>
                   </div>
                 )}
