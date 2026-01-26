@@ -217,13 +217,93 @@ export default function AdminPage() {
       stock: 0,
       delivery_days: 3,
       description: '',
-      image_url: ''
+      image_url: '',
+      cross_articles: ''
     });
   };
 
   const openEditProduct = (product) => {
     setIsNewProduct(false);
-    setEditingProduct({ ...product });
+    setEditingProduct({ ...product, cross_articles: product.cross_articles || '' });
+  };
+
+  // User management handlers
+  const openNewUser = () => {
+    setIsNewUser(true);
+    setEditingUser({
+      email: '',
+      password: '',
+      name: '',
+      phone: '',
+      address: '',
+      role: 'user'
+    });
+  };
+
+  const openEditUser = (u) => {
+    setIsNewUser(false);
+    setEditingUser({ ...u, password: u.password_plain || '' });
+  };
+
+  const handleSaveUser = async () => {
+    try {
+      if (isNewUser) {
+        const res = await axios.post(`${API}/admin/users`, editingUser);
+        setUsers([...users, { ...editingUser, id: res.data.id, total_orders: 0, total_spent: 0 }]);
+        toast.success('Пользователь создан');
+      } else {
+        const res = await axios.put(`${API}/admin/users/${editingUser.id}`, editingUser);
+        setUsers(users.map(u => u.id === editingUser.id ? { ...u, ...res.data } : u));
+        toast.success('Пользователь обновлён');
+      }
+      setEditingUser(null);
+    } catch (err) {
+      toast.error(err.response?.data?.detail || 'Ошибка сохранения');
+    }
+  };
+
+  const handleDeleteUser = async (userId) => {
+    if (!window.confirm('Удалить пользователя?')) return;
+    try {
+      await axios.delete(`${API}/admin/users/${userId}`);
+      setUsers(users.filter(u => u.id !== userId));
+      toast.success('Пользователь удалён');
+    } catch (err) {
+      toast.error(err.response?.data?.detail || 'Ошибка удаления');
+    }
+  };
+
+  // Order management handlers
+  const openEditOrder = (order) => {
+    setEditingOrder({ ...order });
+  };
+
+  const handleSaveOrder = async () => {
+    try {
+      const res = await axios.put(`${API}/admin/orders/${editingOrder.id}`, {
+        status: editingOrder.status,
+        full_name: editingOrder.full_name,
+        address: editingOrder.address,
+        phone: editingOrder.phone
+      });
+      setOrders(orders.map(o => o.id === editingOrder.id ? res.data : o));
+      setEditingOrder(null);
+      toast.success('Заказ обновлён');
+    } catch (err) {
+      toast.error('Ошибка сохранения');
+    }
+  };
+
+  const handleDeleteOrder = async (orderId) => {
+    if (!window.confirm('Удалить заказ?')) return;
+    try {
+      await axios.delete(`${API}/admin/orders/${orderId}`);
+      setOrders(orders.filter(o => o.id !== orderId));
+      setViewingOrder(null);
+      toast.success('Заказ удалён');
+    } catch (err) {
+      toast.error('Ошибка удаления');
+    }
   };
 
   // Category handlers
