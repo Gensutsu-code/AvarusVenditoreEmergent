@@ -694,6 +694,9 @@ async def create_order(data: OrderCreate, user=Depends(get_current_user)):
     # Send Telegram notification
     await send_telegram_order_notification(order, user)
     
+    # Update bonus progress
+    await update_bonus_after_order(user["id"], total)
+    
     return order
 
 @api_router.get("/orders", response_model=List[OrderResponse])
