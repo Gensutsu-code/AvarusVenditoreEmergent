@@ -50,6 +50,13 @@ export default function AdminPage() {
   const [extendedStats, setExtendedStats] = useState(null);
   const [statsPeriod, setStatsPeriod] = useState('month');
   const [importResult, setImportResult] = useState(null);
+  
+  // User management states
+  const [editingUser, setEditingUser] = useState(null);
+  const [isNewUser, setIsNewUser] = useState(false);
+  
+  // Order management states  
+  const [editingOrder, setEditingOrder] = useState(null);
 
   useEffect(() => {
     if (authLoading) return;
