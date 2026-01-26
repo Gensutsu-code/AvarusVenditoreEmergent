@@ -668,6 +668,10 @@ export default function AdminPage() {
               <FileSpreadsheet className="w-4 h-4 mr-2" />
               Импорт
             </TabsTrigger>
+            <TabsTrigger value="bonus" className="rounded-none data-[state=active]:bg-white data-[state=active]:border-b-2 data-[state=active]:border-orange-500 px-4 py-3">
+              <Gift className="w-4 h-4 mr-2" />
+              Бонусы
+            </TabsTrigger>
           </TabsList>
 
           {/* Products Tab */}
