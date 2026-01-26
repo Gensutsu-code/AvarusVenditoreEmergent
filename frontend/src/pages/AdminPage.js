@@ -1504,13 +1504,14 @@ export default function AdminPage() {
               </div>
 
               <div>
-                <Label className="text-xs font-bold uppercase text-zinc-500">Изображение</Label>
-                <div className="mt-1 space-y-2">
+                <Label className="text-xs font-bold uppercase text-zinc-500">Изображения</Label>
+                <div className="mt-1 space-y-3">
                   <input
                     type="file"
                     ref={productFileRef}
-                    onChange={handleProductImageUpload}
+                    onChange={(e) => handleMultipleImageUpload(Array.from(e.target.files || []))}
                     accept="image/*"
+                    multiple
                     className="hidden"
                   />
                   <div className="flex gap-2">
@@ -1522,21 +1523,81 @@ export default function AdminPage() {
                       className="flex-1"
                     >
                       <Upload className="w-4 h-4 mr-2" />
-                      {uploading ? 'Загрузка...' : 'Загрузить изображение'}
+                      {uploading ? 'Загрузка...' : 'Загрузить изображения'}
                     </Button>
                   </div>
-                  <Input
-                    value={editingProduct.image_url || ''}
-                    onChange={(e) => setEditingProduct({ ...editingProduct, image_url: e.target.value })}
-                    placeholder="Или вставьте URL: https://..."
-                    className="text-sm"
-                    data-testid="product-image-input"
-                  />
-                  {editingProduct.image_url && (
-                    <div className="w-24 h-24 bg-zinc-100 overflow-hidden border">
-                      <img src={editingProduct.image_url} alt="Preview" className="w-full h-full object-cover" />
+                  
+                  {/* Image gallery */}
+                  {(editingProduct.images?.length > 0 || editingProduct.image_url) && (
+                    <div className="grid grid-cols-4 gap-2">
+                      {/* Main image first */}
+                      {editingProduct.image_url && (
+                        <div className="relative group">
+                          <div className="aspect-square bg-zinc-100 overflow-hidden border-2 border-orange-500">
+                            <img src={editingProduct.image_url} alt="Main" className="w-full h-full object-cover" />
+                          </div>
+                          <span className="absolute top-1 left-1 bg-orange-500 text-white text-[10px] px-1 py-0.5">
+                            Главное
+                          </span>
+                          <button
+                            type="button"
+                            onClick={() => handleRemoveImage(editingProduct.image_url)}
+                            className="absolute top-1 right-1 bg-red-500 text-white p-1 rounded opacity-0 group-hover:opacity-100 transition-opacity"
+                          >
+                            <Trash2 className="w-3 h-3" />
+                          </button>
+                        </div>
+                      )}
+                      
+                      {/* Other images */}
+                      {(editingProduct.images || [])
+                        .filter(img => img !== editingProduct.image_url)
+                        .map((img, idx) => (
+                          <div key={idx} className="relative group">
+                            <div className="aspect-square bg-zinc-100 overflow-hidden border border-zinc-200 hover:border-zinc-400">
+                              <img src={img} alt={`Product ${idx + 2}`} className="w-full h-full object-cover" />
+                            </div>
+                            <button
+                              type="button"
+                              onClick={() => handleSetMainImage(img)}
+                              className="absolute bottom-1 left-1 bg-blue-500 text-white text-[10px] px-1 py-0.5 opacity-0 group-hover:opacity-100 transition-opacity"
+                            >
+                              Сделать главным
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => handleRemoveImage(img)}
+                              className="absolute top-1 right-1 bg-red-500 text-white p-1 rounded opacity-0 group-hover:opacity-100 transition-opacity"
+                            >
+                              <Trash2 className="w-3 h-3" />
+                            </button>
+                          </div>
+                        ))}
                     </div>
                   )}
+                  
+                  <Input
+                    placeholder="Или вставьте URL и нажмите Enter..."
+                    className="text-sm"
+                    data-testid="product-image-input"
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter') {
+                        e.preventDefault();
+                        const url = e.target.value.trim();
+                        if (url) {
+                          const currentImages = editingProduct.images || [];
+                          const mainImage = editingProduct.image_url || url;
+                          setEditingProduct({
+                            ...editingProduct,
+                            images: [...currentImages, url],
+                            image_url: mainImage
+                          });
+                          e.target.value = '';
+                        }
+                      }
+                    }}
+                  />
+                  <p className="text-xs text-zinc-400">Загрузите несколько изображений или добавьте URL. Первое изображение будет главным.</p>
                 </div>
               </div>
 
