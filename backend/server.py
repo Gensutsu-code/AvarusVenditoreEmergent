@@ -41,6 +41,11 @@ app = FastAPI()
 api_router = APIRouter(prefix="/api")
 security = HTTPBearer()
 
+# Health check endpoint for Kubernetes
+@app.get("/health")
+async def health_check():
+    return {"status": "healthy"}
+
 # Mount uploads directory for serving static files (via /api/uploads for ingress routing)
 app.mount("/api/uploads", StaticFiles(directory=str(UPLOADS_DIR)), name="uploads")
 
