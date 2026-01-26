@@ -3,84 +3,124 @@ The user wants to create a website for a truck auto parts store.
 
 **PRODUCT REQUIREMENTS:**
 - **Core Functionality:** A complete e-commerce platform with a product catalog, shopping cart, and checkout process.
-- **Product Display:**
-    - Initially, the user wanted categories, then removed them, and then re-added them. The current implementation includes category management.
-    - The main product view is a search/catalog page that displays products in a list format.
-    - Each product card in the list shows a photo, name, stock quantity, delivery time, price, and an add to cart button with a quantity selector.
-    - Clicking a product card opens a modal window with more detailed information, avoiding the need for separate product detail pages.
+- **Search:**
+    - Advanced search by part number (SKU), name, and additional cross-reference numbers.
+    - Search results should be split into Exact Match for the primary SKU and Possible Replacements for cross-reference matches.
+- **Product Management:**
+    - Admin can add/edit/delete products, including name, description, SKU, price, photos (multiple), manufacturer, and cross-reference numbers.
+    - Admin can import products from CSV/Excel.
 - **User Management:**
-    - User registration and login are required to place an order.
-    - Prices and product availability are visible to all users, including guests.
-    - An admin account is required with extensive privileges.
-- **Admin Panel:**
-    - A comprehensive admin dashboard to manage the entire store.
-    - **Product Management:** Add, edit, and delete products (including name, description, SKU, price, photos).
-    - **Category Management:** Add, edit, and delete product categories.
-    - **User Management:** View user information and statistics.
-    - **Order Management:** View all orders and update their status.
-    - **Promotions:** Manage a promotional banner at the top of the site (enable/disable, edit text, change color, set height, and upload custom images for the left and right sides).
-- **Checkout & Payment:**
-    - The checkout process must collect the user's full name and delivery address.
-    - The only payment method is cash on delivery.
-- **UI & Branding:**
-    - A simple, light-themed design.
-    - The homepage features a custom company description and a section showcasing partner brand logos.
-    - The header should display avopt.store as the main title and Avarus-Venditore as a smaller, secondary title.
-    - The search icon in the header is only visible to logged-in users.
-- **Technical:**
-    - Image uploads are required for products, categories, and the promotional banner, replacing the need for URL inputs.
+    - Admins must be able to add, edit, and delete users, and view their full details, including their real password.
+    - Users can edit their own profile information (name, email, password, phone, address, profile photo).
+- **Order Management:**
+    - Admin can view, edit, and delete orders without page reloads.
+    - Order notifications are sent to the admin via Telegram, containing full details of the items in the order.
+    - Users can view their detailed order history on a dedicated page.
+- **Promotions & Homepage:**
+    - A manageable promotional banner that can be hidden by the user.
+    - A fully editable homepage block for partner brand logos (add/remove/resize blocks, change images, text, and links).
+- **Live Chat:**
+    - A built-in live chat widget.
+    - Admin can receive chat messages and reply directly from a dedicated Telegram bot.
+    - Chat supports media files, emojis, message editing/deletion, and chat management (pinning, labels, deletion) for admins.
+- **Statistics & Bonus Program:**
+    - Advanced sales statistics in the admin panel, with detailed info per product and user.
+    - A loyalty bonus program where users fill a progress bar based on their total order sum (5% of order value contributes to a 5000 RUB goal).
+    - Upon completion, the user receives a bonus (promo code), and the progress resets.
+    - Admin can manage the bonus program, view user progress, and issue rewards.
+    - Users can see their bonus progress and history in their profile.
 
 **User's preferred language**: Russian
 
 **what currently exists?**
-A full-stack FastAPI (backend) and React (frontend) application for a truck parts e-commerce store. The application is fully functional and includes:
-- User authentication (JWT-based) with registration and login.
-- A comprehensive admin panel with role-based access to manage products, categories, users, orders, and a promotional banner.
-- Functionality for admins to upload images for products, categories, and the promo banner.
-- A product catalog page that displays categories and allows users to view products in a list format, with a modal for detailed views.
-- A complete shopping cart and checkout flow tailored to cash on delivery.
-- A custom homepage with a company description and a grid of brand logos.
+A feature-rich full-stack application (FastAPI backend, React frontend) for a truck parts e-commerce store. It includes a comprehensive admin panel, user authentication, product/category management, a working shopping cart and checkout, and numerous advanced features implemented in previous sessions, such as:
+- Advanced search, favorites/wishlist, popular/related products.
+- A basic built-in chat widget.
+- An admin dashboard with statistics, Telegram notification settings, and product import stubs.
+- Detailed order views for both users and admins, showing the product manufacturer.
+- A separate Orders page for user order history.
+- Custom favicon and site metadata.
 
 **Last working item**:
-- **Last item agent was working:** Implementing advanced customization options for the promotional banner. The goal was to allow the admin to set a custom height for the banner and upload separate images for the left and right sides of the banner text.
+- **Last item agent was working:** Implementing the first phase of a very large feature request. The agent completed the backend changes for this phase, which included:
+    1.  Adding a  endpoint to fix a deployment issue.
+    2.  Implementing full CRUD API endpoints for admins to manage users and orders (, ).
+    3.  Updating user registration to store the plain text password.
+    4.  Rewriting the product search logic to support a cross-references field and return separate lists for exact matches and analogues.
+    The agent then started updating the frontend  to use these new features but was interrupted mid-task.
 - **Status:** IN PROGRESS
 - **Agent Testing Done:** N
 - **Which testing method agent to use?** both
 - **User Testing Done:** N
 
 **All Pending/In progress Issue list**:
-  - **Issue 1:** Finalize and Test the Promotional Banner Customization (P0)
+  - **Issue 1:** Complete Phase 1 of the new features (P0)
 
   **Issues Detail:**
-  - **Issue 1:** Finalize and Test the Promotional Banner Customization
-     - **Attempted fixes:** The agent has successfully implemented the backend logic to store banner height and image URLs, and has updated the admin UI with controls for these new settings (a number input for height and file inputs for images).
+  - **Issue 1:** Complete Phase 1 of the new features
+     - **Attempted fixes:** Backend endpoints have been created and modified. Frontend work on  has started with the addition of state and handler functions.
      - **Next debug checklist:**
-        1. Log in as admin and navigate to the Promotions tab.
-        2. Use the new controls to set a custom height (e.g., 100px) and upload two different images for the left and right sides.
-        3. Save the changes.
-        4. Navigate to the homepage to visually confirm that the banner is displayed with the specified height and that the left and right images appear correctly.
-        5. Run the  to conduct a full regression test and ensure the new functionality and UI changes haven't broken other parts of the application.
-     - **Why fix this issue and what will be achieved with the fix?** This will complete the user's latest feature request, giving them full creative control over the site's promotional banner.
+        1.  **Frontend ():**
+            - Add a Cross-numbers text area to the product add/edit modal.
+            - Implement the UI for full user management (list, add, edit, delete modals), including a field to display the user's plain text password.
+            - Implement UI for editing and deleting orders directly from the orders tab.
+            - Ensure all these admin actions update the UI in real-time without requiring a page reload.
+        2.  **Frontend ():**
+            - Update the product search/display logic to handle the new API response format, showing Exact Match and Possible Replacements sections.
+        3.  **Testing:**
+            - Verify the  endpoint returns a 200 OK status.
+            - Test all new admin CRUD operations for users and orders.
+            - Test the advanced product search with and without cross-reference numbers.
+            - Perform a full regression test using  to ensure no existing functionality was broken.
+     - **Why fix this issue and what will be achieved with the fix?** This will complete the first set of critical admin enhancements and the advanced search feature requested by the user, providing a solid foundation for the subsequent phases.
      - **Status:** IN PROGRESS
      - **Is recurring issue?** N
      - **Should Test frontend/backend/both after fix?** both
      - **Blocked on other issue:** None
 
 **In progress Task List**:
-  None
+  - **Task 1:** Frontend implementation for advanced admin controls and search.
+     - **Where to resume:** Continue editing . The agent was about to add the cross-numbers field to the product editing form. After that, implement the UI for user and order management.
+     - **What will be achieved with this?** The UI will be synchronized with the new backend capabilities.
+     - **Status:** IN PROGRESS
+     - **Should Test frontend/backend/both after fix?** both
+     - **Blocked on something:** None
 
 **Upcoming and Future Tasks**
-  None. All user requests have been addressed. The agent should wait for further user feedback after the current task is completed.
+- **Phase 2 (Admin Panel & Real-time):**
+    - Make *all* actions in the admin panel (add, edit, delete products/categories) update the UI in real-time without page reloads.
+    - Enhance the statistics tab with detailed per-product and per-user information.
+    - Implement multiple photo uploads for products with a slideshow viewer on the product card/modal.
+- **Phase 3 (Chat & Telegram Overhaul):**
+    - Set up a separate Telegram bot for the live chat.
+    - Implement a two-way bridge: Admin can reply from Telegram to the website chat.
+    - Enhance the chat UI: media file uploads, better design/animations, emojis.
+    - Add admin chat management: edit/delete messages, delete chats, pin chats, apply labels.
+- **Phase 4 (Homepage & Profile Customization):**
+    - Make the homepage partner logos section fully editable (resize, add/delete blocks, edit content).
+    - Allow users and admins to change profile pictures.
+    - Enhance the user profile UI to make information more prominent and the Edit button smaller.
+    - Add extended order statistics to the user's Orders page.
+- **Phase 5 (Bonus Program):**
+    - Implement the user-facing bonus program UI in the profile, including the progress bar and bonus history.
+    - Create a new Bonus Program section in the admin panel to manage settings, view user progress, and issue rewards.
 
 **Completed work in this session**
-- **Admin Panel Creation:** Implemented a full admin dashboard from scratch with management for products, categories, orders, and users ().
-- **Image Upload Functionality:** Added backend endpoints () and frontend UI for uploading images for products, categories, and the promotional banner, storing them locally ().
-- **Category Management:** Re-introduced category management in the admin panel and catalog page after an initial removal, including CRUD operations (, ).
-- **Promotional Banner:** Created a manageable promotional banner at the top of the site ().
-- **UI Overhaul (Catalog):** Changed the product catalog from a grid to a list view and replaced separate product pages with a modal dialog for detailed views ().
-- **Homepage Customization:** Replaced the initial category grid with a custom company description and added a section for partner brand logos with user-provided images ().
-- **Header Redesign:** Updated the site branding in the header and implemented conditional visibility for the search icon based on user authentication status ().
-- **Deployment Readiness:** Fixed critical backend issues found by the deployment agent, including N+1 query problems, missing pagination, and insecure environment variable handling ().
+- **Feature Implementation (8 new features):**
+  - Advanced Search (initial version), Popular Products section, Related Products, User Order History, Favorites/Wishlist, Admin Product Import (stub), Admin Advanced Statistics (stub), Admin Telegram Notifications (stub).
+- **Profile & Checkout Enhancements:**
+  - Autofill checkout form with user's last used address.
+  - Implemented user profile editing (name, phone, address).
+  - Moved user order history to a dedicated  page.
+- **Real-time UI Updates:**
+  - Implemented real-time order status updates in the admin panel without page reload.
+- **Manufacturer Field Implementation:**
+  - Added manufacturer to products, visible in all relevant views (catalog, cart, orders). This involved significant debugging of data models and a data migration for old orders.
+- **UI/UX Fixes:**
+  - Relocated and resized the chat widget to avoid being obscured.
+  - Replaced the site's favicon and updated meta tags.
+- **Admin Order View:**
+  - Enhanced the admin order modal to show full product details (image, SKU, price).
 
 **Earlier issues found/mentioned but not fixed**
    - None
@@ -97,80 +137,83 @@ A full-stack FastAPI (backend) and React (frontend) application for a truck part
 - **Database:** MongoDB
 - **Authentication:** JWT (JSON Web Tokens)
 - **Styling:** Tailwind CSS with Shadcn/UI components
-- **File Handling:** The backend uses  to handle file uploads and serves them as static files.
+- **File Handling:** Local file uploads served as static files.
+- **Deployment:** The application is deployed on Kubernetes, which requires a  endpoint for liveness probes.
 
 **key DB schema**
 - **users:** 
 - **products:** 
-- **categories:** 
 - **orders:** 
-- **promo_banner:** A single document storing 
+- **chats:** 
+- **promo_banner:** Single document with configuration.
+- **favorites:** 
 
 **changes in tech stack**
 - None
 
 **All files of reference**
-- : Contains all API logic, including authentication, CRUD operations for all models, file uploads, and static file serving.
-- : A large, multi-functional component that serves as the admin dashboard for managing products, categories, orders, users, and the promo banner.
-- : Renders the product categories and the list of products with a modal for detailed views.
-- : The main landing page, featuring custom content and the brand logo section.
-- : Manages the top navigation, branding, and conditionally displays icons based on authentication status.
-- : A component that displays the site-wide promotional banner based on admin settings.
+- : The monolithic backend file containing all API logic. Heavily modified to add new endpoints for admin CRUD and advanced search.
+- : The monolithic frontend component for the entire admin dashboard. This is the primary file being worked on.
+- : Needs to be updated to support the new search results format.
+- : Was simplified by moving order history out.
+- : The new page for displaying user order history.
+- : Manages user state.
+- : Updated with new favicon and meta tags.
 
 **Areas that need refactoring**:
--  has grown very large. It could be refactored by splitting each tab (Products, Categories, Orders, Users, Promotions) into its own child component to improve readability and maintainability.
+-  is extremely large and complex. It should be broken down into smaller components, with each tab (Products, Orders, Users, etc.) becoming its own component file.
+-  is also becoming very large. The API routes could be split into multiple files using  for better organization (e.g., , ).
 
 **key api endpoints**
+- ** (New)**: Health check for Kubernetes.
+-  (CRUD operations)
+-  (CRUD operations)
+-  (Rewritten to support advanced search)
 - 
-- : Endpoints for all admin operations (stats, users, orders, product CRUD, category CRUD, promo banner management).
-- : Get products (with pagination).
-- : Get all categories.
-- : Manage user's shopping cart.
-- : Create and view orders.
-- : Endpoint for uploading files.
-- : Static route to serve uploaded images.
+-  (For user self-update)
+- 
+- 
+- 
+- 
 
 **Critical Info for New Agent**
-- **Admin Credentials:** Use  and  to log in. If the database is reset, you must visit the  endpoint once to re-create the admin user.
-- **Image URLs:** The application handles image uploads. The backend saves files to  and serves them via . The frontend must prepend the  to construct the full image path (e.g., ).
-- **Component Complexity:** Be aware that  is a very large file containing the logic for five different management tabs. When making changes, carefully locate the relevant section.
+- **User Interaction:** The user has repeatedly insisted on continuing work in the same session without forking. Be prepared to acknowledge this and proceed with the current task.
+- **Deployment Fix:** The immediate priority after completing the current task should be to test and confirm the  endpoint fixes the deployment issue described by the user.
+- **Monolithic Files:** Be extremely careful when editing  and . They contain a vast amount of logic, and changes can have unintended side effects.
+- **Admin Credentials:** Use  and  to log in.
 
 **documents and test reports created in this job**
-- 
-- 
-- 
-- 
-- 
-- 
+-  (Updated)
+-  (Last successful full test run)
 
 **Last 10 User Messages and any pending HUMAN messages**
-1. **User:** Change banner height and add left/right images. (IN PROGRESS)
-2. **Agent:** Implemented UI/backend for banner customization.
-3. **User:** Change header to avopt.store (large) and add Avarus-Venditore (small, gray, centered). (DONE)
-4. **Agent:** Implemented header branding changes and showed a screenshot.
-5. **User:** Add BPW brand with its logo to the homepage. (DONE)
-6. **Agent:** Added BPW and showed a screenshot of the 3x2 grid.
-7. **User:** Fix text overflow and center title in the brands section; use user-provided images. (DONE)
-8. **Agent:** Fixed UI issues, used user images, noted one empty grid slot, and asked for confirmation.
-9. **User:** Asked for image upload for products/categories and a new brand section on the homepage. (DONE)
-10. **Agent:** Confirmed completion of the previous request (promo banner and category management).
+1.  **User:** Replace favicon with a new image. (DONE)
+2.  **Agent:** Replaced favicon and updated meta tags.
+3.  **User:** Provided deployment logs showing a  on  endpoint, asking for a fix. (IN PROGRESS)
+4.  **Agent:** Identified the missing health check as the issue.
+5.  **User:** Dropped a massive list of new features (real-time admin, chat overhaul, bonus program, etc.). (IN PROGRESS)
+6.  **Agent:** Broke the request into phases and asked for clarification.
+7.  **User:** Confirmed details for Phase 1 (Telegram bot, show real password, bonus logic) and told the agent to start. (IN PROGRESS)
+8.  **Agent:** Started implementing the backend for Phase 1.
+9.  **User:** Interrupted multiple times, insisting on continuing in the same chat without forking. (ACKNOWLEDGED)
+10. **Agent:** Acknowledged the user's request and continued working on the frontend .
 
 **Project Health Check:**
-- **Broken:** None.
-- **Mocked:** The entire application's data is mocked (seeded via a backend endpoint). There is no real product or user data.
+- **Broken:** Deployment is failing due to a missing  endpoint. The agent has added the code for this, but it hasn't been tested or deployed yet.
+- **Mocked:** The application data is transient and seeded for testing.
 
 **3rd Party Integrations**
-- None
+- **Telegram (via ):** Partially implemented for notifications. A new bot is required for the chat bridge functionality.
 
 **Testing status**
-- **Testing agent used after significant changes:** YES
+- **Testing agent used after significant changes:** YES, but not since the last major feature batch was started.
 - **Troubleshoot agent used after agent stuck in loop:** NO
 - **Test files created:** None
-- **Known regressions:** None
+- **Known regressions:** None currently, but high risk due to the scale of ongoing changes.
 
 **Credentials to test flow:**
 - **Admin Email:** 
 - **Admin Password:** 
 
 **What agent forgot to execute**
-- Nothing. The agent has been diligent in implementing all user requests. The current task is the only outstanding item.</analysis>
+The agent has been responsive to user corrections. The most significant miss was not initially understanding the depth of the missing manufacturer bug, which required several attempts to fully resolve (from data migration to fixing the Pydantic response model). This has now been corrected.</analysis>

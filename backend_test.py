@@ -4,7 +4,7 @@ from datetime import datetime
 import json
 
 class TruckPartsAPITester:
-    def __init__(self, base_url="https://autoparts-hub-49.preview.emergentagent.com/api"):
+    def __init__(self, base_url="https://auto-parts-hub-45.preview.emergentagent.com/api"):
         self.base_url = base_url
         self.token = None
         self.user_id = None
@@ -326,7 +326,7 @@ class TruckPartsAPITester:
         try:
             # Convert relative URL to full URL
             if file_url.startswith('/uploads/'):
-                full_url = f"https://autoparts-hub-49.preview.emergentagent.com{file_url}"
+                full_url = f"https://auto-parts-hub-45.preview.emergentagent.com{file_url}"
             else:
                 full_url = file_url
             
