@@ -222,13 +222,80 @@ export default function AdminPage() {
       delivery_days: 3,
       description: '',
       image_url: '',
+      images: [],
       cross_articles: ''
     });
   };
 
   const openEditProduct = (product) => {
     setIsNewProduct(false);
-    setEditingProduct({ ...product, cross_articles: product.cross_articles || '' });
+    setEditingProduct({ 
+      ...product, 
+      cross_articles: product.cross_articles || '',
+      images: product.images || []
+    });
+  };
+
+  // Multiple image upload handler
+  const handleMultipleImageUpload = async (files) => {
+    if (!files || files.length === 0) return;
+    
+    setUploading(true);
+    const uploadedUrls = [];
+    
+    try {
+      for (const file of files) {
+        const formData = new FormData();
+        formData.append('file', file);
+        
+        const res = await axios.post(`${API}/upload`, formData, {
+          headers: { 'Content-Type': 'multipart/form-data' }
+        });
+        
+        const url = `${BACKEND_URL}${res.data.url}`;
+        uploadedUrls.push(url);
+      }
+      
+      // Add to existing images
+      const currentImages = editingProduct.images || [];
+      const newImages = [...currentImages, ...uploadedUrls];
+      
+      // Set first image as main if none exists
+      const mainImage = editingProduct.image_url || uploadedUrls[0];
+      
+      setEditingProduct({ 
+        ...editingProduct, 
+        images: newImages,
+        image_url: mainImage
+      });
+      
+      toast.success(`Загружено ${uploadedUrls.length} изображений`);
+    } catch (err) {
+      toast.error('Ошибка загрузки изображений');
+    } finally {
+      setUploading(false);
+    }
+  };
+
+  const handleRemoveImage = (imageUrl) => {
+    const newImages = (editingProduct.images || []).filter(img => img !== imageUrl);
+    const newMainImage = editingProduct.image_url === imageUrl 
+      ? (newImages[0] || '') 
+      : editingProduct.image_url;
+    
+    setEditingProduct({
+      ...editingProduct,
+      images: newImages,
+      image_url: newMainImage
+    });
+  };
+
+  const handleSetMainImage = (imageUrl) => {
+    setEditingProduct({
+      ...editingProduct,
+      image_url: imageUrl
+    });
+    toast.success('Главное изображение установлено');
   };
 
   // User management handlers
