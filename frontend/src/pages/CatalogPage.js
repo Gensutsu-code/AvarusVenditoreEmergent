@@ -99,6 +99,7 @@ export default function CatalogPage() {
     setSearchInput('');
     setSearchParams({});
     setProducts([]);
+    setAlternatives([]);
   };
 
   const selectCategory = (catId) => {
