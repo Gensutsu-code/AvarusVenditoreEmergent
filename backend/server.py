@@ -46,6 +46,10 @@ security = HTTPBearer()
 async def health_check():
     return {"status": "healthy"}
 
+@api_router.get("/health")
+async def api_health_check():
+    return {"status": "healthy"}
+
 # Mount uploads directory for serving static files (via /api/uploads for ingress routing)
 app.mount("/api/uploads", StaticFiles(directory=str(UPLOADS_DIR)), name="uploads")
 
