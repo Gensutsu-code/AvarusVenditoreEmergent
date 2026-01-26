@@ -56,16 +56,29 @@ export default function CatalogPage() {
   const fetchProducts = async () => {
     setLoading(true);
     try {
-      const params = new URLSearchParams();
-      if (searchQuery) params.append('search', searchQuery);
-      if (categoryId) params.append('category_id', categoryId);
-      
-      const res = await axios.get(`${API}/products?${params.toString()}`);
-      setProducts(res.data);
-      // Initialize quantities
-      const q = {};
-      res.data.forEach(p => q[p.id] = 1);
-      setQuantities(q);
+      // If searching by text, use the advanced search endpoint
+      if (searchQuery && !categoryId) {
+        const res = await axios.get(`${API}/products/search-with-alternatives?search=${encodeURIComponent(searchQuery)}`);
+        setProducts(res.data.exact || []);
+        setAlternatives(res.data.alternatives || []);
+        // Initialize quantities for all products
+        const q = {};
+        [...(res.data.exact || []), ...(res.data.alternatives || [])].forEach(p => q[p.id] = 1);
+        setQuantities(q);
+      } else {
+        // Regular search for category browsing
+        const params = new URLSearchParams();
+        if (searchQuery) params.append('search', searchQuery);
+        if (categoryId) params.append('category_id', categoryId);
+        
+        const res = await axios.get(`${API}/products?${params.toString()}`);
+        setProducts(res.data);
+        setAlternatives([]);
+        // Initialize quantities
+        const q = {};
+        res.data.forEach(p => q[p.id] = 1);
+        setQuantities(q);
+      }
     } catch (err) {
       console.error('Failed to fetch products', err);
     } finally {
