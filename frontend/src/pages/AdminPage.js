@@ -726,9 +726,23 @@ export default function AdminPage() {
                         </select>
                       </td>
                       <td className="py-2 px-2 text-right">
-                        <Button variant="ghost" size="sm" onClick={() => setViewingOrder(order)}>
-                          <Eye className="w-4 h-4" />
-                        </Button>
+                        <div className="flex justify-end gap-1">
+                          <Button variant="ghost" size="sm" onClick={() => setViewingOrder(order)} data-testid={`view-order-${order.id}`}>
+                            <Eye className="w-4 h-4" />
+                          </Button>
+                          <Button variant="ghost" size="sm" onClick={() => openEditOrder(order)} data-testid={`edit-order-${order.id}`}>
+                            <Pencil className="w-4 h-4" />
+                          </Button>
+                          <Button 
+                            variant="ghost" 
+                            size="sm" 
+                            onClick={() => handleDeleteOrder(order.id)} 
+                            className="text-red-500 hover:text-red-600"
+                            data-testid={`delete-order-${order.id}`}
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </Button>
+                        </div>
                       </td>
                     </tr>
                   ))}
@@ -739,7 +753,13 @@ export default function AdminPage() {
 
           {/* Users Tab */}
           <TabsContent value="users" className="p-6">
-            <h2 className="text-lg font-semibold mb-4">Пользователи</h2>
+            <div className="flex justify-between items-center mb-4">
+              <h2 className="text-lg font-semibold">Управление пользователями</h2>
+              <Button onClick={openNewUser} className="bg-orange-500 hover:bg-orange-600" data-testid="add-user-btn">
+                <Plus className="w-4 h-4 mr-2" />
+                Добавить пользователя
+              </Button>
+            </div>
             
             <div className="overflow-x-auto">
               <table className="w-full text-sm">
@@ -749,7 +769,10 @@ export default function AdminPage() {
                     <th className="text-left py-3 px-2">Email</th>
                     <th className="text-left py-3 px-2">Телефон</th>
                     <th className="text-left py-3 px-2">Роль</th>
-                    <th className="text-left py-3 px-2">Дата регистрации</th>
+                    <th className="text-right py-3 px-2">Заказов</th>
+                    <th className="text-right py-3 px-2">Потрачено</th>
+                    <th className="text-left py-3 px-2">Дата</th>
+                    <th className="text-right py-3 px-2">Действия</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -763,7 +786,26 @@ export default function AdminPage() {
                           {u.role === 'admin' ? 'Админ' : 'Пользователь'}
                         </span>
                       </td>
-                      <td className="py-2 px-2 text-zinc-500">{formatDate(u.created_at)}</td>
+                      <td className="py-2 px-2 text-right font-mono">{u.total_orders || 0}</td>
+                      <td className="py-2 px-2 text-right font-mono">{formatPrice(u.total_spent || 0)} ₽</td>
+                      <td className="py-2 px-2 text-zinc-500 text-xs">{u.created_at ? formatDate(u.created_at) : '—'}</td>
+                      <td className="py-2 px-2 text-right">
+                        <div className="flex justify-end gap-1">
+                          <Button variant="ghost" size="sm" onClick={() => openEditUser(u)} data-testid={`edit-user-${u.id}`}>
+                            <Pencil className="w-4 h-4" />
+                          </Button>
+                          <Button 
+                            variant="ghost" 
+                            size="sm" 
+                            onClick={() => handleDeleteUser(u.id)} 
+                            className="text-red-500 hover:text-red-600"
+                            disabled={u.email === 'admin@avarus.ru'}
+                            data-testid={`delete-user-${u.id}`}
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </Button>
+                        </div>
+                      </td>
                     </tr>
                   ))}
                 </tbody>
