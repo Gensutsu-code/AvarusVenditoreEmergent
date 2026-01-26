@@ -311,7 +311,7 @@ export default function CatalogPage() {
             <div className="flex items-center gap-2 mt-4">
               {searchQuery && (
                 <span className="inline-flex items-center gap-2 bg-zinc-100 px-3 py-2 text-sm">
-                  Поиск: "{searchQuery}"
+                  Поиск: &quot;{searchQuery}&quot;
                   <button onClick={() => {
                     const params = new URLSearchParams(searchParams);
                     params.delete('search');
@@ -431,7 +431,7 @@ export default function CatalogPage() {
                   </h2>
                 </div>
                 <p className="text-sm text-zinc-500 mb-4">
-                  Товары, у которых артикул "{searchQuery}" указан в кросс-номерах
+                  Товары, у которых артикул &quot;{searchQuery}&quot; указан в кросс-номерах
                 </p>
                 
                 {/* Alternatives List */}
