@@ -460,64 +460,15 @@ export default function CatalogPage() {
       <Dialog open={!!selectedProduct} onOpenChange={() => setSelectedProduct(null)}>
         <DialogContent className="max-w-2xl" data-testid="product-modal">
           {selectedProduct && (
-            <>
-              <DialogHeader>
-                <DialogTitle className="text-xl font-bold">{selectedProduct.name}</DialogTitle>
-              </DialogHeader>
-              
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-4">
-                {/* Large Image */}
-                <div className="aspect-square bg-zinc-100 overflow-hidden">
-                  {selectedProduct.image_url ? (
-                    <img 
-                      src={selectedProduct.image_url} 
-                      alt={selectedProduct.name}
-                      className="w-full h-full object-cover"
-                    />
-                  ) : (
-                    <div className="w-full h-full flex items-center justify-center text-zinc-300">
-                      <Package className="w-16 h-16" />
-                    </div>
-                  )}
-                </div>
-
-                {/* Details */}
-                <div className="space-y-4">
-                  {/* Manufacturer and Article */}
-                  <div className="space-y-1">
-                    {selectedProduct.manufacturer && (
-                      <p className="text-base font-bold text-orange-600">
-                        {selectedProduct.manufacturer}
-                      </p>
-                    )}
-                    <p className="text-base font-mono font-semibold text-zinc-700">
-                      Артикул: {selectedProduct.article}
-                    </p>
-                  </div>
-
-                  {selectedProduct.description && (
-                    <p className="text-zinc-600">
-                      {selectedProduct.description}
-                    </p>
-                  )}
-
-                  <div className="space-y-2 text-sm">
-                    <div className="flex justify-between">
-                      <span className="text-zinc-500">Наличие:</span>
-                      <span className={selectedProduct.stock > 0 ? 'text-green-600 font-semibold' : 'text-red-500'}>
-                        {selectedProduct.stock > 0 ? `${selectedProduct.stock} шт.` : 'Нет в наличии'}
-                      </span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span className="text-zinc-500">Доставка:</span>
-                      <span className="flex items-center gap-1">
-                        <Truck className="w-4 h-4" />
-                        {getDeliveryText(selectedProduct.delivery_days || 3)}
-                      </span>
-                    </div>
-                  </div>
-
-                  <div className="border-t border-zinc-200 pt-4 flex items-center justify-between">
+            <ProductModalContent 
+              product={selectedProduct}
+              quantities={quantities}
+              updateQuantity={updateQuantity}
+              handleAddToCart={handleAddToCart}
+              formatPrice={formatPrice}
+              getDeliveryText={getDeliveryText}
+            />
+          )}
                     <span className="price-tag text-2xl text-zinc-900">
                       {formatPrice(selectedProduct.price)} ₽
                     </span>
