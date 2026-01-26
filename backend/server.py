@@ -1053,6 +1053,345 @@ async def mark_messages_read(user=Depends(get_current_user)):
         )
     return {"message": "Messages marked as read"}
 
+# ==================== CHAT MEDIA UPLOAD ====================
+
+@api_router.post("/chat/upload")
+async def upload_chat_media(file: UploadFile = File(...), user=Depends(get_current_user)):
+    """Upload media file for chat"""
+    # Validate file type
+    allowed_types = ['image/jpeg', 'image/png', 'image/gif', 'image/webp', 'application/pdf', 
+                     'application/msword', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document']
+    
+    if file.content_type not in allowed_types:
+        raise HTTPException(status_code=400, detail="Недопустимый тип файла")
+    
+    # Check file size (max 10MB)
+    content = await file.read()
+    if len(content) > 10 * 1024 * 1024:
+        raise HTTPException(status_code=400, detail="Файл слишком большой (макс. 10МБ)")
+    
+    # Save file
+    file_ext = Path(file.filename).suffix
+    file_name = f"chat_{uuid.uuid4()}{file_ext}"
+    file_path = UPLOADS_DIR / file_name
+    
+    with open(file_path, "wb") as f:
+        f.write(content)
+    
+    file_url = f"/uploads/{file_name}"
+    is_image = file.content_type.startswith('image/')
+    
+    return {
+        "url": file_url,
+        "filename": file.filename,
+        "is_image": is_image,
+        "content_type": file.content_type
+    }
+
+@api_router.post("/chat/send-media")
+async def send_chat_media(
+    chat_id: Optional[str] = None,
+    file_url: str = None,
+    filename: str = None,
+    is_image: bool = False,
+    caption: str = "",
+    user=Depends(get_current_user)
+):
+    """Send media message in chat"""
+    # Get or create chat for user
+    chat = await db.chats.find_one({"user_id": user["id"]})
+    if not chat:
+        new_chat_id = str(uuid.uuid4())
+        await db.chats.insert_one({
+            "id": new_chat_id,
+            "user_id": user["id"],
+            "user_name": user["name"],
+            "user_email": user["email"],
+            "created_at": datetime.now(timezone.utc).isoformat(),
+            "updated_at": datetime.now(timezone.utc).isoformat(),
+            "pinned": False,
+            "labels": []
+        })
+        chat_id = new_chat_id
+    else:
+        chat_id = chat["id"]
+        await db.chats.update_one({"id": chat_id}, {"$set": {"updated_at": datetime.now(timezone.utc).isoformat()}})
+    
+    msg_id = str(uuid.uuid4())
+    message_type = "image" if is_image else "file"
+    
+    chat_message = {
+        "id": msg_id,
+        "chat_id": chat_id,
+        "user_id": user["id"],
+        "user_name": user["name"],
+        "text": caption,
+        "file_url": file_url,
+        "filename": filename,
+        "sender_type": "user",
+        "message_type": message_type,
+        "created_at": datetime.now(timezone.utc).isoformat(),
+        "read": False,
+        "edited": False
+    }
+    await db.chat_messages.insert_one(chat_message)
+    
+    # Send notification to Telegram
+    backend_url = os.environ.get('BACKEND_URL', '')
+    full_file_url = f"{backend_url}{file_url}" if file_url else None
+    await send_to_telegram_chat(chat_id, user["name"], caption or filename, message_type, full_file_url)
+    
+    return {"id": msg_id, "chat_id": chat_id}
+
+# ==================== TELEGRAM CHAT BOT WEBHOOK ====================
+
+class TelegramUpdate(BaseModel):
+    update_id: int
+    message: Optional[Dict[str, Any]] = None
+
+@api_router.post("/telegram/chat-webhook")
+async def telegram_chat_webhook(update: TelegramUpdate):
+    """Webhook for Telegram chat bot - receives admin replies"""
+    if not update.message:
+        return {"ok": True}
+    
+    message = update.message
+    chat_id_tg = str(message.get("chat", {}).get("id", ""))
+    text = message.get("text", "")
+    
+    # Check for /reply command
+    if text.startswith("/reply "):
+        parts = text[7:].split(" ", 1)
+        if len(parts) >= 2:
+            website_chat_id = parts[0]
+            reply_text = parts[1]
+            
+            # Find the chat
+            chat = await db.chats.find_one({"id": website_chat_id})
+            if not chat:
+                # Try partial match
+                chat = await db.chats.find_one({"id": {"$regex": f"^{website_chat_id}"}})
+            
+            if chat:
+                # Send admin message to chat
+                msg_id = str(uuid.uuid4())
+                chat_message = {
+                    "id": msg_id,
+                    "chat_id": chat["id"],
+                    "user_id": "telegram_admin",
+                    "user_name": "Поддержка (Telegram)",
+                    "text": reply_text,
+                    "sender_type": "admin",
+                    "message_type": "text",
+                    "created_at": datetime.now(timezone.utc).isoformat(),
+                    "read": False,
+                    "edited": False
+                }
+                await db.chat_messages.insert_one(chat_message)
+                await db.chats.update_one({"id": chat["id"]}, {"$set": {"updated_at": datetime.now(timezone.utc).isoformat()}})
+                
+                # Send confirmation to Telegram
+                try:
+                    async with httpx.AsyncClient() as client:
+                        await client.post(
+                            f"https://api.telegram.org/bot{TELEGRAM_CHAT_BOT_TOKEN}/sendMessage",
+                            json={
+                                "chat_id": chat_id_tg,
+                                "text": f"✅ Сообщение отправлено пользователю {chat['user_name']}",
+                                "reply_to_message_id": message.get("message_id")
+                            },
+                            timeout=10
+                        )
+                except:
+                    pass
+            else:
+                # Chat not found
+                try:
+                    async with httpx.AsyncClient() as client:
+                        await client.post(
+                            f"https://api.telegram.org/bot{TELEGRAM_CHAT_BOT_TOKEN}/sendMessage",
+                            json={
+                                "chat_id": chat_id_tg,
+                                "text": f"❌ Чат с ID '{website_chat_id}' не найден"
+                            },
+                            timeout=10
+                        )
+                except:
+                    pass
+    
+    # Check for /start command - save admin chat ID
+    elif text == "/start":
+        await db.telegram_chat_settings.update_one(
+            {"setting_type": "chat_bot"},
+            {"$set": {"admin_chat_id": chat_id_tg, "updated_at": datetime.now(timezone.utc).isoformat()}},
+            upsert=True
+        )
+        try:
+            async with httpx.AsyncClient() as client:
+                await client.post(
+                    f"https://api.telegram.org/bot{TELEGRAM_CHAT_BOT_TOKEN}/sendMessage",
+                    json={
+                        "chat_id": chat_id_tg,
+                        "text": "✅ Чат-бот подключен!\n\nТеперь вы будете получать сообщения от пользователей сайта.\n\nДля ответа используйте команду:\n`/reply <chat_id> Ваш ответ`",
+                        "parse_mode": "Markdown"
+                    },
+                    timeout=10
+                )
+        except:
+            pass
+    
+    # Check for /chats command - list active chats
+    elif text == "/chats":
+        chats = await db.chats.find({}, {"_id": 0}).sort("updated_at", -1).limit(10).to_list(10)
+        if chats:
+            chat_list = "📋 *Последние чаты:*\n\n"
+            for c in chats:
+                unread = await db.chat_messages.count_documents({"chat_id": c["id"], "sender_type": "user", "read": False})
+                status = "🔴" if unread > 0 else "⚪"
+                chat_list += f"{status} `{c['id'][:8]}` - {c['user_name']}"
+                if unread > 0:
+                    chat_list += f" ({unread} новых)"
+                chat_list += "\n"
+            
+            try:
+                async with httpx.AsyncClient() as client:
+                    await client.post(
+                        f"https://api.telegram.org/bot{TELEGRAM_CHAT_BOT_TOKEN}/sendMessage",
+                        json={
+                            "chat_id": chat_id_tg,
+                            "text": chat_list,
+                            "parse_mode": "Markdown"
+                        },
+                        timeout=10
+                    )
+            except:
+                pass
+        else:
+            try:
+                async with httpx.AsyncClient() as client:
+                    await client.post(
+                        f"https://api.telegram.org/bot{TELEGRAM_CHAT_BOT_TOKEN}/sendMessage",
+                        json={"chat_id": chat_id_tg, "text": "📭 Чатов пока нет"},
+                        timeout=10
+                    )
+            except:
+                pass
+    
+    return {"ok": True}
+
+@api_router.post("/admin/chat/setup-telegram-webhook")
+async def setup_telegram_chat_webhook(user=Depends(get_current_user)):
+    """Setup Telegram webhook for chat bot"""
+    if user.get("role") != "admin":
+        raise HTTPException(status_code=403, detail="Admin access required")
+    
+    if not TELEGRAM_CHAT_BOT_TOKEN:
+        raise HTTPException(status_code=400, detail="TELEGRAM_CHAT_BOT_TOKEN не настроен")
+    
+    # Get backend URL from environment or construct it
+    backend_url = os.environ.get('BACKEND_URL', '')
+    if not backend_url:
+        # Try to get from request
+        raise HTTPException(status_code=400, detail="BACKEND_URL не настроен")
+    
+    webhook_url = f"{backend_url}/api/telegram/chat-webhook"
+    
+    try:
+        async with httpx.AsyncClient() as client:
+            # Delete existing webhook first
+            await client.post(f"https://api.telegram.org/bot{TELEGRAM_CHAT_BOT_TOKEN}/deleteWebhook")
+            
+            # Set new webhook
+            res = await client.post(
+                f"https://api.telegram.org/bot{TELEGRAM_CHAT_BOT_TOKEN}/setWebhook",
+                json={"url": webhook_url}
+            )
+            result = res.json()
+            
+            if result.get("ok"):
+                return {"success": True, "message": "Webhook установлен", "url": webhook_url}
+            else:
+                raise HTTPException(status_code=400, detail=result.get("description", "Ошибка установки webhook"))
+    except httpx.RequestError as e:
+        raise HTTPException(status_code=500, detail=f"Ошибка подключения к Telegram: {str(e)}")
+
+# ==================== CHAT MANAGEMENT (ADMIN) ====================
+
+@api_router.put("/admin/chats/{chat_id}/pin")
+async def toggle_pin_chat(chat_id: str, user=Depends(get_current_user)):
+    """Toggle pin status of a chat"""
+    if user.get("role") != "admin":
+        raise HTTPException(status_code=403, detail="Admin access required")
+    
+    chat = await db.chats.find_one({"id": chat_id})
+    if not chat:
+        raise HTTPException(status_code=404, detail="Chat not found")
+    
+    new_pinned = not chat.get("pinned", False)
+    await db.chats.update_one({"id": chat_id}, {"$set": {"pinned": new_pinned}})
+    
+    return {"pinned": new_pinned}
+
+@api_router.put("/admin/chats/{chat_id}/label")
+async def update_chat_label(chat_id: str, label: str = "", user=Depends(get_current_user)):
+    """Add or remove label from chat"""
+    if user.get("role") != "admin":
+        raise HTTPException(status_code=403, detail="Admin access required")
+    
+    chat = await db.chats.find_one({"id": chat_id})
+    if not chat:
+        raise HTTPException(status_code=404, detail="Chat not found")
+    
+    labels = chat.get("labels", [])
+    if label in labels:
+        labels.remove(label)
+    else:
+        labels.append(label)
+    
+    await db.chats.update_one({"id": chat_id}, {"$set": {"labels": labels}})
+    
+    return {"labels": labels}
+
+@api_router.delete("/admin/chats/{chat_id}")
+async def delete_chat(chat_id: str, user=Depends(get_current_user)):
+    """Delete a chat and all its messages"""
+    if user.get("role") != "admin":
+        raise HTTPException(status_code=403, detail="Admin access required")
+    
+    await db.chat_messages.delete_many({"chat_id": chat_id})
+    await db.chats.delete_one({"id": chat_id})
+    
+    return {"message": "Chat deleted"}
+
+@api_router.put("/admin/chats/{chat_id}/messages/{message_id}")
+async def edit_chat_message(chat_id: str, message_id: str, message: ChatMessage, user=Depends(get_current_user)):
+    """Edit a chat message"""
+    if user.get("role") != "admin":
+        raise HTTPException(status_code=403, detail="Admin access required")
+    
+    result = await db.chat_messages.update_one(
+        {"id": message_id, "chat_id": chat_id},
+        {"$set": {"text": message.text, "edited": True, "edited_at": datetime.now(timezone.utc).isoformat()}}
+    )
+    
+    if result.modified_count == 0:
+        raise HTTPException(status_code=404, detail="Message not found")
+    
+    return {"message": "Message updated"}
+
+@api_router.delete("/admin/chats/{chat_id}/messages/{message_id}")
+async def delete_chat_message(chat_id: str, message_id: str, user=Depends(get_current_user)):
+    """Delete a chat message"""
+    if user.get("role") != "admin":
+        raise HTTPException(status_code=403, detail="Admin access required")
+    
+    result = await db.chat_messages.delete_one({"id": message_id, "chat_id": chat_id})
+    
+    if result.deleted_count == 0:
+        raise HTTPException(status_code=404, detail="Message not found")
+    
+    return {"message": "Message deleted"}
+
 # ==================== IMPORT/EXPORT ====================
 
 @api_router.post("/admin/products/import")
