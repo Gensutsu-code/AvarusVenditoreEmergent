@@ -17,6 +17,7 @@ const API = `${process.env.REACT_APP_BACKEND_URL}/api`;
 export default function CatalogPage() {
   const [searchParams, setSearchParams] = useSearchParams();
   const [products, setProducts] = useState([]);
+  const [alternatives, setAlternatives] = useState([]);
   const [categories, setCategories] = useState([]);
   const [loading, setLoading] = useState(false);
   const [searchInput, setSearchInput] = useState(searchParams.get('search') || '');
@@ -39,6 +40,7 @@ export default function CatalogPage() {
       fetchProducts();
     } else {
       setProducts([]);
+      setAlternatives([]);
     }
   }, [searchQuery, categoryId]);
 
