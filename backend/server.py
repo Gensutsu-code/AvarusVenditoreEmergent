@@ -110,6 +110,8 @@ class ProductCreate(BaseModel):
     price: float
     description: Optional[str] = None
     image_url: Optional[str] = None
+    images: Optional[List[str]] = None  # Multiple images
+    cross_articles: Optional[str] = None  # Cross-reference articles
     stock: int = 0
     delivery_days: int = 3
 
@@ -121,6 +123,8 @@ class ProductUpdate(BaseModel):
     price: Optional[float] = None
     description: Optional[str] = None
     image_url: Optional[str] = None
+    images: Optional[List[str]] = None
+    cross_articles: Optional[str] = None
     stock: Optional[int] = None
     delivery_days: Optional[int] = None
 
@@ -133,6 +137,8 @@ class ProductResponse(BaseModel):
     price: float
     description: Optional[str] = None
     image_url: Optional[str] = None
+    images: Optional[List[str]] = None
+    cross_articles: Optional[str] = None
     stock: int
     delivery_days: int = 3
 
