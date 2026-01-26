@@ -329,7 +329,7 @@ export default function CatalogPage() {
                 </div>
               </div>
             )}
-          </>
+          </div>
         )}
       </div>
 
