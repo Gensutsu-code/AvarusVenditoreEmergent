@@ -1313,13 +1313,93 @@ async def get_admin_stats(user=Depends(get_current_user)):
         "total_revenue": total_revenue
     }
 
+# ==================== ADMIN USER MANAGEMENT ====================
+
 @api_router.get("/admin/users")
 async def get_admin_users(user=Depends(get_current_user)):
     if user.get("role") != "admin":
         raise HTTPException(status_code=403, detail="Admin access required")
     
-    users = await db.users.find({}, {"_id": 0, "password": 0}).to_list(1000)
+    users = await db.users.find({}, {"_id": 0}).to_list(1000)
+    
+    # Add order statistics for each user
+    for u in users:
+        user_orders = await db.orders.find({"user_id": u["id"]}, {"_id": 0}).to_list(1000)
+        u["total_orders"] = len(user_orders)
+        u["total_spent"] = sum(o.get("total", 0) for o in user_orders)
+        # Don't remove password hash, but add plain password if exists
+        if "password" in u:
+            del u["password"]  # Remove hash, keep password_plain
+    
     return users
+
+@api_router.post("/admin/users")
+async def create_admin_user_new(data: AdminUserCreate, user=Depends(get_current_user)):
+    if user.get("role") != "admin":
+        raise HTTPException(status_code=403, detail="Admin access required")
+    
+    existing = await db.users.find_one({"email": data.email})
+    if existing:
+        raise HTTPException(status_code=400, detail="Email already registered")
+    
+    user_id = str(uuid.uuid4())
+    new_user = {
+        "id": user_id,
+        "email": data.email,
+        "password": hash_password(data.password),
+        "password_plain": data.password,
+        "name": data.name,
+        "phone": data.phone,
+        "address": data.address,
+        "role": data.role,
+        "created_at": datetime.now(timezone.utc).isoformat()
+    }
+    await db.users.insert_one(new_user)
+    await db.carts.insert_one({"user_id": user_id, "items": []})
+    
+    return {"id": user_id, "email": data.email, "name": data.name, "role": data.role}
+
+@api_router.put("/admin/users/{user_id}")
+async def update_admin_user(user_id: str, data: AdminUserUpdate, user=Depends(get_current_user)):
+    if user.get("role") != "admin":
+        raise HTTPException(status_code=403, detail="Admin access required")
+    
+    update_data = {k: v for k, v in data.model_dump().items() if v is not None}
+    
+    # If password is being updated, hash it and store plain
+    if "password" in update_data:
+        update_data["password_plain"] = update_data["password"]
+        update_data["password"] = hash_password(update_data["password"])
+    
+    if not update_data:
+        raise HTTPException(status_code=400, detail="No data to update")
+    
+    result = await db.users.update_one({"id": user_id}, {"$set": update_data})
+    if result.matched_count == 0:
+        raise HTTPException(status_code=404, detail="User not found")
+    
+    updated_user = await db.users.find_one({"id": user_id}, {"_id": 0, "password": 0})
+    return updated_user
+
+@api_router.delete("/admin/users/{user_id}")
+async def delete_admin_user(user_id: str, user=Depends(get_current_user)):
+    if user.get("role") != "admin":
+        raise HTTPException(status_code=403, detail="Admin access required")
+    
+    # Don't allow deleting yourself
+    if user_id == user["id"]:
+        raise HTTPException(status_code=400, detail="Cannot delete yourself")
+    
+    result = await db.users.delete_one({"id": user_id})
+    if result.deleted_count == 0:
+        raise HTTPException(status_code=404, detail="User not found")
+    
+    # Also delete user's cart
+    await db.carts.delete_one({"user_id": user_id})
+    
+    return {"message": "User deleted"}
+
+# ==================== ADMIN ORDER MANAGEMENT ====================
 
 @api_router.get("/admin/orders")
 async def get_admin_orders(user=Depends(get_current_user)):
@@ -1328,6 +1408,28 @@ async def get_admin_orders(user=Depends(get_current_user)):
     
     orders = await db.orders.find({}, {"_id": 0}).sort("created_at", -1).to_list(1000)
     return orders
+
+@api_router.put("/admin/orders/{order_id}")
+async def update_admin_order(order_id: str, data: AdminOrderUpdate, user=Depends(get_current_user)):
+    if user.get("role") != "admin":
+        raise HTTPException(status_code=403, detail="Admin access required")
+    
+    update_data = {k: v for k, v in data.model_dump().items() if v is not None}
+    
+    if "status" in update_data:
+        valid_statuses = ["pending", "processing", "shipped", "delivered", "cancelled"]
+        if update_data["status"] not in valid_statuses:
+            raise HTTPException(status_code=400, detail="Invalid status")
+    
+    if not update_data:
+        raise HTTPException(status_code=400, detail="No data to update")
+    
+    result = await db.orders.update_one({"id": order_id}, {"$set": update_data})
+    if result.matched_count == 0:
+        raise HTTPException(status_code=404, detail="Order not found")
+    
+    updated_order = await db.orders.find_one({"id": order_id}, {"_id": 0})
+    return updated_order
 
 @api_router.put("/admin/orders/{order_id}/status")
 async def update_order_status(order_id: str, status: str, user=Depends(get_current_user)):
@@ -1343,6 +1445,17 @@ async def update_order_status(order_id: str, status: str, user=Depends(get_curre
         raise HTTPException(status_code=404, detail="Order not found")
     
     return {"message": "Status updated"}
+
+@api_router.delete("/admin/orders/{order_id}")
+async def delete_admin_order(order_id: str, user=Depends(get_current_user)):
+    if user.get("role") != "admin":
+        raise HTTPException(status_code=403, detail="Admin access required")
+    
+    result = await db.orders.delete_one({"id": order_id})
+    if result.deleted_count == 0:
+        raise HTTPException(status_code=404, detail="Order not found")
+    
+    return {"message": "Order deleted"}
 
 @api_router.post("/admin/create-admin")
 async def create_admin_user():
