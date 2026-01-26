@@ -1474,6 +1474,19 @@ export default function AdminPage() {
                 />
               </div>
 
+              <div>
+                <Label className="text-xs font-bold uppercase text-zinc-500">Кросс-номера (аналоги)</Label>
+                <Textarea
+                  value={editingProduct.cross_articles || ''}
+                  onChange={(e) => setEditingProduct({ ...editingProduct, cross_articles: e.target.value })}
+                  placeholder="Артикулы аналогов через запятую или с новой строки. Например: MAN-001, SACHS-002"
+                  className="mt-1 font-mono text-sm"
+                  rows={3}
+                  data-testid="product-cross-articles-input"
+                />
+                <p className="text-xs text-zinc-400 mt-1">Позволяет находить товар по артикулам аналогов в поиске</p>
+              </div>
+
               <div className="flex justify-end gap-2 pt-4">
                 <Button variant="outline" onClick={() => setEditingProduct(null)}>
                   Отмена
