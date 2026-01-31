@@ -46,7 +46,7 @@ export default function AccountPage() {
   const [saving, setSaving] = useState(false);
   const [uploadingAvatar, setUploadingAvatar] = useState(false);
   const avatarInputRef = useRef(null);
-  const [profileForm, setProfileForm] = useState({
+  const [formData, setFormData] = useState({
     name: '',
     email: '',
     phone: '',
