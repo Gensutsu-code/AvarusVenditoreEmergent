@@ -18,23 +18,22 @@ const DEFAULT_PARTNERS = [
 export default function HomePage() {
   const [partners, setPartners] = useState(DEFAULT_PARTNERS);
 
-  const fetchPartners = useCallback(async () => {
-    try {
-      const res = await axios.get(`${API}/partners`);
-      if (res.data.length > 0) {
-        setPartners(res.data);
-      }
-    } catch (err) {
-      console.error('Failed to fetch partners', err);
-    }
-  }, []);
-
   useEffect(() => {
     // Seed data on first load
     axios.post(`${API}/seed`).catch(() => {});
     // Fetch partners
-    fetchPartners();
-  }, [fetchPartners]);
+    const loadPartners = async () => {
+      try {
+        const res = await axios.get(`${API}/partners`);
+        if (res.data.length > 0) {
+          setPartners(res.data);
+        }
+      } catch (err) {
+        console.error('Failed to fetch partners', err);
+      }
+    };
+    loadPartners();
+  }, []);
 
   return (
     <div className="min-h-screen" data-testid="home-page">
