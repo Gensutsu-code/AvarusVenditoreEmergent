@@ -1,7 +1,10 @@
 import { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import axios from 'axios';
-import { Package, ChevronDown, ChevronUp, TrendingUp, ShoppingBag, DollarSign, BarChart3 } from 'lucide-react';
+import { 
+  Package, ChevronDown, ChevronUp, TrendingUp, ShoppingBag, 
+  DollarSign, BarChart3, Star, ArrowLeft 
+} from 'lucide-react';
 import { Button } from '../components/ui/button';
 import { useAuth } from '../context/AuthContext';
 
