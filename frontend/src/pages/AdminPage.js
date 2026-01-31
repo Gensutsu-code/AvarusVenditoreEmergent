@@ -871,62 +871,255 @@ export default function AdminPage() {
           {/* Users Tab */}
           <TabsContent value="users" className="p-6">
             <div className="flex justify-between items-center mb-4">
-              <h2 className="text-lg font-semibold">Управление пользователями</h2>
+              <h2 className="text-lg font-semibold">Управление пользователями ({users.length})</h2>
               <Button onClick={openNewUser} className="bg-orange-500 hover:bg-orange-600" data-testid="add-user-btn">
                 <Plus className="w-4 h-4 mr-2" />
                 Добавить пользователя
               </Button>
             </div>
             
-            <div className="overflow-x-auto">
-              <table className="w-full text-sm">
-                <thead>
-                  <tr className="border-b border-zinc-200">
-                    <th className="text-left py-3 px-2">Имя</th>
-                    <th className="text-left py-3 px-2">Email</th>
-                    <th className="text-left py-3 px-2">Телефон</th>
-                    <th className="text-left py-3 px-2">Роль</th>
-                    <th className="text-right py-3 px-2">Заказов</th>
-                    <th className="text-right py-3 px-2">Потрачено</th>
-                    <th className="text-left py-3 px-2">Дата</th>
-                    <th className="text-right py-3 px-2">Действия</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {users.map((u) => (
-                    <tr key={u.id} className="border-b border-zinc-100 hover:bg-zinc-50">
-                      <td className="py-2 px-2 font-medium">{u.name}</td>
-                      <td className="py-2 px-2">{u.email}</td>
-                      <td className="py-2 px-2 text-zinc-500">{u.phone || '—'}</td>
-                      <td className="py-2 px-2">
-                        <span className={`text-xs font-bold px-2 py-1 ${u.role === 'admin' ? 'bg-purple-100 text-purple-800' : 'bg-zinc-100'}`}>
-                          {u.role === 'admin' ? 'Админ' : 'Пользователь'}
-                        </span>
-                      </td>
-                      <td className="py-2 px-2 text-right font-mono">{u.total_orders || 0}</td>
-                      <td className="py-2 px-2 text-right font-mono">{formatPrice(u.total_spent || 0)} ₽</td>
-                      <td className="py-2 px-2 text-zinc-500 text-xs">{u.created_at ? formatDate(u.created_at) : '—'}</td>
-                      <td className="py-2 px-2 text-right">
-                        <div className="flex justify-end gap-1">
-                          <Button variant="ghost" size="sm" onClick={() => openEditUser(u)} data-testid={`edit-user-${u.id}`}>
-                            <Pencil className="w-4 h-4" />
-                          </Button>
-                          <Button 
-                            variant="ghost" 
-                            size="sm" 
-                            onClick={() => handleDeleteUser(u.id)} 
-                            className="text-red-500 hover:text-red-600"
-                            disabled={u.email === 'admin@avarus.ru'}
-                            data-testid={`delete-user-${u.id}`}
-                          >
-                            <Trash2 className="w-4 h-4" />
-                          </Button>
+            <div className="space-y-2">
+              {users.map((u) => (
+                <div key={u.id} className="border border-zinc-200 bg-white rounded-lg overflow-hidden">
+                  {/* User Row - Clickable Header */}
+                  <div 
+                    className={`flex items-center justify-between p-4 cursor-pointer hover:bg-zinc-50 transition-colors ${
+                      expandedUserId === u.id ? 'bg-orange-50 border-b border-orange-200' : ''
+                    }`}
+                    onClick={async () => {
+                      if (expandedUserId === u.id) {
+                        setExpandedUserId(null);
+                        setUserDetails(null);
+                      } else {
+                        setExpandedUserId(u.id);
+                        setLoadingUserDetails(true);
+                        try {
+                          const res = await axios.get(`${API}/admin/users/${u.id}/details`);
+                          setUserDetails(res.data);
+                        } catch (err) {
+                          toast.error('Ошибка загрузки данных');
+                        } finally {
+                          setLoadingUserDetails(false);
+                        }
+                      }
+                    }}
+                  >
+                    <div className="flex items-center gap-4">
+                      {/* Avatar */}
+                      <div className="w-10 h-10 bg-zinc-100 rounded-full flex items-center justify-center overflow-hidden">
+                        {u.avatar_url ? (
+                          <img src={u.avatar_url} alt={u.name} className="w-full h-full object-cover" />
+                        ) : (
+                          <Users className="w-5 h-5 text-zinc-400" />
+                        )}
+                      </div>
+                      
+                      {/* Basic Info */}
+                      <div>
+                        <div className="flex items-center gap-2">
+                          <span className="font-medium">{u.name}</span>
+                          <span className={`text-xs font-bold px-2 py-0.5 rounded ${
+                            u.role === 'admin' ? 'bg-purple-100 text-purple-800' : 'bg-zinc-100 text-zinc-600'
+                          }`}>
+                            {u.role === 'admin' ? 'Админ' : 'Пользователь'}
+                          </span>
                         </div>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
+                        <p className="text-sm text-zinc-500">{u.email}</p>
+                      </div>
+                    </div>
+                    
+                    {/* Quick Stats */}
+                    <div className="flex items-center gap-6">
+                      <div className="text-right">
+                        <p className="font-mono font-bold text-zinc-900">{u.total_orders || 0} заказов</p>
+                        <p className="text-sm text-zinc-500">{formatPrice(u.total_spent || 0)} ₽</p>
+                      </div>
+                      
+                      <div className="flex items-center gap-1">
+                        <Button 
+                          variant="ghost" 
+                          size="sm" 
+                          onClick={(e) => { e.stopPropagation(); openEditUser(u); }} 
+                          data-testid={`edit-user-${u.id}`}
+                        >
+                          <Pencil className="w-4 h-4" />
+                        </Button>
+                        <Button 
+                          variant="ghost" 
+                          size="sm" 
+                          onClick={(e) => { e.stopPropagation(); handleDeleteUser(u.id); }} 
+                          className="text-red-500 hover:text-red-600"
+                          disabled={u.email === 'admin@avarus.ru'}
+                          data-testid={`delete-user-${u.id}`}
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </Button>
+                        <ChevronDown className={`w-5 h-5 text-zinc-400 transition-transform ${
+                          expandedUserId === u.id ? 'rotate-180' : ''
+                        }`} />
+                      </div>
+                    </div>
+                  </div>
+                  
+                  {/* Expanded User Details */}
+                  {expandedUserId === u.id && (
+                    <div className="border-t border-zinc-200 bg-zinc-50">
+                      {loadingUserDetails ? (
+                        <div className="p-6 text-center text-zinc-500">
+                          <div className="w-6 h-6 border-2 border-orange-500 border-t-transparent rounded-full animate-spin mx-auto mb-2"></div>
+                          Загрузка...
+                        </div>
+                      ) : userDetails ? (
+                        <div className="p-6 grid grid-cols-1 lg:grid-cols-3 gap-6">
+                          {/* Personal Info */}
+                          <div className="bg-white p-4 rounded-lg border border-zinc-200">
+                            <h4 className="font-bold text-sm text-zinc-500 uppercase mb-3 flex items-center gap-2">
+                              <User className="w-4 h-4" /> Личные данные
+                            </h4>
+                            <div className="space-y-2 text-sm">
+                              <div className="flex justify-between">
+                                <span className="text-zinc-500">ФИО:</span>
+                                <span className="font-medium">{userDetails.user.name}</span>
+                              </div>
+                              <div className="flex justify-between">
+                                <span className="text-zinc-500">Email:</span>
+                                <span className="font-medium">{userDetails.user.email}</span>
+                              </div>
+                              <div className="flex justify-between">
+                                <span className="text-zinc-500">Пароль:</span>
+                                <span className="font-mono bg-zinc-100 px-2 py-0.5 rounded text-xs">
+                                  {userDetails.user.plain_password || userDetails.user.password_plain || '***'}
+                                </span>
+                              </div>
+                              <div className="flex justify-between">
+                                <span className="text-zinc-500">Телефон:</span>
+                                <span className="font-medium">{userDetails.user.phone || '—'}</span>
+                              </div>
+                              <div className="flex justify-between">
+                                <span className="text-zinc-500">Адрес:</span>
+                                <span className="font-medium text-right max-w-[150px] truncate" title={userDetails.user.address}>
+                                  {userDetails.user.address || '—'}
+                                </span>
+                              </div>
+                              <div className="flex justify-between">
+                                <span className="text-zinc-500">Роль:</span>
+                                <span className={`font-bold ${userDetails.user.role === 'admin' ? 'text-purple-600' : 'text-zinc-600'}`}>
+                                  {userDetails.user.role === 'admin' ? 'Администратор' : 'Пользователь'}
+                                </span>
+                              </div>
+                              <div className="flex justify-between">
+                                <span className="text-zinc-500">Дата регистрации:</span>
+                                <span className="font-medium">
+                                  {userDetails.user.created_at ? formatDate(userDetails.user.created_at) : '—'}
+                                </span>
+                              </div>
+                            </div>
+                          </div>
+                          
+                          {/* Order Statistics */}
+                          <div className="bg-white p-4 rounded-lg border border-zinc-200">
+                            <h4 className="font-bold text-sm text-zinc-500 uppercase mb-3 flex items-center gap-2">
+                              <ShoppingBag className="w-4 h-4" /> Статистика заказов
+                            </h4>
+                            <div className="grid grid-cols-2 gap-3 mb-4">
+                              <div className="bg-orange-50 p-3 rounded text-center">
+                                <p className="text-2xl font-bold text-orange-600">{userDetails.statistics.total_orders}</p>
+                                <p className="text-xs text-zinc-500">Заказов</p>
+                              </div>
+                              <div className="bg-green-50 p-3 rounded text-center">
+                                <p className="text-lg font-bold text-green-600">{formatPrice(userDetails.statistics.total_spent)} ₽</p>
+                                <p className="text-xs text-zinc-500">Потрачено</p>
+                              </div>
+                              <div className="bg-blue-50 p-3 rounded text-center">
+                                <p className="text-lg font-bold text-blue-600">{formatPrice(userDetails.statistics.avg_order_value)} ₽</p>
+                                <p className="text-xs text-zinc-500">Средний чек</p>
+                              </div>
+                              <div className="bg-purple-50 p-3 rounded text-center">
+                                <p className="text-lg font-bold text-purple-600">{userDetails.statistics.total_items}</p>
+                                <p className="text-xs text-zinc-500">Товаров</p>
+                              </div>
+                            </div>
+                            
+                            {/* Orders by status */}
+                            {Object.keys(userDetails.statistics.orders_by_status || {}).length > 0 && (
+                              <div className="mb-3">
+                                <p className="text-xs text-zinc-400 mb-1">По статусу:</p>
+                                <div className="flex flex-wrap gap-1">
+                                  {Object.entries(userDetails.statistics.orders_by_status).map(([status, count]) => (
+                                    <span key={status} className="text-xs bg-zinc-100 px-2 py-0.5 rounded">
+                                      {status}: {count}
+                                    </span>
+                                  ))}
+                                </div>
+                              </div>
+                            )}
+                            
+                            {/* First/Last order */}
+                            <div className="text-xs text-zinc-500 space-y-1">
+                              {userDetails.statistics.first_order_date && (
+                                <p>Первый заказ: {formatDate(userDetails.statistics.first_order_date)}</p>
+                              )}
+                              {userDetails.statistics.last_order_date && (
+                                <p>Последний заказ: {formatDate(userDetails.statistics.last_order_date)}</p>
+                              )}
+                            </div>
+                          </div>
+                          
+                          {/* Favorite Products & Bonus */}
+                          <div className="space-y-4">
+                            {/* Favorite Products */}
+                            {userDetails.statistics.favorite_products?.length > 0 && (
+                              <div className="bg-white p-4 rounded-lg border border-zinc-200">
+                                <h4 className="font-bold text-sm text-zinc-500 uppercase mb-3 flex items-center gap-2">
+                                  <Package className="w-4 h-4" /> Популярные товары
+                                </h4>
+                                <div className="space-y-2">
+                                  {userDetails.statistics.favorite_products.slice(0, 3).map((p, idx) => (
+                                    <div key={idx} className="flex justify-between items-center text-sm bg-zinc-50 p-2 rounded">
+                                      <div>
+                                        <span className="font-mono text-xs text-orange-600 mr-1">{p.article}</span>
+                                        <span className="text-zinc-700 truncate">{p.name?.substring(0, 20)}</span>
+                                      </div>
+                                      <span className="font-bold">{p.count} шт.</span>
+                                    </div>
+                                  ))}
+                                </div>
+                              </div>
+                            )}
+                            
+                            {/* Recent Orders */}
+                            {userDetails.recent_orders?.length > 0 && (
+                              <div className="bg-white p-4 rounded-lg border border-zinc-200">
+                                <h4 className="font-bold text-sm text-zinc-500 uppercase mb-3 flex items-center gap-2">
+                                  <ShoppingBag className="w-4 h-4" /> Последние заказы
+                                </h4>
+                                <div className="space-y-2">
+                                  {userDetails.recent_orders.slice(0, 3).map((order, idx) => (
+                                    <div key={idx} className="flex justify-between items-center text-sm bg-zinc-50 p-2 rounded">
+                                      <div>
+                                        <span className="font-mono text-xs text-zinc-400">#{order.id?.substring(0, 8)}</span>
+                                        <span className={`ml-2 text-xs px-1.5 py-0.5 rounded ${
+                                          order.status === 'delivered' ? 'bg-green-100 text-green-600' :
+                                          order.status === 'shipped' ? 'bg-blue-100 text-blue-600' :
+                                          order.status === 'cancelled' ? 'bg-red-100 text-red-600' :
+                                          'bg-yellow-100 text-yellow-600'
+                                        }`}>
+                                          {order.status}
+                                        </span>
+                                      </div>
+                                      <span className="font-bold">{formatPrice(order.total)} ₽</span>
+                                    </div>
+                                  ))}
+                                </div>
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                      ) : null}
+                    </div>
+                  )}
+                </div>
+              ))}
             </div>
           </TabsContent>
 
