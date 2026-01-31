@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
-import { User, Pencil, Save, X, Gift, TrendingUp, Award, History, Copy, CheckCircle, Camera, Trash2 } from 'lucide-react';
+import { User, Pencil, Save, X, Gift, History, Copy, CheckCircle, Camera, Trash2, Clock, Send } from 'lucide-react';
 import { Button } from '../components/ui/button';
 import { Input } from '../components/ui/input';
 import { Label } from '../components/ui/label';
@@ -12,7 +12,7 @@ const API = `${process.env.REACT_APP_BACKEND_URL}/api`;
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
 
 // Animated Progress Bar Component
-const BonusProgressBar = ({ percentage, currentAmount, goalAmount }) => {
+const BonusProgressBar = ({ percentage, currentAmount, maxAmount }) => {
   const [animatedWidth, setAnimatedWidth] = useState(0);
   
   useEffect(() => {
@@ -33,7 +33,7 @@ const BonusProgressBar = ({ percentage, currentAmount, goalAmount }) => {
       </div>
       <div className="flex justify-between mt-2 text-sm">
         <span className="font-mono font-semibold text-orange-600">{currentAmount.toFixed(0)} ₽</span>
-        <span className="text-zinc-400">из {goalAmount.toFixed(0)} ₽</span>
+        <span className="text-zinc-400">из {maxAmount.toFixed(0)} ₽</span>
       </div>
     </div>
   );
