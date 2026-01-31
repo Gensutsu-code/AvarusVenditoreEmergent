@@ -218,6 +218,14 @@ export const ChatWidget = () => {
 
   return (
     <>
+      {/* Image Lightbox Modal */}
+      {lightboxImage && (
+        <ImageLightbox 
+          src={lightboxImage} 
+          onClose={() => setLightboxImage(null)} 
+        />
+      )}
+
       {/* Chat button */}
       <button
         onClick={() => setIsOpen(true)}
@@ -299,8 +307,9 @@ export const ChatWidget = () => {
                             <img 
                               src={`${BACKEND_URL}${msg.file_url}`} 
                               alt="Изображение" 
-                              className="max-w-full rounded-lg cursor-pointer hover:opacity-90"
-                              onClick={() => window.open(`${BACKEND_URL}${msg.file_url}`, '_blank')}
+                              className="max-w-full rounded-lg cursor-pointer hover:opacity-90 transition-opacity"
+                              onClick={() => setLightboxImage(`${BACKEND_URL}${msg.file_url}`)}
+                              data-testid="chat-image"
                             />
                           </div>
                         )}
