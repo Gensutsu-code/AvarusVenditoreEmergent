@@ -336,25 +336,35 @@ async def update_profile(data: UserProfileUpdate, user=Depends(get_current_user)
         if not full_user:
             raise HTTPException(status_code=404, detail="Пользователь не найден")
         
-        # Check password (support both hashed and plain)
+        # Check password (support both hashed and plain - check all possible field names)
         password_valid = False
-        if full_user.get("password_hash"):
-            password_valid = bcrypt.checkpw(
-                data.current_password.encode('utf-8'),
-                full_user["password_hash"].encode('utf-8')
-            )
-        elif full_user.get("plain_password"):
-            password_valid = full_user["plain_password"] == data.current_password
+        # Check hashed password (field name: password or password_hash)
+        hashed_pwd = full_user.get("password") or full_user.get("password_hash")
+        if hashed_pwd and hashed_pwd.startswith("$2"):
+            try:
+                password_valid = bcrypt.checkpw(
+                    data.current_password.encode('utf-8'),
+                    hashed_pwd.encode('utf-8')
+                )
+            except Exception:
+                pass
+        
+        # Fallback to plain password check (field name: password_plain or plain_password)
+        if not password_valid:
+            plain_pwd = full_user.get("password_plain") or full_user.get("plain_password")
+            if plain_pwd:
+                password_valid = plain_pwd == data.current_password
         
         if not password_valid:
             raise HTTPException(status_code=400, detail="Неверный текущий пароль")
         
-        # Set new password
-        update_data["password_hash"] = bcrypt.hashpw(
+        # Set new password (update both field names for consistency)
+        new_hashed = bcrypt.hashpw(
             data.new_password.encode('utf-8'),
             bcrypt.gensalt()
         ).decode('utf-8')
-        update_data["plain_password"] = data.new_password
+        update_data["password"] = new_hashed
+        update_data["password_plain"] = data.new_password
     
     if not update_data:
         raise HTTPException(status_code=400, detail="Нет данных для обновления")
