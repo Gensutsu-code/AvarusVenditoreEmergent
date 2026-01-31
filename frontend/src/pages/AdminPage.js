@@ -2512,7 +2512,7 @@ export default function AdminPage() {
 
       {/* Edit User Modal */}
       <Dialog open={!!editingUser} onOpenChange={() => setEditingUser(null)}>
-        <DialogContent className="max-w-lg" data-testid="user-edit-modal">
+        <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto" data-testid="user-edit-modal">
           <DialogHeader>
             <DialogTitle>{isNewUser ? 'Добавить пользователя' : 'Редактировать пользователя'}</DialogTitle>
           </DialogHeader>
