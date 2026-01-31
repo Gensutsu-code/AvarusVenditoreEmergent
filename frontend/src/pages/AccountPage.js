@@ -74,11 +74,11 @@ export default function AccountPage() {
 
   const fetchBonusData = async () => {
     try {
-      const [progressRes, historyRes] = await Promise.all([
-        axios.get(`${API}/bonus/progress`),
+      const [programsRes, historyRes] = await Promise.all([
+        axios.get(`${API}/bonus/programs`),
         axios.get(`${API}/bonus/history`)
       ]);
-      setBonusProgress(progressRes.data);
+      setBonusPrograms(programsRes.data.programs || []);
       setBonusHistory(historyRes.data.history || []);
     } catch (err) {
       console.error('Failed to fetch bonus data', err);
@@ -87,16 +87,16 @@ export default function AccountPage() {
     }
   };
 
-  const handleRequestBonus = async () => {
-    setRequestingBonus(true);
+  const handleRequestBonus = async (programId) => {
+    setRequestingBonus(prev => ({ ...prev, [programId]: true }));
     try {
-      const res = await axios.post(`${API}/bonus/request`);
+      const res = await axios.post(`${API}/bonus/request/${programId}`);
       toast.success(res.data.message);
       fetchBonusData(); // Refresh data
     } catch (err) {
       toast.error(err.response?.data?.detail || 'Ошибка отправки запроса');
     } finally {
-      setRequestingBonus(false);
+      setRequestingBonus(prev => ({ ...prev, [programId]: false }));
     }
   };
 
