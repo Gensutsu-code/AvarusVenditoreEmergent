@@ -121,6 +121,7 @@ export default function AdminPage() {
       setBonusUsers(bonusUsersRes.data.users || []);
       setBonusSettings(bonusUsersRes.data.settings || bonusSettings);
       setBonusHistory(bonusHistoryRes.data.history || []);
+      setPendingBonusRequests(bonusUsersRes.data.pending_requests || 0);
       setPartners(partnersRes.data || []);
     } catch (err) {
       console.error('Failed to fetch admin data', err);
