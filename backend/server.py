@@ -1632,107 +1632,140 @@ class BonusSettings(BaseModel):
     min_threshold: float = 5000  # Minimum threshold to request bonus
     enabled: bool = True
 
-# Initialize default bonus settings
-async def get_or_create_bonus_settings():
-    settings = await db.bonus_settings.find_one({"type": "global"}, {"_id": 0})
-    if not settings:
-        settings = {
-            "type": "global",
-            "title": "Бонусная программа",
-            "description": "Накопите сумму заказов и получите бонус!",
-            "image_url": "",
-            "max_amount": 50000,
-            "min_threshold": 5000,
-            "enabled": True
-        }
-        await db.bonus_settings.insert_one(settings)
-        settings = await db.bonus_settings.find_one({"type": "global"}, {"_id": 0})
-    
-    # Migrate old settings to new schema if needed
-    needs_update = False
-    if "title" not in settings:
-        settings["title"] = "Бонусная программа"
-        needs_update = True
-    if "description" not in settings:
-        settings["description"] = "Накопите сумму заказов и получите бонус!"
-        needs_update = True
-    if "image_url" not in settings:
-        settings["image_url"] = ""
-        needs_update = True
-    if "max_amount" not in settings:
-        # Use old goal_amount if it exists
-        settings["max_amount"] = settings.get("goal_amount", 50000)
-        needs_update = True
-    if "min_threshold" not in settings:
-        settings["min_threshold"] = 5000
-        needs_update = True
-    
-    if needs_update:
-        await db.bonus_settings.update_one(
-            {"type": "global"},
-            {"$set": {
-                "title": settings["title"],
-                "description": settings["description"],
-                "image_url": settings["image_url"],
-                "max_amount": settings["max_amount"],
-                "min_threshold": settings["min_threshold"]
-            }}
-        )
-    
-    return settings
+class BonusProgramCreate(BaseModel):
+    title: str = "Бонусная программа"
+    description: str = ""
+    image_url: str = ""
+    max_amount: float = 50000
+    min_threshold: float = 5000
+    contribution_type: str = "order_total"  # "order_total" or "percentage"
+    contribution_percent: float = 100  # Used when contribution_type is "percentage"
+    enabled: bool = True
 
-# Get user's bonus progress
-async def get_user_bonus_progress(user_id: str):
-    progress = await db.bonus_progress.find_one({"user_id": user_id}, {"_id": 0})
+# ==================== MULTIPLE BONUS PROGRAMS ====================
+
+async def get_all_bonus_programs():
+    """Get all bonus programs"""
+    programs = await db.bonus_programs.find({}, {"_id": 0}).to_list(100)
+    return programs
+
+async def get_bonus_program(program_id: str):
+    """Get single bonus program by ID"""
+    program = await db.bonus_programs.find_one({"id": program_id}, {"_id": 0})
+    return program
+
+async def get_user_program_progress(user_id: str, program_id: str):
+    """Get user's progress for a specific program"""
+    progress = await db.bonus_progress.find_one(
+        {"user_id": user_id, "program_id": program_id}, 
+        {"_id": 0}
+    )
     if not progress:
         progress = {
             "user_id": user_id,
-            "current_amount": 0,  # Total from completed orders
+            "program_id": program_id,
+            "current_amount": 0,
             "bonus_requested": False,
             "request_date": None,
             "created_at": datetime.now(timezone.utc).isoformat()
         }
         await db.bonus_progress.insert_one(progress)
-        progress = await db.bonus_progress.find_one({"user_id": user_id}, {"_id": 0})
+        progress = await db.bonus_progress.find_one(
+            {"user_id": user_id, "program_id": program_id}, 
+            {"_id": 0}
+        )
     return progress
 
-# Update bonus progress when order is delivered
 async def update_bonus_on_order_delivered(user_id: str, order_total: float):
-    """Called when order status changes to 'delivered'"""
-    settings = await get_or_create_bonus_settings()
-    if not settings.get("enabled"):
-        return
+    """Called when order status changes to 'delivered' - updates all programs"""
+    programs = await get_all_bonus_programs()
     
-    progress = await get_user_bonus_progress(user_id)
-    # Cap at max_amount
-    new_amount = min(progress["current_amount"] + order_total, settings["max_amount"])
+    for program in programs:
+        if not program.get("enabled"):
+            continue
+        
+        program_id = program["id"]
+        progress = await get_user_program_progress(user_id, program_id)
+        
+        # Calculate contribution based on program type
+        contribution_type = program.get("contribution_type", "order_total")
+        if contribution_type == "percentage":
+            contribution = order_total * (program.get("contribution_percent", 100) / 100)
+        else:
+            contribution = order_total
+        
+        # Cap at max_amount
+        new_amount = min(progress["current_amount"] + contribution, program["max_amount"])
+        
+        await db.bonus_progress.update_one(
+            {"user_id": user_id, "program_id": program_id},
+            {"$set": {"current_amount": new_amount}}
+        )
     
-    await db.bonus_progress.update_one(
-        {"user_id": user_id},
-        {"$set": {"current_amount": new_amount}}
-    )
+    return {"updated": True}
+
+@api_router.get("/bonus/programs")
+async def get_user_bonus_programs(user=Depends(get_current_user)):
+    """Get all bonus programs with user's progress"""
+    programs = await get_all_bonus_programs()
     
-    return {"new_amount": new_amount}
+    result = []
+    for program in programs:
+        if not program.get("enabled"):
+            continue
+        
+        progress = await get_user_program_progress(user["id"], program["id"])
+        
+        max_amount = program.get("max_amount", 50000)
+        current = progress.get("current_amount", 0)
+        percentage = min(100, (current / max_amount) * 100) if max_amount > 0 else 0
+        
+        min_threshold = program.get("min_threshold", 5000)
+        can_request = current >= min_threshold and not progress.get("bonus_requested", False)
+        
+        result.append({
+            "id": program["id"],
+            "title": program.get("title", "Бонусная программа"),
+            "description": program.get("description", ""),
+            "image_url": program.get("image_url", ""),
+            "contribution_type": program.get("contribution_type", "order_total"),
+            "contribution_percent": program.get("contribution_percent", 100),
+            "current_amount": round(current, 2),
+            "max_amount": max_amount,
+            "min_threshold": min_threshold,
+            "percentage": round(percentage, 1),
+            "can_request": can_request,
+            "bonus_requested": progress.get("bonus_requested", False),
+            "request_date": progress.get("request_date"),
+            "enabled": True
+        })
+    
+    return {"programs": result}
 
 @api_router.get("/bonus/progress")
 async def get_bonus_progress(user=Depends(get_current_user)):
-    """Get current user's bonus progress"""
-    settings = await get_or_create_bonus_settings()
-    progress = await get_user_bonus_progress(user["id"])
+    """Get current user's bonus progress (legacy - returns first program)"""
+    programs = await get_all_bonus_programs()
+    active_programs = [p for p in programs if p.get("enabled")]
     
-    # Calculate percentage (capped at 100%)
-    max_amount = settings.get("max_amount", 50000)
+    if not active_programs:
+        return {"enabled": False}
+    
+    program = active_programs[0]
+    progress = await get_user_program_progress(user["id"], program["id"])
+    
+    max_amount = program.get("max_amount", 50000)
     current = progress.get("current_amount", 0)
     percentage = min(100, (current / max_amount) * 100) if max_amount > 0 else 0
     
-    # Check if can request bonus
-    min_threshold = settings.get("min_threshold", 5000)
+    min_threshold = program.get("min_threshold", 5000)
     can_request = current >= min_threshold and not progress.get("bonus_requested", False)
     
     return {
-        "title": settings.get("title", "Бонусная программа"),
-        "description": settings.get("description", ""),
-        "image_url": settings.get("image_url", ""),
+        "program_id": program["id"],
+        "title": program.get("title", "Бонусная программа"),
+        "description": program.get("description", ""),
+        "image_url": program.get("image_url", ""),
         "current_amount": round(current, 2),
         "max_amount": max_amount,
         "min_threshold": min_threshold,
@@ -1740,7 +1773,7 @@ async def get_bonus_progress(user=Depends(get_current_user)):
         "can_request": can_request,
         "bonus_requested": progress.get("bonus_requested", False),
         "request_date": progress.get("request_date"),
-        "enabled": settings.get("enabled", True)
+        "enabled": True
     }
 
 @api_router.get("/bonus/history")
@@ -1753,25 +1786,27 @@ async def get_bonus_history(user=Depends(get_current_user)):
     
     return {"history": history}
 
-@api_router.post("/bonus/request")
-async def request_bonus(user=Depends(get_current_user)):
-    """Request bonus when minimum threshold is reached"""
-    settings = await get_or_create_bonus_settings()
-    progress = await get_user_bonus_progress(user["id"])
+@api_router.post("/bonus/request/{program_id}")
+async def request_bonus_for_program(program_id: str, user=Depends(get_current_user)):
+    """Request bonus for a specific program"""
+    program = await get_bonus_program(program_id)
+    if not program:
+        raise HTTPException(status_code=404, detail="Программа не найдена")
     
-    if not settings.get("enabled"):
+    if not program.get("enabled"):
         raise HTTPException(status_code=400, detail="Бонусная программа отключена")
     
-    if progress.get("bonus_requested"):
-        raise HTTPException(status_code=400, detail="Вы уже отправили запрос на бонус")
+    progress = await get_user_program_progress(user["id"], program_id)
     
-    min_threshold = settings.get("min_threshold", 5000)
+    if progress.get("bonus_requested"):
+        raise HTTPException(status_code=400, detail="Вы уже отправили запрос на бонус по этой программе")
+    
+    min_threshold = program.get("min_threshold", 5000)
     if progress["current_amount"] < min_threshold:
         raise HTTPException(status_code=400, detail=f"Минимальная сумма для запроса бонуса: {min_threshold} ₽")
     
-    # Mark as requested
     await db.bonus_progress.update_one(
-        {"user_id": user["id"]},
+        {"user_id": user["id"], "program_id": program_id},
         {"$set": {
             "bonus_requested": True,
             "request_date": datetime.now(timezone.utc).isoformat()
@@ -1783,60 +1818,137 @@ async def request_bonus(user=Depends(get_current_user)):
         "message": "Запрос на бонус отправлен! Администратор свяжется с вами."
     }
 
-# Admin bonus endpoints
-@api_router.get("/admin/bonus/settings")
-async def get_admin_bonus_settings(user=Depends(get_current_user)):
-    """Get bonus program settings (admin)"""
+@api_router.post("/bonus/request")
+async def request_bonus_legacy(user=Depends(get_current_user)):
+    """Request bonus (legacy - for first program)"""
+    programs = await get_all_bonus_programs()
+    active_programs = [p for p in programs if p.get("enabled")]
+    
+    if not active_programs:
+        raise HTTPException(status_code=400, detail="Нет активных бонусных программ")
+    
+    return await request_bonus_for_program(active_programs[0]["id"], user)
+
+# Admin bonus program endpoints
+@api_router.get("/admin/bonus/programs")
+async def get_admin_bonus_programs(user=Depends(get_current_user)):
+    """Get all bonus programs (admin)"""
     if user.get("role") != "admin":
         raise HTTPException(status_code=403, detail="Admin access required")
     
-    settings = await get_or_create_bonus_settings()
-    return settings
+    programs = await get_all_bonus_programs()
+    
+    # Get stats for each program
+    result = []
+    for program in programs:
+        # Count users with progress and pending requests
+        progress_data = await db.bonus_progress.find(
+            {"program_id": program["id"]},
+            {"_id": 0}
+        ).to_list(10000)
+        
+        pending_requests = sum(1 for p in progress_data if p.get("bonus_requested"))
+        total_users = len(progress_data)
+        
+        result.append({
+            **program,
+            "pending_requests": pending_requests,
+            "total_users": total_users
+        })
+    
+    return {"programs": result}
 
-@api_router.put("/admin/bonus/settings")
-async def update_bonus_settings(settings: BonusSettings, user=Depends(get_current_user)):
-    """Update bonus program settings (admin)"""
+@api_router.post("/admin/bonus/programs")
+async def create_bonus_program(data: BonusProgramCreate, user=Depends(get_current_user)):
+    """Create new bonus program (admin)"""
     if user.get("role") != "admin":
         raise HTTPException(status_code=403, detail="Admin access required")
+    
+    program = {
+        "id": str(uuid.uuid4()),
+        "title": data.title,
+        "description": data.description,
+        "image_url": data.image_url,
+        "max_amount": data.max_amount,
+        "min_threshold": data.min_threshold,
+        "contribution_type": data.contribution_type,
+        "contribution_percent": data.contribution_percent,
+        "enabled": data.enabled,
+        "created_at": datetime.now(timezone.utc).isoformat()
+    }
+    
+    await db.bonus_programs.insert_one(program)
+    
+    return {**program, "pending_requests": 0, "total_users": 0}
+
+@api_router.put("/admin/bonus/programs/{program_id}")
+async def update_bonus_program(program_id: str, data: BonusProgramCreate, user=Depends(get_current_user)):
+    """Update bonus program (admin)"""
+    if user.get("role") != "admin":
+        raise HTTPException(status_code=403, detail="Admin access required")
+    
+    program = await get_bonus_program(program_id)
+    if not program:
+        raise HTTPException(status_code=404, detail="Программа не найдена")
     
     update_data = {
-        "title": settings.title,
-        "description": settings.description,
-        "image_url": settings.image_url,
-        "max_amount": min(settings.max_amount, 50000),  # Cap at 50000
-        "min_threshold": settings.min_threshold,
-        "enabled": settings.enabled,
+        "title": data.title,
+        "description": data.description,
+        "image_url": data.image_url,
+        "max_amount": data.max_amount,
+        "min_threshold": data.min_threshold,
+        "contribution_type": data.contribution_type,
+        "contribution_percent": data.contribution_percent,
+        "enabled": data.enabled,
         "updated_at": datetime.now(timezone.utc).isoformat()
     }
     
-    await db.bonus_settings.update_one(
-        {"type": "global"},
-        {"$set": update_data},
-        upsert=True
+    await db.bonus_programs.update_one(
+        {"id": program_id},
+        {"$set": update_data}
     )
     
-    return {"message": "Settings updated", **update_data}
+    return {"message": "Program updated", "id": program_id, **update_data}
 
-@api_router.get("/admin/bonus/users")
-async def get_bonus_users(user=Depends(get_current_user)):
-    """Get all users with bonus progress (admin)"""
+@api_router.delete("/admin/bonus/programs/{program_id}")
+async def delete_bonus_program(program_id: str, user=Depends(get_current_user)):
+    """Delete bonus program (admin)"""
     if user.get("role") != "admin":
         raise HTTPException(status_code=403, detail="Admin access required")
     
-    settings = await get_or_create_bonus_settings()
+    result = await db.bonus_programs.delete_one({"id": program_id})
+    if result.deleted_count == 0:
+        raise HTTPException(status_code=404, detail="Программа не найдена")
     
-    # Get all users with their bonus progress
+    # Also delete related progress data
+    await db.bonus_progress.delete_many({"program_id": program_id})
+    
+    return {"message": "Program deleted"}
+
+@api_router.get("/admin/bonus/programs/{program_id}/users")
+async def get_program_users(program_id: str, user=Depends(get_current_user)):
+    """Get users for a specific bonus program (admin)"""
+    if user.get("role") != "admin":
+        raise HTTPException(status_code=403, detail="Admin access required")
+    
+    program = await get_bonus_program(program_id)
+    if not program:
+        raise HTTPException(status_code=404, detail="Программа не найдена")
+    
     users = await db.users.find({}, {"_id": 0, "password_hash": 0}).to_list(1000)
     
     result = []
     pending_requests = 0
     
     for u in users:
-        progress = await db.bonus_progress.find_one({"user_id": u["id"]}, {"_id": 0})
+        progress = await db.bonus_progress.find_one(
+            {"user_id": u["id"], "program_id": program_id}, 
+            {"_id": 0}
+        )
         if not progress:
             progress = {"current_amount": 0, "bonus_requested": False, "request_date": None}
         
-        max_amount = settings.get("max_amount", 50000)
+        max_amount = program.get("max_amount", 50000)
         percentage = min(100, (progress.get("current_amount", 0) / max_amount) * 100) if max_amount > 0 else 0
         
         is_requested = progress.get("bonus_requested", False)
@@ -1850,35 +1962,38 @@ async def get_bonus_users(user=Depends(get_current_user)):
             "current_amount": round(progress.get("current_amount", 0), 2),
             "percentage": round(percentage, 1),
             "bonus_requested": is_requested,
-            "request_date": progress.get("request_date"),
-            "can_issue": is_requested
+            "request_date": progress.get("request_date")
         })
     
-    # Sort: requested first, then by amount
     result.sort(key=lambda x: (not x["bonus_requested"], -x["current_amount"]))
     
-    return {"users": result, "settings": settings, "pending_requests": pending_requests}
+    return {"users": result, "program": program, "pending_requests": pending_requests}
 
-@api_router.post("/admin/bonus/issue/{user_id}")
-async def issue_bonus_to_user(user_id: str, bonus_code: str = "", user=Depends(get_current_user)):
-    """Issue bonus to user with custom code (admin)"""
+@api_router.post("/admin/bonus/programs/{program_id}/issue/{user_id}")
+async def issue_program_bonus(program_id: str, user_id: str, bonus_code: str = "", user=Depends(get_current_user)):
+    """Issue bonus from specific program to user (admin)"""
     if user.get("role") != "admin":
         raise HTTPException(status_code=403, detail="Admin access required")
     
     if not bonus_code or not bonus_code.strip():
         raise HTTPException(status_code=400, detail="Введите код бонуса")
     
+    program = await get_bonus_program(program_id)
+    if not program:
+        raise HTTPException(status_code=404, detail="Программа не найдена")
+    
     target_user = await db.users.find_one({"id": user_id}, {"_id": 0})
     if not target_user:
         raise HTTPException(status_code=404, detail="Пользователь не найден")
     
-    progress = await get_user_bonus_progress(user_id)
+    progress = await get_user_program_progress(user_id, program_id)
     
-    # Create history record
     history_record = {
         "id": str(uuid.uuid4()),
         "user_id": user_id,
         "user_name": target_user["name"],
+        "program_id": program_id,
+        "program_title": program.get("title", "Бонусная программа"),
         "bonus_code": bonus_code.strip(),
         "amount_at_issue": progress.get("current_amount", 0),
         "issued_by": user["name"],
@@ -1887,9 +2002,9 @@ async def issue_bonus_to_user(user_id: str, bonus_code: str = "", user=Depends(g
     }
     await db.bonus_history.insert_one(history_record)
     
-    # Reset progress
+    # Reset progress for this program
     await db.bonus_progress.update_one(
-        {"user_id": user_id},
+        {"user_id": user_id, "program_id": program_id},
         {"$set": {
             "current_amount": 0,
             "bonus_requested": False,
@@ -1898,6 +2013,89 @@ async def issue_bonus_to_user(user_id: str, bonus_code: str = "", user=Depends(g
     )
     
     return {
+        "success": True,
+        "message": f"Бонус выдан: {bonus_code}",
+        "bonus_code": bonus_code
+    }
+
+# Legacy endpoints for backward compatibility
+@api_router.get("/admin/bonus/settings")
+async def get_admin_bonus_settings(user=Depends(get_current_user)):
+    """Get bonus program settings (admin) - legacy returns first program"""
+    if user.get("role") != "admin":
+        raise HTTPException(status_code=403, detail="Admin access required")
+    
+    programs = await get_all_bonus_programs()
+    if programs:
+        return programs[0]
+    return {"enabled": False}
+
+@api_router.put("/admin/bonus/settings")
+async def update_bonus_settings(settings: BonusSettings, user=Depends(get_current_user)):
+    """Update bonus program settings (admin) - legacy updates first program"""
+    if user.get("role") != "admin":
+        raise HTTPException(status_code=403, detail="Admin access required")
+    
+    programs = await get_all_bonus_programs()
+    if programs:
+        program_id = programs[0]["id"]
+        update_data = {
+            "title": settings.title,
+            "description": settings.description,
+            "image_url": settings.image_url,
+            "max_amount": settings.max_amount,
+            "min_threshold": settings.min_threshold,
+            "enabled": settings.enabled,
+            "updated_at": datetime.now(timezone.utc).isoformat()
+        }
+        await db.bonus_programs.update_one({"id": program_id}, {"$set": update_data})
+        return {"message": "Settings updated", **update_data}
+    else:
+        # Create first program
+        data = BonusProgramCreate(
+            title=settings.title,
+            description=settings.description,
+            image_url=settings.image_url,
+            max_amount=settings.max_amount,
+            min_threshold=settings.min_threshold,
+            enabled=settings.enabled
+        )
+        return await create_bonus_program(data, user)
+
+@api_router.get("/admin/bonus/users")
+async def get_bonus_users(user=Depends(get_current_user)):
+    """Get all users with bonus progress (admin) - legacy returns first program users"""
+    if user.get("role") != "admin":
+        raise HTTPException(status_code=403, detail="Admin access required")
+    
+    programs = await get_all_bonus_programs()
+    if not programs:
+        return {"users": [], "settings": {}, "pending_requests": 0}
+    
+    program = programs[0]
+    result = await get_program_users(program["id"], user)
+    return {"users": result["users"], "settings": program, "pending_requests": result["pending_requests"]}
+
+@api_router.post("/admin/bonus/issue/{user_id}")
+async def issue_bonus_to_user(user_id: str, bonus_code: str = "", user=Depends(get_current_user)):
+    """Issue bonus to user (admin) - legacy uses first program"""
+    if user.get("role") != "admin":
+        raise HTTPException(status_code=403, detail="Admin access required")
+    
+    programs = await get_all_bonus_programs()
+    if not programs:
+        raise HTTPException(status_code=400, detail="Нет бонусных программ")
+    
+    return await issue_program_bonus(programs[0]["id"], user_id, bonus_code, user)
+
+@api_router.get("/admin/bonus/history")
+async def get_admin_bonus_history(user=Depends(get_current_user)):
+    """Get all bonus history (admin)"""
+    if user.get("role") != "admin":
+        raise HTTPException(status_code=403, detail="Admin access required")
+    
+    history = await db.bonus_history.find({}, {"_id": 0}).sort("created_at", -1).to_list(100)
+    return {"history": history}
         "success": True,
         "message": f"Бонус выдан пользователю {target_user['name']}"
     }
