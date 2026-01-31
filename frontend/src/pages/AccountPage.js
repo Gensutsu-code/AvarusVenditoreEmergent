@@ -166,23 +166,58 @@ export default function AccountPage() {
   };
 
   const handleSaveProfile = async () => {
+    // Validate password fields if changing password
+    if (formData.new_password || formData.current_password) {
+      if (!formData.current_password) {
+        toast.error('Введите текущий пароль');
+        return;
+      }
+      if (!formData.new_password) {
+        toast.error('Введите новый пароль');
+        return;
+      }
+      if (formData.new_password !== formData.confirm_password) {
+        toast.error('Пароли не совпадают');
+        return;
+      }
+      if (formData.new_password.length < 6) {
+        toast.error('Пароль должен быть не менее 6 символов');
+        return;
+      }
+    }
+
     setSaving(true);
     try {
-      await axios.put(`${API}/auth/profile`, profileForm);
+      const updateData = {
+        name: formData.name,
+        email: formData.email,
+        phone: formData.phone,
+        address: formData.address
+      };
+      
+      // Only include password fields if changing password
+      if (formData.new_password) {
+        updateData.current_password = formData.current_password;
+        updateData.new_password = formData.new_password;
+      }
+      
+      await axios.put(`${API}/auth/profile`, updateData);
       toast.success('Профиль обновлён');
       setIsEditing(false);
+      setShowPasswordFields(false);
+      setFormData(prev => ({...prev, current_password: '', new_password: '', confirm_password: ''}));
       if (refreshUser) {
         await refreshUser();
       }
     } catch (err) {
-      toast.error('Ошибка сохранения');
+      toast.error(err.response?.data?.detail || 'Ошибка сохранения');
     } finally {
       setSaving(false);
     }
   };
 
   const handleCancelEdit = () => {
-    setProfileForm({
+    setFormData({
       name: user.name || '',
       email: user.email || '',
       phone: user.phone || '',
@@ -191,6 +226,7 @@ export default function AccountPage() {
       new_password: '',
       confirm_password: ''
     });
+    setShowPasswordFields(false);
     setIsEditing(false);
   };
 
