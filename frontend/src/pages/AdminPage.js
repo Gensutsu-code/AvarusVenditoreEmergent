@@ -2616,7 +2616,7 @@ export default function AdminPage() {
 
       {/* Edit Order Modal */}
       <Dialog open={!!editingOrder} onOpenChange={() => setEditingOrder(null)}>
-        <DialogContent className="max-w-lg" data-testid="order-edit-modal">
+        <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto" data-testid="order-edit-modal">
           <DialogHeader>
             <DialogTitle>Редактировать заказ #{editingOrder?.id.slice(0, 8)}</DialogTitle>
           </DialogHeader>
