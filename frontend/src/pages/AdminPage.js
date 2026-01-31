@@ -700,7 +700,11 @@ export default function AdminPage() {
             </TabsTrigger>
             <TabsTrigger value="bonus" className="rounded-none data-[state=active]:bg-white data-[state=active]:border-b-2 data-[state=active]:border-orange-500 px-4 py-3">
               <Gift className="w-4 h-4 mr-2" />
-              Бонусы
+              Бонусы {pendingBonusRequests > 0 && (
+                <span className="ml-1 bg-red-500 text-white text-xs px-1.5 py-0.5 rounded-full">
+                  {pendingBonusRequests}
+                </span>
+              )}
             </TabsTrigger>
             <TabsTrigger value="partners" className="rounded-none data-[state=active]:bg-white data-[state=active]:border-b-2 data-[state=active]:border-orange-500 px-4 py-3">
               <Image className="w-4 h-4 mr-2" />
