@@ -694,8 +694,8 @@ async def create_order(data: OrderCreate, user=Depends(get_current_user)):
     # Send Telegram notification
     await send_telegram_order_notification(order, user)
     
-    # Update bonus progress
-    await update_bonus_after_order(user["id"], total)
+    # Note: Bonus progress is updated only when order status changes to "delivered"
+    # See update_order_status endpoint
     
     return order
 
