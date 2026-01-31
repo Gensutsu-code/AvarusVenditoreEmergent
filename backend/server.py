@@ -832,7 +832,7 @@ async def get_related_products(product_id: str, limit: int = 4):
 # ==================== TELEGRAM NOTIFICATIONS ====================
 
 async def send_telegram_order_notification(order: dict, user: dict):
-    """Send order notification to Telegram"""
+    """Send order notification to Telegram with full product details"""
     try:
         settings = await db.settings.find_one({"key": "telegram"}, {"_id": 0})
         if not settings or not settings.get("value", {}).get("enabled"):
@@ -844,21 +844,44 @@ async def send_telegram_order_notification(order: dict, user: dict):
         if not bot_token or not chat_id:
             return
         
-        # Format message
-        items_text = "\n".join([f"  • {item['name']} × {item['quantity']} = {item['price'] * item['quantity']:,.0f} ₽" for item in order["items"]])
+        # Format items with full details
+        items_lines = []
+        for item in order["items"]:
+            article = item.get('article', 'N/A')
+            name = item.get('name', 'Товар')
+            manufacturer = item.get('manufacturer', '')
+            quantity = item.get('quantity', 1)
+            price = item.get('price', 0)
+            line_total = price * quantity
+            
+            # Format: Article | Name | Manufacturer | Qty × Price = Total
+            manufacturer_text = f" ({manufacturer})" if manufacturer else ""
+            items_lines.append(
+                f"  📦 *{article}*\n"
+                f"      {name}{manufacturer_text}\n"
+                f"      {quantity} шт. × {price:,.0f} ₽ = *{line_total:,.0f} ₽*"
+            )
         
-        message = f"""🛒 *Новый заказ!*
+        items_text = "\n\n".join(items_lines)
+        
+        message = f"""🛒 *НОВЫЙ ЗАКАЗ!*
 
-📦 *Заказ #{order['id'][:8]}*
-👤 Клиент: {order['full_name']}
-📞 Телефон: {order['phone']}
-📍 Адрес: {order['address']}
+📋 *Заказ #{order['id'][:8]}*
+📅 {datetime.now().strftime('%d.%m.%Y %H:%M')}
 
-*Товары:*
+👤 *Клиент:* {order['full_name']}
+📞 *Телефон:* {order['phone']}
+📍 *Адрес:* {order['address']}
+
+━━━━━━━━━━━━━━━━━━
+*ТОВАРЫ ({len(order['items'])} шт.):*
+━━━━━━━━━━━━━━━━━━
+
 {items_text}
 
-💰 *Итого: {order['total']:,.0f} ₽*
-💳 Оплата: наличными при получении"""
+━━━━━━━━━━━━━━━━━━
+💰 *ИТОГО: {order['total']:,.0f} ₽*
+💳 *Оплата:* наличными при получении"""
 
         url = f"https://api.telegram.org/bot{bot_token}/sendMessage"
         async with httpx.AsyncClient() as client:
