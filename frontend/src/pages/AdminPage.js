@@ -58,19 +58,14 @@ export default function AdminPage() {
   // Order management states  
   const [editingOrder, setEditingOrder] = useState(null);
   
-  // Bonus program states
-  const [bonusSettings, setBonusSettings] = useState({ 
-    title: 'Бонусная программа', 
-    description: 'Накопите сумму заказов и получите бонус!', 
-    image_url: '', 
-    max_amount: 50000, 
-    min_threshold: 5000, 
-    enabled: true 
-  });
-  const [bonusUsers, setBonusUsers] = useState([]);
+  // Bonus program states - Multiple programs
+  const [bonusPrograms, setBonusPrograms] = useState([]);
+  const [editingProgram, setEditingProgram] = useState(null);
+  const [isNewProgram, setIsNewProgram] = useState(false);
+  const [selectedProgramId, setSelectedProgramId] = useState(null);
+  const [programUsers, setProgramUsers] = useState([]);
   const [bonusHistory, setBonusHistory] = useState([]);
-  const [pendingBonusRequests, setPendingBonusRequests] = useState(0);
-  const [issueBonusModal, setIssueBonusModal] = useState(null); // { userId, userName }
+  const [issueBonusModal, setIssueBonusModal] = useState(null); // { programId, userId, userName, amount }
   const [bonusCodeInput, setBonusCodeInput] = useState('');
   const [issuingBonus, setIssuingBonus] = useState(false);
   const bonusImageFileRef = useRef(null);
