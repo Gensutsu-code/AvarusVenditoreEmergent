@@ -62,6 +62,11 @@ export default function AdminPage() {
   const [bonusSettings, setBonusSettings] = useState({ goal_amount: 5000, contribution_percent: 5, reward_value: 500, enabled: true });
   const [bonusUsers, setBonusUsers] = useState([]);
   const [bonusHistory, setBonusHistory] = useState([]);
+  
+  // Partners states
+  const [partners, setPartners] = useState([]);
+  const [editingPartner, setEditingPartner] = useState(null);
+  const [isNewPartner, setIsNewPartner] = useState(false);
 
   useEffect(() => {
     if (authLoading) return;
