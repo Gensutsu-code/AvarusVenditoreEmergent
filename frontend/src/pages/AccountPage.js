@@ -71,8 +71,12 @@ export default function AccountPage() {
     }
     setProfileForm({
       name: user.name || '',
+      email: user.email || '',
       phone: user.phone || '',
-      address: user.address || ''
+      address: user.address || '',
+      current_password: '',
+      new_password: '',
+      confirm_password: ''
     });
     fetchBonusData();
   }, [user, navigate]);
