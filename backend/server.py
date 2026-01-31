@@ -2096,18 +2096,6 @@ async def get_admin_bonus_history(user=Depends(get_current_user)):
     
     history = await db.bonus_history.find({}, {"_id": 0}).sort("created_at", -1).to_list(100)
     return {"history": history}
-        "success": True,
-        "message": f"Бонус выдан пользователю {target_user['name']}"
-    }
-
-@api_router.get("/admin/bonus/history")
-async def get_all_bonus_history(user=Depends(get_current_user)):
-    """Get all bonus history (admin)"""
-    if user.get("role") != "admin":
-        raise HTTPException(status_code=403, detail="Admin access required")
-    
-    history = await db.bonus_history.find({}, {"_id": 0}).sort("created_at", -1).to_list(100)
-    return {"history": history}
 
 # ==================== IMPORT/EXPORT ====================
 
