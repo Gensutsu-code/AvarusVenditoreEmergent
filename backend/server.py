@@ -2309,104 +2309,212 @@ async def get_extended_stats(
     period: str = Query("month", description="day, week, month, year"),
     user=Depends(get_current_user)
 ):
-    """Get extended sales statistics"""
+    """Get extended sales statistics with comprehensive analytics"""
     if user.get("role") != "admin":
         raise HTTPException(status_code=403, detail="Admin access required")
+    
+    from collections import defaultdict
     
     now = datetime.now(timezone.utc)
     
     # Determine date range
     if period == "day":
         start_date = now - timedelta(days=1)
+        prev_start = start_date - timedelta(days=1)
     elif period == "week":
         start_date = now - timedelta(weeks=1)
+        prev_start = start_date - timedelta(weeks=1)
     elif period == "month":
         start_date = now - timedelta(days=30)
+        prev_start = start_date - timedelta(days=30)
     else:  # year
         start_date = now - timedelta(days=365)
+        prev_start = start_date - timedelta(days=365)
     
     start_iso = start_date.isoformat()
+    prev_iso = prev_start.isoformat()
     
-    # Sales by period
+    # Get all orders for current period
     orders = await db.orders.find(
         {"created_at": {"$gte": start_iso}},
         {"_id": 0}
     ).to_list(10000)
     
+    # Get previous period orders for comparison
+    prev_orders = await db.orders.find(
+        {"created_at": {"$gte": prev_iso, "$lt": start_iso}},
+        {"_id": 0}
+    ).to_list(10000)
+    
+    # Get all-time stats
+    all_orders = await db.orders.find({}, {"_id": 0}).to_list(100000)
+    all_users = await db.users.find({}, {"_id": 0}).to_list(10000)
+    all_products = await db.products.find({}, {"_id": 0}).to_list(10000)
+    
     # Daily sales
-    daily_sales = {}
-    product_sales = {}
-    category_sales = {}
-    customer_orders = {}
+    daily_sales = defaultdict(lambda: {"total": 0, "orders": 0, "items": 0})
+    product_sales = defaultdict(lambda: {"count": 0, "revenue": 0})
+    category_sales = defaultdict(lambda: {"count": 0, "revenue": 0})
+    customer_stats = defaultdict(lambda: {"orders": 0, "total_spent": 0, "items": 0})
+    manufacturer_sales = defaultdict(lambda: {"count": 0, "revenue": 0})
+    hourly_distribution = defaultdict(int)
     
     for order in orders:
-        # Parse date
+        # Parse date and hour
         order_date = order["created_at"][:10]
-        daily_sales[order_date] = daily_sales.get(order_date, 0) + order["total"]
+        order_hour = order["created_at"][11:13] if len(order["created_at"]) > 11 else "00"
+        
+        daily_sales[order_date]["total"] += order["total"]
+        daily_sales[order_date]["orders"] += 1
+        hourly_distribution[int(order_hour)] += 1
         
         # Count by customer
         user_id = order["user_id"]
-        customer_orders[user_id] = customer_orders.get(user_id, 0) + 1
+        customer_stats[user_id]["orders"] += 1
+        customer_stats[user_id]["total_spent"] += order["total"]
         
-        # Count by product
+        # Count by product/category/manufacturer
         for item in order.get("items", []):
             pid = item.get("product_id", "")
-            product_sales[pid] = product_sales.get(pid, 0) + item.get("quantity", 0)
+            qty = item.get("quantity", 1)
+            price = item.get("price", 0)
+            
+            product_sales[pid]["count"] += qty
+            product_sales[pid]["revenue"] += price * qty
+            product_sales[pid]["name"] = item.get("name", "")
+            product_sales[pid]["article"] = item.get("article", "")
+            
+            manufacturer = item.get("manufacturer", "Неизвестно")
+            manufacturer_sales[manufacturer]["count"] += qty
+            manufacturer_sales[manufacturer]["revenue"] += price * qty
+            
+            daily_sales[order_date]["items"] += qty
+            customer_stats[user_id]["items"] += qty
     
-    # Top products
-    top_products_data = []
-    if product_sales:
-        sorted_products = sorted(product_sales.items(), key=lambda x: x[1], reverse=True)[:10]
-        product_ids = [p[0] for p in sorted_products]
-        products = await db.products.find({"id": {"$in": product_ids}}, {"_id": 0, "id": 1, "name": 1}).to_list(10)
-        products_map = {p["id"]: p["name"] for p in products}
-        
-        for pid, count in sorted_products:
-            top_products_data.append({
-                "id": pid,
-                "name": products_map.get(pid, "Неизвестно"),
-                "count": count
-            })
+    # Top products (by revenue)
+    top_products_data = sorted(
+        [{"id": k, **v} for k, v in product_sales.items()],
+        key=lambda x: x["revenue"],
+        reverse=True
+    )[:10]
     
-    # Top customers
+    # Top customers (by total spent)
+    top_customers_raw = sorted(
+        [(uid, stats) for uid, stats in customer_stats.items()],
+        key=lambda x: x[1]["total_spent"],
+        reverse=True
+    )[:10]
+    
+    user_ids = [c[0] for c in top_customers_raw]
+    users_data = await db.users.find({"id": {"$in": user_ids}}, {"_id": 0, "id": 1, "name": 1, "email": 1}).to_list(10)
+    users_map = {u["id"]: u for u in users_data}
+    
     top_customers_data = []
-    if customer_orders:
-        sorted_customers = sorted(customer_orders.items(), key=lambda x: x[1], reverse=True)[:10]
-        user_ids = [c[0] for c in sorted_customers]
-        users = await db.users.find({"id": {"$in": user_ids}}, {"_id": 0, "id": 1, "name": 1, "email": 1}).to_list(10)
-        users_map = {u["id"]: u for u in users}
-        
-        for uid, count in sorted_customers:
-            user_data = users_map.get(uid, {})
-            top_customers_data.append({
-                "id": uid,
-                "name": user_data.get("name", "Неизвестно"),
-                "email": user_data.get("email", ""),
-                "order_count": count
-            })
+    for uid, stats in top_customers_raw:
+        user_info = users_map.get(uid, {})
+        top_customers_data.append({
+            "id": uid,
+            "name": user_info.get("name", "Неизвестно"),
+            "email": user_info.get("email", ""),
+            "orders": stats["orders"],
+            "total_spent": round(stats["total_spent"], 2),
+            "items": stats["items"]
+        })
+    
+    # Top manufacturers
+    top_manufacturers = sorted(
+        [{"name": k, **v} for k, v in manufacturer_sales.items()],
+        key=lambda x: x["revenue"],
+        reverse=True
+    )[:8]
     
     # Convert daily_sales to sorted list
-    daily_sales_list = [{"date": k, "total": v} for k, v in sorted(daily_sales.items())]
+    daily_sales_list = sorted([{"date": k, **v} for k, v in daily_sales.items()], key=lambda x: x["date"])
     
     # Order status distribution
-    status_counts = {}
+    status_counts = defaultdict(int)
     for order in orders:
         status = order.get("status", "pending")
-        status_counts[status] = status_counts.get(status, 0) + 1
+        status_counts[status] += 1
     
-    # Total stats
+    # Calculate totals and comparisons
     total_revenue = sum(o["total"] for o in orders)
+    total_items = sum(sum(item.get("quantity", 1) for item in o.get("items", [])) for o in orders)
     avg_order_value = total_revenue / len(orders) if orders else 0
+    
+    prev_revenue = sum(o["total"] for o in prev_orders)
+    prev_orders_count = len(prev_orders)
+    
+    # Growth percentages
+    revenue_growth = ((total_revenue - prev_revenue) / prev_revenue * 100) if prev_revenue > 0 else 0
+    orders_growth = ((len(orders) - prev_orders_count) / prev_orders_count * 100) if prev_orders_count > 0 else 0
+    
+    # New users in period
+    new_users = [u for u in all_users if u.get("created_at", "") >= start_iso]
+    
+    # Hourly distribution formatted
+    hourly_list = [{"hour": h, "orders": hourly_distribution.get(h, 0)} for h in range(24)]
+    
+    # All-time stats
+    all_time_revenue = sum(o["total"] for o in all_orders)
+    all_time_orders = len(all_orders)
+    
+    # Conversion metrics (users who placed at least one order)
+    users_with_orders = set(o["user_id"] for o in all_orders)
+    conversion_rate = (len(users_with_orders) / len(all_users) * 100) if all_users else 0
+    
+    # Average orders per customer
+    avg_orders_per_customer = all_time_orders / len(users_with_orders) if users_with_orders else 0
+    
+    # Products stats
+    active_products = len([p for p in all_products if p.get("in_stock", True)])
+    out_of_stock = len(all_products) - active_products
     
     return {
         "period": period,
+        "period_label": {"day": "За день", "week": "За неделю", "month": "За месяц", "year": "За год"}.get(period, period),
+        
+        # Main metrics
         "total_orders": len(orders),
-        "total_revenue": total_revenue,
+        "total_revenue": round(total_revenue, 2),
+        "total_items": total_items,
         "avg_order_value": round(avg_order_value, 2),
+        
+        # Growth comparison
+        "prev_orders": prev_orders_count,
+        "prev_revenue": round(prev_revenue, 2),
+        "revenue_growth": round(revenue_growth, 1),
+        "orders_growth": round(orders_growth, 1),
+        
+        # Charts data
         "daily_sales": daily_sales_list,
+        "hourly_distribution": hourly_list,
+        
+        # Top lists
         "top_products": top_products_data,
         "top_customers": top_customers_data,
-        "status_distribution": status_counts
+        "top_manufacturers": top_manufacturers,
+        
+        # Status breakdown
+        "status_distribution": dict(status_counts),
+        
+        # Additional stats
+        "new_users": len(new_users),
+        "total_users": len(all_users),
+        "conversion_rate": round(conversion_rate, 1),
+        "avg_orders_per_customer": round(avg_orders_per_customer, 1),
+        
+        # Products stats
+        "total_products": len(all_products),
+        "active_products": active_products,
+        "out_of_stock": out_of_stock,
+        
+        # All-time stats
+        "all_time_revenue": round(all_time_revenue, 2),
+        "all_time_orders": all_time_orders,
+        
+        # Unique customers this period
+        "unique_customers": len(set(o["user_id"] for o in orders))
     }
 
 # ==================== MIGRATION ====================
