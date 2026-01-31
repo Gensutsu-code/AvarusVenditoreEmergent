@@ -167,6 +167,16 @@
 ### Товары (расширено)
 - **GET /api/products/search-with-alternatives** — поиск с кросс-номерами
 
+### Бонусная программа
+- GET /api/bonus/progress — прогресс пользователя
+- POST /api/bonus/request — запросить бонус
+- GET /api/bonus/history — история полученных промокодов
+- GET /api/admin/bonus/settings — настройки программы (admin)
+- PUT /api/admin/bonus/settings — обновить настройки (admin)
+- GET /api/admin/bonus/users — пользователи с прогрессом (admin)
+- POST /api/admin/bonus/issue/{id}?bonus_code=XXX — выдать бонус (admin)
+- GET /api/admin/bonus/history — история выдачи (admin)
+
 ### Прочее
 - GET /api/promo-banner
 - PUT /api/promo-banner (admin)
