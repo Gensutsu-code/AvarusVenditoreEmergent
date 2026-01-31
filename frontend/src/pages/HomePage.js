@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import axios from 'axios';
 import { Search } from 'lucide-react';
@@ -6,45 +6,36 @@ import { PopularProducts } from '../components/PopularProducts';
 
 const API = `${process.env.REACT_APP_BACKEND_URL}/api`;
 
-// Brand logos data with uploaded images
-const BRANDS = [
-  { 
-    name: 'FAG', 
-    desc: 'Подшипники',
-    image: 'https://customer-assets.emergentagent.com/job_heavy-vehicle/artifacts/se4069qi_Screenshot%20%281%29.png'
-  },
-  { 
-    name: 'HENGST', 
-    desc: 'Фильтры',
-    image: 'https://customer-assets.emergentagent.com/job_heavy-vehicle/artifacts/k3fl5886_Screenshot%20%282%29.png'
-  },
-  { 
-    name: 'MANN+HUMMEL', 
-    desc: 'Фильтрация',
-    image: 'https://customer-assets.emergentagent.com/job_heavy-vehicle/artifacts/8hwi685y_Screenshot%20%283%29.png'
-  },
-  { 
-    name: 'PACCAR', 
-    desc: 'Комплектующие',
-    image: 'https://customer-assets.emergentagent.com/job_heavy-vehicle/artifacts/lxmklmq6_Screenshot%20%284%29.png'
-  },
-  { 
-    name: 'SAF', 
-    desc: 'Оси и подвеска',
-    image: 'https://customer-assets.emergentagent.com/job_heavy-vehicle/artifacts/54osguxt_Screenshot%20%285%29.png'
-  },
-  { 
-    name: 'BPW', 
-    desc: 'Ходовая часть',
-    image: 'https://customer-assets.emergentagent.com/job_heavy-vehicle/artifacts/qjidmkpu_Screenshot%20%285%29.png'
-  },
-];
-
 export default function HomePage() {
+  const [partners, setPartners] = useState([]);
+
   useEffect(() => {
     // Seed data on first load
     axios.post(`${API}/seed`).catch(() => {});
+    // Fetch partners
+    fetchPartners();
   }, []);
+
+  const fetchPartners = async () => {
+    try {
+      const res = await axios.get(`${API}/partners`);
+      if (res.data.length > 0) {
+        setPartners(res.data);
+      } else {
+        // Use default partners if none in DB
+        setPartners([
+          { name: 'FAG', description: 'Подшипники', image_url: 'https://customer-assets.emergentagent.com/job_heavy-vehicle/artifacts/se4069qi_Screenshot%20%281%29.png' },
+          { name: 'HENGST', description: 'Фильтры', image_url: 'https://customer-assets.emergentagent.com/job_heavy-vehicle/artifacts/k3fl5886_Screenshot%20%282%29.png' },
+          { name: 'MANN+HUMMEL', description: 'Фильтрация', image_url: 'https://customer-assets.emergentagent.com/job_heavy-vehicle/artifacts/8hwi685y_Screenshot%20%283%29.png' },
+          { name: 'PACCAR', description: 'Комплектующие', image_url: 'https://customer-assets.emergentagent.com/job_heavy-vehicle/artifacts/lxmklmq6_Screenshot%20%284%29.png' },
+          { name: 'SAF', description: 'Оси и подвеска', image_url: 'https://customer-assets.emergentagent.com/job_heavy-vehicle/artifacts/54osguxt_Screenshot%20%285%29.png' },
+          { name: 'BPW', description: 'Ходовая часть', image_url: 'https://customer-assets.emergentagent.com/job_heavy-vehicle/artifacts/qjidmkpu_Screenshot%20%285%29.png' },
+        ]);
+      }
+    } catch (err) {
+      console.error('Failed to fetch partners', err);
+    }
+  };
 
   return (
     <div className="min-h-screen" data-testid="home-page">
@@ -71,67 +62,77 @@ export default function HomePage() {
             </div>
 
             {/* Right side - brands showcase */}
-            <div className="hidden lg:block">
-              <div className="bg-zinc-800/50 border border-zinc-700 p-6 rounded-sm">
-                <p className="text-xs uppercase tracking-widest text-zinc-500 mb-4 text-center">
-                  Работаем с ведущими производителями
-                </p>
-                <div className="grid grid-cols-3 gap-3">
-                  {BRANDS.map((brand) => (
-                    <div 
-                      key={brand.name}
-                      className="bg-zinc-800 border border-zinc-700 p-3 hover:border-orange-500/50 transition-colors group overflow-hidden"
-                    >
-                      {brand.image && (
-                        <div className="w-full h-12 mb-2 flex items-center justify-center">
-                          <img 
-                            src={brand.image} 
-                            alt={brand.name}
-                            className="max-w-full max-h-full object-contain"
-                          />
+            {partners.length > 0 && (
+              <div className="hidden lg:block">
+                <div className="bg-zinc-800/50 border border-zinc-700 p-6 rounded-sm">
+                  <p className="text-xs uppercase tracking-widest text-zinc-500 mb-4 text-center">
+                    Работаем с ведущими производителями
+                  </p>
+                  <div className="grid grid-cols-3 gap-3">
+                    {partners.slice(0, 6).map((partner) => (
+                      <a
+                        key={partner.id || partner.name}
+                        href={partner.link || '#'}
+                        target={partner.link ? '_blank' : undefined}
+                        rel={partner.link ? 'noopener noreferrer' : undefined}
+                        className="bg-zinc-800 border border-zinc-700 p-3 hover:border-orange-500/50 transition-colors group overflow-hidden block"
+                      >
+                        {partner.image_url && (
+                          <div className="w-full h-12 mb-2 flex items-center justify-center">
+                            <img 
+                              src={partner.image_url} 
+                              alt={partner.name}
+                              className="max-w-full max-h-full object-contain"
+                            />
+                          </div>
+                        )}
+                        <div className="text-center">
+                          <div className="text-xs font-medium text-white truncate">
+                            {partner.name}
+                          </div>
+                          <div className="text-[10px] text-zinc-500 truncate">
+                            {partner.description}
+                          </div>
                         </div>
-                      )}
-                      <div className="text-center">
-                        <div className="text-xs font-medium text-white truncate">
-                          {brand.name}
-                        </div>
-                        <div className="text-[10px] text-zinc-500 truncate">
-                          {brand.desc}
-                        </div>
-                      </div>
-                    </div>
-                  ))}
+                      </a>
+                    ))}
+                  </div>
+                  <p className="text-xs text-zinc-600 mt-4 text-center">
+                    Только проверенные поставщики
+                  </p>
                 </div>
-                <p className="text-xs text-zinc-600 mt-4 text-center">
-                  Только проверенные поставщики
-                </p>
               </div>
-            </div>
+            )}
           </div>
 
           {/* Mobile brands - horizontal scroll */}
-          <div className="lg:hidden mt-8 -mx-4 px-4 overflow-x-auto">
-            <div className="flex gap-3 pb-2">
-              {BRANDS.map((brand) => (
-                <div 
-                  key={brand.name}
-                  className="flex-shrink-0 bg-zinc-800 border border-zinc-700 p-3 text-center min-w-[100px]"
-                >
-                  {brand.image && (
-                    <div className="w-full h-10 mb-2 flex items-center justify-center">
-                      <img 
-                        src={brand.image} 
-                        alt={brand.name}
-                        className="max-w-full max-h-full object-contain"
-                      />
-                    </div>
-                  )}
-                  <div className="text-xs font-medium text-white truncate">{brand.name}</div>
-                  <div className="text-[10px] text-zinc-500 truncate">{brand.desc}</div>
-                </div>
-              ))}
+          {partners.length > 0 && (
+            <div className="lg:hidden mt-8 -mx-4 px-4 overflow-x-auto">
+              <div className="flex gap-3 pb-2">
+                {partners.map((partner) => (
+                  <a
+                    key={partner.id || partner.name}
+                    href={partner.link || '#'}
+                    target={partner.link ? '_blank' : undefined}
+                    rel={partner.link ? 'noopener noreferrer' : undefined}
+                    className="flex-shrink-0 bg-zinc-800 border border-zinc-700 p-3 text-center min-w-[100px] block"
+                  >
+                    {partner.image_url && (
+                      <div className="w-full h-10 mb-2 flex items-center justify-center">
+                        <img 
+                          src={partner.image_url} 
+                          alt={partner.name}
+                          className="max-w-full max-h-full object-contain"
+                        />
+                      </div>
+                    )}
+                    <div className="text-xs font-medium text-white truncate">{partner.name}</div>
+                    <div className="text-[10px] text-zinc-500 truncate">{partner.description}</div>
+                  </a>
+                ))}
+              </div>
             </div>
-          </div>
+          )}
         </div>
       </div>
 
