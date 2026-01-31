@@ -682,6 +682,10 @@ export default function AdminPage() {
               <Gift className="w-4 h-4 mr-2" />
               Бонусы
             </TabsTrigger>
+            <TabsTrigger value="partners" className="rounded-none data-[state=active]:bg-white data-[state=active]:border-b-2 data-[state=active]:border-orange-500 px-4 py-3">
+              <Image className="w-4 h-4 mr-2" />
+              Партнёры
+            </TabsTrigger>
           </TabsList>
 
           {/* Products Tab */}
