@@ -184,8 +184,12 @@ export default function AccountPage() {
   const handleCancelEdit = () => {
     setProfileForm({
       name: user.name || '',
+      email: user.email || '',
       phone: user.phone || '',
-      address: user.address || ''
+      address: user.address || '',
+      current_password: '',
+      new_password: '',
+      confirm_password: ''
     });
     setIsEditing(false);
   };
