@@ -755,7 +755,7 @@ async def get_orders(user=Depends(get_current_user)):
 
 @api_router.get("/orders/stats")
 async def get_user_order_stats(user=Depends(get_current_user)):
-    """Get order statistics for current user"""
+    """Get extended order statistics for current user"""
     from collections import defaultdict
     orders = await db.orders.find({"user_id": user["id"]}, {"_id": 0}).to_list(1000)
     
@@ -766,7 +766,13 @@ async def get_user_order_stats(user=Depends(get_current_user)):
             "avg_order_value": 0,
             "total_items": 0,
             "by_status": {},
-            "by_month": []
+            "by_month": [],
+            "delivered_total": 0,
+            "pending_total": 0,
+            "first_order_date": None,
+            "last_order_date": None,
+            "favorite_products": [],
+            "total_products_types": 0
         }
     
     # Calculate stats
@@ -775,13 +781,17 @@ async def get_user_order_stats(user=Depends(get_current_user)):
     total_items = sum(sum(item.get("quantity", 0) for item in o.get("items", [])) for o in orders)
     avg_order_value = total_spent / total_orders if total_orders > 0 else 0
     
+    # Delivered vs pending totals
+    delivered_total = sum(o.get("total", 0) for o in orders if o.get("status") == "delivered")
+    pending_total = sum(o.get("total", 0) for o in orders if o.get("status") in ["pending", "processing", "shipped"])
+    
     # By status
     by_status = {}
     for o in orders:
         status = o.get("status", "pending")
         by_status[status] = by_status.get(status, 0) + 1
     
-    # By month (last 6 months)
+    # By month (last 12 months)
     by_month_dict = defaultdict(lambda: {"orders": 0, "total": 0})
     for o in orders:
         created_at = o.get("created_at", "")
@@ -790,9 +800,32 @@ async def get_user_order_stats(user=Depends(get_current_user)):
             by_month_dict[month_key]["orders"] += 1
             by_month_dict[month_key]["total"] += o.get("total", 0)
     
-    # Sort and limit to last 6 months
-    by_month = sorted([{"month": k, **v} for k, v in by_month_dict.items()], key=lambda x: x["month"], reverse=True)[:6]
+    # Sort and limit to last 12 months
+    by_month = sorted([{"month": k, **v} for k, v in by_month_dict.items()], key=lambda x: x["month"], reverse=True)[:12]
     by_month.reverse()  # Oldest first
+    
+    # First and last order dates
+    order_dates = [o.get("created_at") for o in orders if o.get("created_at")]
+    first_order_date = min(order_dates) if order_dates else None
+    last_order_date = max(order_dates) if order_dates else None
+    
+    # Favorite products (most ordered)
+    product_count = defaultdict(lambda: {"name": "", "article": "", "count": 0, "total_spent": 0})
+    unique_products = set()
+    for o in orders:
+        for item in o.get("items", []):
+            pid = item.get("product_id") or item.get("article", "")
+            unique_products.add(pid)
+            product_count[pid]["name"] = item.get("name", "")
+            product_count[pid]["article"] = item.get("article", "")
+            product_count[pid]["count"] += item.get("quantity", 1)
+            product_count[pid]["total_spent"] += item.get("price", 0) * item.get("quantity", 1)
+    
+    favorite_products = sorted(
+        [{"product_id": k, **v} for k, v in product_count.items()],
+        key=lambda x: x["count"],
+        reverse=True
+    )[:5]  # Top 5 products
     
     return {
         "total_orders": total_orders,
@@ -800,7 +833,13 @@ async def get_user_order_stats(user=Depends(get_current_user)):
         "avg_order_value": round(avg_order_value, 2),
         "total_items": total_items,
         "by_status": by_status,
-        "by_month": by_month
+        "by_month": by_month,
+        "delivered_total": round(delivered_total, 2),
+        "pending_total": round(pending_total, 2),
+        "first_order_date": first_order_date,
+        "last_order_date": last_order_date,
+        "favorite_products": favorite_products,
+        "total_products_types": len(unique_products)
     }
 
 @api_router.get("/orders/{order_id}", response_model=OrderResponse)
