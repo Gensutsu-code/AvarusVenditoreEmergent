@@ -69,7 +69,7 @@ export default function AccountPage() {
       navigate('/login');
       return;
     }
-    setProfileForm({
+    setFormData({
       name: user.name || '',
       email: user.email || '',
       phone: user.phone || '',
