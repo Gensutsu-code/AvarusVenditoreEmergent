@@ -869,7 +869,213 @@ async def test_telegram_notification(user=Depends(get_current_user)):
                 raise HTTPException(status_code=400, detail=f"Telegram API error: {response.text}")
         return {"message": "Test notification sent"}
     except httpx.RequestError as e:
-        raise HTTPException(status_code=500, detail=f"Failed to send: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Failed to connect to Telegram: {str(e)}")
+
+# ==================== PARTNER BRANDS ====================
+
+class PartnerBrand(BaseModel):
+    name: str
+    description: str = ""
+    image_url: str = ""
+    link: str = ""
+    order: int = 0
+
+@api_router.get("/partners")
+async def get_partners():
+    """Get all partner brands for homepage"""
+    partners = await db.partners.find({}, {"_id": 0}).sort("order", 1).to_list(100)
+    return partners
+
+@api_router.post("/admin/partners")
+async def create_partner(partner: PartnerBrand, user=Depends(get_current_user)):
+    """Create a new partner brand (admin)"""
+    if user.get("role") != "admin":
+        raise HTTPException(status_code=403, detail="Admin access required")
+    
+    partner_id = str(uuid.uuid4())
+    partner_data = {
+        "id": partner_id,
+        "name": partner.name,
+        "description": partner.description,
+        "image_url": partner.image_url,
+        "link": partner.link,
+        "order": partner.order,
+        "created_at": datetime.now(timezone.utc).isoformat()
+    }
+    await db.partners.insert_one(partner_data)
+    
+    return {k: v for k, v in partner_data.items() if k != "_id"}
+
+@api_router.put("/admin/partners/{partner_id}")
+async def update_partner(partner_id: str, partner: PartnerBrand, user=Depends(get_current_user)):
+    """Update a partner brand (admin)"""
+    if user.get("role") != "admin":
+        raise HTTPException(status_code=403, detail="Admin access required")
+    
+    result = await db.partners.update_one(
+        {"id": partner_id},
+        {"$set": {
+            "name": partner.name,
+            "description": partner.description,
+            "image_url": partner.image_url,
+            "link": partner.link,
+            "order": partner.order,
+            "updated_at": datetime.now(timezone.utc).isoformat()
+        }}
+    )
+    
+    if result.modified_count == 0:
+        raise HTTPException(status_code=404, detail="Partner not found")
+    
+    updated = await db.partners.find_one({"id": partner_id}, {"_id": 0})
+    return updated
+
+@api_router.delete("/admin/partners/{partner_id}")
+async def delete_partner(partner_id: str, user=Depends(get_current_user)):
+    """Delete a partner brand (admin)"""
+    if user.get("role") != "admin":
+        raise HTTPException(status_code=403, detail="Admin access required")
+    
+    result = await db.partners.delete_one({"id": partner_id})
+    if result.deleted_count == 0:
+        raise HTTPException(status_code=404, detail="Partner not found")
+    
+    return {"message": "Partner deleted"}
+
+@api_router.post("/admin/partners/seed")
+async def seed_default_partners(user=Depends(get_current_user)):
+    """Seed default partner brands if none exist (admin)"""
+    if user.get("role") != "admin":
+        raise HTTPException(status_code=403, detail="Admin access required")
+    
+    count = await db.partners.count_documents({})
+    if count > 0:
+        return {"message": "Partners already exist", "count": count}
+    
+    default_partners = [
+        {"name": "FAG", "description": "Подшипники", "image_url": "https://customer-assets.emergentagent.com/job_heavy-vehicle/artifacts/se4069qi_Screenshot%20%281%29.png"},
+        {"name": "HENGST", "description": "Фильтры", "image_url": "https://customer-assets.emergentagent.com/job_heavy-vehicle/artifacts/k3fl5886_Screenshot%20%282%29.png"},
+        {"name": "MANN+HUMMEL", "description": "Фильтрация", "image_url": "https://customer-assets.emergentagent.com/job_heavy-vehicle/artifacts/8hwi685y_Screenshot%20%283%29.png"},
+        {"name": "PACCAR", "description": "Комплектующие", "image_url": "https://customer-assets.emergentagent.com/job_heavy-vehicle/artifacts/lxmklmq6_Screenshot%20%284%29.png"},
+        {"name": "SAF", "description": "Оси и подвеска", "image_url": "https://customer-assets.emergentagent.com/job_heavy-vehicle/artifacts/54osguxt_Screenshot%20%285%29.png"},
+        {"name": "BPW", "description": "Ходовая часть", "image_url": "https://customer-assets.emergentagent.com/job_heavy-vehicle/artifacts/qjidmkpu_Screenshot%20%285%29.png"},
+    ]
+    
+    for i, p in enumerate(default_partners):
+        await db.partners.insert_one({
+            "id": str(uuid.uuid4()),
+            "name": p["name"],
+            "description": p["description"],
+            "image_url": p["image_url"],
+            "link": "",
+            "order": i,
+            "created_at": datetime.now(timezone.utc).isoformat()
+        })
+    
+    return {"message": "Default partners created", "count": len(default_partners)}
+
+# ==================== USER PROFILE PHOTO ====================
+
+@api_router.post("/users/avatar")
+async def upload_avatar(file: UploadFile = File(...), user=Depends(get_current_user)):
+    """Upload user profile avatar"""
+    # Validate file type
+    if not file.content_type.startswith('image/'):
+        raise HTTPException(status_code=400, detail="File must be an image")
+    
+    # Read and validate size
+    content = await file.read()
+    if len(content) > 5 * 1024 * 1024:  # 5MB limit
+        raise HTTPException(status_code=400, detail="Image too large (max 5MB)")
+    
+    # Save file
+    file_ext = Path(file.filename).suffix or '.jpg'
+    file_name = f"avatar_{user['id']}{file_ext}"
+    file_path = UPLOADS_DIR / file_name
+    
+    with open(file_path, "wb") as f:
+        f.write(content)
+    
+    avatar_url = f"/uploads/{file_name}"
+    
+    # Update user
+    await db.users.update_one(
+        {"id": user["id"]},
+        {"$set": {"avatar_url": avatar_url}}
+    )
+    
+    return {"avatar_url": avatar_url}
+
+@api_router.delete("/users/avatar")
+async def delete_avatar(user=Depends(get_current_user)):
+    """Delete user profile avatar"""
+    current_user = await db.users.find_one({"id": user["id"]}, {"_id": 0})
+    
+    if current_user and current_user.get("avatar_url"):
+        # Delete file
+        file_path = UPLOADS_DIR / Path(current_user["avatar_url"]).name
+        if file_path.exists():
+            file_path.unlink()
+        
+        # Update user
+        await db.users.update_one(
+            {"id": user["id"]},
+            {"$unset": {"avatar_url": ""}}
+        )
+    
+    return {"message": "Avatar deleted"}
+
+# ==================== ORDER STATISTICS ====================
+
+@api_router.get("/orders/stats")
+async def get_user_order_stats(user=Depends(get_current_user)):
+    """Get order statistics for current user"""
+    orders = await db.orders.find({"user_id": user["id"]}, {"_id": 0}).to_list(1000)
+    
+    if not orders:
+        return {
+            "total_orders": 0,
+            "total_spent": 0,
+            "avg_order_value": 0,
+            "total_items": 0,
+            "by_status": {},
+            "by_month": []
+        }
+    
+    # Calculate stats
+    total_orders = len(orders)
+    total_spent = sum(o.get("total", 0) for o in orders)
+    total_items = sum(sum(item.get("quantity", 0) for item in o.get("items", [])) for o in orders)
+    avg_order_value = total_spent / total_orders if total_orders > 0 else 0
+    
+    # By status
+    by_status = {}
+    for o in orders:
+        status = o.get("status", "pending")
+        by_status[status] = by_status.get(status, 0) + 1
+    
+    # By month (last 6 months)
+    from collections import defaultdict
+    by_month_dict = defaultdict(lambda: {"orders": 0, "total": 0})
+    for o in orders:
+        created_at = o.get("created_at", "")
+        if created_at:
+            month_key = created_at[:7]  # YYYY-MM
+            by_month_dict[month_key]["orders"] += 1
+            by_month_dict[month_key]["total"] += o.get("total", 0)
+    
+    # Sort and limit to last 6 months
+    by_month = sorted([{"month": k, **v} for k, v in by_month_dict.items()], key=lambda x: x["month"], reverse=True)[:6]
+    by_month.reverse()  # Oldest first
+    
+    return {
+        "total_orders": total_orders,
+        "total_spent": round(total_spent, 2),
+        "avg_order_value": round(avg_order_value, 2),
+        "total_items": total_items,
+        "by_status": by_status,
+        "by_month": by_month
+    }
 
 # ==================== CHAT ROUTES ====================
 
