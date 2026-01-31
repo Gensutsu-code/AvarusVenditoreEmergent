@@ -1739,7 +1739,7 @@ export default function AdminPage() {
                         className="mt-1"
                         data-testid="bonus-min-threshold-input"
                       />
-                      <p className="text-xs text-zinc-400 mt-1">Минимум для кнопки "Запросить бонус"</p>
+                      <p className="text-xs text-zinc-400 mt-1">Минимум для кнопки «Запросить бонус»</p>
                     </div>
                     <div className="flex items-end gap-2">
                       <div className="flex-1">
