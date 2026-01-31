@@ -4,129 +4,121 @@ The user wants to create a website for a truck auto parts store.
 **PRODUCT REQUIREMENTS:**
 - **Core Functionality:** A complete e-commerce platform with a product catalog, shopping cart, and checkout process.
 - **Search:**
-    - Advanced search by part number (SKU), name, and additional cross-reference numbers.
-    - Search results should be split into Exact Match for the primary SKU and Possible Replacements for cross-reference matches.
+    - Advanced search by part number (SKU), name, and cross-reference numbers.
+    - Search results split into Exact Match and Possible Replacements.
 - **Product Management:**
-    - Admin can add/edit/delete products, including name, description, SKU, price, photos (multiple), manufacturer, and cross-reference numbers.
+    - Admin can add/edit/delete products, including multiple photos and cross-reference numbers.
     - Admin can import products from CSV/Excel.
 - **User Management:**
-    - Admins must be able to add, edit, and delete users, and view their full details, including their real password.
-    - Users can edit their own profile information (name, email, password, phone, address, profile photo).
+    - Admin can add, edit, and delete users, and view their real password.
+    - Users can edit their profile information, including a profile photo.
 - **Order Management:**
-    - Admin can view, edit, and delete orders without page reloads.
-    - Order notifications are sent to the admin via Telegram, containing full details of the items in the order.
-    - Users can view their detailed order history on a dedicated page.
+    - Admin can view, edit, and delete orders in real-time.
+    - Order notifications are sent to the admin via Telegram.
+    - Users can view their detailed order history and statistics.
 - **Promotions & Homepage:**
-    - A manageable promotional banner that can be hidden by the user.
-    - A fully editable homepage block for partner brand logos (add/remove/resize blocks, change images, text, and links).
+    - A manageable promotional banner.
+    - A fully editable homepage block for partner brand logos.
 - **Live Chat:**
-    - A built-in live chat widget.
+    - A built-in live chat widget with media/emoji support.
     - Admin can receive chat messages and reply directly from a dedicated Telegram bot.
-    - Chat supports media files, emojis, message editing/deletion, and chat management (pinning, labels, deletion) for admins.
-- **Statistics & Bonus Program:**
-    - Advanced sales statistics in the admin panel, with detailed info per product and user.
-    - A loyalty bonus program where users fill a progress bar based on their total order sum (5% of order value contributes to a 5000 RUB goal).
-    - Upon completion, the user receives a bonus (promo code), and the progress resets.
-    - Admin can manage the bonus program, view user progress, and issue rewards.
-    - Users can see their bonus progress and history in their profile.
+    - Admin can manage chats (pin, labels, delete).
+- **Bonus Program (New Requirements):**
+    - The bonus system title and description are editable in the admin panel.
+    - Admin can attach a custom image to the bonus program block.
+    - The progress bar goal is editable by the admin (default 50,000 RUB).
+    - Bonus points are accrued only when an order status is set to delivered. The total order sum is tracked.
+    - Users can request a bonus payout only after reaching a minimum threshold (5,000 RUB).
+    - The Issue Bonus button is removed from the admin panel for individual users.
+    - A user's bonus request triggers a notification in the admin panel.
+    - Admin issues the bonus by entering a promo code into a text field, which is then sent to the user.
+    - The user's progress/total order sum resets to zero only after the admin has issued the bonus.
+    - The UI should not show amount left to get bonus or total bonuses received.
 
 **User's preferred language**: Russian
 
 **what currently exists?**
-A feature-rich full-stack application (FastAPI backend, React frontend) for a truck parts e-commerce store. It includes a comprehensive admin panel, user authentication, product/category management, a working shopping cart and checkout, and numerous advanced features implemented in previous sessions, such as:
-- Advanced search, favorites/wishlist, popular/related products.
-- A basic built-in chat widget.
-- An admin dashboard with statistics, Telegram notification settings, and product import stubs.
-- Detailed order views for both users and admins, showing the product manufacturer.
-- A separate Orders page for user order history.
-- Custom favicon and site metadata.
+A feature-rich full-stack e-commerce application for a truck parts store. It features a React frontend and FastAPI backend. Key features include: an advanced admin panel with real-time updates for managing products, categories, users, orders, and chats; a sophisticated product catalog with advanced search (by SKU and cross-reference numbers); user authentication and profiles with photo uploads; a complete shopping cart and checkout flow; a live chat widget integrated with a Telegram bot for two-way communication with admins; and an editable partners section on the homepage. A bonus program was implemented but is now undergoing a complete overhaul based on new, detailed user requirements.
 
 **Last working item**:
-- **Last item agent was working:** Implementing the first phase of a very large feature request. The agent completed the backend changes for this phase, which included:
-    1.  Adding a  endpoint to fix a deployment issue.
-    2.  Implementing full CRUD API endpoints for admins to manage users and orders (, ).
-    3.  Updating user registration to store the plain text password.
-    4.  Rewriting the product search logic to support a cross-references field and return separate lists for exact matches and analogues.
-    The agent then started updating the frontend  to use these new features but was interrupted mid-task.
+- **Last item agent was working:** The user requested a complete overhaul of the bonus program. The agent began by identifying the relevant sections of code in  that handle the bonus logic, preparing to rewrite them according to the new requirements.
 - **Status:** IN PROGRESS
 - **Agent Testing Done:** N
 - **Which testing method agent to use?** both
 - **User Testing Done:** N
 
 **All Pending/In progress Issue list**:
-  - **Issue 1:** Complete Phase 1 of the new features (P0)
+  - **Issue 1:** Overhaul the Bonus Program (P0)
 
   **Issues Detail:**
-  - **Issue 1:** Complete Phase 1 of the new features
-     - **Attempted fixes:** Backend endpoints have been created and modified. Frontend work on  has started with the addition of state and handler functions.
+  - **Issue 1:** Overhaul the Bonus Program
+     - **Attempted fixes:** The agent has located the existing bonus system logic in . The previous implementation has been replaced with new logic that is partially complete.
      - **Next debug checklist:**
-        1.  **Frontend ():**
-            - Add a Cross-numbers text area to the product add/edit modal.
-            - Implement the UI for full user management (list, add, edit, delete modals), including a field to display the user's plain text password.
-            - Implement UI for editing and deleting orders directly from the orders tab.
-            - Ensure all these admin actions update the UI in real-time without requiring a page reload.
+        1.  **Backend ():**
+            -   Modify the bonus settings model to include , , and .
+            -   Remove the  field from the settings.
+            -   Change the order processing logic to add to a user's  only when an order's status is updated to .
+            -   Create an endpoint for users to  which sets a flag (e.g., ) on the user's bonus document. This should only work if their  is >= 5000.
+            -   Create an admin endpoint  that:
+                -   Stores the issued promo code in the user's bonus history.
+                -   Resets the user's  to 0.
+                -   Resets the  flag.
+            -   Ensure all API responses returning user bonus data do not contain .
         2.  **Frontend ():**
-            - Update the product search/display logic to handle the new API response format, showing Exact Match and Possible Replacements sections.
-        3.  **Testing:**
-            - Verify the  endpoint returns a 200 OK status.
-            - Test all new admin CRUD operations for users and orders.
-            - Test the advanced product search with and without cross-reference numbers.
-            - Perform a full regression test using  to ensure no existing functionality was broken.
-     - **Why fix this issue and what will be achieved with the fix?** This will complete the first set of critical admin enhancements and the advanced search feature requested by the user, providing a solid foundation for the subsequent phases.
+            -   In the Bonuses tab, add fields for editing the bonus program's , , and .
+            -   Remove the Bonus Size input field.
+            -   In the user progress table, display a notification/indicator (e.g., an icon or colored row) for users who have a  flag.
+            -   Replace the Issue Bonus (gift icon) button with a new button that opens a modal. This modal should contain a text input for the admin to paste the promo code and a Send Bonus button that calls the new  endpoint.
+        3.  **Frontend ():**
+            -   Display the new editable , , and  for the bonus section.
+            -   The progress bar should reflect the  against the .
+            -   Remove the Amount left to get bonus and Total bonuses received sections.
+            -   Add a Request Bonus button that is enabled only when the user's progress is >= 5000. This button should call the  endpoint.
+            -   Display the list of received promo codes from the user's bonus history.
+     - **Why fix this issue and what will be achieved with the fix?** This will align the bonus program with the user's new, more manual, and controllable workflow, giving the admin full control over bonus issuance.
      - **Status:** IN PROGRESS
      - **Is recurring issue?** N
      - **Should Test frontend/backend/both after fix?** both
      - **Blocked on other issue:** None
 
 **In progress Task List**:
-  - **Task 1:** Frontend implementation for advanced admin controls and search.
-     - **Where to resume:** Continue editing . The agent was about to add the cross-numbers field to the product editing form. After that, implement the UI for user and order management.
-     - **What will be achieved with this?** The UI will be synchronized with the new backend capabilities.
-     - **Status:** IN PROGRESS
-     - **Should Test frontend/backend/both after fix?** both
-     - **Blocked on something:** None
+- **Task 1:** Complete the backend and frontend implementation for the new bonus system.
+    - **Where to resume:** The agent has already replaced the backend logic in . The next step is to implement the corresponding frontend changes in  and  as per the checklist above.
+    - **What will be achieved with this?** The bonus program will be fully functional according to the new user specifications.
+    - **Status:** IN PROGRESS
+    - **Should Test frontend/backend/both after fix?** both
+    - **Blocked on something:** None
 
 **Upcoming and Future Tasks**
-- **Phase 2 (Admin Panel & Real-time):**
-    - Make *all* actions in the admin panel (add, edit, delete products/categories) update the UI in real-time without page reloads.
-    - Enhance the statistics tab with detailed per-product and per-user information.
-    - Implement multiple photo uploads for products with a slideshow viewer on the product card/modal.
-- **Phase 3 (Chat & Telegram Overhaul):**
-    - Set up a separate Telegram bot for the live chat.
-    - Implement a two-way bridge: Admin can reply from Telegram to the website chat.
-    - Enhance the chat UI: media file uploads, better design/animations, emojis.
-    - Add admin chat management: edit/delete messages, delete chats, pin chats, apply labels.
-- **Phase 4 (Homepage & Profile Customization):**
-    - Make the homepage partner logos section fully editable (resize, add/delete blocks, edit content).
-    - Allow users and admins to change profile pictures.
-    - Enhance the user profile UI to make information more prominent and the Edit button smaller.
-    - Add extended order statistics to the user's Orders page.
-- **Phase 5 (Bonus Program):**
-    - Implement the user-facing bonus program UI in the profile, including the progress bar and bonus history.
-    - Create a new Bonus Program section in the admin panel to manage settings, view user progress, and issue rewards.
+- **Future Tasks:**
+    - No other tasks are pending from the original PRD. The user may have new ideas after the bonus system is complete.
 
 **Completed work in this session**
-- **Feature Implementation (8 new features):**
-  - Advanced Search (initial version), Popular Products section, Related Products, User Order History, Favorites/Wishlist, Admin Product Import (stub), Admin Advanced Statistics (stub), Admin Telegram Notifications (stub).
-- **Profile & Checkout Enhancements:**
-  - Autofill checkout form with user's last used address.
-  - Implemented user profile editing (name, phone, address).
-  - Moved user order history to a dedicated  page.
-- **Real-time UI Updates:**
-  - Implemented real-time order status updates in the admin panel without page reload.
-- **Manufacturer Field Implementation:**
-  - Added manufacturer to products, visible in all relevant views (catalog, cart, orders). This involved significant debugging of data models and a data migration for old orders.
-- **UI/UX Fixes:**
-  - Relocated and resized the chat widget to avoid being obscured.
-  - Replaced the site's favicon and updated meta tags.
-- **Admin Order View:**
-  - Enhanced the admin order modal to show full product details (image, SKU, price).
+- **Phase 1: Advanced Admin & Search (DONE)**
+  - Implemented full CRUD API endpoints and UI for managing Users and Orders in the admin panel (, ).
+  - Implemented advanced product search with cross-reference numbers, displaying Exact Match and Possible Replacements ().
+  - Added a  endpoint to fix deployment issues.
+- **Phase 2: Real-time UI & Multi-Photo (DONE)**
+  - Refactored admin panel logic to update product and category lists in real-time without full reloads.
+  - Implemented multiple image uploads for products with a gallery and main image selection ().
+  - Added a slideshow/carousel viewer for product images in the product modal ().
+- **Phase 3: Telegram Chat Overhaul (DONE)**
+  - Created a full two-way chat bridge between the website chat and a Telegram bot.
+  - Implemented a webhook for the Telegram bot ().
+  - Revamped the  component with support for file attachments and emojis.
+  - Added advanced chat management features to the admin panel (pinning, labels, message history) ().
+- **Phase 4: Homepage & Profile Customization (DONE)**
+  - Implemented an editable Partners section on the homepage, manageable from the admin panel.
+  - Added user profile picture upload and display functionality ().
+  - Added extended order statistics to the user's personal Orders page ().
+- **Phase 5: Bonus Program (Version 1 - DONE & REPLACED)**
+  - Implemented the initial version of a loyalty bonus program with automatic progress and rewards. This is now being replaced.
 
 **Earlier issues found/mentioned but not fixed**
-   - None
+- None.
 
 **Known issue recurrence from previous fork**
-  - None
+- None.
 
 **Code Architecture**
 
@@ -136,84 +128,89 @@ A feature-rich full-stack application (FastAPI backend, React frontend) for a tr
 - **Frontend:** React
 - **Database:** MongoDB
 - **Authentication:** JWT (JSON Web Tokens)
-- **Styling:** Tailwind CSS with Shadcn/UI components
-- **File Handling:** Local file uploads served as static files.
-- **Deployment:** The application is deployed on Kubernetes, which requires a  endpoint for liveness probes.
+- **Styling:** Tailwind CSS, Shadcn/UI
+- **Real-time:** Telegram Bot Webhook, client-side state management for UI updates.
 
 **key DB schema**
 - **users:** 
 - **products:** 
 - **orders:** 
 - **chats:** 
-- **promo_banner:** Single document with configuration.
-- **favorites:** 
+- **bonus_settings:**  (Singleton)
+- **user_bonus:** 
+- **partners:** 
 
 **changes in tech stack**
-- None
+- None.
 
 **All files of reference**
-- : The monolithic backend file containing all API logic. Heavily modified to add new endpoints for admin CRUD and advanced search.
-- : The monolithic frontend component for the entire admin dashboard. This is the primary file being worked on.
-- : Needs to be updated to support the new search results format.
-- : Was simplified by moving order history out.
-- : The new page for displaying user order history.
-- : Manages user state.
-- : Updated with new favicon and meta tags.
+- : Heavily modified to add all new features, including the logic for the bonus system overhaul.
+- : The primary file for admin features. Modified to manage users, orders, chats, partners, and the bonus program.
+- : Modified to include profile picture uploads and the user-facing bonus program UI. Needs updating for the new bonus logic.
+- : Updated with advanced search UI and a product image slideshow.
+- : Updated with user order statistics.
+- : Updated to display dynamic partner logos.
+- : Completely rewritten to support file uploads, emojis, and a new design.
 
 **Areas that need refactoring**:
--  is extremely large and complex. It should be broken down into smaller components, with each tab (Products, Orders, Users, etc.) becoming its own component file.
--  is also becoming very large. The API routes could be split into multiple files using  for better organization (e.g., , ).
+- : Remains extremely large. Breaking it down into components for each tab (Products, Orders, Users, Chat, Bonuses, Partners) would improve maintainability.
+- : Has grown into a very large monolith. Splitting routes using FastAPI's  (e.g., , , ) is highly recommended for future development.
 
 **key api endpoints**
-- ** (New)**: Health check for Kubernetes.
--  (CRUD operations)
--  (CRUD operations)
--  (Rewritten to support advanced search)
-- 
--  (For user self-update)
-- 
-- 
-- 
-- 
+-  (GET, PUT)
+-  (GET)
+-  (POST)
+-  (GET)
+-  (POST)
+-  (GET)
+-  (GET, POST, PUT, DELETE)
+-  (POST, DELETE)
+-  (GET)
+-  (POST)
+-  (CRUD for chat management)
 
 **Critical Info for New Agent**
-- **User Interaction:** The user has repeatedly insisted on continuing work in the same session without forking. Be prepared to acknowledge this and proceed with the current task.
-- **Deployment Fix:** The immediate priority after completing the current task should be to test and confirm the  endpoint fixes the deployment issue described by the user.
-- **Monolithic Files:** Be extremely careful when editing  and . They contain a vast amount of logic, and changes can have unintended side effects.
-- **Admin Credentials:** Use  and  to log in.
+- The user's latest request is a **complete replacement** of the bonus system logic. Do not try to patch the old implementation; follow the new requirements outlined in the All Pending/In progress Issue list section.
+- The agent has already performed a full file replacement for the backend logic in  and for some frontend components. You must now implement the new frontend logic in  and  to match the new backend.
+- The admin credentials are  / .
 
 **documents and test reports created in this job**
--  (Updated)
--  (Last successful full test run)
+-  (Updated with each completed phase)
+- 
+- 
+- 
+- 
 
 **Last 10 User Messages and any pending HUMAN messages**
-1.  **User:** Replace favicon with a new image. (DONE)
-2.  **Agent:** Replaced favicon and updated meta tags.
-3.  **User:** Provided deployment logs showing a  on  endpoint, asking for a fix. (IN PROGRESS)
-4.  **Agent:** Identified the missing health check as the issue.
-5.  **User:** Dropped a massive list of new features (real-time admin, chat overhaul, bonus program, etc.). (IN PROGRESS)
-6.  **Agent:** Broke the request into phases and asked for clarification.
-7.  **User:** Confirmed details for Phase 1 (Telegram bot, show real password, bonus logic) and told the agent to start. (IN PROGRESS)
-8.  **Agent:** Started implementing the backend for Phase 1.
-9.  **User:** Interrupted multiple times, insisting on continuing in the same chat without forking. (ACKNOWLEDGED)
-10. **Agent:** Acknowledged the user's request and continued working on the frontend .
+1.  **User:** Start Phase 5 (Bonus Program).
+2.  **Agent:** Started Phase 5, implementing the initial bonus program.
+3.  **Agent:** Completed initial Bonus Program (Phase 5). Asked about starting Phase 4.
+4.  **User:** start phase 4 now
+5.  **Agent:** Started Phase 4 (Partners, Profile Photo, Order Stats).
+6.  **Agent:** Completed Phase 4. Asked for next steps.
+7.  **User:** Provided a very long and detailed list of changes for the Bonus Program. The key points are manual admin issuance of promo codes, editable text/images, new thresholds, and changes to when/how progress is calculated and reset.
+8.  **Agent:** Acknowledged the request and started working on the backend.
+9.  **Agent:** Located the bonus system code in .
+10. **Agent:** Replaced the entire bonus system logic in  with a new implementation based on the user's request.
 
 **Project Health Check:**
-- **Broken:** Deployment is failing due to a missing  endpoint. The agent has added the code for this, but it hasn't been tested or deployed yet.
-- **Mocked:** The application data is transient and seeded for testing.
+- **Broken:** The frontend for the bonus system (, ) is now out of sync with the new backend logic and will not function correctly until updated.
+- **Mocked:** Application data is transient.
 
 **3rd Party Integrations**
-- **Telegram (via ):** Partially implemented for notifications. A new bot is required for the chat bridge functionality.
+- **Telegram (via ):** Used for order notifications and for the admin-user live chat bridge. A bot token has been provided by the user and is stored in .
 
 **Testing status**
-- **Testing agent used after significant changes:** YES, but not since the last major feature batch was started.
+- **Testing agent used after significant changes:** YES, after every major phase was completed ( through ).
 - **Troubleshoot agent used after agent stuck in loop:** NO
 - **Test files created:** None
-- **Known regressions:** None currently, but high risk due to the scale of ongoing changes.
+- **Known regressions:** The bonus system is intentionally broken pending frontend updates.
 
 **Credentials to test flow:**
 - **Admin Email:** 
 - **Admin Password:** 
+- **Test User Email:** 
+- **Test User Password:** 
 
 **What agent forgot to execute**
-The agent has been responsive to user corrections. The most significant miss was not initially understanding the depth of the missing manufacturer bug, which required several attempts to fully resolve (from data migration to fixing the Pydantic response model). This has now been corrected.</analysis>
+- Nothing was forgotten. The agent has been methodically working through the user's phased requests and is now addressing a major change request. The testing agent was even able to find and fix a bug ( routing issue) during the last run.</analysis>
