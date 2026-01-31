@@ -1,7 +1,7 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
-import { User, Pencil, Save, X, Gift, TrendingUp, Award, History, Copy, CheckCircle } from 'lucide-react';
+import { User, Pencil, Save, X, Gift, TrendingUp, Award, History, Copy, CheckCircle, Camera, Trash2 } from 'lucide-react';
 import { Button } from '../components/ui/button';
 import { Input } from '../components/ui/input';
 import { Label } from '../components/ui/label';
@@ -9,6 +9,7 @@ import { useAuth } from '../context/AuthContext';
 import { toast } from 'sonner';
 
 const API = `${process.env.REACT_APP_BACKEND_URL}/api`;
+const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
 
 // Animated Progress Bar Component
 const BonusProgressBar = ({ percentage, currentAmount, goalAmount }) => {
@@ -43,6 +44,8 @@ export default function AccountPage() {
   const navigate = useNavigate();
   const [isEditing, setIsEditing] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [uploadingAvatar, setUploadingAvatar] = useState(false);
+  const avatarInputRef = useRef(null);
   const [profileForm, setProfileForm] = useState({
     name: '',
     phone: '',
