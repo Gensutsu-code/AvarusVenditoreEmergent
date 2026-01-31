@@ -1624,6 +1624,38 @@ async def get_or_create_bonus_settings():
         }
         await db.bonus_settings.insert_one(settings)
         settings = await db.bonus_settings.find_one({"type": "global"}, {"_id": 0})
+    
+    # Migrate old settings to new schema if needed
+    needs_update = False
+    if "title" not in settings:
+        settings["title"] = "Бонусная программа"
+        needs_update = True
+    if "description" not in settings:
+        settings["description"] = "Накопите сумму заказов и получите бонус!"
+        needs_update = True
+    if "image_url" not in settings:
+        settings["image_url"] = ""
+        needs_update = True
+    if "max_amount" not in settings:
+        # Use old goal_amount if it exists
+        settings["max_amount"] = settings.get("goal_amount", 50000)
+        needs_update = True
+    if "min_threshold" not in settings:
+        settings["min_threshold"] = 5000
+        needs_update = True
+    
+    if needs_update:
+        await db.bonus_settings.update_one(
+            {"type": "global"},
+            {"$set": {
+                "title": settings["title"],
+                "description": settings["description"],
+                "image_url": settings["image_url"],
+                "max_amount": settings["max_amount"],
+                "min_threshold": settings["min_threshold"]
+            }}
+        )
+    
     return settings
 
 # Get user's bonus progress
