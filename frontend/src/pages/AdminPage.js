@@ -74,6 +74,11 @@ export default function AdminPage() {
   const [partners, setPartners] = useState([]);
   const [editingPartner, setEditingPartner] = useState(null);
   const [isNewPartner, setIsNewPartner] = useState(false);
+  
+  // User details expansion
+  const [expandedUserId, setExpandedUserId] = useState(null);
+  const [userDetails, setUserDetails] = useState(null);
+  const [loadingUserDetails, setLoadingUserDetails] = useState(false);
 
   useEffect(() => {
     if (authLoading) return;
