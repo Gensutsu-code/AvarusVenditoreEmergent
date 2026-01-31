@@ -2693,7 +2693,7 @@ export default function AdminPage() {
 
       {/* Edit Partner Modal */}
       <Dialog open={!!editingPartner} onOpenChange={() => setEditingPartner(null)}>
-        <DialogContent className="max-w-lg" data-testid="partner-edit-modal">
+        <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto" data-testid="partner-edit-modal">
           <DialogHeader>
             <DialogTitle>{isNewPartner ? 'Добавить партнёра' : 'Редактировать партнёра'}</DialogTitle>
           </DialogHeader>
