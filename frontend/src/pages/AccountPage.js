@@ -87,16 +87,16 @@ export default function AccountPage() {
     }
   };
 
-  const handleClaimBonus = async () => {
-    setClaiming(true);
+  const handleRequestBonus = async () => {
+    setRequestingBonus(true);
     try {
-      const res = await axios.post(`${API}/bonus/claim`);
+      const res = await axios.post(`${API}/bonus/request`);
       toast.success(res.data.message);
       fetchBonusData(); // Refresh data
     } catch (err) {
-      toast.error(err.response?.data?.detail || 'Ошибка получения бонуса');
+      toast.error(err.response?.data?.detail || 'Ошибка отправки запроса');
     } finally {
-      setClaiming(false);
+      setRequestingBonus(false);
     }
   };
 
