@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import axios from 'axios';
-import { MessageCircle, X, Send, Paperclip, Image, Smile, FileText, Download } from 'lucide-react';
+import { MessageCircle, X, Send, Paperclip, Image, Smile, FileText, Download, ZoomIn, ZoomOut, ChevronLeft, ChevronRight } from 'lucide-react';
 import { Button } from './ui/button';
 import { Input } from './ui/input';
 import { useAuth } from '../context/AuthContext';
@@ -12,6 +12,57 @@ const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
 // Common emoji list
 const EMOJI_LIST = ['😀', '😃', '😄', '😁', '😅', '😂', '🤣', '😊', '😇', '🙂', '🙃', '😉', '😌', '😍', '🥰', '😘', '😗', '😙', '😚', '😋', '😛', '😜', '🤪', '😝', '🤑', '🤗', '🤭', '🤫', '🤔', '🤐', '🤨', '😐', '😑', '😶', '😏', '😒', '🙄', '😬', '🤥', '😌', '😔', '😪', '🤤', '😴', '😷', '🤒', '🤕', '🤢', '🤮', '🤧', '🥵', '🥶', '🥴', '😵', '🤯', '🤠', '🥳', '😎', '🤓', '🧐', '😕', '😟', '🙁', '😮', '😯', '😲', '😳', '🥺', '😦', '😧', '😨', '😰', '😥', '😢', '😭', '😱', '😖', '😣', '😞', '😓', '😩', '😫', '🥱', '😤', '😡', '😠', '🤬', '👍', '👎', '👌', '✌️', '🤞', '🤟', '🤘', '🤙', '👋', '🙏', '❤️', '🧡', '💛', '💚', '💙', '💜', '🖤', '🤍', '💔', '❣️', '💕', '💖', '💗', '💘', '💝'];
 
+// Image Lightbox Component
+const ImageLightbox = ({ src, onClose }) => {
+  const [scale, setScale] = useState(1);
+  
+  const handleZoomIn = () => setScale(prev => Math.min(prev + 0.25, 3));
+  const handleZoomOut = () => setScale(prev => Math.max(prev - 0.25, 0.5));
+  
+  return (
+    <div 
+      className="fixed inset-0 bg-black/90 z-[100] flex items-center justify-center"
+      onClick={onClose}
+    >
+      {/* Close button */}
+      <button 
+        onClick={onClose}
+        className="absolute top-4 right-4 text-white hover:bg-white/20 p-2 rounded-full transition-colors z-10"
+      >
+        <X className="w-8 h-8" />
+      </button>
+      
+      {/* Zoom controls */}
+      <div className="absolute bottom-6 left-1/2 -translate-x-1/2 flex items-center gap-3 bg-white/10 backdrop-blur-sm px-4 py-2 rounded-full z-10">
+        <button 
+          onClick={(e) => { e.stopPropagation(); handleZoomOut(); }}
+          className="text-white hover:bg-white/20 p-2 rounded-full transition-colors"
+          disabled={scale <= 0.5}
+        >
+          <ZoomOut className="w-5 h-5" />
+        </button>
+        <span className="text-white text-sm font-medium w-16 text-center">{Math.round(scale * 100)}%</span>
+        <button 
+          onClick={(e) => { e.stopPropagation(); handleZoomIn(); }}
+          className="text-white hover:bg-white/20 p-2 rounded-full transition-colors"
+          disabled={scale >= 3}
+        >
+          <ZoomIn className="w-5 h-5" />
+        </button>
+      </div>
+      
+      {/* Image */}
+      <img 
+        src={src} 
+        alt="Увеличенное изображение"
+        className="max-w-[90vw] max-h-[85vh] object-contain transition-transform duration-200"
+        style={{ transform: `scale(${scale})` }}
+        onClick={(e) => e.stopPropagation()}
+      />
+    </div>
+  );
+};
+
 export const ChatWidget = () => {
   const { user } = useAuth();
   const [isOpen, setIsOpen] = useState(false);
@@ -21,6 +72,7 @@ export const ChatWidget = () => {
   const [uploading, setUploading] = useState(false);
   const [unreadCount, setUnreadCount] = useState(0);
   const [showEmoji, setShowEmoji] = useState(false);
+  const [lightboxImage, setLightboxImage] = useState(null);
   const messagesEndRef = useRef(null);
   const fileInputRef = useRef(null);
 
