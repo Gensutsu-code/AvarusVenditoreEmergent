@@ -53,10 +53,10 @@ export default function AccountPage() {
   });
   
   // Bonus state
-  const [bonusProgress, setBonusProgress] = useState(null);
+  const [bonusPrograms, setBonusPrograms] = useState([]);
   const [bonusHistory, setBonusHistory] = useState([]);
   const [loadingBonus, setLoadingBonus] = useState(true);
-  const [requestingBonus, setRequestingBonus] = useState(false);
+  const [requestingBonus, setRequestingBonus] = useState({});
   const [copiedCode, setCopiedCode] = useState(null);
 
   useEffect(() => {
