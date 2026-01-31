@@ -48,9 +48,14 @@ export default function AccountPage() {
   const avatarInputRef = useRef(null);
   const [profileForm, setProfileForm] = useState({
     name: '',
+    email: '',
     phone: '',
-    address: ''
+    address: '',
+    current_password: '',
+    new_password: '',
+    confirm_password: ''
   });
+  const [showPasswordFields, setShowPasswordFields] = useState(false);
   
   // Bonus state
   const [bonusPrograms, setBonusPrograms] = useState([]);
