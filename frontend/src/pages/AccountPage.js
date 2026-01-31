@@ -56,7 +56,7 @@ export default function AccountPage() {
   const [bonusProgress, setBonusProgress] = useState(null);
   const [bonusHistory, setBonusHistory] = useState([]);
   const [loadingBonus, setLoadingBonus] = useState(true);
-  const [claiming, setClaiming] = useState(false);
+  const [requestingBonus, setRequestingBonus] = useState(false);
   const [copiedCode, setCopiedCode] = useState(null);
 
   useEffect(() => {
