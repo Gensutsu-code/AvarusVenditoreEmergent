@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { Link } from 'react-router-dom';
 import axios from 'axios';
 import { Search } from 'lucide-react';
@@ -6,36 +6,35 @@ import { PopularProducts } from '../components/PopularProducts';
 
 const API = `${process.env.REACT_APP_BACKEND_URL}/api`;
 
+const DEFAULT_PARTNERS = [
+  { name: 'FAG', description: 'Подшипники', image_url: 'https://customer-assets.emergentagent.com/job_heavy-vehicle/artifacts/se4069qi_Screenshot%20%281%29.png' },
+  { name: 'HENGST', description: 'Фильтры', image_url: 'https://customer-assets.emergentagent.com/job_heavy-vehicle/artifacts/k3fl5886_Screenshot%20%282%29.png' },
+  { name: 'MANN+HUMMEL', description: 'Фильтрация', image_url: 'https://customer-assets.emergentagent.com/job_heavy-vehicle/artifacts/8hwi685y_Screenshot%20%283%29.png' },
+  { name: 'PACCAR', description: 'Комплектующие', image_url: 'https://customer-assets.emergentagent.com/job_heavy-vehicle/artifacts/lxmklmq6_Screenshot%20%284%29.png' },
+  { name: 'SAF', description: 'Оси и подвеска', image_url: 'https://customer-assets.emergentagent.com/job_heavy-vehicle/artifacts/54osguxt_Screenshot%20%285%29.png' },
+  { name: 'BPW', description: 'Ходовая часть', image_url: 'https://customer-assets.emergentagent.com/job_heavy-vehicle/artifacts/qjidmkpu_Screenshot%20%285%29.png' },
+];
+
 export default function HomePage() {
-  const [partners, setPartners] = useState([]);
+  const [partners, setPartners] = useState(DEFAULT_PARTNERS);
+
+  const fetchPartners = useCallback(async () => {
+    try {
+      const res = await axios.get(`${API}/partners`);
+      if (res.data.length > 0) {
+        setPartners(res.data);
+      }
+    } catch (err) {
+      console.error('Failed to fetch partners', err);
+    }
+  }, []);
 
   useEffect(() => {
     // Seed data on first load
     axios.post(`${API}/seed`).catch(() => {});
     // Fetch partners
     fetchPartners();
-  }, []);
-
-  const fetchPartners = async () => {
-    try {
-      const res = await axios.get(`${API}/partners`);
-      if (res.data.length > 0) {
-        setPartners(res.data);
-      } else {
-        // Use default partners if none in DB
-        setPartners([
-          { name: 'FAG', description: 'Подшипники', image_url: 'https://customer-assets.emergentagent.com/job_heavy-vehicle/artifacts/se4069qi_Screenshot%20%281%29.png' },
-          { name: 'HENGST', description: 'Фильтры', image_url: 'https://customer-assets.emergentagent.com/job_heavy-vehicle/artifacts/k3fl5886_Screenshot%20%282%29.png' },
-          { name: 'MANN+HUMMEL', description: 'Фильтрация', image_url: 'https://customer-assets.emergentagent.com/job_heavy-vehicle/artifacts/8hwi685y_Screenshot%20%283%29.png' },
-          { name: 'PACCAR', description: 'Комплектующие', image_url: 'https://customer-assets.emergentagent.com/job_heavy-vehicle/artifacts/lxmklmq6_Screenshot%20%284%29.png' },
-          { name: 'SAF', description: 'Оси и подвеска', image_url: 'https://customer-assets.emergentagent.com/job_heavy-vehicle/artifacts/54osguxt_Screenshot%20%285%29.png' },
-          { name: 'BPW', description: 'Ходовая часть', image_url: 'https://customer-assets.emergentagent.com/job_heavy-vehicle/artifacts/qjidmkpu_Screenshot%20%285%29.png' },
-        ]);
-      }
-    } catch (err) {
-      console.error('Failed to fetch partners', err);
-    }
-  };
+  }, [fetchPartners]);
 
   return (
     <div className="min-h-screen" data-testid="home-page">
