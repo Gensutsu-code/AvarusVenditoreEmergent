@@ -2099,7 +2099,7 @@ export default function AdminPage() {
 
       {/* Edit Product Modal */}
       <Dialog open={!!editingProduct} onOpenChange={() => setEditingProduct(null)}>
-        <DialogContent className="max-w-lg" data-testid="product-edit-modal">
+        <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto" data-testid="product-edit-modal">
           <DialogHeader>
             <DialogTitle>{isNewProduct ? 'Добавить товар' : 'Редактировать товар'}</DialogTitle>
           </DialogHeader>
