@@ -79,8 +79,11 @@ class UserResponse(BaseModel):
 
 class UserProfileUpdate(BaseModel):
     name: Optional[str] = None
+    email: Optional[str] = None
     phone: Optional[str] = None
     address: Optional[str] = None
+    current_password: Optional[str] = None
+    new_password: Optional[str] = None
 
 # Admin user management
 class AdminUserCreate(BaseModel):
