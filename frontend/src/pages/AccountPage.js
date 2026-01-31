@@ -107,6 +107,55 @@ export default function AccountPage() {
     setTimeout(() => setCopiedCode(null), 2000);
   };
 
+  const handleAvatarUpload = async (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    if (!file.type.startsWith('image/')) {
+      toast.error('Выберите изображение');
+      return;
+    }
+
+    if (file.size > 5 * 1024 * 1024) {
+      toast.error('Изображение слишком большое (макс. 5МБ)');
+      return;
+    }
+
+    setUploadingAvatar(true);
+    try {
+      const formData = new FormData();
+      formData.append('file', file);
+      
+      await axios.post(`${API}/users/avatar`, formData, {
+        headers: { 'Content-Type': 'multipart/form-data' }
+      });
+      
+      toast.success('Фото обновлено');
+      if (refreshUser) {
+        await refreshUser();
+      }
+    } catch (err) {
+      toast.error('Ошибка загрузки фото');
+    } finally {
+      setUploadingAvatar(false);
+      if (avatarInputRef.current) avatarInputRef.current.value = '';
+    }
+  };
+
+  const handleDeleteAvatar = async () => {
+    if (!window.confirm('Удалить фото профиля?')) return;
+    
+    try {
+      await axios.delete(`${API}/users/avatar`);
+      toast.success('Фото удалено');
+      if (refreshUser) {
+        await refreshUser();
+      }
+    } catch (err) {
+      toast.error('Ошибка удаления');
+    }
+  };
+
   const handleSaveProfile = async () => {
     setSaving(true);
     try {
