@@ -704,6 +704,56 @@ async def get_orders(user=Depends(get_current_user)):
     orders = await db.orders.find({"user_id": user["id"]}, {"_id": 0}).sort("created_at", -1).to_list(100)
     return orders
 
+@api_router.get("/orders/stats")
+async def get_user_order_stats(user=Depends(get_current_user)):
+    """Get order statistics for current user"""
+    from collections import defaultdict
+    orders = await db.orders.find({"user_id": user["id"]}, {"_id": 0}).to_list(1000)
+    
+    if not orders:
+        return {
+            "total_orders": 0,
+            "total_spent": 0,
+            "avg_order_value": 0,
+            "total_items": 0,
+            "by_status": {},
+            "by_month": []
+        }
+    
+    # Calculate stats
+    total_orders = len(orders)
+    total_spent = sum(o.get("total", 0) for o in orders)
+    total_items = sum(sum(item.get("quantity", 0) for item in o.get("items", [])) for o in orders)
+    avg_order_value = total_spent / total_orders if total_orders > 0 else 0
+    
+    # By status
+    by_status = {}
+    for o in orders:
+        status = o.get("status", "pending")
+        by_status[status] = by_status.get(status, 0) + 1
+    
+    # By month (last 6 months)
+    by_month_dict = defaultdict(lambda: {"orders": 0, "total": 0})
+    for o in orders:
+        created_at = o.get("created_at", "")
+        if created_at:
+            month_key = created_at[:7]  # YYYY-MM
+            by_month_dict[month_key]["orders"] += 1
+            by_month_dict[month_key]["total"] += o.get("total", 0)
+    
+    # Sort and limit to last 6 months
+    by_month = sorted([{"month": k, **v} for k, v in by_month_dict.items()], key=lambda x: x["month"], reverse=True)[:6]
+    by_month.reverse()  # Oldest first
+    
+    return {
+        "total_orders": total_orders,
+        "total_spent": round(total_spent, 2),
+        "avg_order_value": round(avg_order_value, 2),
+        "total_items": total_items,
+        "by_status": by_status,
+        "by_month": by_month
+    }
+
 @api_router.get("/orders/{order_id}", response_model=OrderResponse)
 async def get_order(order_id: str, user=Depends(get_current_user)):
     order = await db.orders.find_one({"id": order_id, "user_id": user["id"]}, {"_id": 0})
