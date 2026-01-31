@@ -2528,11 +2528,90 @@ async def get_admin_users(user=Depends(get_current_user)):
         user_orders = await db.orders.find({"user_id": u["id"]}, {"_id": 0}).to_list(1000)
         u["total_orders"] = len(user_orders)
         u["total_spent"] = sum(o.get("total", 0) for o in user_orders)
-        # Don't remove password hash, but add plain password if exists
+        # Keep plain_password for admin view
         if "password" in u:
-            del u["password"]  # Remove hash, keep password_plain
+            del u["password"]  # Remove hash, keep plain_password
     
     return users
+
+@api_router.get("/admin/users/{user_id}/details")
+async def get_admin_user_details(user_id: str, user=Depends(get_current_user)):
+    """Get detailed information about a user including order stats"""
+    if user.get("role") != "admin":
+        raise HTTPException(status_code=403, detail="Admin access required")
+    
+    target_user = await db.users.find_one({"id": user_id}, {"_id": 0})
+    if not target_user:
+        raise HTTPException(status_code=404, detail="User not found")
+    
+    # Remove password hash, keep plain_password
+    if "password" in target_user:
+        del target_user["password"]
+    if "password_hash" in target_user:
+        del target_user["password_hash"]
+    
+    # Get all orders for this user
+    user_orders = await db.orders.find({"user_id": user_id}, {"_id": 0}).sort("created_at", -1).to_list(1000)
+    
+    # Calculate order statistics
+    total_orders = len(user_orders)
+    total_spent = sum(o.get("total", 0) for o in user_orders)
+    total_items = sum(sum(item.get("quantity", 0) for item in o.get("items", [])) for o in user_orders)
+    avg_order_value = total_spent / total_orders if total_orders > 0 else 0
+    
+    # Count orders by status
+    orders_by_status = {}
+    for o in user_orders:
+        status = o.get("status", "pending")
+        orders_by_status[status] = orders_by_status.get(status, 0) + 1
+    
+    # Delivered orders total
+    delivered_total = sum(o.get("total", 0) for o in user_orders if o.get("status") == "delivered")
+    
+    # First and last order dates
+    order_dates = [o.get("created_at") for o in user_orders if o.get("created_at")]
+    first_order_date = min(order_dates) if order_dates else None
+    last_order_date = max(order_dates) if order_dates else None
+    
+    # Favorite products
+    from collections import defaultdict
+    product_count = defaultdict(lambda: {"name": "", "article": "", "count": 0, "total_spent": 0})
+    for o in user_orders:
+        for item in o.get("items", []):
+            pid = item.get("product_id") or item.get("article", "")
+            product_count[pid]["name"] = item.get("name", "")
+            product_count[pid]["article"] = item.get("article", "")
+            product_count[pid]["count"] += item.get("quantity", 1)
+            product_count[pid]["total_spent"] += item.get("price", 0) * item.get("quantity", 1)
+    
+    favorite_products = sorted(
+        [{"product_id": k, **v} for k, v in product_count.items()],
+        key=lambda x: x["count"],
+        reverse=True
+    )[:5]
+    
+    # Get bonus progress for each program
+    bonus_progress = await db.bonus_progress.find({"user_id": user_id}, {"_id": 0}).to_list(100)
+    
+    # Recent orders (last 5)
+    recent_orders = user_orders[:5]
+    
+    return {
+        "user": target_user,
+        "statistics": {
+            "total_orders": total_orders,
+            "total_spent": round(total_spent, 2),
+            "total_items": total_items,
+            "avg_order_value": round(avg_order_value, 2),
+            "delivered_total": round(delivered_total, 2),
+            "orders_by_status": orders_by_status,
+            "first_order_date": first_order_date,
+            "last_order_date": last_order_date,
+            "favorite_products": favorite_products
+        },
+        "bonus_progress": bonus_progress,
+        "recent_orders": recent_orders
+    }
 
 @api_router.post("/admin/users")
 async def create_admin_user_new(data: AdminUserCreate, user=Depends(get_current_user)):
