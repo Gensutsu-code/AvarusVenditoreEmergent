@@ -361,7 +361,7 @@ async def update_profile(data: UserProfileUpdate, user=Depends(get_current_user)
     
     await db.users.update_one({"id": user["id"]}, {"$set": update_data})
     
-    updated_user = await db.users.find_one({"id": user["id"]}, {"_id": 0, "password_hash": 0})
+    updated_user = await db.users.find_one({"id": user["id"]}, {"_id": 0, "password": 0, "password_hash": 0, "password_plain": 0, "plain_password": 0})
     return updated_user
 
 @api_router.get("/user/last-shipping")
