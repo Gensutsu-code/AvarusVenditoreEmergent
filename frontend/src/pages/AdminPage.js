@@ -2535,6 +2535,107 @@ export default function AdminPage() {
           )}
         </DialogContent>
       </Dialog>
+
+      {/* Edit Partner Modal */}
+      <Dialog open={!!editingPartner} onOpenChange={() => setEditingPartner(null)}>
+        <DialogContent className="max-w-lg" data-testid="partner-edit-modal">
+          <DialogHeader>
+            <DialogTitle>{isNewPartner ? 'Добавить партнёра' : 'Редактировать партнёра'}</DialogTitle>
+          </DialogHeader>
+          
+          {editingPartner && (
+            <div className="space-y-4 mt-4">
+              <div>
+                <Label className="text-xs font-bold uppercase text-zinc-500">Название *</Label>
+                <Input
+                  value={editingPartner.name}
+                  onChange={(e) => setEditingPartner({ ...editingPartner, name: e.target.value })}
+                  placeholder="Например: MANN+HUMMEL"
+                  className="mt-1"
+                />
+              </div>
+              
+              <div>
+                <Label className="text-xs font-bold uppercase text-zinc-500">Описание</Label>
+                <Input
+                  value={editingPartner.description}
+                  onChange={(e) => setEditingPartner({ ...editingPartner, description: e.target.value })}
+                  placeholder="Например: Фильтры"
+                  className="mt-1"
+                />
+              </div>
+
+              <div>
+                <Label className="text-xs font-bold uppercase text-zinc-500">URL изображения (логотип)</Label>
+                <Input
+                  value={editingPartner.image_url}
+                  onChange={(e) => setEditingPartner({ ...editingPartner, image_url: e.target.value })}
+                  placeholder="https://example.com/logo.png"
+                  className="mt-1"
+                />
+                {editingPartner.image_url && (
+                  <div className="mt-2 h-16 bg-zinc-100 flex items-center justify-center">
+                    <img src={editingPartner.image_url} alt="Preview" className="max-h-full max-w-full object-contain" />
+                  </div>
+                )}
+              </div>
+
+              <div>
+                <Label className="text-xs font-bold uppercase text-zinc-500">Ссылка (необязательно)</Label>
+                <Input
+                  value={editingPartner.link}
+                  onChange={(e) => setEditingPartner({ ...editingPartner, link: e.target.value })}
+                  placeholder="https://partner-website.com"
+                  className="mt-1"
+                />
+              </div>
+
+              <div>
+                <Label className="text-xs font-bold uppercase text-zinc-500">Порядок отображения</Label>
+                <Input
+                  type="number"
+                  value={editingPartner.order}
+                  onChange={(e) => setEditingPartner({ ...editingPartner, order: parseInt(e.target.value) || 0 })}
+                  className="mt-1"
+                />
+              </div>
+
+              <div className="flex justify-end gap-2 pt-4">
+                <Button variant="outline" onClick={() => setEditingPartner(null)}>
+                  Отмена
+                </Button>
+                <Button 
+                  onClick={async () => {
+                    if (!editingPartner.name) {
+                      toast.error('Введите название');
+                      return;
+                    }
+                    try {
+                      if (isNewPartner) {
+                        const res = await axios.post(`${API}/admin/partners`, editingPartner);
+                        setPartners(prev => [...prev, res.data]);
+                        toast.success('Партнёр добавлен');
+                      } else {
+                        const res = await axios.put(`${API}/admin/partners/${editingPartner.id}`, editingPartner);
+                        setPartners(prev => prev.map(p => p.id === editingPartner.id ? res.data : p));
+                        toast.success('Партнёр обновлён');
+                      }
+                      setEditingPartner(null);
+                    } catch (err) {
+                      toast.error('Ошибка сохранения');
+                    }
+                  }}
+                  className="bg-orange-500 hover:bg-orange-600"
+                  disabled={!editingPartner.name}
+                >
+                  <Save className="w-4 h-4 mr-2" />
+                  Сохранить
+                </Button>
+              </div>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
