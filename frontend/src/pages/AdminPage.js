@@ -1629,247 +1629,234 @@ export default function AdminPage() {
             </div>
           </TabsContent>
 
-          {/* Bonus Program Tab */}
+          {/* Bonus Program Tab - Multiple Programs */}
           <TabsContent value="bonus" className="p-6">
             <div className="space-y-6">
-              {/* Settings Section */}
-              <div className="border border-zinc-200 bg-white">
-                <div className="bg-gradient-to-r from-orange-500 to-orange-600 px-4 py-3 text-white">
-                  <h2 className="font-semibold flex items-center gap-2">
-                    <Gift className="w-5 h-5" />
-                    Настройки бонусной программы
-                  </h2>
+              {/* Header with Add Button */}
+              <div className="flex justify-between items-center">
+                <h2 className="text-lg font-semibold flex items-center gap-2">
+                  <Gift className="w-5 h-5 text-orange-500" />
+                  Бонусные программы ({bonusPrograms.length})
+                </h2>
+                <Button
+                  onClick={() => {
+                    setEditingProgram({
+                      title: 'Новая бонусная программа',
+                      description: '',
+                      image_url: '',
+                      max_amount: 50000,
+                      min_threshold: 5000,
+                      contribution_type: 'order_total',
+                      contribution_percent: 100,
+                      enabled: true
+                    });
+                    setIsNewProgram(true);
+                  }}
+                  className="bg-orange-500 hover:bg-orange-600"
+                  data-testid="add-bonus-program-btn"
+                >
+                  <Plus className="w-4 h-4 mr-2" />
+                  Добавить программу
+                </Button>
+              </div>
+
+              {/* Programs List */}
+              {bonusPrograms.length === 0 ? (
+                <div className="border border-dashed border-zinc-300 rounded-lg p-8 text-center">
+                  <Gift className="w-12 h-12 mx-auto text-zinc-300 mb-3" />
+                  <p className="text-zinc-500">Нет бонусных программ</p>
+                  <p className="text-sm text-zinc-400 mt-1">Создайте первую программу для начала работы</p>
                 </div>
-                <div className="p-4 space-y-4">
-                  {/* Title and Description */}
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div>
-                      <Label className="text-xs font-bold uppercase text-zinc-500">Заголовок</Label>
-                      <Input
-                        value={bonusSettings.title || ''}
-                        onChange={(e) => setBonusSettings({...bonusSettings, title: e.target.value})}
-                        placeholder="Бонусная программа"
-                        className="mt-1"
-                        data-testid="bonus-title-input"
-                      />
-                    </div>
-                    <div>
-                      <Label className="text-xs font-bold uppercase text-zinc-500">Описание</Label>
-                      <Input
-                        value={bonusSettings.description || ''}
-                        onChange={(e) => setBonusSettings({...bonusSettings, description: e.target.value})}
-                        placeholder="Накопите сумму заказов и получите бонус!"
-                        className="mt-1"
-                        data-testid="bonus-description-input"
-                      />
-                    </div>
-                  </div>
-                  
-                  {/* Image Upload */}
-                  <div>
-                    <Label className="text-xs font-bold uppercase text-zinc-500">Изображение</Label>
-                    <div className="mt-1 flex items-center gap-4">
-                      <input
-                        type="file"
-                        ref={bonusImageFileRef}
-                        onChange={async (e) => {
-                          const file = e.target.files?.[0];
-                          if (file) {
-                            const url = await handleFileUpload(file, 'bonus');
-                            if (url) {
-                              setBonusSettings({...bonusSettings, image_url: url});
+              ) : (
+                <div className="space-y-4">
+                  {bonusPrograms.map((program) => (
+                    <div key={program.id} className="border border-zinc-200 bg-white rounded-lg overflow-hidden">
+                      {/* Program Header */}
+                      <div 
+                        className={`px-4 py-3 flex items-center justify-between cursor-pointer hover:bg-zinc-50 ${
+                          selectedProgramId === program.id ? 'bg-orange-50 border-b border-orange-200' : ''
+                        }`}
+                        onClick={async () => {
+                          if (selectedProgramId === program.id) {
+                            setSelectedProgramId(null);
+                            setProgramUsers([]);
+                          } else {
+                            setSelectedProgramId(program.id);
+                            try {
+                              const res = await axios.get(`${API}/admin/bonus/programs/${program.id}/users`);
+                              setProgramUsers(res.data.users || []);
+                            } catch (err) {
+                              toast.error('Ошибка загрузки пользователей');
                             }
                           }
                         }}
-                        accept="image/*"
-                        className="hidden"
-                      />
-                      <Button 
-                        type="button" 
-                        variant="outline" 
-                        onClick={() => bonusImageFileRef.current?.click()}
-                        disabled={uploading}
-                        size="sm"
                       >
-                        <Upload className="w-4 h-4 mr-2" />
-                        {uploading ? 'Загрузка...' : 'Загрузить'}
-                      </Button>
-                      {bonusSettings.image_url && (
+                        <div className="flex items-center gap-3">
+                          {program.image_url ? (
+                            <img src={program.image_url} alt="" className="w-10 h-10 rounded object-cover" />
+                          ) : (
+                            <div className="w-10 h-10 bg-orange-100 rounded flex items-center justify-center">
+                              <Gift className="w-5 h-5 text-orange-500" />
+                            </div>
+                          )}
+                          <div>
+                            <h3 className="font-medium flex items-center gap-2">
+                              {program.title}
+                              {!program.enabled && (
+                                <span className="text-xs bg-zinc-200 text-zinc-500 px-2 py-0.5 rounded">Отключена</span>
+                              )}
+                              {program.pending_requests > 0 && (
+                                <span className="text-xs bg-red-500 text-white px-2 py-0.5 rounded-full">
+                                  {program.pending_requests} запросов
+                                </span>
+                              )}
+                            </h3>
+                            <p className="text-sm text-zinc-500">
+                              Порог: {program.min_threshold?.toLocaleString()} ₽ | Цель: {program.max_amount?.toLocaleString()} ₽ | 
+                              {program.contribution_type === 'percentage' 
+                                ? ` ${program.contribution_percent}% от заказа`
+                                : ' 100% от заказа'}
+                            </p>
+                          </div>
+                        </div>
                         <div className="flex items-center gap-2">
-                          <img src={bonusSettings.image_url} alt="Bonus" className="h-12 object-contain rounded" />
-                          <Button 
-                            variant="ghost" 
+                          <Button
+                            variant="ghost"
                             size="sm"
-                            onClick={() => setBonusSettings({...bonusSettings, image_url: ''})}
-                            className="text-red-500 h-8 px-2"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setEditingProgram({...program});
+                              setIsNewProgram(false);
+                            }}
+                          >
+                            <Pencil className="w-4 h-4" />
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            className="text-red-500 hover:text-red-600"
+                            onClick={async (e) => {
+                              e.stopPropagation();
+                              if (window.confirm(`Удалить программу "${program.title}"?`)) {
+                                try {
+                                  await axios.delete(`${API}/admin/bonus/programs/${program.id}`);
+                                  toast.success('Программа удалена');
+                                  fetchData();
+                                } catch (err) {
+                                  toast.error('Ошибка удаления');
+                                }
+                              }
+                            }}
                           >
                             <Trash2 className="w-4 h-4" />
                           </Button>
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                  
-                  {/* Numeric Settings */}
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                    <div>
-                      <Label className="text-xs font-bold uppercase text-zinc-500">Цель прогресс-бара (₽)</Label>
-                      <Input
-                        type="number"
-                        value={bonusSettings.max_amount || 50000}
-                        onChange={(e) => setBonusSettings({...bonusSettings, max_amount: parseFloat(e.target.value) || 50000})}
-                        className="mt-1"
-                        data-testid="bonus-max-amount-input"
-                      />
-                      <p className="text-xs text-zinc-400 mt-1">Максимальное значение шкалы</p>
-                    </div>
-                    <div>
-                      <Label className="text-xs font-bold uppercase text-zinc-500">Мин. порог для запроса (₽)</Label>
-                      <Input
-                        type="number"
-                        value={bonusSettings.min_threshold || 5000}
-                        onChange={(e) => setBonusSettings({...bonusSettings, min_threshold: parseFloat(e.target.value) || 5000})}
-                        className="mt-1"
-                        data-testid="bonus-min-threshold-input"
-                      />
-                      <p className="text-xs text-zinc-400 mt-1">Минимум для кнопки «Запросить бонус»</p>
-                    </div>
-                    <div className="flex items-end gap-2">
-                      <div className="flex-1">
-                        <Label className="text-xs font-bold uppercase text-zinc-500">Статус</Label>
-                        <div className="mt-1 flex items-center gap-2">
-                          <Switch
-                            checked={bonusSettings.enabled}
-                            onCheckedChange={(checked) => setBonusSettings({...bonusSettings, enabled: checked})}
-                            data-testid="bonus-enabled-switch"
-                          />
-                          <span className={`text-sm ${bonusSettings.enabled ? 'text-green-600' : 'text-zinc-400'}`}>
-                            {bonusSettings.enabled ? 'Активна' : 'Отключена'}
-                          </span>
+                          <ChevronDown className={`w-5 h-5 text-zinc-400 transition-transform ${
+                            selectedProgramId === program.id ? 'rotate-180' : ''
+                          }`} />
                         </div>
                       </div>
-                      <Button
-                        onClick={async () => {
-                          try {
-                            await axios.put(`${API}/admin/bonus/settings`, bonusSettings);
-                            toast.success('Настройки сохранены');
-                          } catch (err) {
-                            toast.error('Ошибка сохранения');
-                          }
-                        }}
-                        className="bg-orange-500 hover:bg-orange-600"
-                        data-testid="save-bonus-settings-btn"
-                      >
-                        <Save className="w-4 h-4 mr-2" />
-                        Сохранить
-                      </Button>
-                    </div>
-                  </div>
-                </div>
-              </div>
 
-              {/* Users Progress Section */}
-              <div className="border border-zinc-200 bg-white">
-                <div className="bg-zinc-50 px-4 py-3 border-b border-zinc-200 flex items-center justify-between">
-                  <h3 className="font-semibold flex items-center gap-2">
-                    <Users className="w-5 h-5 text-zinc-500" />
-                    Прогресс пользователей ({bonusUsers.length})
-                    {pendingBonusRequests > 0 && (
-                      <span className="bg-red-500 text-white text-xs px-2 py-1 rounded-full ml-2">
-                        {pendingBonusRequests} запросов
-                      </span>
-                    )}
-                  </h3>
-                </div>
-                <div className="overflow-x-auto">
-                  <table className="w-full text-sm">
-                    <thead>
-                      <tr className="border-b border-zinc-200 bg-zinc-50">
-                        <th className="text-left py-3 px-4">Пользователь</th>
-                        <th className="text-left py-3 px-4">Email</th>
-                        <th className="text-center py-3 px-4">Прогресс</th>
-                        <th className="text-right py-3 px-4">Сумма заказов (доставлено)</th>
-                        <th className="text-center py-3 px-4">Статус</th>
-                        <th className="text-right py-3 px-4">Действия</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {bonusUsers.map((bu) => (
-                        <tr 
-                          key={bu.id} 
-                          className={`border-b border-zinc-100 hover:bg-zinc-50 ${bu.bonus_requested ? 'bg-orange-50' : ''}`}
-                          data-testid={`bonus-user-row-${bu.id}`}
-                        >
-                          <td className="py-3 px-4 font-medium">
-                            {bu.name}
-                            {bu.bonus_requested && (
-                              <span className="ml-2 inline-flex items-center" title="Запросил бонус">
-                                <Gift className="w-4 h-4 text-orange-500 animate-pulse" />
-                              </span>
-                            )}
-                          </td>
-                          <td className="py-3 px-4 text-zinc-500">{bu.email}</td>
-                          <td className="py-3 px-4">
-                            <div className="flex items-center gap-2">
-                              <div className="flex-1 h-2 bg-zinc-200 rounded-full overflow-hidden">
-                                <div 
-                                  className={`h-full rounded-full transition-all ${bu.bonus_requested ? 'bg-gradient-to-r from-green-400 to-green-600' : 'bg-gradient-to-r from-orange-400 to-orange-600'}`}
-                                  style={{width: `${bu.percentage}%`}}
-                                />
-                              </div>
-                              <span className="text-xs font-mono text-zinc-500 w-12 text-right">{bu.percentage.toFixed(0)}%</span>
-                            </div>
-                          </td>
-                          <td className="py-3 px-4 text-right font-mono">
-                            <span className={bu.bonus_requested ? 'text-green-600 font-bold' : ''}>
-                              {bu.current_amount.toFixed(0)} ₽
-                            </span>
-                          </td>
-                          <td className="py-3 px-4 text-center">
-                            {bu.bonus_requested ? (
-                              <span className="bg-orange-100 text-orange-600 px-2 py-1 rounded text-xs font-bold">
-                                Ожидает бонус
-                              </span>
-                            ) : bu.current_amount >= (bonusSettings.min_threshold || 5000) ? (
-                              <span className="bg-green-100 text-green-600 px-2 py-1 rounded text-xs font-bold">
-                                Готов к запросу
-                              </span>
-                            ) : (
-                              <span className="bg-zinc-100 text-zinc-500 px-2 py-1 rounded text-xs">
-                                Накапливает
-                              </span>
-                            )}
-                          </td>
-                          <td className="py-3 px-4 text-right">
-                            {bu.bonus_requested && (
-                              <Button
-                                variant="default"
-                                size="sm"
-                                onClick={() => {
-                                  setIssueBonusModal({ userId: bu.id, userName: bu.name, amount: bu.current_amount });
-                                  setBonusCodeInput('');
-                                }}
-                                className="bg-green-500 hover:bg-green-600 text-white"
-                                data-testid={`issue-bonus-btn-${bu.id}`}
-                              >
-                                <Gift className="w-4 h-4 mr-1" />
-                                Выдать бонус
-                              </Button>
-                            )}
-                          </td>
-                        </tr>
-                      ))}
-                      {bonusUsers.length === 0 && (
-                        <tr>
-                          <td colSpan="6" className="py-8 text-center text-zinc-400">
-                            Нет пользователей
-                          </td>
-                        </tr>
+                      {/* Program Users (Expandable) */}
+                      {selectedProgramId === program.id && (
+                        <div className="border-t border-zinc-200">
+                          <div className="bg-zinc-50 px-4 py-2 text-sm font-medium text-zinc-600">
+                            Прогресс пользователей ({programUsers.length})
+                          </div>
+                          <div className="overflow-x-auto max-h-[400px] overflow-y-auto">
+                            <table className="w-full text-sm">
+                              <thead className="sticky top-0 bg-white">
+                                <tr className="border-b border-zinc-200">
+                                  <th className="text-left py-2 px-4">Пользователь</th>
+                                  <th className="text-left py-2 px-4">Email</th>
+                                  <th className="text-center py-2 px-4">Прогресс</th>
+                                  <th className="text-right py-2 px-4">Сумма</th>
+                                  <th className="text-center py-2 px-4">Статус</th>
+                                  <th className="text-right py-2 px-4">Действия</th>
+                                </tr>
+                              </thead>
+                              <tbody>
+                                {programUsers.map((pu) => (
+                                  <tr 
+                                    key={pu.id} 
+                                    className={`border-b border-zinc-100 hover:bg-zinc-50 ${pu.bonus_requested ? 'bg-orange-50' : ''}`}
+                                  >
+                                    <td className="py-2 px-4 font-medium">
+                                      {pu.name}
+                                      {pu.bonus_requested && (
+                                        <Gift className="w-4 h-4 text-orange-500 inline ml-2 animate-pulse" />
+                                      )}
+                                    </td>
+                                    <td className="py-2 px-4 text-zinc-500">{pu.email}</td>
+                                    <td className="py-2 px-4">
+                                      <div className="flex items-center gap-2">
+                                        <div className="flex-1 h-2 bg-zinc-200 rounded-full overflow-hidden">
+                                          <div 
+                                            className={`h-full rounded-full ${pu.bonus_requested ? 'bg-green-500' : 'bg-orange-500'}`}
+                                            style={{width: `${pu.percentage}%`}}
+                                          />
+                                        </div>
+                                        <span className="text-xs font-mono w-10 text-right">{pu.percentage.toFixed(0)}%</span>
+                                      </div>
+                                    </td>
+                                    <td className="py-2 px-4 text-right font-mono">
+                                      <span className={pu.bonus_requested ? 'text-green-600 font-bold' : ''}>
+                                        {pu.current_amount.toFixed(0)} ₽
+                                      </span>
+                                    </td>
+                                    <td className="py-2 px-4 text-center">
+                                      {pu.bonus_requested ? (
+                                        <span className="bg-orange-100 text-orange-600 px-2 py-1 rounded text-xs font-bold">
+                                          Ожидает
+                                        </span>
+                                      ) : pu.current_amount >= program.min_threshold ? (
+                                        <span className="bg-green-100 text-green-600 px-2 py-1 rounded text-xs">
+                                          Готов
+                                        </span>
+                                      ) : (
+                                        <span className="bg-zinc-100 text-zinc-500 px-2 py-1 rounded text-xs">
+                                          Копит
+                                        </span>
+                                      )}
+                                    </td>
+                                    <td className="py-2 px-4 text-right">
+                                      {pu.bonus_requested && (
+                                        <Button
+                                          size="sm"
+                                          onClick={() => {
+                                            setIssueBonusModal({
+                                              programId: program.id,
+                                              programTitle: program.title,
+                                              userId: pu.id,
+                                              userName: pu.name,
+                                              amount: pu.current_amount
+                                            });
+                                            setBonusCodeInput('');
+                                          }}
+                                          className="bg-green-500 hover:bg-green-600 text-white"
+                                        >
+                                          <Gift className="w-3 h-3 mr-1" />
+                                          Выдать
+                                        </Button>
+                                      )}
+                                    </td>
+                                  </tr>
+                                ))}
+                                {programUsers.length === 0 && (
+                                  <tr>
+                                    <td colSpan="6" className="py-8 text-center text-zinc-400">
+                                      Нет пользователей
+                                    </td>
+                                  </tr>
+                                )}
+                              </tbody>
+                            </table>
+                          </div>
+                        </div>
                       )}
-                    </tbody>
-                  </table>
+                    </div>
+                  ))}
                 </div>
-              </div>
+              )}
 
               {/* Bonus History Section */}
               <div className="border border-zinc-200 bg-white">
@@ -1879,17 +1866,18 @@ export default function AdminPage() {
                     История выдачи бонусов ({bonusHistory.length})
                   </h3>
                 </div>
-                <div className="overflow-x-auto">
+                <div className="overflow-x-auto max-h-[300px] overflow-y-auto">
                   {bonusHistory.length === 0 ? (
                     <p className="text-center text-zinc-400 py-8">История пуста</p>
                   ) : (
                     <table className="w-full text-sm">
-                      <thead>
+                      <thead className="sticky top-0 bg-white">
                         <tr className="border-b border-zinc-200 bg-zinc-50">
                           <th className="text-left py-3 px-4">Дата</th>
+                          <th className="text-left py-3 px-4">Программа</th>
                           <th className="text-left py-3 px-4">Пользователь</th>
                           <th className="text-left py-3 px-4">Промокод</th>
-                          <th className="text-right py-3 px-4">Сумма на момент выдачи</th>
+                          <th className="text-right py-3 px-4">Сумма</th>
                           <th className="text-left py-3 px-4">Выдал</th>
                         </tr>
                       </thead>
@@ -1899,6 +1887,7 @@ export default function AdminPage() {
                             <td className="py-3 px-4 text-zinc-500 text-xs">
                               {formatDate(item.created_at)}
                             </td>
+                            <td className="py-3 px-4 text-sm">{item.program_title || 'Бонусная программа'}</td>
                             <td className="py-3 px-4 font-medium">{item.user_name}</td>
                             <td className="py-3 px-4">
                               <span className="font-mono bg-zinc-100 px-2 py-1 rounded text-sm">
@@ -1921,19 +1910,181 @@ export default function AdminPage() {
             </div>
           </TabsContent>
 
+          {/* Edit Bonus Program Modal */}
+          <Dialog open={!!editingProgram} onOpenChange={() => setEditingProgram(null)}>
+            <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
+              <DialogHeader>
+                <DialogTitle>{isNewProgram ? 'Создать бонусную программу' : 'Редактировать программу'}</DialogTitle>
+              </DialogHeader>
+              {editingProgram && (
+                <div className="space-y-4 mt-4">
+                  <div>
+                    <Label className="text-xs font-bold uppercase text-zinc-500">Заголовок</Label>
+                    <Input
+                      value={editingProgram.title || ''}
+                      onChange={(e) => setEditingProgram({...editingProgram, title: e.target.value})}
+                      placeholder="Название программы"
+                      className="mt-1"
+                    />
+                  </div>
+                  
+                  <div>
+                    <Label className="text-xs font-bold uppercase text-zinc-500">Описание</Label>
+                    <Input
+                      value={editingProgram.description || ''}
+                      onChange={(e) => setEditingProgram({...editingProgram, description: e.target.value})}
+                      placeholder="Описание для пользователей"
+                      className="mt-1"
+                    />
+                  </div>
+
+                  <div>
+                    <Label className="text-xs font-bold uppercase text-zinc-500">Изображение</Label>
+                    <div className="mt-1 flex items-center gap-4">
+                      <input
+                        type="file"
+                        ref={bonusImageFileRef}
+                        onChange={async (e) => {
+                          const file = e.target.files?.[0];
+                          if (file) {
+                            const url = await handleFileUpload(file, 'bonus');
+                            if (url) {
+                              setEditingProgram({...editingProgram, image_url: url});
+                            }
+                          }
+                        }}
+                        accept="image/*"
+                        className="hidden"
+                      />
+                      <Button 
+                        type="button" 
+                        variant="outline" 
+                        onClick={() => bonusImageFileRef.current?.click()}
+                        disabled={uploading}
+                        size="sm"
+                      >
+                        <Upload className="w-4 h-4 mr-2" />
+                        {uploading ? 'Загрузка...' : 'Загрузить'}
+                      </Button>
+                      {editingProgram.image_url && (
+                        <div className="flex items-center gap-2">
+                          <img src={editingProgram.image_url} alt="Preview" className="h-12 object-contain rounded" />
+                          <Button 
+                            variant="ghost" 
+                            size="sm"
+                            onClick={() => setEditingProgram({...editingProgram, image_url: ''})}
+                            className="text-red-500 h-8 px-2"
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </Button>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <Label className="text-xs font-bold uppercase text-zinc-500">Цель прогресс-бара (₽)</Label>
+                      <Input
+                        type="number"
+                        value={editingProgram.max_amount || 50000}
+                        onChange={(e) => setEditingProgram({...editingProgram, max_amount: parseFloat(e.target.value) || 50000})}
+                        className="mt-1"
+                      />
+                    </div>
+                    <div>
+                      <Label className="text-xs font-bold uppercase text-zinc-500">Мин. порог для запроса (₽)</Label>
+                      <Input
+                        type="number"
+                        value={editingProgram.min_threshold || 5000}
+                        onChange={(e) => setEditingProgram({...editingProgram, min_threshold: parseFloat(e.target.value) || 5000})}
+                        className="mt-1"
+                      />
+                    </div>
+                  </div>
+
+                  <div>
+                    <Label className="text-xs font-bold uppercase text-zinc-500">Тип начисления</Label>
+                    <select
+                      value={editingProgram.contribution_type || 'order_total'}
+                      onChange={(e) => setEditingProgram({...editingProgram, contribution_type: e.target.value})}
+                      className="mt-1 w-full h-10 px-3 border border-zinc-200 bg-white rounded"
+                    >
+                      <option value="order_total">100% от суммы заказа</option>
+                      <option value="percentage">Процент от суммы заказа</option>
+                    </select>
+                  </div>
+
+                  {editingProgram.contribution_type === 'percentage' && (
+                    <div>
+                      <Label className="text-xs font-bold uppercase text-zinc-500">Процент начисления (%)</Label>
+                      <Input
+                        type="number"
+                        value={editingProgram.contribution_percent || 100}
+                        onChange={(e) => setEditingProgram({...editingProgram, contribution_percent: parseFloat(e.target.value) || 100})}
+                        className="mt-1"
+                        min="1"
+                        max="100"
+                      />
+                      <p className="text-xs text-zinc-400 mt-1">От 1% до 100% от суммы доставленного заказа</p>
+                    </div>
+                  )}
+
+                  <div className="flex items-center gap-2">
+                    <Switch
+                      checked={editingProgram.enabled}
+                      onCheckedChange={(checked) => setEditingProgram({...editingProgram, enabled: checked})}
+                    />
+                    <span className={editingProgram.enabled ? 'text-green-600' : 'text-zinc-400'}>
+                      {editingProgram.enabled ? 'Активна' : 'Отключена'}
+                    </span>
+                  </div>
+
+                  <div className="flex justify-end gap-2 pt-4">
+                    <Button variant="outline" onClick={() => setEditingProgram(null)}>
+                      Отмена
+                    </Button>
+                    <Button
+                      onClick={async () => {
+                        try {
+                          if (isNewProgram) {
+                            await axios.post(`${API}/admin/bonus/programs`, editingProgram);
+                            toast.success('Программа создана');
+                          } else {
+                            await axios.put(`${API}/admin/bonus/programs/${editingProgram.id}`, editingProgram);
+                            toast.success('Программа обновлена');
+                          }
+                          setEditingProgram(null);
+                          fetchData();
+                        } catch (err) {
+                          toast.error(err.response?.data?.detail || 'Ошибка сохранения');
+                        }
+                      }}
+                      className="bg-orange-500 hover:bg-orange-600"
+                    >
+                      <Save className="w-4 h-4 mr-2" />
+                      {isNewProgram ? 'Создать' : 'Сохранить'}
+                    </Button>
+                  </div>
+                </div>
+              )}
+            </DialogContent>
+          </Dialog>
+
           {/* Issue Bonus Modal */}
           <Dialog open={!!issueBonusModal} onOpenChange={() => setIssueBonusModal(null)}>
             <DialogContent className="max-w-md">
               <DialogHeader>
                 <DialogTitle className="flex items-center gap-2">
                   <Gift className="w-5 h-5 text-orange-500" />
-                  Выдать бонус пользователю
+                  Выдать бонус
                 </DialogTitle>
               </DialogHeader>
               {issueBonusModal && (
                 <div className="space-y-4">
                   <div className="bg-zinc-50 p-4 rounded-lg">
-                    <p className="font-medium">{issueBonusModal.userName}</p>
+                    <p className="text-sm text-zinc-500">Программа: <span className="font-medium text-zinc-700">{issueBonusModal.programTitle}</span></p>
+                    <p className="font-medium mt-1">{issueBonusModal.userName}</p>
                     <p className="text-sm text-zinc-500">
                       Накоплено: <span className="font-mono font-bold text-green-600">{issueBonusModal.amount?.toFixed(0)} ₽</span>
                     </p>
@@ -1968,10 +2119,15 @@ export default function AdminPage() {
                         }
                         setIssuingBonus(true);
                         try {
-                          await axios.post(`${API}/admin/bonus/issue/${issueBonusModal.userId}?bonus_code=${encodeURIComponent(bonusCodeInput.trim())}`);
+                          await axios.post(`${API}/admin/bonus/programs/${issueBonusModal.programId}/issue/${issueBonusModal.userId}?bonus_code=${encodeURIComponent(bonusCodeInput.trim())}`);
                           toast.success(`Бонус выдан: ${bonusCodeInput}`);
                           setIssueBonusModal(null);
                           setBonusCodeInput('');
+                          // Refresh program users
+                          if (selectedProgramId) {
+                            const res = await axios.get(`${API}/admin/bonus/programs/${selectedProgramId}/users`);
+                            setProgramUsers(res.data.users || []);
+                          }
                           fetchData();
                         } catch (err) {
                           toast.error(err.response?.data?.detail || 'Ошибка выдачи бонуса');
