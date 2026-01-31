@@ -109,77 +109,132 @@ export default function OrdersPage() {
           </div>
         ) : (
           <div className="space-y-6">
-            {/* Statistics Summary */}
+            {/* Extended Statistics Summary */}
             {stats && stats.total_orders > 0 && (
-              <div className="border border-zinc-200 bg-white p-6" data-testid="orders-stats">
-                <h2 className="text-sm font-bold uppercase text-zinc-500 mb-4 flex items-center gap-2">
-                  <BarChart3 className="w-4 h-4" />
-                  Статистика заказов
-                </h2>
-                
-                {/* Stats Cards */}
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
-                  <div className="bg-gradient-to-br from-orange-50 to-orange-100 p-4 rounded-lg">
-                    <ShoppingBag className="w-5 h-5 text-orange-500 mb-2" />
-                    <p className="text-2xl font-bold text-zinc-900">{stats.total_orders}</p>
-                    <p className="text-xs text-zinc-500">Всего заказов</p>
-                  </div>
-                  <div className="bg-gradient-to-br from-green-50 to-green-100 p-4 rounded-lg">
-                    <DollarSign className="w-5 h-5 text-green-500 mb-2" />
-                    <p className="text-2xl font-bold text-zinc-900">{formatPrice(stats.total_spent)} ₽</p>
-                    <p className="text-xs text-zinc-500">Общая сумма</p>
-                  </div>
-                  <div className="bg-gradient-to-br from-blue-50 to-blue-100 p-4 rounded-lg">
-                    <TrendingUp className="w-5 h-5 text-blue-500 mb-2" />
-                    <p className="text-2xl font-bold text-zinc-900">{formatPrice(stats.avg_order_value)} ₽</p>
-                    <p className="text-xs text-zinc-500">Средний чек</p>
-                  </div>
-                  <div className="bg-gradient-to-br from-purple-50 to-purple-100 p-4 rounded-lg">
-                    <Package className="w-5 h-5 text-purple-500 mb-2" />
-                    <p className="text-2xl font-bold text-zinc-900">{stats.total_items}</p>
-                    <p className="text-xs text-zinc-500">Товаров куплено</p>
-                  </div>
+              <div className="border border-zinc-200 bg-white" data-testid="orders-stats">
+                {/* Stats Header */}
+                <div className="bg-gradient-to-r from-zinc-800 to-zinc-900 px-6 py-4">
+                  <h2 className="text-white font-bold flex items-center gap-2">
+                    <BarChart3 className="w-5 h-5" />
+                    Статистика заказов
+                  </h2>
                 </div>
-
-                {/* Status breakdown */}
-                {Object.keys(stats.by_status).length > 0 && (
-                  <div className="mb-6">
-                    <p className="text-xs font-bold uppercase text-zinc-400 mb-2">По статусу</p>
-                    <div className="flex flex-wrap gap-2">
-                      {Object.entries(stats.by_status).map(([status, count]) => (
-                        <span 
-                          key={status} 
-                          className={`px-3 py-1 text-xs font-bold ${STATUS_COLORS[status] || 'bg-zinc-100'}`}
-                        >
-                          {STATUS_LABELS[status] || status}: {count}
-                        </span>
-                      ))}
+                
+                <div className="p-6">
+                  {/* Main Stats Cards */}
+                  <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+                    <div className="bg-gradient-to-br from-orange-50 to-orange-100 p-4 rounded-lg">
+                      <ShoppingBag className="w-5 h-5 text-orange-500 mb-2" />
+                      <p className="text-2xl font-bold text-zinc-900">{stats.total_orders}</p>
+                      <p className="text-xs text-zinc-500">Всего заказов</p>
+                    </div>
+                    <div className="bg-gradient-to-br from-green-50 to-green-100 p-4 rounded-lg">
+                      <Wallet className="w-5 h-5 text-green-500 mb-2" />
+                      <p className="text-2xl font-bold text-zinc-900">{formatPrice(stats.total_spent)} ₽</p>
+                      <p className="text-xs text-zinc-500">Общая сумма</p>
+                    </div>
+                    <div className="bg-gradient-to-br from-blue-50 to-blue-100 p-4 rounded-lg">
+                      <TrendingUp className="w-5 h-5 text-blue-500 mb-2" />
+                      <p className="text-2xl font-bold text-zinc-900">{formatPrice(stats.avg_order_value)} ₽</p>
+                      <p className="text-xs text-zinc-500">Средний чек</p>
+                    </div>
+                    <div className="bg-gradient-to-br from-purple-50 to-purple-100 p-4 rounded-lg">
+                      <Package className="w-5 h-5 text-purple-500 mb-2" />
+                      <p className="text-2xl font-bold text-zinc-900">{stats.total_items}</p>
+                      <p className="text-xs text-zinc-500">Товаров куплено</p>
                     </div>
                   </div>
-                )}
+                  
+                  {/* Secondary Stats */}
+                  <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+                    <div className="bg-zinc-50 p-3 rounded-lg border border-zinc-100">
+                      <p className="text-xs text-zinc-400 mb-1">Доставлено</p>
+                      <p className="font-bold text-green-600">{formatPrice(stats.delivered_total || 0)} ₽</p>
+                    </div>
+                    <div className="bg-zinc-50 p-3 rounded-lg border border-zinc-100">
+                      <p className="text-xs text-zinc-400 mb-1">В работе</p>
+                      <p className="font-bold text-orange-600">{formatPrice(stats.pending_total || 0)} ₽</p>
+                    </div>
+                    <div className="bg-zinc-50 p-3 rounded-lg border border-zinc-100">
+                      <p className="text-xs text-zinc-400 mb-1">Видов товаров</p>
+                      <p className="font-bold text-zinc-700">{stats.total_products_types || 0}</p>
+                    </div>
+                    <div className="bg-zinc-50 p-3 rounded-lg border border-zinc-100">
+                      <p className="text-xs text-zinc-400 mb-1">Клиент с</p>
+                      <p className="font-bold text-zinc-700">
+                        {stats.first_order_date ? new Date(stats.first_order_date).toLocaleDateString('ru-RU', { month: 'short', year: 'numeric' }) : '—'}
+                      </p>
+                    </div>
+                  </div>
 
-                {/* Monthly chart */}
-                {stats.by_month && stats.by_month.length > 0 && (
-                  <div>
-                    <p className="text-xs font-bold uppercase text-zinc-400 mb-3">Динамика по месяцам</p>
-                    <div className="flex items-end gap-2 h-24">
-                      {stats.by_month.map((month, idx) => {
-                        const maxTotal = Math.max(...stats.by_month.map(m => m.total));
-                        const heightPercent = maxTotal > 0 ? (month.total / maxTotal) * 100 : 0;
-                        return (
-                          <div key={idx} className="flex-1 flex flex-col items-center">
-                            <div 
-                              className="w-full bg-gradient-to-t from-orange-500 to-orange-400 rounded-t transition-all hover:from-orange-600 hover:to-orange-500"
-                              style={{ height: `${Math.max(heightPercent, 5)}%` }}
-                              title={`${formatPrice(month.total)} ₽`}
-                            />
-                            <p className="text-[10px] text-zinc-400 mt-1">{formatMonth(month.month)}</p>
+                  {/* Status breakdown */}
+                  {Object.keys(stats.by_status || {}).length > 0 && (
+                    <div className="mb-6">
+                      <p className="text-xs font-bold uppercase text-zinc-400 mb-2">По статусу</p>
+                      <div className="flex flex-wrap gap-2">
+                        {Object.entries(stats.by_status).map(([status, count]) => (
+                          <span 
+                            key={status} 
+                            className={`px-3 py-1 text-xs font-bold ${STATUS_COLORS[status] || 'bg-zinc-100'}`}
+                          >
+                            {STATUS_LABELS[status] || status}: {count}
+                          </span>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                  
+                  {/* Favorite Products */}
+                  {stats.favorite_products && stats.favorite_products.length > 0 && (
+                    <div className="mb-6">
+                      <p className="text-xs font-bold uppercase text-zinc-400 mb-3 flex items-center gap-1">
+                        <Star className="w-3 h-3" /> Часто заказываемые товары
+                      </p>
+                      <div className="space-y-2">
+                        {stats.favorite_products.slice(0, 3).map((product, idx) => (
+                          <div key={idx} className="flex items-center justify-between bg-zinc-50 p-2 rounded">
+                            <div className="flex items-center gap-2">
+                              <span className="text-xs font-mono text-orange-500 bg-orange-50 px-1.5 py-0.5 rounded">
+                                {product.article}
+                              </span>
+                              <span className="text-sm text-zinc-700 truncate max-w-[200px]">{product.name}</span>
+                            </div>
+                            <div className="text-right">
+                              <span className="text-sm font-bold text-zinc-900">{product.count} шт.</span>
+                              <span className="text-xs text-zinc-400 ml-2">({formatPrice(product.total_spent)} ₽)</span>
+                            </div>
                           </div>
-                        );
-                      })}
+                        ))}
+                      </div>
                     </div>
-                  </div>
-                )}
+                  )}
+
+                  {/* Monthly chart */}
+                  {stats.by_month && stats.by_month.length > 0 && (
+                    <div>
+                      <p className="text-xs font-bold uppercase text-zinc-400 mb-3 flex items-center gap-1">
+                        <CalendarDays className="w-3 h-3" /> Динамика по месяцам
+                      </p>
+                      <div className="flex items-end gap-1 sm:gap-2 h-28 bg-zinc-50 p-3 rounded-lg">
+                        {stats.by_month.map((month, idx) => {
+                          const maxTotal = Math.max(...stats.by_month.map(m => m.total));
+                          const heightPercent = maxTotal > 0 ? (month.total / maxTotal) * 100 : 0;
+                          return (
+                            <div key={idx} className="flex-1 flex flex-col items-center">
+                              <p className="text-[9px] text-zinc-500 mb-1">{formatPrice(month.total)}</p>
+                              <div 
+                                className="w-full bg-gradient-to-t from-orange-500 to-orange-400 rounded-t transition-all hover:from-orange-600 hover:to-orange-500 cursor-pointer"
+                                style={{ height: `${Math.max(heightPercent, 8)}%`, minHeight: '8px' }}
+                                title={`${month.orders} заказов на ${formatPrice(month.total)} ₽`}
+                              />
+                              <p className="text-[10px] text-zinc-400 mt-1">{formatMonth(month.month)}</p>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  )}
+                </div>
               </div>
             )}
 
