@@ -251,12 +251,13 @@ export default function AccountPage() {
         </div>
 
         <div className="grid gap-6">
-          {/* User info */}
-          <div className="border border-zinc-200 p-6 bg-white">
-            <div className="flex items-start justify-between mb-4">
-              <div className="flex items-center gap-4">
-                {/* Avatar with upload */}
-                <div className="relative group">
+          {/* User Profile Card - Enhanced */}
+          <div className="border border-zinc-200 bg-white overflow-hidden">
+            {/* Profile Header */}
+            <div className="bg-gradient-to-r from-zinc-800 to-zinc-900 px-6 py-8">
+              <div className="flex flex-col sm:flex-row items-center sm:items-start gap-6">
+                {/* Large Avatar */}
+                <div className="relative group flex-shrink-0">
                   <input
                     ref={avatarInputRef}
                     type="file"
@@ -264,7 +265,7 @@ export default function AccountPage() {
                     onChange={handleAvatarUpload}
                     className="hidden"
                   />
-                  <div className="w-16 h-16 bg-zinc-100 flex items-center justify-center rounded-full overflow-hidden border-2 border-zinc-200">
+                  <div className="w-24 h-24 sm:w-28 sm:h-28 bg-zinc-700 flex items-center justify-center rounded-full overflow-hidden border-4 border-white/20 shadow-xl">
                     {user.avatar_url ? (
                       <img 
                         src={user.avatar_url.startsWith('http') ? user.avatar_url : `${BACKEND_URL}${user.avatar_url}`} 
@@ -272,91 +273,185 @@ export default function AccountPage() {
                         className="w-full h-full object-cover"
                       />
                     ) : (
-                      <User className="w-8 h-8 text-zinc-400" />
+                      <User className="w-12 h-12 text-zinc-400" />
                     )}
                   </div>
                   {/* Avatar actions on hover */}
-                  <div className="absolute inset-0 bg-black/50 rounded-full flex items-center justify-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                    <button
-                      onClick={() => avatarInputRef.current?.click()}
-                      disabled={uploadingAvatar}
-                      className="p-1.5 bg-white/20 hover:bg-white/30 rounded-full text-white"
-                      title="Загрузить фото"
-                    >
-                      <Camera className="w-4 h-4" />
-                    </button>
-                    {user.avatar_url && (
-                      <button
-                        onClick={handleDeleteAvatar}
-                        className="p-1.5 bg-white/20 hover:bg-red-500/50 rounded-full text-white"
-                        title="Удалить фото"
-                      >
-                        <Trash2 className="w-4 h-4" />
-                      </button>
-                    )}
+                  <div className="absolute inset-0 bg-black/60 rounded-full flex items-center justify-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer"
+                    onClick={() => avatarInputRef.current?.click()}>
+                    <Camera className="w-6 h-6 text-white" />
                   </div>
+                  {user.avatar_url && (
+                    <button
+                      onClick={(e) => { e.stopPropagation(); handleDeleteAvatar(); }}
+                      className="absolute -bottom-1 -right-1 p-1.5 bg-red-500 hover:bg-red-600 rounded-full text-white shadow-lg"
+                      title="Удалить фото"
+                    >
+                      <Trash2 className="w-3 h-3" />
+                    </button>
+                  )}
                   {uploadingAvatar && (
-                    <div className="absolute inset-0 bg-white/80 rounded-full flex items-center justify-center">
-                      <div className="w-6 h-6 border-2 border-orange-500 border-t-transparent rounded-full animate-spin"></div>
+                    <div className="absolute inset-0 bg-black/70 rounded-full flex items-center justify-center">
+                      <div className="w-8 h-8 border-3 border-white border-t-transparent rounded-full animate-spin"></div>
                     </div>
                   )}
                 </div>
                 
+                {/* User Info - Large & Prominent */}
                 {!isEditing && (
-                  <div>
-                    <h2 className="font-semibold text-zinc-900" data-testid="user-name">{user.name}</h2>
-                    <p className="text-sm text-zinc-500" data-testid="user-email">{user.email}</p>
-                    {user.phone && <p className="text-sm text-zinc-500">{user.phone}</p>}
-                    {user.address && <p className="text-sm text-zinc-500">{user.address}</p>}
+                  <div className="text-center sm:text-left flex-1">
+                    <h2 className="text-2xl sm:text-3xl font-bold text-white mb-2" data-testid="user-name">
+                      {user.name}
+                    </h2>
+                    <div className="space-y-1.5">
+                      <p className="text-zinc-300 flex items-center justify-center sm:justify-start gap-2">
+                        <Mail className="w-4 h-4" />
+                        <span data-testid="user-email">{user.email}</span>
+                      </p>
+                      {user.phone && (
+                        <p className="text-zinc-300 flex items-center justify-center sm:justify-start gap-2">
+                          <Phone className="w-4 h-4" />
+                          <span>{user.phone}</span>
+                        </p>
+                      )}
+                      {user.address && (
+                        <p className="text-zinc-400 flex items-center justify-center sm:justify-start gap-2 text-sm">
+                          <MapPin className="w-4 h-4" />
+                          <span>{user.address}</span>
+                        </p>
+                      )}
+                    </div>
                   </div>
                 )}
+                
+                {/* Small Edit Button */}
+                {!isEditing && (
+                  <button 
+                    onClick={() => setIsEditing(true)}
+                    className="absolute top-4 right-4 sm:static p-2 text-zinc-400 hover:text-white hover:bg-white/10 rounded-full transition-colors"
+                    data-testid="edit-profile-btn"
+                    title="Редактировать профиль"
+                  >
+                    <Pencil className="w-4 h-4" />
+                  </button>
+                )}
               </div>
-              {!isEditing && (
-                <Button 
-                  variant="outline" 
-                  size="sm"
-                  onClick={() => setIsEditing(true)}
-                  data-testid="edit-profile-btn"
-                >
-                  <Pencil className="w-4 h-4 mr-2" />
-                  Редактировать
-                </Button>
-              )}
             </div>
 
+            {/* Edit Form */}
             {isEditing && (
-              <div className="space-y-4" data-testid="profile-edit-form">
-                <div>
-                  <Label className="text-xs font-bold uppercase text-zinc-500">Имя</Label>
-                  <Input
-                    value={profileForm.name}
-                    onChange={(e) => setProfileForm({ ...profileForm, name: e.target.value })}
-                    placeholder="Ваше имя"
-                    className="mt-1"
-                    data-testid="profile-name-input"
-                  />
+              <div className="p-6 space-y-5" data-testid="profile-edit-form">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  {/* Name */}
+                  <div>
+                    <Label className="text-xs font-bold uppercase text-zinc-500 flex items-center gap-1">
+                      <User className="w-3 h-3" /> ФИО
+                    </Label>
+                    <Input
+                      value={formData.name}
+                      onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                      placeholder="Ваше полное имя"
+                      className="mt-1"
+                      data-testid="profile-name-input"
+                    />
+                  </div>
+                  
+                  {/* Email */}
+                  <div>
+                    <Label className="text-xs font-bold uppercase text-zinc-500 flex items-center gap-1">
+                      <Mail className="w-3 h-3" /> Email
+                    </Label>
+                    <Input
+                      type="email"
+                      value={formData.email}
+                      onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                      placeholder="email@example.com"
+                      className="mt-1"
+                      data-testid="profile-email-input"
+                    />
+                  </div>
+                  
+                  {/* Phone */}
+                  <div>
+                    <Label className="text-xs font-bold uppercase text-zinc-500 flex items-center gap-1">
+                      <Phone className="w-3 h-3" /> Телефон
+                    </Label>
+                    <Input
+                      value={formData.phone}
+                      onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
+                      placeholder="+7 (___) ___-__-__"
+                      className="mt-1"
+                      data-testid="profile-phone-input"
+                    />
+                  </div>
+                  
+                  {/* Address */}
+                  <div>
+                    <Label className="text-xs font-bold uppercase text-zinc-500 flex items-center gap-1">
+                      <MapPin className="w-3 h-3" /> Адрес доставки
+                    </Label>
+                    <Input
+                      value={formData.address}
+                      onChange={(e) => setFormData({ ...formData, address: e.target.value })}
+                      placeholder="Город, улица, дом, квартира"
+                      className="mt-1"
+                      data-testid="profile-address-input"
+                    />
+                  </div>
                 </div>
-                <div>
-                  <Label className="text-xs font-bold uppercase text-zinc-500">Телефон</Label>
-                  <Input
-                    value={profileForm.phone}
-                    onChange={(e) => setProfileForm({ ...profileForm, phone: e.target.value })}
-                    placeholder="+7 (___) ___-__-__"
-                    className="mt-1"
-                    data-testid="profile-phone-input"
-                  />
+                
+                {/* Password Change Section */}
+                <div className="border-t border-zinc-200 pt-4 mt-4">
+                  <button
+                    type="button"
+                    onClick={() => setShowPasswordFields(!showPasswordFields)}
+                    className="flex items-center gap-2 text-sm text-zinc-600 hover:text-zinc-900"
+                  >
+                    <Lock className="w-4 h-4" />
+                    {showPasswordFields ? 'Скрыть смену пароля' : 'Сменить пароль'}
+                  </button>
+                  
+                  {showPasswordFields && (
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-4">
+                      <div>
+                        <Label className="text-xs font-bold uppercase text-zinc-500">Текущий пароль</Label>
+                        <Input
+                          type="password"
+                          value={formData.current_password}
+                          onChange={(e) => setFormData({ ...formData, current_password: e.target.value })}
+                          placeholder="••••••••"
+                          className="mt-1"
+                          data-testid="profile-current-password-input"
+                        />
+                      </div>
+                      <div>
+                        <Label className="text-xs font-bold uppercase text-zinc-500">Новый пароль</Label>
+                        <Input
+                          type="password"
+                          value={formData.new_password}
+                          onChange={(e) => setFormData({ ...formData, new_password: e.target.value })}
+                          placeholder="••••••••"
+                          className="mt-1"
+                          data-testid="profile-new-password-input"
+                        />
+                      </div>
+                      <div>
+                        <Label className="text-xs font-bold uppercase text-zinc-500">Подтвердите пароль</Label>
+                        <Input
+                          type="password"
+                          value={formData.confirm_password}
+                          onChange={(e) => setFormData({ ...formData, confirm_password: e.target.value })}
+                          placeholder="••••••••"
+                          className="mt-1"
+                          data-testid="profile-confirm-password-input"
+                        />
+                      </div>
+                    </div>
+                  )}
                 </div>
-                <div>
-                  <Label className="text-xs font-bold uppercase text-zinc-500">Адрес доставки</Label>
-                  <Input
-                    value={profileForm.address}
-                    onChange={(e) => setProfileForm({ ...profileForm, address: e.target.value })}
-                    placeholder="Город, улица, дом, квартира"
-                    className="mt-1"
-                    data-testid="profile-address-input"
-                  />
-                </div>
-                <div className="flex gap-2 pt-2">
+                
+                {/* Action Buttons */}
+                <div className="flex gap-3 pt-2">
                   <Button 
                     onClick={handleSaveProfile} 
                     disabled={saving}
@@ -364,7 +459,7 @@ export default function AccountPage() {
                     data-testid="save-profile-btn"
                   >
                     <Save className="w-4 h-4 mr-2" />
-                    {saving ? 'Сохранение...' : 'Сохранить'}
+                    {saving ? 'Сохранение...' : 'Сохранить изменения'}
                   </Button>
                   <Button variant="outline" onClick={handleCancelEdit}>
                     <X className="w-4 h-4 mr-2" />
