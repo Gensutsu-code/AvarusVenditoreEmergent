@@ -326,85 +326,94 @@ export default function AccountPage() {
             )}
           </div>
 
-          {/* Bonus Program Section */}
-          {bonusProgress && bonusProgress.enabled && (
-            <div className="border border-zinc-200 bg-white overflow-hidden" data-testid="bonus-section">
-              {/* Bonus Header */}
-              <div className="bg-gradient-to-r from-orange-500 to-orange-600 px-6 py-4 text-white">
-                <div className="flex items-center gap-3">
-                  {bonusProgress.image_url ? (
-                    <img 
-                      src={bonusProgress.image_url} 
-                      alt="Bonus" 
-                      className="w-12 h-12 rounded-full object-cover border-2 border-white/30"
-                    />
-                  ) : (
-                    <div className="w-10 h-10 bg-white/20 rounded-full flex items-center justify-center">
-                      <Gift className="w-5 h-5" />
+          {/* Bonus Programs Section - Multiple Programs */}
+          {bonusPrograms.length > 0 && (
+            <div className="space-y-4" data-testid="bonus-section">
+              {bonusPrograms.map((program) => (
+                <div key={program.id} className="border border-zinc-200 bg-white overflow-hidden">
+                  {/* Program Header */}
+                  <div className="bg-gradient-to-r from-orange-500 to-orange-600 px-6 py-4 text-white">
+                    <div className="flex items-center gap-3">
+                      {program.image_url ? (
+                        <img 
+                          src={program.image_url} 
+                          alt="Bonus" 
+                          className="w-12 h-12 rounded-full object-cover border-2 border-white/30"
+                        />
+                      ) : (
+                        <div className="w-10 h-10 bg-white/20 rounded-full flex items-center justify-center">
+                          <Gift className="w-5 h-5" />
+                        </div>
+                      )}
+                      <div>
+                        <h3 className="font-bold text-lg">{program.title || 'Бонусная программа'}</h3>
+                        <p className="text-orange-100 text-sm">{program.description || 'Накопите сумму заказов и получите бонус!'}</p>
+                      </div>
                     </div>
-                  )}
-                  <div>
-                    <h3 className="font-bold text-lg">{bonusProgress.title || 'Бонусная программа'}</h3>
-                    <p className="text-orange-100 text-sm">{bonusProgress.description || 'Накопите сумму заказов и получите бонус!'}</p>
                   </div>
-                </div>
-              </div>
-              
-              {/* Progress Section */}
-              <div className="p-6">
-                <div className="mb-6">
-                  <div className="flex items-center justify-between mb-3">
-                    <span className="text-sm font-medium text-zinc-700">Ваш прогресс (сумма доставленных заказов)</span>
-                    <span className="text-lg font-bold text-orange-600">{bonusProgress.percentage.toFixed(0)}%</span>
-                  </div>
-                  <BonusProgressBar 
-                    percentage={bonusProgress.percentage} 
-                    currentAmount={bonusProgress.current_amount}
-                    maxAmount={bonusProgress.max_amount}
-                  />
-                </div>
-                
-                {/* Request Bonus Button or Status */}
-                {bonusProgress.bonus_requested ? (
-                  <div className="text-center p-4 bg-orange-50 rounded-lg border border-orange-200">
-                    <div className="flex items-center justify-center gap-2 text-orange-600 mb-2">
-                      <Clock className="w-5 h-5 animate-pulse" />
-                      <span className="font-bold">Запрос отправлен!</span>
+                  
+                  {/* Progress Section */}
+                  <div className="p-6">
+                    <div className="mb-6">
+                      <div className="flex items-center justify-between mb-3">
+                        <span className="text-sm font-medium text-zinc-700">
+                          Ваш прогресс 
+                          {program.contribution_type === 'percentage' && (
+                            <span className="text-zinc-400 ml-1">({program.contribution_percent}% от заказов)</span>
+                          )}
+                        </span>
+                        <span className="text-lg font-bold text-orange-600">{program.percentage.toFixed(0)}%</span>
+                      </div>
+                      <BonusProgressBar 
+                        percentage={program.percentage} 
+                        currentAmount={program.current_amount}
+                        maxAmount={program.max_amount}
+                      />
                     </div>
-                    <p className="text-sm text-orange-700">
-                      Администратор скоро свяжется с вами и выдаст промокод.
-                    </p>
-                    {bonusProgress.request_date && (
-                      <p className="text-xs text-orange-500 mt-2">
-                        Запрос от {formatDate(bonusProgress.request_date)}
-                      </p>
+                    
+                    {/* Request Bonus Button or Status */}
+                    {program.bonus_requested ? (
+                      <div className="text-center p-4 bg-orange-50 rounded-lg border border-orange-200">
+                        <div className="flex items-center justify-center gap-2 text-orange-600 mb-2">
+                          <Clock className="w-5 h-5 animate-pulse" />
+                          <span className="font-bold">Запрос отправлен!</span>
+                        </div>
+                        <p className="text-sm text-orange-700">
+                          Администратор скоро свяжется с вами и выдаст промокод.
+                        </p>
+                        {program.request_date && (
+                          <p className="text-xs text-orange-500 mt-2">
+                            Запрос от {formatDate(program.request_date)}
+                          </p>
+                        )}
+                      </div>
+                    ) : program.can_request ? (
+                      <Button 
+                        onClick={() => handleRequestBonus(program.id)}
+                        disabled={requestingBonus[program.id]}
+                        className="w-full bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 text-white font-bold py-3"
+                        data-testid={`request-bonus-btn-${program.id}`}
+                      >
+                        <Send className="w-5 h-5 mr-2" />
+                        {requestingBonus[program.id] ? 'Отправка...' : 'Запросить бонус'}
+                      </Button>
+                    ) : (
+                      <div className="text-center p-4 bg-zinc-50 rounded-lg">
+                        <p className="text-sm text-zinc-500">
+                          Минимальная сумма для запроса бонуса: <span className="font-bold text-orange-600">{program.min_threshold?.toLocaleString()} ₽</span>
+                        </p>
+                        <p className="text-xs text-zinc-400 mt-1">
+                          Накопите ещё {Math.max(0, program.min_threshold - program.current_amount).toFixed(0)} ₽ для получения бонуса
+                        </p>
+                      </div>
                     )}
                   </div>
-                ) : bonusProgress.can_request ? (
-                  <Button 
-                    onClick={handleRequestBonus}
-                    disabled={requestingBonus}
-                    className="w-full bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 text-white font-bold py-3"
-                    data-testid="request-bonus-btn"
-                  >
-                    <Send className="w-5 h-5 mr-2" />
-                    {requestingBonus ? 'Отправка...' : 'Запросить бонус'}
-                  </Button>
-                ) : (
-                  <div className="text-center p-4 bg-zinc-50 rounded-lg">
-                    <p className="text-sm text-zinc-500">
-                      Минимальная сумма для запроса бонуса: <span className="font-bold text-orange-600">{bonusProgress.min_threshold} ₽</span>
-                    </p>
-                    <p className="text-xs text-zinc-400 mt-1">
-                      Накопите ещё {Math.max(0, bonusProgress.min_threshold - bonusProgress.current_amount).toFixed(0)} ₽ для получения бонуса
-                    </p>
-                  </div>
-                )}
-              </div>
+                </div>
+              ))}
               
               {/* Bonus History - received promo codes */}
               {bonusHistory.length > 0 && (
-                <div className="border-t border-zinc-200">
+                <div className="border border-zinc-200 bg-white overflow-hidden">
                   <button 
                     className="w-full px-6 py-3 flex items-center justify-between text-left hover:bg-zinc-50 transition-colors"
                     onClick={() => document.getElementById('bonus-history').classList.toggle('hidden')}
@@ -421,7 +430,7 @@ export default function AccountPage() {
                       <div key={item.id} className="px-6 py-3 flex items-center justify-between border-b border-zinc-100 last:border-0">
                         <div>
                           <p className="text-sm font-medium">
-                            Бонус за накопления
+                            {item.program_title || 'Бонус за накопления'}
                           </p>
                           <p className="text-xs text-zinc-400">{formatDate(item.created_at)}</p>
                         </div>
