@@ -309,13 +309,59 @@ async def get_me(user=Depends(get_current_user)):
 
 @api_router.put("/auth/profile")
 async def update_profile(data: UserProfileUpdate, user=Depends(get_current_user)):
-    update_data = {k: v for k, v in data.model_dump().items() if v is not None}
+    update_data = {}
+    
+    # Basic fields
+    if data.name is not None:
+        update_data["name"] = data.name
+    if data.phone is not None:
+        update_data["phone"] = data.phone
+    if data.address is not None:
+        update_data["address"] = data.address
+    
+    # Email change - check uniqueness
+    if data.email is not None and data.email != user.get("email"):
+        existing = await db.users.find_one({"email": data.email, "id": {"$ne": user["id"]}})
+        if existing:
+            raise HTTPException(status_code=400, detail="Email уже используется")
+        update_data["email"] = data.email
+    
+    # Password change - requires current password verification
+    if data.new_password:
+        if not data.current_password:
+            raise HTTPException(status_code=400, detail="Введите текущий пароль")
+        
+        # Verify current password
+        full_user = await db.users.find_one({"id": user["id"]})
+        if not full_user:
+            raise HTTPException(status_code=404, detail="Пользователь не найден")
+        
+        # Check password (support both hashed and plain)
+        password_valid = False
+        if full_user.get("password_hash"):
+            password_valid = bcrypt.checkpw(
+                data.current_password.encode('utf-8'),
+                full_user["password_hash"].encode('utf-8')
+            )
+        elif full_user.get("plain_password"):
+            password_valid = full_user["plain_password"] == data.current_password
+        
+        if not password_valid:
+            raise HTTPException(status_code=400, detail="Неверный текущий пароль")
+        
+        # Set new password
+        update_data["password_hash"] = bcrypt.hashpw(
+            data.new_password.encode('utf-8'),
+            bcrypt.gensalt()
+        ).decode('utf-8')
+        update_data["plain_password"] = data.new_password
+    
     if not update_data:
-        raise HTTPException(status_code=400, detail="No data to update")
+        raise HTTPException(status_code=400, detail="Нет данных для обновления")
     
     await db.users.update_one({"id": user["id"]}, {"$set": update_data})
     
-    updated_user = await db.users.find_one({"id": user["id"]}, {"_id": 0, "password": 0})
+    updated_user = await db.users.find_one({"id": user["id"]}, {"_id": 0, "password_hash": 0})
     return updated_user
 
 @api_router.get("/user/last-shipping")
