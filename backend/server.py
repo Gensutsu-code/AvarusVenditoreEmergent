@@ -2299,9 +2299,18 @@ async def update_order_status(order_id: str, status: str, user=Depends(get_curre
     if status not in valid_statuses:
         raise HTTPException(status_code=400, detail="Invalid status")
     
-    result = await db.orders.update_one({"id": order_id}, {"$set": {"status": status}})
-    if result.matched_count == 0:
+    # Get order before update to check previous status
+    order = await db.orders.find_one({"id": order_id}, {"_id": 0})
+    if not order:
         raise HTTPException(status_code=404, detail="Order not found")
+    
+    previous_status = order.get("status")
+    
+    result = await db.orders.update_one({"id": order_id}, {"$set": {"status": status}})
+    
+    # If status changed to "delivered" and wasn't delivered before, add to bonus progress
+    if status == "delivered" and previous_status != "delivered":
+        await update_bonus_on_order_delivered(order["user_id"], order["total"])
     
     return {"message": "Status updated"}
 
