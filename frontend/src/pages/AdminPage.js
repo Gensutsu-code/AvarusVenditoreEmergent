@@ -101,7 +101,7 @@ export default function AdminPage() {
         axios.get(`${API}/promo-banner`),
         axios.get(`${API}/admin/telegram-settings`),
         axios.get(`${API}/admin/chats`),
-        axios.get(`${API}/admin/bonus/users`),
+        axios.get(`${API}/admin/bonus/programs`),
         axios.get(`${API}/admin/bonus/history`),
         axios.get(`${API}/partners`)
       ]);
@@ -113,10 +113,8 @@ export default function AdminPage() {
       setPromoBanner(bannerRes.data);
       setTelegramSettings(telegramRes.data);
       setChats(chatsRes.data);
-      setBonusUsers(bonusUsersRes.data.users || []);
-      setBonusSettings(bonusUsersRes.data.settings || bonusSettings);
+      setBonusPrograms(bonusProgramsRes.data.programs || []);
       setBonusHistory(bonusHistoryRes.data.history || []);
-      setPendingBonusRequests(bonusUsersRes.data.pending_requests || 0);
       setPartners(partnersRes.data || []);
     } catch (err) {
       console.error('Failed to fetch admin data', err);
