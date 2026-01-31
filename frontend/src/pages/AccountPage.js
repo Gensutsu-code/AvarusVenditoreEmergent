@@ -206,9 +206,53 @@ export default function AccountPage() {
           <div className="border border-zinc-200 p-6 bg-white">
             <div className="flex items-start justify-between mb-4">
               <div className="flex items-center gap-4">
-                <div className="w-12 h-12 bg-zinc-100 flex items-center justify-center rounded-full">
-                  <User className="w-6 h-6 text-zinc-400" />
+                {/* Avatar with upload */}
+                <div className="relative group">
+                  <input
+                    ref={avatarInputRef}
+                    type="file"
+                    accept="image/*"
+                    onChange={handleAvatarUpload}
+                    className="hidden"
+                  />
+                  <div className="w-16 h-16 bg-zinc-100 flex items-center justify-center rounded-full overflow-hidden border-2 border-zinc-200">
+                    {user.avatar_url ? (
+                      <img 
+                        src={user.avatar_url.startsWith('http') ? user.avatar_url : `${BACKEND_URL}${user.avatar_url}`} 
+                        alt={user.name}
+                        className="w-full h-full object-cover"
+                      />
+                    ) : (
+                      <User className="w-8 h-8 text-zinc-400" />
+                    )}
+                  </div>
+                  {/* Avatar actions on hover */}
+                  <div className="absolute inset-0 bg-black/50 rounded-full flex items-center justify-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                    <button
+                      onClick={() => avatarInputRef.current?.click()}
+                      disabled={uploadingAvatar}
+                      className="p-1.5 bg-white/20 hover:bg-white/30 rounded-full text-white"
+                      title="Загрузить фото"
+                    >
+                      <Camera className="w-4 h-4" />
+                    </button>
+                    {user.avatar_url && (
+                      <button
+                        onClick={handleDeleteAvatar}
+                        className="p-1.5 bg-white/20 hover:bg-red-500/50 rounded-full text-white"
+                        title="Удалить фото"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </button>
+                    )}
+                  </div>
+                  {uploadingAvatar && (
+                    <div className="absolute inset-0 bg-white/80 rounded-full flex items-center justify-center">
+                      <div className="w-6 h-6 border-2 border-orange-500 border-t-transparent rounded-full animate-spin"></div>
+                    </div>
+                  )}
                 </div>
+                
                 {!isEditing && (
                   <div>
                     <h2 className="font-semibold text-zinc-900" data-testid="user-name">{user.name}</h2>
