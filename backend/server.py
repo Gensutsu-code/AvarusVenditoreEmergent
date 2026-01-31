@@ -1879,6 +1879,9 @@ async def create_bonus_program(data: BonusProgramCreate, user=Depends(get_curren
     
     await db.bonus_programs.insert_one(program)
     
+    # Remove _id that MongoDB adds
+    program.pop('_id', None)
+    
     return {**program, "pending_requests": 0, "total_users": 0}
 
 @api_router.put("/admin/bonus/programs/{program_id}")
