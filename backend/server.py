@@ -1386,36 +1386,29 @@ async def mark_messages_read(user=Depends(get_current_user)):
 
 @api_router.post("/chat/upload")
 async def upload_chat_media(file: UploadFile = File(...), user=Depends(get_current_user)):
-    """Upload media file for chat"""
-    # Validate file type
-    allowed_types = ['image/jpeg', 'image/png', 'image/gif', 'image/webp', 'application/pdf', 
-                     'application/msword', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document']
-    
-    if file.content_type not in allowed_types:
-        raise HTTPException(status_code=400, detail="Недопустимый тип файла")
-    
-    # Check file size (max 10MB)
+    """Upload media file for chat to Google Drive"""
+    # Read file content
     content = await file.read()
-    if len(content) > 10 * 1024 * 1024:
-        raise HTTPException(status_code=400, detail="Файл слишком большой (макс. 10МБ)")
     
-    # Save file
+    # Generate unique filename
     file_ext = Path(file.filename).suffix
-    file_name = f"chat_{uuid.uuid4()}{file_ext}"
-    file_path = UPLOADS_DIR / file_name
+    unique_filename = f"chat_{uuid.uuid4()}{file_ext}"
     
-    with open(file_path, "wb") as f:
-        f.write(content)
-    
-    file_url = f"/api/uploads/{file_name}"
-    is_image = file.content_type.startswith('image/')
-    
-    return {
-        "url": file_url,
-        "filename": file.filename,
-        "is_image": is_image,
-        "content_type": file.content_type
-    }
+    try:
+        # Upload to Google Drive
+        result = await upload_to_drive(content, unique_filename)
+        
+        return {
+            "url": result['direct_link'],
+            "file_id": result['file_id'],
+            "filename": file.filename,
+            "is_image": result['is_image'],
+            "is_video": result['is_video'],
+            "content_type": result['mime_type']
+        }
+    except Exception as e:
+        logger.error(f"Failed to upload to Google Drive: {e}")
+        raise HTTPException(status_code=500, detail=f"Ошибка загрузки файла: {str(e)}")
 
 @api_router.post("/chat/send-media")
 async def send_chat_media(
