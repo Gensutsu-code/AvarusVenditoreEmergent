@@ -1348,8 +1348,90 @@ async def send_admin_message(chat_id: str, message: ChatMessage, user=Depends(ge
         "user_name": "Поддержка",
         "text": message.text,
         "sender_type": "admin",
+        "message_type": "text",
         "created_at": datetime.now(timezone.utc).isoformat(),
         "read": False
+    }
+    await db.chat_messages.insert_one(chat_message)
+    
+    await db.chats.update_one({"id": chat_id}, {"$set": {"updated_at": datetime.now(timezone.utc).isoformat()}})
+    
+    return {"id": msg_id}
+
+@api_router.post("/admin/chats/{chat_id}/upload")
+async def admin_upload_chat_media(chat_id: str, file: UploadFile = File(...), user=Depends(get_current_user)):
+    """Upload media file for chat from admin panel to Google Drive"""
+    if user.get("role") != "admin":
+        raise HTTPException(status_code=403, detail="Admin access required")
+    
+    chat = await db.chats.find_one({"id": chat_id})
+    if not chat:
+        raise HTTPException(status_code=404, detail="Chat not found")
+    
+    # Read file content
+    content = await file.read()
+    
+    # Generate unique filename
+    file_ext = Path(file.filename).suffix
+    unique_filename = f"admin_chat_{uuid.uuid4()}{file_ext}"
+    
+    try:
+        # Upload to Google Drive
+        result = await upload_to_drive(content, unique_filename)
+        
+        return {
+            "url": result['direct_link'],
+            "file_id": result['file_id'],
+            "filename": file.filename,
+            "is_image": result['is_image'],
+            "is_video": result['is_video'],
+            "content_type": result['mime_type']
+        }
+    except Exception as e:
+        logger.error(f"Failed to upload to Google Drive: {e}")
+        raise HTTPException(status_code=500, detail=f"Ошибка загрузки файла: {str(e)}")
+
+@api_router.post("/admin/chats/{chat_id}/send-media")
+async def admin_send_chat_media(
+    chat_id: str,
+    file_url: str = None,
+    filename: str = None,
+    is_image: bool = False,
+    is_video: bool = False,
+    caption: str = "",
+    user=Depends(get_current_user)
+):
+    """Send media message as admin"""
+    if user.get("role") != "admin":
+        raise HTTPException(status_code=403, detail="Admin access required")
+    
+    chat = await db.chats.find_one({"id": chat_id})
+    if not chat:
+        raise HTTPException(status_code=404, detail="Chat not found")
+    
+    msg_id = str(uuid.uuid4())
+    
+    # Determine message type
+    if is_video:
+        message_type = "video"
+    elif is_image:
+        message_type = "image"
+    else:
+        message_type = "file"
+    
+    chat_message = {
+        "id": msg_id,
+        "chat_id": chat_id,
+        "user_id": user["id"],
+        "user_name": "Поддержка",
+        "text": caption,
+        "file_url": file_url,
+        "filename": filename,
+        "sender_type": "admin",
+        "message_type": message_type,
+        "created_at": datetime.now(timezone.utc).isoformat(),
+        "read": False,
+        "edited": False
     }
     await db.chat_messages.insert_one(chat_message)
     
