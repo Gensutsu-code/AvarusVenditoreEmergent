@@ -346,6 +346,30 @@ export const ChatWidget = () => {
                           </div>
                         )}
                         
+                        {/* Video message */}
+                        {msg.message_type === 'video' && msg.file_url && (
+                          <div className="mb-2">
+                            {isGoogleDriveVideo(msg.file_url) ? (
+                              <iframe
+                                src={getGoogleDriveVideoUrl(msg.file_url)}
+                                className="w-full aspect-video rounded-lg"
+                                allow="autoplay"
+                                allowFullScreen
+                                title="Видео"
+                              />
+                            ) : (
+                              <video 
+                                src={normalizeFileUrl(msg.file_url)} 
+                                controls
+                                className="max-w-full rounded-lg"
+                                data-testid="chat-video"
+                              >
+                                Ваш браузер не поддерживает видео
+                              </video>
+                            )}
+                          </div>
+                        )}
+                        
                         {/* File message */}
                         {msg.message_type === 'file' && msg.file_url && (
                           <a 
