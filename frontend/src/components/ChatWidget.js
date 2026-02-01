@@ -166,15 +166,9 @@ export const ChatWidget = () => {
     const file = e.target.files?.[0];
     if (!file) return;
 
-    // Check file size (10MB limit)
-    if (file.size > 10 * 1024 * 1024) {
-      toast.error('Файл слишком большой (макс. 10МБ)');
-      return;
-    }
-
     setUploading(true);
     try {
-      // Upload file
+      // Upload file to Google Drive
       const formData = new FormData();
       formData.append('file', file);
       
@@ -188,6 +182,7 @@ export const ChatWidget = () => {
           file_url: uploadRes.data.url,
           filename: uploadRes.data.filename,
           is_image: uploadRes.data.is_image,
+          is_video: uploadRes.data.is_video,
           caption: ''
         }
       });
