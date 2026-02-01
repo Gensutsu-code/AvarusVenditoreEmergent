@@ -517,6 +517,42 @@ export default function AdminPage() {
       toast.error('Ошибка отправки');
     }
   };
+  
+  const handleAdminChatFileUpload = async (e) => {
+    const file = e.target.files?.[0];
+    if (!file || !selectedChat) return;
+
+    setAdminChatUploading(true);
+    try {
+      // Upload file to Google Drive
+      const formData = new FormData();
+      formData.append('file', file);
+      
+      const uploadRes = await axios.post(`${API}/admin/chats/${selectedChat.id}/upload`, formData, {
+        headers: { 'Content-Type': 'multipart/form-data' }
+      });
+
+      // Send media message
+      await axios.post(`${API}/admin/chats/${selectedChat.id}/send-media`, null, {
+        params: {
+          file_url: uploadRes.data.url,
+          filename: uploadRes.data.filename,
+          is_image: uploadRes.data.is_image,
+          is_video: uploadRes.data.is_video,
+          caption: ''
+        }
+      });
+
+      fetchChatMessages(selectedChat.id);
+      toast.success('Файл отправлен');
+    } catch (err) {
+      console.error('Failed to upload file', err);
+      toast.error('Ошибка загрузки файла');
+    } finally {
+      setAdminChatUploading(false);
+      if (adminChatFileRef.current) adminChatFileRef.current.value = '';
+    }
+  };
 
   // Extended stats
   const fetchExtendedStats = async (period) => {
