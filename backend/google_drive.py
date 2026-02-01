@@ -115,11 +115,12 @@ async def upload_to_drive(file_content: bytes, filename: str, folder_id: str = N
             resumable=False  # Changed to False to avoid storage quota issue
         )
         
-        # Upload file
+        # Upload file with supportsAllDrives to work with shared folders
         file = service.files().create(
             body=file_metadata,
             media_body=media,
-            fields='id, name, webViewLink, webContentLink, mimeType'
+            fields='id, name, webViewLink, webContentLink, mimeType',
+            supportsAllDrives=True
         ).execute()
         
         file_id = file.get('id')
