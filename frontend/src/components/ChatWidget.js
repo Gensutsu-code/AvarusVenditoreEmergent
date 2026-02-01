@@ -432,7 +432,7 @@ export const ChatWidget = () => {
                 ref={fileInputRef}
                 type="file"
                 onChange={handleFileUpload}
-                accept="image/*,.pdf,.doc,.docx"
+                accept="image/*,video/*,.pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.txt,.csv,.zip,.rar,.7z"
                 className="hidden"
               />
               <button
