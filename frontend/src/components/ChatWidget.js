@@ -320,10 +320,10 @@ export const ChatWidget = () => {
                         {msg.message_type === 'image' && msg.file_url && (
                           <div className="mb-2">
                             <img 
-                              src={`${BACKEND_URL}${msg.file_url}`} 
+                              src={normalizeFileUrl(msg.file_url)} 
                               alt="Изображение" 
                               className="max-w-full rounded-lg cursor-pointer hover:opacity-90 transition-opacity"
-                              onClick={() => setLightboxImage(`${BACKEND_URL}${msg.file_url}`)}
+                              onClick={() => setLightboxImage(normalizeFileUrl(msg.file_url))}
                               data-testid="chat-image"
                             />
                           </div>
@@ -332,7 +332,7 @@ export const ChatWidget = () => {
                         {/* File message */}
                         {msg.message_type === 'file' && msg.file_url && (
                           <a 
-                            href={`${BACKEND_URL}${msg.file_url}`}
+                            href={normalizeFileUrl(msg.file_url)}
                             target="_blank"
                             rel="noopener noreferrer"
                             className={`flex items-center gap-2 p-2 rounded-lg mb-2 ${
