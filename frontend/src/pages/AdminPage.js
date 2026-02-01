@@ -1855,15 +1855,36 @@ export default function AdminPage() {
                             {/* Media content */}
                             {msg.message_type === 'image' && msg.file_url && (
                               <img 
-                                src={`${BACKEND_URL}${msg.file_url}`} 
+                                src={msg.file_url.startsWith('http') ? msg.file_url : `${BACKEND_URL}${msg.file_url}`} 
                                 alt="Изображение" 
                                 className="max-w-full rounded mb-2 cursor-pointer"
-                                onClick={() => window.open(`${BACKEND_URL}${msg.file_url}`, '_blank')}
+                                onClick={() => window.open(msg.file_url.startsWith('http') ? msg.file_url : `${BACKEND_URL}${msg.file_url}`, '_blank')}
                               />
+                            )}
+                            {msg.message_type === 'video' && msg.file_url && (
+                              <div className="mb-2">
+                                {msg.file_url.includes('drive.google.com') ? (
+                                  <iframe
+                                    src={msg.file_url}
+                                    className="w-full aspect-video rounded"
+                                    allow="autoplay"
+                                    allowFullScreen
+                                    title="Видео"
+                                  />
+                                ) : (
+                                  <video 
+                                    src={msg.file_url.startsWith('http') ? msg.file_url : `${BACKEND_URL}${msg.file_url}`} 
+                                    controls
+                                    className="max-w-full rounded"
+                                  >
+                                    Ваш браузер не поддерживает видео
+                                  </video>
+                                )}
+                              </div>
                             )}
                             {msg.message_type === 'file' && msg.file_url && (
                               <a 
-                                href={`${BACKEND_URL}${msg.file_url}`}
+                                href={msg.file_url.startsWith('http') ? msg.file_url : `${BACKEND_URL}${msg.file_url}`}
                                 target="_blank"
                                 rel="noopener noreferrer"
                                 className="flex items-center gap-2 p-2 bg-zinc-100 rounded mb-2 hover:bg-zinc-200"
