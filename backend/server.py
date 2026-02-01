@@ -1360,7 +1360,7 @@ async def send_admin_message(chat_id: str, message: ChatMessage, user=Depends(ge
 
 @api_router.post("/admin/chats/{chat_id}/upload")
 async def admin_upload_chat_media(chat_id: str, file: UploadFile = File(...), user=Depends(get_current_user)):
-    """Upload media file for chat from admin panel to Google Drive"""
+    """Upload media file for chat from admin panel to Cloudinary"""
     if user.get("role") != "admin":
         raise HTTPException(status_code=403, detail="Admin access required")
     
@@ -1371,24 +1371,20 @@ async def admin_upload_chat_media(chat_id: str, file: UploadFile = File(...), us
     # Read file content
     content = await file.read()
     
-    # Generate unique filename
-    file_ext = Path(file.filename).suffix
-    unique_filename = f"admin_chat_{uuid.uuid4()}{file_ext}"
-    
     try:
-        # Upload to Google Drive
-        result = await upload_to_drive(content, unique_filename)
+        # Upload to Cloudinary
+        result = await upload_to_cloudinary(content, file.filename, folder="admin_chat")
         
         return {
-            "url": result['direct_link'],
-            "file_id": result['file_id'],
+            "url": result['url'],
+            "public_id": result['public_id'],
             "filename": file.filename,
             "is_image": result['is_image'],
             "is_video": result['is_video'],
-            "content_type": result['mime_type']
+            "resource_type": result['resource_type']
         }
     except Exception as e:
-        logger.error(f"Failed to upload to Google Drive: {e}")
+        logger.error(f"Failed to upload to Cloudinary: {e}")
         raise HTTPException(status_code=500, detail=f"Ошибка загрузки файла: {str(e)}")
 
 @api_router.post("/admin/chats/{chat_id}/send-media")
