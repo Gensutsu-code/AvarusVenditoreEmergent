@@ -4,6 +4,11 @@ Cloudinary integration for file uploads (images, videos, documents)
 import os
 import logging
 from pathlib import Path
+from dotenv import load_dotenv
+
+# Load environment variables
+load_dotenv()
+
 import cloudinary
 import cloudinary.uploader
 import cloudinary.utils
