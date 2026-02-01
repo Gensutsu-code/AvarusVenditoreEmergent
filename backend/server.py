@@ -1416,6 +1416,7 @@ async def send_chat_media(
     file_url: str = None,
     filename: str = None,
     is_image: bool = False,
+    is_video: bool = False,
     caption: str = "",
     user=Depends(get_current_user)
 ):
@@ -1440,7 +1441,14 @@ async def send_chat_media(
         await db.chats.update_one({"id": chat_id}, {"$set": {"updated_at": datetime.now(timezone.utc).isoformat()}})
     
     msg_id = str(uuid.uuid4())
-    message_type = "image" if is_image else "file"
+    
+    # Determine message type
+    if is_video:
+        message_type = "video"
+    elif is_image:
+        message_type = "image"
+    else:
+        message_type = "file"
     
     chat_message = {
         "id": msg_id,
@@ -1459,9 +1467,7 @@ async def send_chat_media(
     await db.chat_messages.insert_one(chat_message)
     
     # Send notification to Telegram
-    backend_url = os.environ.get('BACKEND_URL', '')
-    full_file_url = f"{backend_url}{file_url}" if file_url else None
-    await send_to_telegram_chat(chat_id, user["name"], caption or filename, message_type, full_file_url)
+    await send_to_telegram_chat(chat_id, user["name"], caption or filename, message_type, file_url)
     
     return {"id": msg_id, "chat_id": chat_id}
 
