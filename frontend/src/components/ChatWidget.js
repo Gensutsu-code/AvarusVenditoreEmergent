@@ -9,9 +9,13 @@ import { toast } from 'sonner';
 const API = `${process.env.REACT_APP_BACKEND_URL}/api`;
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
 
-// Normalize file URL - ensure /api prefix for uploads
+// Normalize file URL - handle local uploads and Google Drive URLs
 const normalizeFileUrl = (fileUrl) => {
   if (!fileUrl) return '';
+  // If URL is already a full URL (Google Drive, etc.), return as is
+  if (fileUrl.startsWith('http://') || fileUrl.startsWith('https://')) {
+    return fileUrl;
+  }
   // If URL starts with /uploads/ (old format), convert to /api/uploads/
   if (fileUrl.startsWith('/uploads/')) {
     return `${BACKEND_URL}/api${fileUrl}`;
@@ -22,6 +26,24 @@ const normalizeFileUrl = (fileUrl) => {
   }
   // For any other format, return as is with BACKEND_URL
   return `${BACKEND_URL}${fileUrl}`;
+};
+
+// Check if URL is a Google Drive video
+const isGoogleDriveVideo = (url) => {
+  return url && url.includes('drive.google.com') && url.includes('/preview');
+};
+
+// Get Google Drive embed URL for video
+const getGoogleDriveVideoUrl = (url) => {
+  if (!url) return '';
+  // Already a preview URL
+  if (url.includes('/preview')) return url;
+  // Extract file ID and create preview URL
+  const match = url.match(/id=([^&]+)/);
+  if (match) {
+    return `https://drive.google.com/file/d/${match[1]}/preview`;
+  }
+  return url;
 };
 
 // Common emoji list
