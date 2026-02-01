@@ -28,12 +28,17 @@ const normalizeFileUrl = (fileUrl) => {
   return `${BACKEND_URL}${fileUrl}`;
 };
 
-// Check if URL is a Google Drive video
+// Check if URL is a Cloudinary video
+const isCloudinaryVideo = (url) => {
+  return url && url.includes('cloudinary.com') && url.includes('/video/');
+};
+
+// Check if URL is a Google Drive video (legacy support)
 const isGoogleDriveVideo = (url) => {
   return url && url.includes('drive.google.com') && url.includes('/preview');
 };
 
-// Get Google Drive embed URL for video
+// Get Google Drive embed URL for video (legacy support)
 const getGoogleDriveVideoUrl = (url) => {
   if (!url) return '';
   // Already a preview URL
