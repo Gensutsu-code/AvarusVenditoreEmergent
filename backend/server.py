@@ -1167,7 +1167,7 @@ async def upload_avatar(file: UploadFile = File(...), user=Depends(get_current_u
     with open(file_path, "wb") as f:
         f.write(content)
     
-    avatar_url = f"/uploads/{file_name}"
+    avatar_url = f"/api/uploads/{file_name}"
     
     # Update user
     await db.users.update_one(
@@ -1406,7 +1406,7 @@ async def upload_chat_media(file: UploadFile = File(...), user=Depends(get_curre
     with open(file_path, "wb") as f:
         f.write(content)
     
-    file_url = f"/uploads/{file_name}"
+    file_url = f"/api/uploads/{file_name}"
     is_image = file.content_type.startswith('image/')
     
     return {
