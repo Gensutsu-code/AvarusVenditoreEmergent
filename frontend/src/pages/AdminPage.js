@@ -1944,11 +1944,34 @@ export default function AdminPage() {
                     </div>
                     <div className="p-3 border-t border-zinc-200 bg-white">
                       <div className="flex gap-2">
+                        {/* File upload input */}
+                        <input
+                          ref={adminChatFileRef}
+                          type="file"
+                          onChange={handleAdminChatFileUpload}
+                          accept="image/*,video/*,.pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.txt,.csv,.zip,.rar,.7z"
+                          className="hidden"
+                        />
+                        <Button 
+                          type="button"
+                          variant="outline"
+                          onClick={() => adminChatFileRef.current?.click()}
+                          disabled={adminChatUploading}
+                          className="px-3"
+                          title="Прикрепить файл"
+                        >
+                          {adminChatUploading ? (
+                            <div className="w-4 h-4 border-2 border-orange-500 border-t-transparent rounded-full animate-spin" />
+                          ) : (
+                            <Paperclip className="w-4 h-4" />
+                          )}
+                        </Button>
                         <Input
                           value={newAdminMessage}
                           onChange={(e) => setNewAdminMessage(e.target.value)}
                           placeholder="Введите ответ..."
                           onKeyPress={(e) => e.key === 'Enter' && handleSendAdminMessage()}
+                          className="flex-1"
                         />
                         <Button onClick={handleSendAdminMessage} className="bg-orange-500 hover:bg-orange-600">
                           <Send className="w-4 h-4" />
