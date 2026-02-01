@@ -9,6 +9,21 @@ import { toast } from 'sonner';
 const API = `${process.env.REACT_APP_BACKEND_URL}/api`;
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
 
+// Normalize file URL - ensure /api prefix for uploads
+const normalizeFileUrl = (fileUrl) => {
+  if (!fileUrl) return '';
+  // If URL starts with /uploads/ (old format), convert to /api/uploads/
+  if (fileUrl.startsWith('/uploads/')) {
+    return `${BACKEND_URL}/api${fileUrl}`;
+  }
+  // If URL already has /api/uploads/, just prepend BACKEND_URL
+  if (fileUrl.startsWith('/api/uploads/')) {
+    return `${BACKEND_URL}${fileUrl}`;
+  }
+  // For any other format, return as is with BACKEND_URL
+  return `${BACKEND_URL}${fileUrl}`;
+};
+
 // Common emoji list
 const EMOJI_LIST = ['😀', '😃', '😄', '😁', '😅', '😂', '🤣', '😊', '😇', '🙂', '🙃', '😉', '😌', '😍', '🥰', '😘', '😗', '😙', '😚', '😋', '😛', '😜', '🤪', '😝', '🤑', '🤗', '🤭', '🤫', '🤔', '🤐', '🤨', '😐', '😑', '😶', '😏', '😒', '🙄', '😬', '🤥', '😌', '😔', '😪', '🤤', '😴', '😷', '🤒', '🤕', '🤢', '🤮', '🤧', '🥵', '🥶', '🥴', '😵', '🤯', '🤠', '🥳', '😎', '🤓', '🧐', '😕', '😟', '🙁', '😮', '😯', '😲', '😳', '🥺', '😦', '😧', '😨', '😰', '😥', '😢', '😭', '😱', '😖', '😣', '😞', '😓', '😩', '😫', '🥱', '😤', '😡', '😠', '🤬', '👍', '👎', '👌', '✌️', '🤞', '🤟', '🤘', '🤙', '👋', '🙏', '❤️', '🧡', '💛', '💚', '💙', '💜', '🖤', '🤍', '💔', '❣️', '💕', '💖', '💗', '💘', '💝'];
 
