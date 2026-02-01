@@ -108,11 +108,11 @@ async def upload_to_drive(file_content: bytes, filename: str, folder_id: str = N
             'parents': [target_folder]
         }
         
-        # Create media upload from bytes
+        # Create media upload from bytes - using non-resumable for smaller files
         media = MediaIoBaseUpload(
             io.BytesIO(file_content),
             mimetype=mime_type,
-            resumable=True
+            resumable=False  # Changed to False to avoid storage quota issue
         )
         
         # Upload file
