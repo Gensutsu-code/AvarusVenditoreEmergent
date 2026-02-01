@@ -79,6 +79,10 @@ export default function AdminPage() {
   const [expandedUserId, setExpandedUserId] = useState(null);
   const [userDetails, setUserDetails] = useState(null);
   const [loadingUserDetails, setLoadingUserDetails] = useState(false);
+  
+  // Admin chat file upload
+  const adminChatFileRef = useRef(null);
+  const [adminChatUploading, setAdminChatUploading] = useState(false);
 
   useEffect(() => {
     if (authLoading) return;
