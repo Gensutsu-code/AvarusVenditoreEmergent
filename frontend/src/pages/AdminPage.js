@@ -2382,7 +2382,11 @@ export default function AdminPage() {
                                 try {
                                   await axios.delete(`${API}/admin/bonus/programs/${program.id}`);
                                   toast.success('Программа удалена');
-                                  fetchData();
+                                  // Real-time update: remove from local state
+                                  setBonusPrograms(prev => prev.filter(p => p.id !== program.id));
+                                  if (selectedProgramId === program.id) {
+                                    setSelectedProgramId(null);
+                                  }
                                 } catch (err) {
                                   toast.error('Ошибка удаления');
                                 }
