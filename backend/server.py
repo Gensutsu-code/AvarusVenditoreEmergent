@@ -1114,6 +1114,28 @@ async def delete_partner(partner_id: str, user=Depends(get_current_user)):
     
     return {"message": "Partner deleted"}
 
+@api_router.post("/admin/partners/upload-image")
+async def upload_partner_image(file: UploadFile = File(...), user=Depends(get_current_user)):
+    """Upload partner logo image to Cloudinary"""
+    if user.get("role") != "admin":
+        raise HTTPException(status_code=403, detail="Admin access required")
+    
+    # Read file content
+    content = await file.read()
+    
+    try:
+        # Upload to Cloudinary
+        result = await upload_to_cloudinary(content, file.filename, folder="partners")
+        
+        return {
+            "url": result['url'],
+            "public_id": result['public_id'],
+            "filename": file.filename
+        }
+    except Exception as e:
+        logger.error(f"Failed to upload partner image: {e}")
+        raise HTTPException(status_code=500, detail=f"Ошибка загрузки изображения: {str(e)}")
+
 @api_router.post("/admin/partners/seed")
 async def seed_default_partners(user=Depends(get_current_user)):
     """Seed default partner brands if none exist (admin)"""
