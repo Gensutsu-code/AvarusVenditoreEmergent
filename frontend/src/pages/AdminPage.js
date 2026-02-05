@@ -3620,5 +3620,6 @@ export default function AdminPage() {
         </DialogContent>
       </Dialog>
     </div>
+    </>
   );
 }
