@@ -565,10 +565,6 @@ export default function AccountPage() {
                           <h3 className="font-bold text-zinc-800">{program.title || 'Бонусная программа'}</h3>
                           <p className="text-zinc-500 text-sm">{program.description || 'Накопите баллы и получите призы!'}</p>
                         </div>
-                        <div className="text-right bg-orange-100 px-4 py-2 rounded-lg">
-                          <p className="text-xl font-bold text-orange-600">{program.bonus_points?.toFixed(0) || 0}</p>
-                          <p className="text-orange-500 text-xs">баллов</p>
-                        </div>
                       </div>
                     </div>
                     
