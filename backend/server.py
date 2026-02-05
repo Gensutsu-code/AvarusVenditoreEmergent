@@ -1820,21 +1820,32 @@ async def delete_chat_message(chat_id: str, message_id: str, user=Depends(get_cu
 
 class BonusSettings(BaseModel):
     title: str = "Бонусная программа"
-    description: str = "Накопите сумму заказов и получите бонус!"
+    description: str = "Накопите баллы и получите призы!"
     image_url: str = ""
     max_amount: float = 50000  # Maximum scale amount
     min_threshold: float = 5000  # Minimum threshold to request bonus
     enabled: bool = True
 
+class BonusPrize(BaseModel):
+    id: str = ""
+    name: str
+    description: str = ""
+    image_url: str = ""
+    points_cost: float  # Сколько баллов стоит приз
+    quantity: int = -1  # -1 = unlimited
+    enabled: bool = True
+
 class BonusProgramCreate(BaseModel):
     title: str = "Бонусная программа"
     description: str = ""
+    full_description: str = ""  # Расширенное описание с текстом
     image_url: str = ""
     max_amount: float = 50000
     min_threshold: float = 5000
     contribution_type: str = "order_total"  # "order_total" or "percentage"
     contribution_percent: float = 100  # Used when contribution_type is "percentage"
     enabled: bool = True
+    prizes: List[dict] = []  # Список призов
 
 # ==================== MULTIPLE BONUS PROGRAMS ====================
 
