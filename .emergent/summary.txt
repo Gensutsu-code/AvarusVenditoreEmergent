@@ -3,116 +3,72 @@ The user wants to create a website for a truck auto parts store.
 
 **PRODUCT REQUIREMENTS:**
 - **Core Functionality:** A complete e-commerce platform with a product catalog, shopping cart, and checkout process.
-- **Search:**
-    - Advanced search by part number (SKU), name, and cross-reference numbers.
-    - Search results split into Exact Match and Possible Replacements.
-- **Product Management:**
-    - Admin can add/edit/delete products, including multiple photos and cross-reference numbers.
-    - Admin can import products from CSV/Excel.
-- **User Management:**
-    - Admin can add, edit, and delete users, and view their real password.
-    - Users can edit their profile information, including a profile photo.
-- **Order Management:**
-    - Admin can view, edit, and delete orders in real-time.
-    - Order notifications are sent to the admin via Telegram.
-    - Users can view their detailed order history and statistics.
-- **Promotions & Homepage:**
-    - A manageable promotional banner.
-    - A fully editable homepage block for partner brand logos.
-- **Live Chat:**
-    - A built-in live chat widget with media/emoji support.
-    - Admin can receive chat messages and reply directly from a dedicated Telegram bot.
-    - Admin can manage chats (pin, labels, delete).
-- **Bonus Program (New Requirements):**
-    - The bonus system title and description are editable in the admin panel.
-    - Admin can attach a custom image to the bonus program block.
-    - The progress bar goal is editable by the admin (default 50,000 RUB).
-    - Bonus points are accrued only when an order status is set to delivered. The total order sum is tracked.
-    - Users can request a bonus payout only after reaching a minimum threshold (5,000 RUB).
-    - The Issue Bonus button is removed from the admin panel for individual users.
-    - A user's bonus request triggers a notification in the admin panel.
-    - Admin issues the bonus by entering a promo code into a text field, which is then sent to the user.
-    - The user's progress/total order sum resets to zero only after the admin has issued the bonus.
-    - The UI should not show amount left to get bonus or total bonuses received.
+- **Search:** Advanced search by part number, name, and cross-reference.
+- **Product Management:** Admin can manage products, including multiple photos, cross-reference numbers, and CSV/Excel import.
+- **User Management:** Admin can manage users, including viewing their real passwords. Users can fully edit their profiles.
+- **Order Management:** Admin can manage orders in real-time. Detailed Telegram notifications for new orders. Users can view their detailed order history and statistics.
+- **Promotions & Homepage:** Manageable promotional banner and a block for partner brand logos.
+- **Live Chat:** A built-in live chat with media support, integrated with a Telegram bot for admin replies. Images/videos must be viewable in an in-app lightbox. Admins can also send media from the admin panel.
+- **Bonus Program (Advanced):**
+    - Admin can create, edit, and delete multiple, independent bonus programs.
+    - Currency is points, not rubles.
+    - Each program has an editable title, an extended description, an image, and a multi-level structure (e.g., Bronze, Silver, Gold) with different point thresholds and rewards.
+    - Admin can add specific prizes (with name, point cost, and image) that users can redeem with their points.
+    - Users can spend points to claim available prizes.
+- **Admin Dashboard:** A comprehensive statistics page and an enhanced user management section.
 
 **User's preferred language**: Russian
 
 **what currently exists?**
-A feature-rich full-stack e-commerce application for a truck parts store. It features a React frontend and FastAPI backend. Key features include: an advanced admin panel with real-time updates for managing products, categories, users, orders, and chats; a sophisticated product catalog with advanced search (by SKU and cross-reference numbers); user authentication and profiles with photo uploads; a complete shopping cart and checkout flow; a live chat widget integrated with a Telegram bot for two-way communication with admins; and an editable partners section on the homepage. A bonus program was implemented but is now undergoing a complete overhaul based on new, detailed user requirements.
+A full-stack e-commerce application (React, FastAPI, MongoDB) for a truck parts store. It features a complete admin panel for managing products, users, orders, partners, and a highly customized, multi-level bonus system with redeemable prizes. File and media uploads for chat and other features are now handled by Cloudinary. The user-facing side includes advanced search, full profile management, a shopping cart, detailed order history, and a feature-rich chat widget that supports images, videos, and files, all opening in a lightbox.
 
 **Last working item**:
-- **Last item agent was working:** The user requested a complete overhaul of the bonus program. The agent began by identifying the relevant sections of code in  that handle the bonus logic, preparing to rewrite them according to the new requirements.
+- **Last item agent was working:** The user requested a redesign of the bonus program display on the user's account page. The requirements are:
+    1.  Create a separate, distinct UI element to show the user's total accumulated bonus points.
+    2.  Remove the existing progress bar related to bonus programs.
+    3.  Add a new progress bar that shows the user's total spend on 'delivered' orders for the current calendar year (January 1st to December 31st).
 - **Status:** IN PROGRESS
 - **Agent Testing Done:** N
-- **Which testing method agent to use?** both
+- **Which testing method agent to use?** backend testing agent
 - **User Testing Done:** N
 
 **All Pending/In progress Issue list**:
-  - **Issue 1:** Overhaul the Bonus Program (P0)
-
-  **Issues Detail:**
-  - **Issue 1:** Overhaul the Bonus Program
-     - **Attempted fixes:** The agent has located the existing bonus system logic in . The previous implementation has been replaced with new logic that is partially complete.
-     - **Next debug checklist:**
-        1.  **Backend ():**
-            -   Modify the bonus settings model to include , , and .
-            -   Remove the  field from the settings.
-            -   Change the order processing logic to add to a user's  only when an order's status is updated to .
-            -   Create an endpoint for users to  which sets a flag (e.g., ) on the user's bonus document. This should only work if their  is >= 5000.
-            -   Create an admin endpoint  that:
-                -   Stores the issued promo code in the user's bonus history.
-                -   Resets the user's  to 0.
-                -   Resets the  flag.
-            -   Ensure all API responses returning user bonus data do not contain .
-        2.  **Frontend ():**
-            -   In the Bonuses tab, add fields for editing the bonus program's , , and .
-            -   Remove the Bonus Size input field.
-            -   In the user progress table, display a notification/indicator (e.g., an icon or colored row) for users who have a  flag.
-            -   Replace the Issue Bonus (gift icon) button with a new button that opens a modal. This modal should contain a text input for the admin to paste the promo code and a Send Bonus button that calls the new  endpoint.
-        3.  **Frontend ():**
-            -   Display the new editable , , and  for the bonus section.
-            -   The progress bar should reflect the  against the .
-            -   Remove the Amount left to get bonus and Total bonuses received sections.
-            -   Add a Request Bonus button that is enabled only when the user's progress is >= 5000. This button should call the  endpoint.
-            -   Display the list of received promo codes from the user's bonus history.
-     - **Why fix this issue and what will be achieved with the fix?** This will align the bonus program with the user's new, more manual, and controllable workflow, giving the admin full control over bonus issuance.
-     - **Status:** IN PROGRESS
-     - **Is recurring issue?** N
-     - **Should Test frontend/backend/both after fix?** both
-     - **Blocked on other issue:** None
+- No pending issues.
 
 **In progress Task List**:
-- **Task 1:** Complete the backend and frontend implementation for the new bonus system.
-    - **Where to resume:** The agent has already replaced the backend logic in . The next step is to implement the corresponding frontend changes in  and  as per the checklist above.
-    - **What will be achieved with this?** The bonus program will be fully functional according to the new user specifications.
-    - **Status:** IN PROGRESS
-    - **Should Test frontend/backend/both after fix?** both
-    - **Blocked on something:** None
+- **Task 1: Refactor Bonus UI & Add Yearly Order Progress Bar (P0)**
+  - **Where to resume:** The agent has identified the backend endpoint  in .
+    1.  **Backend:** Modify this endpoint to calculate the total sum of the user's 'delivered' orders within the current calendar year and include this value in the API response.
+    2.  **Frontend:** Modify  to consume the new data. Implement the UI changes: display total bonus points in a new card, remove the old progress bar, and add the new yearly order progress bar.
+  - **What will be achieved with this?** The user's account page will be updated to the new design, separating the display of accumulated points from a new yearly purchase progress metric, providing a clearer overview for the user.
+  - **Status:** IN PROGRESS
+  - **Should Test frontend/backend/both after fix?** both
+  - **Blocked on something:** None.
 
 **Upcoming and Future Tasks**
+- **Upcoming Tasks:**
+    - **P1:** Add pagination and search functionality to the user list in the admin panel.
+    - **P1:** Implement an export feature for order statistics (Excel/PDF) in the admin dashboard.
+    - **P2:** Send a Telegram notification to the user when the admin issues a bonus promo code.
 - **Future Tasks:**
-    - No other tasks are pending from the original PRD. The user may have new ideas after the bonus system is complete.
+    - Search by VIN/truck model.
+    - Product reviews.
+    - Delivery cost calculator by region.
 
 **Completed work in this session**
-- **Phase 1: Advanced Admin & Search (DONE)**
-  - Implemented full CRUD API endpoints and UI for managing Users and Orders in the admin panel (, ).
-  - Implemented advanced product search with cross-reference numbers, displaying Exact Match and Possible Replacements ().
-  - Added a  endpoint to fix deployment issues.
-- **Phase 2: Real-time UI & Multi-Photo (DONE)**
-  - Refactored admin panel logic to update product and category lists in real-time without full reloads.
-  - Implemented multiple image uploads for products with a gallery and main image selection ().
-  - Added a slideshow/carousel viewer for product images in the product modal ().
-- **Phase 3: Telegram Chat Overhaul (DONE)**
-  - Created a full two-way chat bridge between the website chat and a Telegram bot.
-  - Implemented a webhook for the Telegram bot ().
-  - Revamped the  component with support for file attachments and emojis.
-  - Added advanced chat management features to the admin panel (pinning, labels, message history) ().
-- **Phase 4: Homepage & Profile Customization (DONE)**
-  - Implemented an editable Partners section on the homepage, manageable from the admin panel.
-  - Added user profile picture upload and display functionality ().
-  - Added extended order statistics to the user's personal Orders page ().
-- **Phase 5: Bonus Program (Version 1 - DONE & REPLACED)**
-  - Implemented the initial version of a loyalty bonus program with automatic progress and rewards. This is now being replaced.
+- **Chat Media Overhaul:**
+    - Fixed a bug where images in chat opened in a new tab. Implemented an in-app lightbox for both images and videos.
+    - Standardized media previews in the chat to be small, clickable thumbnails.
+    - The fix was applied to both the user-facing  and the  chat interface.
+- **File Upload Migration to Cloudinary:**
+    - Implemented support for uploading images, videos, and generic files in the chat for both users and admins.
+    - Migrated the file storage backend from an unreliable local setup to Cloudinary. This resolved issues with broken image links. The initial attempt to use Google Drive failed due to API limitations.
+- **Partner Image Uploads:** Added a feature for admins to upload partner logos directly via Cloudinary from the admin panel, replacing the previous URL input field.
+- **Bonus Program Major Enhancements:**
+    - **Prizes & Points System:** Replaced currency (₽) with points, and enabled admins to add redeemable prizes (with names, point costs, and images) to each bonus program.
+    - **Multi-Level Structure:** Implemented a level-based system (e.g., Bronze, Silver, Gold), allowing admins to configure different reward tiers based on accumulated points.
+    - **Extended Descriptions:** Added a rich text field for admins to provide detailed descriptions for each bonus program.
+    - **UI/UX Cleanup:** Removed the Your Progress text and the minimum payout threshold requirement, simplifying the user experience.
 
 **Earlier issues found/mentioned but not fixed**
 - None.
@@ -127,84 +83,74 @@ A feature-rich full-stack e-commerce application for a truck parts store. It fea
 - **Backend:** FastAPI
 - **Frontend:** React
 - **Database:** MongoDB
-- **Authentication:** JWT (JSON Web Tokens)
+- **Authentication:** JWT
 - **Styling:** Tailwind CSS, Shadcn/UI
-- **Real-time:** Telegram Bot Webhook, client-side state management for UI updates.
+- **Media Storage:** Cloudinary (New)
 
 **key DB schema**
-- **users:** 
-- **products:** 
-- **orders:** 
-- **chats:** 
-- **bonus_settings:**  (Singleton)
-- **user_bonus:** 
-- **partners:** 
+- **bonus_programs:** The schema was significantly expanded to include:
+    - 
+    - 
+    - 
+- **chat_messages:**  now stores a Cloudinary URL.
 
 **changes in tech stack**
-- None.
+- **Added:** Cloudinary is now used for all media and file storage.
 
 **All files of reference**
-- : Heavily modified to add all new features, including the logic for the bonus system overhaul.
-- : The primary file for admin features. Modified to manage users, orders, chats, partners, and the bonus program.
-- : Modified to include profile picture uploads and the user-facing bonus program UI. Needs updating for the new bonus logic.
-- : Updated with advanced search UI and a product image slideshow.
-- : Updated with user order statistics.
-- : Updated to display dynamic partner logos.
-- : Completely rewritten to support file uploads, emojis, and a new design.
+- : Heavily modified to integrate Cloudinary, add new upload endpoints (for chat and partners), and completely overhaul the bonus program logic (points, prizes, levels, yearly total calculation).
+- : Significantly updated to support file uploads in chat and management of the new advanced bonus program features (prizes with images, levels). Implemented a lightbox for media.
+- : Overhauled to display the new multi-level bonus program with prizes and points. This is the primary file for the current task.
+- : Refactored to handle Cloudinary URLs, display media thumbnails, and open images/videos in a lightbox.
+- : New file created to encapsulate all Cloudinary API interactions.
+- : Updated with Cloudinary API credentials.
+- : Obsolete file from a failed integration attempt.
 
 **Areas that need refactoring**:
-- : Remains extremely large. Breaking it down into components for each tab (Products, Orders, Users, Chat, Bonuses, Partners) would improve maintainability.
-- : Has grown into a very large monolith. Splitting routes using FastAPI's  (e.g., , , ) is highly recommended for future development.
+-  and  remain large monoliths that would benefit from being broken down into smaller, more focused modules/components.
+- The files  and  are obsolete after the switch to Cloudinary and should be removed to clean up the codebase.
 
 **key api endpoints**
--  (GET, PUT)
--  (GET)
--  (POST)
--  (GET)
--  (POST)
--  (GET)
--  (GET, POST, PUT, DELETE)
--  (POST, DELETE)
--  (GET)
--  (POST)
--  (CRUD for chat management)
+-  (POST): Handles user media uploads to chat via Cloudinary.
+-  (POST): Handles admin media uploads to chat via Cloudinary.
+-  (POST): Handles partner logo uploads.
+-  (POST): Allows users to spend points on prizes.
+-  (GET, POST, PUT): Manages all aspects of bonus programs, including levels and prizes.
+-  (GET): Returns program details, including levels and prizes, to the user. This is the endpoint to be modified for the current task.
 
 **Critical Info for New Agent**
-- The user's latest request is a **complete replacement** of the bonus system logic. Do not try to patch the old implementation; follow the new requirements outlined in the All Pending/In progress Issue list section.
-- The agent has already performed a full file replacement for the backend logic in  and for some frontend components. You must now implement the new frontend logic in  and  to match the new backend.
-- The admin credentials are  / .
+- The immediate priority is to modify the bonus program display on the user's account page as per the last user request (separate points display, remove progress bar, add yearly order total bar). This involves work on both the backend () and frontend ().
+- All file uploads are now handled by **Cloudinary**. The code for the previous Google Drive attempt () is still in the repository but is unused and should be ignored.
+- The bonus system is now based on points, redeemable prizes, and a multi-level structure. Ensure all related logic adheres to this new model.
 
 **documents and test reports created in this job**
--  (Updated with each completed phase)
-- 
-- 
-- 
 - 
 
 **Last 10 User Messages and any pending HUMAN messages**
-1.  **User:** Start Phase 5 (Bonus Program).
-2.  **Agent:** Started Phase 5, implementing the initial bonus program.
-3.  **Agent:** Completed initial Bonus Program (Phase 5). Asked about starting Phase 4.
-4.  **User:** start phase 4 now
-5.  **Agent:** Started Phase 4 (Partners, Profile Photo, Order Stats).
-6.  **Agent:** Completed Phase 4. Asked for next steps.
-7.  **User:** Provided a very long and detailed list of changes for the Bonus Program. The key points are manual admin issuance of promo codes, editable text/images, new thresholds, and changes to when/how progress is calculated and reset.
-8.  **Agent:** Acknowledged the request and started working on the backend.
-9.  **Agent:** Located the bonus system code in .
-10. **Agent:** Replaced the entire bonus system logic in  with a new implementation based on the user's request.
+10. **User:** remove the minimum threshold for prize requests in the bonus program (COMPLETED)
+9. **User:** can you give me advice on improving the bonus program...? (COMPLETED - Agent provided suggestions)
+8. **User:** add an extended description, change rubles to points, add prizes, and allow spending points (COMPLETED)
+7. **User:** remove the text above the progress bar in the bonus program (COMPLETED)
+6. **User:** files open on another page...they should open on the main page (COMPLETED - Implemented lightbox in admin panel)
+5. **User:** chat images are too big, make them small thumbnails... (COMPLETED)
+4. **User:** add the ability to upload photos to partners in the admin panel (COMPLETED)
+3. **User:** add image/video/file support to chat for users and admins... and store files on my google drive (COMPLETED - Implemented with Cloudinary after Google Drive failed)
+2. **User:** images in chat still not showing, just a broken file... (COMPLETED - This was the initial bug that was fixed)
+1. **User:** make a separate cell showing the number of bonuses... remove the progress bar. Make a bar that shows the total amount of all delivered orders for one calendar year (PENDING - This is the current task)
 
 **Project Health Check:**
-- **Broken:** The frontend for the bonus system (, ) is now out of sync with the new backend logic and will not function correctly until updated.
-- **Mocked:** Application data is transient.
+- **Broken:** None.
+- **Mocked:** Application data is transient and resets with each new session.
 
 **3rd Party Integrations**
-- **Telegram (via ):** Used for order notifications and for the admin-user live chat bridge. A bot token has been provided by the user and is stored in .
+- **Telegram (via ):** Used for order notifications and the admin-user live chat bridge.
+- **Cloudinary:** Used for all media and file storage. Credentials are in .
 
 **Testing status**
-- **Testing agent used after significant changes:** YES, after every major phase was completed ( through ).
+- **Testing agent used after significant changes:** NO
 - **Troubleshoot agent used after agent stuck in loop:** NO
-- **Test files created:** None
-- **Known regressions:** The bonus system is intentionally broken pending frontend updates.
+- **Test files created:** None.
+- **Known regressions:** None.
 
 **Credentials to test flow:**
 - **Admin Email:** 
@@ -213,4 +159,4 @@ A feature-rich full-stack e-commerce application for a truck parts store. It fea
 - **Test User Password:** 
 
 **What agent forgot to execute**
-- Nothing was forgotten. The agent has been methodically working through the user's phased requests and is now addressing a major change request. The testing agent was even able to find and fix a bug ( routing issue) during the last run.</analysis>
+- The agent correctly identified and started working on the user's most recent request. Nothing was forgotten.</analysis>
