@@ -798,7 +798,7 @@ export default function AccountPage() {
                     )}
                   </div>
                 </div>
-              ))}
+              );})}
               
               {/* Bonus History - received promo codes */}
               {bonusHistory.length > 0 && (
