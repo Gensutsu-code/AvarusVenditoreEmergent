@@ -103,18 +103,26 @@
 - ✅ **Фото профиля** — загрузка/удаление аватара пользователями
 - ✅ **Статистика заказов** — карточки метрик, диаграмма по статусам, график по месяцам
 
+### v3.8 - Редизайн бонусной программы и оптимизация админ-панели (05.02.2025)
+- ✅ **Отдельная карточка баллов** — оранжевая карточка "Ваши накопленные баллы" на странице аккаунта
+- ✅ **Прогресс-бар годовых покупок** — зеленый бар "Покупки за 2026 год" показывает сумму доставленных заказов за текущий календарный год (янв-дек)
+- ✅ **Упрощенные карточки программ** — убран старый прогресс-бар баллов, добавлены уровни (Бронза, Серебро, Золото, Платина)
+- ✅ **Real-time обновления в админке** — все CRUD операции (товары, бонусные программы, партнёры) обновляют UI без перезагрузки страницы
+- ✅ **Оптимизированные state-updates** — замена fetchData() на локальные обновления состояния (setProducts, setBonusPrograms, setPartners)
+
 ## Структура проекта
 ```
 /app
 ├── backend/
 │   ├── .env
 │   ├── requirements.txt
-│   ├── server.py          # FastAPI app, all API endpoints
-│   └── uploads/           # User-uploaded images
+│   ├── server.py              # FastAPI app, all API endpoints
+│   ├── cloudinary_service.py  # Cloudinary integration for media storage
+│   └── uploads/               # Local uploads (legacy)
 └── frontend/
     ├── src/
     │   ├── components/
-    │   │   ├── ChatWidget.js      # Виджет онлайн-чата
+    │   │   ├── ChatWidget.js      # Виджет онлайн-чата с lightbox
     │   │   ├── FavoritesButton.js # Кнопка добавления в избранное
     │   │   ├── Header.js
     │   │   ├── PopularProducts.js # Секция популярных товаров
@@ -126,8 +134,8 @@
     │   │   ├── AuthContext.js
     │   │   └── CartContext.js
     │   └── pages/
-    │       ├── AccountPage.js
-    │       ├── AdminPage.js       # + Статистика, Чаты, Telegram, Импорт
+    │       ├── AccountPage.js     # + Редизайн бонусов (точки, годовой прогресс)
+    │       ├── AdminPage.js       # + Real-time CRUD, все вкладки без перезагрузки
     │       ├── CartPage.js
     │       ├── CatalogPage.js     # + Избранное, Сопутствующие
     │       ├── CheckoutPage.js
