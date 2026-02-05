@@ -105,7 +105,10 @@ export default function AccountPage() {
     }
   };
 
-  const handleRequestBonus = async (programId) => {
+  const handleRequestBonus = async (programId, programTitle, buttonText) => {
+    const confirmText = `Вы уверены, что хотите запросить бонус по программе «${programTitle}»?`;
+    if (!window.confirm(confirmText)) return;
+    
     setRequestingBonus(prev => ({ ...prev, [programId]: true }));
     try {
       const res = await axios.post(`${API}/bonus/request/${programId}`);
@@ -119,13 +122,16 @@ export default function AccountPage() {
   };
 
   const handleRedeemPrize = async (programId, prizeId, prizeName, pointsCost) => {
-    if (!window.confirm(`Обменять ${pointsCost} баллов на «${prizeName}»?`)) return;
+    const confirmText = `Обменять ${pointsCost} баллов на «${prizeName}»?\n\nПосле подтверждения баллы будут списаны с вашего счёта.`;
+    if (!window.confirm(confirmText)) return;
     
     const key = `${programId}_${prizeId}`;
     setRedeemingPrize(prev => ({ ...prev, [key]: true }));
     try {
       const res = await axios.post(`${API}/bonus/redeem-prize/${programId}/${prizeId}`);
       toast.success(res.data.message);
+      // Show delivery message
+      setRedeemedPrize({ name: prizeName, pointsCost });
       fetchBonusData(); // Refresh data
     } catch (err) {
       toast.error(err.response?.data?.detail || 'Ошибка обмена');
