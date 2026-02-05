@@ -120,6 +120,15 @@ export default function AdminPage() {
   const [isNewCategory, setIsNewCategory] = useState(false);
   const [viewingOrder, setViewingOrder] = useState(null);
   
+  // Tab order state
+  const defaultTabOrder = ['products', 'categories', 'orders', 'users', 'promo', 'stats', 'chat', 'telegram', 'import', 'bonus', 'partners'];
+  const [tabOrder, setTabOrder] = useState(() => {
+    const saved = localStorage.getItem('adminTabOrder');
+    return saved ? JSON.parse(saved) : defaultTabOrder;
+  });
+  const [activeTab, setActiveTab] = useState('products');
+  const [editingTabOrder, setEditingTabOrder] = useState(false);
+  
   // New states
   const [telegramSettings, setTelegramSettings] = useState({ enabled: false, bot_token: '', chat_id: '' });
   const [chats, setChats] = useState([]);
