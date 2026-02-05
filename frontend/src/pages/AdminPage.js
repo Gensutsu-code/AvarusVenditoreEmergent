@@ -2287,10 +2287,8 @@ export default function AdminPage() {
                       title: 'Новая бонусная программа',
                       description: '',
                       image_url: '',
-                      max_amount: 50000,
-                      min_threshold: 5000,
-                      contribution_type: 'order_total',
-                      contribution_percent: 100,
+                      levels: [],
+                      prizes: [],
                       enabled: true
                     });
                     setIsNewProgram(true);
