@@ -63,6 +63,8 @@ export default function AccountPage() {
   const [loadingBonus, setLoadingBonus] = useState(true);
   const [requestingBonus, setRequestingBonus] = useState({});
   const [copiedCode, setCopiedCode] = useState(null);
+  const [redeemingPrize, setRedeemingPrize] = useState({});
+  const [expandedProgram, setExpandedProgram] = useState(null);
 
   useEffect(() => {
     if (!user) {
