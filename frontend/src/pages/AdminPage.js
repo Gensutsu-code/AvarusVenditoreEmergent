@@ -2355,10 +2355,9 @@ export default function AdminPage() {
                               )}
                             </h3>
                             <p className="text-sm text-zinc-500">
-                              Порог: {program.min_threshold?.toLocaleString()} ₽ | Цель: {program.max_amount?.toLocaleString()} ₽ | 
-                              {program.contribution_type === 'percentage' 
-                                ? ` ${program.contribution_percent}% от заказа`
-                                : ' 100% от заказа'}
+                              {program.levels?.length > 0 
+                                ? `${program.levels.length} уровней | Баллы начисляются по % от уровня`
+                                : 'Уровни не настроены'}
                             </p>
                           </div>
                         </div>
