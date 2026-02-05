@@ -32,8 +32,8 @@ const BonusProgressBar = ({ percentage, currentAmount, maxAmount }) => {
         </div>
       </div>
       <div className="flex justify-between mt-2 text-sm">
-        <span className="font-mono font-semibold text-orange-600">{currentAmount.toFixed(0)} ₽</span>
-        <span className="text-zinc-400">из {maxAmount.toFixed(0)} ₽</span>
+        <span className="font-mono font-semibold text-orange-600">{currentAmount.toFixed(0)} баллов</span>
+        <span className="text-zinc-400">из {maxAmount.toFixed(0)} баллов</span>
       </div>
     </div>
   );
