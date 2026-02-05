@@ -216,13 +216,16 @@
 - **GET /api/products/search-with-alternatives** — поиск с кросс-номерами
 
 ### Бонусная программа
-- GET /api/bonus/progress — прогресс пользователя
-- POST /api/bonus/request — запросить бонус
+- GET /api/bonus/programs — список программ с yearly_total, bonus_points, levels, prizes
+- POST /api/bonus/request/{program_id} — запросить бонус
+- POST /api/bonus/redeem-prize — потратить баллы на приз
 - GET /api/bonus/history — история полученных промокодов
-- GET /api/admin/bonus/settings — настройки программы (admin)
-- PUT /api/admin/bonus/settings — обновить настройки (admin)
-- GET /api/admin/bonus/users — пользователи с прогрессом (admin)
-- POST /api/admin/bonus/issue/{id}?bonus_code=XXX — выдать бонус (admin)
+- GET /api/admin/bonus/programs — список программ (admin)
+- POST /api/admin/bonus/programs — создать программу (admin)
+- PUT /api/admin/bonus/programs/{id} — обновить программу (admin)
+- DELETE /api/admin/bonus/programs/{id} — удалить программу (admin)
+- GET /api/admin/bonus/programs/{id}/users — пользователи программы (admin)
+- POST /api/admin/bonus/programs/{id}/issue/{user_id} — выдать промокод (admin)
 - GET /api/admin/bonus/history — история выдачи (admin)
 
 ### Прочее
@@ -233,7 +236,12 @@
 
 ## Учётные данные
 - **Admin**: admin@avarus.ru / admin123
-- **Test User**: test_user_features@test.com / testpass123
+- **Test User**: testbonus@test.com / test123
+
+## Backlog (P0 - Ближайшие задачи)
+- Пагинация и поиск в списке пользователей в админ-панели
+- Экспорт статистики заказов (Excel/PDF)
+- Telegram-уведомление при выдаче промокода
 
 ## Backlog (P1)
 - Уведомления о наличии товаров
@@ -244,3 +252,4 @@
 - Интеграция с 1С
 - Фильтр по марке/модели грузовика
 - Отзывы о товарах
+
