@@ -175,7 +175,7 @@ export const ChatWidget = () => {
       const interval = setInterval(() => {
         fetchUnreadCount();
         if (isOpen) fetchMessages();
-      }, 5000); // Poll every 5 seconds
+      }, 2000); // Poll every 2 seconds for real-time feel
       return () => clearInterval(interval);
     }
   }, [user, isOpen]);
