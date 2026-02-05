@@ -7,6 +7,7 @@
 - **Frontend**: React + Tailwind CSS + Shadcn UI
 - **Backend**: FastAPI + MongoDB
 - **Auth**: JWT tokens (bcrypt для паролей)
+- **Media Storage**: Cloudinary
 
 ## Реализованный функционал
 
