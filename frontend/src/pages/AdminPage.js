@@ -2636,6 +2636,18 @@ export default function AdminPage() {
                     </div>
                   </div>
 
+                  {/* Button Text Customization */}
+                  <div>
+                    <Label className="text-xs font-bold uppercase text-zinc-500">Текст кнопки запроса бонуса</Label>
+                    <Input
+                      value={editingProgram.request_button_text || ''}
+                      onChange={(e) => setEditingProgram({...editingProgram, request_button_text: e.target.value})}
+                      placeholder="Запросить бонус"
+                      className="mt-1"
+                    />
+                    <p className="text-xs text-zinc-400 mt-1">Оставьте пустым для текста по умолчанию</p>
+                  </div>
+
                   {/* Prizes Section */}
                   <div className="border-t pt-4">
                     <div className="flex items-center justify-between mb-3">
