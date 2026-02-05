@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import axios from 'axios';
-import { MessageCircle, X, Send, Paperclip, Image, Smile, FileText, Download, ZoomIn, ZoomOut, ChevronLeft, ChevronRight } from 'lucide-react';
+import { MessageCircle, X, Send, Paperclip, Image, Smile, FileText, Download, ZoomIn, ZoomOut, ChevronLeft, ChevronRight, Play } from 'lucide-react';
 import { Button } from './ui/button';
 import { Input } from './ui/input';
 import { useAuth } from '../context/AuthContext';
