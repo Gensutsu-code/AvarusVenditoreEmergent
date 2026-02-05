@@ -777,108 +777,118 @@ export default function AdminPage() {
       
     <div className="min-h-screen bg-zinc-50" data-testid="admin-page">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <h1 className="text-2xl md:text-3xl font-bold tracking-tight uppercase text-zinc-900 mb-8">
+        <h1 className="text-2xl md:text-3xl font-bold tracking-tight uppercase text-zinc-900 mb-6">
           Панель администратора
         </h1>
 
-        {/* Stats */}
+        {/* Stats Cards - Modern Design */}
         {stats && (
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
-            <div className="bg-white border border-zinc-200 p-6">
-              <div className="flex items-center gap-3">
-                <Users className="w-8 h-8 text-blue-500" />
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+            <div className="bg-gradient-to-br from-blue-500 to-blue-600 rounded-xl p-5 text-white shadow-lg">
+              <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-2xl font-bold">{stats.total_users}</p>
-                  <p className="text-sm text-zinc-500">Пользователей</p>
+                  <p className="text-blue-100 text-sm font-medium">Пользователей</p>
+                  <p className="text-3xl font-bold mt-1">{stats.total_users}</p>
+                </div>
+                <div className="w-12 h-12 bg-white/20 rounded-full flex items-center justify-center">
+                  <Users className="w-6 h-6" />
                 </div>
               </div>
             </div>
-            <div className="bg-white border border-zinc-200 p-6">
-              <div className="flex items-center gap-3">
-                <Package className="w-8 h-8 text-green-500" />
+            <div className="bg-gradient-to-br from-green-500 to-green-600 rounded-xl p-5 text-white shadow-lg">
+              <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-2xl font-bold">{stats.total_products}</p>
-                  <p className="text-sm text-zinc-500">Товаров</p>
+                  <p className="text-green-100 text-sm font-medium">Товаров</p>
+                  <p className="text-3xl font-bold mt-1">{stats.total_products}</p>
+                </div>
+                <div className="w-12 h-12 bg-white/20 rounded-full flex items-center justify-center">
+                  <Package className="w-6 h-6" />
                 </div>
               </div>
             </div>
-            <div className="bg-white border border-zinc-200 p-6">
-              <div className="flex items-center gap-3">
-                <ShoppingBag className="w-8 h-8 text-orange-500" />
+            <div className="bg-gradient-to-br from-orange-500 to-orange-600 rounded-xl p-5 text-white shadow-lg">
+              <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-2xl font-bold">{stats.total_orders}</p>
-                  <p className="text-sm text-zinc-500">Заказов</p>
+                  <p className="text-orange-100 text-sm font-medium">Заказов</p>
+                  <p className="text-3xl font-bold mt-1">{stats.total_orders}</p>
+                </div>
+                <div className="w-12 h-12 bg-white/20 rounded-full flex items-center justify-center">
+                  <ShoppingBag className="w-6 h-6" />
                 </div>
               </div>
             </div>
-            <div className="bg-white border border-zinc-200 p-6">
-              <div className="flex items-center gap-3">
-                <TrendingUp className="w-8 h-8 text-purple-500" />
+            <div className="bg-gradient-to-br from-purple-500 to-purple-600 rounded-xl p-5 text-white shadow-lg">
+              <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-2xl font-bold">{formatPrice(stats.total_revenue)} ₽</p>
-                  <p className="text-sm text-zinc-500">Выручка</p>
+                  <p className="text-purple-100 text-sm font-medium">Выручка</p>
+                  <p className="text-2xl font-bold mt-1">{formatPrice(stats.total_revenue)} ₽</p>
+                </div>
+                <div className="w-12 h-12 bg-white/20 rounded-full flex items-center justify-center">
+                  <TrendingUp className="w-6 h-6" />
                 </div>
               </div>
             </div>
           </div>
         )}
 
-        {/* Tabs */}
-        <Tabs defaultValue="products" className="bg-white border border-zinc-200">
-          <TabsList className="w-full justify-start border-b border-zinc-200 rounded-none bg-zinc-50 p-0 h-auto flex-wrap">
-            <TabsTrigger value="products" className="rounded-none data-[state=active]:bg-white data-[state=active]:border-b-2 data-[state=active]:border-orange-500 px-4 py-3">
-              <Package className="w-4 h-4 mr-2" />
-              Товары ({products.length})
-            </TabsTrigger>
-            <TabsTrigger value="categories" className="rounded-none data-[state=active]:bg-white data-[state=active]:border-b-2 data-[state=active]:border-orange-500 px-4 py-3">
-              <FolderOpen className="w-4 h-4 mr-2" />
-              Категории ({categories.length})
-            </TabsTrigger>
-            <TabsTrigger value="orders" className="rounded-none data-[state=active]:bg-white data-[state=active]:border-b-2 data-[state=active]:border-orange-500 px-4 py-3">
-              <ShoppingBag className="w-4 h-4 mr-2" />
-              Заказы ({orders.length})
-            </TabsTrigger>
-            <TabsTrigger value="users" className="rounded-none data-[state=active]:bg-white data-[state=active]:border-b-2 data-[state=active]:border-orange-500 px-4 py-3">
-              <Users className="w-4 h-4 mr-2" />
-              Пользователи ({users.length})
-            </TabsTrigger>
-            <TabsTrigger value="promo" className="rounded-none data-[state=active]:bg-white data-[state=active]:border-b-2 data-[state=active]:border-orange-500 px-4 py-3">
-              <Megaphone className="w-4 h-4 mr-2" />
-              Акции
-            </TabsTrigger>
-            <TabsTrigger value="stats" className="rounded-none data-[state=active]:bg-white data-[state=active]:border-b-2 data-[state=active]:border-orange-500 px-4 py-3">
-              <BarChart3 className="w-4 h-4 mr-2" />
-              Статистика
-            </TabsTrigger>
-            <TabsTrigger value="chat" className="rounded-none data-[state=active]:bg-white data-[state=active]:border-b-2 data-[state=active]:border-orange-500 px-4 py-3">
-              <MessageCircle className="w-4 h-4 mr-2" />
-              Чаты {chats.filter(c => c.unread_count > 0).length > 0 && (
-                <span className="ml-1 bg-red-500 text-white text-xs px-1.5 py-0.5 rounded-full">
-                  {chats.reduce((sum, c) => sum + (c.unread_count || 0), 0)}
-                </span>
-              )}
-            </TabsTrigger>
-            <TabsTrigger value="telegram" className="rounded-none data-[state=active]:bg-white data-[state=active]:border-b-2 data-[state=active]:border-orange-500 px-4 py-3">
-              <Send className="w-4 h-4 mr-2" />
-              Telegram
-            </TabsTrigger>
-            <TabsTrigger value="import" className="rounded-none data-[state=active]:bg-white data-[state=active]:border-b-2 data-[state=active]:border-orange-500 px-4 py-3">
-              <FileSpreadsheet className="w-4 h-4 mr-2" />
-              Импорт
-            </TabsTrigger>
-            <TabsTrigger value="bonus" className="rounded-none data-[state=active]:bg-white data-[state=active]:border-b-2 data-[state=active]:border-orange-500 px-4 py-3">
-              <Gift className="w-4 h-4 mr-2" />
-              Бонусы {bonusPrograms.reduce((sum, p) => sum + (p.pending_requests || 0), 0) > 0 && (
-                <span className="ml-1 bg-red-500 text-white text-xs px-1.5 py-0.5 rounded-full">
-                  {bonusPrograms.reduce((sum, p) => sum + (p.pending_requests || 0), 0)}
-                </span>
-              )}
-            </TabsTrigger>
-            <TabsTrigger value="partners" className="rounded-none data-[state=active]:bg-white data-[state=active]:border-b-2 data-[state=active]:border-orange-500 px-4 py-3">
-              <Image className="w-4 h-4 mr-2" />
-              Партнёры
-            </TabsTrigger>
-          </TabsList>
+        {/* Tabs - Horizontal Scrollable */}
+        <Tabs defaultValue="products" className="bg-white rounded-xl border border-zinc-200 shadow-sm overflow-hidden">
+          <div className="overflow-x-auto">
+            <TabsList className="w-max min-w-full justify-start border-b border-zinc-200 rounded-none bg-zinc-50 p-0 h-auto">
+              <TabsTrigger value="products" className="rounded-none border-b-2 border-transparent data-[state=active]:bg-white data-[state=active]:border-orange-500 px-4 py-3 text-sm font-medium whitespace-nowrap">
+                <Package className="w-4 h-4 mr-2" />
+                Товары <span className="ml-1 text-xs bg-zinc-200 data-[state=active]:bg-orange-100 px-1.5 py-0.5 rounded-full">{products.length}</span>
+              </TabsTrigger>
+              <TabsTrigger value="categories" className="rounded-none border-b-2 border-transparent data-[state=active]:bg-white data-[state=active]:border-orange-500 px-4 py-3 text-sm font-medium whitespace-nowrap">
+                <FolderOpen className="w-4 h-4 mr-2" />
+                Категории <span className="ml-1 text-xs bg-zinc-200 data-[state=active]:bg-orange-100 px-1.5 py-0.5 rounded-full">{categories.length}</span>
+              </TabsTrigger>
+              <TabsTrigger value="orders" className="rounded-none border-b-2 border-transparent data-[state=active]:bg-white data-[state=active]:border-orange-500 px-4 py-3 text-sm font-medium whitespace-nowrap">
+                <ShoppingBag className="w-4 h-4 mr-2" />
+                Заказы <span className="ml-1 text-xs bg-zinc-200 data-[state=active]:bg-orange-100 px-1.5 py-0.5 rounded-full">{orders.length}</span>
+              </TabsTrigger>
+              <TabsTrigger value="users" className="rounded-none border-b-2 border-transparent data-[state=active]:bg-white data-[state=active]:border-orange-500 px-4 py-3 text-sm font-medium whitespace-nowrap">
+                <Users className="w-4 h-4 mr-2" />
+                Пользователи <span className="ml-1 text-xs bg-zinc-200 data-[state=active]:bg-orange-100 px-1.5 py-0.5 rounded-full">{users.length}</span>
+              </TabsTrigger>
+              <TabsTrigger value="promo" className="rounded-none border-b-2 border-transparent data-[state=active]:bg-white data-[state=active]:border-orange-500 px-4 py-3 text-sm font-medium whitespace-nowrap">
+                <Megaphone className="w-4 h-4 mr-2" />
+                Акции
+              </TabsTrigger>
+              <TabsTrigger value="stats" className="rounded-none border-b-2 border-transparent data-[state=active]:bg-white data-[state=active]:border-orange-500 px-4 py-3 text-sm font-medium whitespace-nowrap">
+                <BarChart3 className="w-4 h-4 mr-2" />
+                Статистика
+              </TabsTrigger>
+              <TabsTrigger value="chat" className="rounded-none border-b-2 border-transparent data-[state=active]:bg-white data-[state=active]:border-orange-500 px-4 py-3 text-sm font-medium whitespace-nowrap">
+                <MessageCircle className="w-4 h-4 mr-2" />
+                Чаты {chats.filter(c => c.unread_count > 0).length > 0 && (
+                  <span className="ml-1 bg-red-500 text-white text-xs px-1.5 py-0.5 rounded-full animate-pulse">
+                    {chats.reduce((sum, c) => sum + (c.unread_count || 0), 0)}
+                  </span>
+                )}
+              </TabsTrigger>
+              <TabsTrigger value="telegram" className="rounded-none border-b-2 border-transparent data-[state=active]:bg-white data-[state=active]:border-orange-500 px-4 py-3 text-sm font-medium whitespace-nowrap">
+                <Send className="w-4 h-4 mr-2" />
+                Telegram
+              </TabsTrigger>
+              <TabsTrigger value="import" className="rounded-none border-b-2 border-transparent data-[state=active]:bg-white data-[state=active]:border-orange-500 px-4 py-3 text-sm font-medium whitespace-nowrap">
+                <FileSpreadsheet className="w-4 h-4 mr-2" />
+                Импорт
+              </TabsTrigger>
+              <TabsTrigger value="bonus" className="rounded-none border-b-2 border-transparent data-[state=active]:bg-white data-[state=active]:border-orange-500 px-4 py-3 text-sm font-medium whitespace-nowrap">
+                <Gift className="w-4 h-4 mr-2" />
+                Бонусы {bonusPrograms.reduce((sum, p) => sum + (p.pending_requests || 0), 0) > 0 && (
+                  <span className="ml-1 bg-red-500 text-white text-xs px-1.5 py-0.5 rounded-full animate-pulse">
+                    {bonusPrograms.reduce((sum, p) => sum + (p.pending_requests || 0), 0)}
+                  </span>
+                )}
+              </TabsTrigger>
+              <TabsTrigger value="partners" className="rounded-none border-b-2 border-transparent data-[state=active]:bg-white data-[state=active]:border-orange-500 px-4 py-3 text-sm font-medium whitespace-nowrap">
+                <Image className="w-4 h-4 mr-2" />
+                Партнёры
+              </TabsTrigger>
+            </TabsList>
+          </div>
 
           {/* Products Tab */}
           <TabsContent value="products" className="p-6">
