@@ -1932,6 +1932,7 @@ async def get_user_bonus_programs(user=Depends(get_current_user)):
             "id": program["id"],
             "title": program.get("title", "Бонусная программа"),
             "description": program.get("description", ""),
+            "full_description": program.get("full_description", ""),
             "image_url": program.get("image_url", ""),
             "contribution_type": program.get("contribution_type", "order_total"),
             "contribution_percent": program.get("contribution_percent", 100),
@@ -1942,6 +1943,7 @@ async def get_user_bonus_programs(user=Depends(get_current_user)):
             "can_request": can_request,
             "bonus_requested": progress.get("bonus_requested", False),
             "request_date": progress.get("request_date"),
+            "prizes": program.get("prizes", []),
             "enabled": True
         })
     
