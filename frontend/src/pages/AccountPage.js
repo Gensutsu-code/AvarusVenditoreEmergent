@@ -518,8 +518,93 @@ export default function AccountPage() {
                     </div>
                   </div>
                   
+                  {/* Current Level Badge */}
+                  {program.current_level && (
+                    <div 
+                      className="px-6 py-3 flex items-center justify-between"
+                      style={{ backgroundColor: program.current_level.color + '20' }}
+                    >
+                      <div className="flex items-center gap-3">
+                        <div 
+                          className="w-10 h-10 rounded-full flex items-center justify-center text-white font-bold"
+                          style={{ backgroundColor: program.current_level.color }}
+                        >
+                          {program.current_level.name?.charAt(0) || '★'}
+                        </div>
+                        <div>
+                          <p className="font-bold" style={{ color: program.current_level.color }}>
+                            {program.current_level.name}
+                          </p>
+                          {program.current_level.benefits && (
+                            <p className="text-xs text-zinc-500">{program.current_level.benefits}</p>
+                          )}
+                        </div>
+                      </div>
+                      {program.current_level.cashback_percent > 0 && (
+                        <div className="text-right">
+                          <p className="text-2xl font-bold" style={{ color: program.current_level.color }}>
+                            {program.current_level.cashback_percent}%
+                          </p>
+                          <p className="text-xs text-zinc-500">кешбэк</p>
+                        </div>
+                      )}
+                    </div>
+                  )}
+                  
                   {/* Progress Section */}
                   <div className="p-6">
+                    {/* Next Level Progress */}
+                    {program.next_level && (
+                      <div className="mb-4 p-3 bg-zinc-50 rounded-lg">
+                        <div className="flex items-center justify-between mb-2">
+                          <span className="text-sm text-zinc-600">До уровня <strong style={{ color: program.next_level.color }}>{program.next_level.name}</strong></span>
+                          <span className="text-sm font-mono">
+                            {Math.max(0, program.next_level.min_points - program.current_amount).toFixed(0)} баллов
+                          </span>
+                        </div>
+                        <div className="h-2 bg-zinc-200 rounded-full overflow-hidden">
+                          <div 
+                            className="h-full rounded-full transition-all duration-500"
+                            style={{ 
+                              width: `${Math.min(100, (program.current_amount / program.next_level.min_points) * 100)}%`,
+                              backgroundColor: program.next_level.color 
+                            }}
+                          />
+                        </div>
+                      </div>
+                    )}
+                    
+                    {/* All Levels Overview */}
+                    {program.levels && program.levels.length > 0 && (
+                      <div className="mb-4">
+                        <p className="text-xs font-medium text-zinc-500 uppercase mb-2">Уровни программы</p>
+                        <div className="flex gap-2 flex-wrap">
+                          {program.levels.map((level) => {
+                            const isActive = program.current_level?.id === level.id;
+                            const isAchieved = program.current_amount >= level.min_points;
+                            return (
+                              <div 
+                                key={level.id}
+                                className={`px-3 py-1.5 rounded-full text-xs font-medium flex items-center gap-1 ${
+                                  isActive 
+                                    ? 'text-white' 
+                                    : isAchieved 
+                                      ? 'text-white opacity-60' 
+                                      : 'bg-zinc-100 text-zinc-400'
+                                }`}
+                                style={isActive || isAchieved ? { backgroundColor: level.color } : {}}
+                                title={level.benefits || `От ${level.min_points} баллов`}
+                              >
+                                {isActive && <span>★</span>}
+                                {level.name}
+                                {level.cashback_percent > 0 && <span>({level.cashback_percent}%)</span>}
+                              </div>
+                            );
+                          })}
+                        </div>
+                      </div>
+                    )}
+                    
                     <div className="mb-4">
                       <BonusProgressBar 
                         percentage={program.percentage} 
