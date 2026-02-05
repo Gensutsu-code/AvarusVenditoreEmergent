@@ -2484,16 +2484,15 @@ export default function AdminPage() {
                       {selectedProgramId === program.id && (
                         <div className="border-t border-zinc-200">
                           <div className="bg-zinc-50 px-4 py-2 text-sm font-medium text-zinc-600">
-                            Прогресс пользователей ({programUsers.length})
+                            Пользователи программы ({programUsers.length})
                           </div>
                           <div className="overflow-x-auto max-h-[400px] overflow-y-auto">
                             <table className="w-full text-sm">
                               <thead className="sticky top-0 bg-white">
                                 <tr className="border-b border-zinc-200">
                                   <th className="text-left py-2 px-4">Пользователь</th>
-                                  <th className="text-left py-2 px-4">Email</th>
-                                  <th className="text-center py-2 px-4">Прогресс</th>
-                                  <th className="text-right py-2 px-4">Сумма</th>
+                                  <th className="text-right py-2 px-4">Баллы</th>
+                                  <th className="text-center py-2 px-4">Уровень</th>
                                   <th className="text-center py-2 px-4">Статус</th>
                                   <th className="text-right py-2 px-4">Действия</th>
                                 </tr>
@@ -2510,21 +2509,14 @@ export default function AdminPage() {
                                         <Gift className="w-4 h-4 text-orange-500 inline ml-2 animate-pulse" />
                                       )}
                                     </td>
-                                    <td className="py-2 px-4 text-zinc-500">{pu.email}</td>
-                                    <td className="py-2 px-4">
-                                      <div className="flex items-center gap-2">
-                                        <div className="flex-1 h-2 bg-zinc-200 rounded-full overflow-hidden">
-                                          <div 
-                                            className={`h-full rounded-full ${pu.bonus_requested ? 'bg-green-500' : 'bg-orange-500'}`}
-                                            style={{width: `${pu.percentage}%`}}
-                                          />
-                                        </div>
-                                        <span className="text-xs font-mono w-10 text-right">{pu.percentage.toFixed(0)}%</span>
-                                      </div>
-                                    </td>
                                     <td className="py-2 px-4 text-right font-mono">
                                       <span className={pu.bonus_requested ? 'text-green-600 font-bold' : ''}>
-                                        {pu.current_amount.toFixed(0)} ₽
+                                        {pu.current_amount?.toFixed(0) || 0}
+                                      </span>
+                                    </td>
+                                    <td className="py-2 px-4 text-center">
+                                      <span className="bg-orange-100 text-orange-600 px-2 py-1 rounded text-xs font-medium">
+                                        {pu.current_level?.name || 'Бронза'}
                                       </span>
                                     </td>
                                     <td className="py-2 px-4 text-center">
@@ -2532,13 +2524,13 @@ export default function AdminPage() {
                                         <span className="bg-orange-100 text-orange-600 px-2 py-1 rounded text-xs font-bold">
                                           Ожидает
                                         </span>
-                                      ) : pu.current_amount >= program.min_threshold ? (
+                                      ) : pu.current_amount >= (program.min_threshold || 0) ? (
                                         <span className="bg-green-100 text-green-600 px-2 py-1 rounded text-xs">
                                           Готов
                                         </span>
                                       ) : (
                                         <span className="bg-zinc-100 text-zinc-500 px-2 py-1 rounded text-xs">
-                                          Копит
+                                          Активен
                                         </span>
                                       )}
                                     </td>
