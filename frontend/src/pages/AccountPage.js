@@ -491,32 +491,92 @@ export default function AccountPage() {
             )}
           </div>
 
-          {/* Bonus Programs Section - Multiple Programs */}
+          {/* Bonus Programs Section - Redesigned */}
           {bonusPrograms.length > 0 && (
             <div className="space-y-4" data-testid="bonus-section">
+              {/* Total Bonus Points Card - Separate prominent display */}
+              {(() => {
+                const totalPoints = bonusPrograms.reduce((sum, p) => sum + (p.bonus_points || 0), 0);
+                const firstProgram = bonusPrograms[0];
+                const yearlyTotal = firstProgram?.yearly_total || 0;
+                const currentYear = firstProgram?.current_year || new Date().getFullYear();
+                const yearlyOrderCount = firstProgram?.yearly_order_count || 0;
+                const formatPrice = (price) => new Intl.NumberFormat('ru-RU').format(price);
+                
+                return (
+                  <>
+                    {/* Total Points Card */}
+                    <div className="border border-zinc-200 bg-white overflow-hidden" data-testid="total-points-card">
+                      <div className="bg-gradient-to-r from-orange-500 to-orange-600 px-6 py-6 text-white">
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center gap-4">
+                            <div className="w-14 h-14 bg-white/20 rounded-full flex items-center justify-center">
+                              <Gift className="w-7 h-7" />
+                            </div>
+                            <div>
+                              <p className="text-orange-100 text-sm font-medium">Ваши накопленные баллы</p>
+                              <p className="text-4xl font-bold mt-1">{totalPoints.toFixed(0)}</p>
+                            </div>
+                          </div>
+                          <div className="text-right">
+                            <p className="text-orange-200 text-xs uppercase tracking-wider">Баллов</p>
+                            <p className="text-orange-100 text-sm mt-1">Доступно для обмена</p>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                    
+                    {/* Yearly Orders Progress Card */}
+                    <div className="border border-zinc-200 bg-white overflow-hidden" data-testid="yearly-progress-card">
+                      <div className="px-6 py-4 border-b border-zinc-100 bg-zinc-50">
+                        <div className="flex items-center justify-between">
+                          <h3 className="font-bold text-zinc-800 flex items-center gap-2">
+                            <TrendingUp className="w-5 h-5 text-green-500" />
+                            Покупки за {currentYear} год
+                          </h3>
+                          <span className="text-sm text-zinc-500">
+                            {yearlyOrderCount} {yearlyOrderCount === 1 ? 'заказ' : yearlyOrderCount < 5 ? 'заказа' : 'заказов'} доставлено
+                          </span>
+                        </div>
+                      </div>
+                      <div className="p-6">
+                        <YearlyProgressBar 
+                          currentAmount={yearlyTotal} 
+                          yearGoal={100000}
+                        />
+                        <p className="text-xs text-zinc-400 mt-3 text-center">
+                          Сумма всех доставленных заказов с 1 января по 31 декабря {currentYear}
+                        </p>
+                      </div>
+                    </div>
+                  </>
+                );
+              })()}
+              
+              {/* Individual Bonus Programs */}
               {bonusPrograms.map((program) => (
                 <div key={program.id} className="border border-zinc-200 bg-white overflow-hidden">
-                  {/* Program Header */}
-                  <div className="bg-gradient-to-r from-orange-500 to-orange-600 px-6 py-4 text-white">
+                  {/* Program Header - Simplified */}
+                  <div className="px-6 py-4 border-b border-zinc-100 bg-zinc-50">
                     <div className="flex items-center gap-3">
                       {program.image_url ? (
                         <img 
                           src={program.image_url} 
                           alt="Bonus" 
-                          className="w-12 h-12 rounded-full object-cover border-2 border-white/30"
+                          className="w-10 h-10 rounded-full object-cover border border-zinc-200"
                         />
                       ) : (
-                        <div className="w-10 h-10 bg-white/20 rounded-full flex items-center justify-center">
-                          <Gift className="w-5 h-5" />
+                        <div className="w-10 h-10 bg-orange-100 rounded-full flex items-center justify-center">
+                          <Award className="w-5 h-5 text-orange-500" />
                         </div>
                       )}
                       <div className="flex-1">
-                        <h3 className="font-bold text-lg">{program.title || 'Бонусная программа'}</h3>
-                        <p className="text-orange-100 text-sm">{program.description || 'Накопите баллы и получите призы!'}</p>
+                        <h3 className="font-bold text-zinc-800">{program.title || 'Бонусная программа'}</h3>
+                        <p className="text-zinc-500 text-sm">{program.description || 'Накопите баллы и получите призы!'}</p>
                       </div>
-                      <div className="text-right">
-                        <p className="text-2xl font-bold">{program.current_amount?.toFixed(0) || 0}</p>
-                        <p className="text-orange-200 text-xs">баллов</p>
+                      <div className="text-right bg-orange-100 px-4 py-2 rounded-lg">
+                        <p className="text-xl font-bold text-orange-600">{program.bonus_points?.toFixed(0) || 0}</p>
+                        <p className="text-orange-500 text-xs">баллов</p>
                       </div>
                     </div>
                   </div>
@@ -524,19 +584,19 @@ export default function AccountPage() {
                   {/* Current Level Badge */}
                   {program.current_level && (
                     <div 
-                      className="px-6 py-3 flex items-center justify-between"
-                      style={{ backgroundColor: program.current_level.color + '20' }}
+                      className="px-6 py-3 flex items-center justify-between border-b border-zinc-100"
+                      style={{ backgroundColor: program.current_level.color + '15' }}
                     >
                       <div className="flex items-center gap-3">
                         <div 
-                          className="w-10 h-10 rounded-full flex items-center justify-center text-white font-bold"
+                          className="w-8 h-8 rounded-full flex items-center justify-center text-white font-bold text-sm"
                           style={{ backgroundColor: program.current_level.color }}
                         >
                           {program.current_level.name?.charAt(0) || '★'}
                         </div>
                         <div>
-                          <p className="font-bold" style={{ color: program.current_level.color }}>
-                            {program.current_level.name}
+                          <p className="font-bold text-sm" style={{ color: program.current_level.color }}>
+                            Уровень: {program.current_level.name}
                           </p>
                           {program.current_level.benefits && (
                             <p className="text-xs text-zinc-500">{program.current_level.benefits}</p>
@@ -545,7 +605,7 @@ export default function AccountPage() {
                       </div>
                       {program.current_level.cashback_percent > 0 && (
                         <div className="text-right">
-                          <p className="text-2xl font-bold" style={{ color: program.current_level.color }}>
+                          <p className="text-lg font-bold" style={{ color: program.current_level.color }}>
                             {program.current_level.cashback_percent}%
                           </p>
                           <p className="text-xs text-zinc-500">кешбэк</p>
@@ -554,29 +614,8 @@ export default function AccountPage() {
                     </div>
                   )}
                   
-                  {/* Progress Section */}
+                  {/* Content */}
                   <div className="p-6">
-                    {/* Next Level Progress */}
-                    {program.next_level && (
-                      <div className="mb-4 p-3 bg-zinc-50 rounded-lg">
-                        <div className="flex items-center justify-between mb-2">
-                          <span className="text-sm text-zinc-600">До уровня <strong style={{ color: program.next_level.color }}>{program.next_level.name}</strong></span>
-                          <span className="text-sm font-mono">
-                            {Math.max(0, program.next_level.min_points - program.current_amount).toFixed(0)} баллов
-                          </span>
-                        </div>
-                        <div className="h-2 bg-zinc-200 rounded-full overflow-hidden">
-                          <div 
-                            className="h-full rounded-full transition-all duration-500"
-                            style={{ 
-                              width: `${Math.min(100, (program.current_amount / program.next_level.min_points) * 100)}%`,
-                              backgroundColor: program.next_level.color 
-                            }}
-                          />
-                        </div>
-                      </div>
-                    )}
-                    
                     {/* All Levels Overview */}
                     {program.levels && program.levels.length > 0 && (
                       <div className="mb-4">
@@ -584,7 +623,7 @@ export default function AccountPage() {
                         <div className="flex gap-2 flex-wrap">
                           {program.levels.map((level) => {
                             const isActive = program.current_level?.id === level.id;
-                            const isAchieved = program.current_amount >= level.min_points;
+                            const isAchieved = (program.yearly_total || 0) >= level.min_points;
                             return (
                               <div 
                                 key={level.id}
@@ -596,7 +635,7 @@ export default function AccountPage() {
                                       : 'bg-zinc-100 text-zinc-400'
                                 }`}
                                 style={isActive || isAchieved ? { backgroundColor: level.color } : {}}
-                                title={level.benefits || `От ${level.min_points} баллов`}
+                                title={level.benefits || `От ${level.min_points} ₽`}
                               >
                                 {isActive && <span>★</span>}
                                 {level.name}
@@ -607,14 +646,6 @@ export default function AccountPage() {
                         </div>
                       </div>
                     )}
-                    
-                    <div className="mb-4">
-                      <BonusProgressBar 
-                        percentage={program.percentage} 
-                        currentAmount={program.current_amount}
-                        maxAmount={program.max_amount}
-                      />
-                    </div>
                     
                     {/* Full Description */}
                     {program.full_description && (
@@ -643,7 +674,7 @@ export default function AccountPage() {
                         </h4>
                         <div className="grid gap-3">
                           {program.prizes.filter(p => p.enabled).map((prize) => {
-                            const canAfford = program.current_amount >= prize.points_cost;
+                            const canAfford = (program.bonus_points || 0) >= prize.points_cost;
                             const isRedeeming = redeemingPrize[`${program.id}_${prize.id}`];
                             const isAvailable = prize.quantity === -1 || prize.quantity > 0;
                             
@@ -719,7 +750,7 @@ export default function AccountPage() {
                     ) : (
                       <Button 
                         onClick={() => handleRequestBonus(program.id)}
-                        disabled={requestingBonus[program.id] || program.current_amount === 0}
+                        disabled={requestingBonus[program.id] || (program.bonus_points || 0) === 0}
                         className="w-full bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 text-white font-bold py-3 disabled:opacity-50"
                         data-testid={`request-bonus-btn-${program.id}`}
                       >
