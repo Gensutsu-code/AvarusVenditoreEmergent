@@ -556,6 +556,32 @@ export default function AdminPage() {
     }
   };
 
+  // Partner image upload
+  const handlePartnerImageUpload = async (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    setPartnerImageUploading(true);
+    try {
+      const formData = new FormData();
+      formData.append('file', file);
+      
+      const res = await axios.post(`${API}/admin/partners/upload-image`, formData, {
+        headers: { 'Content-Type': 'multipart/form-data' }
+      });
+
+      // Update editingPartner with new image URL
+      setEditingPartner(prev => ({ ...prev, image_url: res.data.url }));
+      toast.success('Изображение загружено');
+    } catch (err) {
+      console.error('Failed to upload partner image', err);
+      toast.error('Ошибка загрузки изображения');
+    } finally {
+      setPartnerImageUploading(false);
+      if (partnerImageRef.current) partnerImageRef.current.value = '';
+    }
+  };
+
   // Extended stats
   const fetchExtendedStats = async (period) => {
     try {
