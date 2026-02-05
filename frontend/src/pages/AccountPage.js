@@ -497,10 +497,6 @@ export default function AccountPage() {
               {/* Total Bonus Points Card - Separate prominent display */}
               {(() => {
                 const totalPoints = bonusPrograms.reduce((sum, p) => sum + (p.bonus_points || 0), 0);
-                const firstProgram = bonusPrograms[0];
-                const yearlyTotal = firstProgram?.yearly_total || 0;
-                const currentYear = firstProgram?.current_year || new Date().getFullYear();
-                const yearlyOrderCount = firstProgram?.yearly_order_count || 0;
                 const formatPrice = (price) => new Intl.NumberFormat('ru-RU').format(price);
                 
                 return (
@@ -525,127 +521,169 @@ export default function AccountPage() {
                         </div>
                       </div>
                     </div>
-                    
-                    {/* Yearly Orders Progress Card */}
-                    <div className="border border-zinc-200 bg-white overflow-hidden" data-testid="yearly-progress-card">
-                      <div className="px-6 py-4 border-b border-zinc-100 bg-zinc-50">
-                        <div className="flex items-center justify-between">
-                          <h3 className="font-bold text-zinc-800 flex items-center gap-2">
-                            <TrendingUp className="w-5 h-5 text-green-500" />
-                            Покупки за {currentYear} год
-                          </h3>
-                          <span className="text-sm text-zinc-500">
-                            {yearlyOrderCount} {yearlyOrderCount === 1 ? 'заказ' : yearlyOrderCount < 5 ? 'заказа' : 'заказов'} доставлено
-                          </span>
-                        </div>
-                      </div>
-                      <div className="p-6">
-                        <YearlyProgressBar 
-                          currentAmount={yearlyTotal} 
-                          yearGoal={100000}
-                        />
-                        <p className="text-xs text-zinc-400 mt-3 text-center">
-                          Сумма всех доставленных заказов с 1 января по 31 декабря {currentYear}
-                        </p>
-                      </div>
-                    </div>
                   </>
                 );
               })()}
               
               {/* Individual Bonus Programs */}
-              {bonusPrograms.map((program) => (
-                <div key={program.id} className="border border-zinc-200 bg-white overflow-hidden">
-                  {/* Program Header - Simplified */}
-                  <div className="px-6 py-4 border-b border-zinc-100 bg-zinc-50">
-                    <div className="flex items-center gap-3">
-                      {program.image_url ? (
-                        <img 
-                          src={program.image_url} 
-                          alt="Bonus" 
-                          className="w-10 h-10 rounded-full object-cover border border-zinc-200"
-                        />
-                      ) : (
-                        <div className="w-10 h-10 bg-orange-100 rounded-full flex items-center justify-center">
-                          <Award className="w-5 h-5 text-orange-500" />
-                        </div>
-                      )}
-                      <div className="flex-1">
-                        <h3 className="font-bold text-zinc-800">{program.title || 'Бонусная программа'}</h3>
-                        <p className="text-zinc-500 text-sm">{program.description || 'Накопите баллы и получите призы!'}</p>
-                      </div>
-                      <div className="text-right bg-orange-100 px-4 py-2 rounded-lg">
-                        <p className="text-xl font-bold text-orange-600">{program.bonus_points?.toFixed(0) || 0}</p>
-                        <p className="text-orange-500 text-xs">баллов</p>
-                      </div>
-                    </div>
-                  </div>
-                  
-                  {/* Current Level Badge */}
-                  {program.current_level && (
-                    <div 
-                      className="px-6 py-3 flex items-center justify-between border-b border-zinc-100"
-                      style={{ backgroundColor: program.current_level.color + '15' }}
-                    >
+              {bonusPrograms.map((program) => {
+                const yearlyTotal = program.yearly_total || 0;
+                const currentYear = program.current_year || new Date().getFullYear();
+                const yearlyOrderCount = program.yearly_order_count || 0;
+                const formatPrice = (price) => new Intl.NumberFormat('ru-RU').format(price);
+                
+                // Calculate next level and progress
+                const sortedLevels = [...(program.levels || [])].sort((a, b) => a.min_points - b.min_points);
+                const currentLevelIndex = sortedLevels.findIndex(l => l.id === program.current_level?.id);
+                const nextLevel = currentLevelIndex >= 0 && currentLevelIndex < sortedLevels.length - 1 
+                  ? sortedLevels[currentLevelIndex + 1] 
+                  : null;
+                const currentLevelThreshold = program.current_level?.min_points || 0;
+                const nextLevelThreshold = nextLevel?.min_points || yearlyTotal;
+                const progressToNext = nextLevel 
+                  ? Math.min(100, ((yearlyTotal - currentLevelThreshold) / (nextLevelThreshold - currentLevelThreshold)) * 100)
+                  : 100;
+                const amountToNextLevel = nextLevel ? Math.max(0, nextLevelThreshold - yearlyTotal) : 0;
+                
+                return (
+                  <div key={program.id} className="border border-zinc-200 bg-white overflow-hidden">
+                    {/* Program Header - Simplified */}
+                    <div className="px-6 py-4 border-b border-zinc-100 bg-zinc-50">
                       <div className="flex items-center gap-3">
-                        <div 
-                          className="w-8 h-8 rounded-full flex items-center justify-center text-white font-bold text-sm"
-                          style={{ backgroundColor: program.current_level.color }}
-                        >
-                          {program.current_level.name?.charAt(0) || '★'}
+                        {program.image_url ? (
+                          <img 
+                            src={program.image_url} 
+                            alt="Bonus" 
+                            className="w-10 h-10 rounded-full object-cover border border-zinc-200"
+                          />
+                        ) : (
+                          <div className="w-10 h-10 bg-orange-100 rounded-full flex items-center justify-center">
+                            <Award className="w-5 h-5 text-orange-500" />
+                          </div>
+                        )}
+                        <div className="flex-1">
+                          <h3 className="font-bold text-zinc-800">{program.title || 'Бонусная программа'}</h3>
+                          <p className="text-zinc-500 text-sm">{program.description || 'Накопите баллы и получите призы!'}</p>
                         </div>
-                        <div>
-                          <p className="font-bold text-sm" style={{ color: program.current_level.color }}>
-                            Уровень: {program.current_level.name}
-                          </p>
-                          {program.current_level.benefits && (
-                            <p className="text-xs text-zinc-500">{program.current_level.benefits}</p>
-                          )}
+                        <div className="text-right bg-orange-100 px-4 py-2 rounded-lg">
+                          <p className="text-xl font-bold text-orange-600">{program.bonus_points?.toFixed(0) || 0}</p>
+                          <p className="text-orange-500 text-xs">баллов</p>
                         </div>
                       </div>
-                      {program.current_level.cashback_percent > 0 && (
-                        <div className="text-right">
-                          <p className="text-lg font-bold" style={{ color: program.current_level.color }}>
-                            {program.current_level.cashback_percent}%
-                          </p>
-                          <p className="text-xs text-zinc-500">кешбэк</p>
-                        </div>
-                      )}
                     </div>
-                  )}
-                  
-                  {/* Content */}
-                  <div className="p-6">
-                    {/* All Levels Overview */}
+                    
+                    {/* Levels & Progress Section - Combined */}
                     {program.levels && program.levels.length > 0 && (
-                      <div className="mb-4">
-                        <p className="text-xs font-medium text-zinc-500 uppercase mb-2">Уровни программы</p>
-                        <div className="flex gap-2 flex-wrap">
-                          {program.levels.map((level) => {
-                            const isActive = program.current_level?.id === level.id;
-                            const isAchieved = (program.yearly_total || 0) >= level.min_points;
-                            return (
+                      <div className="px-6 py-4 border-b border-zinc-100" data-testid="levels-progress-section">
+                        {/* Current Level Badge */}
+                        {program.current_level && (
+                          <div 
+                            className="flex items-center justify-between mb-4 p-3 rounded-lg"
+                            style={{ backgroundColor: program.current_level.color + '15' }}
+                          >
+                            <div className="flex items-center gap-3">
                               <div 
-                                key={level.id}
-                                className={`px-3 py-1.5 rounded-full text-xs font-medium flex items-center gap-1 ${
-                                  isActive 
-                                    ? 'text-white' 
-                                    : isAchieved 
-                                      ? 'text-white opacity-60' 
-                                      : 'bg-zinc-100 text-zinc-400'
-                                }`}
-                                style={isActive || isAchieved ? { backgroundColor: level.color } : {}}
-                                title={level.benefits || `От ${level.min_points} ₽`}
+                                className="w-10 h-10 rounded-full flex items-center justify-center text-white font-bold"
+                                style={{ backgroundColor: program.current_level.color }}
                               >
-                                {isActive && <span>★</span>}
-                                {level.name}
-                                {level.cashback_percent > 0 && <span>({level.cashback_percent}%)</span>}
+                                {program.current_level.name?.charAt(0) || '★'}
                               </div>
-                            );
-                          })}
+                              <div>
+                                <p className="font-bold" style={{ color: program.current_level.color }}>
+                                  Ваш уровень: {program.current_level.name}
+                                </p>
+                                {program.current_level.benefits && (
+                                  <p className="text-xs text-zinc-500">{program.current_level.benefits}</p>
+                                )}
+                              </div>
+                            </div>
+                            {program.current_level.cashback_percent > 0 && (
+                              <div className="text-right">
+                                <p className="text-2xl font-bold" style={{ color: program.current_level.color }}>
+                                  {program.current_level.cashback_percent}%
+                                </p>
+                                <p className="text-xs text-zinc-500">кешбэк</p>
+                              </div>
+                            )}
+                          </div>
+                        )}
+                        
+                        {/* All Levels Visual */}
+                        <div className="mb-4">
+                          <p className="text-xs font-medium text-zinc-500 uppercase mb-2">Уровни программы</p>
+                          <div className="flex gap-1 flex-wrap">
+                            {sortedLevels.map((level, idx) => {
+                              const isActive = program.current_level?.id === level.id;
+                              const isAchieved = yearlyTotal >= level.min_points;
+                              return (
+                                <div 
+                                  key={level.id}
+                                  className={`flex-1 min-w-[80px] p-2 rounded-lg text-center transition-all ${
+                                    isActive 
+                                      ? 'text-white shadow-lg scale-105' 
+                                      : isAchieved 
+                                        ? 'text-white opacity-70' 
+                                        : 'bg-zinc-100 text-zinc-400'
+                                  }`}
+                                  style={isActive || isAchieved ? { backgroundColor: level.color } : {}}
+                                >
+                                  <p className="font-bold text-sm">{level.name}</p>
+                                  <p className="text-xs opacity-80">
+                                    {level.cashback_percent > 0 ? `${level.cashback_percent}%` : ''}
+                                  </p>
+                                  <p className="text-xs opacity-60 mt-1">от {formatPrice(level.min_points)} ₽</p>
+                                </div>
+                              );
+                            })}
+                          </div>
+                        </div>
+                        
+                        {/* Progress to Next Level */}
+                        <div className="bg-zinc-50 rounded-lg p-4">
+                          <div className="flex items-center justify-between mb-2">
+                            <div className="flex items-center gap-2">
+                              <TrendingUp className="w-4 h-4 text-green-500" />
+                              <span className="text-sm font-medium text-zinc-700">
+                                Покупки за {currentYear} год
+                              </span>
+                            </div>
+                            <span className="text-xs text-zinc-500">
+                              {yearlyOrderCount} {yearlyOrderCount === 1 ? 'заказ' : yearlyOrderCount < 5 ? 'заказа' : 'заказов'}
+                            </span>
+                          </div>
+                          
+                          {/* Progress Bar */}
+                          <div className="relative mb-2">
+                            <div className="h-4 bg-zinc-200 rounded-full overflow-hidden">
+                              <div 
+                                className="h-full rounded-full transition-all duration-1000 ease-out relative"
+                                style={{ 
+                                  width: `${progressToNext}%`,
+                                  backgroundColor: nextLevel?.color || program.current_level?.color || '#22c55e'
+                                }}
+                              >
+                                <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/30 to-transparent animate-pulse"></div>
+                              </div>
+                            </div>
+                          </div>
+                          
+                          {/* Progress Info */}
+                          <div className="flex justify-between items-center text-sm">
+                            <span className="font-mono font-semibold text-green-600">{formatPrice(yearlyTotal)} ₽</span>
+                            {nextLevel ? (
+                              <span className="text-zinc-500">
+                                до <span className="font-semibold" style={{ color: nextLevel.color }}>{nextLevel.name}</span>: {formatPrice(amountToNextLevel)} ₽
+                              </span>
+                            ) : (
+                              <span className="text-green-600 font-medium">🎉 Максимальный уровень!</span>
+                            )}
+                          </div>
                         </div>
                       </div>
                     )}
+                  
+                    {/* Content */}
+                    <div className="p-6">
                     
                     {/* Full Description */}
                     {program.full_description && (
