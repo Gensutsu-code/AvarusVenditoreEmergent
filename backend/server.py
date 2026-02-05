@@ -1953,6 +1953,9 @@ async def get_user_bonus_programs(user=Depends(get_current_user)):
             "bonus_requested": progress.get("bonus_requested", False),
             "request_date": progress.get("request_date"),
             "prizes": program.get("prizes", []),
+            "levels": program.get("levels", []),
+            "current_level": current_level,
+            "next_level": next_level,
             "enabled": True
         })
     
