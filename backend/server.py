@@ -1923,6 +1923,21 @@ async def get_user_bonus_programs(user=Depends(get_current_user)):
     """Get all bonus programs with user's progress"""
     programs = await get_all_bonus_programs()
     
+    # Calculate yearly order total (Jan 1 - Dec 31 of current year)
+    current_year = datetime.now(timezone.utc).year
+    year_start = f"{current_year}-01-01T00:00:00"
+    year_end = f"{current_year}-12-31T23:59:59"
+    
+    # Get all delivered orders for this user in current year
+    yearly_orders = await db.orders.find({
+        "user_id": user["id"],
+        "status": "delivered",
+        "created_at": {"$gte": year_start, "$lte": year_end}
+    }, {"_id": 0, "total": 1}).to_list(1000)
+    
+    yearly_total = sum(order.get("total", 0) for order in yearly_orders)
+    yearly_order_count = len(yearly_orders)
+    
     result = []
     for program in programs:
         if not program.get("enabled"):
@@ -1932,12 +1947,11 @@ async def get_user_bonus_programs(user=Depends(get_current_user)):
         
         max_amount = program.get("max_amount", 50000)
         current = progress.get("current_amount", 0)
-        percentage = min(100, (current / max_amount) * 100) if max_amount > 0 else 0
         
         min_threshold = program.get("min_threshold", 5000)
-        can_request = current >= min_threshold and not progress.get("bonus_requested", False)
+        can_request = current > 0 and not progress.get("bonus_requested", False)
         
-        # Calculate current level and next level
+        # Calculate current level and next level based on yearly total
         levels = program.get("levels", [])
         levels_sorted = sorted(levels, key=lambda x: x.get("min_points", 0))
         
@@ -1945,13 +1959,24 @@ async def get_user_bonus_programs(user=Depends(get_current_user)):
         next_level = None
         
         for i, level in enumerate(levels_sorted):
-            if current >= level.get("min_points", 0):
+            if yearly_total >= level.get("min_points", 0):
                 current_level = level
                 # Check if there's a next level
                 if i + 1 < len(levels_sorted):
                     next_level = levels_sorted[i + 1]
                 else:
                     next_level = None
+        
+        # Calculate percentage to next level
+        level_percentage = 0
+        if next_level:
+            current_min = current_level.get("min_points", 0) if current_level else 0
+            next_min = next_level.get("min_points", 0)
+            level_range = next_min - current_min
+            if level_range > 0:
+                level_percentage = min(100, ((yearly_total - current_min) / level_range) * 100)
+        elif current_level:
+            level_percentage = 100  # Max level achieved
         
         result.append({
             "id": program["id"],
@@ -1961,10 +1986,12 @@ async def get_user_bonus_programs(user=Depends(get_current_user)):
             "image_url": program.get("image_url", ""),
             "contribution_type": program.get("contribution_type", "order_total"),
             "contribution_percent": program.get("contribution_percent", 100),
-            "current_amount": round(current, 2),
+            "bonus_points": round(current, 2),  # Накопленные бонусные баллы
+            "yearly_total": round(yearly_total, 2),  # Сумма заказов за год
+            "yearly_order_count": yearly_order_count,  # Количество заказов за год
+            "current_year": current_year,
             "max_amount": max_amount,
-            "min_threshold": min_threshold,
-            "percentage": round(percentage, 1),
+            "level_percentage": round(level_percentage, 1),
             "can_request": can_request,
             "bonus_requested": progress.get("bonus_requested", False),
             "request_date": progress.get("request_date"),
