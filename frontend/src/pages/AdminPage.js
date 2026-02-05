@@ -2047,9 +2047,9 @@ export default function AdminPage() {
                               {msg.edited && <span>(ред.)</span>}
                             </div>
                             
-                            {/* Message actions */}
-                            {msg.sender_type === 'admin' && (
-                              <div className="absolute -left-16 top-1/2 -translate-y-1/2 hidden group-hover:flex gap-1">
+                            {/* Message actions - Delete for all, Edit only for admin messages */}
+                            <div className={`absolute ${msg.sender_type === 'admin' ? '-left-16' : '-right-8'} top-1/2 -translate-y-1/2 hidden group-hover:flex gap-1`}>
+                              {msg.sender_type === 'admin' && (
                                 <button
                                   onClick={async () => {
                                     const newText = prompt('Редактировать сообщение:', msg.text);
@@ -2064,27 +2064,29 @@ export default function AdminPage() {
                                     }
                                   }}
                                   className="p-1 bg-white border border-zinc-200 rounded text-zinc-400 hover:text-zinc-600"
+                                  title="Редактировать"
                                 >
                                   <Pencil className="w-3 h-3" />
                                 </button>
-                                <button
-                                  onClick={async () => {
-                                    if (window.confirm('Удалить сообщение?')) {
-                                      try {
-                                        await axios.delete(`${API}/admin/chats/${selectedChat.id}/messages/${msg.id}`);
-                                        setChatMessages(prev => prev.filter(m => m.id !== msg.id));
-                                        toast.success('Сообщение удалено');
-                                      } catch (err) {
-                                        toast.error('Ошибка');
-                                      }
+                              )}
+                              <button
+                                onClick={async () => {
+                                  if (window.confirm('Удалить сообщение?')) {
+                                    try {
+                                      await axios.delete(`${API}/admin/chats/${selectedChat.id}/messages/${msg.id}`);
+                                      setChatMessages(prev => prev.filter(m => m.id !== msg.id));
+                                      toast.success('Сообщение удалено');
+                                    } catch (err) {
+                                      toast.error('Ошибка');
                                     }
-                                  }}
-                                  className="p-1 bg-white border border-zinc-200 rounded text-zinc-400 hover:text-red-500"
-                                >
-                                  <Trash2 className="w-3 h-3" />
-                                </button>
-                              </div>
-                            )}
+                                  }
+                                }}
+                                className="p-1 bg-white border border-zinc-200 rounded text-zinc-400 hover:text-red-500"
+                                title="Удалить"
+                              >
+                                <Trash2 className="w-3 h-3" />
+                              </button>
+                            </div>
                           </div>
                         </div>
                       ))}
