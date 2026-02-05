@@ -1835,6 +1835,14 @@ class BonusPrize(BaseModel):
     quantity: int = -1  # -1 = unlimited
     enabled: bool = True
 
+class BonusLevel(BaseModel):
+    id: str = ""
+    name: str  # Название уровня (Бронза, Серебро, Золото)
+    min_points: float = 0  # Минимум баллов для достижения уровня
+    cashback_percent: float = 0  # Процент кешбэка на этом уровне
+    color: str = "#f97316"  # Цвет уровня для отображения
+    benefits: str = ""  # Описание привилегий уровня
+
 class BonusProgramCreate(BaseModel):
     title: str = "Бонусная программа"
     description: str = ""
@@ -1846,6 +1854,7 @@ class BonusProgramCreate(BaseModel):
     contribution_percent: float = 100  # Used when contribution_type is "percentage"
     enabled: bool = True
     prizes: List[dict] = []  # Список призов
+    levels: List[dict] = []  # Список уровней программы
 
 # ==================== MULTIPLE BONUS PROGRAMS ====================
 
