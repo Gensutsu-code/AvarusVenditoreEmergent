@@ -74,6 +74,8 @@ export default function AdminPage() {
   const [partners, setPartners] = useState([]);
   const [editingPartner, setEditingPartner] = useState(null);
   const [isNewPartner, setIsNewPartner] = useState(false);
+  const partnerImageRef = useRef(null);
+  const [partnerImageUploading, setPartnerImageUploading] = useState(false);
   
   // User details expansion
   const [expandedUserId, setExpandedUserId] = useState(null);
