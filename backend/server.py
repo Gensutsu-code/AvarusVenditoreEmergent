@@ -2268,6 +2268,22 @@ async def update_bonus_program(program_id: str, data: BonusProgramCreate, user=D
         }
         prizes_with_ids.append(prize_data)
     
+    # Generate IDs for levels
+    levels_with_ids = []
+    for level in data.levels:
+        level_data = {
+            "id": level.get("id") or str(uuid.uuid4()),
+            "name": level.get("name", ""),
+            "min_points": level.get("min_points", 0),
+            "cashback_percent": level.get("cashback_percent", 0),
+            "color": level.get("color", "#f97316"),
+            "benefits": level.get("benefits", "")
+        }
+        levels_with_ids.append(level_data)
+    
+    # Sort levels by min_points
+    levels_with_ids.sort(key=lambda x: x["min_points"])
+    
     update_data = {
         "title": data.title,
         "description": data.description,
@@ -2279,6 +2295,7 @@ async def update_bonus_program(program_id: str, data: BonusProgramCreate, user=D
         "contribution_percent": data.contribution_percent,
         "enabled": data.enabled,
         "prizes": prizes_with_ids,
+        "levels": levels_with_ids,
         "updated_at": datetime.now(timezone.utc).isoformat()
     }
     
