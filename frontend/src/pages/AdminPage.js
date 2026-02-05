@@ -2639,45 +2639,6 @@ export default function AdminPage() {
                     </div>
                   </div>
 
-                  <div className="grid grid-cols-2 gap-4">
-                    <div>
-                      <Label className="text-xs font-bold uppercase text-zinc-500">Цель прогресс-бара (баллов)</Label>
-                      <Input
-                        type="number"
-                        value={editingProgram.max_amount || 50000}
-                        onChange={(e) => setEditingProgram({...editingProgram, max_amount: parseFloat(e.target.value) || 50000})}
-                        className="mt-1"
-                      />
-                    </div>
-                  </div>
-
-                  <div>
-                    <Label className="text-xs font-bold uppercase text-zinc-500">Тип начисления баллов</Label>
-                    <select
-                      value={editingProgram.contribution_type || 'order_total'}
-                      onChange={(e) => setEditingProgram({...editingProgram, contribution_type: e.target.value})}
-                      className="mt-1 w-full h-10 px-3 border border-zinc-200 bg-white rounded"
-                    >
-                      <option value="order_total">100% от суммы заказа</option>
-                      <option value="percentage">Процент от суммы заказа</option>
-                    </select>
-                  </div>
-
-                  {editingProgram.contribution_type === 'percentage' && (
-                    <div>
-                      <Label className="text-xs font-bold uppercase text-zinc-500">Процент начисления (%)</Label>
-                      <Input
-                        type="number"
-                        value={editingProgram.contribution_percent || 100}
-                        onChange={(e) => setEditingProgram({...editingProgram, contribution_percent: parseFloat(e.target.value) || 100})}
-                        className="mt-1"
-                        min="1"
-                        max="100"
-                      />
-                      <p className="text-xs text-zinc-400 mt-1">От 1% до 100% от суммы доставленного заказа</p>
-                    </div>
-                  )}
-                  
                   {/* Prizes Section */}
                   <div className="border-t pt-4">
                     <div className="flex items-center justify-between mb-3">
