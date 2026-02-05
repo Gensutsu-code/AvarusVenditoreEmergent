@@ -192,6 +192,38 @@ export default function AdminPage() {
     fetchData();
   }, [user, authLoading, navigate]);
 
+  // Real-time chat polling for admin
+  useEffect(() => {
+    if (!selectedChat) return;
+    
+    const interval = setInterval(async () => {
+      try {
+        const res = await axios.get(`${API}/admin/chats/${selectedChat.id}/messages`);
+        setChatMessages(res.data.messages || []);
+      } catch (err) {
+        console.error('Failed to poll chat messages', err);
+      }
+    }, 2000); // Poll every 2 seconds for real-time feel
+    
+    return () => clearInterval(interval);
+  }, [selectedChat]);
+
+  // Real-time chat list polling for admin
+  useEffect(() => {
+    if (!user || user.role !== 'admin') return;
+    
+    const interval = setInterval(async () => {
+      try {
+        const res = await axios.get(`${API}/admin/chats`);
+        setChats(res.data);
+      } catch (err) {
+        console.error('Failed to poll chats', err);
+      }
+    }, 3000); // Poll chat list every 3 seconds
+    
+    return () => clearInterval(interval);
+  }, [user]);
+
   const fetchData = async () => {
     setLoading(true);
     try {
