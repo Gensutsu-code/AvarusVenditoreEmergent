@@ -2733,6 +2733,62 @@ export default function AdminPage() {
                                 <Trash2 className="w-4 h-4" />
                               </Button>
                             </div>
+                            
+                            {/* Prize image upload */}
+                            <div className="flex items-center gap-3 mb-2">
+                              {prize.image_url ? (
+                                <img src={prize.image_url} alt={prize.name} className="w-16 h-16 object-cover rounded" />
+                              ) : (
+                                <div className="w-16 h-16 bg-zinc-200 rounded flex items-center justify-center">
+                                  <Gift className="w-6 h-6 text-zinc-400" />
+                                </div>
+                              )}
+                              <div className="flex-1">
+                                <input
+                                  type="file"
+                                  id={`prize-image-${idx}`}
+                                  accept="image/*"
+                                  className="hidden"
+                                  onChange={async (e) => {
+                                    const file = e.target.files?.[0];
+                                    if (file) {
+                                      const url = await handleFileUpload(file, 'prizes');
+                                      if (url) {
+                                        const updatedPrizes = [...(editingProgram.prizes || [])];
+                                        updatedPrizes[idx].image_url = url;
+                                        setEditingProgram({...editingProgram, prizes: updatedPrizes});
+                                      }
+                                    }
+                                  }}
+                                />
+                                <Button
+                                  type="button"
+                                  variant="outline"
+                                  size="sm"
+                                  onClick={() => document.getElementById(`prize-image-${idx}`).click()}
+                                  disabled={uploading}
+                                >
+                                  <Upload className="w-3 h-3 mr-1" />
+                                  {prize.image_url ? 'Заменить' : 'Фото'}
+                                </Button>
+                                {prize.image_url && (
+                                  <Button
+                                    type="button"
+                                    variant="ghost"
+                                    size="sm"
+                                    className="text-red-500 ml-1"
+                                    onClick={() => {
+                                      const updatedPrizes = [...(editingProgram.prizes || [])];
+                                      updatedPrizes[idx].image_url = '';
+                                      setEditingProgram({...editingProgram, prizes: updatedPrizes});
+                                    }}
+                                  >
+                                    <X className="w-3 h-3" />
+                                  </Button>
+                                )}
+                              </div>
+                            </div>
+                            
                             <Input
                               value={prize.description || ''}
                               onChange={(e) => {
