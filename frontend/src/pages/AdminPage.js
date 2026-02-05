@@ -4,7 +4,7 @@ import axios from 'axios';
 import { 
   Users, Package, ShoppingBag, TrendingUp, User,
   Plus, Pencil, Trash2, Save, Eye, FolderOpen, Megaphone, Upload, Image,
-  MessageCircle, Send, BarChart3, Download, FileSpreadsheet, Pin, Tag, X, Copy, Gift, Award, ChevronDown, Paperclip, Play
+  MessageCircle, Send, BarChart3, Download, FileSpreadsheet, Pin, Tag, X, Copy, Gift, Award, ChevronDown, Paperclip, Play, ZoomIn, ZoomOut
 } from 'lucide-react';
 import { Button } from '../components/ui/button';
 import { Input } from '../components/ui/input';
@@ -18,6 +18,85 @@ import { toast } from 'sonner';
 
 const API = `${process.env.REACT_APP_BACKEND_URL}/api`;
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
+
+// Admin Image Lightbox Component
+const AdminImageLightbox = ({ src, onClose }) => {
+  const [scale, setScale] = useState(1);
+  
+  const handleZoomIn = () => setScale(prev => Math.min(prev + 0.25, 3));
+  const handleZoomOut = () => setScale(prev => Math.max(prev - 0.25, 0.5));
+  
+  return (
+    <div 
+      className="fixed inset-0 bg-black/90 z-[100] flex items-center justify-center"
+      onClick={onClose}
+    >
+      <button 
+        onClick={onClose}
+        className="absolute top-4 right-4 text-white hover:bg-white/20 p-2 rounded-full transition-colors z-10"
+      >
+        <X className="w-8 h-8" />
+      </button>
+      
+      <div className="absolute bottom-6 left-1/2 -translate-x-1/2 flex items-center gap-3 bg-white/10 backdrop-blur-sm px-4 py-2 rounded-full z-10">
+        <button 
+          onClick={(e) => { e.stopPropagation(); handleZoomOut(); }}
+          className="text-white hover:bg-white/20 p-2 rounded-full transition-colors"
+          disabled={scale <= 0.5}
+        >
+          <ZoomOut className="w-5 h-5" />
+        </button>
+        <span className="text-white text-sm font-medium w-16 text-center">{Math.round(scale * 100)}%</span>
+        <button 
+          onClick={(e) => { e.stopPropagation(); handleZoomIn(); }}
+          className="text-white hover:bg-white/20 p-2 rounded-full transition-colors"
+          disabled={scale >= 3}
+        >
+          <ZoomIn className="w-5 h-5" />
+        </button>
+      </div>
+      
+      <img 
+        src={src} 
+        alt="Увеличенное изображение"
+        className="max-w-[90vw] max-h-[85vh] object-contain transition-transform duration-200"
+        style={{ transform: `scale(${scale})` }}
+        onClick={(e) => e.stopPropagation()}
+      />
+    </div>
+  );
+};
+
+// Admin Video Lightbox Component
+const AdminVideoLightbox = ({ src, onClose }) => {
+  return (
+    <div 
+      className="fixed inset-0 bg-black/90 z-[100] flex items-center justify-center"
+      onClick={onClose}
+    >
+      <button 
+        onClick={onClose}
+        className="absolute top-4 right-4 text-white hover:bg-white/20 p-2 rounded-full transition-colors z-10"
+      >
+        <X className="w-8 h-8" />
+      </button>
+      
+      <div 
+        className="w-[90vw] max-w-4xl aspect-video"
+        onClick={(e) => e.stopPropagation()}
+      >
+        <video 
+          src={src} 
+          controls
+          autoPlay
+          className="w-full h-full rounded-lg bg-black"
+        >
+          Ваш браузер не поддерживает видео
+        </video>
+      </div>
+    </div>
+  );
+};
 
 export default function AdminPage() {
   const { user, loading: authLoading } = useAuth();
