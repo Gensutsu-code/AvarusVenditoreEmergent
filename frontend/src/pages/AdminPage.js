@@ -3404,18 +3404,56 @@ export default function AdminPage() {
               </div>
 
               <div>
-                <Label className="text-xs font-bold uppercase text-zinc-500">URL изображения (логотип)</Label>
-                <Input
-                  value={editingPartner.image_url}
-                  onChange={(e) => setEditingPartner({ ...editingPartner, image_url: e.target.value })}
-                  placeholder="https://example.com/logo.png"
-                  className="mt-1"
-                />
-                {editingPartner.image_url && (
-                  <div className="mt-2 h-16 bg-zinc-100 flex items-center justify-center">
-                    <img src={editingPartner.image_url} alt="Preview" className="max-h-full max-w-full object-contain" />
+                <Label className="text-xs font-bold uppercase text-zinc-500">Логотип партнёра</Label>
+                <div className="mt-2 space-y-3">
+                  {/* Current image preview */}
+                  {editingPartner.image_url && (
+                    <div className="h-20 bg-zinc-100 rounded-lg flex items-center justify-center p-2">
+                      <img src={editingPartner.image_url} alt="Preview" className="max-h-full max-w-full object-contain" />
+                    </div>
+                  )}
+                  
+                  {/* Upload button */}
+                  <div className="flex gap-2">
+                    <input
+                      ref={partnerImageRef}
+                      type="file"
+                      accept="image/*"
+                      onChange={handlePartnerImageUpload}
+                      className="hidden"
+                    />
+                    <Button
+                      type="button"
+                      variant="outline"
+                      onClick={() => partnerImageRef.current?.click()}
+                      disabled={partnerImageUploading}
+                      className="flex-1"
+                    >
+                      {partnerImageUploading ? (
+                        <>
+                          <div className="w-4 h-4 border-2 border-orange-500 border-t-transparent rounded-full animate-spin mr-2" />
+                          Загрузка...
+                        </>
+                      ) : (
+                        <>
+                          <Upload className="w-4 h-4 mr-2" />
+                          {editingPartner.image_url ? 'Заменить изображение' : 'Загрузить изображение'}
+                        </>
+                      )}
+                    </Button>
                   </div>
-                )}
+                  
+                  {/* URL input for external images */}
+                  <div>
+                    <Label className="text-[10px] text-zinc-400">Или вставьте URL</Label>
+                    <Input
+                      value={editingPartner.image_url}
+                      onChange={(e) => setEditingPartner({ ...editingPartner, image_url: e.target.value })}
+                      placeholder="https://example.com/logo.png"
+                      className="mt-1 text-sm"
+                    />
+                  </div>
+                </div>
               </div>
 
               <div>
