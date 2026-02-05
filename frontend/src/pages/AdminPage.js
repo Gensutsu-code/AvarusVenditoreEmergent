@@ -51,6 +51,10 @@ export default function AdminPage() {
   const [statsPeriod, setStatsPeriod] = useState('month');
   const [importResult, setImportResult] = useState(null);
   
+  // Lightbox states for admin chat
+  const [adminLightboxImage, setAdminLightboxImage] = useState(null);
+  const [adminLightboxVideo, setAdminLightboxVideo] = useState(null);
+  
   // User management states
   const [editingUser, setEditingUser] = useState(null);
   const [isNewUser, setIsNewUser] = useState(false);
