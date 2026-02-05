@@ -1882,32 +1882,39 @@ export default function AdminPage() {
                           >
                             {/* Media content */}
                             {msg.message_type === 'image' && msg.file_url && (
-                              <img 
-                                src={msg.file_url.startsWith('http') ? msg.file_url : `${BACKEND_URL}${msg.file_url}`} 
-                                alt="Изображение" 
-                                className="max-w-full rounded mb-2 cursor-pointer"
+                              <div 
+                                className="relative w-28 h-28 rounded overflow-hidden cursor-pointer group mb-2"
                                 onClick={() => window.open(msg.file_url.startsWith('http') ? msg.file_url : `${BACKEND_URL}${msg.file_url}`, '_blank')}
-                              />
+                              >
+                                <img 
+                                  src={msg.file_url.startsWith('http') ? msg.file_url : `${BACKEND_URL}${msg.file_url}`} 
+                                  alt="Изображение" 
+                                  className="w-full h-full object-cover"
+                                />
+                                <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-colors flex items-center justify-center">
+                                  <Eye className="w-5 h-5 text-white opacity-0 group-hover:opacity-100 transition-opacity" />
+                                </div>
+                              </div>
                             )}
                             {msg.message_type === 'video' && msg.file_url && (
-                              <div className="mb-2">
+                              <div 
+                                className="relative w-36 h-24 rounded overflow-hidden cursor-pointer group mb-2 bg-zinc-900"
+                                onClick={() => window.open(msg.file_url.startsWith('http') ? msg.file_url : `${BACKEND_URL}${msg.file_url}`, '_blank')}
+                              >
                                 {msg.file_url.includes('drive.google.com') ? (
-                                  <iframe
-                                    src={msg.file_url}
-                                    className="w-full aspect-video rounded"
-                                    allow="autoplay"
-                                    allowFullScreen
-                                    title="Видео"
-                                  />
+                                  <div className="w-full h-full flex items-center justify-center">
+                                    <Play className="w-8 h-8 text-white/80" />
+                                  </div>
                                 ) : (
                                   <video 
                                     src={msg.file_url.startsWith('http') ? msg.file_url : `${BACKEND_URL}${msg.file_url}`} 
-                                    controls
-                                    className="max-w-full rounded"
-                                  >
-                                    Ваш браузер не поддерживает видео
-                                  </video>
+                                    className="w-full h-full object-cover"
+                                    muted
+                                  />
                                 )}
+                                <div className="absolute inset-0 bg-black/0 group-hover:bg-black/30 transition-colors flex items-center justify-center">
+                                  <Play className="w-8 h-8 text-white drop-shadow-lg" />
+                                </div>
                               </div>
                             )}
                             {msg.message_type === 'file' && msg.file_url && (
