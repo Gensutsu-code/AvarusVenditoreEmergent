@@ -1967,7 +1967,7 @@ export default function AdminPage() {
                             {msg.message_type === 'image' && msg.file_url && (
                               <div 
                                 className="relative w-28 h-28 rounded overflow-hidden cursor-pointer group mb-2"
-                                onClick={() => window.open(msg.file_url.startsWith('http') ? msg.file_url : `${BACKEND_URL}${msg.file_url}`, '_blank')}
+                                onClick={() => setAdminLightboxImage(msg.file_url.startsWith('http') ? msg.file_url : `${BACKEND_URL}${msg.file_url}`)}
                               >
                                 <img 
                                   src={msg.file_url.startsWith('http') ? msg.file_url : `${BACKEND_URL}${msg.file_url}`} 
@@ -1975,14 +1975,14 @@ export default function AdminPage() {
                                   className="w-full h-full object-cover"
                                 />
                                 <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-colors flex items-center justify-center">
-                                  <Eye className="w-5 h-5 text-white opacity-0 group-hover:opacity-100 transition-opacity" />
+                                  <ZoomIn className="w-5 h-5 text-white opacity-0 group-hover:opacity-100 transition-opacity" />
                                 </div>
                               </div>
                             )}
                             {msg.message_type === 'video' && msg.file_url && (
                               <div 
                                 className="relative w-36 h-24 rounded overflow-hidden cursor-pointer group mb-2 bg-zinc-900"
-                                onClick={() => window.open(msg.file_url.startsWith('http') ? msg.file_url : `${BACKEND_URL}${msg.file_url}`, '_blank')}
+                                onClick={() => setAdminLightboxVideo(msg.file_url.startsWith('http') ? msg.file_url : `${BACKEND_URL}${msg.file_url}`)}
                               >
                                 {msg.file_url.includes('drive.google.com') ? (
                                   <div className="w-full h-full flex items-center justify-center">
