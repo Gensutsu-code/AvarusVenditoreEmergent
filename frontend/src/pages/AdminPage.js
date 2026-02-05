@@ -756,6 +756,23 @@ export default function AdminPage() {
   }
 
   return (
+    <>
+      {/* Admin Image Lightbox */}
+      {adminLightboxImage && (
+        <AdminImageLightbox 
+          src={adminLightboxImage} 
+          onClose={() => setAdminLightboxImage(null)} 
+        />
+      )}
+      
+      {/* Admin Video Lightbox */}
+      {adminLightboxVideo && (
+        <AdminVideoLightbox 
+          src={adminLightboxVideo} 
+          onClose={() => setAdminLightboxVideo(null)} 
+        />
+      )}
+      
     <div className="min-h-screen bg-zinc-50" data-testid="admin-page">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <h1 className="text-2xl md:text-3xl font-bold tracking-tight uppercase text-zinc-900 mb-8">
