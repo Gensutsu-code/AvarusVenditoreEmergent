@@ -68,6 +68,7 @@ export default function AccountPage() {
   const [copiedCode, setCopiedCode] = useState(null);
   const [redeemingPrize, setRedeemingPrize] = useState({});
   const [expandedProgram, setExpandedProgram] = useState(null);
+  const [redeemedPrize, setRedeemedPrize] = useState(null); // For showing delivery message
 
   useEffect(() => {
     // Wait for auth loading to complete before checking user
