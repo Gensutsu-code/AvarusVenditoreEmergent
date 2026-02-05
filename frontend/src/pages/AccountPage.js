@@ -507,22 +507,110 @@ export default function AccountPage() {
                           <Gift className="w-5 h-5" />
                         </div>
                       )}
-                      <div>
+                      <div className="flex-1">
                         <h3 className="font-bold text-lg">{program.title || 'Бонусная программа'}</h3>
-                        <p className="text-orange-100 text-sm">{program.description || 'Накопите сумму заказов и получите бонус!'}</p>
+                        <p className="text-orange-100 text-sm">{program.description || 'Накопите баллы и получите призы!'}</p>
+                      </div>
+                      <div className="text-right">
+                        <p className="text-2xl font-bold">{program.current_amount?.toFixed(0) || 0}</p>
+                        <p className="text-orange-200 text-xs">баллов</p>
                       </div>
                     </div>
                   </div>
                   
                   {/* Progress Section */}
                   <div className="p-6">
-                    <div className="mb-6">
+                    <div className="mb-4">
                       <BonusProgressBar 
                         percentage={program.percentage} 
                         currentAmount={program.current_amount}
                         maxAmount={program.max_amount}
                       />
                     </div>
+                    
+                    {/* Full Description */}
+                    {program.full_description && (
+                      <div className="mb-4 p-4 bg-zinc-50 rounded-lg">
+                        <button 
+                          onClick={() => setExpandedProgram(expandedProgram === program.id ? null : program.id)}
+                          className="flex items-center justify-between w-full text-left"
+                        >
+                          <span className="text-sm font-medium text-zinc-700">Подробнее о программе</span>
+                          <span className="text-zinc-400">{expandedProgram === program.id ? '▲' : '▼'}</span>
+                        </button>
+                        {expandedProgram === program.id && (
+                          <div className="mt-3 pt-3 border-t border-zinc-200">
+                            <p className="text-sm text-zinc-600 whitespace-pre-line">{program.full_description}</p>
+                          </div>
+                        )}
+                      </div>
+                    )}
+                    
+                    {/* Prizes Section */}
+                    {program.prizes && program.prizes.length > 0 && (
+                      <div className="mb-4">
+                        <h4 className="font-semibold text-zinc-800 mb-3 flex items-center gap-2">
+                          <Award className="w-5 h-5 text-orange-500" />
+                          Призы
+                        </h4>
+                        <div className="grid gap-3">
+                          {program.prizes.filter(p => p.enabled).map((prize) => {
+                            const canAfford = program.current_amount >= prize.points_cost;
+                            const isRedeeming = redeemingPrize[`${program.id}_${prize.id}`];
+                            const isAvailable = prize.quantity === -1 || prize.quantity > 0;
+                            
+                            return (
+                              <div 
+                                key={prize.id} 
+                                className={`flex items-center gap-4 p-4 rounded-lg border ${
+                                  canAfford && isAvailable 
+                                    ? 'border-green-200 bg-green-50' 
+                                    : 'border-zinc-200 bg-zinc-50'
+                                }`}
+                              >
+                                {prize.image_url ? (
+                                  <img 
+                                    src={prize.image_url} 
+                                    alt={prize.name}
+                                    className="w-16 h-16 rounded-lg object-cover"
+                                  />
+                                ) : (
+                                  <div className="w-16 h-16 rounded-lg bg-orange-100 flex items-center justify-center">
+                                    <Gift className="w-8 h-8 text-orange-500" />
+                                  </div>
+                                )}
+                                <div className="flex-1 min-w-0">
+                                  <h5 className="font-semibold text-zinc-800">{prize.name}</h5>
+                                  {prize.description && (
+                                    <p className="text-sm text-zinc-500 truncate">{prize.description}</p>
+                                  )}
+                                  <div className="flex items-center gap-2 mt-1">
+                                    <span className="text-sm font-bold text-orange-600">{prize.points_cost} баллов</span>
+                                    {prize.quantity >= 0 && (
+                                      <span className="text-xs text-zinc-400">
+                                        (осталось: {prize.quantity})
+                                      </span>
+                                    )}
+                                  </div>
+                                </div>
+                                <Button
+                                  onClick={() => handleRedeemPrize(program.id, prize.id, prize.name, prize.points_cost)}
+                                  disabled={!canAfford || !isAvailable || isRedeeming}
+                                  size="sm"
+                                  className={`whitespace-nowrap ${
+                                    canAfford && isAvailable
+                                      ? 'bg-green-500 hover:bg-green-600'
+                                      : 'bg-zinc-300 cursor-not-allowed'
+                                  }`}
+                                >
+                                  {isRedeeming ? '...' : !isAvailable ? 'Нет в наличии' : canAfford ? 'Получить' : 'Недостаточно'}
+                                </Button>
+                              </div>
+                            );
+                          })}
+                        </div>
+                      </div>
+                    )}
                     
                     {/* Request Bonus Button or Status */}
                     {program.bonus_requested ? (
@@ -553,11 +641,16 @@ export default function AccountPage() {
                     ) : (
                       <div className="text-center p-4 bg-zinc-50 rounded-lg">
                         <p className="text-sm text-zinc-500">
-                          Минимальная сумма для запроса бонуса: <span className="font-bold text-orange-600">{program.min_threshold?.toLocaleString()} ₽</span>
+                          Минимум для запроса бонуса: <span className="font-bold text-orange-600">{program.min_threshold?.toLocaleString()} баллов</span>
                         </p>
                         <p className="text-xs text-zinc-400 mt-1">
-                          Накопите ещё {Math.max(0, program.min_threshold - program.current_amount).toFixed(0)} ₽ для получения бонуса
+                          Накопите ещё {Math.max(0, program.min_threshold - program.current_amount).toFixed(0)} баллов
                         </p>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              ))}
                       </div>
                     )}
                   </div>
