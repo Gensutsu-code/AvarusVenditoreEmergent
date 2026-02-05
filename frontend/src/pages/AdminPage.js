@@ -758,6 +758,40 @@ export default function AdminPage() {
     return cat ? cat.name : '—';
   };
 
+  // Tab management functions
+  const moveTab = (tabId, direction) => {
+    const currentIndex = tabOrder.indexOf(tabId);
+    const newIndex = direction === 'left' ? currentIndex - 1 : currentIndex + 1;
+    
+    if (newIndex < 0 || newIndex >= tabOrder.length) return;
+    
+    const newOrder = [...tabOrder];
+    [newOrder[currentIndex], newOrder[newIndex]] = [newOrder[newIndex], newOrder[currentIndex]];
+    setTabOrder(newOrder);
+    localStorage.setItem('adminTabOrder', JSON.stringify(newOrder));
+  };
+
+  const resetTabOrder = () => {
+    setTabOrder(defaultTabOrder);
+    localStorage.removeItem('adminTabOrder');
+    toast.success('Порядок вкладок сброшен');
+  };
+
+  // Tab configuration
+  const tabConfig = {
+    products: { icon: Package, label: 'Товары', count: products.length },
+    categories: { icon: FolderOpen, label: 'Категории', count: categories.length },
+    orders: { icon: ShoppingBag, label: 'Заказы', count: orders.length },
+    users: { icon: Users, label: 'Клиенты', count: users.length },
+    promo: { icon: Megaphone, label: 'Акции' },
+    stats: { icon: BarChart3, label: 'Аналитика' },
+    chat: { icon: MessageCircle, label: 'Чаты', badge: chats.reduce((sum, c) => sum + (c.unread_count || 0), 0) },
+    telegram: { icon: Send, label: 'TG' },
+    import: { icon: FileSpreadsheet, label: 'Импорт' },
+    bonus: { icon: Gift, label: 'Бонусы', badge: bonusPrograms.reduce((sum, p) => sum + (p.pending_requests || 0), 0) },
+    partners: { icon: Image, label: 'Партнёры' }
+  };
+
   if (authLoading || loading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
@@ -786,9 +820,20 @@ export default function AdminPage() {
       
     <div className="min-h-screen bg-zinc-50" data-testid="admin-page">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <h1 className="text-2xl md:text-3xl font-bold tracking-tight uppercase text-zinc-900 mb-6">
-          Панель администратора
-        </h1>
+        <div className="flex items-center justify-between mb-6">
+          <h1 className="text-2xl md:text-3xl font-bold tracking-tight uppercase text-zinc-900">
+            Панель администратора
+          </h1>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => setEditingTabOrder(!editingTabOrder)}
+            className={editingTabOrder ? 'bg-orange-100 border-orange-500' : ''}
+          >
+            <Settings className="w-4 h-4 mr-1" />
+            {editingTabOrder ? 'Готово' : 'Настроить вкладки'}
+          </Button>
+        </div>
 
         {/* Stats Cards - Modern Design */}
         {stats && (
