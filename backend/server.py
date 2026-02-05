@@ -1891,8 +1891,21 @@ async def get_user_program_progress(user_id: str, program_id: str):
     return progress
 
 async def update_bonus_on_order_delivered(user_id: str, order_total: float):
-    """Called when order status changes to 'delivered' - updates all programs"""
+    """Called when order status changes to 'delivered' - updates bonus points based on user's level"""
     programs = await get_all_bonus_programs()
+    
+    # Calculate yearly order total to determine user's level
+    current_year = datetime.now(timezone.utc).year
+    year_start = f"{current_year}-01-01T00:00:00"
+    year_end = f"{current_year}-12-31T23:59:59"
+    
+    yearly_orders = await db.orders.find({
+        "user_id": user_id,
+        "status": "delivered",
+        "created_at": {"$gte": year_start, "$lte": year_end}
+    }, {"_id": 0, "total": 1}).to_list(1000)
+    
+    yearly_total = sum(order.get("total", 0) for order in yearly_orders)
     
     for program in programs:
         if not program.get("enabled"):
@@ -1901,19 +1914,26 @@ async def update_bonus_on_order_delivered(user_id: str, order_total: float):
         program_id = program["id"]
         progress = await get_user_program_progress(user_id, program_id)
         
-        # Calculate contribution based on program type
-        contribution_type = program.get("contribution_type", "order_total")
-        if contribution_type == "percentage":
-            contribution = order_total * (program.get("contribution_percent", 100) / 100)
-        else:
-            contribution = order_total
+        # Determine user's current level based on yearly total
+        levels = program.get("levels", [])
+        levels_sorted = sorted(levels, key=lambda x: x.get("min_points", 0))
         
-        # Cap at max_amount
-        new_amount = min(progress["current_amount"] + contribution, program["max_amount"])
+        current_level = None
+        for level in levels_sorted:
+            if yearly_total >= level.get("min_points", 0):
+                current_level = level
+        
+        # Calculate bonus points based on level's cashback percentage
+        cashback_percent = current_level.get("cashback_percent", 0) if current_level else 0
+        bonus_points = order_total * (cashback_percent / 100)
+        
+        # Update bonus points (accumulate)
+        new_points = progress.get("current_amount", 0) + bonus_points
         
         await db.bonus_progress.update_one(
             {"user_id": user_id, "program_id": program_id},
-            {"$set": {"current_amount": new_amount}}
+            {"$set": {"current_amount": new_points}},
+            upsert=True
         )
     
     return {"updated": True}
