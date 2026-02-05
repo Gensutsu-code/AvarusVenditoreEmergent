@@ -10,7 +10,7 @@ import { toast } from 'sonner';
 const API = `${process.env.REACT_APP_BACKEND_URL}/api`;
 
 export default function FavoritesPage() {
-  const { user } = useAuth();
+  const { user, loading: authLoading } = useAuth();
   const { addToCart } = useCart();
   const navigate = useNavigate();
   const [favorites, setFavorites] = useState([]);
@@ -18,12 +18,15 @@ export default function FavoritesPage() {
   const [quantities, setQuantities] = useState({});
 
   useEffect(() => {
+    // Wait for auth loading to complete
+    if (authLoading) return;
+    
     if (!user) {
       navigate('/login');
       return;
     }
     fetchFavorites();
-  }, [user, navigate]);
+  }, [user, authLoading, navigate]);
 
   const fetchFavorites = async () => {
     try {
