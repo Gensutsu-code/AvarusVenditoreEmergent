@@ -11,6 +11,37 @@ import { toast } from 'sonner';
 const API = `${process.env.REACT_APP_BACKEND_URL}/api`;
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
 
+// Animated Progress Bar Component for Yearly Orders
+const YearlyProgressBar = ({ currentAmount, yearGoal = 100000 }) => {
+  const [animatedWidth, setAnimatedWidth] = useState(0);
+  const percentage = Math.min(100, (currentAmount / yearGoal) * 100);
+  
+  useEffect(() => {
+    const timer = setTimeout(() => setAnimatedWidth(percentage), 100);
+    return () => clearTimeout(timer);
+  }, [percentage]);
+  
+  const formatPrice = (price) => new Intl.NumberFormat('ru-RU').format(price);
+  
+  return (
+    <div className="relative">
+      <div className="h-6 bg-zinc-200 rounded-full overflow-hidden">
+        <div 
+          className="h-full bg-gradient-to-r from-green-400 via-green-500 to-green-600 rounded-full transition-all duration-1000 ease-out relative"
+          style={{ width: `${animatedWidth}%` }}
+        >
+          {/* Shine effect */}
+          <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/30 to-transparent animate-pulse"></div>
+        </div>
+      </div>
+      <div className="flex justify-between mt-2 text-sm">
+        <span className="font-mono font-semibold text-green-600">{formatPrice(currentAmount)} ₽</span>
+        <span className="text-zinc-400">цель: {formatPrice(yearGoal)} ₽</span>
+      </div>
+    </div>
+  );
+};
+
 export default function AccountPage() {
   const { user, loading, refreshUser } = useAuth();
   const navigate = useNavigate();
