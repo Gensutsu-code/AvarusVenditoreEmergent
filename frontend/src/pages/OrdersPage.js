@@ -28,7 +28,7 @@ const STATUS_COLORS = {
 };
 
 export default function OrdersPage() {
-  const { user } = useAuth();
+  const { user, loading: authLoading } = useAuth();
   const navigate = useNavigate();
   const [orders, setOrders] = useState([]);
   const [stats, setStats] = useState(null);
@@ -36,12 +36,15 @@ export default function OrdersPage() {
   const [expandedOrders, setExpandedOrders] = useState({});
 
   useEffect(() => {
+    // Wait for auth loading to complete
+    if (authLoading) return;
+    
     if (!user) {
       navigate('/login');
       return;
     }
     fetchData();
-  }, [user, navigate]);
+  }, [user, authLoading, navigate]);
 
   const fetchData = async () => {
     try {
