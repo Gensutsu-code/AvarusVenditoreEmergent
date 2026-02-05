@@ -699,7 +699,9 @@ export default function AdminPage() {
       
       setImportResult(res.data);
       toast.success(`Импортировано: ${res.data.imported}, Обновлено: ${res.data.updated}`);
-      fetchData();
+      // Refresh products list to show imported items
+      const productsRes = await axios.get(`${API}/products`);
+      setProducts(productsRes.data);
     } catch (err) {
       toast.error(err.response?.data?.detail || 'Ошибка импорта');
     } finally {
