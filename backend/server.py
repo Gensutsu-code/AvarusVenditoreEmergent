@@ -2227,15 +2227,31 @@ async def update_bonus_program(program_id: str, data: BonusProgramCreate, user=D
     if not program:
         raise HTTPException(status_code=404, detail="Программа не найдена")
     
+    # Generate IDs for new prizes
+    prizes_with_ids = []
+    for prize in data.prizes:
+        prize_data = {
+            "id": prize.get("id") or str(uuid.uuid4()),
+            "name": prize.get("name", ""),
+            "description": prize.get("description", ""),
+            "image_url": prize.get("image_url", ""),
+            "points_cost": prize.get("points_cost", 0),
+            "quantity": prize.get("quantity", -1),
+            "enabled": prize.get("enabled", True)
+        }
+        prizes_with_ids.append(prize_data)
+    
     update_data = {
         "title": data.title,
         "description": data.description,
+        "full_description": data.full_description,
         "image_url": data.image_url,
         "max_amount": data.max_amount,
         "min_threshold": data.min_threshold,
         "contribution_type": data.contribution_type,
         "contribution_percent": data.contribution_percent,
         "enabled": data.enabled,
+        "prizes": prizes_with_ids,
         "updated_at": datetime.now(timezone.utc).isoformat()
     }
     
