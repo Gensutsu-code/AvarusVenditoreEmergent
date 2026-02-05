@@ -111,7 +111,7 @@ export default function AccountPage() {
     try {
       const formData = new FormData();
       formData.append('file', file);
-      await axios.post(`${API}/user/avatar`, formData, {
+      await axios.post(`${API}/users/avatar`, formData, {
         headers: { 'Content-Type': 'multipart/form-data' }
       });
       toast.success('Фото обновлено');
@@ -128,7 +128,7 @@ export default function AccountPage() {
     if (!window.confirm('Удалить фото профиля?')) return;
     
     try {
-      await axios.delete(`${API}/user/avatar`);
+      await axios.delete(`${API}/users/avatar`);
       toast.success('Фото удалено');
       refreshUser();
     } catch (err) {
