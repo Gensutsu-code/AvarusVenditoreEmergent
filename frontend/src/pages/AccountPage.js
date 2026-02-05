@@ -70,6 +70,9 @@ export default function AccountPage() {
   const [expandedProgram, setExpandedProgram] = useState(null);
 
   useEffect(() => {
+    // Wait for auth loading to complete before checking user
+    if (loading) return;
+    
     if (!user) {
       navigate('/login');
       return;
@@ -84,7 +87,7 @@ export default function AccountPage() {
       confirm_password: ''
     });
     fetchBonusData();
-  }, [user, navigate]);
+  }, [user, loading, navigate]);
 
   const fetchBonusData = async () => {
     try {
