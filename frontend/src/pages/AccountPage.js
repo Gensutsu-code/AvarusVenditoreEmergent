@@ -497,17 +497,60 @@ export default function AccountPage() {
           {/* Bonus Programs Section - Redesigned */}
           {bonusPrograms.length > 0 && (
             <div className="space-y-4" data-testid="bonus-section">
+              {/* Total Bonus Points Card - Separate prominent display */}
+              {(() => {
+                const totalPoints = bonusPrograms.reduce((sum, p) => sum + (p.bonus_points || 0), 0);
+                const formatPrice = (price) => new Intl.NumberFormat('ru-RU').format(price);
+                
+                return (
+                  <>
+                    {/* Total Points Card */}
+                    <div className="border border-zinc-200 bg-white overflow-hidden" data-testid="total-points-card">
+                      <div className="bg-gradient-to-r from-orange-500 to-orange-600 px-6 py-6 text-white">
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center gap-4">
+                            <div className="w-14 h-14 bg-white/20 rounded-full flex items-center justify-center">
+                              <Gift className="w-7 h-7" />
+                            </div>
+                            <div>
+                              <p className="text-orange-100 text-sm font-medium">Ваши накопленные баллы</p>
+                              <p className="text-4xl font-bold mt-1">{totalPoints.toFixed(0)}</p>
+                            </div>
+                          </div>
+                          <div className="text-right">
+                            <p className="text-orange-200 text-xs uppercase tracking-wider">Баллов</p>
+                            <p className="text-orange-100 text-sm mt-1">Доступно для обмена</p>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </>
+                );
+              })()}
+              
               {/* Individual Bonus Programs */}
               {bonusPrograms.map((program) => {
                 const yearlyTotal = program.yearly_total || 0;
+                const currentYear = program.current_year || new Date().getFullYear();
+                const yearlyOrderCount = program.yearly_order_count || 0;
                 const formatPrice = (price) => new Intl.NumberFormat('ru-RU').format(price);
                 
-                // Sort levels for display
+                // Calculate next level and progress
                 const sortedLevels = [...(program.levels || [])].sort((a, b) => a.min_points - b.min_points);
+                const currentLevelIndex = sortedLevels.findIndex(l => l.id === program.current_level?.id);
+                const nextLevel = currentLevelIndex >= 0 && currentLevelIndex < sortedLevels.length - 1 
+                  ? sortedLevels[currentLevelIndex + 1] 
+                  : null;
+                const currentLevelThreshold = program.current_level?.min_points || 0;
+                const nextLevelThreshold = nextLevel?.min_points || yearlyTotal;
+                const progressToNext = nextLevel 
+                  ? Math.min(100, ((yearlyTotal - currentLevelThreshold) / (nextLevelThreshold - currentLevelThreshold)) * 100)
+                  : 100;
+                const amountToNextLevel = nextLevel ? Math.max(0, nextLevelThreshold - yearlyTotal) : 0;
                 
                 return (
                   <div key={program.id} className="border border-zinc-200 bg-white overflow-hidden">
-                    {/* Program Header */}
+                    {/* Program Header - Simplified */}
                     <div className="px-6 py-4 border-b border-zinc-100 bg-zinc-50">
                       <div className="flex items-center gap-3">
                         {program.image_url ? (
@@ -523,14 +566,14 @@ export default function AccountPage() {
                         )}
                         <div className="flex-1">
                           <h3 className="font-bold text-zinc-800">{program.title || 'Бонусная программа'}</h3>
-                          <p className="text-zinc-500 text-sm">{program.description || 'Программа лояльности с уровнями!'}</p>
+                          <p className="text-zinc-500 text-sm">{program.description || 'Накопите баллы и получите призы!'}</p>
                         </div>
                       </div>
                     </div>
                     
-                    {/* Levels Section */}
+                    {/* Levels & Progress Section - Combined */}
                     {program.levels && program.levels.length > 0 && (
-                      <div className="px-6 py-4 border-b border-zinc-100" data-testid="levels-section">
+                      <div className="px-6 py-4 border-b border-zinc-100" data-testid="levels-progress-section">
                         {/* Current Level Badge */}
                         {program.current_level && (
                           <div 
@@ -565,10 +608,10 @@ export default function AccountPage() {
                         )}
                         
                         {/* All Levels Visual */}
-                        <div>
+                        <div className="mb-4">
                           <p className="text-xs font-medium text-zinc-500 uppercase mb-2">Уровни программы</p>
                           <div className="flex gap-1 flex-wrap">
-                            {sortedLevels.map((level) => {
+                            {sortedLevels.map((level, idx) => {
                               const isActive = program.current_level?.id === level.id;
                               const isAchieved = yearlyTotal >= level.min_points;
                               return (
@@ -591,6 +634,48 @@ export default function AccountPage() {
                                 </div>
                               );
                             })}
+                          </div>
+                        </div>
+                        
+                        {/* Progress to Next Level */}
+                        <div className="bg-zinc-50 rounded-lg p-4">
+                          <div className="flex items-center justify-between mb-2">
+                            <div className="flex items-center gap-2">
+                              <TrendingUp className="w-4 h-4 text-green-500" />
+                              <span className="text-sm font-medium text-zinc-700">
+                                Покупки за {currentYear} год
+                              </span>
+                            </div>
+                            <span className="text-xs text-zinc-500">
+                              {yearlyOrderCount} {yearlyOrderCount === 1 ? 'заказ' : yearlyOrderCount < 5 ? 'заказа' : 'заказов'}
+                            </span>
+                          </div>
+                          
+                          {/* Progress Bar */}
+                          <div className="relative mb-2">
+                            <div className="h-4 bg-zinc-200 rounded-full overflow-hidden">
+                              <div 
+                                className="h-full rounded-full transition-all duration-1000 ease-out relative"
+                                style={{ 
+                                  width: `${progressToNext}%`,
+                                  backgroundColor: nextLevel?.color || program.current_level?.color || '#22c55e'
+                                }}
+                              >
+                                <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/30 to-transparent animate-pulse"></div>
+                              </div>
+                            </div>
+                          </div>
+                          
+                          {/* Progress Info */}
+                          <div className="flex justify-between items-center text-sm">
+                            <span className="font-mono font-semibold text-green-600">{formatPrice(yearlyTotal)} ₽</span>
+                            {nextLevel ? (
+                              <span className="text-zinc-500">
+                                до <span className="font-semibold" style={{ color: nextLevel.color }}>{nextLevel.name}</span>: {formatPrice(amountToNextLevel)} ₽
+                              </span>
+                            ) : (
+                              <span className="text-green-600 font-medium">🎉 Максимальный уровень!</span>
+                            )}
                           </div>
                         </div>
                       </div>
