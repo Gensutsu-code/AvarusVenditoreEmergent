@@ -3105,9 +3105,11 @@ export default function AdminPage() {
                     variant="outline"
                     onClick={async () => {
                       try {
-                        await axios.post(`${API}/admin/partners/seed`);
+                        const res = await axios.post(`${API}/admin/partners/seed`);
                         toast.success('Партнёры по умолчанию добавлены');
-                        fetchData();
+                        // Refresh partners from server
+                        const partnersRes = await axios.get(`${API}/partners`);
+                        setPartners(partnersRes.data || []);
                       } catch (err) {
                         toast.error('Ошибка');
                       }
