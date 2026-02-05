@@ -50,7 +50,7 @@ export default function AccountPage() {
   const handleSaveProfile = async () => {
     setSaving(true);
     try {
-      await axios.put(`${API}/user/profile`, {
+      await axios.put(`${API}/auth/profile`, {
         name: formData.name,
         phone: formData.phone,
         address: formData.address
