@@ -499,15 +499,6 @@ export default function AccountPage() {
                   {/* Progress Section */}
                   <div className="p-6">
                     <div className="mb-6">
-                      <div className="flex items-center justify-between mb-3">
-                        <span className="text-sm font-medium text-zinc-700">
-                          Ваш прогресс 
-                          {program.contribution_type === 'percentage' && (
-                            <span className="text-zinc-400 ml-1">({program.contribution_percent}% от заказов)</span>
-                          )}
-                        </span>
-                        <span className="text-lg font-bold text-orange-600">{program.percentage.toFixed(0)}%</span>
-                      </div>
                       <BonusProgressBar 
                         percentage={program.percentage} 
                         currentAmount={program.current_amount}
