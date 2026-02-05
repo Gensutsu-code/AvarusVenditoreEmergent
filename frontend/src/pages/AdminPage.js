@@ -2857,7 +2857,7 @@ export default function AdminPage() {
                     <p className="text-sm text-zinc-500">Программа: <span className="font-medium text-zinc-700">{issueBonusModal.programTitle}</span></p>
                     <p className="font-medium mt-1">{issueBonusModal.userName}</p>
                     <p className="text-sm text-zinc-500">
-                      Накоплено: <span className="font-mono font-bold text-green-600">{issueBonusModal.amount?.toFixed(0)} ₽</span>
+                      Накоплено: <span className="font-mono font-bold text-green-600">{issueBonusModal.amount?.toFixed(0)} баллов</span>
                     </p>
                   </div>
                   
