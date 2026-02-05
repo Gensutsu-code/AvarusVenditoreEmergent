@@ -132,7 +132,7 @@
     │   ├── components/
     │   │   ├── ChatWidget.js      # Виджет онлайн-чата с lightbox
     │   │   ├── FavoritesButton.js # Кнопка добавления в избранное
-    │   │   ├── Header.js
+    │   │   ├── Header.js          # Навигация с кнопкой "Бонусы"
     │   │   ├── PopularProducts.js # Секция популярных товаров
     │   │   ├── ProductCard.js
     │   │   ├── PromoBanner.js
@@ -142,14 +142,18 @@
     │   │   ├── AuthContext.js
     │   │   └── CartContext.js
     │   └── pages/
-    │       ├── AccountPage.js     # + Редизайн бонусов (точки, годовой прогресс)
+    │       ├── AccountPage.js     # Упрощённый профиль (без бонусов)
     │       ├── AdminPage.js       # + Real-time CRUD, все вкладки без перезагрузки
+    │       ├── AdminOrdersPage.js # Страница заказов для админа
+    │       ├── AdminProfilePage.js# Профиль админа
+    │       ├── BonusPage.js       # НОВАЯ: Отдельная страница бонусной программы
     │       ├── CartPage.js
     │       ├── CatalogPage.js     # + Избранное, Сопутствующие
     │       ├── CheckoutPage.js
     │       ├── FavoritesPage.js   # Страница избранного
     │       ├── HomePage.js        # + Популярные товары
     │       ├── LoginPage.js
+    │       ├── OrdersPage.js      # История заказов пользователя
     │       └── RegisterPage.js
 ```
 
