@@ -1937,6 +1937,22 @@ async def get_user_bonus_programs(user=Depends(get_current_user)):
         min_threshold = program.get("min_threshold", 5000)
         can_request = current >= min_threshold and not progress.get("bonus_requested", False)
         
+        # Calculate current level and next level
+        levels = program.get("levels", [])
+        levels_sorted = sorted(levels, key=lambda x: x.get("min_points", 0))
+        
+        current_level = None
+        next_level = None
+        
+        for i, level in enumerate(levels_sorted):
+            if current >= level.get("min_points", 0):
+                current_level = level
+                # Check if there's a next level
+                if i + 1 < len(levels_sorted):
+                    next_level = levels_sorted[i + 1]
+                else:
+                    next_level = None
+        
         result.append({
             "id": program["id"],
             "title": program.get("title", "Бонусная программа"),
@@ -1953,7 +1969,7 @@ async def get_user_bonus_programs(user=Depends(get_current_user)):
             "bonus_requested": progress.get("bonus_requested", False),
             "request_date": progress.get("request_date"),
             "prizes": program.get("prizes", []),
-            "levels": program.get("levels", []),
+            "levels": levels_sorted,
             "current_level": current_level,
             "next_level": next_level,
             "enabled": True
