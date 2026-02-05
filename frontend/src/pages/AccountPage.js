@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
-import { User, Pencil, Save, X, Gift, History, Copy, CheckCircle, Camera, Trash2, Clock, Send, Mail, Lock, Phone, MapPin } from 'lucide-react';
+import { User, Pencil, Save, X, Gift, History, Copy, CheckCircle, Camera, Trash2, Clock, Send, Mail, Lock, Phone, MapPin, Award } from 'lucide-react';
 import { Button } from '../components/ui/button';
 import { Input } from '../components/ui/input';
 import { Label } from '../components/ui/label';
