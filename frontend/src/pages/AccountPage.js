@@ -793,14 +793,38 @@ export default function AccountPage() {
                       </div>
                     ) : (
                       <Button 
-                        onClick={() => handleRequestBonus(program.id)}
+                        onClick={() => handleRequestBonus(program.id, program.title, program.request_button_text)}
                         disabled={requestingBonus[program.id] || (program.bonus_points || 0) === 0}
                         className="w-full bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 text-white font-bold py-3 disabled:opacity-50"
                         data-testid={`request-bonus-btn-${program.id}`}
                       >
                         <Send className="w-5 h-5 mr-2" />
-                        {requestingBonus[program.id] ? 'Отправка...' : 'Запросить бонус'}
+                        {requestingBonus[program.id] ? 'Отправка...' : (program.request_button_text || 'Запросить бонус')}
                       </Button>
+                    )}
+                    
+                    {/* Prize Delivery Message */}
+                    {redeemedPrize && (
+                      <div className="mt-4 p-4 bg-green-50 border border-green-200 rounded-lg">
+                        <div className="flex items-start gap-3">
+                          <div className="w-10 h-10 bg-green-100 rounded-full flex items-center justify-center flex-shrink-0">
+                            <Gift className="w-5 h-5 text-green-600" />
+                          </div>
+                          <div className="flex-1">
+                            <p className="font-bold text-green-800">🎉 Приз «{redeemedPrize.name}» оформлен!</p>
+                            <p className="text-sm text-green-700 mt-1">
+                              Списано {redeemedPrize.pointsCost} баллов. Приз будет доставлен вам в ближайшее время. 
+                              Администратор свяжется с вами для уточнения деталей доставки.
+                            </p>
+                            <button 
+                              onClick={() => setRedeemedPrize(null)}
+                              className="text-xs text-green-600 hover:text-green-800 mt-2 underline"
+                            >
+                              Закрыть
+                            </button>
+                          </div>
+                        </div>
+                      </div>
                     )}
                   </div>
                 </div>
