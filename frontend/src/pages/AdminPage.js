@@ -2553,7 +2553,7 @@ export default function AdminPage() {
 
           {/* Edit Bonus Program Modal */}
           <Dialog open={!!editingProgram} onOpenChange={() => setEditingProgram(null)}>
-            <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
+            <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
               <DialogHeader>
                 <DialogTitle>{isNewProgram ? 'Создать бонусную программу' : 'Редактировать программу'}</DialogTitle>
               </DialogHeader>
@@ -2570,12 +2570,22 @@ export default function AdminPage() {
                   </div>
                   
                   <div>
-                    <Label className="text-xs font-bold uppercase text-zinc-500">Описание</Label>
+                    <Label className="text-xs font-bold uppercase text-zinc-500">Краткое описание</Label>
                     <Input
                       value={editingProgram.description || ''}
                       onChange={(e) => setEditingProgram({...editingProgram, description: e.target.value})}
-                      placeholder="Описание для пользователей"
+                      placeholder="Короткое описание для карточки"
                       className="mt-1"
+                    />
+                  </div>
+                  
+                  <div>
+                    <Label className="text-xs font-bold uppercase text-zinc-500">Расширенное описание</Label>
+                    <Textarea
+                      value={editingProgram.full_description || ''}
+                      onChange={(e) => setEditingProgram({...editingProgram, full_description: e.target.value})}
+                      placeholder="Подробное описание программы, условия участия, правила начисления баллов..."
+                      className="mt-1 min-h-[100px]"
                     />
                   </div>
 
@@ -2625,7 +2635,7 @@ export default function AdminPage() {
 
                   <div className="grid grid-cols-2 gap-4">
                     <div>
-                      <Label className="text-xs font-bold uppercase text-zinc-500">Цель прогресс-бара (₽)</Label>
+                      <Label className="text-xs font-bold uppercase text-zinc-500">Цель прогресс-бара (баллов)</Label>
                       <Input
                         type="number"
                         value={editingProgram.max_amount || 50000}
@@ -2634,7 +2644,7 @@ export default function AdminPage() {
                       />
                     </div>
                     <div>
-                      <Label className="text-xs font-bold uppercase text-zinc-500">Мин. порог для запроса (₽)</Label>
+                      <Label className="text-xs font-bold uppercase text-zinc-500">Мин. порог для запроса (баллов)</Label>
                       <Input
                         type="number"
                         value={editingProgram.min_threshold || 5000}
@@ -2645,7 +2655,7 @@ export default function AdminPage() {
                   </div>
 
                   <div>
-                    <Label className="text-xs font-bold uppercase text-zinc-500">Тип начисления</Label>
+                    <Label className="text-xs font-bold uppercase text-zinc-500">Тип начисления баллов</Label>
                     <select
                       value={editingProgram.contribution_type || 'order_total'}
                       onChange={(e) => setEditingProgram({...editingProgram, contribution_type: e.target.value})}
@@ -2670,6 +2680,126 @@ export default function AdminPage() {
                       <p className="text-xs text-zinc-400 mt-1">От 1% до 100% от суммы доставленного заказа</p>
                     </div>
                   )}
+                  
+                  {/* Prizes Section */}
+                  <div className="border-t pt-4">
+                    <div className="flex items-center justify-between mb-3">
+                      <Label className="text-xs font-bold uppercase text-zinc-500">Призы</Label>
+                      <Button
+                        type="button"
+                        size="sm"
+                        variant="outline"
+                        onClick={() => {
+                          const newPrize = {
+                            id: `prize_${Date.now()}`,
+                            name: '',
+                            description: '',
+                            image_url: '',
+                            points_cost: 1000,
+                            quantity: -1,
+                            enabled: true
+                          };
+                          setEditingProgram({
+                            ...editingProgram, 
+                            prizes: [...(editingProgram.prizes || []), newPrize]
+                          });
+                        }}
+                      >
+                        <Plus className="w-4 h-4 mr-1" />
+                        Добавить приз
+                      </Button>
+                    </div>
+                    
+                    {(editingProgram.prizes || []).length === 0 ? (
+                      <p className="text-sm text-zinc-400 text-center py-4">
+                        Нет призов. Добавьте призы, которые пользователи смогут получить за баллы.
+                      </p>
+                    ) : (
+                      <div className="space-y-3">
+                        {(editingProgram.prizes || []).map((prize, idx) => (
+                          <div key={prize.id} className="border rounded-lg p-3 bg-zinc-50">
+                            <div className="flex items-start justify-between gap-2 mb-2">
+                              <Input
+                                value={prize.name}
+                                onChange={(e) => {
+                                  const updatedPrizes = [...(editingProgram.prizes || [])];
+                                  updatedPrizes[idx].name = e.target.value;
+                                  setEditingProgram({...editingProgram, prizes: updatedPrizes});
+                                }}
+                                placeholder="Название приза"
+                                className="flex-1"
+                              />
+                              <Button
+                                type="button"
+                                variant="ghost"
+                                size="sm"
+                                className="text-red-500"
+                                onClick={() => {
+                                  const updatedPrizes = (editingProgram.prizes || []).filter((_, i) => i !== idx);
+                                  setEditingProgram({...editingProgram, prizes: updatedPrizes});
+                                }}
+                              >
+                                <Trash2 className="w-4 h-4" />
+                              </Button>
+                            </div>
+                            <Input
+                              value={prize.description || ''}
+                              onChange={(e) => {
+                                const updatedPrizes = [...(editingProgram.prizes || [])];
+                                updatedPrizes[idx].description = e.target.value;
+                                setEditingProgram({...editingProgram, prizes: updatedPrizes});
+                              }}
+                              placeholder="Описание приза"
+                              className="mb-2"
+                            />
+                            <div className="grid grid-cols-3 gap-2">
+                              <div>
+                                <Label className="text-[10px] text-zinc-400">Стоимость (баллов)</Label>
+                                <Input
+                                  type="number"
+                                  value={prize.points_cost || 0}
+                                  onChange={(e) => {
+                                    const updatedPrizes = [...(editingProgram.prizes || [])];
+                                    updatedPrizes[idx].points_cost = parseFloat(e.target.value) || 0;
+                                    setEditingProgram({...editingProgram, prizes: updatedPrizes});
+                                  }}
+                                  className="mt-1"
+                                />
+                              </div>
+                              <div>
+                                <Label className="text-[10px] text-zinc-400">Количество (-1 = ∞)</Label>
+                                <Input
+                                  type="number"
+                                  value={prize.quantity}
+                                  onChange={(e) => {
+                                    const updatedPrizes = [...(editingProgram.prizes || [])];
+                                    updatedPrizes[idx].quantity = parseInt(e.target.value) || -1;
+                                    setEditingProgram({...editingProgram, prizes: updatedPrizes});
+                                  }}
+                                  className="mt-1"
+                                />
+                              </div>
+                              <div className="flex items-end pb-1">
+                                <label className="flex items-center gap-2 text-sm">
+                                  <input
+                                    type="checkbox"
+                                    checked={prize.enabled}
+                                    onChange={(e) => {
+                                      const updatedPrizes = [...(editingProgram.prizes || [])];
+                                      updatedPrizes[idx].enabled = e.target.checked;
+                                      setEditingProgram({...editingProgram, prizes: updatedPrizes});
+                                    }}
+                                    className="rounded"
+                                  />
+                                  Активен
+                                </label>
+                              </div>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
 
                   <div className="flex items-center gap-2">
                     <Switch
