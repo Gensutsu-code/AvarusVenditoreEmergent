@@ -111,6 +111,22 @@ export default function AccountPage() {
     }
   };
 
+  const handleRedeemPrize = async (programId, prizeId, prizeName, pointsCost) => {
+    if (!window.confirm(`Обменять ${pointsCost} баллов на «${prizeName}»?`)) return;
+    
+    const key = `${programId}_${prizeId}`;
+    setRedeemingPrize(prev => ({ ...prev, [key]: true }));
+    try {
+      const res = await axios.post(`${API}/bonus/redeem-prize/${programId}/${prizeId}`);
+      toast.success(res.data.message);
+      fetchBonusData(); // Refresh data
+    } catch (err) {
+      toast.error(err.response?.data?.detail || 'Ошибка обмена');
+    } finally {
+      setRedeemingPrize(prev => ({ ...prev, [key]: false }));
+    }
+  };
+
   const copyPromoCode = (code) => {
     navigator.clipboard.writeText(code);
     setCopiedCode(code);
