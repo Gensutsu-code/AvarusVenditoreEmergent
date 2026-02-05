@@ -2847,6 +2847,126 @@ export default function AdminPage() {
                       </div>
                     )}
                   </div>
+                  
+                  {/* Levels Section - Multi-tier system */}
+                  <div className="border-t pt-4">
+                    <div className="flex items-center justify-between mb-3">
+                      <Label className="text-xs font-bold uppercase text-zinc-500">Уровни программы</Label>
+                      <Button
+                        type="button"
+                        size="sm"
+                        variant="outline"
+                        onClick={() => {
+                          const newLevel = {
+                            id: `level_${Date.now()}`,
+                            name: '',
+                            min_points: 0,
+                            cashback_percent: 0,
+                            color: '#f97316',
+                            benefits: ''
+                          };
+                          setEditingProgram({
+                            ...editingProgram, 
+                            levels: [...(editingProgram.levels || []), newLevel]
+                          });
+                        }}
+                      >
+                        <Plus className="w-4 h-4 mr-1" />
+                        Добавить уровень
+                      </Button>
+                    </div>
+                    
+                    {(editingProgram.levels || []).length === 0 ? (
+                      <p className="text-sm text-zinc-400 text-center py-4">
+                        Нет уровней. Добавьте уровни для многоуровневой бонусной программы (например: Бронза, Серебро, Золото).
+                      </p>
+                    ) : (
+                      <div className="space-y-3">
+                        {(editingProgram.levels || []).map((level, idx) => (
+                          <div key={level.id} className="border rounded-lg p-3" style={{ borderLeftColor: level.color, borderLeftWidth: '4px' }}>
+                            <div className="flex items-start justify-between gap-2 mb-2">
+                              <Input
+                                value={level.name}
+                                onChange={(e) => {
+                                  const updatedLevels = [...(editingProgram.levels || [])];
+                                  updatedLevels[idx].name = e.target.value;
+                                  setEditingProgram({...editingProgram, levels: updatedLevels});
+                                }}
+                                placeholder="Название уровня (напр: Золото)"
+                                className="flex-1"
+                              />
+                              <input
+                                type="color"
+                                value={level.color || '#f97316'}
+                                onChange={(e) => {
+                                  const updatedLevels = [...(editingProgram.levels || [])];
+                                  updatedLevels[idx].color = e.target.value;
+                                  setEditingProgram({...editingProgram, levels: updatedLevels});
+                                }}
+                                className="w-10 h-10 rounded cursor-pointer"
+                                title="Цвет уровня"
+                              />
+                              <Button
+                                type="button"
+                                variant="ghost"
+                                size="sm"
+                                className="text-red-500"
+                                onClick={() => {
+                                  const updatedLevels = (editingProgram.levels || []).filter((_, i) => i !== idx);
+                                  setEditingProgram({...editingProgram, levels: updatedLevels});
+                                }}
+                              >
+                                <Trash2 className="w-4 h-4" />
+                              </Button>
+                            </div>
+                            <div className="grid grid-cols-2 gap-2 mb-2">
+                              <div>
+                                <Label className="text-[10px] text-zinc-400">Мин. баллов для уровня</Label>
+                                <Input
+                                  type="number"
+                                  value={level.min_points || 0}
+                                  onChange={(e) => {
+                                    const updatedLevels = [...(editingProgram.levels || [])];
+                                    updatedLevels[idx].min_points = parseFloat(e.target.value) || 0;
+                                    setEditingProgram({...editingProgram, levels: updatedLevels});
+                                  }}
+                                  className="mt-1"
+                                />
+                              </div>
+                              <div>
+                                <Label className="text-[10px] text-zinc-400">Кешбэк (%)</Label>
+                                <Input
+                                  type="number"
+                                  value={level.cashback_percent || 0}
+                                  onChange={(e) => {
+                                    const updatedLevels = [...(editingProgram.levels || [])];
+                                    updatedLevels[idx].cashback_percent = parseFloat(e.target.value) || 0;
+                                    setEditingProgram({...editingProgram, levels: updatedLevels});
+                                  }}
+                                  className="mt-1"
+                                  min="0"
+                                  max="100"
+                                />
+                              </div>
+                            </div>
+                            <div>
+                              <Label className="text-[10px] text-zinc-400">Привилегии уровня</Label>
+                              <Input
+                                value={level.benefits || ''}
+                                onChange={(e) => {
+                                  const updatedLevels = [...(editingProgram.levels || [])];
+                                  updatedLevels[idx].benefits = e.target.value;
+                                  setEditingProgram({...editingProgram, levels: updatedLevels});
+                                }}
+                                placeholder="Например: Бесплатная доставка, приоритетная поддержка"
+                                className="mt-1"
+                              />
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
 
                   <div className="flex items-center gap-2">
                     <Switch
