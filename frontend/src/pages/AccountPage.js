@@ -43,7 +43,7 @@ const YearlyProgressBar = ({ currentAmount, yearGoal = 100000 }) => {
 };
 
 export default function AccountPage() {
-  const { user, refreshUser } = useAuth();
+  const { user, loading, refreshUser } = useAuth();
   const navigate = useNavigate();
   const [isEditing, setIsEditing] = useState(false);
   const [saving, setSaving] = useState(false);
