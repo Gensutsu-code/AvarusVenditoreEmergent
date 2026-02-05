@@ -2008,7 +2008,7 @@ async def request_bonus_for_program(program_id: str, user=Depends(get_current_us
     
     min_threshold = program.get("min_threshold", 5000)
     if progress["current_amount"] < min_threshold:
-        raise HTTPException(status_code=400, detail=f"Минимальная сумма для запроса бонуса: {min_threshold} ₽")
+        raise HTTPException(status_code=400, detail=f"Минимальная сумма для запроса бонуса: {min_threshold} баллов")
     
     await db.bonus_progress.update_one(
         {"user_id": user["id"], "program_id": program_id},
@@ -2022,6 +2022,118 @@ async def request_bonus_for_program(program_id: str, user=Depends(get_current_us
         "success": True,
         "message": "Запрос на бонус отправлен! Администратор свяжется с вами."
     }
+
+@api_router.post("/bonus/redeem-prize/{program_id}/{prize_id}")
+async def redeem_prize(program_id: str, prize_id: str, user=Depends(get_current_user)):
+    """Redeem a prize using bonus points"""
+    program = await get_bonus_program(program_id)
+    if not program:
+        raise HTTPException(status_code=404, detail="Бонусная программа не найдена")
+    
+    if not program.get("enabled"):
+        raise HTTPException(status_code=400, detail="Бонусная программа отключена")
+    
+    # Find the prize
+    prizes = program.get("prizes", [])
+    prize = next((p for p in prizes if p.get("id") == prize_id), None)
+    if not prize:
+        raise HTTPException(status_code=404, detail="Приз не найден")
+    
+    if not prize.get("enabled", True):
+        raise HTTPException(status_code=400, detail="Приз недоступен")
+    
+    # Check quantity
+    if prize.get("quantity", -1) == 0:
+        raise HTTPException(status_code=400, detail="Приз закончился")
+    
+    # Get user progress
+    progress = await get_user_program_progress(user["id"], program_id)
+    points_cost = prize.get("points_cost", 0)
+    
+    if progress["current_amount"] < points_cost:
+        raise HTTPException(status_code=400, detail=f"Недостаточно баллов. Нужно {points_cost}, у вас {progress['current_amount']:.0f}")
+    
+    # Deduct points
+    new_amount = progress["current_amount"] - points_cost
+    await db.bonus_progress.update_one(
+        {"user_id": user["id"], "program_id": program_id},
+        {"$set": {"current_amount": new_amount}}
+    )
+    
+    # Update prize quantity if not unlimited
+    if prize.get("quantity", -1) > 0:
+        await db.bonus_programs.update_one(
+            {"id": program_id, "prizes.id": prize_id},
+            {"$inc": {"prizes.$.quantity": -1}}
+        )
+    
+    # Record redemption
+    redemption = {
+        "id": str(uuid.uuid4()),
+        "user_id": user["id"],
+        "user_name": user["name"],
+        "user_email": user["email"],
+        "program_id": program_id,
+        "prize_id": prize_id,
+        "prize_name": prize.get("name"),
+        "points_spent": points_cost,
+        "status": "pending",  # pending, approved, delivered, cancelled
+        "created_at": datetime.now(timezone.utc).isoformat()
+    }
+    await db.prize_redemptions.insert_one(redemption)
+    
+    return {
+        "success": True,
+        "message": f"Вы успешно обменяли {points_cost:.0f} баллов на приз «{prize.get('name')}»!",
+        "new_balance": new_amount,
+        "redemption_id": redemption["id"]
+    }
+
+@api_router.get("/bonus/redemptions")
+async def get_user_redemptions(user=Depends(get_current_user)):
+    """Get user's prize redemption history"""
+    redemptions = await db.prize_redemptions.find(
+        {"user_id": user["id"]},
+        {"_id": 0}
+    ).sort("created_at", -1).to_list(100)
+    return {"redemptions": redemptions}
+
+@api_router.get("/admin/prize-redemptions")
+async def get_admin_prize_redemptions(user=Depends(get_current_user)):
+    """Get all prize redemptions (admin)"""
+    if user.get("role") != "admin":
+        raise HTTPException(status_code=403, detail="Admin access required")
+    
+    redemptions = await db.prize_redemptions.find({}, {"_id": 0}).sort("created_at", -1).to_list(500)
+    return {"redemptions": redemptions}
+
+@api_router.put("/admin/prize-redemptions/{redemption_id}")
+async def update_prize_redemption(redemption_id: str, status: str, user=Depends(get_current_user)):
+    """Update prize redemption status (admin)"""
+    if user.get("role") != "admin":
+        raise HTTPException(status_code=403, detail="Admin access required")
+    
+    if status not in ["pending", "approved", "delivered", "cancelled"]:
+        raise HTTPException(status_code=400, detail="Invalid status")
+    
+    result = await db.prize_redemptions.update_one(
+        {"id": redemption_id},
+        {"$set": {"status": status, "updated_at": datetime.now(timezone.utc).isoformat()}}
+    )
+    
+    if result.modified_count == 0:
+        raise HTTPException(status_code=404, detail="Redemption not found")
+    
+    # If cancelled, refund points
+    if status == "cancelled":
+        redemption = await db.prize_redemptions.find_one({"id": redemption_id}, {"_id": 0})
+        if redemption:
+            await db.bonus_progress.update_one(
+                {"user_id": redemption["user_id"], "program_id": redemption["program_id"]},
+                {"$inc": {"current_amount": redemption["points_spent"]}}
+            )
+    
+    return {"success": True}
 
 @api_router.post("/bonus/request")
 async def request_bonus_legacy(user=Depends(get_current_user)):
