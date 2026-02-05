@@ -20,6 +20,7 @@ import AdminProfilePage from "./pages/AdminProfilePage";
 import AdminOrdersPage from "./pages/AdminOrdersPage";
 import FavoritesPage from "./pages/FavoritesPage";
 import OrdersPage from "./pages/OrdersPage";
+import BonusPage from "./pages/BonusPage";
 
 function AppContent() {
   const { user } = useAuth();
@@ -44,6 +45,7 @@ function AppContent() {
           <Route path="/admin/orders" element={<AdminOrdersPage />} />
           <Route path="/favorites" element={<FavoritesPage />} />
           <Route path="/orders" element={<OrdersPage />} />
+          <Route path="/bonus" element={<BonusPage />} />
         </Routes>
       </main>
       {/* Hide chat widget for admin */}
