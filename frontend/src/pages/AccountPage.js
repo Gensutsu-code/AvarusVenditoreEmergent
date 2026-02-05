@@ -651,11 +651,6 @@ export default function AccountPage() {
                   </div>
                 </div>
               ))}
-                      </div>
-                    )}
-                  </div>
-                </div>
-              ))}
               
               {/* Bonus History - received promo codes */}
               {bonusHistory.length > 0 && (
