@@ -306,6 +306,15 @@ export const ChatWidget = () => {
           onClose={() => setLightboxImage(null)} 
         />
       )}
+      
+      {/* Video Lightbox Modal */}
+      {lightboxVideo && (
+        <VideoLightbox 
+          src={lightboxVideo.url} 
+          isGoogleDrive={lightboxVideo.isGoogleDrive}
+          onClose={() => setLightboxVideo(null)} 
+        />
+      )}
 
       {/* Chat button */}
       <button
