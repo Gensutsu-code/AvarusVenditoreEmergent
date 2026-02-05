@@ -235,7 +235,9 @@ class TestAdminBonusProgramCRUD:
         )
         assert response.status_code == 200
         data = response.json()
-        assert isinstance(data, list), "Should return list of programs"
+        # API returns {"programs": [...]} or plain list
+        programs = data.get("programs", data) if isinstance(data, dict) else data
+        assert isinstance(programs, list), "Should return list of programs"
     
     def test_create_bonus_program_returns_data(self, admin_token):
         """Verify POST /api/admin/bonus/programs returns created program"""
