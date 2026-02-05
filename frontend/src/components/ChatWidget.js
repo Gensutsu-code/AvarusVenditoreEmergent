@@ -391,40 +391,52 @@ export const ChatWidget = () => {
                           <p className="text-xs font-semibold text-orange-500 mb-1">Поддержка</p>
                         )}
                         
-                        {/* Image message */}
+                        {/* Image message - small thumbnail with click to enlarge */}
                         {msg.message_type === 'image' && msg.file_url && (
                           <div className="mb-2">
-                            <img 
-                              src={normalizeFileUrl(msg.file_url)} 
-                              alt="Изображение" 
-                              className="max-w-full rounded-lg cursor-pointer hover:opacity-90 transition-opacity"
+                            <div 
+                              className="relative w-32 h-32 rounded-lg overflow-hidden cursor-pointer group"
                               onClick={() => setLightboxImage(normalizeFileUrl(msg.file_url))}
-                              data-testid="chat-image"
-                            />
+                            >
+                              <img 
+                                src={normalizeFileUrl(msg.file_url)} 
+                                alt="Изображение" 
+                                className="w-full h-full object-cover"
+                                data-testid="chat-image"
+                              />
+                              <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-colors flex items-center justify-center">
+                                <ZoomIn className="w-6 h-6 text-white opacity-0 group-hover:opacity-100 transition-opacity" />
+                              </div>
+                            </div>
                           </div>
                         )}
                         
-                        {/* Video message */}
+                        {/* Video message - small thumbnail with click to enlarge */}
                         {msg.message_type === 'video' && msg.file_url && (
                           <div className="mb-2">
-                            {isGoogleDriveVideo(msg.file_url) ? (
-                              <iframe
-                                src={getGoogleDriveVideoUrl(msg.file_url)}
-                                className="w-full aspect-video rounded-lg"
-                                allow="autoplay"
-                                allowFullScreen
-                                title="Видео"
-                              />
-                            ) : (
-                              <video 
-                                src={normalizeFileUrl(msg.file_url)} 
-                                controls
-                                className="max-w-full rounded-lg"
-                                data-testid="chat-video"
-                              >
-                                Ваш браузер не поддерживает видео
-                              </video>
-                            )}
+                            <div 
+                              className="relative w-40 h-28 rounded-lg overflow-hidden cursor-pointer group bg-zinc-900"
+                              onClick={() => setLightboxVideo({
+                                url: isGoogleDriveVideo(msg.file_url) ? getGoogleDriveVideoUrl(msg.file_url) : normalizeFileUrl(msg.file_url),
+                                isGoogleDrive: isGoogleDriveVideo(msg.file_url)
+                              })}
+                            >
+                              {isGoogleDriveVideo(msg.file_url) ? (
+                                <div className="w-full h-full flex items-center justify-center">
+                                  <Play className="w-10 h-10 text-white/80" />
+                                </div>
+                              ) : (
+                                <video 
+                                  src={normalizeFileUrl(msg.file_url)} 
+                                  className="w-full h-full object-cover"
+                                  muted
+                                  data-testid="chat-video"
+                                />
+                              )}
+                              <div className="absolute inset-0 bg-black/0 group-hover:bg-black/30 transition-colors flex items-center justify-center">
+                                <Play className="w-10 h-10 text-white drop-shadow-lg" />
+                              </div>
+                            </div>
                           </div>
                         )}
                         
