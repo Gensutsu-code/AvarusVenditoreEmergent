@@ -158,6 +158,7 @@ export const ChatWidget = () => {
   const [unreadCount, setUnreadCount] = useState(0);
   const [showEmoji, setShowEmoji] = useState(false);
   const [lightboxImage, setLightboxImage] = useState(null);
+  const [lightboxVideo, setLightboxVideo] = useState(null);
   const messagesEndRef = useRef(null);
   const fileInputRef = useRef(null);
 
