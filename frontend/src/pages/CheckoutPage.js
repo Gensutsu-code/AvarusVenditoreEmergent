@@ -70,6 +70,11 @@ export default function CheckoutPage() {
     }
   };
 
+  // Wait for auth loading before redirecting
+  if (authLoading) {
+    return null;
+  }
+
   if (!user) {
     navigate('/login');
     return null;
