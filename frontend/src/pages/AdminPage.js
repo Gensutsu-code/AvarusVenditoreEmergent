@@ -3068,12 +3068,14 @@ export default function AdminPage() {
                           toast.success(`Бонус выдан: ${bonusCodeInput}`);
                           setIssueBonusModal(null);
                           setBonusCodeInput('');
-                          // Refresh program users
+                          // Refresh program users (only the relevant data)
                           if (selectedProgramId) {
                             const res = await axios.get(`${API}/admin/bonus/programs/${selectedProgramId}/users`);
                             setProgramUsers(res.data.users || []);
                           }
-                          fetchData();
+                          // Update bonus history locally
+                          const historyRes = await axios.get(`${API}/admin/bonus/history`);
+                          setBonusHistory(historyRes.data.history || []);
                         } catch (err) {
                           toast.error(err.response?.data?.detail || 'Ошибка выдачи бонуса');
                         } finally {
