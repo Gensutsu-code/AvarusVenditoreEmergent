@@ -2008,9 +2008,8 @@ async def request_bonus_for_program(program_id: str, user=Depends(get_current_us
     if progress.get("bonus_requested"):
         raise HTTPException(status_code=400, detail="Вы уже отправили запрос на бонус по этой программе")
     
-    min_threshold = program.get("min_threshold", 5000)
-    if progress["current_amount"] < min_threshold:
-        raise HTTPException(status_code=400, detail=f"Минимальная сумма для запроса бонуса: {min_threshold} баллов")
+    if progress["current_amount"] <= 0:
+        raise HTTPException(status_code=400, detail="У вас нет накопленных баллов")
     
     await db.bonus_progress.update_one(
         {"user_id": user["id"], "program_id": program_id},
