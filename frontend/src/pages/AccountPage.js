@@ -80,7 +80,7 @@ export default function AccountPage() {
 
     setSaving(true);
     try {
-      await axios.put(`${API}/user/password`, {
+      await axios.put(`${API}/auth/profile`, {
         current_password: formData.current_password,
         new_password: formData.new_password
       });
