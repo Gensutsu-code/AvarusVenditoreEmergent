@@ -68,6 +68,15 @@ export const Header = () => {
                         <Package className="w-5 h-5" />
                       </Button>
                     </Link>
+                    <Link to="/bonus" data-testid="bonus-link">
+                      <Button variant="ghost" size="sm" className="hidden sm:flex items-center gap-1 text-orange-500 hover:text-orange-600">
+                        <Gift className="w-5 h-5" />
+                        <span className="text-sm">Бонусы</span>
+                      </Button>
+                      <Button variant="ghost" size="sm" className="sm:hidden text-orange-500 hover:text-orange-600">
+                        <Gift className="w-5 h-5" />
+                      </Button>
+                    </Link>
                     <Link to="/catalog" data-testid="search-link">
                       <Button variant="ghost" size="sm">
                         <Search className="w-5 h-5" />
