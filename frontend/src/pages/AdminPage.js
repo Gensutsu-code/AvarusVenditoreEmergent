@@ -2990,14 +2990,17 @@ export default function AdminPage() {
                       onClick={async () => {
                         try {
                           if (isNewProgram) {
-                            await axios.post(`${API}/admin/bonus/programs`, editingProgram);
+                            const res = await axios.post(`${API}/admin/bonus/programs`, editingProgram);
                             toast.success('Программа создана');
+                            // Real-time update: add to local state
+                            setBonusPrograms(prev => [...prev, res.data]);
                           } else {
-                            await axios.put(`${API}/admin/bonus/programs/${editingProgram.id}`, editingProgram);
+                            const res = await axios.put(`${API}/admin/bonus/programs/${editingProgram.id}`, editingProgram);
                             toast.success('Программа обновлена');
+                            // Real-time update: update in local state
+                            setBonusPrograms(prev => prev.map(p => p.id === editingProgram.id ? res.data : p));
                           }
                           setEditingProgram(null);
-                          fetchData();
                         } catch (err) {
                           toast.error(err.response?.data?.detail || 'Ошибка сохранения');
                         }
