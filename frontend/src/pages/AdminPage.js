@@ -2643,15 +2643,6 @@ export default function AdminPage() {
                         className="mt-1"
                       />
                     </div>
-                    <div>
-                      <Label className="text-xs font-bold uppercase text-zinc-500">Мин. порог для запроса (баллов)</Label>
-                      <Input
-                        type="number"
-                        value={editingProgram.min_threshold || 5000}
-                        onChange={(e) => setEditingProgram({...editingProgram, min_threshold: parseFloat(e.target.value) || 5000})}
-                        className="mt-1"
-                      />
-                    </div>
                   </div>
 
                   <div>
