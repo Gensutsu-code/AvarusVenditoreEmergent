@@ -316,8 +316,8 @@ export default function AdminPage() {
         headers: { 'Content-Type': 'multipart/form-data' }
       });
       
-      // Return full URL
-      const url = `${BACKEND_URL}${res.data.url}`;
+      // Cloudinary returns full URL, use it directly
+      const url = res.data.url;
       toast.success('Изображение загружено');
       return url;
     } catch (err) {
