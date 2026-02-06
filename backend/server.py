@@ -489,16 +489,16 @@ async def upload_file(file: UploadFile = File(...), user=Depends(get_current_use
     if len(content) > MAX_FILE_SIZE:
         raise HTTPException(status_code=400, detail="File too large. Max 5MB")
     
-    # Generate unique filename
-    unique_filename = f"{uuid.uuid4()}{ext}"
-    file_path = UPLOADS_DIR / unique_filename
-    
-    # Save file
-    with open(file_path, "wb") as f:
-        f.write(content)
-    
-    # Return URL
-    return {"url": f"/api/uploads/{unique_filename}", "filename": unique_filename}
+    # Upload to Cloudinary
+    try:
+        result = await upload_to_cloudinary(content, file.filename, folder="uploads")
+        if result and result.get("url"):
+            return {"url": result["url"], "filename": file.filename}
+        else:
+            raise HTTPException(status_code=500, detail="Failed to upload to Cloudinary")
+    except Exception as e:
+        logger.error(f"Upload error: {e}")
+        raise HTTPException(status_code=500, detail=f"Upload failed: {str(e)}")
 
 # ==================== PRODUCTS ROUTES ====================
 
