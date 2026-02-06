@@ -221,15 +221,15 @@ export default function BonusPage() {
                                     isActive 
                                       ? 'ring-4 ring-offset-2 scale-110' 
                                       : ''
-                                  } ${isAchieved ? 'text-white' : 'text-zinc-400'}`}
+                                  } ${isAchieved ? 'text-white' : 'text-white opacity-50'}`}
                                   style={{ 
-                                    backgroundColor: isAchieved ? level.color : '#e4e4e7',
+                                    backgroundColor: level.color,
                                     '--tw-ring-color': isActive ? level.color + '60' : 'transparent'
                                   }}
                                 >
                                   {idx + 1}
                                 </div>
-                                <p className={`text-xs mt-1 ${isActive ? 'font-bold' : 'text-zinc-400'}`} style={isActive ? { color: level.color } : {}}>
+                                <p className={`text-xs mt-1 ${isActive ? 'font-bold' : isAchieved ? '' : 'opacity-60'}`} style={{ color: level.color }}>
                                   {level.name}
                                 </p>
                               </div>
