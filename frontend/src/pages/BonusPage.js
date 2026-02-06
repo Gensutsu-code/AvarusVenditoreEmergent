@@ -299,15 +299,17 @@ export default function BonusPage() {
                                   <img 
                                     src={prize.image_url} 
                                     alt={prize.name} 
-                                    className="w-16 h-16 rounded-xl object-cover"
+                                    className="w-16 h-16 rounded-xl object-cover flex-shrink-0"
                                     onError={(e) => {
                                       e.target.style.display = 'none';
-                                      e.target.nextSibling.style.display = 'flex';
+                                      const placeholder = e.target.parentElement.querySelector('[data-placeholder]');
+                                      if (placeholder) placeholder.style.display = 'flex';
                                     }}
                                   />
                                 ) : null}
                                 <div 
-                                  className={`w-16 h-16 rounded-xl bg-gradient-to-br from-orange-100 to-orange-200 items-center justify-center ${prize.image_url ? 'hidden' : 'flex'}`}
+                                  data-placeholder
+                                  className={`w-16 h-16 rounded-xl bg-gradient-to-br from-orange-100 to-orange-200 items-center justify-center flex-shrink-0 ${prize.image_url ? 'hidden' : 'flex'}`}
                                 >
                                   <Gift className="w-8 h-8 text-orange-500" />
                                 </div>
