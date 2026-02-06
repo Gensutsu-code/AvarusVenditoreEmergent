@@ -293,12 +293,21 @@ export default function BonusPage() {
                                 }`}
                               >
                                 {prize.image_url ? (
-                                  <img src={prize.image_url} alt={prize.name} className="w-16 h-16 rounded-xl object-cover" />
-                                ) : (
-                                  <div className="w-16 h-16 rounded-xl bg-gradient-to-br from-orange-100 to-orange-200 flex items-center justify-center">
-                                    <Gift className="w-8 h-8 text-orange-500" />
-                                  </div>
-                                )}
+                                  <img 
+                                    src={prize.image_url} 
+                                    alt={prize.name} 
+                                    className="w-16 h-16 rounded-xl object-cover"
+                                    onError={(e) => {
+                                      e.target.style.display = 'none';
+                                      e.target.nextSibling.style.display = 'flex';
+                                    }}
+                                  />
+                                ) : null}
+                                <div 
+                                  className={`w-16 h-16 rounded-xl bg-gradient-to-br from-orange-100 to-orange-200 items-center justify-center ${prize.image_url ? 'hidden' : 'flex'}`}
+                                >
+                                  <Gift className="w-8 h-8 text-orange-500" />
+                                </div>
                                 <div className="flex-1 min-w-0">
                                   <h4 className="font-semibold text-zinc-900">{prize.name}</h4>
                                   {prize.description && (
