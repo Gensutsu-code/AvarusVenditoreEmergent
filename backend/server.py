@@ -1182,15 +1182,16 @@ async def upload_avatar(file: UploadFile = File(...), user=Depends(get_current_u
     if len(content) > 5 * 1024 * 1024:  # 5MB limit
         raise HTTPException(status_code=400, detail="Image too large (max 5MB)")
     
-    # Save file
-    file_ext = Path(file.filename).suffix or '.jpg'
-    file_name = f"avatar_{user['id']}{file_ext}"
-    file_path = UPLOADS_DIR / file_name
-    
-    with open(file_path, "wb") as f:
-        f.write(content)
-    
-    avatar_url = f"/api/uploads/{file_name}"
+    # Upload to Cloudinary
+    try:
+        result = await upload_to_cloudinary(content, file.filename, folder="avatars")
+        if result and result.get("url"):
+            avatar_url = result["url"]
+        else:
+            raise HTTPException(status_code=500, detail="Failed to upload avatar")
+    except Exception as e:
+        logger.error(f"Avatar upload error: {e}")
+        raise HTTPException(status_code=500, detail=f"Upload failed: {str(e)}")
     
     # Update user
     await db.users.update_one(
@@ -1203,19 +1204,11 @@ async def upload_avatar(file: UploadFile = File(...), user=Depends(get_current_u
 @api_router.delete("/users/avatar")
 async def delete_avatar(user=Depends(get_current_user)):
     """Delete user profile avatar"""
-    current_user = await db.users.find_one({"id": user["id"]}, {"_id": 0})
-    
-    if current_user and current_user.get("avatar_url"):
-        # Delete file
-        file_path = UPLOADS_DIR / Path(current_user["avatar_url"]).name
-        if file_path.exists():
-            file_path.unlink()
-        
-        # Update user
-        await db.users.update_one(
-            {"id": user["id"]},
-            {"$unset": {"avatar_url": ""}}
-        )
+    # Update user - just remove the URL (Cloudinary manages storage)
+    await db.users.update_one(
+        {"id": user["id"]},
+        {"$set": {"avatar_url": ""}}
+    )
     
     return {"message": "Avatar deleted"}
 
