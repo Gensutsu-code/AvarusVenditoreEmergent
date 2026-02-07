@@ -77,6 +77,7 @@ class UserResponse(BaseModel):
     phone: Optional[str] = None
     role: str = "user"
     address: Optional[str] = None
+    avatar_url: Optional[str] = None
 
 class UserProfileUpdate(BaseModel):
     name: Optional[str] = None
