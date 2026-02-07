@@ -46,7 +46,7 @@ export default function AdminProfilePage() {
     setSaving(true);
     try {
       // Update profile info
-      await axios.put(`${API}/user/profile`, {
+      await axios.put(`${API}/auth/profile`, {
         name: formData.name,
         phone: user.phone,
         address: user.address
