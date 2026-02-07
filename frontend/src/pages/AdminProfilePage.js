@@ -151,14 +151,48 @@ export default function AdminProfilePage() {
         <div className="space-y-6">
           {/* Profile Info Card */}
           <div className="bg-white rounded-xl border border-zinc-200 shadow-sm overflow-hidden">
-            <div className="bg-gradient-to-r from-purple-500 to-purple-600 px-6 py-4">
-              <div className="flex items-center gap-3">
-                <div className="w-12 h-12 bg-white/20 rounded-full flex items-center justify-center">
-                  <User className="w-6 h-6 text-white" />
+            <div className="bg-gradient-to-r from-purple-500 to-purple-600 px-6 py-6">
+              <div className="flex items-center gap-4">
+                {/* Avatar */}
+                <div className="relative group">
+                  <div className="w-20 h-20 rounded-full bg-white/20 flex items-center justify-center overflow-hidden border-4 border-white/30">
+                    {user?.avatar_url ? (
+                      <img src={user.avatar_url} alt="Avatar" className="w-full h-full object-cover" />
+                    ) : (
+                      <User className="w-10 h-10 text-white" />
+                    )}
+                  </div>
+                  <input
+                    ref={avatarInputRef}
+                    type="file"
+                    accept="image/*"
+                    onChange={handleAvatarUpload}
+                    className="hidden"
+                  />
+                  <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+                    <div className="flex gap-1">
+                      <button
+                        onClick={() => avatarInputRef.current?.click()}
+                        disabled={uploadingAvatar}
+                        className="p-2 bg-black/50 rounded-full text-white hover:bg-black/70"
+                      >
+                        <Camera className="w-4 h-4" />
+                      </button>
+                      {user?.avatar_url && (
+                        <button
+                          onClick={handleDeleteAvatar}
+                          className="p-2 bg-red-500/80 rounded-full text-white hover:bg-red-600"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </button>
+                      )}
+                    </div>
+                  </div>
                 </div>
-                <div>
-                  <h2 className="text-lg font-bold text-white">Основная информация</h2>
-                  <p className="text-purple-200 text-sm">Данные вашего аккаунта</p>
+                <div className="text-white">
+                  <h2 className="text-xl font-bold">{user?.name || 'Администратор'}</h2>
+                  <p className="text-purple-200 text-sm">{user?.email}</p>
+                  <p className="text-purple-300 text-xs mt-1">Администратор</p>
                 </div>
               </div>
             </div>
