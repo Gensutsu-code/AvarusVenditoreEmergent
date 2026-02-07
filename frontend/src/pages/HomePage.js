@@ -19,8 +19,6 @@ export default function HomePage() {
   const [partners, setPartners] = useState(DEFAULT_PARTNERS);
 
   useEffect(() => {
-    // Seed data on first load
-    axios.post(`${API}/seed`).catch(() => {});
     // Fetch partners
     const loadPartners = async () => {
       try {
