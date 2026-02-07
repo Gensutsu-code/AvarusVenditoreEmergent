@@ -294,7 +294,7 @@ async def register(data: UserRegister):
     await db.carts.insert_one({"user_id": user_id, "items": []})
     
     token = create_token(user_id)
-    return {"token": token, "user": {"id": user_id, "email": data.email, "name": data.name, "phone": data.phone, "role": "user"}}
+    return {"token": token, "user": {"id": user_id, "email": data.email, "name": data.name, "phone": data.phone, "role": "user", "avatar_url": None}}
 
 @api_router.post("/auth/login")
 async def login(data: UserLogin):
