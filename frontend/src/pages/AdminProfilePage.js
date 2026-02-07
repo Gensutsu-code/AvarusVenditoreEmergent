@@ -1,7 +1,7 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
-import { User, Mail, Lock, Save, Eye, EyeOff } from 'lucide-react';
+import { User, Mail, Lock, Save, Eye, EyeOff, Camera, Trash2 } from 'lucide-react';
 import { Button } from '../components/ui/button';
 import { Input } from '../components/ui/input';
 import { Label } from '../components/ui/label';
@@ -13,6 +13,7 @@ const API = `${process.env.REACT_APP_BACKEND_URL}/api`;
 export default function AdminProfilePage() {
   const { user, loading: authLoading, refreshUser } = useAuth();
   const navigate = useNavigate();
+  const avatarInputRef = useRef(null);
   const [formData, setFormData] = useState({
     name: '',
     email: '',
@@ -21,6 +22,7 @@ export default function AdminProfilePage() {
     confirm_password: ''
   });
   const [saving, setSaving] = useState(false);
+  const [uploadingAvatar, setUploadingAvatar] = useState(false);
   const [showPasswords, setShowPasswords] = useState(false);
 
   useEffect(() => {
