@@ -77,7 +77,7 @@ export default function AdminProfilePage() {
 
     setSaving(true);
     try {
-      await axios.put(`${API}/user/password`, {
+      await axios.put(`${API}/auth/profile`, {
         current_password: formData.current_password,
         new_password: formData.new_password
       });
@@ -92,6 +92,44 @@ export default function AdminProfilePage() {
       toast.error(err.response?.data?.detail || 'Ошибка смены пароля');
     } finally {
       setSaving(false);
+    }
+  };
+
+  const handleAvatarUpload = async (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+    
+    if (!file.type.startsWith('image/')) {
+      toast.error('Выберите изображение');
+      return;
+    }
+
+    setUploadingAvatar(true);
+    try {
+      const formData = new FormData();
+      formData.append('file', file);
+      await axios.post(`${API}/users/avatar`, formData, {
+        headers: { 'Content-Type': 'multipart/form-data' }
+      });
+      toast.success('Фото обновлено');
+      refreshUser();
+    } catch (err) {
+      toast.error('Ошибка загрузки фото');
+    } finally {
+      setUploadingAvatar(false);
+      if (avatarInputRef.current) avatarInputRef.current.value = '';
+    }
+  };
+
+  const handleDeleteAvatar = async () => {
+    if (!window.confirm('Удалить фото профиля?')) return;
+    
+    try {
+      await axios.delete(`${API}/users/avatar`);
+      toast.success('Фото удалено');
+      refreshUser();
+    } catch (err) {
+      toast.error('Ошибка удаления');
     }
   };
 
