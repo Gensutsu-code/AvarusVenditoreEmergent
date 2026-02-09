@@ -2698,7 +2698,7 @@ export default function AdminPage() {
                   </div>
 
                   <div>
-                    <Label className="text-xs font-bold uppercase text-zinc-500">Изображение</Label>
+                    <Label className="text-xs font-bold uppercase text-zinc-500">Изображение программы</Label>
                     <div className="mt-1 flex items-center gap-4">
                       <input
                         type="file"
@@ -2737,6 +2737,87 @@ export default function AdminPage() {
                             <Trash2 className="w-4 h-4" />
                           </Button>
                         </div>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Banner Image */}
+                  <div className="border-t pt-4">
+                    <Label className="text-xs font-bold uppercase text-zinc-500">Баннер (отображается на странице бонусов)</Label>
+                    <div className="mt-2">
+                      <input
+                        type="file"
+                        ref={bonusBannerFileRef}
+                        onChange={async (e) => {
+                          const file = e.target.files?.[0];
+                          if (file) {
+                            const url = await handleFileUpload(file, 'bonus_banner');
+                            if (url) {
+                              setEditingProgram({...editingProgram, banner_url: url});
+                            }
+                          }
+                        }}
+                        accept="image/*"
+                        className="hidden"
+                      />
+                      
+                      {editingProgram.banner_url ? (
+                        <div className="space-y-3">
+                          <div className="flex justify-center bg-zinc-100 rounded-lg p-4">
+                            <img 
+                              src={editingProgram.banner_url} 
+                              alt="Banner Preview" 
+                              className="rounded-lg object-cover"
+                              style={{ height: editingProgram.banner_height || 200 }}
+                            />
+                          </div>
+                          <div className="flex items-center gap-4">
+                            <div className="flex-1">
+                              <Label className="text-xs text-zinc-500">Высота баннера (px)</Label>
+                              <Input
+                                type="number"
+                                value={editingProgram.banner_height || 200}
+                                onChange={(e) => setEditingProgram({...editingProgram, banner_height: parseInt(e.target.value) || 200})}
+                                min={100}
+                                max={600}
+                                className="mt-1"
+                              />
+                            </div>
+                            <div className="flex gap-2 pt-5">
+                              <Button 
+                                type="button" 
+                                variant="outline" 
+                                onClick={() => bonusBannerFileRef.current?.click()}
+                                disabled={uploading}
+                                size="sm"
+                              >
+                                <Upload className="w-4 h-4 mr-1" />
+                                Заменить
+                              </Button>
+                              <Button 
+                                variant="ghost" 
+                                size="sm"
+                                onClick={() => setEditingProgram({...editingProgram, banner_url: '', banner_height: 200})}
+                                className="text-red-500"
+                              >
+                                <Trash2 className="w-4 h-4" />
+                              </Button>
+                            </div>
+                          </div>
+                        </div>
+                      ) : (
+                        <Button 
+                          type="button" 
+                          variant="outline" 
+                          onClick={() => bonusBannerFileRef.current?.click()}
+                          disabled={uploading}
+                          className="w-full h-24 border-dashed"
+                        >
+                          <div className="flex flex-col items-center gap-2">
+                            <Upload className="w-6 h-6 text-zinc-400" />
+                            <span className="text-sm text-zinc-500">{uploading ? 'Загрузка...' : 'Загрузить баннер'}</span>
+                          </div>
+                        </Button>
                       )}
                     </div>
                   </div>
