@@ -27,6 +27,7 @@ export const PromoBanner = () => {
   }
 
   const height = banner.height || 40;
+  const imagePosition = banner.image_position || 'left';
 
   const content = (
     <div 
@@ -37,11 +38,11 @@ export const PromoBanner = () => {
       }}
       data-testid="promo-banner"
     >
-      {/* Left image */}
+      {/* Left side */}
       <div className="flex-shrink-0 h-full flex items-center">
-        {banner.left_image ? (
+        {banner.image && imagePosition === 'left' ? (
           <img 
-            src={banner.left_image} 
+            src={banner.image} 
             alt="" 
             className="object-contain"
             style={{ maxHeight: `${height - 8}px` }}
@@ -56,11 +57,11 @@ export const PromoBanner = () => {
         <span className="text-sm font-medium">{banner.text}</span>
       </div>
 
-      {/* Right image */}
+      {/* Right side */}
       <div className="flex-shrink-0 h-full flex items-center">
-        {banner.right_image ? (
+        {banner.image && imagePosition === 'right' ? (
           <img 
-            src={banner.right_image} 
+            src={banner.image} 
             alt="" 
             className="object-contain"
             style={{ maxHeight: `${height - 8}px` }}
