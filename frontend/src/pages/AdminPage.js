@@ -349,22 +349,12 @@ export default function AdminPage() {
     }
   };
 
-  const handlePromoLeftImageUpload = async (e) => {
+  const handlePromoImageUpload = async (e) => {
     const file = e.target.files?.[0];
     if (file) {
       const url = await handleFileUpload(file, 'promo');
       if (url) {
-        setPromoBanner({ ...promoBanner, left_image: url });
-      }
-    }
-  };
-
-  const handlePromoRightImageUpload = async (e) => {
-    const file = e.target.files?.[0];
-    if (file) {
-      const url = await handleFileUpload(file, 'promo');
-      if (url) {
-        setPromoBanner({ ...promoBanner, right_image: url });
+        setPromoBanner({ ...promoBanner, image: url });
       }
     }
   };
