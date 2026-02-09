@@ -107,13 +107,31 @@ export default function AdminOrdersPage() {
     if (!editingOrder) return;
     
     try {
-      await axios.put(`${API}/admin/orders/${editingOrder.id}`, editingOrder);
-      setOrders(prev => prev.map(o => o.id === editingOrder.id ? editingOrder : o));
+      const res = await axios.put(`${API}/admin/orders/${editingOrder.id}`, {
+        status: editingOrder.status,
+        full_name: editingOrder.full_name,
+        address: editingOrder.address,
+        phone: editingOrder.phone,
+        comment: editingOrder.comment,
+        created_at: editingOrder.created_at,
+        items: editingOrder.items
+      });
+      setOrders(prev => prev.map(o => o.id === editingOrder.id ? res.data : o));
       setEditingOrder(null);
       toast.success('Заказ обновлён');
     } catch (err) {
       toast.error('Ошибка сохранения');
     }
+  };
+
+  const handleUpdateOrderItem = (index, field, value) => {
+    const newItems = [...editingOrder.items];
+    newItems[index] = { ...newItems[index], [field]: field === 'price' || field === 'quantity' ? Number(value) : value };
+    setEditingOrder({ ...editingOrder, items: newItems });
+  };
+
+  const calculateOrderTotal = (items) => {
+    return items.reduce((sum, item) => sum + (item.price * item.quantity), 0);
   };
 
   const toggleExpand = (orderId) => {
