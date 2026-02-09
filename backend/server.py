@@ -2035,6 +2035,7 @@ async def get_user_bonus_programs(user=Depends(get_current_user)):
             "image_url": program.get("image_url", ""),
             "banner_url": program.get("banner_url", ""),
             "banner_height": program.get("banner_height", 200),
+            "header_font_size": program.get("header_font_size", 14),
             "request_button_text": program.get("request_button_text", ""),
             "contribution_type": program.get("contribution_type", "order_total"),
             "contribution_percent": program.get("contribution_percent", 100),
