@@ -758,6 +758,7 @@ async def create_order(data: OrderCreate, user=Depends(get_current_user)):
         "full_name": data.full_name,
         "address": data.address,
         "phone": data.phone,
+        "comment": data.comment,
         "payment_method": "cash",
         "created_at": datetime.now(timezone.utc).isoformat()
     }
