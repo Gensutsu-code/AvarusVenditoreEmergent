@@ -3121,6 +3121,7 @@ async def create_admin_user_new(data: AdminUserCreate, user=Depends(get_current_
         "name": data.name,
         "phone": data.phone,
         "address": data.address,
+        "address_comment": data.address_comment,
         "role": data.role,
         "created_at": datetime.now(timezone.utc).isoformat()
     }
