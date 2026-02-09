@@ -1875,6 +1875,7 @@ class BonusProgramCreate(BaseModel):
     image_url: str = ""
     banner_url: str = ""  # Баннер для страницы бонусов
     banner_height: int = 200  # Высота баннера в пикселях
+    header_font_size: int = 14  # Размер шрифта заголовка "Бонусная программа"
     request_button_text: str = ""  # Текст кнопки запроса бонуса
     max_amount: float = 50000
     min_threshold: float = 5000
