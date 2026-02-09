@@ -1,10 +1,11 @@
 import { useState, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import axios from 'axios';
-import { ArrowLeft, CheckCircle, Banknote } from 'lucide-react';
+import { ArrowLeft, CheckCircle, Banknote, MessageSquare } from 'lucide-react';
 import { Button } from '../components/ui/button';
 import { Input } from '../components/ui/input';
 import { Label } from '../components/ui/label';
+import { Textarea } from '../components/ui/textarea';
 import { useCart } from '../context/CartContext';
 import { useAuth } from '../context/AuthContext';
 import { toast } from 'sonner';
@@ -21,7 +22,8 @@ export default function CheckoutPage() {
   const [form, setForm] = useState({
     full_name: '',
     address: '',
-    phone: ''
+    phone: '',
+    comment: ''
   });
 
   useEffect(() => {
@@ -37,7 +39,8 @@ export default function CheckoutPage() {
       setForm({
         full_name: data.full_name || '',
         address: data.address || '',
-        phone: data.phone || ''
+        phone: data.phone || '',
+        comment: ''
       });
     } catch (err) {
       console.error('Failed to fetch last shipping', err);
