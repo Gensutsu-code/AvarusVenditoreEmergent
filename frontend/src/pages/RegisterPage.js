@@ -3,6 +3,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { Button } from '../components/ui/button';
 import { Input } from '../components/ui/input';
 import { Label } from '../components/ui/label';
+import { Textarea } from '../components/ui/textarea';
 import { useAuth } from '../context/AuthContext';
 import { toast } from 'sonner';
 
@@ -14,6 +15,8 @@ export default function RegisterPage() {
     name: '',
     email: '',
     phone: '',
+    address: '',
+    address_comment: '',
     password: '',
     confirmPassword: ''
   });
@@ -38,6 +41,8 @@ export default function RegisterPage() {
         name: form.name,
         email: form.email,
         phone: form.phone,
+        address: form.address,
+        address_comment: form.address_comment,
         password: form.password
       });
       toast.success('Регистрация успешна!');
@@ -60,7 +65,7 @@ export default function RegisterPage() {
           <h1 className="text-2xl font-bold text-zinc-900 mt-6">Регистрация</h1>
         </div>
 
-        <form onSubmit={handleSubmit} className="space-y-6 border border-zinc-200 p-8">
+        <form onSubmit={handleSubmit} className="space-y-5 border border-zinc-200 p-8">
           <div>
             <Label htmlFor="name" className="text-xs font-bold uppercase tracking-widest text-zinc-500">
               Имя *
@@ -104,6 +109,34 @@ export default function RegisterPage() {
               placeholder="+7 (___) ___-__-__"
               className="mt-2 h-12 bg-zinc-50"
               data-testid="register-phone"
+            />
+          </div>
+
+          <div>
+            <Label htmlFor="address" className="text-xs font-bold uppercase tracking-widest text-zinc-500">
+              Адрес доставки
+            </Label>
+            <Input
+              id="address"
+              value={form.address}
+              onChange={(e) => setForm({ ...form, address: e.target.value })}
+              placeholder="Город, улица, дом, квартира"
+              className="mt-2 h-12 bg-zinc-50"
+              data-testid="register-address"
+            />
+          </div>
+
+          <div>
+            <Label htmlFor="address_comment" className="text-xs font-bold uppercase tracking-widest text-zinc-500">
+              Комментарий к адресу
+            </Label>
+            <Textarea
+              id="address_comment"
+              value={form.address_comment}
+              onChange={(e) => setForm({ ...form, address_comment: e.target.value })}
+              placeholder="Код домофона, этаж, ориентиры..."
+              className="mt-2 bg-zinc-50 min-h-[80px]"
+              data-testid="register-address-comment"
             />
           </div>
 
