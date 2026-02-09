@@ -3925,6 +3925,18 @@ export default function AdminPage() {
                 />
               </div>
 
+              <div>
+                <Label className="text-xs font-bold uppercase text-zinc-500">Комментарий к заказу</Label>
+                <Textarea
+                  value={editingOrder.comment || ''}
+                  onChange={(e) => setEditingOrder({ ...editingOrder, comment: e.target.value })}
+                  className="mt-1"
+                  rows={2}
+                  placeholder="Комментарий от клиента или для курьера..."
+                  data-testid="order-comment-input"
+                />
+              </div>
+
               <div className="bg-zinc-50 p-3 border border-zinc-200">
                 <p className="text-sm text-zinc-500">Сумма заказа:</p>
                 <p className="text-xl font-bold font-mono">{formatPrice(editingOrder.total)} ₽</p>
