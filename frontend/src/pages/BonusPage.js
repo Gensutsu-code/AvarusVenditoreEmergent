@@ -19,7 +19,7 @@ export default function BonusPage() {
   const [loading, setLoading] = useState(true);
   const [requestingBonus, setRequestingBonus] = useState({});
   const [redeemingPrize, setRedeemingPrize] = useState({});
-  const [expandedProgram, setExpandedProgram] = useState(null);
+  const [collapsedPrizes, setCollapsedPrizes] = useState({});
   const [redeemedPrize, setRedeemedPrize] = useState(null);
   const [copiedCode, setCopiedCode] = useState(null);
   const [showHistory, setShowHistory] = useState(false);
