@@ -298,6 +298,14 @@ export default function OrdersPage() {
                         </div>
                       </div>
 
+                      {/* Order comment */}
+                      {order.comment && (
+                        <div className="mb-4 p-3 bg-amber-50 border border-amber-200 rounded-lg">
+                          <p className="text-amber-800 text-xs uppercase font-bold mb-1">Комментарий к заказу</p>
+                          <p className="text-amber-900 text-sm">{order.comment}</p>
+                        </div>
+                      )}
+
                       {/* Order items with full details */}
                       <div className="border border-zinc-200 divide-y divide-zinc-100">
                         {order.items.map((item, idx) => (
