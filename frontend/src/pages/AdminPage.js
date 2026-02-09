@@ -411,7 +411,8 @@ export default function AdminPage() {
           headers: { 'Content-Type': 'multipart/form-data' }
         });
         
-        const url = `${BACKEND_URL}${res.data.url}`;
+        // Cloudinary returns full URL directly
+        const url = res.data.url;
         uploadedUrls.push(url);
       }
       
