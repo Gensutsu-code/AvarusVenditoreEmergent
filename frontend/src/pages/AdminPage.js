@@ -1495,6 +1495,22 @@ export default function AdminPage() {
                 />
               </div>
 
+              {/* Swap images button */}
+              {(promoBanner.left_image || promoBanner.right_image) && (
+                <div className="flex justify-center">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={handleSwapPromoImages}
+                    className="flex items-center gap-2"
+                  >
+                    <ArrowLeftRight className="w-4 h-4" />
+                    Поменять местами
+                  </Button>
+                </div>
+              )}
+
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <Label className="text-xs font-bold uppercase text-zinc-500">Изображение слева</Label>
