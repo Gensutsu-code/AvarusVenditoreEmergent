@@ -212,6 +212,7 @@ class OrderCreate(BaseModel):
     full_name: str
     address: str
     phone: str
+    comment: Optional[str] = None
 
 class OrderResponse(BaseModel):
     id: str
@@ -222,6 +223,7 @@ class OrderResponse(BaseModel):
     full_name: str
     address: str
     phone: str
+    comment: Optional[str] = None
     created_at: str
 
 # Favorites model
