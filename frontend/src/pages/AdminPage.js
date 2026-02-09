@@ -1484,121 +1484,70 @@ export default function AdminPage() {
                 />
               </div>
 
-              {/* Swap images button */}
-              {(promoBanner.left_image || promoBanner.right_image) && (
-                <div className="flex justify-center">
-                  <Button
-                    type="button"
-                    variant="outline"
+              {/* Single Image Upload */}
+              <div>
+                <Label className="text-xs font-bold uppercase text-zinc-500">Изображение баннера</Label>
+                <div className="mt-2 space-y-3">
+                  <input
+                    type="file"
+                    ref={promoFileRef}
+                    onChange={handlePromoImageUpload}
+                    accept="image/*"
+                    className="hidden"
+                  />
+                  <Button 
+                    type="button" 
+                    variant="outline" 
+                    onClick={() => promoFileRef.current?.click()}
+                    disabled={uploading}
                     size="sm"
-                    onClick={handleSwapPromoImages}
-                    className="flex items-center gap-2"
                   >
-                    <ArrowLeftRight className="w-4 h-4" />
-                    Поменять местами
+                    <Upload className="w-4 h-4 mr-2" />
+                    {uploading ? 'Загрузка...' : 'Загрузить изображение'}
                   </Button>
-                </div>
-              )}
-
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <Label className="text-xs font-bold uppercase text-zinc-500">Изображение слева</Label>
-                  <div className="mt-1 space-y-2">
-                    <input
-                      type="file"
-                      ref={promoLeftFileRef}
-                      onChange={handlePromoLeftImageUpload}
-                      accept="image/*"
-                      className="hidden"
-                    />
-                    <Button 
-                      type="button" 
-                      variant="outline" 
-                      onClick={() => promoLeftFileRef.current?.click()}
-                      disabled={uploading}
-                      size="sm"
-                      className="w-full"
-                    >
-                      <Upload className="w-4 h-4 mr-2" />
-                      {uploading ? 'Загрузка...' : 'Загрузить'}
-                    </Button>
-                    {promoBanner.left_image && (
-                      <div className="space-y-2">
-                        <div className="flex items-center gap-2">
-                          <img src={promoBanner.left_image} alt="Left" className="h-10 object-contain" />
-                          <Button 
-                            variant="ghost" 
+                  
+                  {promoBanner.image && (
+                    <div className="space-y-3">
+                      <div className="flex items-center gap-3">
+                        <img src={promoBanner.image} alt="Banner" className="h-12 object-contain" />
+                        <Button 
+                          variant="ghost" 
+                          size="sm"
+                          onClick={() => setPromoBanner({ ...promoBanner, image: null })}
+                          className="text-red-500"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </Button>
+                      </div>
+                      
+                      {/* Position selector */}
+                      <div className="flex items-center gap-4">
+                        <Label className="text-xs text-zinc-500">Позиция:</Label>
+                        <div className="flex gap-2">
+                          <Button
+                            type="button"
+                            variant={promoBanner.image_position === 'left' ? 'default' : 'outline'}
                             size="sm"
-                            onClick={() => setPromoBanner({ ...promoBanner, left_image: null })}
-                            className="text-red-500 h-8 px-2"
+                            onClick={() => setPromoBanner({ ...promoBanner, image_position: 'left' })}
+                            className={promoBanner.image_position === 'left' ? 'bg-orange-500 hover:bg-orange-600' : ''}
                           >
-                            <Trash2 className="w-4 h-4" />
+                            <ChevronLeft className="w-4 h-4 mr-1" />
+                            Слева
+                          </Button>
+                          <Button
+                            type="button"
+                            variant={promoBanner.image_position === 'right' ? 'default' : 'outline'}
+                            size="sm"
+                            onClick={() => setPromoBanner({ ...promoBanner, image_position: 'right' })}
+                            className={promoBanner.image_position === 'right' ? 'bg-orange-500 hover:bg-orange-600' : ''}
+                          >
+                            Справа
+                            <ChevronRight className="w-4 h-4 ml-1" />
                           </Button>
                         </div>
-                        <div className="flex items-center gap-2">
-                          <Label className="text-xs text-zinc-400 whitespace-nowrap">Отступ слева (px):</Label>
-                          <Input
-                            type="number"
-                            value={promoBanner.left_image_offset || 0}
-                            onChange={(e) => setPromoBanner({ ...promoBanner, left_image_offset: parseInt(e.target.value) || 0 })}
-                            className="h-8 w-20 text-sm"
-                            min={-200}
-                            max={200}
-                          />
-                        </div>
                       </div>
-                    )}
-                  </div>
-                </div>
-
-                <div>
-                  <Label className="text-xs font-bold uppercase text-zinc-500">Изображение справа</Label>
-                  <div className="mt-1 space-y-2">
-                    <input
-                      type="file"
-                      ref={promoRightFileRef}
-                      onChange={handlePromoRightImageUpload}
-                      accept="image/*"
-                      className="hidden"
-                    />
-                    <Button 
-                      type="button" 
-                      variant="outline" 
-                      onClick={() => promoRightFileRef.current?.click()}
-                      disabled={uploading}
-                      size="sm"
-                      className="w-full"
-                    >
-                      <Upload className="w-4 h-4 mr-2" />
-                      {uploading ? 'Загрузка...' : 'Загрузить'}
-                    </Button>
-                    {promoBanner.right_image && (
-                      <div className="space-y-2">
-                        <div className="flex items-center gap-2">
-                          <img src={promoBanner.right_image} alt="Right" className="h-10 object-contain" />
-                          <Button 
-                            variant="ghost" 
-                            size="sm"
-                            onClick={() => setPromoBanner({ ...promoBanner, right_image: null })}
-                            className="text-red-500 h-8 px-2"
-                          >
-                            <Trash2 className="w-4 h-4" />
-                          </Button>
-                        </div>
-                        <div className="flex items-center gap-2">
-                          <Label className="text-xs text-zinc-400 whitespace-nowrap">Отступ справа (px):</Label>
-                          <Input
-                            type="number"
-                            value={promoBanner.right_image_offset || 0}
-                            onChange={(e) => setPromoBanner({ ...promoBanner, right_image_offset: parseInt(e.target.value) || 0 })}
-                            className="h-8 w-20 text-sm"
-                            min={-200}
-                            max={200}
-                          />
-                        </div>
-                      </div>
-                    )}
-                  </div>
+                    </div>
+                  )}
                 </div>
               </div>
 
@@ -1614,14 +1563,14 @@ export default function AdminPage() {
                     }}
                   >
                     <div className="flex-shrink-0">
-                      {promoBanner.left_image && (
-                        <img src={promoBanner.left_image} alt="" className="object-contain" style={{ maxHeight: `${(promoBanner.height || 40) - 8}px` }} />
+                      {promoBanner.image && promoBanner.image_position === 'left' && (
+                        <img src={promoBanner.image} alt="" className="object-contain" style={{ maxHeight: `${(promoBanner.height || 40) - 8}px` }} />
                       )}
                     </div>
                     <span className="flex-1 text-center">{promoBanner.text}</span>
                     <div className="flex-shrink-0">
-                      {promoBanner.right_image && (
-                        <img src={promoBanner.right_image} alt="" className="object-contain" style={{ maxHeight: `${(promoBanner.height || 40) - 8}px` }} />
+                      {promoBanner.image && promoBanner.image_position === 'right' && (
+                        <img src={promoBanner.image} alt="" className="object-contain" style={{ maxHeight: `${(promoBanner.height || 40) - 8}px` }} />
                       )}
                     </div>
                   </div>
