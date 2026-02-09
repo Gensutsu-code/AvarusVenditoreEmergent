@@ -1507,16 +1507,29 @@ export default function AdminPage() {
                       {uploading ? 'Загрузка...' : 'Загрузить'}
                     </Button>
                     {promoBanner.left_image && (
-                      <div className="flex items-center gap-2">
-                        <img src={promoBanner.left_image} alt="Left" className="h-10 object-contain" />
-                        <Button 
-                          variant="ghost" 
-                          size="sm"
-                          onClick={() => setPromoBanner({ ...promoBanner, left_image: null })}
-                          className="text-red-500 h-8 px-2"
-                        >
-                          <Trash2 className="w-4 h-4" />
-                        </Button>
+                      <div className="space-y-2">
+                        <div className="flex items-center gap-2">
+                          <img src={promoBanner.left_image} alt="Left" className="h-10 object-contain" />
+                          <Button 
+                            variant="ghost" 
+                            size="sm"
+                            onClick={() => setPromoBanner({ ...promoBanner, left_image: null })}
+                            className="text-red-500 h-8 px-2"
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </Button>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <Label className="text-xs text-zinc-400 whitespace-nowrap">Отступ слева (px):</Label>
+                          <Input
+                            type="number"
+                            value={promoBanner.left_image_offset || 0}
+                            onChange={(e) => setPromoBanner({ ...promoBanner, left_image_offset: parseInt(e.target.value) || 0 })}
+                            className="h-8 w-20 text-sm"
+                            min={-200}
+                            max={200}
+                          />
+                        </div>
                       </div>
                     )}
                   </div>
@@ -1544,16 +1557,29 @@ export default function AdminPage() {
                       {uploading ? 'Загрузка...' : 'Загрузить'}
                     </Button>
                     {promoBanner.right_image && (
-                      <div className="flex items-center gap-2">
-                        <img src={promoBanner.right_image} alt="Right" className="h-10 object-contain" />
-                        <Button 
-                          variant="ghost" 
-                          size="sm"
-                          onClick={() => setPromoBanner({ ...promoBanner, right_image: null })}
-                          className="text-red-500 h-8 px-2"
-                        >
-                          <Trash2 className="w-4 h-4" />
-                        </Button>
+                      <div className="space-y-2">
+                        <div className="flex items-center gap-2">
+                          <img src={promoBanner.right_image} alt="Right" className="h-10 object-contain" />
+                          <Button 
+                            variant="ghost" 
+                            size="sm"
+                            onClick={() => setPromoBanner({ ...promoBanner, right_image: null })}
+                            className="text-red-500 h-8 px-2"
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </Button>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <Label className="text-xs text-zinc-400 whitespace-nowrap">Отступ справа (px):</Label>
+                          <Input
+                            type="number"
+                            value={promoBanner.right_image_offset || 0}
+                            onChange={(e) => setPromoBanner({ ...promoBanner, right_image_offset: parseInt(e.target.value) || 0 })}
+                            className="h-8 w-20 text-sm"
+                            min={-200}
+                            max={200}
+                          />
+                        </div>
                       </div>
                     )}
                   </div>
