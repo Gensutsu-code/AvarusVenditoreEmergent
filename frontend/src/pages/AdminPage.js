@@ -514,7 +514,8 @@ export default function AdminPage() {
         status: editingOrder.status,
         full_name: editingOrder.full_name,
         address: editingOrder.address,
-        phone: editingOrder.phone
+        phone: editingOrder.phone,
+        comment: editingOrder.comment
       });
       setOrders(orders.map(o => o.id === editingOrder.id ? res.data : o));
       setEditingOrder(null);
