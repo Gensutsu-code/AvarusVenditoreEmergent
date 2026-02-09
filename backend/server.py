@@ -2001,6 +2001,9 @@ async def get_user_bonus_programs(user=Depends(get_current_user)):
             "description": program.get("description", ""),
             "full_description": program.get("full_description", ""),
             "image_url": program.get("image_url", ""),
+            "banner_url": program.get("banner_url", ""),
+            "banner_height": program.get("banner_height", 200),
+            "request_button_text": program.get("request_button_text", ""),
             "contribution_type": program.get("contribution_type", "order_total"),
             "contribution_percent": program.get("contribution_percent", 100),
             "bonus_points": round(current, 2),  # Накопленные бонусные баллы
