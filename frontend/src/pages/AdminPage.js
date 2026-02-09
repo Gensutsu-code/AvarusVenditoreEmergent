@@ -1080,7 +1080,7 @@ export default function AdminPage() {
               {categories.map((category) => (
                 <div key={category.id} className="border border-zinc-200 p-4">
                   {category.image_url && (
-                    <div className="aspect-video bg-zinc-100 mb-3 overflow-hidden">
+                    <div className="aspect-square bg-zinc-100 mb-3 overflow-hidden">
                       <img src={category.image_url} alt={category.name} className="w-full h-full object-cover" />
                     </div>
                   )}
