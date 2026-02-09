@@ -113,7 +113,7 @@ export default function AdminPage() {
   const productFileRef = useRef(null);
   const categoryFileRef = useRef(null);
   const promoFileRef = useRef(null);
-  const promoRightFileRef = useRef(null);
+  const promoFileRef = useRef(null);
   const importFileRef = useRef(null);
   const [editingCategory, setEditingCategory] = useState(null);
   const [isNewProduct, setIsNewProduct] = useState(false);
