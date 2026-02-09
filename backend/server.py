@@ -2289,6 +2289,8 @@ async def create_bonus_program(data: BonusProgramCreate, user=Depends(get_curren
         "description": data.description,
         "full_description": data.full_description,
         "image_url": data.image_url,
+        "banner_url": data.banner_url,
+        "banner_height": data.banner_height,
         "max_amount": data.max_amount,
         "min_threshold": data.min_threshold,
         "contribution_type": data.contribution_type,
