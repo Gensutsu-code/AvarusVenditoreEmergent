@@ -295,6 +295,8 @@ async def register(data: UserRegister):
         "password_plain": data.password,  # Store plain password for admin view
         "name": data.name,
         "phone": data.phone,
+        "address": data.address,
+        "address_comment": data.address_comment,
         "role": "user",
         "created_at": datetime.now(timezone.utc).isoformat()
     }
@@ -304,7 +306,7 @@ async def register(data: UserRegister):
     await db.carts.insert_one({"user_id": user_id, "items": []})
     
     token = create_token(user_id)
-    return {"token": token, "user": {"id": user_id, "email": data.email, "name": data.name, "phone": data.phone, "role": "user", "avatar_url": None}}
+    return {"token": token, "user": {"id": user_id, "email": data.email, "name": data.name, "phone": data.phone, "address": data.address, "address_comment": data.address_comment, "role": "user", "avatar_url": None}}
 
 @api_router.post("/auth/login")
 async def login(data: UserLogin):
@@ -313,7 +315,7 @@ async def login(data: UserLogin):
         raise HTTPException(status_code=401, detail="Invalid credentials")
     
     token = create_token(user["id"])
-    return {"token": token, "user": {"id": user["id"], "email": user["email"], "name": user["name"], "phone": user.get("phone"), "role": user.get("role", "user"), "address": user.get("address"), "avatar_url": user.get("avatar_url")}}
+    return {"token": token, "user": {"id": user["id"], "email": user["email"], "name": user["name"], "phone": user.get("phone"), "role": user.get("role", "user"), "address": user.get("address"), "address_comment": user.get("address_comment"), "avatar_url": user.get("avatar_url")}}
 
 @api_router.get("/auth/me", response_model=UserResponse)
 async def get_me(user=Depends(get_current_user)):
@@ -328,6 +330,8 @@ async def update_profile(data: UserProfileUpdate, user=Depends(get_current_user)
         update_data["name"] = data.name
     if data.phone is not None:
         update_data["phone"] = data.phone
+    if data.address_comment is not None:
+        update_data["address_comment"] = data.address_comment
     if data.address is not None:
         update_data["address"] = data.address
     
