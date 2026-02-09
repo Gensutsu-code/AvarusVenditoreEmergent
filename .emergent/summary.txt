@@ -5,73 +5,144 @@ The user wants to create a website for a truck auto parts store.
 - **Core Functionality:** A complete e-commerce platform with a product catalog, shopping cart, and checkout process.
 - **Search:** Advanced search by part number, name, and cross-reference.
 - **Product Management:** Admin can manage products, including multiple photos, cross-reference numbers, and CSV/Excel import.
-- **User Management:** Admin can manage users, including viewing their real passwords. Users can fully edit their profiles.
+- **User Management:** Admin can manage users.
 - **Order Management:** Admin can manage orders in real-time. Detailed Telegram notifications for new orders. Users can view their detailed order history and statistics.
 - **Promotions & Homepage:** Manageable promotional banner and a block for partner brand logos.
-- **Live Chat:** A built-in live chat with media support, integrated with a Telegram bot for admin replies. Images/videos must be viewable in an in-app lightbox. Admins can also send media from the admin panel.
+- **Live Chat:** A built-in live chat with media support, integrated with a Telegram bot for admin replies. The chat should update in real-time. Admins can delete any message.
 - **Bonus Program (Advanced):**
     - Admin can create, edit, and delete multiple, independent bonus programs.
-    - Currency is points, not rubles.
-    - Each program has an editable title, an extended description, an image, and a multi-level structure (e.g., Bronze, Silver, Gold) with different point thresholds and rewards.
-    - Admin can add specific prizes (with name, point cost, and image) that users can redeem with their points.
-    - Users can spend points to claim available prizes.
-- **Admin Dashboard:** A comprehensive statistics page and an enhanced user management section.
+    - Each program has an editable title, description, and image. It also features a customizable banner with adjustable height.
+    - Bonus accrual is based on a percentage of the order total, which is configurable for each level.
+    - Admin can add specific prizes (with name, point cost, and image) that users can redeem.
+    - Admin can customize the text of the request bonus button.
+- **Admin Experience:** A separate UI for administrators with a redesigned dashboard, order management, and profile page.
+- **User Experience:**
+    - A redesigned profile page, separate from the bonus program.
+    - Ability to add a comment to their delivery address.
+    - Ability to add a comment to their order during checkout.
 
 **User's preferred language**: Russian
 
 **what currently exists?**
-A full-stack e-commerce application (React, FastAPI, MongoDB) for a truck parts store. It features a complete admin panel for managing products, users, orders, partners, and a highly customized, multi-level bonus system with redeemable prizes. File and media uploads for chat and other features are now handled by Cloudinary. The user-facing side includes advanced search, full profile management, a shopping cart, detailed order history, and a feature-rich chat widget that supports images, videos, and files, all opening in a lightbox.
+A full-stack e-commerce application with a React frontend, FastAPI backend, and a persistent **MongoDB Atlas** database. All file uploads (product images, user avatars, prize photos, banners) are handled by **Cloudinary**.
+
+The application has two distinct UIs: one for customers and a separate, streamlined one for administrators.
+
+Key functionalities implemented:
+- A multi-level bonus program with customizable banners and prizes.
+- A persistent database, solving the problem of data loss on redeployment.
+- Admin capabilities to edit order details, including prices, items, and creation date.
+- Users can add comments to their delivery address and to specific orders.
+- A redesigned admin panel and separate user profile/bonus pages.
 
 **Last working item**:
-- **Last item agent was working:** The user requested a redesign of the bonus program display on the user's account page. The requirements are:
-    1.  Create a separate, distinct UI element to show the user's total accumulated bonus points.
-    2.  Remove the existing progress bar related to bonus programs.
-    3.  Add a new progress bar that shows the user's total spend on 'delivered' orders for the current calendar year (January 1st to December 31st).
+- **Last item agent was working:** The user reported a batch of issues. The agent started investigating the first one: uploaded photos for products and categories are not displaying correctly during creation or editing. The agent identified that the frontend was incorrectly constructing the image URL after upload and applied a fix.
 - **Status:** IN PROGRESS
 - **Agent Testing Done:** N
-- **Which testing method agent to use?** backend testing agent
+- **Which testing method agent to use?** both
 - **User Testing Done:** N
 
 **All Pending/In progress Issue list**:
-- No pending issues.
+- **Issue 1: Product/Category photos not displaying on upload (P0)**
+- **Issue 2: Aspect ratio for product/category images is not 1:1 (P1)**
+- **Issue 3: Reordering images in the promo banner is not implemented (P1)**
+- **Issue 4: The request bonus button text change is not working (P1)**
+- **Issue 5: Some order information is missing in the admin panel's order details views (P1)**
+
+**Issues Detail:**
+- **Issue 1: Product/Category photos not displaying on upload (P0)**
+  - **Attempted fixes:** The agent identified that  in  was incorrectly prepending the backend URL to the full URL returned by Cloudinary. A  was executed to remove the prepended URL.
+  - **Next debug checklist:**
+    1.  Verify the fix in  is correct and no other upload functions have the same bug.
+    2.  Test the full image upload flow for a new product: In the admin panel, create a product, upload an image, save it, and confirm the image appears correctly in the product list and on the product's public page.
+    3.  Test the image upload for an existing product (editing).
+    4.  Verify the category image upload works similarly.
+  - **Why fix this issue and what will be achieved with the fix?** This is a critical bug preventing admins from properly managing product and category visuals. Fixing it will restore core product management functionality.
+  - **Status:** IN PROGRESS
+  - **Is recurring issue?** N
+  - **Should Test frontend/backend/both after fix?** both
+  - **Blocked on other issue:** None
+
+- **Issue 2: Make product/category images 1:1 aspect ratio (P1)**
+  - **Attempted fixes:** None.
+  - **Next debug checklist:**
+    1.  Locate the CSS or component styles for product and category images in , , and any other relevant product listing components.
+    2.  Apply Tailwind CSS classes like  and  to enforce a 1:1 ratio without distorting the image.
+  - **Why fix this issue and what will be achieved with the fix?** To create a uniform and visually appealing grid for products and categories.
+  - **Status:** NOT STARTED
+  - **Is recurring issue?** N
+  - **Should Test frontend/backend/both after fix?** frontend
+  - **Blocked on other issue:** None
+
+- **Issue 3: Allow reordering images in the promo banner (P1)**
+  - **Attempted fixes:** None.
+  - **Next debug checklist:**
+    1.  In , within the Акции (Promotions) tab, add arrow buttons (left/right) next to each of the two banner images (, ).
+    2.  Implement a handler function that swaps the  and  URLs in the  state when an arrow is clicked.
+    3.  Ensure the  function saves the updated state to the backend.
+  - **Why fix this issue and what will be achieved with the fix?** Gives the admin more control over the homepage's visual layout.
+  - **Status:** NOT STARTED
+  - **Is recurring issue?** N
+  - **Should Test frontend/backend/both after fix?** both
+  - **Blocked on other issue:** None
+
+- **Issue 4: request bonus button text change is not working (P1)**
+  - **Attempted fixes:** The agent previously added the field to the backend models but did not fully test the implementation.
+  - **Next debug checklist:**
+    1.  In , verify that the input for  correctly updates the  state.
+    2.  Confirm that  sends the  field to the backend.
+    3.  In , ensure the  endpoint correctly receives and saves this field to the database.
+    4.  In , ensure the button's text is being pulled from the program data fetched from the API.
+  - **Why fix this issue and what will be achieved with the fix?** Restores a feature that was requested and partially implemented but is currently broken.
+  - **Status:** NOT STARTED
+  - **Is recurring issue?** Y
+  - **Should Test frontend/backend/both after fix?** both
+  - **Blocked on other issue:** None
+
+- **Issue 5: Some order information is missing in admin panel views (P1)**
+  - **Attempted fixes:** None.
+  - **Next debug checklist:**
+    1.  Ask the user for specifics on what information is missing.
+    2.  Inspect the order details view in  and the order editing modal in .
+    3.  Compare the displayed data with the data available in the  model in .
+    4.  Add the missing fields to the frontend components.
+  - **Why fix this issue and what will be achieved with the fix?** Ensures admins have all necessary information to process orders efficiently.
+  - **Status:** NOT STARTED
+  - **Is recurring issue?** N
+  - **Should Test frontend/backend/both after fix?** both
+  - **Blocked on other issue:** None
 
 **In progress Task List**:
-- **Task 1: Refactor Bonus UI & Add Yearly Order Progress Bar (P0)**
-  - **Where to resume:** The agent has identified the backend endpoint  in .
-    1.  **Backend:** Modify this endpoint to calculate the total sum of the user's 'delivered' orders within the current calendar year and include this value in the API response.
-    2.  **Frontend:** Modify  to consume the new data. Implement the UI changes: display total bonus points in a new card, remove the old progress bar, and add the new yearly order progress bar.
-  - **What will be achieved with this?** The user's account page will be updated to the new design, separating the display of accumulated points from a new yearly purchase progress metric, providing a clearer overview for the user.
-  - **Status:** IN PROGRESS
-  - **Should Test frontend/backend/both after fix?** both
-  - **Blocked on something:** None.
+- No separate in-progress tasks. The current work is captured in the issue list above.
 
 **Upcoming and Future Tasks**
 - **Upcoming Tasks:**
-    - **P1:** Add pagination and search functionality to the user list in the admin panel.
-    - **P1:** Implement an export feature for order statistics (Excel/PDF) in the admin dashboard.
-    - **P2:** Send a Telegram notification to the user when the admin issues a bonus promo code.
+    - **P0:** Add pagination and search functionality to the user list in the admin panel.
+    - **P0:** Implement an export feature for order statistics (Excel/PDF) in the admin dashboard.
+    - **P1:** Send a Telegram notification to the user when the admin issues a bonus promo code.
 - **Future Tasks:**
     - Search by VIN/truck model.
     - Product reviews.
     - Delivery cost calculator by region.
 
 **Completed work in this session**
-- **Chat Media Overhaul:**
-    - Fixed a bug where images in chat opened in a new tab. Implemented an in-app lightbox for both images and videos.
-    - Standardized media previews in the chat to be small, clickable thumbnails.
-    - The fix was applied to both the user-facing  and the  chat interface.
-- **File Upload Migration to Cloudinary:**
-    - Implemented support for uploading images, videos, and generic files in the chat for both users and admins.
-    - Migrated the file storage backend from an unreliable local setup to Cloudinary. This resolved issues with broken image links. The initial attempt to use Google Drive failed due to API limitations.
-- **Partner Image Uploads:** Added a feature for admins to upload partner logos directly via Cloudinary from the admin panel, replacing the previous URL input field.
-- **Bonus Program Major Enhancements:**
-    - **Prizes & Points System:** Replaced currency (₽) with points, and enabled admins to add redeemable prizes (with names, point costs, and images) to each bonus program.
-    - **Multi-Level Structure:** Implemented a level-based system (e.g., Bronze, Silver, Gold), allowing admins to configure different reward tiers based on accumulated points.
-    - **Extended Descriptions:** Added a rich text field for admins to provide detailed descriptions for each bonus program.
-    - **UI/UX Cleanup:** Removed the Your Progress text and the minimum payout threshold requirement, simplifying the user experience.
+- **Database Migration:** Migrated the entire application database from a local, ephemeral MongoDB instance to a user-provided, persistent **MongoDB Atlas** cluster. This was a critical fix for data persistence.
+- **File Storage Migration:** Migrated all file uploads (avatars, prize images, banners) from local server storage to **Cloudinary**, ensuring files are persistent and served correctly.
+- **Bonus Page Banner:** Replaced the static points card on the bonus page with a dynamic, admin-configurable banner with adjustable height.
+- **Address & Order Comments:**
+    - Added a comment field to delivery addresses, editable on registration and in the user profile.
+    - Added a comment field to orders, editable during checkout and in the admin panel.
+    - Included the order comment in the Telegram notification for new orders.
+- **Admin Order Editing:**
+    - Admins can now edit the date and time of an order.
+    - Admins can now edit the price and quantity of items within any order, with the total price automatically recalculating.
+- **Avatar Uploads:** Fixed avatar uploads for both users and admins, ensuring they save to Cloudinary and display correctly across the app.
+- **Product Seeding Bug:** Fixed a bug where products were re-added to the database on every home page visit by removing the automatic seeding call.
+- **Bonus Page Redesign & Separation:** Completed the task of separating the Bonus Program into its own page () and simplifying the , with full testing.
+- **Bonus Level Color Fix:** Corrected the CSS logic to ensure bonus levels display their assigned colors correctly, both for achieved and unachieved levels.
 
 **Earlier issues found/mentioned but not fixed**
-- None.
+- All known issues are listed in the  section.
 
 **Known issue recurrence from previous fork**
 - None.
@@ -81,73 +152,82 @@ A full-stack e-commerce application (React, FastAPI, MongoDB) for a truck parts 
 
 **Key Technical Concepts**
 - **Backend:** FastAPI
-- **Frontend:** React
-- **Database:** MongoDB
+- **Frontend:** React, React Router
+- **Database:** **MongoDB Atlas** (persistent cloud database)
+- **File Storage:** **Cloudinary** (for all images and uploads)
 - **Authentication:** JWT
 - **Styling:** Tailwind CSS, Shadcn/UI
-- **Media Storage:** Cloudinary (New)
+- **Real-time:** Frontend polling.
 
 **key DB schema**
-- **bonus_programs:** The schema was significantly expanded to include:
-    - 
-    - 
-    - 
-- **chat_messages:**  now stores a Cloudinary URL.
-
-**changes in tech stack**
-- **Added:** Cloudinary is now used for all media and file storage.
+- **users:**
+  - : (string) Now points to a Cloudinary URL.
+  - : (string, optional) New field for comments on the delivery address.
+- **orders:**
+  - : (string, optional) New field for comments on the order.
+  -  is now editable by admins.
+  -  array's  and  are now editable by admins.
+- **bonus_programs:**
+  - : (string, optional) URL for the banner image on the bonus page.
+  - : (integer, optional) Height in pixels for the banner.
+  - : (string, optional) Custom text for the prize request button.
 
 **All files of reference**
-- : Heavily modified to integrate Cloudinary, add new upload endpoints (for chat and partners), and completely overhaul the bonus program logic (points, prizes, levels, yearly total calculation).
-- : Significantly updated to support file uploads in chat and management of the new advanced bonus program features (prizes with images, levels). Implemented a lightbox for media.
-- : Overhauled to display the new multi-level bonus program with prizes and points. This is the primary file for the current task.
-- : Refactored to handle Cloudinary URLs, display media thumbnails, and open images/videos in a lightbox.
-- : New file created to encapsulate all Cloudinary API interactions.
-- : Updated with Cloudinary API credentials.
-- : Obsolete file from a failed integration attempt.
+- : Major changes to integrate Cloudinary, add new fields to Pydantic models (User, Order, BonusProgram), and update API endpoints for creating/updating users, orders, and bonus programs to handle the new editable fields.
+- : Major changes to add UI for editing order date/time/items, user address comments, bonus program banners, and product image uploads.
+- : Refactored to support advanced order editing in its own modal.
+- : Added UI for editing the new .
+- : Added UI for admin avatar uploads.
+- : Replaced the points card with the new dynamic banner. Corrected image fallback logic and color display.
+- : Added an input field for the new order .
+- : Added an input field for the new .
+- : Removed the  call that was causing unwanted data seeding.
+- : Updated with the user's MongoDB Atlas connection string.
 
 **Areas that need refactoring**:
--  and  remain large monoliths that would benefit from being broken down into smaller, more focused modules/components.
-- The files  and  are obsolete after the switch to Cloudinary and should be removed to clean up the codebase.
+-  and  remain large monolithic files and would benefit from being broken down into smaller, more manageable modules (e.g., API routes, components).
 
 **key api endpoints**
--  (POST): Handles user media uploads to chat via Cloudinary.
--  (POST): Handles admin media uploads to chat via Cloudinary.
--  (POST): Handles partner logo uploads.
--  (POST): Allows users to spend points on prizes.
--  (GET, POST, PUT): Manages all aspects of bonus programs, including levels and prizes.
--  (GET): Returns program details, including levels and prizes, to the user. This is the endpoint to be modified for the current task.
+-  (POST): Now uploads files to Cloudinary instead of local storage.
+-  (PUT): Now accepts .
+-  (PUT): Now accepts .
+-  (PUT): Heavily modified to accept , , and an updated  array with new prices/quantities. It now recalculates the order total.
+-  (PUT): Updated to save , , and .
+- , , : All updated to return  and .
 
 **Critical Info for New Agent**
-- The immediate priority is to modify the bonus program display on the user's account page as per the last user request (separate points display, remove progress bar, add yearly order total bar). This involves work on both the backend () and frontend ().
-- All file uploads are now handled by **Cloudinary**. The code for the previous Google Drive attempt () is still in the repository but is unused and should be ignored.
-- The bonus system is now based on points, redeemable prizes, and a multi-level structure. Ensure all related logic adheres to this new model.
+- **The database is now persistent on MongoDB Atlas.** The connection string is in . Do not expect the database to be empty on startup.
+- **All file uploads are handled by Cloudinary.** Do not implement any local file storage. When handling uploads, ensure the frontend uses the full URL returned by the API directly, without prepending any backend URL.
+- **The immediate priority is to fix the batch of bugs reported by the user in their last message (msg #586).** Start with the product/category image upload issue, as the agent has already begun work on it. Follow the checklist provided in the Pending Issues section.
 
 **documents and test reports created in this job**
+-  (Updated)
 - 
+-  (Created during the MongoDB Atlas migration)
 
 **Last 10 User Messages and any pending HUMAN messages**
-10. **User:** remove the minimum threshold for prize requests in the bonus program (COMPLETED)
-9. **User:** can you give me advice on improving the bonus program...? (COMPLETED - Agent provided suggestions)
-8. **User:** add an extended description, change rubles to points, add prizes, and allow spending points (COMPLETED)
-7. **User:** remove the text above the progress bar in the bonus program (COMPLETED)
-6. **User:** files open on another page...they should open on the main page (COMPLETED - Implemented lightbox in admin panel)
-5. **User:** chat images are too big, make them small thumbnails... (COMPLETED)
-4. **User:** add the ability to upload photos to partners in the admin panel (COMPLETED)
-3. **User:** add image/video/file support to chat for users and admins... and store files on my google drive (COMPLETED - Implemented with Cloudinary after Google Drive failed)
-2. **User:** images in chat still not showing, just a broken file... (COMPLETED - This was the initial bug that was fixed)
-1. **User:** make a separate cell showing the number of bonuses... remove the progress bar. Make a bar that shows the total amount of all delivered orders for one calendar year (PENDING - This is the current task)
+10. **User:** Asked to add the ability for admins to change order date/time and item prices. (COMPLETED)
+9. **User:** Asked to add comments to user addresses and orders. (COMPLETED)
+8. **User:** да давай настроим mongodb (Yes, let's set up mongodb) (COMPLETED - Migrated to MongoDB Atlas)
+7. **User:** А ты не можешь скопировать все данные из моей базы когда приступаешь к редактированию? (Can't you copy all the data from my database when you start editing?) (ADDRESSED - Agent explained why it's not possible and proposed MongoDB Atlas)
+6. **User:** Почему наши базы данных не синхронизируются... (Why don't our databases sync...) - User reported data loss on redeploy. (ADDRESSED - Agent identified the root cause and proposed MongoDB Atlas)
+5. **User:** Asked to replace the bonus points card with a customizable image banner. (COMPLETED)
+4. **User:** Asked to add avatar changing functionality for the administrator. (COMPLETED)
+3. **User:** Почему снова добавляются товары после удаления? ... не отображаются аватарки... (Why are products being added again after deletion? ... avatars are not showing...) (COMPLETED)
+2. **User:** не работает загрузка изображения в призах на бонусную программу (Image upload for prizes in the bonus program isn't working.) (COMPLETED)
+1. **User:** не отображаются загруженные фотографии к товарам... сделать размер 1:1... в акциях добавь возможность двигать расположение фотографий... кнопка изменения текста запроса бонуса не работает... в подробностях о заказах не отображается некоторая информация (Uploaded product photos aren't showing... make images 1:1... in promotions, add the ability to move photos... the bonus request button text change isn't working... some order details are missing in the admin panel.) (IN PROGRESS - This is the current set of tasks)
 
 **Project Health Check:**
 - **Broken:** None.
-- **Mocked:** Application data is transient and resets with each new session.
+- **Mocked:** None. The application now uses a persistent cloud database and file storage.
 
 **3rd Party Integrations**
+- **MongoDB Atlas:** Cloud-hosted MongoDB for persistent data storage.
+- **Cloudinary:** Used for all media and file storage (product images, user avatars, banners).
 - **Telegram (via ):** Used for order notifications and the admin-user live chat bridge.
-- **Cloudinary:** Used for all media and file storage. Credentials are in .
 
 **Testing status**
-- **Testing agent used after significant changes:** NO
+- **Testing agent used after significant changes:** YES
 - **Troubleshoot agent used after agent stuck in loop:** NO
 - **Test files created:** None.
 - **Known regressions:** None.
@@ -159,4 +239,8 @@ A full-stack e-commerce application (React, FastAPI, MongoDB) for a truck parts 
 - **Test User Password:** 
 
 **What agent forgot to execute**
-- The agent correctly identified and started working on the user's most recent request. Nothing was forgotten.</analysis>
+The agent was in the middle of addressing a list of 5 bugs/features reported by the user in their last message. It started work on the first item (product image uploads) but has not fully tested the fix or started work on the other four items:
+- Making images 1:1 aspect ratio.
+- Allowing reordering of promo banner images.
+- Fixing the request bonus button text functionality.
+- Adding missing information to admin order views.</analysis>
