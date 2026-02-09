@@ -515,7 +515,9 @@ export default function AdminPage() {
         full_name: editingOrder.full_name,
         address: editingOrder.address,
         phone: editingOrder.phone,
-        comment: editingOrder.comment
+        comment: editingOrder.comment,
+        created_at: editingOrder.created_at,
+        items: editingOrder.items
       });
       setOrders(orders.map(o => o.id === editingOrder.id ? res.data : o));
       setEditingOrder(null);
@@ -523,6 +525,16 @@ export default function AdminPage() {
     } catch (err) {
       toast.error('Ошибка сохранения');
     }
+  };
+
+  const handleUpdateOrderItem = (index, field, value) => {
+    const newItems = [...editingOrder.items];
+    newItems[index] = { ...newItems[index], [field]: field === 'price' || field === 'quantity' ? Number(value) : value };
+    setEditingOrder({ ...editingOrder, items: newItems });
+  };
+
+  const calculateOrderTotal = (items) => {
+    return items.reduce((sum, item) => sum + (item.price * item.quantity), 0);
   };
 
   const handleDeleteOrder = async (orderId) => {
