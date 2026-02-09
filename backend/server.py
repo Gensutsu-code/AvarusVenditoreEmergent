@@ -979,6 +979,11 @@ async def send_telegram_order_notification(order: dict, user: dict):
         
         items_text = "\n\n".join(items_lines)
         
+        # Add comment if present
+        comment_text = ""
+        if order.get('comment'):
+            comment_text = f"\n💬 *Комментарий:* {order['comment']}"
+        
         message = f"""🛒 *НОВЫЙ ЗАКАЗ!*
 
 📋 *Заказ #{order['id'][:8]}*
@@ -986,7 +991,7 @@ async def send_telegram_order_notification(order: dict, user: dict):
 
 👤 *Клиент:* {order['full_name']}
 📞 *Телефон:* {order['phone']}
-📍 *Адрес:* {order['address']}
+📍 *Адрес:* {order['address']}{comment_text}
 
 ━━━━━━━━━━━━━━━━━━
 *ТОВАРЫ ({len(order['items'])} шт.):*
