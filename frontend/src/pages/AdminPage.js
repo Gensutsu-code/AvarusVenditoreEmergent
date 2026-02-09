@@ -2897,6 +2897,19 @@ export default function AdminPage() {
                           </div>
                         </Button>
                       )}
+                      
+                      {/* Header Font Size - always visible */}
+                      <div className="mt-4">
+                        <Label className="text-xs text-zinc-500">Размер заголовка "Бонусная программа" (px)</Label>
+                        <Input
+                          type="number"
+                          value={editingProgram.header_font_size || 14}
+                          onChange={(e) => setEditingProgram({...editingProgram, header_font_size: parseInt(e.target.value) || 14})}
+                          min={12}
+                          max={48}
+                          className="mt-1"
+                        />
+                      </div>
                     </div>
                   </div>
 
