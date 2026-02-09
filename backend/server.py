@@ -165,6 +165,8 @@ class PromoBannerUpdate(BaseModel):
     height: Optional[int] = 40
     left_image: Optional[str] = None
     right_image: Optional[str] = None
+    left_image_offset: Optional[int] = 0
+    right_image_offset: Optional[int] = 0
 
 class ProductCreate(BaseModel):
     name: str
