@@ -255,6 +255,19 @@ export default function AccountPage() {
                   className="mt-1"
                 />
               </div>
+
+              <div>
+                <Label className="text-xs font-bold uppercase text-zinc-500 flex items-center gap-2">
+                  <MessageSquare className="w-4 h-4" />
+                  Комментарий к адресу
+                </Label>
+                <Textarea
+                  value={formData.address_comment}
+                  onChange={(e) => setFormData({ ...formData, address_comment: e.target.value })}
+                  placeholder="Код домофона, этаж, ориентиры..."
+                  className="mt-1 min-h-[80px]"
+                />
+              </div>
               
               <Button 
                 onClick={handleSaveProfile}
