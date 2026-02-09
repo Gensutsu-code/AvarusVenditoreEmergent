@@ -4,7 +4,7 @@ import axios from 'axios';
 import { 
   Users, Package, ShoppingBag, TrendingUp, User,
   Plus, Pencil, Trash2, Save, Eye, FolderOpen, Megaphone, Upload, Image,
-  MessageCircle, Send, BarChart3, Download, FileSpreadsheet, Pin, Tag, X, Copy, Gift, Award, ChevronDown, Paperclip, Play, ZoomIn, ZoomOut, Settings, ChevronLeft, ChevronRight
+  MessageCircle, Send, BarChart3, Download, FileSpreadsheet, Pin, Tag, X, Copy, Gift, Award, ChevronDown, Paperclip, Play, ZoomIn, ZoomOut, Settings, ChevronLeft, ChevronRight, ArrowLeftRight
 } from 'lucide-react';
 import { Button } from '../components/ui/button';
 import { Input } from '../components/ui/input';
