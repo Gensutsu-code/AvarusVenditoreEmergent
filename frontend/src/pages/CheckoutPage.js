@@ -181,6 +181,21 @@ export default function CheckoutPage() {
               />
             </div>
 
+            <div>
+              <Label htmlFor="comment" className="text-xs font-bold uppercase tracking-widest text-zinc-500 flex items-center gap-2">
+                <MessageSquare className="w-4 h-4" />
+                Комментарий к заказу
+              </Label>
+              <Textarea
+                id="comment"
+                value={form.comment}
+                onChange={(e) => setForm({ ...form, comment: e.target.value })}
+                placeholder="Дополнительные пожелания, время доставки, код домофона..."
+                className="mt-2 bg-zinc-50 min-h-[100px]"
+                data-testid="checkout-comment"
+              />
+            </div>
+
             {/* Payment info */}
             <div className="bg-zinc-50 border border-zinc-200 p-4">
               <div className="flex items-center gap-3 mb-2">
