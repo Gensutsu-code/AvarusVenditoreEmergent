@@ -2850,6 +2850,17 @@ export default function AdminPage() {
                                 className="mt-1"
                               />
                             </div>
+                            <div>
+                              <Label className="text-xs text-zinc-500">Размер заголовка (px)</Label>
+                              <Input
+                                type="number"
+                                value={editingProgram.header_font_size || 14}
+                                onChange={(e) => setEditingProgram({...editingProgram, header_font_size: parseInt(e.target.value) || 14})}
+                                min={12}
+                                max={48}
+                                className="mt-1"
+                              />
+                            </div>
                             <div className="flex gap-2 pt-5">
                               <Button 
                                 type="button" 
