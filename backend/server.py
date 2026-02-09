@@ -2351,6 +2351,8 @@ async def update_bonus_program(program_id: str, data: BonusProgramCreate, user=D
         "description": data.description,
         "full_description": data.full_description,
         "image_url": data.image_url,
+        "banner_url": data.banner_url,
+        "banner_height": data.banner_height,
         "max_amount": data.max_amount,
         "min_threshold": data.min_threshold,
         "contribution_type": data.contribution_type,
