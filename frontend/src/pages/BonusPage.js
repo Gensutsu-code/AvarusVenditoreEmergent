@@ -342,6 +342,21 @@ export default function BonusPage() {
                     </div>
                   )}
 
+                  {/* Full Description */}
+                  {program.full_description && (
+                    <div className="px-6 pb-6">
+                      <details className="group">
+                        <summary className="cursor-pointer text-sm text-orange-600 hover:text-orange-700 font-medium list-none flex items-center gap-1">
+                          <span>Подробнее о программе</span>
+                          <ChevronDown className="w-4 h-4 group-open:rotate-180 transition-transform" />
+                        </summary>
+                        <p className="mt-3 text-sm text-zinc-600 whitespace-pre-line bg-zinc-50 p-4 rounded-xl">
+                          {program.full_description}
+                        </p>
+                      </details>
+                    </div>
+                  )}
+
                   {/* Request Bonus Button */}
                   <div className="p-6 border-t border-zinc-100 bg-zinc-50">
                     {program.bonus_requested ? (
