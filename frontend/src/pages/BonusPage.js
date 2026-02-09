@@ -152,7 +152,6 @@ export default function BonusPage() {
                 ? sortedLevels[currentLevelIndex + 1] 
                 : null;
               const amountToNextLevel = nextLevel ? Math.max(0, nextLevel.min_points - yearlyTotal) : 0;
-              const isExpanded = expandedProgram === program.id;
 
               return (
                 <div key={program.id} className="bg-white rounded-2xl border border-zinc-200 shadow-sm overflow-hidden">
