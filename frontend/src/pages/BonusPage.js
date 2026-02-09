@@ -263,35 +263,21 @@ export default function BonusPage() {
                     </div>
                   )}
 
-                  {/* Prizes Section - Expanded by default */}
+                  {/* Prizes Section */}
                   {program.prizes && program.prizes.filter(p => p.enabled).length > 0 && (
                     <div className="p-6 border-t border-zinc-100">
-                      <div className="flex items-center justify-between mb-4">
+                      <button 
+                        className="flex items-center justify-between w-full"
+                        onClick={() => setExpandedProgram(isExpanded ? null : program.id)}
+                      >
                         <h3 className="font-bold text-zinc-900 flex items-center gap-2">
                           <Award className="w-5 h-5 text-orange-500" />
                           Доступные призы ({program.prizes.filter(p => p.enabled).length})
                         </h3>
-                        <Button 
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => setCollapsedPrizes(prev => ({ ...prev, [program.id]: !prev[program.id] }))}
-                          className="text-zinc-500 hover:text-zinc-700"
-                        >
-                          {isCollapsed ? (
-                            <>
-                              <ChevronDown className="w-4 h-4 mr-1" />
-                              Развернуть
-                            </>
-                          ) : (
-                            <>
-                              <ChevronUp className="w-4 h-4 mr-1" />
-                              Свернуть
-                            </>
-                          )}
-                        </Button>
-                      </div>
+                        {isExpanded ? <ChevronUp className="w-5 h-5" /> : <ChevronDown className="w-5 h-5" />}
+                      </button>
                       
-                      {!isCollapsed && (
+                      {isExpanded && (
                         <div className="mt-4 grid gap-3">
                           {program.prizes.filter(p => p.enabled).map((prize) => {
                             const canAfford = (program.bonus_points || 0) >= prize.points_cost;
