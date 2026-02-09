@@ -111,31 +111,15 @@ export default function BonusPage() {
       <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Header */}
         <div className="text-center mb-8">
-          <h1 className="text-4xl md:text-5xl font-bold text-zinc-900">
+          <div className="inline-flex items-center gap-2 bg-orange-100 text-orange-600 px-4 py-2 rounded-full text-sm font-medium mb-4">
+            <Sparkles className="w-4 h-4" />
             Бонусная программа
-          </h1>
-        </div>
-
-        {/* Total Points Card - More Prominent */}
-        {bonusPrograms.length > 0 && (
-          <div className="mb-8 bg-gradient-to-r from-orange-500 via-amber-500 to-orange-600 rounded-3xl p-8 text-white shadow-2xl">
-            <div className="flex flex-col md:flex-row items-center justify-between gap-4">
-              <div className="flex items-center gap-4">
-                <div className="w-16 h-16 bg-white/20 rounded-2xl flex items-center justify-center backdrop-blur-sm">
-                  <Star className="w-10 h-10 text-white" />
-                </div>
-                <div>
-                  <p className="text-white/80 text-sm font-medium uppercase tracking-wide">Ваши баллы</p>
-                  <p className="text-lg text-white/90">Накоплено на счету</p>
-                </div>
-              </div>
-              <div className="text-center md:text-right">
-                <p className="text-5xl md:text-6xl font-black">{totalPoints.toFixed(0)}</p>
-                <p className="text-white/80 text-lg">баллов</p>
-              </div>
-            </div>
           </div>
-        )}
+          <h1 className="text-3xl md:text-4xl font-bold text-zinc-900 mb-2">
+            Ваши бонусы
+          </h1>
+          <p className="text-zinc-500">Накапливайте баллы и обменивайте на призы</p>
+        </div>
 
         {/* Banner Image - fetched from first bonus program */}
         {bonusPrograms.length > 0 && bonusPrograms[0].banner_url && (
