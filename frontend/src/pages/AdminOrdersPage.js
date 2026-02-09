@@ -409,6 +409,12 @@ export default function AdminOrdersPage() {
                   <p className="text-xs font-bold uppercase text-zinc-500">Адрес</p>
                   <p className="font-medium">{viewingOrder.address}</p>
                 </div>
+                {viewingOrder.comment && (
+                  <div className="col-span-2">
+                    <p className="text-xs font-bold uppercase text-zinc-500">Комментарий</p>
+                    <p className="font-medium text-zinc-600">{viewingOrder.comment}</p>
+                  </div>
+                )}
               </div>
               
               <div>
