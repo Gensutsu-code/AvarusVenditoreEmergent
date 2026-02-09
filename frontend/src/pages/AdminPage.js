@@ -369,6 +369,17 @@ export default function AdminPage() {
     }
   };
 
+  // Swap promo banner images
+  const handleSwapPromoImages = () => {
+    setPromoBanner({
+      ...promoBanner,
+      left_image: promoBanner.right_image,
+      right_image: promoBanner.left_image,
+      left_image_offset: promoBanner.right_image_offset || 0,
+      right_image_offset: promoBanner.left_image_offset || 0
+    });
+  };
+
   const openNewProduct = () => {
     setIsNewProduct(true);
     setEditingProduct({
