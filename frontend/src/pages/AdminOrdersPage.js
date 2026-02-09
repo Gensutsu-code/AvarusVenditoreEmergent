@@ -399,15 +399,15 @@ export default function AdminOrdersPage() {
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <p className="text-xs font-bold uppercase text-zinc-500">Клиент</p>
-                  <p className="font-medium">{viewingOrder.customer_name}</p>
+                  <p className="font-medium">{viewingOrder.full_name}</p>
                 </div>
                 <div>
                   <p className="text-xs font-bold uppercase text-zinc-500">Телефон</p>
-                  <p className="font-medium">{viewingOrder.customer_phone}</p>
+                  <p className="font-medium">{viewingOrder.phone}</p>
                 </div>
                 <div className="col-span-2">
                   <p className="text-xs font-bold uppercase text-zinc-500">Адрес</p>
-                  <p className="font-medium">{viewingOrder.customer_address}</p>
+                  <p className="font-medium">{viewingOrder.address}</p>
                 </div>
               </div>
               
