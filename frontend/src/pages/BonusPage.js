@@ -111,14 +111,13 @@ export default function BonusPage() {
       <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Header */}
         <div className="text-center mb-8">
-          <div className="inline-flex items-center gap-2 bg-orange-100 text-orange-600 px-4 py-2 rounded-full text-sm font-medium mb-4">
+          <div 
+            className="inline-flex items-center gap-2 bg-orange-100 text-orange-600 px-4 py-2 rounded-full font-medium"
+            style={{ fontSize: bonusPrograms[0]?.header_font_size || 14 }}
+          >
             <Sparkles className="w-4 h-4" />
             Бонусная программа
           </div>
-          <h1 className="text-3xl md:text-4xl font-bold text-zinc-900 mb-2">
-            Ваши бонусы
-          </h1>
-          <p className="text-zinc-500">Накапливайте баллы и обменивайте на призы</p>
         </div>
 
         {/* Banner Image - fetched from first bonus program */}
