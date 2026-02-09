@@ -153,7 +153,7 @@ export default function BonusPage() {
                 ? sortedLevels[currentLevelIndex + 1] 
                 : null;
               const amountToNextLevel = nextLevel ? Math.max(0, nextLevel.min_points - yearlyTotal) : 0;
-              const isCollapsed = collapsedPrizes[program.id];
+              const isExpanded = expandedProgram === program.id;
 
               return (
                 <div key={program.id} className="bg-white rounded-2xl border border-zinc-200 shadow-sm overflow-hidden">
@@ -170,12 +170,6 @@ export default function BonusPage() {
                       <div className="flex-1">
                         <h2 className="text-xl font-bold text-zinc-900">{program.title || 'Бонусная программа'}</h2>
                         <p className="text-zinc-500 text-sm mt-1">{program.description}</p>
-                        {/* Full Description - moved here below short description */}
-                        {program.full_description && (
-                          <p className="text-zinc-600 text-sm mt-3 whitespace-pre-line bg-zinc-50 p-3 rounded-lg">
-                            {program.full_description}
-                          </p>
-                        )}
                       </div>
                       <div className="text-right">
                         <p className="text-3xl font-bold text-orange-500">{(program.bonus_points || 0).toFixed(0)}</p>
