@@ -65,6 +65,8 @@ class UserRegister(BaseModel):
     password: str
     name: str
     phone: Optional[str] = None
+    address: Optional[str] = None
+    address_comment: Optional[str] = None
 
 class UserLogin(BaseModel):
     email: str
@@ -77,6 +79,7 @@ class UserResponse(BaseModel):
     phone: Optional[str] = None
     role: str = "user"
     address: Optional[str] = None
+    address_comment: Optional[str] = None
     avatar_url: Optional[str] = None
 
 class UserProfileUpdate(BaseModel):
@@ -84,6 +87,7 @@ class UserProfileUpdate(BaseModel):
     email: Optional[str] = None
     phone: Optional[str] = None
     address: Optional[str] = None
+    address_comment: Optional[str] = None
     current_password: Optional[str] = None
     new_password: Optional[str] = None
 
@@ -94,6 +98,7 @@ class AdminUserCreate(BaseModel):
     name: str
     phone: Optional[str] = None
     address: Optional[str] = None
+    address_comment: Optional[str] = None
     role: str = "user"
 
 class AdminUserUpdate(BaseModel):
@@ -102,6 +107,7 @@ class AdminUserUpdate(BaseModel):
     name: Optional[str] = None
     phone: Optional[str] = None
     address: Optional[str] = None
+    address_comment: Optional[str] = None
     role: Optional[str] = None
 
 class AdminUserResponse(BaseModel):
@@ -111,6 +117,7 @@ class AdminUserResponse(BaseModel):
     phone: Optional[str] = None
     role: str = "user"
     address: Optional[str] = None
+    address_comment: Optional[str] = None
     password_plain: Optional[str] = None  # Plain password for admin view
     created_at: Optional[str] = None
     total_orders: int = 0
@@ -122,6 +129,7 @@ class AdminOrderUpdate(BaseModel):
     full_name: Optional[str] = None
     address: Optional[str] = None
     phone: Optional[str] = None
+    comment: Optional[str] = None
 
 # Category models
 class CategoryCreate(BaseModel):
