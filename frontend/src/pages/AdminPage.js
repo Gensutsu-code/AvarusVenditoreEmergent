@@ -161,6 +161,7 @@ export default function AdminPage() {
   const [bonusCodeInput, setBonusCodeInput] = useState('');
   const [issuingBonus, setIssuingBonus] = useState(false);
   const bonusImageFileRef = useRef(null);
+  const bonusBannerFileRef = useRef(null);
   
   // Partners states
   const [partners, setPartners] = useState([]);
