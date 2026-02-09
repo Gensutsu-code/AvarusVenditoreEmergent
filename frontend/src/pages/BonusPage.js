@@ -109,7 +109,7 @@ export default function BonusPage() {
   return (
     <div className="min-h-screen bg-gradient-to-b from-orange-50 to-white" data-testid="bonus-page">
       <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        {/* Header with Total Points */}
+        {/* Header */}
         <div className="text-center mb-8">
           <div className="inline-flex items-center gap-2 bg-orange-100 text-orange-600 px-4 py-2 rounded-full text-sm font-medium mb-4">
             <Sparkles className="w-4 h-4" />
@@ -121,22 +121,20 @@ export default function BonusPage() {
           <p className="text-zinc-500">Накапливайте баллы и обменивайте на призы</p>
         </div>
 
-        {/* Total Points Card */}
-        <div className="bg-gradient-to-r from-orange-500 via-orange-600 to-amber-500 rounded-2xl p-6 md:p-8 text-white shadow-xl mb-8 relative overflow-hidden">
-          <div className="absolute top-0 right-0 w-64 h-64 bg-white/10 rounded-full -translate-y-1/2 translate-x-1/2"></div>
-          <div className="absolute bottom-0 left-0 w-32 h-32 bg-white/10 rounded-full translate-y-1/2 -translate-x-1/2"></div>
-          
-          <div className="relative flex items-center justify-between">
-            <div>
-              <p className="text-orange-200 text-sm font-medium mb-1">Накоплено баллов</p>
-              <p className="text-5xl md:text-6xl font-bold">{totalPoints.toFixed(0)}</p>
-              <p className="text-orange-200 text-sm mt-2">Доступно для обмена на призы</p>
-            </div>
-            <div className="w-20 h-20 md:w-24 md:h-24 bg-white/20 rounded-full flex items-center justify-center">
-              <Gift className="w-10 h-10 md:w-12 md:h-12" />
-            </div>
+        {/* Banner Image - fetched from first bonus program */}
+        {bonusPrograms.length > 0 && bonusPrograms[0].banner_url && (
+          <div className="flex justify-center mb-8">
+            <img 
+              src={bonusPrograms[0].banner_url} 
+              alt="Бонусная программа"
+              className="rounded-2xl shadow-xl object-cover"
+              style={{ 
+                maxWidth: '100%',
+                height: bonusPrograms[0].banner_height || 200
+              }}
+            />
           </div>
-        </div>
+        )}
 
         {/* Bonus Programs */}
         {bonusPrograms.length === 0 ? (
