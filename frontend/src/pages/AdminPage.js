@@ -3961,9 +3961,70 @@ export default function AdminPage() {
                 />
               </div>
 
-              <div className="bg-zinc-50 p-3 border border-zinc-200">
-                <p className="text-sm text-zinc-500">Сумма заказа:</p>
-                <p className="text-xl font-bold font-mono">{formatPrice(editingOrder.total)} ₽</p>
+              <div>
+                <Label className="text-xs font-bold uppercase text-zinc-500">Дата и время заказа</Label>
+                <Input
+                  type="datetime-local"
+                  value={editingOrder.created_at ? editingOrder.created_at.slice(0, 16) : ''}
+                  onChange={(e) => setEditingOrder({ ...editingOrder, created_at: e.target.value ? new Date(e.target.value).toISOString() : editingOrder.created_at })}
+                  className="mt-1"
+                  data-testid="order-date-input"
+                />
+              </div>
+
+              {/* Order Items with editable prices */}
+              <div className="border-t pt-4">
+                <Label className="text-xs font-bold uppercase text-zinc-500 mb-3 block">Товары в заказе</Label>
+                <div className="space-y-3">
+                  {editingOrder.items?.map((item, idx) => (
+                    <div key={idx} className="bg-zinc-50 p-3 rounded-lg border border-zinc-200">
+                      <div className="flex items-start gap-3">
+                        {item.image_url && (
+                          <img src={item.image_url} alt={item.name} className="w-12 h-12 object-cover rounded" />
+                        )}
+                        <div className="flex-1 min-w-0">
+                          <p className="font-medium text-sm truncate">{item.name}</p>
+                          <p className="text-xs text-zinc-500">{item.article}</p>
+                        </div>
+                      </div>
+                      <div className="grid grid-cols-3 gap-2 mt-2">
+                        <div>
+                          <Label className="text-xs text-zinc-400">Цена (₽)</Label>
+                          <Input
+                            type="number"
+                            value={item.price}
+                            onChange={(e) => handleUpdateOrderItem(idx, 'price', e.target.value)}
+                            className="mt-1 h-8 text-sm"
+                            min={0}
+                          />
+                        </div>
+                        <div>
+                          <Label className="text-xs text-zinc-400">Кол-во</Label>
+                          <Input
+                            type="number"
+                            value={item.quantity}
+                            onChange={(e) => handleUpdateOrderItem(idx, 'quantity', e.target.value)}
+                            className="mt-1 h-8 text-sm"
+                            min={1}
+                          />
+                        </div>
+                        <div>
+                          <Label className="text-xs text-zinc-400">Сумма</Label>
+                          <p className="mt-1 h-8 flex items-center text-sm font-bold">
+                            {formatPrice(item.price * item.quantity)} ₽
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              <div className="bg-orange-50 p-3 border border-orange-200 rounded-lg">
+                <p className="text-sm text-orange-600">Итого:</p>
+                <p className="text-2xl font-bold font-mono text-orange-600">
+                  {formatPrice(calculateOrderTotal(editingOrder.items || []))} ₽
+                </p>
               </div>
 
               <div className="flex justify-end gap-2 pt-4">
