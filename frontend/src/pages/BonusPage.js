@@ -262,21 +262,21 @@ export default function BonusPage() {
                     </div>
                   )}
 
-                  {/* Prizes Section */}
+                  {/* Prizes Section - Expanded by default */}
                   {program.prizes && program.prizes.filter(p => p.enabled).length > 0 && (
                     <div className="p-6 border-t border-zinc-100">
                       <button 
                         className="flex items-center justify-between w-full"
-                        onClick={() => setExpandedProgram(isExpanded ? null : program.id)}
+                        onClick={() => setCollapsedPrograms(prev => ({ ...prev, [program.id]: !prev[program.id] }))}
                       >
                         <h3 className="font-bold text-zinc-900 flex items-center gap-2">
                           <Award className="w-5 h-5 text-orange-500" />
                           Доступные призы ({program.prizes.filter(p => p.enabled).length})
                         </h3>
-                        {isExpanded ? <ChevronUp className="w-5 h-5" /> : <ChevronDown className="w-5 h-5" />}
+                        {collapsedPrograms[program.id] ? <ChevronDown className="w-5 h-5" /> : <ChevronUp className="w-5 h-5" />}
                       </button>
                       
-                      {isExpanded && (
+                      {!collapsedPrograms[program.id] && (
                         <div className="mt-4 grid gap-3">
                           {program.prizes.filter(p => p.enabled).map((prize) => {
                             const canAfford = (program.bonus_points || 0) >= prize.points_cost;
