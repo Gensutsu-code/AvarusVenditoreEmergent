@@ -3840,6 +3840,18 @@ export default function AdminPage() {
               </div>
 
               <div>
+                <Label className="text-xs font-bold uppercase text-zinc-500">Комментарий к адресу</Label>
+                <Textarea
+                  value={editingUser.address_comment || ''}
+                  onChange={(e) => setEditingUser({ ...editingUser, address_comment: e.target.value })}
+                  placeholder="Код домофона, этаж, ориентиры..."
+                  className="mt-1"
+                  rows={2}
+                  data-testid="user-address-comment-input"
+                />
+              </div>
+
+              <div>
                 <Label className="text-xs font-bold uppercase text-zinc-500">Роль</Label>
                 <select
                   value={editingUser.role || 'user'}
