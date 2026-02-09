@@ -124,12 +124,23 @@ class AdminUserResponse(BaseModel):
     total_spent: float = 0
 
 # Admin order management
+class OrderItemUpdate(BaseModel):
+    product_id: str
+    name: str
+    article: Optional[str] = None
+    manufacturer: Optional[str] = None
+    price: float
+    quantity: int
+    image_url: Optional[str] = None
+
 class AdminOrderUpdate(BaseModel):
     status: Optional[str] = None
     full_name: Optional[str] = None
     address: Optional[str] = None
     phone: Optional[str] = None
     comment: Optional[str] = None
+    created_at: Optional[str] = None  # Дата и время заказа
+    items: Optional[List[dict]] = None  # Товары с ценами
 
 # Category models
 class CategoryCreate(BaseModel):
