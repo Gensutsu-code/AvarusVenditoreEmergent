@@ -302,15 +302,15 @@ export default function AdminOrdersPage() {
                       <div className="p-4 bg-zinc-50 grid grid-cols-1 md:grid-cols-3 gap-4">
                         <div className="flex items-center gap-2">
                           <User className="w-4 h-4 text-zinc-400" />
-                          <span className="text-sm">{order.customer_name}</span>
+                          <span className="text-sm">{order.full_name}</span>
                         </div>
                         <div className="flex items-center gap-2">
                           <Phone className="w-4 h-4 text-zinc-400" />
-                          <span className="text-sm">{order.customer_phone}</span>
+                          <span className="text-sm">{order.phone}</span>
                         </div>
                         <div className="flex items-center gap-2">
                           <MapPin className="w-4 h-4 text-zinc-400" />
-                          <span className="text-sm">{order.customer_address}</span>
+                          <span className="text-sm truncate max-w-xs">{order.address}</span>
                         </div>
                       </div>
                       
