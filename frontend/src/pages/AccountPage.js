@@ -1,10 +1,11 @@
 import { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
-import { User, Mail, Lock, Phone, MapPin, Save, Eye, EyeOff, Camera, Trash2 } from 'lucide-react';
+import { User, Mail, Lock, Phone, MapPin, Save, Eye, EyeOff, Camera, Trash2, MessageSquare } from 'lucide-react';
 import { Button } from '../components/ui/button';
 import { Input } from '../components/ui/input';
 import { Label } from '../components/ui/label';
+import { Textarea } from '../components/ui/textarea';
 import { useAuth } from '../context/AuthContext';
 import { toast } from 'sonner';
 
@@ -19,6 +20,7 @@ export default function AccountPage() {
     email: '',
     phone: '',
     address: '',
+    address_comment: '',
     current_password: '',
     new_password: '',
     confirm_password: ''
@@ -43,7 +45,8 @@ export default function AccountPage() {
       name: user.name || '',
       email: user.email || '',
       phone: user.phone || '',
-      address: user.address || ''
+      address: user.address || '',
+      address_comment: user.address_comment || ''
     }));
   }, [user, authLoading, navigate]);
 
@@ -53,7 +56,8 @@ export default function AccountPage() {
       await axios.put(`${API}/auth/profile`, {
         name: formData.name,
         phone: formData.phone,
-        address: formData.address
+        address: formData.address,
+        address_comment: formData.address_comment
       });
       toast.success('Профиль обновлён');
       refreshUser();
