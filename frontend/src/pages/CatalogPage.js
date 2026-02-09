@@ -535,7 +535,7 @@ export default function CatalogPage() {
                   data-testid={`category-${category.id}`}
                 >
                   {category.image_url && (
-                    <div className="aspect-video bg-zinc-100 mb-3 overflow-hidden">
+                    <div className="aspect-square bg-zinc-100 mb-3 overflow-hidden">
                       <img 
                         src={category.image_url} 
                         alt={category.name}
