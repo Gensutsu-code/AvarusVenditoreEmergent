@@ -449,48 +449,129 @@ export default function AdminOrdersPage() {
 
       {/* Edit Order Dialog */}
       <Dialog open={!!editingOrder} onOpenChange={() => setEditingOrder(null)}>
-        <DialogContent>
+        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
-            <DialogTitle>Редактировать заказ</DialogTitle>
+            <DialogTitle>Редактировать заказ #{editingOrder?.id?.slice(0, 8)}</DialogTitle>
           </DialogHeader>
           {editingOrder && (
             <div className="space-y-4">
-              <div>
-                <label className="text-xs font-bold uppercase text-zinc-500">Имя клиента</label>
-                <Input
-                  value={editingOrder.customer_name || ''}
-                  onChange={(e) => setEditingOrder({...editingOrder, customer_name: e.target.value})}
-                  className="mt-1"
-                />
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="text-xs font-bold uppercase text-zinc-500">Получатель</label>
+                  <Input
+                    value={editingOrder.full_name || ''}
+                    onChange={(e) => setEditingOrder({...editingOrder, full_name: e.target.value})}
+                    className="mt-1"
+                  />
+                </div>
+                <div>
+                  <label className="text-xs font-bold uppercase text-zinc-500">Телефон</label>
+                  <Input
+                    value={editingOrder.phone || ''}
+                    onChange={(e) => setEditingOrder({...editingOrder, phone: e.target.value})}
+                    className="mt-1"
+                  />
+                </div>
               </div>
-              <div>
-                <label className="text-xs font-bold uppercase text-zinc-500">Телефон</label>
-                <Input
-                  value={editingOrder.customer_phone || ''}
-                  onChange={(e) => setEditingOrder({...editingOrder, customer_phone: e.target.value})}
-                  className="mt-1"
-                />
-              </div>
+
               <div>
                 <label className="text-xs font-bold uppercase text-zinc-500">Адрес</label>
                 <Input
-                  value={editingOrder.customer_address || ''}
-                  onChange={(e) => setEditingOrder({...editingOrder, customer_address: e.target.value})}
+                  value={editingOrder.address || ''}
+                  onChange={(e) => setEditingOrder({...editingOrder, address: e.target.value})}
                   className="mt-1"
                 />
               </div>
+
               <div>
-                <label className="text-xs font-bold uppercase text-zinc-500">Статус</label>
-                <select
-                  value={editingOrder.status}
-                  onChange={(e) => setEditingOrder({...editingOrder, status: e.target.value})}
-                  className="mt-1 w-full h-10 px-3 border border-zinc-200 bg-white rounded"
-                >
-                  {ORDER_STATUSES.map(status => (
-                    <option key={status.value} value={status.value}>{status.label}</option>
-                  ))}
-                </select>
+                <label className="text-xs font-bold uppercase text-zinc-500">Комментарий к заказу</label>
+                <Input
+                  value={editingOrder.comment || ''}
+                  onChange={(e) => setEditingOrder({...editingOrder, comment: e.target.value})}
+                  className="mt-1"
+                  placeholder="Комментарий от клиента..."
+                />
               </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="text-xs font-bold uppercase text-zinc-500">Дата и время заказа</label>
+                  <Input
+                    type="datetime-local"
+                    value={editingOrder.created_at ? editingOrder.created_at.slice(0, 16) : ''}
+                    onChange={(e) => setEditingOrder({...editingOrder, created_at: e.target.value ? new Date(e.target.value).toISOString() : editingOrder.created_at})}
+                    className="mt-1"
+                  />
+                </div>
+                <div>
+                  <label className="text-xs font-bold uppercase text-zinc-500">Статус</label>
+                  <select
+                    value={editingOrder.status}
+                    onChange={(e) => setEditingOrder({...editingOrder, status: e.target.value})}
+                    className="mt-1 w-full h-10 px-3 border border-zinc-200 bg-white rounded"
+                  >
+                    {ORDER_STATUSES.map(status => (
+                      <option key={status.value} value={status.value}>{status.label}</option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+
+              {/* Order Items with editable prices */}
+              <div className="border-t pt-4">
+                <label className="text-xs font-bold uppercase text-zinc-500 mb-3 block">Товары в заказе</label>
+                <div className="space-y-3">
+                  {editingOrder.items?.map((item, idx) => (
+                    <div key={idx} className="bg-zinc-50 p-3 rounded-lg border border-zinc-200">
+                      <div className="flex items-start gap-3">
+                        {item.image_url && (
+                          <img src={item.image_url} alt={item.name} className="w-12 h-12 object-cover rounded" />
+                        )}
+                        <div className="flex-1 min-w-0">
+                          <p className="font-medium text-sm truncate">{item.name}</p>
+                          <p className="text-xs text-zinc-500">{item.article}</p>
+                        </div>
+                      </div>
+                      <div className="grid grid-cols-3 gap-2 mt-2">
+                        <div>
+                          <label className="text-xs text-zinc-400">Цена (₽)</label>
+                          <Input
+                            type="number"
+                            value={item.price}
+                            onChange={(e) => handleUpdateOrderItem(idx, 'price', e.target.value)}
+                            className="mt-1 h-8 text-sm"
+                            min={0}
+                          />
+                        </div>
+                        <div>
+                          <label className="text-xs text-zinc-400">Кол-во</label>
+                          <Input
+                            type="number"
+                            value={item.quantity}
+                            onChange={(e) => handleUpdateOrderItem(idx, 'quantity', e.target.value)}
+                            className="mt-1 h-8 text-sm"
+                            min={1}
+                          />
+                        </div>
+                        <div>
+                          <label className="text-xs text-zinc-400">Сумма</label>
+                          <p className="mt-1 h-8 flex items-center text-sm font-bold">
+                            {new Intl.NumberFormat('ru-RU').format(item.price * item.quantity)} ₽
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              <div className="bg-orange-50 p-3 border border-orange-200 rounded-lg">
+                <p className="text-sm text-orange-600">Итого:</p>
+                <p className="text-2xl font-bold font-mono text-orange-600">
+                  {new Intl.NumberFormat('ru-RU').format(calculateOrderTotal(editingOrder.items || []))} ₽
+                </p>
+              </div>
+
               <div className="flex gap-2 pt-4">
                 <Button variant="outline" onClick={() => setEditingOrder(null)} className="flex-1">
                   <X className="w-4 h-4 mr-2" />
