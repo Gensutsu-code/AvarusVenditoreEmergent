@@ -167,6 +167,7 @@ class CategoryResponse(BaseModel):
 class DiscountSettingsUpdate(BaseModel):
     retail_discount: float = 0  # Discount for retail customers (%)
     wholesale_discount: float = 0  # Discount for wholesale customers (%)
+    partner_discount: float = 0  # Discount for partner customers (%)
 
 # Promo banner model
 class PromoBannerUpdate(BaseModel):
