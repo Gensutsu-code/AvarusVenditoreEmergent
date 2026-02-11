@@ -443,6 +443,40 @@ export default function BonusPage() {
               </div>
             )}
           </div>
+
+          {/* My Prize Redemptions */}
+          {myRedemptions.length > 0 && (
+            <div className="mt-8 bg-white rounded-2xl border border-zinc-200 shadow-sm overflow-hidden" data-testid="my-prize-redemptions">
+              <div className="p-4 border-b border-zinc-100">
+                <span className="flex items-center gap-2 font-medium">
+                  <Gift className="w-5 h-5 text-amber-500" />
+                  Мои призы ({myRedemptions.length})
+                </span>
+              </div>
+              <div>
+                {myRedemptions.map(r => (
+                  <div key={r.id} className="px-4 py-3 flex items-center justify-between border-b border-zinc-100 last:border-0 hover:bg-zinc-50">
+                    <div>
+                      <p className="font-medium">{r.prize_name}</p>
+                      <p className="text-xs text-zinc-400">{formatDate(r.created_at)} — {r.points_cost} баллов</p>
+                    </div>
+                    <span className={`text-xs font-bold px-2.5 py-1 rounded-full ${
+                      r.status === 'pending' ? 'bg-yellow-100 text-yellow-700' :
+                      r.status === 'approved' ? 'bg-blue-100 text-blue-700' :
+                      (r.status === 'issued' || r.status === 'delivered') ? 'bg-green-100 text-green-700' :
+                      r.status === 'cancelled' ? 'bg-red-100 text-red-700' :
+                      'bg-zinc-100 text-zinc-600'
+                    }`}>
+                      {r.status === 'pending' && 'Ожидает'}
+                      {r.status === 'approved' && 'Одобрен'}
+                      {(r.status === 'issued' || r.status === 'delivered') && 'Выдан'}
+                      {r.status === 'cancelled' && 'Отклонён'}
+                    </span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
         )}
       </div>
     </div>
