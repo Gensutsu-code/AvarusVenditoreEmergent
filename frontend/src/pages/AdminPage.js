@@ -3474,12 +3474,120 @@ export default function AdminPage() {
                     <p className="text-xs text-zinc-400 mt-1">Скидка для партнёров</p>
                   </div>
                 </div>
+
+                {/* Threshold settings */}
+                <div className="border-t border-zinc-200 pt-4 mt-4">
+                  <h4 className="text-sm font-semibold text-zinc-700 mb-3">Пороги для повышения статуса (сумма доставленных заказов)</h4>
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="p-3 bg-orange-50 rounded-lg border border-orange-100">
+                      <Label className="text-xs font-bold uppercase text-orange-600">Порог «Опт»</Label>
+                      <div className="flex items-center gap-2 mt-1">
+                        <Input
+                          type="number"
+                          min="0"
+                          value={discountSettings.wholesale_threshold || 50000}
+                          onChange={(e) => setDiscountSettings({...discountSettings, wholesale_threshold: parseFloat(e.target.value) || 0})}
+                          className="w-32"
+                          data-testid="wholesale-threshold-input"
+                        />
+                        <span className="text-zinc-500 text-sm">₽</span>
+                      </div>
+                    </div>
+                    <div className="p-3 bg-purple-50 rounded-lg border border-purple-100">
+                      <Label className="text-xs font-bold uppercase text-purple-600">Порог «Партнёр»</Label>
+                      <div className="flex items-center gap-2 mt-1">
+                        <Input
+                          type="number"
+                          min="0"
+                          value={discountSettings.partner_threshold || 200000}
+                          onChange={(e) => setDiscountSettings({...discountSettings, partner_threshold: parseFloat(e.target.value) || 0})}
+                          className="w-32"
+                          data-testid="partner-threshold-input"
+                        />
+                        <span className="text-zinc-500 text-sm">₽</span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
                 
                 <Button onClick={handleSaveDiscountSettings} className="bg-orange-500 hover:bg-orange-600 mt-4">
                   <Save className="w-4 h-4 mr-2" />
                   Сохранить настройки скидок
                 </Button>
               </div>
+
+              {/* Pending Status Upgrade Requests */}
+              {statusRequests.filter(r => r.status === 'pending').length > 0 && (
+                <div className="bg-white border border-purple-200 rounded-xl p-6" data-testid="status-requests-section">
+                  <h3 className="font-semibold text-purple-800 mb-4 flex items-center gap-2">
+                    <TrendingUp className="w-5 h-5" />
+                    Запросы на повышение статуса
+                    <span className="bg-purple-100 text-purple-700 text-xs px-2 py-0.5 rounded-full ml-2">
+                      {statusRequests.filter(r => r.status === 'pending').length}
+                    </span>
+                  </h3>
+                  <div className="space-y-3">
+                    {statusRequests.filter(r => r.status === 'pending').map(req => (
+                      <div key={req.id} className="flex items-center justify-between p-4 bg-purple-50 rounded-lg border border-purple-100">
+                        <div>
+                          <p className="font-semibold text-zinc-800">{req.user_name} <span className="text-zinc-400 text-sm">({req.user_email})</span></p>
+                          <p className="text-sm text-zinc-600">
+                            {req.current_status === 'retail' ? 'Розница' : 'Опт'} → <span className="font-bold text-purple-700">{req.requested_status === 'wholesale' ? 'Опт' : 'Партнёр'}</span>
+                          </p>
+                          <p className="text-xs text-zinc-500">Сумма заказов: {req.total_spent?.toLocaleString('ru-RU')} ₽</p>
+                        </div>
+                        <div className="flex gap-2">
+                          <Button size="sm" className="bg-green-500 hover:bg-green-600 text-white" onClick={() => handleStatusRequest(req.id, 'approve')} data-testid={`approve-status-${req.id}`}>
+                            Одобрить
+                          </Button>
+                          <Button size="sm" variant="outline" className="border-red-300 text-red-600 hover:bg-red-50" onClick={() => handleStatusRequest(req.id, 'reject')} data-testid={`reject-status-${req.id}`}>
+                            Отклонить
+                          </Button>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Pending Discount Requests */}
+              {discountRequests.filter(r => r.status === 'pending').length > 0 && (
+                <div className="bg-white border border-amber-200 rounded-xl p-6" data-testid="discount-requests-section">
+                  <h3 className="font-semibold text-amber-800 mb-4 flex items-center gap-2">
+                    <Percent className="w-5 h-5" />
+                    Запросы на индивидуальную скидку
+                    <span className="bg-amber-100 text-amber-700 text-xs px-2 py-0.5 rounded-full ml-2">
+                      {discountRequests.filter(r => r.status === 'pending').length}
+                    </span>
+                  </h3>
+                  <div className="space-y-3">
+                    {discountRequests.filter(r => r.status === 'pending').map(req => (
+                      <div key={req.id} className="p-4 bg-amber-50 rounded-lg border border-amber-100">
+                        <div className="flex items-start justify-between">
+                          <div className="flex-1">
+                            <p className="font-semibold text-zinc-800">{req.user_name} <span className="text-zinc-400 text-sm">({req.user_email})</span></p>
+                            <p className="text-sm text-zinc-600">
+                              Текущая: {req.current_discount || 0}% → Запрос: <span className="font-bold text-amber-700">{req.requested_discount}%</span>
+                            </p>
+                            <div className="mt-2 p-2 bg-white rounded border border-amber-200">
+                              <p className="text-xs text-zinc-500 uppercase font-bold mb-1">Причина:</p>
+                              <p className="text-sm text-zinc-700">{req.reason}</p>
+                            </div>
+                          </div>
+                          <div className="flex gap-2 ml-4 flex-shrink-0">
+                            <Button size="sm" className="bg-green-500 hover:bg-green-600 text-white" onClick={() => handleDiscountRequest(req.id, 'approve', req.requested_discount)} data-testid={`approve-discount-${req.id}`}>
+                              Одобрить ({req.requested_discount}%)
+                            </Button>
+                            <Button size="sm" variant="outline" className="border-red-300 text-red-600 hover:bg-red-50" onClick={() => handleDiscountRequest(req.id, 'reject')} data-testid={`reject-discount-${req.id}`}>
+                              Отклонить
+                            </Button>
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
 
               {/* Statistics */}
               <div className="bg-white border border-zinc-200 rounded-xl p-6">
