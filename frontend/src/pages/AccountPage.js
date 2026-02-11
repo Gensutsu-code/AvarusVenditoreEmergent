@@ -28,7 +28,10 @@ export default function AccountPage() {
   const [saving, setSaving] = useState(false);
   const [uploadingAvatar, setUploadingAvatar] = useState(false);
   const [showPasswords, setShowPasswords] = useState(false);
-  const [discountSettings, setDiscountSettings] = useState({ retail_discount: 0, wholesale_discount: 0, partner_discount: 0 });
+  const [discountSettings, setDiscountSettings] = useState({ retail_discount: 0, wholesale_discount: 0, partner_discount: 0, wholesale_threshold: 50000, partner_threshold: 200000 });
+  const [myRequests, setMyRequests] = useState({ status_request: null, discount_request: null });
+  const [discountRequestForm, setDiscountRequestForm] = useState({ requested_discount: '', reason: '' });
+  const [orderStats, setOrderStats] = useState({ total_spent: 0 });
 
   // Fetch discount settings
   useEffect(() => {
