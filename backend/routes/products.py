@@ -208,3 +208,110 @@ async def get_related_products(product_id: str, limit: int = 4):
         related.extend(additional)
     
     return related
+
+
+
+# ==================== PRODUCT IMPORT/EXPORT ====================
+
+@router.post("/admin/products/import")
+async def import_products(file: UploadFile = File(...), user=Depends(get_current_user)):
+    """Import products from CSV file"""
+    import csv
+    import io
+    
+    if user.get("role") != "admin":
+        raise HTTPException(status_code=403, detail="Admin access required")
+    
+    if not file.filename.endswith('.csv'):
+        raise HTTPException(status_code=400, detail="File must be CSV")
+    
+    content = await file.read()
+    try:
+        text = content.decode('utf-8-sig')
+    except:
+        text = content.decode('cp1251')
+    
+    reader = csv.DictReader(io.StringIO(text), delimiter=';')
+    
+    imported = 0
+    errors = []
+    
+    for row in reader:
+        try:
+            article = row.get('Артикул', '').strip()
+            if not article:
+                continue
+            
+            existing = await db.products.find_one({"article": article})
+            
+            product_data = {
+                "name": row.get('Наименование', '').strip(),
+                "article": article,
+                "manufacturer": row.get('Производитель', '').strip(),
+                "price": float(row.get('Цена', '0').replace(',', '.').replace(' ', '') or '0'),
+                "stock": int(float(row.get('Остаток', '0').replace(',', '.').replace(' ', '') or '0')),
+                "description": row.get('Описание', '').strip(),
+                "cross_articles": row.get('Кросс-артикулы', '').strip(),
+                "delivery_days": int(row.get('Срок доставки', '3') or '3'),
+            }
+            
+            if existing:
+                await db.products.update_one({"article": article}, {"$set": product_data})
+            else:
+                product_data["id"] = str(uuid.uuid4())
+                product_data["image_url"] = ""
+                product_data["images"] = []
+                product_data["category_id"] = None
+                await db.products.insert_one(product_data)
+            
+            imported += 1
+        except Exception as e:
+            errors.append(f"Row error: {str(e)}")
+    
+    return {
+        "success": True,
+        "imported": imported,
+        "errors": errors[:10]
+    }
+
+
+@router.get("/admin/products/export")
+async def export_products(user=Depends(get_current_user)):
+    """Export products to CSV"""
+    import csv
+    import io
+    from fastapi.responses import StreamingResponse
+    
+    if user.get("role") != "admin":
+        raise HTTPException(status_code=403, detail="Admin access required")
+    
+    products = await db.products.find({}, {"_id": 0}).to_list(10000)
+    
+    output = io.StringIO()
+    writer = csv.writer(output, delimiter=';')
+    
+    writer.writerow(['Артикул', 'Наименование', 'Производитель', 'Цена', 'Остаток', 'Описание', 'Кросс-артикулы', 'Срок доставки', 'Категория'])
+    
+    categories = await db.categories.find({}, {"_id": 0}).to_list(100)
+    cat_map = {c["id"]: c["name"] for c in categories}
+    
+    for p in products:
+        writer.writerow([
+            p.get('article', ''),
+            p.get('name', ''),
+            p.get('manufacturer', ''),
+            p.get('price', 0),
+            p.get('stock', 0),
+            p.get('description', ''),
+            p.get('cross_articles', ''),
+            p.get('delivery_days', 3),
+            cat_map.get(p.get('category_id'), '')
+        ])
+    
+    output.seek(0)
+    
+    return StreamingResponse(
+        iter([output.getvalue()]),
+        media_type="text/csv",
+        headers={"Content-Disposition": "attachment; filename=products.csv"}
+    )
