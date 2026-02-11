@@ -217,7 +217,48 @@ export default function AccountPage() {
               </div>
             </div>
             
-            <div className="p-6 space-y-4">
+            {/* Discount Card */}
+            <div className="px-6 pb-4 -mt-2">
+              <div className="bg-gradient-to-r from-green-50 to-emerald-50 rounded-xl p-4 border border-green-200">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 bg-green-500 rounded-full flex items-center justify-center">
+                      <Percent className="w-5 h-5 text-white" />
+                    </div>
+                    <div>
+                      <p className="text-sm text-green-800 font-medium">Ваш статус</p>
+                      <p className="text-lg font-bold text-green-900">
+                        {user?.customer_status === 'wholesale' ? 'Оптовый покупатель' : 'Розничный покупатель'}
+                      </p>
+                    </div>
+                  </div>
+                  <div className="text-right">
+                    <p className="text-sm text-green-700">Ваша скидка</p>
+                    <p className="text-2xl font-bold text-green-600">
+                      {((user?.customer_status === 'wholesale' ? discountSettings.wholesale_discount : discountSettings.retail_discount) + (user?.individual_discount || 0)).toFixed(0)}%
+                    </p>
+                  </div>
+                </div>
+                
+                {/* Discount breakdown */}
+                <div className="mt-3 pt-3 border-t border-green-200 grid grid-cols-2 gap-3 text-sm">
+                  <div>
+                    <p className="text-green-600">Скидка по статусу:</p>
+                    <p className="font-bold text-green-800">
+                      {user?.customer_status === 'wholesale' ? discountSettings.wholesale_discount : discountSettings.retail_discount}%
+                    </p>
+                  </div>
+                  {(user?.individual_discount || 0) > 0 && (
+                    <div>
+                      <p className="text-green-600">Персональная скидка:</p>
+                      <p className="font-bold text-green-800">{user?.individual_discount}%</p>
+                    </div>
+                  )}
+                </div>
+              </div>
+            </div>
+            
+            <div className="p-6 pt-2 space-y-4">
               <div>
                 <Label className="text-xs font-bold uppercase text-zinc-500 flex items-center gap-2">
                   <User className="w-4 h-4" />
