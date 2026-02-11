@@ -230,7 +230,7 @@ export default function AdminPage() {
   const fetchData = async () => {
     setLoading(true);
     try {
-      const [statsRes, productsRes, categoriesRes, usersRes, ordersRes, bannerRes, telegramRes, chatsRes, bonusProgramsRes, bonusHistoryRes, partnersRes] = await Promise.all([
+      const [statsRes, productsRes, categoriesRes, usersRes, ordersRes, bannerRes, telegramRes, chatsRes, bonusProgramsRes, bonusHistoryRes, partnersRes, discountRes] = await Promise.all([
         axios.get(`${API}/admin/stats`),
         axios.get(`${API}/products`),
         axios.get(`${API}/categories`),
@@ -241,7 +241,8 @@ export default function AdminPage() {
         axios.get(`${API}/admin/chats`),
         axios.get(`${API}/admin/bonus/programs`),
         axios.get(`${API}/admin/bonus/history`),
-        axios.get(`${API}/partners`)
+        axios.get(`${API}/partners`),
+        axios.get(`${API}/admin/discount-settings`)
       ]);
       setStats(statsRes.data);
       setProducts(productsRes.data);
@@ -254,6 +255,7 @@ export default function AdminPage() {
       setBonusPrograms(bonusProgramsRes.data.programs || []);
       setBonusHistory(bonusHistoryRes.data.history || []);
       setPartners(partnersRes.data || []);
+      setDiscountSettings(discountRes.data || { retail_discount: 0, wholesale_discount: 0 });
     } catch (err) {
       console.error('Failed to fetch admin data', err);
       toast.error('Ошибка загрузки данных');
