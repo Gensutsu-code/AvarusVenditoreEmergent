@@ -284,7 +284,10 @@ export default function AdminPage() {
       setStatusRequests(statusReqRes.data || []);
       setDiscountRequests(discountReqRes.data || []);
       setPrizeRedemptions(prizeRedemptionsRes.data?.redemptions || []);
-      setPaymentSettings(paymentRes.data || { card_discount: 0, crypto_discount: 0, cash_discount: 0 });
+      setPaymentSettings(paymentRes.data || { 
+        card_discount: 0, crypto_discount: 0, cash_discount: 0,
+        card_enabled: true, crypto_enabled: true, cash_enabled: true
+      });
       setNewsList(newsRes.data || []);
       // Fetch crypto wallets separately
       try { const cw = await axios.get(`${API}/admin/crypto-wallets`); setCryptoWallets(cw.data); } catch(e) {}
