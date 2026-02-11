@@ -160,8 +160,10 @@ export default function AdminPage() {
   const [bonusCodeInput, setBonusCodeInput] = useState('');
   
   // Discount settings states
-  const [discountSettings, setDiscountSettings] = useState({ retail_discount: 0, wholesale_discount: 0 });
+  const [discountSettings, setDiscountSettings] = useState({ retail_discount: 0, wholesale_discount: 0, wholesale_threshold: 50000, partner_threshold: 200000 });
   const [issuingBonus, setIssuingBonus] = useState(false);
+  const [statusRequests, setStatusRequests] = useState([]);
+  const [discountRequests, setDiscountRequests] = useState([]);
   const bonusImageFileRef = useRef(null);
   const bonusBannerFileRef = useRef(null);
   
