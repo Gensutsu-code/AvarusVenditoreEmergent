@@ -40,11 +40,11 @@ export default function AccountPage() {
         const [settingsRes, requestsRes, statsRes] = await Promise.all([
           axios.get(`${API}/discount-settings`),
           axios.get(`${API}/my-requests`).catch(() => ({ data: { status_request: null, discount_request: null } })),
-          axios.get(`${API}/orders/stats`).catch(() => ({ data: { total_delivered_amount: 0 } }))
+          axios.get(`${API}/orders/stats`).catch(() => ({ data: { delivered_total: 0 } }))
         ]);
         setDiscountSettings(settingsRes.data);
         setMyRequests(requestsRes.data);
-        setOrderStats({ total_spent: statsRes.data?.total_delivered_amount || 0 });
+        setOrderStats({ total_spent: statsRes.data?.delivered_total || 0 });
       } catch (err) {
         console.error('Failed to fetch data');
       }
