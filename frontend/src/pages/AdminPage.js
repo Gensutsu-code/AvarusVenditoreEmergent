@@ -604,6 +604,30 @@ export default function AdminPage() {
     }
   };
 
+  // Discount settings handlers
+  const handleSaveDiscountSettings = async () => {
+    try {
+      await axios.put(`${API}/admin/discount-settings`, discountSettings);
+      toast.success('Настройки скидок сохранены');
+    } catch (err) {
+      toast.error('Ошибка сохранения');
+    }
+  };
+
+  const handleSaveUserDiscount = async (userId, customerStatus, individualDiscount) => {
+    try {
+      await axios.put(`${API}/admin/users/${userId}`, {
+        customer_status: customerStatus,
+        individual_discount: individualDiscount
+      });
+      // Update local state
+      setUsers(prev => prev.map(u => u.id === userId ? {...u, customer_status: customerStatus, individual_discount: individualDiscount} : u));
+      toast.success('Настройки клиента обновлены');
+    } catch (err) {
+      toast.error('Ошибка сохранения');
+    }
+  };
+
   // Telegram handlers
   const handleSaveTelegram = async () => {
     try {
