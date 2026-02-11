@@ -3,6 +3,7 @@ import { ShoppingCart, User, Search, LogOut, Settings, Heart, Package, Clipboard
 import { useAuth } from '../context/AuthContext';
 import { useCart } from '../context/CartContext';
 import { Button } from './ui/button';
+import { AdminNotifications } from './AdminNotifications';
 
 export const Header = () => {
   const { user, logout } = useAuth();
@@ -33,7 +34,7 @@ export const Header = () => {
             {user ? (
               <>
                 {isAdmin ? (
-                  /* Admin Navigation - Simplified */
+                  /* Admin Navigation */
                   <>
                     <Link to="/admin" data-testid="admin-link">
                       <Button variant="ghost" size="sm" className="text-purple-600 flex items-center gap-1">
@@ -41,6 +42,7 @@ export const Header = () => {
                         <span className="hidden sm:inline text-sm">Панель</span>
                       </Button>
                     </Link>
+                    <AdminNotifications />
                     <Link to="/admin/orders" data-testid="admin-orders-link">
                       <Button variant="ghost" size="sm" className="flex items-center gap-1">
                         <ClipboardList className="w-5 h-5" />
