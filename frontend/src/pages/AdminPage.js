@@ -101,6 +101,7 @@ const AdminVideoLightbox = ({ src, onClose }) => {
 export default function AdminPage() {
   const { user, loading: authLoading } = useAuth();
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const [stats, setStats] = useState(null);
   const [products, setProducts] = useState([]);
   const [categories, setCategories] = useState([]);
