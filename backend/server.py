@@ -3746,6 +3746,7 @@ async def request_status_upgrade(data: StatusUpgradeRequest, user=Depends(get_cu
         "created_at": datetime.now(timezone.utc).isoformat()
     }
     await db.status_requests.insert_one(request_doc)
+    await create_admin_activity(user["id"], user.get("name", ""), "status_request", f"Запрос на статус: {data.requested_status}")
     return {"success": True, "message": "Запрос на повышение статуса отправлен!"}
 
 @api_router.post("/request-individual-discount")
