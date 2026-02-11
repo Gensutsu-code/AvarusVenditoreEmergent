@@ -165,6 +165,7 @@ export default function AdminPage() {
   const [issuingBonus, setIssuingBonus] = useState(false);
   const [statusRequests, setStatusRequests] = useState([]);
   const [discountRequests, setDiscountRequests] = useState([]);
+  const [prizeRedemptions, setPrizeRedemptions] = useState([]);
   const bonusImageFileRef = useRef(null);
   const bonusBannerFileRef = useRef(null);
   
