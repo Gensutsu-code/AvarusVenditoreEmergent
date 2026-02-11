@@ -81,6 +81,8 @@ class UserResponse(BaseModel):
     address: Optional[str] = None
     address_comment: Optional[str] = None
     avatar_url: Optional[str] = None
+    customer_status: str = "retail"  # "retail" or "wholesale"
+    individual_discount: float = 0  # Individual discount percent
 
 class UserProfileUpdate(BaseModel):
     name: Optional[str] = None
