@@ -3432,6 +3432,190 @@ async def create_admin_user():
     
     return {"message": "Admin created", "email": "admin@avarus.ru", "password": "admin123"}
 
+# ==================== STATUS & DISCOUNT REQUESTS ====================
+
+@api_router.post("/request-status-upgrade")
+async def request_status_upgrade(data: StatusUpgradeRequest, user=Depends(get_current_user)):
+    """User requests a status upgrade"""
+    if data.requested_status not in ("wholesale", "partner"):
+        raise HTTPException(status_code=400, detail="Недопустимый статус")
+    
+    # Check if already has this status or higher
+    current = user.get("customer_status", "retail")
+    status_rank = {"retail": 0, "wholesale": 1, "partner": 2}
+    if status_rank.get(current, 0) >= status_rank.get(data.requested_status, 0):
+        raise HTTPException(status_code=400, detail="У вас уже есть этот статус или выше")
+    
+    # Check for existing pending request
+    existing = await db.status_requests.find_one({
+        "user_id": user["id"], "status": "pending"
+    })
+    if existing:
+        raise HTTPException(status_code=400, detail="У вас уже есть активный запрос на повышение статуса")
+    
+    # Get user's total spent
+    orders = await db.orders.find({"user_id": user["id"], "status": "delivered"}).to_list(None)
+    total_spent = sum(o.get("total", 0) for o in orders)
+    
+    # Get threshold settings
+    settings = await db.settings.find_one({"key": "discount_settings"})
+    settings_val = settings.get("value", {}) if settings else {}
+    threshold = settings_val.get(f"{data.requested_status}_threshold", 50000 if data.requested_status == "wholesale" else 200000)
+    
+    if total_spent < threshold:
+        raise HTTPException(status_code=400, detail=f"Недостаточная сумма заказов. Необходимо: {threshold:,.0f} ₽, у вас: {total_spent:,.0f} ₽")
+    
+    request_doc = {
+        "id": str(uuid.uuid4()),
+        "user_id": user["id"],
+        "user_name": user.get("name", ""),
+        "user_email": user.get("email", ""),
+        "current_status": current,
+        "requested_status": data.requested_status,
+        "total_spent": total_spent,
+        "status": "pending",
+        "created_at": datetime.now(timezone.utc).isoformat()
+    }
+    await db.status_requests.insert_one(request_doc)
+    return {"success": True, "message": "Запрос на повышение статуса отправлен!"}
+
+@api_router.post("/request-individual-discount")
+async def request_individual_discount(data: IndividualDiscountRequest, user=Depends(get_current_user)):
+    """User requests an individual discount"""
+    if data.requested_discount <= 0 or data.requested_discount > 50:
+        raise HTTPException(status_code=400, detail="Скидка должна быть от 1% до 50%")
+    if not data.reason.strip():
+        raise HTTPException(status_code=400, detail="Укажите причину запроса")
+    
+    existing = await db.discount_requests.find_one({
+        "user_id": user["id"], "status": "pending"
+    })
+    if existing:
+        raise HTTPException(status_code=400, detail="У вас уже есть активный запрос на скидку")
+    
+    request_doc = {
+        "id": str(uuid.uuid4()),
+        "user_id": user["id"],
+        "user_name": user.get("name", ""),
+        "user_email": user.get("email", ""),
+        "current_discount": user.get("individual_discount", 0),
+        "requested_discount": data.requested_discount,
+        "reason": data.reason.strip(),
+        "status": "pending",
+        "created_at": datetime.now(timezone.utc).isoformat()
+    }
+    await db.discount_requests.insert_one(request_doc)
+    return {"success": True, "message": "Запрос на индивидуальную скидку отправлен!"}
+
+@api_router.get("/my-requests")
+async def get_my_requests(user=Depends(get_current_user)):
+    """Get current user's pending requests"""
+    status_req = await db.status_requests.find_one(
+        {"user_id": user["id"], "status": "pending"}, {"_id": 0}
+    )
+    discount_req = await db.discount_requests.find_one(
+        {"user_id": user["id"], "status": "pending"}, {"_id": 0}
+    )
+    return {
+        "status_request": status_req,
+        "discount_request": discount_req
+    }
+
+@api_router.get("/admin/notifications")
+async def get_admin_notifications(user=Depends(get_current_user)):
+    """Get counts of pending admin notifications"""
+    if user.get("role") != "admin":
+        raise HTTPException(status_code=403, detail="Admin access required")
+    
+    # Pending status upgrade requests
+    status_count = await db.status_requests.count_documents({"status": "pending"})
+    # Pending discount requests
+    discount_count = await db.discount_requests.count_documents({"status": "pending"})
+    # Pending bonus requests
+    bonus_count = await db.bonus_progress.count_documents({"bonus_requested": True})
+    # Pending prize redemptions
+    prize_count = await db.prize_redemptions.count_documents({"status": "pending"})
+    # New orders (status "new")
+    order_count = await db.orders.count_documents({"status": "new"})
+    # Unread chat messages
+    chats = await db.chats.find({}, {"_id": 0}).to_list(None)
+    unread_chats = sum(1 for c in chats if c.get("admin_unread", 0) > 0)
+    
+    return {
+        "status_requests": status_count,
+        "discount_requests": discount_count,
+        "bonus_requests": bonus_count,
+        "prize_requests": prize_count,
+        "new_orders": order_count,
+        "unread_chats": unread_chats,
+        "total": status_count + discount_count + bonus_count + prize_count + order_count + unread_chats
+    }
+
+@api_router.get("/admin/status-requests")
+async def get_status_requests(user=Depends(get_current_user)):
+    """Get all status upgrade requests"""
+    if user.get("role") != "admin":
+        raise HTTPException(status_code=403, detail="Admin access required")
+    return await db.status_requests.find({}, {"_id": 0}).sort("created_at", -1).to_list(100)
+
+@api_router.put("/admin/status-requests/{request_id}")
+async def handle_status_request(request_id: str, action: str = Query(...), user=Depends(get_current_user)):
+    """Approve or reject a status upgrade request"""
+    if user.get("role") != "admin":
+        raise HTTPException(status_code=403, detail="Admin access required")
+    if action not in ("approve", "reject"):
+        raise HTTPException(status_code=400, detail="Action must be 'approve' or 'reject'")
+    
+    req = await db.status_requests.find_one({"id": request_id})
+    if not req:
+        raise HTTPException(status_code=404, detail="Запрос не найден")
+    
+    if action == "approve":
+        await db.users.update_one(
+            {"id": req["user_id"]},
+            {"$set": {"customer_status": req["requested_status"]}}
+        )
+    
+    await db.status_requests.update_one(
+        {"id": request_id},
+        {"$set": {"status": "approved" if action == "approve" else "rejected",
+                  "handled_at": datetime.now(timezone.utc).isoformat()}}
+    )
+    return {"success": True}
+
+@api_router.get("/admin/discount-requests")
+async def get_discount_requests(user=Depends(get_current_user)):
+    """Get all individual discount requests"""
+    if user.get("role") != "admin":
+        raise HTTPException(status_code=403, detail="Admin access required")
+    return await db.discount_requests.find({}, {"_id": 0}).sort("created_at", -1).to_list(100)
+
+@api_router.put("/admin/discount-requests/{request_id}")
+async def handle_discount_request(request_id: str, action: str = Query(...), discount: float = Query(None), user=Depends(get_current_user)):
+    """Approve or reject a discount request"""
+    if user.get("role") != "admin":
+        raise HTTPException(status_code=403, detail="Admin access required")
+    if action not in ("approve", "reject"):
+        raise HTTPException(status_code=400, detail="Action must be 'approve' or 'reject'")
+    
+    req = await db.discount_requests.find_one({"id": request_id})
+    if not req:
+        raise HTTPException(status_code=404, detail="Запрос не найден")
+    
+    if action == "approve":
+        final_discount = discount if discount is not None else req["requested_discount"]
+        await db.users.update_one(
+            {"id": req["user_id"]},
+            {"$set": {"individual_discount": final_discount}}
+        )
+    
+    await db.discount_requests.update_one(
+        {"id": request_id},
+        {"$set": {"status": "approved" if action == "approve" else "rejected",
+                  "handled_at": datetime.now(timezone.utc).isoformat()}}
+    )
+    return {"success": True}
+
 app.include_router(api_router)
 
 app.add_middleware(
