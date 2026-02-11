@@ -115,7 +115,8 @@ export default function AdminOrdersPage() {
         phone: editingOrder.phone,
         comment: editingOrder.comment,
         created_at: editingOrder.created_at,
-        items: editingOrder.items
+        items: editingOrder.items,
+        order_discount_percent: editingOrder.order_discount_percent || 0
       });
       setOrders(prev => prev.map(o => o.id === editingOrder.id ? res.data : o));
       setEditingOrder(null);
@@ -127,12 +128,17 @@ export default function AdminOrdersPage() {
 
   const handleUpdateOrderItem = (index, field, value) => {
     const newItems = [...editingOrder.items];
-    newItems[index] = { ...newItems[index], [field]: field === 'price' || field === 'quantity' ? Number(value) : value };
+    newItems[index] = { ...newItems[index], [field]: field === 'price' || field === 'quantity' || field === 'discount_percent' ? Number(value) : value };
     setEditingOrder({ ...editingOrder, items: newItems });
   };
 
-  const calculateOrderTotal = (items) => {
-    return items.reduce((sum, item) => sum + (item.price * item.quantity), 0);
+  const calculateOrderTotal = (items, orderDiscount = 0) => {
+    const itemsTotal = items.reduce((sum, item) => {
+      const itemTotal = item.price * item.quantity;
+      const itemDiscount = item.discount_percent || 0;
+      return sum + (itemTotal * (1 - itemDiscount / 100));
+    }, 0);
+    return itemsTotal * (1 - orderDiscount / 100);
   };
 
   const toggleExpand = (orderId) => {
