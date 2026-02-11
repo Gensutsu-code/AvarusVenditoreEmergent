@@ -146,7 +146,8 @@ class AdminOrderUpdate(BaseModel):
     phone: Optional[str] = None
     comment: Optional[str] = None
     created_at: Optional[str] = None  # Дата и время заказа
-    items: Optional[List[dict]] = None  # Товары с ценами
+    items: Optional[List[dict]] = None  # Товары с ценами и скидками
+    order_discount_percent: Optional[float] = None  # Скидка на весь заказ
 
 # Category models
 class CategoryCreate(BaseModel):
