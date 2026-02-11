@@ -16,19 +16,29 @@ const API = `${process.env.REACT_APP_BACKEND_URL}/api`;
 
 // Price display component with discount
 const PriceDisplay = ({ price, discount, formatPrice, showDualPrice = false }) => {
-  if (!showDualPrice || discount <= 0) {
+  if (discount <= 0) {
     return <span className="text-xl font-bold text-zinc-900">{formatPrice(price)} ₽</span>;
   }
   
   const discountedPrice = price * (1 - discount / 100);
   
-  return (
-    <div className="flex flex-col">
-      <span className="text-sm text-red-500 line-through">{formatPrice(price)} ₽</span>
-      <div className="flex items-center gap-2">
-        <span className="text-xl font-bold text-green-600">{formatPrice(discountedPrice)} ₽</span>
-        <span className="text-xs bg-green-100 text-green-700 px-1.5 py-0.5 rounded font-bold">-{discount}%</span>
+  if (showDualPrice) {
+    return (
+      <div className="flex flex-col">
+        <span className="text-sm text-red-500 line-through">{formatPrice(price)} ₽</span>
+        <div className="flex items-center gap-2">
+          <span className="text-xl font-bold text-green-600">{formatPrice(Math.round(discountedPrice))} ₽</span>
+          <span className="text-xs bg-green-100 text-green-700 px-1.5 py-0.5 rounded font-bold">-{discount}%</span>
+        </div>
       </div>
+    );
+  }
+  
+  // For retail with discount — just show discounted price
+  return (
+    <div className="flex items-center gap-2">
+      <span className="text-xl font-bold text-zinc-900">{formatPrice(Math.round(discountedPrice))} ₽</span>
+      <span className="text-xs bg-green-100 text-green-700 px-1.5 py-0.5 rounded font-bold">-{discount}%</span>
     </div>
   );
 };
