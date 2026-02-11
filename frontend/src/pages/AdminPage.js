@@ -281,6 +281,7 @@ export default function AdminPage() {
       setDiscountRequests(discountReqRes.data || []);
       setPrizeRedemptions(prizeRedemptionsRes.data?.redemptions || []);
       setPaymentSettings(paymentRes.data || { card_discount: 0, crypto_discount: 0, cash_discount: 0 });
+      setNewsList(newsRes.data || []);
     } catch (err) {
       console.error('Failed to fetch admin data', err);
       toast.error('Ошибка загрузки данных');
