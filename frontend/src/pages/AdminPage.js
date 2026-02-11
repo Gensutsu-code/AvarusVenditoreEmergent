@@ -120,7 +120,7 @@ export default function AdminPage() {
   const [viewingOrder, setViewingOrder] = useState(null);
   
   // Tab order state
-  const defaultTabOrder = ['products', 'categories', 'orders', 'users', 'promo', 'stats', 'chat', 'telegram', 'import', 'bonus', 'partners'];
+  const defaultTabOrder = ['products', 'categories', 'orders', 'users', 'promo', 'stats', 'chat', 'telegram', 'import', 'bonus', 'discounts', 'partners'];
   const [tabOrder, setTabOrder] = useState(() => {
     const saved = localStorage.getItem('adminTabOrder');
     return saved ? JSON.parse(saved) : defaultTabOrder;
