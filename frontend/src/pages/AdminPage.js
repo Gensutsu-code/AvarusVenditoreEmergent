@@ -158,6 +158,9 @@ export default function AdminPage() {
   const [bonusHistory, setBonusHistory] = useState([]);
   const [issueBonusModal, setIssueBonusModal] = useState(null); // { programId, userId, userName, amount }
   const [bonusCodeInput, setBonusCodeInput] = useState('');
+  
+  // Discount settings states
+  const [discountSettings, setDiscountSettings] = useState({ retail_discount: 0, wholesale_discount: 0 });
   const [issuingBonus, setIssuingBonus] = useState(false);
   const bonusImageFileRef = useRef(null);
   const bonusBannerFileRef = useRef(null);
