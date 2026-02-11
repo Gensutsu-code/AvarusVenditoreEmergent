@@ -1,5 +1,6 @@
 """Products and Categories routes"""
-from fastapi import APIRouter, HTTPException, Depends
+from fastapi import APIRouter, HTTPException, Depends, UploadFile, File
+from fastapi.responses import StreamingResponse
 from typing import List, Optional
 import uuid
 
