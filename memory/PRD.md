@@ -39,15 +39,29 @@
 - **Включение/отключение способов оплаты:** админ может временно отключить способ оплаты
 - **UI для отключённых методов:** отображаются серым цветом с текстом «Временно недоступно»
 
-### v4.5 — Рефакторинг бэкенда (11.02.2026)
-Создана модульная архитектура для бэкенда:
-- `/app/backend/database.py` — подключение к БД, JWT, авторизация
-- `/app/backend/models.py` — все Pydantic модели (~270 строк)
-- `/app/backend/routes/__init__.py` — объединение роутеров
-- `/app/backend/routes/auth.py` — аутентификация (~160 строк)
-- `/app/backend/routes/products.py` — продукты и категории (~170 строк)
-- `/app/backend/routes/orders.py` — корзина, заказы, избранное (~300 строк)
-- `/app/memory/REFACTORING_PLAN.md` — план дальнейшего рефакторинга
+### v4.5 — Рефакторинг архитектуры (11.02.2026)
+
+**Бэкенд — создано 11 модулей:**
+- `database.py` — подключение к БД, JWT, авторизация
+- `models.py` — все Pydantic модели (~280 строк)
+- `routes/auth.py` — регистрация, логин, профиль
+- `routes/products.py` — CRUD продуктов и категорий
+- `routes/orders.py` — корзина, заказы, избранное
+- `routes/admin.py` — управление пользователями/заказами
+- `routes/settings.py` — настройки скидок, платежей, баннера
+- `routes/news.py` — новости CRUD
+- `routes/chat.py` — чат и сообщения
+- `routes/bonus.py` — бонусная программа
+
+**Фронтенд — созданы компоненты:**
+- `components/admin/ProductsTab.js` — вкладка товаров
+- `components/admin/CategoriesTab.js` — вкладка категорий
+- `components/admin/OrdersTab.js` — вкладка заказов
+- `components/admin/UsersTab.js` — вкладка пользователей
+- `components/admin/NewsTab.js` — вкладка новостей
+
+**Документация:**
+- `/app/memory/REFACTORING_PLAN.md` — детальный план рефакторинга
 
 ## Учётные данные
 - Admin: admin@avarus.ru / admin123
