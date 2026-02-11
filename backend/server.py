@@ -165,9 +165,21 @@ class CategoryResponse(BaseModel):
 
 # Discount settings model
 class DiscountSettingsUpdate(BaseModel):
-    retail_discount: float = 0  # Discount for retail customers (%)
-    wholesale_discount: float = 0  # Discount for wholesale customers (%)
-    partner_discount: float = 0  # Discount for partner customers (%)
+    retail_discount: float = 0
+    wholesale_discount: float = 0
+    partner_discount: float = 0
+    # Thresholds for status upgrade (total order amount)
+    wholesale_threshold: float = 50000  # Amount to qualify for wholesale
+    partner_threshold: float = 200000   # Amount to qualify for partner
+
+# Status upgrade request
+class StatusUpgradeRequest(BaseModel):
+    requested_status: str  # "wholesale" or "partner"
+
+# Individual discount request
+class IndividualDiscountRequest(BaseModel):
+    requested_discount: float
+    reason: str
 
 # Promo banner model
 class PromoBannerUpdate(BaseModel):
