@@ -35,6 +35,7 @@ export default function CheckoutPage() {
   const [orderId, setOrderId] = useState(null);
   const [paymentMethod, setPaymentMethod] = useState('cash');
   const [paymentSettings, setPaymentSettings] = useState({ card_discount: 0, crypto_discount: 0, cash_discount: 0 });
+  const [discountSettings, setDiscountSettings] = useState({ retail_discount: 0, wholesale_discount: 0, partner_discount: 0 });
   const [cryptoWallets, setCryptoWallets] = useState({});
   const [selectedChain, setSelectedChain] = useState('eth');
   const [txHash, setTxHash] = useState('');
