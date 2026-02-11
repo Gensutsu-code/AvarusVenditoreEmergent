@@ -2574,6 +2574,46 @@ async def update_bonus_settings(settings: BonusSettings, user=Depends(get_curren
         )
         return await create_bonus_program(data, user)
 
+# ==================== DISCOUNT SETTINGS ====================
+
+@api_router.get("/admin/discount-settings")
+async def get_discount_settings(user=Depends(get_current_user)):
+    """Get discount settings for customer statuses"""
+    if user.get("role") != "admin":
+        raise HTTPException(status_code=403, detail="Admin access required")
+    
+    settings = await db.settings.find_one({"key": "discount_settings"})
+    if settings:
+        return settings.get("value", {"retail_discount": 0, "wholesale_discount": 0})
+    return {"retail_discount": 0, "wholesale_discount": 0}
+
+@api_router.put("/admin/discount-settings")
+async def update_discount_settings(data: DiscountSettingsUpdate, user=Depends(get_current_user)):
+    """Update discount settings for customer statuses"""
+    if user.get("role") != "admin":
+        raise HTTPException(status_code=403, detail="Admin access required")
+    
+    settings_data = {
+        "retail_discount": data.retail_discount,
+        "wholesale_discount": data.wholesale_discount
+    }
+    
+    await db.settings.update_one(
+        {"key": "discount_settings"},
+        {"$set": {"key": "discount_settings", "value": settings_data}},
+        upsert=True
+    )
+    
+    return settings_data
+
+@api_router.get("/discount-settings")
+async def get_public_discount_settings():
+    """Get discount settings (public - for showing to users)"""
+    settings = await db.settings.find_one({"key": "discount_settings"})
+    if settings:
+        return settings.get("value", {"retail_discount": 0, "wholesale_discount": 0})
+    return {"retail_discount": 0, "wholesale_discount": 0}
+
 @api_router.get("/admin/bonus/users")
 async def get_bonus_users(user=Depends(get_current_user)):
     """Get all users with bonus progress (admin) - legacy returns first program users"""
