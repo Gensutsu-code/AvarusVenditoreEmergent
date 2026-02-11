@@ -27,6 +27,7 @@ export default function FavoritesPage() {
       return;
     }
     fetchFavorites();
+    axios.get(`${API}/discount-settings`).then(res => setDiscountSettings(res.data)).catch(() => {});
   }, [user, authLoading, navigate]);
 
   const fetchFavorites = async () => {
