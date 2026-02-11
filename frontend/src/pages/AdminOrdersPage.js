@@ -618,11 +618,28 @@ export default function AdminOrdersPage() {
                 </div>
               </div>
 
-              <div className="bg-orange-50 p-3 border border-orange-200 rounded-lg">
-                <p className="text-sm text-orange-600">Итого:</p>
-                <p className="text-2xl font-bold font-mono text-orange-600">
-                  {new Intl.NumberFormat('ru-RU').format(calculateOrderTotal(editingOrder.items || []))} ₽
-                </p>
+              <div className="bg-green-50 p-4 border border-green-200 rounded-lg">
+                <div className="flex justify-between items-center">
+                  <div>
+                    <p className="text-sm text-green-600">Итого со скидками:</p>
+                    <p className="text-2xl font-bold font-mono text-green-700">
+                      {new Intl.NumberFormat('ru-RU').format(calculateOrderTotal(editingOrder.items || [], editingOrder.order_discount_percent || 0))} ₽
+                    </p>
+                  </div>
+                  {(editingOrder.order_discount_percent > 0 || editingOrder.items?.some(i => i.discount_percent > 0)) && (
+                    <div className="text-right">
+                      <p className="text-xs text-zinc-500 line-through">
+                        {new Intl.NumberFormat('ru-RU').format(editingOrder.items?.reduce((s, i) => s + i.price * i.quantity, 0) || 0)} ₽
+                      </p>
+                      <p className="text-sm text-green-600">
+                        Экономия: {new Intl.NumberFormat('ru-RU').format(
+                          (editingOrder.items?.reduce((s, i) => s + i.price * i.quantity, 0) || 0) - 
+                          calculateOrderTotal(editingOrder.items || [], editingOrder.order_discount_percent || 0)
+                        )} ₽
+                      </p>
+                    </div>
+                  )}
+                </div>
               </div>
 
               <div className="flex gap-2 pt-4">
