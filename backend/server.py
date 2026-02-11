@@ -2345,7 +2345,7 @@ async def update_prize_redemption(redemption_id: str, status: str, user=Depends(
     if user.get("role") != "admin":
         raise HTTPException(status_code=403, detail="Admin access required")
     
-    if status not in ["pending", "approved", "delivered", "cancelled"]:
+    if status not in ["pending", "approved", "delivered", "issued", "cancelled"]:
         raise HTTPException(status_code=400, detail="Invalid status")
     
     result = await db.prize_redemptions.update_one(
