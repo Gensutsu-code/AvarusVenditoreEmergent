@@ -841,6 +841,10 @@ async def create_order(data: OrderCreate, user=Depends(get_current_user)):
             original_total += original_price * cart_item["quantity"]
             discounted_total += discounted_price * cart_item["quantity"]
     
+    # Apply payment method discount to the discounted total
+    if payment_discount > 0:
+        discounted_total = discounted_total * (1 - payment_discount / 100)
+    
     order_id = str(uuid.uuid4())
     order = {
         "id": order_id,
@@ -849,12 +853,13 @@ async def create_order(data: OrderCreate, user=Depends(get_current_user)):
         "total": round(discounted_total, 2),
         "original_total": round(original_total, 2),
         "applied_discount": total_discount,
-        "status": "pending",
+        "payment_discount": payment_discount,
+        "status": "new",
         "full_name": data.full_name,
         "address": data.address,
         "phone": data.phone,
         "comment": data.comment,
-        "payment_method": "cash",
+        "payment_method": payment_method,
         "created_at": datetime.now(timezone.utc).isoformat()
     }
     await db.orders.insert_one(order)
