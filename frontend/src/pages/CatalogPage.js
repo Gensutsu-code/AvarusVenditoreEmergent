@@ -104,10 +104,13 @@ const ProductCard = ({
       </div>
 
       {/* Price */}
-      <div className="text-right min-w-[100px]">
-        <span className="price-tag text-lg text-zinc-900">
-          {formatPrice(product.price)} ₽
-        </span>
+      <div className="text-right min-w-[120px]">
+        <PriceDisplay 
+          price={product.price} 
+          discount={userDiscount} 
+          formatPrice={formatPrice} 
+          showDualPrice={showDualPrice} 
+        />
       </div>
 
       {/* Quantity + Cart */}
@@ -165,7 +168,9 @@ const ProductModalContent = ({
   updateQuantity, 
   handleAddToCart, 
   formatPrice, 
-  getDeliveryText 
+  getDeliveryText,
+  userDiscount = 0,
+  showDualPrice = false
 }) => {
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
   
