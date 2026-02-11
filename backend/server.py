@@ -874,6 +874,10 @@ async def create_order(data: OrderCreate, user=Depends(get_current_user)):
     }
     await db.orders.insert_one(order)
     
+    # Log activity and create notification
+    await create_admin_activity(user["id"], user.get("name", ""), "order", f"Новый заказ #{order_id[:8]} на {round(discounted_total, 2)} ₽")
+    await create_notification(user["id"], "order", "Заказ оформлен", f"Ваш заказ #{order_id[:8]} принят в обработку", "/orders")
+    
     # Decrease stock for each ordered product
     for cart_item in cart["items"]:
         await db.products.update_one(
