@@ -3450,6 +3450,10 @@ async def update_order_status(order_id: str, status: str, user=Depends(get_curre
     
     result = await db.orders.update_one({"id": order_id}, {"$set": {"status": status}})
     
+    # Notify user about status change
+    status_labels = {"new": "Новый", "processing": "В обработке", "shipped": "Отправлен", "delivered": "Доставлен", "cancelled": "Отменён"}
+    await create_notification(order["user_id"], "order_status", "Статус заказа обновлён", f"Заказ #{order['id'][:8]}: {status_labels.get(status, status)}", "/orders")
+    
     # If status changed to "delivered" and wasn't delivered before, add to bonus progress
     if status == "delivered" and previous_status != "delivered":
         await update_bonus_on_order_delivered(order["user_id"], order["total"])
