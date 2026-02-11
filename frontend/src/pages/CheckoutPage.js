@@ -28,7 +28,7 @@ const CHAINS = [
 
 export default function CheckoutPage() {
   const navigate = useNavigate();
-  const { cart, cartTotal, fetchCart } = useCart();
+  const { cart, cartTotal, fetchCart, loading: cartLoading } = useCart();
   const { user, loading: authLoading } = useAuth();
   const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState(false);
