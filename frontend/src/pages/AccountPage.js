@@ -323,6 +323,98 @@ export default function AccountPage() {
                 </div>
               </div>
             </div>
+
+            {/* Status Upgrade Request */}
+            {nextUpgrade && (
+              <div className="px-6 pb-2">
+                <div className="bg-gradient-to-r from-purple-50 to-indigo-50 rounded-xl p-4 border border-purple-200">
+                  <div className="flex items-center gap-3 mb-2">
+                    <ArrowUpCircle className="w-5 h-5 text-purple-600" />
+                    <p className="font-semibold text-purple-800">Повышение статуса до «{nextUpgrade.label}»</p>
+                  </div>
+                  <div className="text-sm text-purple-700 mb-3">
+                    <p>Сумма ваших доставленных заказов: <span className="font-bold">{orderStats.total_spent.toLocaleString('ru-RU')} ₽</span></p>
+                    <p>Необходимо для повышения: <span className="font-bold">{nextUpgrade.threshold.toLocaleString('ru-RU')} ₽</span></p>
+                    {!canRequestUpgrade && (
+                      <div className="mt-2 bg-purple-100 rounded-lg p-2">
+                        <div className="flex justify-between text-xs mb-1">
+                          <span>Прогресс</span>
+                          <span>{Math.min(100, (orderStats.total_spent / nextUpgrade.threshold * 100)).toFixed(0)}%</span>
+                        </div>
+                        <div className="h-2 bg-purple-200 rounded-full overflow-hidden">
+                          <div className="h-full bg-purple-500 rounded-full transition-all" style={{ width: `${Math.min(100, orderStats.total_spent / nextUpgrade.threshold * 100)}%` }} />
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                  {myRequests.status_request ? (
+                    <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-3 text-sm text-yellow-800">
+                      Ваш запрос на повышение статуса отправлен и ожидает рассмотрения
+                    </div>
+                  ) : canRequestUpgrade ? (
+                    <Button
+                      onClick={() => handleRequestStatusUpgrade(nextUpgrade.status)}
+                      className="w-full bg-purple-600 hover:bg-purple-700 text-white"
+                      data-testid="request-status-upgrade-btn"
+                    >
+                      <ArrowUpCircle className="w-4 h-4 mr-2" />
+                      Запросить повышение до «{nextUpgrade.label}»
+                    </Button>
+                  ) : (
+                    <p className="text-xs text-purple-500">Продолжайте покупки для повышения статуса</p>
+                  )}
+                </div>
+              </div>
+            )}
+
+            {/* Individual Discount Request */}
+            <div className="px-6 pb-4">
+              <div className="bg-gradient-to-r from-amber-50 to-orange-50 rounded-xl p-4 border border-amber-200">
+                <div className="flex items-center gap-3 mb-2">
+                  <FileText className="w-5 h-5 text-amber-600" />
+                  <p className="font-semibold text-amber-800">Запрос персональной скидки</p>
+                </div>
+                {myRequests.discount_request ? (
+                  <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-3 text-sm text-yellow-800">
+                    Ваш запрос на скидку {myRequests.discount_request.requested_discount}% отправлен и ожидает рассмотрения
+                  </div>
+                ) : (
+                  <div className="space-y-3">
+                    <div>
+                      <Label className="text-xs font-bold uppercase text-amber-700">Желаемая скидка (%)</Label>
+                      <Input
+                        type="number"
+                        min="1"
+                        max="50"
+                        value={discountRequestForm.requested_discount}
+                        onChange={(e) => setDiscountRequestForm(prev => ({ ...prev, requested_discount: e.target.value }))}
+                        placeholder="Например, 10"
+                        className="mt-1"
+                        data-testid="discount-request-percent"
+                      />
+                    </div>
+                    <div>
+                      <Label className="text-xs font-bold uppercase text-amber-700">Причина запроса</Label>
+                      <Textarea
+                        value={discountRequestForm.reason}
+                        onChange={(e) => setDiscountRequestForm(prev => ({ ...prev, reason: e.target.value }))}
+                        placeholder="Опишите, почему вам нужна индивидуальная скидка..."
+                        className="mt-1 min-h-[80px]"
+                        data-testid="discount-request-reason"
+                      />
+                    </div>
+                    <Button
+                      onClick={handleRequestDiscount}
+                      className="w-full bg-amber-500 hover:bg-amber-600 text-white"
+                      data-testid="submit-discount-request-btn"
+                    >
+                      <FileText className="w-4 h-4 mr-2" />
+                      Отправить запрос
+                    </Button>
+                  </div>
+                )}
+              </div>
+            </div>
             
             <div className="p-6 pt-2 space-y-4">
               <div>
