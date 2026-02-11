@@ -343,11 +343,16 @@ export default function CheckoutPage() {
             </div>
             <div className="border-t border-zinc-200 pt-4 space-y-2">
               <div className="flex justify-between text-sm text-zinc-500">
-                <span>Сумма товаров:</span><span>{formatPrice(cartTotal)} ₽</span>
+                <span>Розничная цена:</span><span>{formatPrice(cartTotal)} ₽</span>
               </div>
+              {userDiscount > 0 && (
+                <div className="flex justify-between text-sm text-green-600">
+                  <span>Ваша скидка ({userDiscount}%):</span><span>-{formatPrice(cartTotal - discountedCartTotal)} ₽</span>
+                </div>
+              )}
               {currentPaymentDiscount > 0 && (
                 <div className="flex justify-between text-sm text-green-600">
-                  <span>Скидка за оплату:</span><span>-{currentPaymentDiscount}%</span>
+                  <span>Скидка за оплату ({currentPaymentDiscount}%):</span><span>-{formatPrice(discountedCartTotal - finalTotal)} ₽</span>
                 </div>
               )}
               <div className="flex justify-between pt-2 border-t border-zinc-100">
