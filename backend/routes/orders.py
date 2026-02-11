@@ -362,3 +362,25 @@ async def get_last_shipping(user=Depends(get_current_user)):
         "address": user.get("address", ""),
         "phone": user.get("phone", "")
     }
+
+
+
+# ==================== USER NOTIFICATIONS ====================
+
+@router.get("/my-notifications")
+async def get_my_notifications(user=Depends(get_current_user)):
+    """Get client notifications"""
+    notifs = await db.notifications.find(
+        {"user_id": user["id"]}, {"_id": 0}
+    ).sort("created_at", -1).limit(50).to_list(50)
+    unread = sum(1 for n in notifs if not n.get("read", False))
+    return {"notifications": notifs, "unread_count": unread}
+
+
+@router.put("/my-notifications/read-all")
+async def mark_notifications_read(user=Depends(get_current_user)):
+    await db.notifications.update_many(
+        {"user_id": user["id"], "read": False},
+        {"$set": {"read": True}}
+    )
+    return {"success": True}
