@@ -43,7 +43,7 @@ export const AdminNotifications = () => {
     { key: 'discount_requests', label: 'Запросы на скидку', icon: Percent, count: notifications.discount_requests, color: 'text-green-600 bg-green-50', path: '/admin', tab: 'discounts' },
     { key: 'bonus_requests', label: 'Запросы на бонус', icon: Gift, count: notifications.bonus_requests, color: 'text-orange-600 bg-orange-50', path: '/admin', tab: 'bonus' },
     { key: 'prize_requests', label: 'Запросы на приз', icon: Award, count: notifications.prize_requests, color: 'text-amber-600 bg-amber-50', path: '/admin', tab: 'bonus' },
-    { key: 'unread_chats', label: 'Непрочитанные чаты', icon: MessageCircle, count: notifications.unread_chats, color: 'text-cyan-600 bg-cyan-50', path: '/admin', tab: 'chat' },
+    { key: 'unread_chats', label: 'Сообщения в чате', icon: MessageCircle, count: notifications.unread_chats, color: 'text-cyan-600 bg-cyan-50', path: '/admin', tab: 'chat' },
   ];
 
   const activeItems = items.filter(i => i.count > 0);
