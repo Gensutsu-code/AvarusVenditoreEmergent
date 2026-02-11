@@ -173,6 +173,12 @@ class DiscountSettingsUpdate(BaseModel):
     wholesale_threshold: float = 50000  # Amount to qualify for wholesale
     partner_threshold: float = 200000   # Amount to qualify for partner
 
+# Payment method discount settings
+class PaymentMethodSettings(BaseModel):
+    card_discount: float = 0
+    crypto_discount: float = 0
+    cash_discount: float = 0
+
 # Status upgrade request
 class StatusUpgradeRequest(BaseModel):
     requested_status: str  # "wholesale" or "partner"
