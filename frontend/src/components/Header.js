@@ -105,6 +105,7 @@ export const Header = () => {
                         <User className="w-5 h-5" />
                       </Button>
                     </Link>
+                    <ClientNotifications />
                     <Button variant="ghost" size="sm" onClick={logout} data-testid="logout-button">
                       <LogOut className="w-5 h-5" />
                     </Button>
