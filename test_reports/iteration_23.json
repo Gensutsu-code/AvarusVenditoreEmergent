@@ -1,0 +1,95 @@
+{
+  "summary": "Iteration 23 testing complete. All requested payment settings and sequential discount features verified. Backend APIs 100% passing (10/10 tests). Frontend UI working correctly.",
+  
+  "backend_issues": {
+    "critical": [],
+    "minor": []
+  },
+  
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [],
+    "design_issues": []
+  },
+  
+  "passed_tests": {
+    "payment_settings_api": [
+      "GET /api/payment-settings - public endpoint returns all settings (card_discount, crypto_discount, cash_discount, card_enabled, crypto_enabled, cash_enabled)",
+      "GET /api/admin/payment-settings - admin endpoint requires auth (returns 401/403 without auth)",
+      "GET /api/admin/payment-settings - admin endpoint returns settings with valid token",
+      "PUT /api/admin/payment-settings - successfully disables card payment",
+      "PUT /api/admin/payment-settings - successfully disables crypto payment",
+      "PUT /api/admin/payment-settings - successfully sets payment method discounts",
+      "PUT /api/admin/payment-settings - toggle all payment methods on/off"
+    ],
+    "checkout_sequential_discounts": [
+      "User discount applied first (wholesale 15% + individual 2% = 17%)",
+      "Payment method discount applied second (cash 15% in test)",
+      "Sequential calculation verified: 1500 × (1-0.17) × (1-0.15) = 1058 ₽",
+      "Total shown on checkout matches sequential calculation"
+    ],
+    "payment_method_toggle_admin": [
+      "Admin panel 'Скидки' tab shows 'Способы оплаты и скидки' section",
+      "Toggle switches visible for each payment method (Наличные, Карта, Криптовалюта)",
+      "Discount input fields for each payment method",
+      "Save button 'Сохранить настройки оплаты' functional"
+    ],
+    "disabled_payment_method_ui": [
+      "Disabled card payment shows 'Временно недоступно' text (red)",
+      "Disabled payment button has disabled attribute = true",
+      "Disabled payment button has opacity-60 styling (grayed out)",
+      "Disabled payment method cannot be selected",
+      "Other payment methods remain selectable"
+    ]
+  },
+  
+  "test_report_links": [
+    "/app/backend/tests/test_payment_settings.py",
+    "/app/test_reports/pytest/pytest_payment_settings.xml"
+  ],
+  
+  "action_items": [],
+  
+  "critical_code_review_comments": [],
+  
+  "updated_files": [
+    "/app/backend/tests/test_payment_settings.py"
+  ],
+  
+  "success_rate": {
+    "backend": "100% (10/10 pytest tests passed)",
+    "frontend": "100% (All features verified via Playwright)"
+  },
+  
+  "test_credentials": {
+    "admin": {"email": "admin@avarus.ru", "password": "admin123"},
+    "test_user": {"email": "TEST@MAIL.RU", "password": "admin123", "customer_status": "wholesale", "individual_discount": 2.0, "total_discount": "17%"}
+  },
+  
+  "seed_data_creation": "Added 1 product to cart for testing checkout page. Cart cleared after tests.",
+  
+  "retest_needed": false,
+  
+  "should_main_agent_self_test": false,
+  
+  "context_for_next_testing_agent": "Payment settings features verified: 1) GET/PUT /api/payment-settings APIs working. 2) Admin panel has payment method toggles in 'Скидки' tab under 'Способы оплаты и скидки' section. 3) Disabled payment methods show 'Временно недоступно' on checkout page (verified card disabled state). 4) Sequential discount calculation working: user discount (status + individual) applied first, then payment method discount. Current payment settings: cash_discount=15%, crypto_discount=20%, card_discount=0%, all methods enabled.",
+  
+  "sequential_discount_verification": {
+    "product_price": 1500,
+    "user_discount": "17% (wholesale 15% + individual 2%)",
+    "after_user_discount": 1245,
+    "payment_method_discount": "15% (cash selected)",
+    "final_price": 1058,
+    "calculation": "1500 × (1-0.17) × (1-0.15) = 1058.25 ≈ 1058",
+    "note": "Discounts applied SEQUENTIALLY, not combined"
+  },
+  
+  "payment_settings_state": {
+    "card_discount": 0,
+    "crypto_discount": 20,
+    "cash_discount": 15,
+    "card_enabled": true,
+    "crypto_enabled": true,
+    "cash_enabled": true
+  }
+}
