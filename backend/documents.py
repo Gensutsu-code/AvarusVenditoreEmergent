@@ -138,8 +138,8 @@ def generate_invoice_docx(order, user=None):
     doc.add_paragraph('')
     doc.add_paragraph('')
     table2 = doc.add_table(rows=1, cols=2)
-    table2.cells[0].text = 'Поставщик: _______________'
-    table2.cells[1].text = 'Покупатель: _______________'
+    table2.rows[0].cells[0].text = 'Поставщик: _______________'
+    table2.rows[0].cells[1].text = 'Покупатель: _______________'
     
     buf = io.BytesIO()
     doc.save(buf)
