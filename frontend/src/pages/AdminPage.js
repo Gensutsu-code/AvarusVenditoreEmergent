@@ -283,6 +283,8 @@ export default function AdminPage() {
       setPrizeRedemptions(prizeRedemptionsRes.data?.redemptions || []);
       setPaymentSettings(paymentRes.data || { card_discount: 0, crypto_discount: 0, cash_discount: 0 });
       setNewsList(newsRes.data || []);
+      // Fetch crypto wallets separately
+      try { const cw = await axios.get(`${API}/admin/crypto-wallets`); setCryptoWallets(cw.data); } catch(e) {}
     } catch (err) {
       console.error('Failed to fetch admin data', err);
       toast.error('Ошибка загрузки данных');
