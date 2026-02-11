@@ -3892,6 +3892,9 @@ async def handle_discount_request(request_id: str, action: str = Query(...), dis
         {"$set": {"status": "approved" if action == "approve" else "rejected",
                   "handled_at": datetime.now(timezone.utc).isoformat()}}
     )
+    # Notify user
+    status_text = "одобрена" if action == "approve" else "отклонена"
+    await create_notification(req["user_id"], "discount_response", "Запрос на скидку", f"Ваша заявка на индивидуальную скидку {status_text}", "/account")
     return {"success": True}
 
 app.include_router(api_router)
