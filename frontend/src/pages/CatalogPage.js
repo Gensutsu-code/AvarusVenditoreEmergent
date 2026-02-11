@@ -717,6 +717,8 @@ export default function CatalogPage() {
               handleAddToCart={handleAddToCart}
               formatPrice={formatPrice}
               getDeliveryText={getDeliveryText}
+              userDiscount={userDiscount}
+              showDualPrice={showDualPrice}
             />
           )}
         </DialogContent>
