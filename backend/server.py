@@ -2617,7 +2617,8 @@ async def update_discount_settings(data: DiscountSettingsUpdate, user=Depends(ge
     
     settings_data = {
         "retail_discount": data.retail_discount,
-        "wholesale_discount": data.wholesale_discount
+        "wholesale_discount": data.wholesale_discount,
+        "partner_discount": data.partner_discount
     }
     
     await db.settings.update_one(
