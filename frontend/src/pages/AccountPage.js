@@ -33,17 +33,23 @@ export default function AccountPage() {
   const [discountRequestForm, setDiscountRequestForm] = useState({ requested_discount: '', reason: '' });
   const [orderStats, setOrderStats] = useState({ total_spent: 0 });
 
-  // Fetch discount settings
+  // Fetch discount settings and user requests
   useEffect(() => {
-    const fetchDiscountSettings = async () => {
+    const fetchData = async () => {
       try {
-        const res = await axios.get(`${API}/discount-settings`);
-        setDiscountSettings(res.data);
+        const [settingsRes, requestsRes, statsRes] = await Promise.all([
+          axios.get(`${API}/discount-settings`),
+          axios.get(`${API}/my-requests`).catch(() => ({ data: { status_request: null, discount_request: null } })),
+          axios.get(`${API}/orders/stats`).catch(() => ({ data: { total_delivered_amount: 0 } }))
+        ]);
+        setDiscountSettings(settingsRes.data);
+        setMyRequests(requestsRes.data);
+        setOrderStats({ total_spent: statsRes.data?.total_delivered_amount || 0 });
       } catch (err) {
-        console.error('Failed to fetch discount settings');
+        console.error('Failed to fetch data');
       }
     };
-    fetchDiscountSettings();
+    fetchData();
   }, []);
 
   useEffect(() => {
