@@ -330,16 +330,22 @@ export default function CheckoutPage() {
           <div className="border border-zinc-200 rounded-xl p-6 h-fit sticky top-20">
             <h2 className="text-xs font-bold uppercase tracking-widest text-zinc-500 mb-4">Ваш заказ</h2>
             <div className="space-y-3 mb-6">
-              {cart.items.map(item => (
+              {cart.items.map(item => {
+                const dp = userDiscount > 0 ? Math.round(item.price * (1 - userDiscount / 100)) : item.price;
+                return (
                 <div key={item.product_id} className="flex gap-3 text-sm border-b border-zinc-100 pb-3">
                   <div className="flex-1">
                     {item.manufacturer && <p className="text-xs font-bold text-orange-600">{item.manufacturer}</p>}
                     <p className="text-zinc-900 font-medium">{item.name}</p>
-                    <p className="text-zinc-500 text-xs">{item.quantity} шт. × {formatPrice(item.price)} ₽</p>
+                    <p className="text-zinc-500 text-xs">{item.quantity} шт. × {formatPrice(dp)} ₽</p>
                   </div>
-                  <span className="font-mono font-semibold whitespace-nowrap">{formatPrice(item.price * item.quantity)} ₽</span>
+                  <div className="text-right">
+                    {userDiscount > 0 && <p className="text-xs text-red-400 line-through">{formatPrice(item.price * item.quantity)} ₽</p>}
+                    <span className="font-mono font-semibold whitespace-nowrap">{formatPrice(dp * item.quantity)} ₽</span>
+                  </div>
                 </div>
-              ))}
+                );
+              })}
             </div>
             <div className="border-t border-zinc-200 pt-4 space-y-2">
               <div className="flex justify-between text-sm text-zinc-500">
