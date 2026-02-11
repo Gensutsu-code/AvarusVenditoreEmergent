@@ -3301,6 +3301,83 @@ export default function AdminPage() {
             </DialogContent>
           </Dialog>
 
+          {/* Discounts Tab */}
+          <TabsContent value="discounts" className="p-6">
+            <div className="space-y-6">
+              <h2 className="text-lg font-semibold">Настройки скидок</h2>
+              
+              {/* Status-based discounts */}
+              <div className="bg-white border border-zinc-200 rounded-xl p-6 space-y-4">
+                <h3 className="font-semibold text-zinc-800 flex items-center gap-2">
+                  <Percent className="w-5 h-5 text-orange-500" />
+                  Скидки по статусам клиентов
+                </h3>
+                <p className="text-sm text-zinc-500">Эти скидки применяются автоматически ко всем заказам клиентов с соответствующим статусом</p>
+                
+                <div className="grid grid-cols-2 gap-4 mt-4">
+                  <div className="p-4 bg-zinc-50 rounded-lg">
+                    <Label className="text-xs font-bold uppercase text-zinc-500">Розничные покупатели</Label>
+                    <div className="flex items-center gap-2 mt-2">
+                      <Input
+                        type="number"
+                        min="0"
+                        max="100"
+                        value={discountSettings.retail_discount || 0}
+                        onChange={(e) => setDiscountSettings({...discountSettings, retail_discount: parseFloat(e.target.value) || 0})}
+                        className="w-24"
+                      />
+                      <span className="text-zinc-500">%</span>
+                    </div>
+                    <p className="text-xs text-zinc-400 mt-1">Базовая скидка для розничных клиентов</p>
+                  </div>
+                  
+                  <div className="p-4 bg-orange-50 rounded-lg border border-orange-100">
+                    <Label className="text-xs font-bold uppercase text-orange-600">Оптовые покупатели</Label>
+                    <div className="flex items-center gap-2 mt-2">
+                      <Input
+                        type="number"
+                        min="0"
+                        max="100"
+                        value={discountSettings.wholesale_discount || 0}
+                        onChange={(e) => setDiscountSettings({...discountSettings, wholesale_discount: parseFloat(e.target.value) || 0})}
+                        className="w-24"
+                      />
+                      <span className="text-zinc-500">%</span>
+                    </div>
+                    <p className="text-xs text-zinc-400 mt-1">Скидка для оптовых клиентов</p>
+                  </div>
+                </div>
+                
+                <Button onClick={handleSaveDiscountSettings} className="bg-orange-500 hover:bg-orange-600 mt-4">
+                  <Save className="w-4 h-4 mr-2" />
+                  Сохранить настройки скидок
+                </Button>
+              </div>
+
+              {/* Statistics */}
+              <div className="bg-white border border-zinc-200 rounded-xl p-6">
+                <h3 className="font-semibold text-zinc-800 mb-4">Статистика по статусам</h3>
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="p-4 bg-zinc-50 rounded-lg">
+                    <p className="text-2xl font-bold text-zinc-800">{users.filter(u => u.customer_status !== 'wholesale').length}</p>
+                    <p className="text-sm text-zinc-500">Розничных клиентов</p>
+                  </div>
+                  <div className="p-4 bg-orange-50 rounded-lg">
+                    <p className="text-2xl font-bold text-orange-600">{users.filter(u => u.customer_status === 'wholesale').length}</p>
+                    <p className="text-sm text-zinc-500">Оптовых клиентов</p>
+                  </div>
+                </div>
+              </div>
+
+              {/* Individual discounts info */}
+              <div className="bg-blue-50 border border-blue-100 rounded-xl p-6">
+                <h3 className="font-semibold text-blue-800 mb-2">Индивидуальные скидки</h3>
+                <p className="text-sm text-blue-600">Для установки индивидуальной скидки конкретному клиенту, перейдите во вкладку "Клиенты" и отредактируйте карточку нужного клиента.</p>
+                <p className="text-sm text-blue-600 mt-2">Итоговая скидка клиента = Скидка по статусу + Индивидуальная скидка</p>
+              </div>
+            </div>
+          </TabsContent>
+
           {/* Partners Tab */}
           <TabsContent value="partners" className="p-6">
             <div className="space-y-6">
