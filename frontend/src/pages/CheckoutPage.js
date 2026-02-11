@@ -139,7 +139,15 @@ export default function CheckoutPage() {
 
   if (authLoading) return null;
   if (!user) { navigate('/login'); return null; }
-  if (cart.items.length === 0 && !success && !cryptoStep) { navigate('/cart'); return null; }
+
+  // Don't redirect if cart is still loading or if we're in a payment flow
+  if (cart.items.length === 0 && !success && !cryptoStep && !loading) {
+    // Check if cart is actually loaded (not just empty during initial render)
+    if (cart._loaded) {
+      navigate('/cart');
+      return null;
+    }
+  }
 
   // Crypto payment step
   if (cryptoStep === 'submitted') {
