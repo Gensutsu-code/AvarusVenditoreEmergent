@@ -45,6 +45,7 @@ export default function CheckoutPage() {
   useEffect(() => {
     if (user) fetchLastShipping();
     axios.get(`${API}/payment-settings`).then(res => setPaymentSettings(res.data)).catch(() => {});
+    axios.get(`${API}/discount-settings`).then(res => setDiscountSettings(res.data)).catch(() => {});
     axios.get(`${API}/crypto-wallets`).then(res => setCryptoWallets(res.data)).catch(() => {});
   }, [user]);
 
