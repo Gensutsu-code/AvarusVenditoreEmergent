@@ -230,6 +230,14 @@ export default function AdminPage() {
     return () => clearInterval(interval);
   }, [user]);
 
+  // Handle tab from URL params (for notification clicks)
+  useEffect(() => {
+    const tab = searchParams.get('tab');
+    if (tab && defaultTabOrder.includes(tab)) {
+      setActiveTab(tab);
+    }
+  }, [searchParams]);
+
   const fetchData = async () => {
     setLoading(true);
     try {
