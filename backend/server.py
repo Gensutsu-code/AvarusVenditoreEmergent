@@ -173,6 +173,12 @@ class DiscountSettingsUpdate(BaseModel):
     wholesale_threshold: float = 50000  # Amount to qualify for wholesale
     partner_threshold: float = 200000   # Amount to qualify for partner
 
+# News article model
+class NewsArticle(BaseModel):
+    title: str
+    content: str
+    image_url: Optional[str] = None
+
 # Payment method discount settings
 class PaymentMethodSettings(BaseModel):
     card_discount: float = 0
