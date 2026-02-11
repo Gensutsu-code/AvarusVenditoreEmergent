@@ -59,8 +59,8 @@
 - Криптовалюта: включено, скидка 20%
 
 ## Backlog (P0)
-- **Рефакторинг server.py:** разбить 4136 строк на роутеры (auth, products, orders, admin, chat, bonus, payments)
-- **Рефакторинг AdminPage.js:** разбить 4907 строк на компоненты
+- **Продолжить рефакторинг server.py:** создать роутеры для admin, chat, bonus, payments, settings, news
+- **Рефакторинг AdminPage.js:** разбить 4907 строк на компоненты по вкладкам
 
 ## Backlog (P1)
 - ЮKassa: настроить API ключи
