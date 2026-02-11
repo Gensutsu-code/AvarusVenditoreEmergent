@@ -2020,6 +2020,15 @@ async def update_bonus_on_order_delivered(user_id: str, order_total: float):
         program_id = program["id"]
         progress = await get_user_program_progress(user_id, program_id)
         
+        # Determine contribution amount based on program settings
+        contribution_type = program.get("contribution_type", "order_total")
+        contribution_percent = program.get("contribution_percent", 100)
+        
+        if contribution_type == "percentage":
+            base_amount = order_total * (contribution_percent / 100)
+        else:
+            base_amount = order_total
+        
         # Determine user's current level based on yearly total
         levels = program.get("levels", [])
         levels_sorted = sorted(levels, key=lambda x: x.get("min_points", 0))
@@ -2029,9 +2038,13 @@ async def update_bonus_on_order_delivered(user_id: str, order_total: float):
             if yearly_total >= level.get("min_points", 0):
                 current_level = level
         
-        # Calculate bonus points based on level's cashback percentage
-        cashback_percent = current_level.get("cashback_percent", 0) if current_level else 0
-        bonus_points = order_total * (cashback_percent / 100)
+        # Calculate bonus points
+        if current_level and current_level.get("cashback_percent", 0) > 0:
+            # Level-based cashback
+            bonus_points = base_amount * (current_level["cashback_percent"] / 100)
+        else:
+            # No levels or no cashback — use base_amount directly as points
+            bonus_points = base_amount
         
         # Update bonus points (accumulate)
         new_points = progress.get("current_amount", 0) + bonus_points
