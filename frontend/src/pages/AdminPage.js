@@ -262,7 +262,8 @@ export default function AdminPage() {
         axios.get(`${API}/admin/status-requests`),
         axios.get(`${API}/admin/discount-requests`),
         axios.get(`${API}/admin/prize-redemptions`),
-        axios.get(`${API}/admin/payment-settings`)
+        axios.get(`${API}/admin/payment-settings`),
+        axios.get(`${API}/admin/news`)
       ]);
       setStats(statsRes.data);
       setProducts(productsRes.data);
