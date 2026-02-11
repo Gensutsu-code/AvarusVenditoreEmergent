@@ -226,3 +226,53 @@ async def toggle_pin_chat(chat_id: str, user=Depends(get_current_user)):
     await db.chats.update_one({"id": chat_id}, {"$set": {"pinned": new_pinned}})
     
     return {"pinned": new_pinned}
+
+
+@router.put("/admin/chats/{chat_id}/label")
+async def update_chat_label(chat_id: str, label: str = "", user=Depends(get_current_user)):
+    """Add or remove label from chat"""
+    if user.get("role") != "admin":
+        raise HTTPException(status_code=403, detail="Admin access required")
+    
+    chat = await db.chats.find_one({"id": chat_id})
+    if not chat:
+        raise HTTPException(status_code=404, detail="Chat not found")
+    
+    labels = chat.get("labels", [])
+    if label in labels:
+        labels.remove(label)
+    else:
+        labels.append(label)
+    
+    await db.chats.update_one({"id": chat_id}, {"$set": {"labels": labels}})
+    return {"labels": labels}
+
+
+@router.put("/admin/chats/{chat_id}/messages/{message_id}")
+async def edit_chat_message(chat_id: str, message_id: str, message: ChatMessage, user=Depends(get_current_user)):
+    """Edit a chat message"""
+    if user.get("role") != "admin":
+        raise HTTPException(status_code=403, detail="Admin access required")
+    
+    result = await db.chat_messages.update_one(
+        {"id": message_id, "chat_id": chat_id},
+        {"$set": {"text": message.text, "edited": True, "edited_at": datetime.now(timezone.utc).isoformat()}}
+    )
+    
+    if result.modified_count == 0:
+        raise HTTPException(status_code=404, detail="Message not found")
+    
+    return {"message": "Message updated"}
+
+
+@router.delete("/admin/chats/{chat_id}/messages/{message_id}")
+async def delete_chat_message(chat_id: str, message_id: str, user=Depends(get_current_user)):
+    """Delete a chat message"""
+    if user.get("role") != "admin":
+        raise HTTPException(status_code=403, detail="Admin access required")
+    
+    result = await db.chat_messages.delete_one({"id": message_id, "chat_id": chat_id})
+    if result.deleted_count == 0:
+        raise HTTPException(status_code=404, detail="Message not found")
+    
+    return {"message": "Message deleted"}
