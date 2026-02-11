@@ -20,25 +20,19 @@ const PriceDisplay = ({ price, discount, formatPrice, showDualPrice = false }) =
     return <span className="text-xl font-bold text-zinc-900">{formatPrice(price)} ₽</span>;
   }
   
-  const discountedPrice = price * (1 - discount / 100);
+  const discountedPrice = Math.round(price * (1 - discount / 100));
   
-  if (showDualPrice) {
-    return (
-      <div className="flex flex-col">
-        <span className="text-sm text-red-500 line-through">{formatPrice(price)} ₽</span>
-        <div className="flex items-center gap-2">
-          <span className="text-xl font-bold text-green-600">{formatPrice(Math.round(discountedPrice))} ₽</span>
-          <span className="text-xs bg-green-100 text-green-700 px-1.5 py-0.5 rounded font-bold">-{discount}%</span>
-        </div>
-      </div>
-    );
-  }
-  
-  // For retail with discount — just show discounted price
   return (
-    <div className="flex items-center gap-2">
-      <span className="text-xl font-bold text-zinc-900">{formatPrice(Math.round(discountedPrice))} ₽</span>
-      <span className="text-xs bg-green-100 text-green-700 px-1.5 py-0.5 rounded font-bold">-{discount}%</span>
+    <div className="flex flex-col items-end">
+      <div className="flex items-center gap-1.5">
+        <span className="text-[10px] uppercase tracking-wide text-zinc-400">Розничная</span>
+        <span className="text-sm text-red-400 line-through">{formatPrice(price)} ₽</span>
+      </div>
+      <div className="flex items-center gap-1.5">
+        <span className="text-[10px] uppercase tracking-wide text-green-600 font-semibold">Ваша цена</span>
+        <span className="text-xl font-bold text-green-600">{formatPrice(discountedPrice)} ₽</span>
+        <span className="text-[10px] bg-green-100 text-green-700 px-1.5 py-0.5 rounded font-bold">-{discount}%</span>
+      </div>
     </div>
   );
 };
