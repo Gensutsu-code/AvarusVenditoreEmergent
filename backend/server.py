@@ -3615,9 +3615,13 @@ async def handle_discount_request(request_id: str, action: str = Query(...), dis
     
     if action == "approve":
         final_discount = discount if discount is not None else req["requested_discount"]
+        # ADD to existing individual discount, not replace
+        current_user = await db.users.find_one({"id": req["user_id"]}, {"_id": 0})
+        current_ind = current_user.get("individual_discount", 0) if current_user else 0
+        new_total = current_ind + final_discount
         await db.users.update_one(
             {"id": req["user_id"]},
-            {"$set": {"individual_discount": final_discount}}
+            {"$set": {"individual_discount": new_total}}
         )
     
     await db.discount_requests.update_one(
