@@ -94,7 +94,7 @@ class TestCatalogSearch:
     def test_search_filter_product(self, test_user_auth):
         """Test searching for 'фильтр' returns products with price data"""
         headers = test_user_auth["headers"]
-        response = requests.get(f"{BASE_URL}/api/products/search?q=фильтр", headers=headers)
+        response = requests.get(f"{BASE_URL}/api/products?search=фильтр", headers=headers)
         assert response.status_code == 200, f"Search failed: {response.text}"
         data = response.json()
         products = data.get("products", [])
