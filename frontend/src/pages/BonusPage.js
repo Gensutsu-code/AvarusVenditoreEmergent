@@ -23,6 +23,7 @@ export default function BonusPage() {
   const [redeemedPrize, setRedeemedPrize] = useState(null);
   const [copiedCode, setCopiedCode] = useState(null);
   const [showHistory, setShowHistory] = useState(false);
+  const [myRedemptions, setMyRedemptions] = useState([]);
 
   useEffect(() => {
     if (authLoading) return;
