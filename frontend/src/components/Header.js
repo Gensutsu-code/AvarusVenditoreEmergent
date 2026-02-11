@@ -80,6 +80,11 @@ export const Header = () => {
                         <Gift className="w-5 h-5" />
                       </Button>
                     </Link>
+                    <Link to="/news" data-testid="news-link">
+                      <Button variant="ghost" size="sm">
+                        <Newspaper className="w-5 h-5" />
+                      </Button>
+                    </Link>
                     <Link to="/catalog" data-testid="search-link">
                       <Button variant="ghost" size="sm">
                         <Search className="w-5 h-5" />
