@@ -34,7 +34,10 @@ export default function CheckoutPage() {
   const [success, setSuccess] = useState(false);
   const [orderId, setOrderId] = useState(null);
   const [paymentMethod, setPaymentMethod] = useState('cash');
-  const [paymentSettings, setPaymentSettings] = useState({ card_discount: 0, crypto_discount: 0, cash_discount: 0 });
+  const [paymentSettings, setPaymentSettings] = useState({ 
+    card_discount: 0, crypto_discount: 0, cash_discount: 0,
+    card_enabled: true, crypto_enabled: true, cash_enabled: true
+  });
   const [discountSettings, setDiscountSettings] = useState({ retail_discount: 0, wholesale_discount: 0, partner_discount: 0 });
   const [cryptoWallets, setCryptoWallets] = useState({});
   const [selectedChain, setSelectedChain] = useState('eth');
@@ -42,9 +45,22 @@ export default function CheckoutPage() {
   const [cryptoStep, setCryptoStep] = useState(null); // null | 'pay' | 'submitted'
   const [form, setForm] = useState({ full_name: '', address: '', phone: '', comment: '' });
 
+  // Check if payment method is enabled
+  const isPaymentMethodEnabled = (method) => paymentSettings[`${method}_enabled`] !== false;
+
   useEffect(() => {
     if (user) fetchLastShipping();
-    axios.get(`${API}/payment-settings`).then(res => setPaymentSettings(res.data)).catch(() => {});
+    axios.get(`${API}/payment-settings`).then(res => {
+      setPaymentSettings(res.data);
+      // Auto-select first enabled payment method
+      if (res.data.cash_enabled !== false) {
+        setPaymentMethod('cash');
+      } else if (res.data.card_enabled !== false) {
+        setPaymentMethod('card');
+      } else if (res.data.crypto_enabled !== false) {
+        setPaymentMethod('crypto');
+      }
+    }).catch(() => {});
     axios.get(`${API}/discount-settings`).then(res => setDiscountSettings(res.data)).catch(() => {});
     axios.get(`${API}/crypto-wallets`).then(res => setCryptoWallets(res.data)).catch(() => {});
   }, [user]);
