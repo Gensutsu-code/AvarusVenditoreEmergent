@@ -374,6 +374,10 @@ async def register(data: UserRegister):
     await db.carts.insert_one({"user_id": user_id, "items": []})
     
     token = create_token(user_id)
+    
+    # Log admin activity
+    await create_admin_activity(user_id, data.name, "registration", f"Новый пользователь: {data.email}")
+    
     return {"token": token, "user": {"id": user_id, "email": data.email, "name": data.name, "phone": data.phone, "address": data.address, "address_comment": data.address_comment, "role": "user", "avatar_url": None, "customer_status": "retail", "individual_discount": 0}}
 
 @api_router.post("/auth/login")
