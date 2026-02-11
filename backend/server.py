@@ -3471,6 +3471,45 @@ async def create_admin_user():
     
     return {"message": "Admin created", "email": "admin@avarus.ru", "password": "admin123"}
 
+# ==================== PAYMENT SETTINGS ====================
+
+@api_router.get("/payment-settings")
+async def get_payment_settings():
+    """Get payment method discount settings (public)"""
+    defaults = {"card_discount": 0, "crypto_discount": 0, "cash_discount": 0}
+    settings = await db.settings.find_one({"key": "payment_settings"})
+    if settings:
+        val = settings.get("value", {})
+        return {**defaults, **val}
+    return defaults
+
+@api_router.get("/admin/payment-settings")
+async def get_admin_payment_settings(user=Depends(get_current_user)):
+    if user.get("role") != "admin":
+        raise HTTPException(status_code=403, detail="Admin access required")
+    defaults = {"card_discount": 0, "crypto_discount": 0, "cash_discount": 0}
+    settings = await db.settings.find_one({"key": "payment_settings"})
+    if settings:
+        val = settings.get("value", {})
+        return {**defaults, **val}
+    return defaults
+
+@api_router.put("/admin/payment-settings")
+async def update_payment_settings(data: PaymentMethodSettings, user=Depends(get_current_user)):
+    if user.get("role") != "admin":
+        raise HTTPException(status_code=403, detail="Admin access required")
+    settings_data = {
+        "card_discount": data.card_discount,
+        "crypto_discount": data.crypto_discount,
+        "cash_discount": data.cash_discount
+    }
+    await db.settings.update_one(
+        {"key": "payment_settings"},
+        {"$set": {"value": settings_data}},
+        upsert=True
+    )
+    return {"success": True}
+
 # ==================== DOCUMENT GENERATION ====================
 
 @api_router.get("/admin/orders/{order_id}/invoice/{format}")
