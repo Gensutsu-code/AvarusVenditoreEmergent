@@ -1,9 +1,10 @@
 import { Link } from 'react-router-dom';
-import { ShoppingCart, User, Search, LogOut, Settings, Heart, Package, ClipboardList, Gift } from 'lucide-react';
+import { ShoppingCart, User, Search, LogOut, Settings, Heart, Package, ClipboardList, Gift, Newspaper } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { useCart } from '../context/CartContext';
 import { Button } from './ui/button';
 import { AdminNotifications } from './AdminNotifications';
+import { ClientNotifications } from './ClientNotifications';
 
 export const Header = () => {
   const { user, logout } = useAuth();
