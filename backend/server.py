@@ -256,6 +256,7 @@ class OrderCreate(BaseModel):
     address: str
     phone: str
     comment: Optional[str] = None
+    payment_method: Optional[str] = "cash"  # "cash", "card", "crypto"
 
 class OrderItemDiscount(BaseModel):
     product_id: str
