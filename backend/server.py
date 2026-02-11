@@ -3713,7 +3713,10 @@ async def confirm_crypto_payment(order_id: str, user=Depends(get_current_user)):
 @api_router.get("/payment-settings")
 async def get_payment_settings():
     """Get payment method discount settings (public)"""
-    defaults = {"card_discount": 0, "crypto_discount": 0, "cash_discount": 0}
+    defaults = {
+        "card_discount": 0, "crypto_discount": 0, "cash_discount": 0,
+        "card_enabled": True, "crypto_enabled": True, "cash_enabled": True
+    }
     settings = await db.settings.find_one({"key": "payment_settings"})
     if settings:
         val = settings.get("value", {})
@@ -3724,7 +3727,10 @@ async def get_payment_settings():
 async def get_admin_payment_settings(user=Depends(get_current_user)):
     if user.get("role") != "admin":
         raise HTTPException(status_code=403, detail="Admin access required")
-    defaults = {"card_discount": 0, "crypto_discount": 0, "cash_discount": 0}
+    defaults = {
+        "card_discount": 0, "crypto_discount": 0, "cash_discount": 0,
+        "card_enabled": True, "crypto_enabled": True, "cash_enabled": True
+    }
     settings = await db.settings.find_one({"key": "payment_settings"})
     if settings:
         val = settings.get("value", {})
@@ -3738,7 +3744,10 @@ async def update_payment_settings(data: PaymentMethodSettings, user=Depends(get_
     settings_data = {
         "card_discount": data.card_discount,
         "crypto_discount": data.crypto_discount,
-        "cash_discount": data.cash_discount
+        "cash_discount": data.cash_discount,
+        "card_enabled": data.card_enabled,
+        "crypto_enabled": data.crypto_enabled,
+        "cash_enabled": data.cash_enabled
     }
     await db.settings.update_one(
         {"key": "payment_settings"},
