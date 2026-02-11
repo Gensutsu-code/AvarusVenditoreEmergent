@@ -626,11 +626,41 @@ export default function AdminPage() {
         customer_status: customerStatus,
         individual_discount: individualDiscount
       });
-      // Update local state
       setUsers(prev => prev.map(u => u.id === userId ? {...u, customer_status: customerStatus, individual_discount: individualDiscount} : u));
       toast.success('Настройки клиента обновлены');
     } catch (err) {
       toast.error('Ошибка сохранения');
+    }
+  };
+
+  // Request handlers
+  const handleStatusRequest = async (requestId, action) => {
+    try {
+      await axios.put(`${API}/admin/status-requests/${requestId}?action=${action}`);
+      setStatusRequests(prev => prev.map(r => r.id === requestId ? {...r, status: action === 'approve' ? 'approved' : 'rejected'} : r));
+      if (action === 'approve') {
+        const req = statusRequests.find(r => r.id === requestId);
+        if (req) setUsers(prev => prev.map(u => u.id === req.user_id ? {...u, customer_status: req.requested_status} : u));
+      }
+      toast.success(action === 'approve' ? 'Запрос одобрен' : 'Запрос отклонён');
+    } catch (err) {
+      toast.error('Ошибка обработки запроса');
+    }
+  };
+
+  const handleDiscountRequest = async (requestId, action, discount = null) => {
+    try {
+      let url = `${API}/admin/discount-requests/${requestId}?action=${action}`;
+      if (discount !== null) url += `&discount=${discount}`;
+      await axios.put(url);
+      setDiscountRequests(prev => prev.map(r => r.id === requestId ? {...r, status: action === 'approve' ? 'approved' : 'rejected'} : r));
+      if (action === 'approve') {
+        const req = discountRequests.find(r => r.id === requestId);
+        if (req) setUsers(prev => prev.map(u => u.id === req.user_id ? {...u, individual_discount: discount ?? req.requested_discount} : u));
+      }
+      toast.success(action === 'approve' ? 'Скидка одобрена' : 'Запрос отклонён');
+    } catch (err) {
+      toast.error('Ошибка обработки запроса');
     }
   };
 
