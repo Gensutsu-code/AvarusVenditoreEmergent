@@ -178,6 +178,7 @@ export default function AdminPage() {
   
   // User details expansion
   const [expandedUserId, setExpandedUserId] = useState(null);
+  const [paymentSettings, setPaymentSettings] = useState({ card_discount: 0, crypto_discount: 0, cash_discount: 0 });
   const [userDetails, setUserDetails] = useState(null);
   const [loadingUserDetails, setLoadingUserDetails] = useState(false);
   
