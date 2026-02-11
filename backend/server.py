@@ -2673,10 +2673,12 @@ async def update_discount_settings(data: DiscountSettingsUpdate, user=Depends(ge
 @api_router.get("/discount-settings")
 async def get_public_discount_settings():
     """Get discount settings (public - for showing to users)"""
+    defaults = {"retail_discount": 0, "wholesale_discount": 0, "partner_discount": 0, "wholesale_threshold": 50000, "partner_threshold": 200000}
     settings = await db.settings.find_one({"key": "discount_settings"})
     if settings:
-        return settings.get("value", {"retail_discount": 0, "wholesale_discount": 0, "partner_discount": 0})
-    return {"retail_discount": 0, "wholesale_discount": 0, "partner_discount": 0}
+        val = settings.get("value", {})
+        return {**defaults, **val}
+    return defaults
 
 @api_router.get("/admin/bonus/users")
 async def get_bonus_users(user=Depends(get_current_user)):
