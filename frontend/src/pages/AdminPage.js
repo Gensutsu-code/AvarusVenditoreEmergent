@@ -4302,9 +4302,41 @@ export default function AdminPage() {
                 </div>
                 <div>
                   <p className="text-zinc-500 text-xs uppercase">Способ оплаты</p>
-                  <p className="font-medium">Наличными при получении</p>
+                  <p className="font-medium">
+                    {viewingOrder.payment_method === 'card' ? 'Банковская карта' : 
+                     viewingOrder.payment_method === 'crypto' ? 'Криптовалюта' : 'Наличные'}
+                  </p>
+                  {viewingOrder.payment_status && (
+                    <span className={`text-xs px-2 py-0.5 rounded-full ${
+                      viewingOrder.payment_status === 'paid' ? 'bg-green-100 text-green-700' :
+                      viewingOrder.payment_status === 'crypto_pending' ? 'bg-amber-100 text-amber-700' :
+                      'bg-zinc-100 text-zinc-600'
+                    }`}>
+                      {viewingOrder.payment_status === 'paid' ? 'Оплачен' : 
+                       viewingOrder.payment_status === 'crypto_pending' ? 'Ожидает подтверждения' : 
+                       viewingOrder.payment_status}
+                    </span>
+                  )}
                 </div>
               </div>
+
+              {/* Crypto payment confirmation */}
+              {viewingOrder.payment_status === 'crypto_pending' && viewingOrder.crypto_tx_hash && (
+                <div className="bg-amber-50 border border-amber-200 rounded-lg p-4">
+                  <p className="font-semibold text-amber-800 mb-2">Крипто-платёж ожидает подтверждения</p>
+                  <p className="text-sm text-zinc-600">Сеть: <span className="font-mono font-bold">{viewingOrder.crypto_chain?.toUpperCase()}</span></p>
+                  <p className="text-sm text-zinc-600 break-all">TX: <span className="font-mono">{viewingOrder.crypto_tx_hash}</span></p>
+                  <Button size="sm" className="bg-green-500 hover:bg-green-600 text-white mt-3" onClick={async () => {
+                    try {
+                      await axios.put(`${API}/admin/orders/${viewingOrder.id}/confirm-crypto`);
+                      setViewingOrder(prev => ({...prev, payment_status: 'paid', status: 'processing'}));
+                      toast.success('Крипто-платёж подтверждён');
+                    } catch (err) { toast.error('Ошибка подтверждения'); }
+                  }} data-testid="confirm-crypto-btn">
+                    Подтвердить оплату
+                  </Button>
+                </div>
+              )}
 
               {/* Order items with full details */}
               <div className="border border-zinc-200">
