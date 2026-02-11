@@ -28,7 +28,7 @@ export default function AccountPage() {
   const [saving, setSaving] = useState(false);
   const [uploadingAvatar, setUploadingAvatar] = useState(false);
   const [showPasswords, setShowPasswords] = useState(false);
-  const [discountSettings, setDiscountSettings] = useState({ retail_discount: 0, wholesale_discount: 0 });
+  const [discountSettings, setDiscountSettings] = useState({ retail_discount: 0, wholesale_discount: 0, partner_discount: 0 });
 
   // Fetch discount settings
   useEffect(() => {
