@@ -1237,6 +1237,18 @@ export default function AdminPage() {
                           }`}>
                             {u.role === 'admin' ? 'Админ' : 'Пользователь'}
                           </span>
+                          {u.role !== 'admin' && (
+                            <span className={`text-xs font-bold px-2 py-0.5 rounded ${
+                              u.customer_status === 'wholesale' ? 'bg-orange-100 text-orange-800' : 'bg-blue-100 text-blue-800'
+                            }`}>
+                              {u.customer_status === 'wholesale' ? 'Оптовик' : 'Розница'}
+                            </span>
+                          )}
+                          {(u.individual_discount > 0 || (u.customer_status === 'wholesale' ? discountSettings.wholesale_discount : discountSettings.retail_discount) > 0) && u.role !== 'admin' && (
+                            <span className="text-xs font-bold px-2 py-0.5 rounded bg-green-100 text-green-800">
+                              -{((u.customer_status === 'wholesale' ? discountSettings.wholesale_discount : discountSettings.retail_discount) + (u.individual_discount || 0)).toFixed(0)}%
+                            </span>
+                          )}
                         </div>
                         <p className="text-sm text-zinc-500">{u.email}</p>
                       </div>
