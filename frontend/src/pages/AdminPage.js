@@ -3714,6 +3714,54 @@ export default function AdminPage() {
                 <p className="text-sm text-blue-600">Для установки индивидуальной скидки конкретному клиенту, перейдите во вкладку "Клиенты" и отредактируйте карточку нужного клиента.</p>
                 <p className="text-sm text-blue-600 mt-2">Итоговая скидка клиента = Скидка по статусу + Индивидуальная скидка</p>
               </div>
+
+              {/* Payment method discounts */}
+              <div className="bg-white border border-zinc-200 rounded-xl p-6 space-y-4">
+                <h3 className="font-semibold text-zinc-800 flex items-center gap-2">
+                  <CreditCard className="w-5 h-5 text-green-500" />
+                  Скидки по способу оплаты
+                </h3>
+                <p className="text-sm text-zinc-500">Дополнительная скидка при выборе определённого способа оплаты</p>
+                
+                <div className="grid grid-cols-3 gap-4 mt-4">
+                  <div className="p-4 bg-zinc-50 rounded-lg">
+                    <Label className="text-xs font-bold uppercase text-zinc-500">Наличные</Label>
+                    <div className="flex items-center gap-2 mt-2">
+                      <Input type="number" min="0" max="100" value={paymentSettings.cash_discount || 0}
+                        onChange={(e) => setPaymentSettings({...paymentSettings, cash_discount: parseFloat(e.target.value) || 0})}
+                        className="w-24" />
+                      <span className="text-zinc-500">%</span>
+                    </div>
+                  </div>
+                  <div className="p-4 bg-blue-50 rounded-lg border border-blue-100">
+                    <Label className="text-xs font-bold uppercase text-blue-600">Карта</Label>
+                    <div className="flex items-center gap-2 mt-2">
+                      <Input type="number" min="0" max="100" value={paymentSettings.card_discount || 0}
+                        onChange={(e) => setPaymentSettings({...paymentSettings, card_discount: parseFloat(e.target.value) || 0})}
+                        className="w-24" />
+                      <span className="text-zinc-500">%</span>
+                    </div>
+                  </div>
+                  <div className="p-4 bg-amber-50 rounded-lg border border-amber-100">
+                    <Label className="text-xs font-bold uppercase text-amber-600">Криптовалюта</Label>
+                    <div className="flex items-center gap-2 mt-2">
+                      <Input type="number" min="0" max="100" value={paymentSettings.crypto_discount || 0}
+                        onChange={(e) => setPaymentSettings({...paymentSettings, crypto_discount: parseFloat(e.target.value) || 0})}
+                        className="w-24" />
+                      <span className="text-zinc-500">%</span>
+                    </div>
+                  </div>
+                </div>
+                
+                <Button onClick={async () => {
+                  try {
+                    await axios.put(`${API}/admin/payment-settings`, paymentSettings);
+                    toast.success('Скидки по оплате сохранены');
+                  } catch (err) { toast.error('Ошибка сохранения'); }
+                }} className="bg-green-500 hover:bg-green-600 mt-4" data-testid="save-payment-settings-btn">
+                  <Save className="w-4 h-4 mr-2" /> Сохранить скидки по оплате
+                </Button>
+              </div>
             </div>
           </TabsContent>
 
