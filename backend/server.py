@@ -160,6 +160,11 @@ class CategoryResponse(BaseModel):
     name: str
     image_url: Optional[str] = None
 
+# Discount settings model
+class DiscountSettingsUpdate(BaseModel):
+    retail_discount: float = 0  # Discount for retail customers (%)
+    wholesale_discount: float = 0  # Discount for wholesale customers (%)
+
 # Promo banner model
 class PromoBannerUpdate(BaseModel):
     enabled: bool
