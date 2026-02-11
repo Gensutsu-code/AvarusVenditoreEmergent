@@ -97,7 +97,8 @@ class TestCatalogSearch:
         response = requests.get(f"{BASE_URL}/api/products?search=фильтр", headers=headers)
         assert response.status_code == 200, f"Search failed: {response.text}"
         data = response.json()
-        products = data.get("products", [])
+        # API returns list directly
+        products = data if isinstance(data, list) else data.get("products", [])
         print(f"Found {len(products)} products for 'фильтр'")
         assert len(products) > 0, "No products found for 'фильтр'"
         
