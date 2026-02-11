@@ -243,7 +243,7 @@ export default function AdminPage() {
   const fetchData = async () => {
     setLoading(true);
     try {
-      const [statsRes, productsRes, categoriesRes, usersRes, ordersRes, bannerRes, telegramRes, chatsRes, bonusProgramsRes, bonusHistoryRes, partnersRes, discountRes, statusReqRes, discountReqRes, prizeRedemptionsRes] = await Promise.all([
+      const [statsRes, productsRes, categoriesRes, usersRes, ordersRes, bannerRes, telegramRes, chatsRes, bonusProgramsRes, bonusHistoryRes, partnersRes, discountRes, statusReqRes, discountReqRes, prizeRedemptionsRes, paymentRes] = await Promise.all([
         axios.get(`${API}/admin/stats`),
         axios.get(`${API}/products`),
         axios.get(`${API}/categories`),
@@ -258,7 +258,8 @@ export default function AdminPage() {
         axios.get(`${API}/admin/discount-settings`),
         axios.get(`${API}/admin/status-requests`),
         axios.get(`${API}/admin/discount-requests`),
-        axios.get(`${API}/admin/prize-redemptions`)
+        axios.get(`${API}/admin/prize-redemptions`),
+        axios.get(`${API}/admin/payment-settings`)
       ]);
       setStats(statsRes.data);
       setProducts(productsRes.data);
