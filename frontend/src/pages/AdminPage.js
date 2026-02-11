@@ -232,7 +232,7 @@ export default function AdminPage() {
   const fetchData = async () => {
     setLoading(true);
     try {
-      const [statsRes, productsRes, categoriesRes, usersRes, ordersRes, bannerRes, telegramRes, chatsRes, bonusProgramsRes, bonusHistoryRes, partnersRes, discountRes] = await Promise.all([
+      const [statsRes, productsRes, categoriesRes, usersRes, ordersRes, bannerRes, telegramRes, chatsRes, bonusProgramsRes, bonusHistoryRes, partnersRes, discountRes, statusReqRes, discountReqRes] = await Promise.all([
         axios.get(`${API}/admin/stats`),
         axios.get(`${API}/products`),
         axios.get(`${API}/categories`),
@@ -244,7 +244,9 @@ export default function AdminPage() {
         axios.get(`${API}/admin/bonus/programs`),
         axios.get(`${API}/admin/bonus/history`),
         axios.get(`${API}/partners`),
-        axios.get(`${API}/admin/discount-settings`)
+        axios.get(`${API}/admin/discount-settings`),
+        axios.get(`${API}/admin/status-requests`),
+        axios.get(`${API}/admin/discount-requests`)
       ]);
       setStats(statsRes.data);
       setProducts(productsRes.data);
@@ -258,6 +260,8 @@ export default function AdminPage() {
       setBonusHistory(bonusHistoryRes.data.history || []);
       setPartners(partnersRes.data || []);
       setDiscountSettings(discountRes.data || { retail_discount: 0, wholesale_discount: 0 });
+      setStatusRequests(statusReqRes.data || []);
+      setDiscountRequests(discountReqRes.data || []);
     } catch (err) {
       console.error('Failed to fetch admin data', err);
       toast.error('Ошибка загрузки данных');
