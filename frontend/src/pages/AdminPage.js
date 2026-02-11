@@ -182,6 +182,7 @@ export default function AdminPage() {
   const [newsList, setNewsList] = useState([]);
   const [editingNews, setEditingNews] = useState(null);
   const [newsForm, setNewsForm] = useState({ title: '', content: '', image_url: '' });
+  const [cryptoWallets, setCryptoWallets] = useState({ eth_address: '', bsc_address: '', base_address: '', trc_address: '' });
   const [userDetails, setUserDetails] = useState(null);
   const [loadingUserDetails, setLoadingUserDetails] = useState(false);
   
