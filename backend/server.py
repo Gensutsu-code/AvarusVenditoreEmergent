@@ -3576,6 +3576,119 @@ async def download_receipt(order_id: str, format: str, user=Depends(get_current_
         return StreamingResponse(buf, media_type="application/pdf",
                                  headers={"Content-Disposition": f'attachment; filename="receipt_{order_id[:8]}.pdf"'})
 
+# ==================== CLIENT NOTIFICATIONS ====================
+
+async def create_notification(user_id: str, ntype: str, title: str, message: str, link: str = ""):
+    """Create a notification for a user"""
+    notif = {
+        "id": str(uuid.uuid4()),
+        "user_id": user_id,
+        "type": ntype,
+        "title": title,
+        "message": message,
+        "link": link,
+        "read": False,
+        "created_at": datetime.now(timezone.utc).isoformat()
+    }
+    await db.notifications.insert_one(notif)
+
+async def create_admin_activity(user_id: str, user_name: str, action: str, details: str = ""):
+    """Log client activity for admin notifications"""
+    activity = {
+        "id": str(uuid.uuid4()),
+        "user_id": user_id,
+        "user_name": user_name,
+        "action": action,
+        "details": details,
+        "read": False,
+        "created_at": datetime.now(timezone.utc).isoformat()
+    }
+    await db.admin_activities.insert_one(activity)
+
+@api_router.get("/my-notifications")
+async def get_my_notifications(user=Depends(get_current_user)):
+    """Get client notifications"""
+    notifs = await db.notifications.find(
+        {"user_id": user["id"]}, {"_id": 0}
+    ).sort("created_at", -1).to_list(50)
+    unread = sum(1 for n in notifs if not n.get("read"))
+    return {"notifications": notifs, "unread_count": unread}
+
+@api_router.put("/my-notifications/read-all")
+async def mark_notifications_read(user=Depends(get_current_user)):
+    await db.notifications.update_many(
+        {"user_id": user["id"], "read": False},
+        {"$set": {"read": True}}
+    )
+    return {"success": True}
+
+@api_router.get("/admin/activities")
+async def get_admin_activities(user=Depends(get_current_user)):
+    if user.get("role") != "admin":
+        raise HTTPException(status_code=403, detail="Admin access required")
+    activities = await db.admin_activities.find({}, {"_id": 0}).sort("created_at", -1).to_list(100)
+    unread = sum(1 for a in activities if not a.get("read"))
+    return {"activities": activities, "unread_count": unread}
+
+@api_router.put("/admin/activities/read-all")
+async def mark_admin_activities_read(user=Depends(get_current_user)):
+    if user.get("role") != "admin":
+        raise HTTPException(status_code=403, detail="Admin access required")
+    await db.admin_activities.update_many({"read": False}, {"$set": {"read": True}})
+    return {"success": True}
+
+# ==================== NEWS ====================
+
+@api_router.get("/news")
+async def get_news():
+    """Get published news"""
+    news = await db.news.find({"published": True}, {"_id": 0}).sort("created_at", -1).to_list(50)
+    return news
+
+@api_router.get("/news/{news_id}")
+async def get_news_article(news_id: str):
+    article = await db.news.find_one({"id": news_id}, {"_id": 0})
+    if not article:
+        raise HTTPException(status_code=404, detail="Статья не найдена")
+    return article
+
+@api_router.get("/admin/news")
+async def get_admin_news(user=Depends(get_current_user)):
+    if user.get("role") != "admin":
+        raise HTTPException(status_code=403, detail="Admin access required")
+    return await db.news.find({}, {"_id": 0}).sort("created_at", -1).to_list(100)
+
+@api_router.post("/admin/news")
+async def create_news(data: NewsArticle, user=Depends(get_current_user)):
+    if user.get("role") != "admin":
+        raise HTTPException(status_code=403, detail="Admin access required")
+    article = {
+        "id": str(uuid.uuid4()),
+        "title": data.title,
+        "content": data.content,
+        "image_url": data.image_url,
+        "published": True,
+        "created_at": datetime.now(timezone.utc).isoformat()
+    }
+    await db.news.insert_one(article)
+    return {k: v for k, v in article.items() if k != "_id"}
+
+@api_router.put("/admin/news/{news_id}")
+async def update_news(news_id: str, data: NewsArticle, user=Depends(get_current_user)):
+    if user.get("role") != "admin":
+        raise HTTPException(status_code=403, detail="Admin access required")
+    await db.news.update_one({"id": news_id}, {"$set": {
+        "title": data.title, "content": data.content, "image_url": data.image_url
+    }})
+    return {"success": True}
+
+@api_router.delete("/admin/news/{news_id}")
+async def delete_news(news_id: str, user=Depends(get_current_user)):
+    if user.get("role") != "admin":
+        raise HTTPException(status_code=403, detail="Admin access required")
+    await db.news.delete_one({"id": news_id})
+    return {"success": True}
+
 # ==================== STATUS & DISCOUNT REQUESTS ====================
 
 @api_router.post("/request-status-upgrade")
