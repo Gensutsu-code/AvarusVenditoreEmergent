@@ -3852,6 +3852,9 @@ async def handle_status_request(request_id: str, action: str = Query(...), user=
         {"$set": {"status": "approved" if action == "approve" else "rejected",
                   "handled_at": datetime.now(timezone.utc).isoformat()}}
     )
+    # Notify user
+    status_text = "одобрен" if action == "approve" else "отклонён"
+    await create_notification(req["user_id"], "status_response", "Запрос на статус", f"Ваш запрос на повышение статуса {status_text}", "/account")
     return {"success": True}
 
 @api_router.get("/admin/discount-requests")
