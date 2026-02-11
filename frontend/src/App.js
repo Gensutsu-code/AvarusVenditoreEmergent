@@ -47,6 +47,7 @@ function AppContent() {
           <Route path="/favorites" element={<FavoritesPage />} />
           <Route path="/orders" element={<OrdersPage />} />
           <Route path="/bonus" element={<BonusPage />} />
+          <Route path="/news" element={<NewsPage />} />
         </Routes>
       </main>
       {/* Hide chat widget for admin */}
