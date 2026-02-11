@@ -1,0 +1,110 @@
+{
+  "summary": "Tested discount and status request system features. All 8 test items verified: dynamic pricing with 15% discount (strikethrough 1500₽ + green 1275₽), account page status/discount display, admin notifications bell, admin discount thresholds, and all related APIs.",
+  
+  "backend_issues": {
+    "critical": [],
+    "minor": []
+  },
+  
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [],
+    "design_issues": []
+  },
+  
+  "passed_tests": {
+    "dynamic_price_display": [
+      "Catalog shows strikethrough retail price (1500₽)",
+      "Catalog shows discounted green price (1275₽)",
+      "Discount badge shows -15%",
+      "PriceDisplay component works correctly for wholesale user"
+    ],
+    "account_page_discount_display": [
+      "Status 'Опт' displayed correctly",
+      "Total discount 15% shown (10% wholesale + 5% individual)",
+      "Progress bar for Partner upgrade shown (78% progress)",
+      "Status upgrade section with threshold info visible",
+      "Individual discount request form present"
+    ],
+    "admin_notifications_bell": [
+      "Bell icon visible in header next to 'Панель'",
+      "Badge shows notification count (2)",
+      "Dropdown opens with notification items",
+      "Shows discount requests and prize requests counts"
+    ],
+    "admin_discounts_tab_thresholds": [
+      "Threshold for Опт: 50000₽ visible",
+      "Threshold for Партнёр: 200000₽ visible",
+      "Status discount percentages editable",
+      "Save button present"
+    ],
+    "api_discount_settings": [
+      "GET /api/discount-settings returns thresholds (wholesale_threshold=50000, partner_threshold=200000)",
+      "Returns retail_discount, wholesale_discount, partner_discount"
+    ],
+    "api_admin_notifications": [
+      "GET /api/admin/notifications returns counts for all notification types",
+      "Returns status_requests, discount_requests, bonus_requests, prize_requests, new_orders, unread_chats, total"
+    ],
+    "api_individual_discount_request": [
+      "POST /api/request-individual-discount works with reason text",
+      "Validates discount percentage (1-50%)",
+      "Requires non-empty reason"
+    ],
+    "api_status_upgrade_request": [
+      "POST /api/request-status-upgrade validates threshold requirement",
+      "Blocks if total_spent < threshold",
+      "Blocks if already has requested status"
+    ]
+  },
+  
+  "test_report_links": [
+    "/app/backend/tests/test_discount_status.py",
+    "/app/test_reports/pytest/pytest_discount_status.xml"
+  ],
+  
+  "action_items": [],
+  
+  "critical_code_review_comments": [],
+  
+  "updated_files": [
+    "/app/backend/tests/test_discount_status.py - Created test file for discount/status features"
+  ],
+  
+  "success_rate": {
+    "backend": "100% (12/12 pytest tests passed)",
+    "frontend": "100% (All 8 feature items verified via Playwright)"
+  },
+  
+  "test_credentials": {
+    "admin": {"email": "admin@avarus.ru", "password": "admin123"},
+    "wholesale_user": {"email": "TEST@MAIL.RU", "password": "admin123", "customer_status": "wholesale", "individual_discount": 5, "total_discount": "15%"}
+  },
+  
+  "seed_data_creation": "None - used existing test user TEST@MAIL.RU with wholesale status",
+  
+  "retest_needed": false,
+  
+  "should_main_agent_self_test": true,
+  
+  "context_for_next_testing_agent": "All discount and status request features are working correctly. Test user TEST@MAIL.RU has wholesale status (10% discount) + 5% individual discount = 15% total. The catalog shows strikethrough original price and green discounted price with -15% badge. Admin notifications bell works and shows pending requests. Admin discounts tab has editable thresholds (50000 for Опт, 200000 for Партнёр). The test file /app/backend/tests/test_discount_status.py can be used for regression testing.",
+  
+  "verification_details": {
+    "price_calculation": {
+      "original_price": "1500₽",
+      "discount_percentage": "15%",
+      "discounted_price": "1275₽",
+      "calculation": "1500 * (1 - 0.15) = 1275"
+    },
+    "test_user_discount_breakdown": {
+      "customer_status": "wholesale",
+      "status_discount": "10%",
+      "individual_discount": "5%",
+      "total_discount": "15%"
+    },
+    "admin_thresholds": {
+      "wholesale_threshold": "50000₽",
+      "partner_threshold": "200000₽"
+    }
+  }
+}
