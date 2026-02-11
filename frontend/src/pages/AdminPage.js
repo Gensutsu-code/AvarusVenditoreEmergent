@@ -3728,47 +3728,85 @@ export default function AdminPage() {
               <div className="bg-white border border-zinc-200 rounded-xl p-6 space-y-4">
                 <h3 className="font-semibold text-zinc-800 flex items-center gap-2">
                   <CreditCard className="w-5 h-5 text-green-500" />
-                  Скидки по способу оплаты
+                  Способы оплаты и скидки
                 </h3>
-                <p className="text-sm text-zinc-500">Дополнительная скидка при выборе определённого способа оплаты</p>
+                <p className="text-sm text-zinc-500">Включение/отключение способов оплаты и дополнительные скидки</p>
                 
                 <div className="grid grid-cols-3 gap-4 mt-4">
-                  <div className="p-4 bg-zinc-50 rounded-lg">
-                    <Label className="text-xs font-bold uppercase text-zinc-500">Наличные</Label>
-                    <div className="flex items-center gap-2 mt-2">
+                  <div className={`p-4 rounded-lg border ${paymentSettings.cash_enabled !== false ? 'bg-zinc-50 border-zinc-200' : 'bg-red-50 border-red-200'}`}>
+                    <div className="flex items-center justify-between mb-3">
+                      <Label className="text-xs font-bold uppercase text-zinc-500">Наличные</Label>
+                      <label className="relative inline-flex items-center cursor-pointer">
+                        <input type="checkbox" className="sr-only peer" 
+                          checked={paymentSettings.cash_enabled !== false}
+                          onChange={(e) => setPaymentSettings({...paymentSettings, cash_enabled: e.target.checked})} />
+                        <div className="w-9 h-5 bg-zinc-300 peer-checked:bg-green-500 rounded-full peer peer-checked:after:translate-x-full after:content-[''] after:absolute after:top-0.5 after:left-[2px] after:bg-white after:rounded-full after:h-4 after:w-4 after:transition-all"></div>
+                      </label>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <span className="text-xs text-zinc-500">Скидка:</span>
                       <Input type="number" min="0" max="100" value={paymentSettings.cash_discount || 0}
                         onChange={(e) => setPaymentSettings({...paymentSettings, cash_discount: parseFloat(e.target.value) || 0})}
-                        className="w-24" />
-                      <span className="text-zinc-500">%</span>
+                        className="w-20 h-8 text-sm" disabled={paymentSettings.cash_enabled === false} />
+                      <span className="text-zinc-500 text-sm">%</span>
                     </div>
+                    {paymentSettings.cash_enabled === false && (
+                      <p className="text-xs text-red-500 mt-2">Временно недоступно</p>
+                    )}
                   </div>
-                  <div className="p-4 bg-blue-50 rounded-lg border border-blue-100">
-                    <Label className="text-xs font-bold uppercase text-blue-600">Карта</Label>
-                    <div className="flex items-center gap-2 mt-2">
+                  
+                  <div className={`p-4 rounded-lg border ${paymentSettings.card_enabled !== false ? 'bg-blue-50 border-blue-100' : 'bg-red-50 border-red-200'}`}>
+                    <div className="flex items-center justify-between mb-3">
+                      <Label className="text-xs font-bold uppercase text-blue-600">Карта (ЮKassa)</Label>
+                      <label className="relative inline-flex items-center cursor-pointer">
+                        <input type="checkbox" className="sr-only peer" 
+                          checked={paymentSettings.card_enabled !== false}
+                          onChange={(e) => setPaymentSettings({...paymentSettings, card_enabled: e.target.checked})} />
+                        <div className="w-9 h-5 bg-zinc-300 peer-checked:bg-green-500 rounded-full peer peer-checked:after:translate-x-full after:content-[''] after:absolute after:top-0.5 after:left-[2px] after:bg-white after:rounded-full after:h-4 after:w-4 after:transition-all"></div>
+                      </label>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <span className="text-xs text-zinc-500">Скидка:</span>
                       <Input type="number" min="0" max="100" value={paymentSettings.card_discount || 0}
                         onChange={(e) => setPaymentSettings({...paymentSettings, card_discount: parseFloat(e.target.value) || 0})}
-                        className="w-24" />
-                      <span className="text-zinc-500">%</span>
+                        className="w-20 h-8 text-sm" disabled={paymentSettings.card_enabled === false} />
+                      <span className="text-zinc-500 text-sm">%</span>
                     </div>
+                    {paymentSettings.card_enabled === false && (
+                      <p className="text-xs text-red-500 mt-2">Временно недоступно</p>
+                    )}
                   </div>
-                  <div className="p-4 bg-amber-50 rounded-lg border border-amber-100">
-                    <Label className="text-xs font-bold uppercase text-amber-600">Криптовалюта</Label>
-                    <div className="flex items-center gap-2 mt-2">
+                  
+                  <div className={`p-4 rounded-lg border ${paymentSettings.crypto_enabled !== false ? 'bg-amber-50 border-amber-100' : 'bg-red-50 border-red-200'}`}>
+                    <div className="flex items-center justify-between mb-3">
+                      <Label className="text-xs font-bold uppercase text-amber-600">Криптовалюта</Label>
+                      <label className="relative inline-flex items-center cursor-pointer">
+                        <input type="checkbox" className="sr-only peer" 
+                          checked={paymentSettings.crypto_enabled !== false}
+                          onChange={(e) => setPaymentSettings({...paymentSettings, crypto_enabled: e.target.checked})} />
+                        <div className="w-9 h-5 bg-zinc-300 peer-checked:bg-green-500 rounded-full peer peer-checked:after:translate-x-full after:content-[''] after:absolute after:top-0.5 after:left-[2px] after:bg-white after:rounded-full after:h-4 after:w-4 after:transition-all"></div>
+                      </label>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <span className="text-xs text-zinc-500">Скидка:</span>
                       <Input type="number" min="0" max="100" value={paymentSettings.crypto_discount || 0}
                         onChange={(e) => setPaymentSettings({...paymentSettings, crypto_discount: parseFloat(e.target.value) || 0})}
-                        className="w-24" />
-                      <span className="text-zinc-500">%</span>
+                        className="w-20 h-8 text-sm" disabled={paymentSettings.crypto_enabled === false} />
+                      <span className="text-zinc-500 text-sm">%</span>
                     </div>
+                    {paymentSettings.crypto_enabled === false && (
+                      <p className="text-xs text-red-500 mt-2">Временно недоступно</p>
+                    )}
                   </div>
                 </div>
                 
                 <Button onClick={async () => {
                   try {
                     await axios.put(`${API}/admin/payment-settings`, paymentSettings);
-                    toast.success('Скидки по оплате сохранены');
+                    toast.success('Настройки оплаты сохранены');
                   } catch (err) { toast.error('Ошибка сохранения'); }
                 }} className="bg-green-500 hover:bg-green-600 mt-4" data-testid="save-payment-settings-btn">
-                  <Save className="w-4 h-4 mr-2" /> Сохранить скидки по оплате
+                  <Save className="w-4 h-4 mr-2" /> Сохранить настройки оплаты
                 </Button>
               </div>
 
