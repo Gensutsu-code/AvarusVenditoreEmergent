@@ -163,6 +163,52 @@ export default function AccountPage() {
     }
   };
 
+  const handleRequestStatusUpgrade = async (requestedStatus) => {
+    try {
+      await axios.post(`${API}/request-status-upgrade`, { requested_status: requestedStatus });
+      toast.success('Запрос на повышение статуса отправлен!');
+      const res = await axios.get(`${API}/my-requests`);
+      setMyRequests(res.data);
+    } catch (err) {
+      toast.error(err.response?.data?.detail || 'Ошибка отправки запроса');
+    }
+  };
+
+  const handleRequestDiscount = async () => {
+    const discount = parseFloat(discountRequestForm.requested_discount);
+    if (!discount || discount <= 0) {
+      toast.error('Укажите размер скидки');
+      return;
+    }
+    if (!discountRequestForm.reason.trim()) {
+      toast.error('Укажите причину запроса');
+      return;
+    }
+    try {
+      await axios.post(`${API}/request-individual-discount`, {
+        requested_discount: discount,
+        reason: discountRequestForm.reason
+      });
+      toast.success('Запрос на индивидуальную скидку отправлен!');
+      setDiscountRequestForm({ requested_discount: '', reason: '' });
+      const res = await axios.get(`${API}/my-requests`);
+      setMyRequests(res.data);
+    } catch (err) {
+      toast.error(err.response?.data?.detail || 'Ошибка отправки запроса');
+    }
+  };
+
+  // Determine next possible status upgrade
+  const getNextStatusUpgrade = () => {
+    const current = user?.customer_status || 'retail';
+    if (current === 'retail') return { status: 'wholesale', label: 'Опт', threshold: discountSettings.wholesale_threshold || 50000 };
+    if (current === 'wholesale') return { status: 'partner', label: 'Партнёр', threshold: discountSettings.partner_threshold || 200000 };
+    return null;
+  };
+
+  const nextUpgrade = getNextStatusUpgrade();
+  const canRequestUpgrade = nextUpgrade && orderStats.total_spent >= nextUpgrade.threshold;
+
   if (authLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
