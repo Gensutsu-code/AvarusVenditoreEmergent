@@ -332,16 +332,26 @@ export default function CheckoutPage() {
             <div className="space-y-3 mb-6">
               {cart.items.map(item => {
                 const dp = userDiscount > 0 ? Math.round(item.price * (1 - userDiscount / 100)) : item.price;
+                const hasDiscount = userDiscount > 0;
                 return (
                 <div key={item.product_id} className="flex gap-3 text-sm border-b border-zinc-100 pb-3">
                   <div className="flex-1">
                     {item.manufacturer && <p className="text-xs font-bold text-orange-600">{item.manufacturer}</p>}
                     <p className="text-zinc-900 font-medium">{item.name}</p>
-                    <p className="text-zinc-500 text-xs">{item.quantity} шт. × {formatPrice(dp)} ₽</p>
+                    <p className="text-zinc-500 text-xs">{item.quantity} шт.</p>
                   </div>
-                  <div className="text-right">
-                    {userDiscount > 0 && <p className="text-xs text-red-400 line-through">{formatPrice(item.price * item.quantity)} ₽</p>}
-                    <span className="font-mono font-semibold whitespace-nowrap">{formatPrice(dp * item.quantity)} ₽</span>
+                  <div className="text-right flex-shrink-0">
+                    {hasDiscount && (
+                      <div className="flex items-center justify-end gap-1.5 mb-0.5">
+                        <span className="text-[10px] text-zinc-400">Розн.</span>
+                        <span className="text-xs text-red-400 line-through">{formatPrice(item.price)} ₽</span>
+                      </div>
+                    )}
+                    <div className="flex items-center justify-end gap-1.5">
+                      {hasDiscount && <span className="text-[10px] text-green-600 font-semibold">Ваша</span>}
+                      <span className={`text-sm font-bold ${hasDiscount ? 'text-green-600' : 'text-zinc-900'}`}>{formatPrice(dp)} ₽</span>
+                    </div>
+                    <p className="text-xs text-zinc-400 mt-0.5">= {formatPrice(dp * item.quantity)} ₽</p>
                   </div>
                 </div>
                 );
