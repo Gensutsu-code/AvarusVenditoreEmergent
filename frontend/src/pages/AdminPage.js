@@ -273,6 +273,7 @@ export default function AdminPage() {
       setDiscountSettings(discountRes.data || { retail_discount: 0, wholesale_discount: 0 });
       setStatusRequests(statusReqRes.data || []);
       setDiscountRequests(discountReqRes.data || []);
+      setPrizeRedemptions(prizeRedemptionsRes.data?.redemptions || []);
     } catch (err) {
       console.error('Failed to fetch admin data', err);
       toast.error('Ошибка загрузки данных');
