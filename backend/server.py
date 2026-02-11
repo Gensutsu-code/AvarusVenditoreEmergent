@@ -3421,6 +3421,14 @@ async def update_order_status(order_id: str, status: str, user=Depends(get_curre
     if status == "delivered" and previous_status != "delivered":
         await update_bonus_on_order_delivered(order["user_id"], order["total"])
     
+    # If order is cancelled, restore stock
+    if status == "cancelled" and previous_status != "cancelled":
+        for item in order.get("items", []):
+            await db.products.update_one(
+                {"id": item["product_id"]},
+                {"$inc": {"stock": item.get("quantity", 0)}}
+            )
+    
     return {"message": "Status updated"}
 
 @api_router.delete("/admin/orders/{order_id}")
