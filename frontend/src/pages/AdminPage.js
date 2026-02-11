@@ -178,7 +178,10 @@ export default function AdminPage() {
   
   // User details expansion
   const [expandedUserId, setExpandedUserId] = useState(null);
-  const [paymentSettings, setPaymentSettings] = useState({ card_discount: 0, crypto_discount: 0, cash_discount: 0 });
+  const [paymentSettings, setPaymentSettings] = useState({ 
+    card_discount: 0, crypto_discount: 0, cash_discount: 0,
+    card_enabled: true, crypto_enabled: true, cash_enabled: true
+  });
   const [newsList, setNewsList] = useState([]);
   const [editingNews, setEditingNews] = useState(null);
   const [newsForm, setNewsForm] = useState({ title: '', content: '', image_url: '' });
