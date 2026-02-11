@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
-import { User, Mail, Lock, Phone, MapPin, Save, Eye, EyeOff, Camera, Trash2, MessageSquare } from 'lucide-react';
+import { User, Mail, Lock, Phone, MapPin, Save, Eye, EyeOff, Camera, Trash2, MessageSquare, Percent, Tag } from 'lucide-react';
 import { Button } from '../components/ui/button';
 import { Input } from '../components/ui/input';
 import { Label } from '../components/ui/label';
@@ -28,6 +28,20 @@ export default function AccountPage() {
   const [saving, setSaving] = useState(false);
   const [uploadingAvatar, setUploadingAvatar] = useState(false);
   const [showPasswords, setShowPasswords] = useState(false);
+  const [discountSettings, setDiscountSettings] = useState({ retail_discount: 0, wholesale_discount: 0 });
+
+  // Fetch discount settings
+  useEffect(() => {
+    const fetchDiscountSettings = async () => {
+      try {
+        const res = await axios.get(`${API}/discount-settings`);
+        setDiscountSettings(res.data);
+      } catch (err) {
+        console.error('Failed to fetch discount settings');
+      }
+    };
+    fetchDiscountSettings();
+  }, []);
 
   useEffect(() => {
     if (authLoading) return;
