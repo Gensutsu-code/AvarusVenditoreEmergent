@@ -3284,10 +3284,44 @@ async def update_admin_order(order_id: str, data: AdminOrderUpdate, user=Depends
         if update_data["status"] not in valid_statuses:
             raise HTTPException(status_code=400, detail="Invalid status")
     
-    # Recalculate total if items are updated
+    # Recalculate total if items are updated (considering item discounts)
     if "items" in update_data:
-        total = sum(item.get("price", 0) * item.get("quantity", 1) for item in update_data["items"])
-        update_data["total"] = total
+        original_total = 0
+        discounted_total = 0
+        for item in update_data["items"]:
+            item_price = item.get("price", 0)
+            item_qty = item.get("quantity", 1)
+            item_discount = item.get("discount_percent", 0)
+            item_total = item_price * item_qty
+            original_total += item_total
+            discounted_total += item_total * (1 - item_discount / 100)
+        
+        update_data["original_total"] = original_total
+        
+        # Apply order-level discount if present
+        order_discount = update_data.get("order_discount_percent", 0)
+        if order_discount > 0:
+            discounted_total = discounted_total * (1 - order_discount / 100)
+        
+        update_data["total"] = round(discounted_total, 2)
+    
+    # Handle order_discount_percent update without items
+    elif "order_discount_percent" in update_data:
+        order = await db.orders.find_one({"id": order_id}, {"_id": 0})
+        if order:
+            original = order.get("original_total", order.get("total", 0))
+            order_discount = update_data["order_discount_percent"]
+            
+            # First calculate item discounts
+            item_total = 0
+            for item in order.get("items", []):
+                item_price = item.get("price", 0)
+                item_qty = item.get("quantity", 1)
+                item_discount = item.get("discount_percent", 0)
+                item_total += item_price * item_qty * (1 - item_discount / 100)
+            
+            # Then apply order discount
+            update_data["total"] = round(item_total * (1 - order_discount / 100), 2)
     
     if not update_data:
         raise HTTPException(status_code=400, detail="No data to update")
