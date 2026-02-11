@@ -59,7 +59,27 @@ export default function CheckoutPage() {
   const formatPrice = (price) => new Intl.NumberFormat('ru-RU').format(Math.round(price));
   const getPaymentDiscount = (method) => paymentSettings[`${method}_discount`] || 0;
   const currentPaymentDiscount = getPaymentDiscount(paymentMethod);
-  const finalTotal = currentPaymentDiscount > 0 ? cartTotal * (1 - currentPaymentDiscount / 100) : cartTotal;
+
+  // User's total discount (status + individual)
+  const getUserDiscount = () => {
+    if (!user) return 0;
+    const status = user.customer_status || 'retail';
+    let sd = 0;
+    if (status === 'partner') sd = discountSettings.partner_discount || 0;
+    else if (status === 'wholesale') sd = discountSettings.wholesale_discount || 0;
+    else sd = discountSettings.retail_discount || 0;
+    return sd + (user.individual_discount || 0);
+  };
+  const userDiscount = getUserDiscount();
+
+  // Apply user discount to cart items
+  const discountedCartTotal = cart.items.reduce((sum, item) => {
+    const dp = userDiscount > 0 ? Math.round(item.price * (1 - userDiscount / 100)) : item.price;
+    return sum + dp * item.quantity;
+  }, 0);
+
+  // Then apply payment discount on top
+  const finalTotal = currentPaymentDiscount > 0 ? discountedCartTotal * (1 - currentPaymentDiscount / 100) : discountedCartTotal;
 
   const handleSubmit = async (e) => {
     e.preventDefault();
