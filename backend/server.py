@@ -767,35 +767,62 @@ async def create_order(data: OrderCreate, user=Depends(get_current_user)):
     if not cart or not cart.get("items"):
         raise HTTPException(status_code=400, detail="Cart is empty")
     
+    # Get user's discount
+    customer_status = user.get("customer_status", "retail")
+    individual_discount = user.get("individual_discount", 0)
+    
+    # Get status-based discount
+    discount_settings = await db.settings.find_one({"key": "discount_settings"})
+    status_discounts = discount_settings.get("value", {}) if discount_settings else {}
+    
+    if customer_status == "wholesale":
+        status_discount = status_discounts.get("wholesale_discount", 0)
+    elif customer_status == "partner":
+        status_discount = status_discounts.get("partner_discount", 0)
+    else:
+        status_discount = status_discounts.get("retail_discount", 0)
+    
+    total_discount = status_discount + individual_discount
+    
     # Batch fetch all products
     product_ids = [item["product_id"] for item in cart["items"]]
     products = await db.products.find({"id": {"$in": product_ids}}, {"_id": 0}).to_list(100)
     products_map = {p["id"]: p for p in products}
     
-    # Build order items
+    # Build order items with discounts applied
     items = []
-    total = 0
+    original_total = 0
+    discounted_total = 0
+    
     for cart_item in cart["items"]:
         product = products_map.get(cart_item["product_id"])
         if product:
+            original_price = product["price"]
+            discounted_price = original_price * (1 - total_discount / 100) if total_discount > 0 else original_price
+            
             item_data = {
                 "product_id": cart_item["product_id"],
                 "name": product["name"],
                 "article": product["article"],
                 "manufacturer": product.get("manufacturer"),
-                "price": product["price"],
+                "price": round(discounted_price, 2),  # Store discounted price
+                "original_price": original_price,  # Store original for reference
+                "discount_percent": total_discount,
                 "quantity": cart_item["quantity"],
                 "image_url": product.get("image_url")
             }
             items.append(item_data)
-            total += product["price"] * cart_item["quantity"]
+            original_total += original_price * cart_item["quantity"]
+            discounted_total += discounted_price * cart_item["quantity"]
     
     order_id = str(uuid.uuid4())
     order = {
         "id": order_id,
         "user_id": user["id"],
         "items": items,
-        "total": total,
+        "total": round(discounted_total, 2),
+        "original_total": round(original_total, 2),
+        "applied_discount": total_discount,
         "status": "pending",
         "full_name": data.full_name,
         "address": data.address,
