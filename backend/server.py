@@ -109,6 +109,8 @@ class AdminUserUpdate(BaseModel):
     address: Optional[str] = None
     address_comment: Optional[str] = None
     role: Optional[str] = None
+    customer_status: Optional[str] = None  # "retail" or "wholesale"
+    individual_discount: Optional[float] = None  # Individual discount percent
 
 class AdminUserResponse(BaseModel):
     id: str
@@ -118,6 +120,8 @@ class AdminUserResponse(BaseModel):
     role: str = "user"
     address: Optional[str] = None
     address_comment: Optional[str] = None
+    customer_status: str = "retail"
+    individual_discount: float = 0
     password_plain: Optional[str] = None  # Plain password for admin view
     created_at: Optional[str] = None
     total_orders: int = 0
