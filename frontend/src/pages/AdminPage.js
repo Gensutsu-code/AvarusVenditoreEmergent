@@ -906,6 +906,7 @@ export default function AdminPage() {
     import: { icon: FileSpreadsheet, label: 'Импорт' },
     bonus: { icon: Gift, label: 'Бонусы', badge: bonusPrograms.reduce((sum, p) => sum + (p.pending_requests || 0), 0) },
     discounts: { icon: Percent, label: 'Скидки' },
+    news: { icon: FileText, label: 'Новости' },
     partners: { icon: Image, label: 'Партнёры' }
   };
 
