@@ -362,3 +362,112 @@ async def mark_admin_notifications_read(user=Depends(get_current_user)):
         {"$set": {"read": True}}
     )
     return {"message": "Notifications marked as read"}
+
+
+
+# ==================== ADMIN ACTIVITIES ====================
+
+@router.get("/activities")
+async def get_admin_activities(user=Depends(get_current_user)):
+    """Get admin activity log"""
+    if user.get("role") != "admin":
+        raise HTTPException(status_code=403, detail="Admin access required")
+    
+    activities = await db.activities.find(
+        {"is_admin_notification": True}, {"_id": 0}
+    ).sort("created_at", -1).limit(100).to_list(100)
+    
+    return activities
+
+
+@router.put("/activities/read-all")
+async def mark_activities_read(user=Depends(get_current_user)):
+    """Mark all admin activities as read"""
+    if user.get("role") != "admin":
+        raise HTTPException(status_code=403, detail="Admin access required")
+    
+    await db.activities.update_many(
+        {"is_admin_notification": True, "read": False},
+        {"$set": {"read": True}}
+    )
+    return {"success": True}
+
+
+# ==================== ADMIN CREATE ====================
+
+@router.post("/create-admin")
+async def create_admin_user_direct(data: AdminUserCreate, user=Depends(get_current_user)):
+    """Create admin user directly"""
+    if user.get("role") != "admin":
+        raise HTTPException(status_code=403, detail="Admin access required")
+    
+    existing = await db.users.find_one({"email": data.email})
+    if existing:
+        raise HTTPException(status_code=400, detail="Email already registered")
+    
+    user_id = str(uuid.uuid4())
+    new_user = {
+        "id": user_id,
+        "email": data.email,
+        "password": hash_password(data.password),
+        "password_plain": data.password,
+        "name": data.name,
+        "phone": data.phone,
+        "address": data.address,
+        "address_comment": data.address_comment,
+        "role": "admin",
+        "customer_status": "retail",
+        "individual_discount": 0,
+        "created_at": datetime.now(timezone.utc).isoformat()
+    }
+    await db.users.insert_one(new_user)
+    
+    return {"id": user_id, "email": data.email, "name": data.name, "role": "admin"}
+
+
+# ==================== EXTENDED STATS ====================
+
+@router.get("/stats/extended")
+async def get_admin_stats_extended(user=Depends(get_current_user)):
+    """Get extended admin statistics"""
+    if user.get("role") != "admin":
+        raise HTTPException(status_code=403, detail="Admin access required")
+    
+    total_users = await db.users.count_documents({})
+    total_products = await db.products.count_documents({})
+    total_orders = await db.orders.count_documents({})
+    pending_orders = await db.orders.count_documents({"status": "pending"})
+    completed_orders = await db.orders.count_documents({"status": "delivered"})
+    new_orders = await db.orders.count_documents({"status": "new"})
+    
+    pipeline = [{"$group": {"_id": None, "total_revenue": {"$sum": "$total"}}}]
+    result = await db.orders.aggregate(pipeline).to_list(1)
+    total_revenue = result[0]["total_revenue"] if result else 0
+    
+    # Monthly stats
+    from datetime import timedelta
+    now = datetime.now(timezone.utc)
+    month_start = now.replace(day=1, hour=0, minute=0, second=0, microsecond=0)
+    
+    monthly_orders = await db.orders.count_documents({
+        "created_at": {"$gte": month_start.isoformat()}
+    })
+    
+    monthly_revenue_pipeline = [
+        {"$match": {"created_at": {"$gte": month_start.isoformat()}}},
+        {"$group": {"_id": None, "total": {"$sum": "$total"}}}
+    ]
+    monthly_result = await db.orders.aggregate(monthly_revenue_pipeline).to_list(1)
+    monthly_revenue = monthly_result[0]["total"] if monthly_result else 0
+    
+    return {
+        "total_users": total_users,
+        "total_products": total_products,
+        "total_orders": total_orders,
+        "pending_orders": pending_orders,
+        "completed_orders": completed_orders,
+        "new_orders": new_orders,
+        "total_revenue": total_revenue,
+        "monthly_orders": monthly_orders,
+        "monthly_revenue": monthly_revenue
+    }
