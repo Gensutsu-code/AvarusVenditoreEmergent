@@ -72,14 +72,17 @@ export default function CheckoutPage() {
   };
   const userDiscount = getUserDiscount();
 
-  // Apply user discount to cart items
-  const discountedCartTotal = cart.items.reduce((sum, item) => {
-    const dp = userDiscount > 0 ? Math.round(item.price * (1 - userDiscount / 100)) : item.price;
-    return sum + dp * item.quantity;
+  // Apply user discount to cart items, then payment discount - sequentially
+  const finalTotal = cart.items.reduce((sum, item) => {
+    let itemPrice = item.price;
+    if (userDiscount > 0) {
+      itemPrice = itemPrice * (1 - userDiscount / 100);
+    }
+    if (currentPaymentDiscount > 0) {
+      itemPrice = itemPrice * (1 - currentPaymentDiscount / 100);
+    }
+    return sum + Math.round(itemPrice) * item.quantity;
   }, 0);
-
-  // Then apply payment discount on top
-  const finalTotal = currentPaymentDiscount > 0 ? discountedCartTotal * (1 - currentPaymentDiscount / 100) : discountedCartTotal;
 
   const handleSubmit = async (e) => {
     e.preventDefault();
