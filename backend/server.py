@@ -10,6 +10,7 @@ import logging
 from pathlib import Path
 from pydantic import BaseModel, Field
 from typing import List, Optional, Dict, Any
+from documents import generate_invoice_docx, generate_receipt_docx, generate_invoice_pdf, generate_receipt_pdf
 import uuid
 from datetime import datetime, timezone, timedelta
 import bcrypt
