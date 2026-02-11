@@ -331,8 +331,15 @@ export default function CheckoutPage() {
             <h2 className="text-xs font-bold uppercase tracking-widest text-zinc-500 mb-4">Ваш заказ</h2>
             <div className="space-y-3 mb-6">
               {cart.items.map(item => {
-                const totalDiscount = userDiscount + currentPaymentDiscount;
-                const itemPrice = totalDiscount > 0 ? Math.round(item.price * (1 - totalDiscount / 100)) : item.price;
+                // Apply discounts sequentially: first user discount, then payment discount
+                let itemPrice = item.price;
+                if (userDiscount > 0) {
+                  itemPrice = itemPrice * (1 - userDiscount / 100);
+                }
+                if (currentPaymentDiscount > 0) {
+                  itemPrice = itemPrice * (1 - currentPaymentDiscount / 100);
+                }
+                itemPrice = Math.round(itemPrice);
                 return (
                 <div key={item.product_id} className="flex gap-3 text-sm border-b border-zinc-100 pb-3">
                   <div className="flex-1">
