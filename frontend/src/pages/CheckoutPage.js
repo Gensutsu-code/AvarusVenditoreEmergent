@@ -137,17 +137,9 @@ export default function CheckoutPage() {
 
   const copyToClipboard = (text) => { navigator.clipboard.writeText(text); toast.success('Скопировано!'); };
 
-  if (authLoading) return null;
+  if (authLoading || cartLoading) return null;
   if (!user) { navigate('/login'); return null; }
-
-  // Don't redirect if cart is still loading or if we're in a payment flow
-  if (cart.items.length === 0 && !success && !cryptoStep && !loading) {
-    // Check if cart is actually loaded (not just empty during initial render)
-    if (cart._loaded) {
-      navigate('/cart');
-      return null;
-    }
-  }
+  if (cart.items.length === 0 && !success && !cryptoStep && !loading) { navigate('/cart'); return null; }
 
   // Crypto payment step
   if (cryptoStep === 'submitted') {
