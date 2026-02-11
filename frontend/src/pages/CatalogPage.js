@@ -4,7 +4,7 @@ import axios from 'axios';
 import { Button } from '../components/ui/button';
 import { Input } from '../components/ui/input';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '../components/ui/dialog';
-import { Search, X, ShoppingCart, Package, Truck, Minus, Plus, ArrowRight, Heart, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Search, X, ShoppingCart, Package, Truck, Minus, Plus, ArrowRight, Heart, ChevronLeft, ChevronRight, Percent } from 'lucide-react';
 import { useCart } from '../context/CartContext';
 import { useAuth } from '../context/AuthContext';
 import { toast } from 'sonner';
@@ -13,6 +13,25 @@ import { FavoritesButton } from '../components/FavoritesButton';
 import { RelatedProducts } from '../components/RelatedProducts';
 
 const API = `${process.env.REACT_APP_BACKEND_URL}/api`;
+
+// Price display component with discount
+const PriceDisplay = ({ price, discount, formatPrice, showDualPrice = false }) => {
+  if (!showDualPrice || discount <= 0) {
+    return <span className="text-xl font-bold text-zinc-900">{formatPrice(price)} ₽</span>;
+  }
+  
+  const discountedPrice = price * (1 - discount / 100);
+  
+  return (
+    <div className="flex flex-col">
+      <span className="text-sm text-red-500 line-through">{formatPrice(price)} ₽</span>
+      <div className="flex items-center gap-2">
+        <span className="text-xl font-bold text-green-600">{formatPrice(discountedPrice)} ₽</span>
+        <span className="text-xs bg-green-100 text-green-700 px-1.5 py-0.5 rounded font-bold">-{discount}%</span>
+      </div>
+    </div>
+  );
+};
 
 // ProductCard component for reuse
 const ProductCard = ({ 
@@ -23,7 +42,9 @@ const ProductCard = ({
   setSelectedProduct, 
   formatPrice, 
   getDeliveryText,
-  isAlternative = false 
+  isAlternative = false,
+  userDiscount = 0,
+  showDualPrice = false
 }) => (
   <div 
     className={`border bg-white hover:border-zinc-300 transition-colors ${isAlternative ? 'border-orange-200' : 'border-zinc-200'}`}
