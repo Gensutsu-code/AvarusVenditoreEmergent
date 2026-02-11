@@ -70,9 +70,18 @@ export default function FavoritesPage() {
     }));
   };
 
-  const formatPrice = (price) => {
-    return new Intl.NumberFormat('ru-RU').format(price);
+  const formatPrice = (price) => new Intl.NumberFormat('ru-RU').format(Math.round(price));
+
+  const getUserDiscount = () => {
+    if (!user) return 0;
+    const status = user.customer_status || 'retail';
+    let sd = 0;
+    if (status === 'partner') sd = discountSettings.partner_discount || 0;
+    else if (status === 'wholesale') sd = discountSettings.wholesale_discount || 0;
+    else sd = discountSettings.retail_discount || 0;
+    return sd + (user.individual_discount || 0);
   };
+  const userDiscount = getUserDiscount();
 
   if (!user) return null;
 
