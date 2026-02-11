@@ -314,23 +314,42 @@ export default function CheckoutPage() {
               <div className="space-y-2">
                 {PAYMENT_METHODS.map(method => {
                   const discount = getPaymentDiscount(method.id);
+                  const isEnabled = isPaymentMethodEnabled(method.id);
                   const isSelected = paymentMethod === method.id;
                   const Icon = method.icon;
                   return (
-                    <button key={method.id} type="button" onClick={() => setPaymentMethod(method.id)}
+                    <button key={method.id} type="button" 
+                      onClick={() => isEnabled && setPaymentMethod(method.id)}
+                      disabled={!isEnabled}
                       className={`w-full flex items-center gap-4 p-4 rounded-lg border-2 transition-all text-left ${
-                        isSelected ? 'border-orange-500 bg-orange-50' : 'border-zinc-200 bg-white hover:border-zinc-300'
+                        !isEnabled 
+                          ? 'border-zinc-200 bg-zinc-100 opacity-60 cursor-not-allowed' 
+                          : isSelected 
+                            ? 'border-orange-500 bg-orange-50' 
+                            : 'border-zinc-200 bg-white hover:border-zinc-300'
                       }`} data-testid={`payment-method-${method.id}`}>
                       <div className={`w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0 ${
-                        isSelected ? 'bg-orange-500 text-white' : 'bg-zinc-100 text-zinc-600'
+                        !isEnabled 
+                          ? 'bg-zinc-200 text-zinc-400'
+                          : isSelected 
+                            ? 'bg-orange-500 text-white' 
+                            : 'bg-zinc-100 text-zinc-600'
                       }`}><Icon className="w-5 h-5" /></div>
                       <div className="flex-1">
-                        <p className={`font-semibold ${isSelected ? 'text-orange-700' : 'text-zinc-800'}`}>{method.label}</p>
-                        <p className="text-xs text-zinc-500">{method.desc}</p>
+                        <p className={`font-semibold ${!isEnabled ? 'text-zinc-400' : isSelected ? 'text-orange-700' : 'text-zinc-800'}`}>
+                          {method.label}
+                        </p>
+                        <p className={`text-xs ${!isEnabled ? 'text-red-400 font-medium' : 'text-zinc-500'}`}>
+                          {!isEnabled ? 'Временно недоступно' : method.desc}
+                        </p>
                       </div>
-                      {discount > 0 && <span className="bg-green-100 text-green-700 text-xs font-bold px-2.5 py-1 rounded-full">-{discount}%</span>}
-                      <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center ${isSelected ? 'border-orange-500' : 'border-zinc-300'}`}>
-                        {isSelected && <div className="w-3 h-3 rounded-full bg-orange-500" />}
+                      {isEnabled && discount > 0 && (
+                        <span className="bg-green-100 text-green-700 text-xs font-bold px-2.5 py-1 rounded-full">-{discount}%</span>
+                      )}
+                      <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center ${
+                        !isEnabled ? 'border-zinc-300' : isSelected ? 'border-orange-500' : 'border-zinc-300'
+                      }`}>
+                        {isSelected && isEnabled && <div className="w-3 h-3 rounded-full bg-orange-500" />}
                       </div>
                     </button>
                   );
