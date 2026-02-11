@@ -3995,6 +3995,14 @@ async def get_my_requests(user=Depends(get_current_user)):
         "discount_request": discount_req
     }
 
+@api_router.get("/my-prize-redemptions")
+async def get_my_prize_redemptions(user=Depends(get_current_user)):
+    """Get user's prize redemption history"""
+    redemptions = await db.prize_redemptions.find(
+        {"user_id": user["id"]}, {"_id": 0}
+    ).sort("created_at", -1).to_list(50)
+    return {"redemptions": redemptions}
+
 @api_router.get("/admin/notifications")
 async def get_admin_notifications(user=Depends(get_current_user)):
     """Get counts of pending admin notifications"""
