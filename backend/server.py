@@ -845,6 +845,13 @@ async def create_order(data: OrderCreate, user=Depends(get_current_user)):
     }
     await db.orders.insert_one(order)
     
+    # Decrease stock for each ordered product
+    for cart_item in cart["items"]:
+        await db.products.update_one(
+            {"id": cart_item["product_id"], "stock": {"$gte": cart_item["quantity"]}},
+            {"$inc": {"stock": -cart_item["quantity"]}}
+        )
+    
     # Clear cart
     await db.carts.update_one({"user_id": user["id"]}, {"$set": {"items": []}})
     
