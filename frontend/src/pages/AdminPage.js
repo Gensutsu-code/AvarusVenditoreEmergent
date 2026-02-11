@@ -3772,6 +3772,85 @@ export default function AdminPage() {
           </TabsContent>
 
           {/* Partners Tab */}
+
+          {/* News Tab */}
+          <TabsContent value="news" className="p-6">
+            <div className="space-y-6">
+              <div className="flex items-center justify-between">
+                <h2 className="text-lg font-semibold">Управление новостями</h2>
+                <Button onClick={() => { setEditingNews(null); setNewsForm({ title: '', content: '', image_url: '' }); document.getElementById('news-form')?.scrollIntoView(); }} className="bg-orange-500 hover:bg-orange-600" data-testid="add-news-btn">
+                  <Plus className="w-4 h-4 mr-2" /> Добавить новость
+                </Button>
+              </div>
+
+              {/* News form */}
+              <div id="news-form" className="bg-white border border-zinc-200 rounded-xl p-6 space-y-4">
+                <h3 className="font-semibold">{editingNews ? 'Редактировать новость' : 'Новая публикация'}</h3>
+                <div>
+                  <Label className="text-xs font-bold uppercase text-zinc-500">Заголовок</Label>
+                  <Input value={newsForm.title} onChange={(e) => setNewsForm({...newsForm, title: e.target.value})}
+                    placeholder="Заголовок новости" className="mt-1" data-testid="news-title-input" />
+                </div>
+                <div>
+                  <Label className="text-xs font-bold uppercase text-zinc-500">Содержание</Label>
+                  <Textarea value={newsForm.content} onChange={(e) => setNewsForm({...newsForm, content: e.target.value})}
+                    placeholder="Текст новости..." className="mt-1 min-h-[120px]" data-testid="news-content-input" />
+                </div>
+                <div>
+                  <Label className="text-xs font-bold uppercase text-zinc-500">URL изображения (опционально)</Label>
+                  <Input value={newsForm.image_url} onChange={(e) => setNewsForm({...newsForm, image_url: e.target.value})}
+                    placeholder="https://..." className="mt-1" />
+                </div>
+                <Button onClick={async () => {
+                  if (!newsForm.title || !newsForm.content) { toast.error('Заполните заголовок и содержание'); return; }
+                  try {
+                    if (editingNews) {
+                      await axios.put(`${API}/admin/news/${editingNews.id}`, newsForm);
+                      setNewsList(prev => prev.map(n => n.id === editingNews.id ? {...n, ...newsForm} : n));
+                      toast.success('Новость обновлена');
+                    } else {
+                      const res = await axios.post(`${API}/admin/news`, newsForm);
+                      setNewsList(prev => [res.data, ...prev]);
+                      toast.success('Новость опубликована');
+                    }
+                    setNewsForm({ title: '', content: '', image_url: '' });
+                    setEditingNews(null);
+                  } catch (err) { toast.error('Ошибка сохранения'); }
+                }} className="bg-orange-500 hover:bg-orange-600" data-testid="save-news-btn">
+                  <Save className="w-4 h-4 mr-2" /> {editingNews ? 'Обновить' : 'Опубликовать'}
+                </Button>
+              </div>
+
+              {/* News list */}
+              <div className="space-y-3">
+                {newsList.map(article => (
+                  <div key={article.id} className="bg-white border border-zinc-200 rounded-xl p-4 flex items-center justify-between">
+                    <div className="flex-1 min-w-0">
+                      <p className="font-semibold text-zinc-800">{article.title}</p>
+                      <p className="text-sm text-zinc-500 line-clamp-1">{article.content}</p>
+                      <p className="text-xs text-zinc-400 mt-1">{new Date(article.created_at).toLocaleDateString('ru-RU')}</p>
+                    </div>
+                    <div className="flex gap-2 ml-4">
+                      <Button size="sm" variant="outline" onClick={() => { setEditingNews(article); setNewsForm({ title: article.title, content: article.content, image_url: article.image_url || '' }); }}>
+                        <Pencil className="w-4 h-4" />
+                      </Button>
+                      <Button size="sm" variant="outline" className="text-red-600 border-red-200 hover:bg-red-50" onClick={async () => {
+                        if (!window.confirm('Удалить новость?')) return;
+                        try {
+                          await axios.delete(`${API}/admin/news/${article.id}`);
+                          setNewsList(prev => prev.filter(n => n.id !== article.id));
+                          toast.success('Новость удалена');
+                        } catch (err) { toast.error('Ошибка'); }
+                      }}>
+                        <Trash2 className="w-4 h-4" />
+                      </Button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </TabsContent>
+
           <TabsContent value="partners" className="p-6">
             <div className="space-y-6">
               <div className="flex justify-between items-center">
