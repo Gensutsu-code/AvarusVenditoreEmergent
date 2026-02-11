@@ -530,7 +530,7 @@ export default function AdminOrdersPage() {
                 </div>
               </div>
 
-              {/* Order Items with editable prices */}
+              {/* Order Items with editable prices and discounts */}
               <div className="border-t pt-4">
                 <label className="text-xs font-bold uppercase text-zinc-500 mb-3 block">Товары в заказе</label>
                 <div className="space-y-3">
@@ -545,7 +545,7 @@ export default function AdminOrdersPage() {
                           <p className="text-xs text-zinc-500">{item.article}</p>
                         </div>
                       </div>
-                      <div className="grid grid-cols-3 gap-2 mt-2">
+                      <div className="grid grid-cols-4 gap-2 mt-2">
                         <div>
                           <label className="text-xs text-zinc-400">Цена (₽)</label>
                           <Input
@@ -567,14 +567,54 @@ export default function AdminOrdersPage() {
                           />
                         </div>
                         <div>
+                          <label className="text-xs text-zinc-400 flex items-center gap-1">
+                            <Percent className="w-3 h-3" /> Скидка
+                          </label>
+                          <Input
+                            type="number"
+                            value={item.discount_percent || 0}
+                            onChange={(e) => handleUpdateOrderItem(idx, 'discount_percent', e.target.value)}
+                            className="mt-1 h-8 text-sm"
+                            min={0}
+                            max={100}
+                          />
+                        </div>
+                        <div>
                           <label className="text-xs text-zinc-400">Сумма</label>
                           <p className="mt-1 h-8 flex items-center text-sm font-bold">
-                            {new Intl.NumberFormat('ru-RU').format(item.price * item.quantity)} ₽
+                            {new Intl.NumberFormat('ru-RU').format(
+                              item.price * item.quantity * (1 - (item.discount_percent || 0) / 100)
+                            )} ₽
                           </p>
                         </div>
                       </div>
+                      {(item.discount_percent || 0) > 0 && (
+                        <p className="text-xs text-green-600 mt-1">
+                          Скидка {item.discount_percent}%: -{new Intl.NumberFormat('ru-RU').format(item.price * item.quantity * (item.discount_percent / 100))} ₽
+                        </p>
+                      )}
                     </div>
                   ))}
+                </div>
+              </div>
+
+              {/* Order-level discount */}
+              <div className="border-t pt-4">
+                <div className="bg-orange-50 p-4 rounded-lg border border-orange-200">
+                  <Label className="text-xs font-bold uppercase text-orange-600 flex items-center gap-2">
+                    <Percent className="w-4 h-4" /> Скидка на весь заказ
+                  </Label>
+                  <div className="flex items-center gap-3 mt-2">
+                    <Input
+                      type="number"
+                      value={editingOrder.order_discount_percent || 0}
+                      onChange={(e) => setEditingOrder({...editingOrder, order_discount_percent: parseFloat(e.target.value) || 0})}
+                      className="w-24"
+                      min={0}
+                      max={100}
+                    />
+                    <span className="text-zinc-500">%</span>
+                  </div>
                 </div>
               </div>
 
