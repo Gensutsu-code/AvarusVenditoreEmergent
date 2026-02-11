@@ -377,12 +377,31 @@ export default function CatalogPage() {
   const { addToCart } = useCart();
   const { user } = useAuth();
   const navigate = useNavigate();
+  const [discountSettings, setDiscountSettings] = useState({ retail_discount: 0, wholesale_discount: 0, partner_discount: 0 });
 
   const searchQuery = searchParams.get('search');
   const categoryId = searchParams.get('category');
 
+  // Calculate user's total discount
+  const getUserDiscount = () => {
+    if (!user) return 0;
+    const status = user.customer_status || 'retail';
+    let statusDiscount = 0;
+    if (status === 'partner') statusDiscount = discountSettings.partner_discount || 0;
+    else if (status === 'wholesale') statusDiscount = discountSettings.wholesale_discount || 0;
+    else statusDiscount = discountSettings.retail_discount || 0;
+    return statusDiscount + (user.individual_discount || 0);
+  };
+
+  const userDiscount = getUserDiscount();
+  const showDualPrice = user && (user.customer_status === 'wholesale' || user.customer_status === 'partner');
+
   useEffect(() => {
     fetchCategories();
+    // Fetch discount settings
+    axios.get(`${API}/discount-settings`).then(res => {
+      setDiscountSettings(res.data);
+    }).catch(() => {});
   }, []);
 
   useEffect(() => {
