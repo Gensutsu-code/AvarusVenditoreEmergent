@@ -4215,30 +4215,26 @@ export default function AdminPage() {
               <div className="border border-zinc-200 rounded-lg p-4">
                 <Label className="text-xs font-bold uppercase text-zinc-500 mb-3 block">Документы</Label>
                 <div className="grid grid-cols-2 gap-2">
-                  <a href={`${API}/admin/orders/${viewingOrder.id}/invoice/docx`} 
-                     onClick={(e) => { e.preventDefault(); const a=document.createElement('a'); a.href=`${API}/admin/orders/${viewingOrder.id}/invoice/docx`; a.setAttribute('download',''); document.body.appendChild(a); a.click(); a.remove(); }}
-                     className="flex items-center justify-center gap-2 px-3 py-2 bg-blue-50 hover:bg-blue-100 border border-blue-200 rounded-lg text-sm font-medium text-blue-700 cursor-pointer transition-colors"
-                     data-testid="download-invoice-docx">
-                    <FileText className="w-4 h-4" /> Накладная WORD
-                  </a>
-                  <a href={`${API}/admin/orders/${viewingOrder.id}/invoice/pdf`}
-                     onClick={(e) => { e.preventDefault(); const a=document.createElement('a'); a.href=`${API}/admin/orders/${viewingOrder.id}/invoice/pdf`; a.setAttribute('download',''); document.body.appendChild(a); a.click(); a.remove(); }}
-                     className="flex items-center justify-center gap-2 px-3 py-2 bg-red-50 hover:bg-red-100 border border-red-200 rounded-lg text-sm font-medium text-red-700 cursor-pointer transition-colors"
-                     data-testid="download-invoice-pdf">
-                    <FileText className="w-4 h-4" /> Накладная PDF
-                  </a>
-                  <a href={`${API}/admin/orders/${viewingOrder.id}/receipt/docx`}
-                     onClick={(e) => { e.preventDefault(); const a=document.createElement('a'); a.href=`${API}/admin/orders/${viewingOrder.id}/receipt/docx`; a.setAttribute('download',''); document.body.appendChild(a); a.click(); a.remove(); }}
-                     className="flex items-center justify-center gap-2 px-3 py-2 bg-blue-50 hover:bg-blue-100 border border-blue-200 rounded-lg text-sm font-medium text-blue-700 cursor-pointer transition-colors"
-                     data-testid="download-receipt-docx">
-                    <FileText className="w-4 h-4" /> Чек WORD
-                  </a>
-                  <a href={`${API}/admin/orders/${viewingOrder.id}/receipt/pdf`}
-                     onClick={(e) => { e.preventDefault(); const a=document.createElement('a'); a.href=`${API}/admin/orders/${viewingOrder.id}/receipt/pdf`; a.setAttribute('download',''); document.body.appendChild(a); a.click(); a.remove(); }}
-                     className="flex items-center justify-center gap-2 px-3 py-2 bg-red-50 hover:bg-red-100 border border-red-200 rounded-lg text-sm font-medium text-red-700 cursor-pointer transition-colors"
-                     data-testid="download-receipt-pdf">
-                    <FileText className="w-4 h-4" /> Чек PDF
-                  </a>
+                  {[
+                    { type: 'invoice', format: 'docx', label: 'Накладная WORD', color: 'blue' },
+                    { type: 'invoice', format: 'pdf', label: 'Накладная PDF', color: 'red' },
+                    { type: 'receipt', format: 'docx', label: 'Чек WORD', color: 'blue' },
+                    { type: 'receipt', format: 'pdf', label: 'Чек PDF', color: 'red' },
+                  ].map(doc => (
+                    <button key={`${doc.type}-${doc.format}`}
+                      onClick={async () => {
+                        try {
+                          const res = await axios.get(`${API}/admin/orders/${viewingOrder.id}/${doc.type}/${doc.format}`, { responseType: 'blob' });
+                          const url = window.URL.createObjectURL(new Blob([res.data]));
+                          const a = document.createElement('a'); a.href = url; a.download = `${doc.type}_${viewingOrder.id.slice(0,8)}.${doc.format}`;
+                          document.body.appendChild(a); a.click(); a.remove(); window.URL.revokeObjectURL(url);
+                        } catch (err) { toast.error('Ошибка скачивания'); }
+                      }}
+                      className={`flex items-center justify-center gap-2 px-3 py-2 bg-${doc.color}-50 hover:bg-${doc.color}-100 border border-${doc.color}-200 rounded-lg text-sm font-medium text-${doc.color}-700 cursor-pointer transition-colors`}
+                      data-testid={`download-${doc.type}-${doc.format}`}>
+                      <FileText className="w-4 h-4" /> {doc.label}
+                    </button>
+                  ))}
                 </div>
               </div>
 
