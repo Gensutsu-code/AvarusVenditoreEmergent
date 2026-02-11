@@ -3768,6 +3768,34 @@ export default function AdminPage() {
                   <Save className="w-4 h-4 mr-2" /> Сохранить скидки по оплате
                 </Button>
               </div>
+
+              {/* Crypto wallet settings */}
+              <div className="bg-white border border-zinc-200 rounded-xl p-6 space-y-4">
+                <h3 className="font-semibold text-zinc-800 flex items-center gap-2">
+                  <Settings className="w-5 h-5 text-amber-500" />
+                  Кошельки для крипто-оплаты
+                </h3>
+                <p className="text-sm text-zinc-500">Адреса кошельков для приёма криптовалюты</p>
+                {['eth', 'bsc', 'base', 'trc'].map(chain => (
+                  <div key={chain} className="flex items-center gap-3">
+                    <Label className="w-16 text-xs font-bold uppercase text-zinc-500">{chain.toUpperCase()}</Label>
+                    <Input
+                      value={cryptoWallets?.[`${chain}_address`] || ''}
+                      onChange={(e) => setCryptoWallets(prev => ({...prev, [`${chain}_address`]: e.target.value}))}
+                      placeholder={`Адрес ${chain.toUpperCase()} кошелька`}
+                      className="flex-1 font-mono text-sm"
+                    />
+                  </div>
+                ))}
+                <Button onClick={async () => {
+                  try {
+                    await axios.put(`${API}/admin/crypto-wallets`, cryptoWallets);
+                    toast.success('Кошельки сохранены');
+                  } catch (err) { toast.error('Ошибка'); }
+                }} className="bg-amber-500 hover:bg-amber-600 mt-2" data-testid="save-crypto-wallets-btn">
+                  <Save className="w-4 h-4 mr-2" /> Сохранить кошельки
+                </Button>
+              </div>
             </div>
           </TabsContent>
 
