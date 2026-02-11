@@ -3775,6 +3775,7 @@ async def request_individual_discount(data: IndividualDiscountRequest, user=Depe
         "created_at": datetime.now(timezone.utc).isoformat()
     }
     await db.discount_requests.insert_one(request_doc)
+    await create_admin_activity(user["id"], user.get("name", ""), "discount_request", f"Запрос на скидку: {data.requested_discount}%")
     return {"success": True, "message": "Запрос на индивидуальную скидку отправлен!"}
 
 @api_router.get("/my-requests")
