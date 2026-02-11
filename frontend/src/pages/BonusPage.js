@@ -36,12 +36,14 @@ export default function BonusPage() {
 
   const fetchBonusData = async () => {
     try {
-      const [programsRes, historyRes] = await Promise.all([
+      const [programsRes, historyRes, redemptionsRes] = await Promise.all([
         axios.get(`${API}/bonus/programs`),
-        axios.get(`${API}/bonus/history`)
+        axios.get(`${API}/bonus/history`),
+        axios.get(`${API}/my-prize-redemptions`).catch(() => ({ data: { redemptions: [] } }))
       ]);
       setBonusPrograms(programsRes.data.programs || []);
       setBonusHistory(historyRes.data.history || []);
+      setMyRedemptions(redemptionsRes.data.redemptions || []);
     } catch (err) {
       console.error('Failed to fetch bonus data', err);
     } finally {
