@@ -331,47 +331,22 @@ export default function CheckoutPage() {
             <h2 className="text-xs font-bold uppercase tracking-widest text-zinc-500 mb-4">Ваш заказ</h2>
             <div className="space-y-3 mb-6">
               {cart.items.map(item => {
-                const dp = userDiscount > 0 ? Math.round(item.price * (1 - userDiscount / 100)) : item.price;
-                const hasDiscount = userDiscount > 0;
+                const totalDiscount = userDiscount + currentPaymentDiscount;
+                const itemPrice = totalDiscount > 0 ? Math.round(item.price * (1 - totalDiscount / 100)) : item.price;
                 return (
                 <div key={item.product_id} className="flex gap-3 text-sm border-b border-zinc-100 pb-3">
                   <div className="flex-1">
                     {item.manufacturer && <p className="text-xs font-bold text-orange-600">{item.manufacturer}</p>}
                     <p className="text-zinc-900 font-medium">{item.name}</p>
-                    <p className="text-zinc-500 text-xs">{item.quantity} шт.</p>
+                    <p className="text-zinc-500 text-xs">{item.quantity} шт. × {formatPrice(itemPrice)} ₽</p>
                   </div>
-                  <div className="text-right flex-shrink-0">
-                    {hasDiscount && (
-                      <div className="flex items-center justify-end gap-1.5 mb-0.5">
-                        <span className="text-[10px] text-zinc-400">Розн.</span>
-                        <span className="text-xs text-red-400 line-through">{formatPrice(item.price)} ₽</span>
-                      </div>
-                    )}
-                    <div className="flex items-center justify-end gap-1.5">
-                      {hasDiscount && <span className="text-[10px] text-green-600 font-semibold">Ваша</span>}
-                      <span className={`text-sm font-bold ${hasDiscount ? 'text-green-600' : 'text-zinc-900'}`}>{formatPrice(dp)} ₽</span>
-                    </div>
-                    <p className="text-xs text-zinc-400 mt-0.5">= {formatPrice(dp * item.quantity)} ₽</p>
-                  </div>
+                  <span className="font-semibold whitespace-nowrap">{formatPrice(itemPrice * item.quantity)} ₽</span>
                 </div>
                 );
               })}
             </div>
-            <div className="border-t border-zinc-200 pt-4 space-y-2">
-              <div className="flex justify-between text-sm text-zinc-500">
-                <span>Розничная цена:</span><span>{formatPrice(cartTotal)} ₽</span>
-              </div>
-              {userDiscount > 0 && (
-                <div className="flex justify-between text-sm text-green-600">
-                  <span>Ваша скидка ({userDiscount}%):</span><span>-{formatPrice(cartTotal - discountedCartTotal)} ₽</span>
-                </div>
-              )}
-              {currentPaymentDiscount > 0 && (
-                <div className="flex justify-between text-sm text-green-600">
-                  <span>Скидка за оплату ({currentPaymentDiscount}%):</span><span>-{formatPrice(discountedCartTotal - finalTotal)} ₽</span>
-                </div>
-              )}
-              <div className="flex justify-between pt-2 border-t border-zinc-100">
+            <div className="border-t border-zinc-200 pt-4">
+              <div className="flex justify-between">
                 <span className="font-semibold">Итого:</span>
                 <span className="text-xl font-bold text-zinc-900" data-testid="checkout-total">{formatPrice(finalTotal)} ₽</span>
               </div>
