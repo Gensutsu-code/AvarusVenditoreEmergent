@@ -1362,14 +1362,17 @@ export default function AdminPage() {
                                     onChange={(e) => handleSaveUserDiscount(u.id, e.target.value, u.individual_discount || 0)}
                                     className="w-full mt-1 p-2 border border-zinc-200 rounded-lg text-sm"
                                   >
-                                    <option value="retail">Розничный покупатель</option>
-                                    <option value="wholesale">Оптовый покупатель</option>
+                                    <option value="retail">Розница</option>
+                                    <option value="wholesale">Опт</option>
+                                    <option value="partner">Партнёр</option>
                                   </select>
                                 </div>
                                 <div>
                                   <Label className="text-xs text-zinc-500">Скидка по статусу</Label>
                                   <div className="mt-1 p-2 bg-zinc-50 rounded-lg text-sm font-bold text-orange-600">
-                                    {u.customer_status === 'wholesale' ? discountSettings.wholesale_discount : discountSettings.retail_discount}%
+                                    {u.customer_status === 'partner' ? discountSettings.partner_discount : 
+                                     u.customer_status === 'wholesale' ? discountSettings.wholesale_discount : 
+                                     discountSettings.retail_discount}%
                                   </div>
                                 </div>
                                 <div>
@@ -1393,7 +1396,9 @@ export default function AdminPage() {
                                 <div className="p-3 bg-green-50 rounded-lg">
                                   <p className="text-xs text-zinc-500">Итоговая скидка:</p>
                                   <p className="text-xl font-bold text-green-600">
-                                    {((u.customer_status === 'wholesale' ? discountSettings.wholesale_discount : discountSettings.retail_discount) + (u.individual_discount || 0)).toFixed(1)}%
+                                    {((u.customer_status === 'partner' ? discountSettings.partner_discount :
+                                       u.customer_status === 'wholesale' ? discountSettings.wholesale_discount : 
+                                       discountSettings.retail_discount) + (u.individual_discount || 0)).toFixed(1)}%
                                   </p>
                                 </div>
                               </div>
