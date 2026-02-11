@@ -236,11 +236,24 @@ class OrderCreate(BaseModel):
     phone: str
     comment: Optional[str] = None
 
+class OrderItemDiscount(BaseModel):
+    product_id: str
+    discount_percent: float = 0
+
+class OrderUpdateAdmin(BaseModel):
+    status: Optional[str] = None
+    comment: Optional[str] = None
+    created_at: Optional[str] = None
+    items: Optional[List[dict]] = None  # Can include discount_percent per item
+    order_discount_percent: Optional[float] = None  # Overall order discount
+
 class OrderResponse(BaseModel):
     id: str
     user_id: str
     items: List[CartItemResponse]
     total: float
+    original_total: Optional[float] = None  # Total before discounts
+    order_discount_percent: float = 0  # Order-level discount
     status: str
     full_name: str
     address: str
