@@ -2356,6 +2356,15 @@ async def update_prize_redemption(redemption_id: str, status: str, user=Depends(
     if result.modified_count == 0:
         raise HTTPException(status_code=404, detail="Redemption not found")
     
+    # Notify user about prize status change
+    redemption = await db.prize_redemptions.find_one({"id": redemption_id}, {"_id": 0})
+    if redemption:
+        status_labels = {"approved": "одобрен", "issued": "выдан", "delivered": "выдан", "cancelled": "отклонён"}
+        await create_notification(
+            redemption["user_id"], "prize_response", "Статус приза",
+            f"Приз «{redemption.get('prize_name', '')}»: {status_labels.get(status, status)}", "/bonus"
+        )
+    
     # If cancelled, refund points
     if status == "cancelled":
         redemption = await db.prize_redemptions.find_one({"id": redemption_id}, {"_id": 0})
