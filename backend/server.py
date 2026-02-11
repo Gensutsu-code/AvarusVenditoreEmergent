@@ -180,10 +180,14 @@ class NewsArticle(BaseModel):
     image_url: Optional[str] = None
 
 # Payment method discount settings
+# Payment method discount settings
 class PaymentMethodSettings(BaseModel):
     card_discount: float = 0
     crypto_discount: float = 0
     cash_discount: float = 0
+    card_enabled: bool = True
+    crypto_enabled: bool = True
+    cash_enabled: bool = True
 
 # Status upgrade request
 class StatusUpgradeRequest(BaseModel):
