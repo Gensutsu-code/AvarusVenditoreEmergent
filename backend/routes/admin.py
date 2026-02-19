@@ -66,8 +66,6 @@ async def get_admin_users(user=Depends(get_current_user)):
         user_orders = await db.orders.find({"user_id": u["id"]}, {"_id": 0}).to_list(1000)
         u["total_orders"] = len(user_orders)
         u["total_spent"] = sum(o.get("total", 0) for o in user_orders)
-        u["customer_status"] = u.get("customer_status", "retail")
-        u["individual_discount"] = u.get("individual_discount", 0)
         if "password" in u:
             del u["password"]
     
