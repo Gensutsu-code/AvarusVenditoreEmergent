@@ -150,9 +150,7 @@ const ProductModalContent = ({
   updateQuantity, 
   handleAddToCart, 
   formatPrice, 
-  getDeliveryText,
-  userDiscount = 0,
-  showDualPrice = false
+  getDeliveryText
 }) => {
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
   
