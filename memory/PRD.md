@@ -6,9 +6,9 @@ E-commerce platform for selling heavy vehicle parts with:
 - Shopping cart and checkout
 - User authentication and profiles
 - Admin panel for managing products, orders, users
-- Bonus programs and discounts
+- Bonus programs
 - Chat support with Telegram integration
-- Payment methods (cash, card, crypto)
+- Payment methods (cash, card, crypto) with discounts per payment method
 
 ## Architecture
 
@@ -27,13 +27,12 @@ E-commerce platform for selling heavy vehicle parts with:
 │   ├── products.py     # Products & categories
 │   ├── orders.py       # Cart, orders, favorites
 │   ├── admin.py        # Admin user/order management
-│   ├── settings.py     # Discount, payment settings
+│   ├── settings.py     # Payment settings
 │   ├── news.py         # News articles
 │   ├── chat.py         # User/admin chat
 │   ├── bonus.py        # Bonus programs
 │   ├── uploads.py      # File uploads, avatars
 │   ├── partners.py     # Partner brands
-│   ├── requests.py     # Status/discount requests
 │   ├── telegram.py     # Telegram integration
 │   ├── payments.py     # YooKassa, crypto
 │   └── documents.py    # Invoice/receipt routes
@@ -43,16 +42,10 @@ E-commerce platform for selling heavy vehicle parts with:
 ```
 /app/frontend/src/
 ├── pages/
-│   ├── AdminPage.js    # Admin panel (monolithic, ~4900 lines)
-│   ├── CheckoutPage.js # Checkout with payment methods
+│   ├── AdminPage.js    # Admin panel
+│   ├── CheckoutPage.js # Checkout - only payment method discounts
 │   └── ...
 ├── components/
-│   ├── admin/          # Reusable admin components (prepared for future refactoring)
-│   │   ├── ProductsTab.js
-│   │   ├── CategoriesTab.js
-│   │   ├── OrdersTab.js
-│   │   ├── UsersTab.js
-│   │   └── NewsTab.js
 │   └── ui/             # Shadcn UI components
 ```
 
@@ -60,24 +53,23 @@ E-commerce platform for selling heavy vehicle parts with:
 
 ### Session: February 11, 2025
 
-#### Backend Refactoring ✅
-- Split monolithic `server.py` (4000+ lines) into modular routes
-- Created 14 route files in `/app/backend/routes/`
-- Centralized database connection in `database.py`
-- All 23+ API test cases passing
-- No breaking changes to API contracts
+#### Removed Features:
+1. **Customer Statuses** - Removed retail, wholesale, partner statuses
+2. **Status-based Discounts** - Removed discounts based on customer status
+3. **Individual Discounts** - Removed per-user individual discounts
+4. **Double Prices** - Removed original/discounted price display
 
-#### Features Fixed/Added:
-1. **Checkout Page Price Calculation** ✅
-   - Fixed sequential discount application (user discount → payment discount)
-   
-2. **Payment Method Toggle** ✅
-   - Admin can enable/disable payment methods
-   - Disabled methods show "Временно недоступно" on checkout
+#### Kept Features:
+- ✅ Payment Method Discounts (cash, card, crypto)
+- ✅ Payment Method Toggle (enable/disable)
 
-3. **Bonus History Endpoint** ✅
-   - Added `/api/admin/bonus/history`
-   - Added alias `/api/admin/prize-redemptions`
+#### Admin Panel Changes:
+- Tab renamed from "Скидки" to "Оплата"
+- Contains only: Payment method settings + Crypto wallets
+- Removed: Status-based discounts, status statistics, individual discount settings
+
+### Previous Session (same day):
+- Backend refactoring completed (server.py split into modular routes)
 
 ## API Endpoints Summary
 
@@ -85,36 +77,31 @@ E-commerce platform for selling heavy vehicle parts with:
 - `GET /api/health` - Health check
 - `GET /api/products` - Product list
 - `GET /api/categories` - Categories
-- `GET /api/payment-settings` - Payment method settings
-- `GET /api/discount-settings` - Discount settings
-- `GET /api/promo-banner` - Promo banner
-- `GET /api/news` - News articles
-- `GET /api/partners` - Partner brands
+- `GET /api/payment-settings` - Payment method settings and discounts
 
 ### Auth Required
 - `POST /api/auth/register` - Register
 - `POST /api/auth/login` - Login
-- `GET /api/auth/me` - Current user
-- `PUT /api/auth/profile` - Update profile
 - `GET /api/cart` - Get cart
-- `POST /api/orders` - Create order
-- `GET /api/favorites` - Favorites
+- `POST /api/orders` - Create order (applies payment discount only)
 
 ### Admin Required
 - `GET /api/admin/stats` - Dashboard stats
-- `GET /api/admin/orders` - All orders
-- `GET /api/admin/users` - All users
-- `GET /api/admin/products/export` - Export CSV
-- `POST /api/admin/products/import` - Import CSV
+- `PUT /api/admin/payment-settings` - Update payment settings
+- `PUT /api/admin/crypto-wallets` - Update crypto wallet addresses
 
 ## Test Credentials
 - **Admin:** admin@avarus.ru / admin123
-- **User:** TEST@MAIL.RU / admin123
+
+## Pricing Logic (Current)
+```
+subtotal = sum(item.price * item.quantity)
+finalTotal = subtotal * (1 - paymentDiscount / 100)
+```
+
+No status-based or individual discounts are applied.
 
 ## Remaining Tasks
-
-### P0 (High Priority)
-- [ ] Frontend refactoring - integrate prepared components into AdminPage.js
 
 ### P1 (Medium Priority)
 - [ ] Payment integrations (YooKassa, crypto verification)
@@ -122,11 +109,7 @@ E-commerce platform for selling heavy vehicle parts with:
 
 ### P2 (Low Priority)
 - [ ] Email notifications
-- [ ] Advanced analytics
 - [ ] Mobile optimization
-
-## Known Issues
-- None critical after refactoring
 
 ## Preview URL
 https://checkout-refactor-2.preview.emergentagent.com
