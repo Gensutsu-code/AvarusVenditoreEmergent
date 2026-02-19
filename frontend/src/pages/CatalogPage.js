@@ -28,9 +28,7 @@ const ProductCard = ({
   setSelectedProduct, 
   formatPrice, 
   getDeliveryText,
-  isAlternative = false,
-  userDiscount = 0,
-  showDualPrice = false
+  isAlternative = false
 }) => (
   <div 
     className={`border bg-white hover:border-zinc-300 transition-colors ${isAlternative ? 'border-orange-200' : 'border-zinc-200'}`}
