@@ -91,9 +91,7 @@ const ProductCard = ({
       <div className="text-right min-w-[120px]">
         <PriceDisplay 
           price={product.price} 
-          discount={userDiscount} 
           formatPrice={formatPrice} 
-          showDualPrice={showDualPrice} 
         />
       </div>
 
