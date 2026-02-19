@@ -152,20 +152,7 @@ export default function FavoritesPage() {
 
                     {/* Price */}
                     <div className="text-right min-w-[120px]">
-                      {userDiscount > 0 ? (
-                        <div className="flex flex-col items-end">
-                          <div className="flex items-center gap-1.5">
-                            <span className="text-[10px] uppercase tracking-wide text-zinc-400">Розничная</span>
-                            <span className="text-sm text-red-400 line-through">{formatPrice(product.price)} ₽</span>
-                          </div>
-                          <div className="flex items-center gap-1.5">
-                            <span className="text-[10px] uppercase tracking-wide text-green-600 font-semibold">Ваша цена</span>
-                            <span className="text-lg font-bold text-green-600">{formatPrice(Math.round(product.price * (1 - userDiscount / 100)))} ₽</span>
-                          </div>
-                        </div>
-                      ) : (
-                        <span className="price-tag text-lg text-zinc-900">{formatPrice(product.price)} ₽</span>
-                      )}
+                      <span className="price-tag text-lg text-zinc-900">{formatPrice(product.price)} ₽</span>
                     </div>
 
                     {/* Quantity + Actions */}
