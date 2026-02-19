@@ -38,7 +38,6 @@ export default function CheckoutPage() {
     card_discount: 0, crypto_discount: 0, cash_discount: 0,
     card_enabled: true, crypto_enabled: true, cash_enabled: true
   });
-  const [discountSettings, setDiscountSettings] = useState({ retail_discount: 0, wholesale_discount: 0, partner_discount: 0 });
   const [cryptoWallets, setCryptoWallets] = useState({});
   const [selectedChain, setSelectedChain] = useState('eth');
   const [txHash, setTxHash] = useState('');
@@ -61,7 +60,6 @@ export default function CheckoutPage() {
         setPaymentMethod('crypto');
       }
     }).catch(() => {});
-    axios.get(`${API}/discount-settings`).then(res => setDiscountSettings(res.data)).catch(() => {});
     axios.get(`${API}/crypto-wallets`).then(res => setCryptoWallets(res.data)).catch(() => {});
   }, [user]);
 
@@ -76,29 +74,13 @@ export default function CheckoutPage() {
   const getPaymentDiscount = (method) => paymentSettings[`${method}_discount`] || 0;
   const currentPaymentDiscount = getPaymentDiscount(paymentMethod);
 
-  // User's total discount (status + individual)
-  const getUserDiscount = () => {
-    if (!user) return 0;
-    const status = user.customer_status || 'retail';
-    let sd = 0;
-    if (status === 'partner') sd = discountSettings.partner_discount || 0;
-    else if (status === 'wholesale') sd = discountSettings.wholesale_discount || 0;
-    else sd = discountSettings.retail_discount || 0;
-    return sd + (user.individual_discount || 0);
-  };
-  const userDiscount = getUserDiscount();
+  // Calculate subtotal (before payment discount)
+  const subtotal = cart.items.reduce((sum, item) => sum + item.price * item.quantity, 0);
 
-  // Apply user discount to cart items, then payment discount - sequentially
-  const finalTotal = cart.items.reduce((sum, item) => {
-    let itemPrice = item.price;
-    if (userDiscount > 0) {
-      itemPrice = itemPrice * (1 - userDiscount / 100);
-    }
-    if (currentPaymentDiscount > 0) {
-      itemPrice = itemPrice * (1 - currentPaymentDiscount / 100);
-    }
-    return sum + Math.round(itemPrice) * item.quantity;
-  }, 0);
+  // Apply payment discount only
+  const finalTotal = currentPaymentDiscount > 0 
+    ? Math.round(subtotal * (1 - currentPaymentDiscount / 100))
+    : subtotal;
 
   const handleSubmit = async (e) => {
     e.preventDefault();
