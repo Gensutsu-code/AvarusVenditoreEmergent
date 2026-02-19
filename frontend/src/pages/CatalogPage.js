@@ -610,8 +610,6 @@ export default function CatalogPage() {
                       setSelectedProduct={setSelectedProduct}
                       formatPrice={formatPrice}
                       getDeliveryText={getDeliveryText}
-                      userDiscount={userDiscount}
-                      showDualPrice={showDualPrice}
                     />
                   ))}
                 </div>
@@ -644,8 +642,6 @@ export default function CatalogPage() {
                       formatPrice={formatPrice}
                       getDeliveryText={getDeliveryText}
                       isAlternative={true}
-                      userDiscount={userDiscount}
-                      showDualPrice={showDualPrice}
                     />
                   ))}
                 </div>
@@ -666,8 +662,6 @@ export default function CatalogPage() {
               handleAddToCart={handleAddToCart}
               formatPrice={formatPrice}
               getDeliveryText={getDeliveryText}
-              userDiscount={userDiscount}
-              showDualPrice={showDualPrice}
             />
           )}
         </DialogContent>
