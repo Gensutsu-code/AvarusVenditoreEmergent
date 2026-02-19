@@ -345,7 +345,6 @@ export default function CatalogPage() {
   const { addToCart } = useCart();
   const { user } = useAuth();
   const navigate = useNavigate();
-  const [discountSettings, setDiscountSettings] = useState({ retail_discount: 0, wholesale_discount: 0, partner_discount: 0 });
 
   const searchQuery = searchParams.get('search');
   const categoryId = searchParams.get('category');
