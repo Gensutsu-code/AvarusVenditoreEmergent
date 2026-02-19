@@ -25,7 +25,7 @@ async def send_to_telegram_chat(chat_id: str, user_name: str, text: str, message
     
     admin_tg_chat_id = settings["admin_chat_id"]
     
-    formatted_text = f"💬 *Новое сообщение в чат*\n\n"
+    formatted_text = "💬 *Новое сообщение в чат*\n\n"
     formatted_text += f"👤 *От:* {user_name}\n"
     formatted_text += f"🆔 *Чат:* `{chat_id[:8]}...`\n\n"
     
