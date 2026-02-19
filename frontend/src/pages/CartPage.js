@@ -67,72 +67,52 @@ export default function CartPage() {
         <h1 className="text-2xl md:text-3xl font-bold tracking-tight uppercase text-zinc-900 mb-8">Корзина</h1>
 
         <div className="space-y-3" data-testid="cart-items">
-          {cart.items.map((item) => {
-            const discountedPrice = applyDiscount(item.price);
-            const hasDiscount = userDiscount > 0;
-            return (
-              <div key={item.product_id} className="border border-zinc-200 bg-white hover:border-zinc-300 transition-colors" data-testid={`cart-item-${item.product_id}`}>
-                <div className="flex items-center gap-4 p-4">
-                  <div className="w-16 h-16 flex-shrink-0 bg-zinc-100 overflow-hidden">
-                    {item.image_url ? (
-                      <img src={item.image_url} alt={item.name} className="w-full h-full object-cover" />
-                    ) : (
-                      <div className="w-full h-full flex items-center justify-center text-zinc-300">
-                        <ShoppingCart className="w-6 h-6" />
-                      </div>
-                    )}
-                  </div>
-
-                  <div className="flex-1 min-w-0">
-                    {item.manufacturer && <p className="text-sm font-bold text-orange-600">{item.manufacturer}</p>}
-                    <p className="text-sm font-mono font-semibold text-zinc-600">Арт: {item.article}</p>
-                    <Link to={`/product/${item.product_id}`} className="font-semibold text-zinc-900 hover:text-orange-500 transition-colors line-clamp-1">{item.name}</Link>
-                    <div className="mt-1">
-                      {hasDiscount ? (
-                        <div className="flex items-center gap-2">
-                          <span className="text-sm text-red-400 line-through">{formatPrice(item.price)} ₽</span>
-                          <span className="font-bold text-green-600">{formatPrice(discountedPrice)} ₽</span>
-                          <span className="text-[10px] bg-green-100 text-green-700 px-1.5 py-0.5 rounded font-bold">-{userDiscount}%</span>
-                        </div>
-                      ) : (
-                        <span className="font-bold text-zinc-900">{formatPrice(item.price)} ₽</span>
-                      )}
+          {cart.items.map((item) => (
+            <div key={item.product_id} className="border border-zinc-200 bg-white hover:border-zinc-300 transition-colors" data-testid={`cart-item-${item.product_id}`}>
+              <div className="flex items-center gap-4 p-4">
+                <div className="w-16 h-16 flex-shrink-0 bg-zinc-100 overflow-hidden">
+                  {item.image_url ? (
+                    <img src={item.image_url} alt={item.name} className="w-full h-full object-cover" />
+                  ) : (
+                    <div className="w-full h-full flex items-center justify-center text-zinc-300">
+                      <ShoppingCart className="w-6 h-6" />
                     </div>
-                  </div>
+                  )}
+                </div>
 
-                  <div className="flex items-center gap-2">
-                    <div className="flex items-center border border-zinc-200">
-                      <button onClick={() => updateQuantity(item.product_id, Math.max(1, item.quantity - 1))} className="px-3 py-1 text-sm hover:bg-zinc-100" data-testid={`decrease-${item.product_id}`}>−</button>
-                      <span className="px-3 py-1 min-w-[40px] text-center text-sm font-semibold">{item.quantity}</span>
-                      <button onClick={() => updateQuantity(item.product_id, item.quantity + 1)} className="px-3 py-1 text-sm hover:bg-zinc-100" data-testid={`increase-${item.product_id}`}>+</button>
-                    </div>
-
-                    <span className="font-bold text-zinc-900 min-w-[80px] text-right">{formatPrice(discountedPrice * item.quantity)} ₽</span>
-
-                    <button onClick={() => removeFromCart(item.product_id)} className="p-2 text-zinc-400 hover:text-red-500 transition-colors" data-testid={`remove-${item.product_id}`}>
-                      <Trash2 className="w-5 h-5" />
-                    </button>
+                <div className="flex-1 min-w-0">
+                  {item.manufacturer && <p className="text-sm font-bold text-orange-600">{item.manufacturer}</p>}
+                  <p className="text-sm font-mono font-semibold text-zinc-600">Арт: {item.article}</p>
+                  <Link to={`/product/${item.product_id}`} className="font-semibold text-zinc-900 hover:text-orange-500 transition-colors line-clamp-1">{item.name}</Link>
+                  <div className="mt-1">
+                    <span className="font-bold text-zinc-900">{formatPrice(item.price)} ₽</span>
                   </div>
                 </div>
+
+                <div className="flex items-center gap-2">
+                  <div className="flex items-center border border-zinc-200">
+                    <button onClick={() => updateQuantity(item.product_id, Math.max(1, item.quantity - 1))} className="px-3 py-1 text-sm hover:bg-zinc-100" data-testid={`decrease-${item.product_id}`}>−</button>
+                    <span className="px-3 py-1 min-w-[40px] text-center text-sm font-semibold">{item.quantity}</span>
+                    <button onClick={() => updateQuantity(item.product_id, item.quantity + 1)} className="px-3 py-1 text-sm hover:bg-zinc-100" data-testid={`increase-${item.product_id}`}>+</button>
+                  </div>
+
+                  <span className="font-bold text-zinc-900 min-w-[80px] text-right">{formatPrice(item.price * item.quantity)} ₽</span>
+
+                  <button onClick={() => removeFromCart(item.product_id)} className="p-2 text-zinc-400 hover:text-red-500 transition-colors" data-testid={`remove-${item.product_id}`}>
+                    <Trash2 className="w-5 h-5" />
+                  </button>
+                </div>
               </div>
-            );
-          })}
+            </div>
+          ))}
         </div>
 
         <div className="mt-6 border border-zinc-200 p-6">
-          {userDiscount > 0 && (
-            <div className="flex items-center justify-between mb-3 text-sm text-zinc-500">
-              <span>Сумма без скидки:</span>
-              <span className="line-through">{formatPrice(cartTotal)} ₽</span>
-            </div>
-          )}
           <div className="flex items-center justify-between mb-6">
             <span className="text-lg font-semibold text-zinc-900">Итого:</span>
-            <span className="price-tag text-2xl text-zinc-900" data-testid="cart-total">{formatPrice(discountedTotal)} ₽</span>
+            <span className="price-tag text-2xl text-zinc-900" data-testid="cart-total">{formatPrice(cartTotal)} ₽</span>
           </div>
-          {userDiscount > 0 && (
-            <p className="text-xs text-green-600 mb-4">Ваша скидка: {userDiscount}% (скидка по способу оплаты применится при оформлении)</p>
-          )}
+          <p className="text-xs text-zinc-500 mb-4">Скидка за способ оплаты применится при оформлении заказа</p>
           <Button onClick={() => navigate('/checkout')} className="w-full bg-orange-500 hover:bg-orange-600 text-white font-bold uppercase tracking-wide h-12" data-testid="checkout-btn">
             Оформить заказ
           </Button>
