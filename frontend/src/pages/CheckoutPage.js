@@ -351,28 +351,31 @@ export default function CheckoutPage() {
             <h2 className="text-xs font-bold uppercase tracking-widest text-zinc-500 mb-4">Ваш заказ</h2>
             <div className="space-y-3 mb-6">
               {cart.items.map(item => {
-                // Apply discounts sequentially: first user discount, then payment discount
-                let itemPrice = item.price;
-                if (userDiscount > 0) {
-                  itemPrice = itemPrice * (1 - userDiscount / 100);
-                }
-                if (currentPaymentDiscount > 0) {
-                  itemPrice = itemPrice * (1 - currentPaymentDiscount / 100);
-                }
-                itemPrice = Math.round(itemPrice);
                 return (
                 <div key={item.product_id} className="flex gap-3 text-sm border-b border-zinc-100 pb-3">
                   <div className="flex-1">
                     {item.manufacturer && <p className="text-xs font-bold text-orange-600">{item.manufacturer}</p>}
                     <p className="text-zinc-900 font-medium">{item.name}</p>
-                    <p className="text-zinc-500 text-xs">{item.quantity} шт. × {formatPrice(itemPrice)} ₽</p>
+                    <p className="text-zinc-500 text-xs">{item.quantity} шт. × {formatPrice(item.price)} ₽</p>
                   </div>
-                  <span className="font-semibold whitespace-nowrap">{formatPrice(itemPrice * item.quantity)} ₽</span>
+                  <span className="font-semibold whitespace-nowrap">{formatPrice(item.price * item.quantity)} ₽</span>
                 </div>
                 );
               })}
             </div>
-            <div className="border-t border-zinc-200 pt-4">
+            <div className="border-t border-zinc-200 pt-4 space-y-2">
+              {currentPaymentDiscount > 0 && (
+                <>
+                  <div className="flex justify-between text-sm text-zinc-600">
+                    <span>Подытог:</span>
+                    <span>{formatPrice(subtotal)} ₽</span>
+                  </div>
+                  <div className="flex justify-between text-sm text-green-600">
+                    <span>Скидка за оплату ({currentPaymentDiscount}%):</span>
+                    <span>-{formatPrice(subtotal - finalTotal)} ₽</span>
+                  </div>
+                </>
+              )}
               <div className="flex justify-between">
                 <span className="font-semibold">Итого:</span>
                 <span className="text-xl font-bold text-zinc-900" data-testid="checkout-total">{formatPrice(finalTotal)} ₽</span>
