@@ -20,22 +20,8 @@ export default function CartPage() {
 
   const formatPrice = (price) => new Intl.NumberFormat('ru-RU').format(Math.round(price));
 
-  // Calculate user's total discount
-  const getUserDiscount = () => {
-    if (!user) return 0;
-    const status = user.customer_status || 'retail';
-    let statusDiscount = 0;
-    if (status === 'partner') statusDiscount = discountSettings.partner_discount || 0;
-    else if (status === 'wholesale') statusDiscount = discountSettings.wholesale_discount || 0;
-    else statusDiscount = discountSettings.retail_discount || 0;
-    return statusDiscount + (user.individual_discount || 0);
-  };
-
-  const userDiscount = getUserDiscount();
-  const applyDiscount = (price) => userDiscount > 0 ? Math.round(price * (1 - userDiscount / 100)) : price;
-
-  // Calculate discounted cart total
-  const discountedTotal = cart.items.reduce((sum, item) => sum + applyDiscount(item.price) * item.quantity, 0);
+  // Simple cart total without discounts
+  const cartTotal = cart.items.reduce((sum, item) => sum + item.price * item.quantity, 0);
 
   if (!user) {
     return (
