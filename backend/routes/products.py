@@ -229,7 +229,7 @@ async def import_products(file: UploadFile = File(...), user=Depends(get_current
     content = await file.read()
     try:
         text = content.decode('utf-8-sig')
-    except:
+    except UnicodeDecodeError:
         text = content.decode('cp1251')
     
     reader = csv.DictReader(io.StringIO(text), delimiter=';')
@@ -281,7 +281,6 @@ async def export_products(user=Depends(get_current_user)):
     """Export products to CSV"""
     import csv
     import io
-    from fastapi.responses import StreamingResponse
     
     if user.get("role") != "admin":
         raise HTTPException(status_code=403, detail="Admin access required")
