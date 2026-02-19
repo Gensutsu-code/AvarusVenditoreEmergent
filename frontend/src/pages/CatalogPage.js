@@ -282,9 +282,7 @@ const ProductModalContent = ({
           <div className="border-t border-zinc-200 pt-4 flex items-center justify-between">
             <PriceDisplay 
               price={product.price} 
-              discount={userDiscount} 
               formatPrice={formatPrice} 
-              showDualPrice={showDualPrice} 
             />
             <FavoritesButton productId={product.id} />
           </div>
