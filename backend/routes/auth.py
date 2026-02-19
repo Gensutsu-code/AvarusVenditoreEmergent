@@ -42,8 +42,6 @@ async def register(data: UserRegister):
         "address": data.address,
         "address_comment": data.address_comment,
         "role": "user",
-        "customer_status": "retail",
-        "individual_discount": 0,
         "created_at": datetime.now(timezone.utc).isoformat()
     }
     await db.users.insert_one(user)
@@ -66,9 +64,7 @@ async def register(data: UserRegister):
             "address": data.address, 
             "address_comment": data.address_comment, 
             "role": "user", 
-            "avatar_url": None, 
-            "customer_status": "retail", 
-            "individual_discount": 0
+            "avatar_url": None
         }
     }
 
@@ -90,9 +86,7 @@ async def login(data: UserLogin):
             "role": user.get("role", "user"), 
             "address": user.get("address"), 
             "address_comment": user.get("address_comment"), 
-            "avatar_url": user.get("avatar_url"), 
-            "customer_status": user.get("customer_status", "retail"), 
-            "individual_discount": user.get("individual_discount", 0)
+            "avatar_url": user.get("avatar_url")
         }
     }
 
