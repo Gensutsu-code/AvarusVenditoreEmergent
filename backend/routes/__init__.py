@@ -12,7 +12,6 @@ from .chat import router as chat_router
 from .bonus import router as bonus_router
 from .uploads import router as uploads_router
 from .partners import router as partners_router
-from .requests import router as requests_router
 from .telegram import router as telegram_router
 from .payments import router as payments_router
 from .documents import router as documents_router
@@ -31,7 +30,6 @@ api_router.include_router(chat_router)
 api_router.include_router(bonus_router)
 api_router.include_router(uploads_router)
 api_router.include_router(partners_router)
-api_router.include_router(requests_router)
 api_router.include_router(telegram_router)
 api_router.include_router(payments_router)
 api_router.include_router(documents_router)
