@@ -367,3 +367,42 @@ async def update_prize_redemption_status(redemption_id: str, status: str, user=D
     )
     
     return {"success": True}
+
+
+# ==================== COMPATIBILITY ALIASES ====================
+
+@router.get("/admin/prize-redemptions")
+async def get_admin_prize_redemptions_alias(user=Depends(get_current_user)):
+    """Alias for /admin/bonus/prize-redemptions"""
+    return await get_admin_prize_redemptions(user)
+
+
+@router.put("/admin/prize-redemptions/{redemption_id}")
+async def update_prize_redemption_alias(redemption_id: str, status: str, user=Depends(get_current_user)):
+    """Alias for /admin/bonus/prize-redemptions/{id}/status"""
+    return await update_prize_redemption_status(redemption_id, status, user)
+
+
+@router.get("/admin/bonus/history")
+async def get_admin_bonus_history(user=Depends(get_current_user)):
+    """Get bonus history for admin"""
+    if user.get("role") != "admin":
+        raise HTTPException(status_code=403, detail="Admin access required")
+    
+    # Return recent bonus activities - redemptions + progress changes
+    redemptions = await db.prize_redemptions.find({}, {"_id": 0}).sort("created_at", -1).limit(100).to_list(100)
+    
+    history = []
+    for r in redemptions:
+        history.append({
+            "id": r.get("id"),
+            "type": "prize_redemption",
+            "user_name": r.get("user_name", ""),
+            "prize_name": r.get("prize_name", ""),
+            "points_cost": r.get("points_cost", 0),
+            "status": r.get("status", "pending"),
+            "created_at": r.get("created_at")
+        })
+    
+    return {"history": history}
+
