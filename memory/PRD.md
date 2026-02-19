@@ -1,86 +1,132 @@
-# Магазин грузовых автозапчастей — PRD
+# AVOPT.STORE - E-Commerce Platform for Heavy Vehicle Parts
 
-## Архитектура
-- **Frontend**: React + Tailwind CSS + Shadcn UI + ethers.js
-- **Backend**: FastAPI + MongoDB
-- **Auth**: JWT tokens
-- **Media**: Cloudinary
-- **Documents**: python-docx + ReportLab
-- **Платежи**: ЮKassa (карты), Крипто (MetaMask)
+## Original Problem Statement
+E-commerce platform for selling heavy vehicle parts with:
+- Product catalog with categories
+- Shopping cart and checkout
+- User authentication and profiles
+- Admin panel for managing products, orders, users
+- Bonus programs and discounts
+- Chat support with Telegram integration
+- Payment methods (cash, card, crypto)
 
-## Реализованный функционал
+## Architecture
 
-### v1.0–v4.0 — MVP + Расширение
-- Каталог, корзина, заказы, авторизация, админ-панель
-- Промо-баннер, бонусы, чат, Telegram, аналитика
+### Backend (FastAPI + MongoDB)
+**Refactored Structure (February 2025):**
+```
+/app/backend/
+├── server.py           # Main entry point (~70 lines)
+├── database.py         # MongoDB connection, auth helpers
+├── models.py           # Pydantic models
+├── documents.py        # Invoice/receipt generation
+├── cloudinary_service.py # Image uploads
+├── routes/
+│   ├── __init__.py     # Router aggregation
+│   ├── auth.py         # Authentication
+│   ├── products.py     # Products & categories
+│   ├── orders.py       # Cart, orders, favorites
+│   ├── admin.py        # Admin user/order management
+│   ├── settings.py     # Discount, payment settings
+│   ├── news.py         # News articles
+│   ├── chat.py         # User/admin chat
+│   ├── bonus.py        # Bonus programs
+│   ├── uploads.py      # File uploads, avatars
+│   ├── partners.py     # Partner brands
+│   ├── requests.py     # Status/discount requests
+│   ├── telegram.py     # Telegram integration
+│   ├── payments.py     # YooKassa, crypto
+│   └── documents.py    # Invoice/receipt routes
+```
 
-### v4.1 — Скидки и статусы (11.02.2026)
-- Статусы: Розница/Опт/Партнёр
-- Скидки по статусам + индивидуальные
-- Динамические цены, запросы на статус/скидку
-- Админ-уведомления в шапке
+### Frontend (React)
+```
+/app/frontend/src/
+├── pages/
+│   ├── AdminPage.js    # Admin panel (monolithic, ~4900 lines)
+│   ├── CheckoutPage.js # Checkout with payment methods
+│   └── ...
+├── components/
+│   ├── admin/          # Reusable admin components (prepared for future refactoring)
+│   │   ├── ProductsTab.js
+│   │   ├── CategoriesTab.js
+│   │   ├── OrdersTab.js
+│   │   ├── UsersTab.js
+│   │   └── NewsTab.js
+│   └── ui/             # Shadcn UI components
+```
 
-### v4.2 — Документы, платежи, уведомления (11.02.2026)
-- Товарная накладная + чек (WORD/PDF)
-- 3 способа оплаты: наличные/карта/крипто
-- Скидки по оплате, ЮKassa, MetaMask
-- Клиентские + админские уведомления
-- Новости (CRUD + страница /news)
+## What's Been Implemented
 
-### v4.3 — Ценообразование и призы (11.02.2026)
-- Двойные цены: «Розничная цена» (перечёркнутая) + «Ваша цена» (зелёная)
-- Корзина: цены со скидкой клиента
-- Избранное: двойные цены как в каталоге
-- Призы: кнопка «Выдать» исправлена
-- Отслеживание статуса призов на странице бонусов
+### Session: February 11, 2025
 
-### v4.4 — Исправления и управление оплатой (11.02.2026)
-- **Исправлен расчёт цены на checkout:** скидки применяются последовательно (сначала скидка пользователя, затем скидка способа оплаты)
-- **Включение/отключение способов оплаты:** админ может временно отключить способ оплаты
-- **UI для отключённых методов:** отображаются серым цветом с текстом «Временно недоступно»
+#### Backend Refactoring ✅
+- Split monolithic `server.py` (4000+ lines) into modular routes
+- Created 14 route files in `/app/backend/routes/`
+- Centralized database connection in `database.py`
+- All 23+ API test cases passing
+- No breaking changes to API contracts
 
-### v4.5 — Рефакторинг архитектуры (11.02.2026)
+#### Features Fixed/Added:
+1. **Checkout Page Price Calculation** ✅
+   - Fixed sequential discount application (user discount → payment discount)
+   
+2. **Payment Method Toggle** ✅
+   - Admin can enable/disable payment methods
+   - Disabled methods show "Временно недоступно" on checkout
 
-**Бэкенд — создано 11 модулей:**
-- `database.py` — подключение к БД, JWT, авторизация
-- `models.py` — все Pydantic модели (~280 строк)
-- `routes/auth.py` — регистрация, логин, профиль
-- `routes/products.py` — CRUD продуктов и категорий
-- `routes/orders.py` — корзина, заказы, избранное
-- `routes/admin.py` — управление пользователями/заказами
-- `routes/settings.py` — настройки скидок, платежей, баннера
-- `routes/news.py` — новости CRUD
-- `routes/chat.py` — чат и сообщения
-- `routes/bonus.py` — бонусная программа
+3. **Bonus History Endpoint** ✅
+   - Added `/api/admin/bonus/history`
+   - Added alias `/api/admin/prize-redemptions`
 
-**Фронтенд — созданы компоненты:**
-- `components/admin/ProductsTab.js` — вкладка товаров
-- `components/admin/CategoriesTab.js` — вкладка категорий
-- `components/admin/OrdersTab.js` — вкладка заказов
-- `components/admin/UsersTab.js` — вкладка пользователей
-- `components/admin/NewsTab.js` — вкладка новостей
+## API Endpoints Summary
 
-**Документация:**
-- `/app/memory/REFACTORING_PLAN.md` — детальный план рефакторинга
+### Public
+- `GET /api/health` - Health check
+- `GET /api/products` - Product list
+- `GET /api/categories` - Categories
+- `GET /api/payment-settings` - Payment method settings
+- `GET /api/discount-settings` - Discount settings
+- `GET /api/promo-banner` - Promo banner
+- `GET /api/news` - News articles
+- `GET /api/partners` - Partner brands
 
-## Учётные данные
-- Admin: admin@avarus.ru / admin123
-- Test: TEST@MAIL.RU / admin123
+### Auth Required
+- `POST /api/auth/register` - Register
+- `POST /api/auth/login` - Login
+- `GET /api/auth/me` - Current user
+- `PUT /api/auth/profile` - Update profile
+- `GET /api/cart` - Get cart
+- `POST /api/orders` - Create order
+- `GET /api/favorites` - Favorites
 
-## Текущие настройки оплаты
-- Наличные: включено, скидка 15%
-- Карта (ЮKassa): включено, скидка 0%
-- Криптовалюта: включено, скидка 20%
+### Admin Required
+- `GET /api/admin/stats` - Dashboard stats
+- `GET /api/admin/orders` - All orders
+- `GET /api/admin/users` - All users
+- `GET /api/admin/products/export` - Export CSV
+- `POST /api/admin/products/import` - Import CSV
 
-## Backlog (P0)
-- **Завершить рефакторинг:** интегрировать роутеры в server.py, удалить дублирующий код
-- **Компоненты AdminPage:** создать оставшиеся 8 компонентов вкладок
+## Test Credentials
+- **Admin:** admin@avarus.ru / admin123
+- **User:** TEST@MAIL.RU / admin123
 
-## Backlog (P1)
-- ЮKassa: настроить API ключи
-- Поиск по VIN, email-уведомления
-- Автопроверка крипто через блокчейн API
+## Remaining Tasks
 
-## Backlog (P2)
-- Редизайн сайта
-- Миграция с JSON файлов на полноценную БД
+### P0 (High Priority)
+- [ ] Frontend refactoring - integrate prepared components into AdminPage.js
+
+### P1 (Medium Priority)
+- [ ] Payment integrations (YooKassa, crypto verification)
+- [ ] Telegram bot setup
+
+### P2 (Low Priority)
+- [ ] Email notifications
+- [ ] Advanced analytics
+- [ ] Mobile optimization
+
+## Known Issues
+- None critical after refactoring
+
+## Preview URL
+https://checkout-refactor-2.preview.emergentagent.com
