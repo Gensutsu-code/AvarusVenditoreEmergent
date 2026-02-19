@@ -198,7 +198,7 @@ async def telegram_chat_webhook(update: TelegramUpdate):
                             },
                             timeout=10
                         )
-                except:
+                except Exception:
                     pass
             else:
                 try:
@@ -211,7 +211,7 @@ async def telegram_chat_webhook(update: TelegramUpdate):
                             },
                             timeout=10
                         )
-                except:
+                except Exception:
                     pass
     
     # Check for /start command - save admin chat ID
@@ -232,7 +232,7 @@ async def telegram_chat_webhook(update: TelegramUpdate):
                     },
                     timeout=10
                 )
-        except:
+        except Exception:
             pass
     
     # Check for /chats command - list active chats
@@ -259,7 +259,7 @@ async def telegram_chat_webhook(update: TelegramUpdate):
                         },
                         timeout=10
                     )
-            except:
+            except Exception:
                 pass
         else:
             try:
@@ -269,7 +269,7 @@ async def telegram_chat_webhook(update: TelegramUpdate):
                         json={"chat_id": chat_id_tg, "text": "📭 Чатов пока нет"},
                         timeout=10
                     )
-            except:
+            except Exception:
                 pass
     
     return {"ok": True}
