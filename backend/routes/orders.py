@@ -128,21 +128,7 @@ async def create_order(data: OrderCreate, user=Depends(get_current_user)):
     if not cart or not cart.get("items"):
         raise HTTPException(status_code=400, detail="Cart is empty")
     
-    customer_status = user.get("customer_status", "retail")
-    individual_discount = user.get("individual_discount", 0)
-    
-    discount_settings = await db.settings.find_one({"key": "discount_settings"})
-    status_discounts = discount_settings.get("value", {}) if discount_settings else {}
-    
-    if customer_status == "wholesale":
-        status_discount = status_discounts.get("wholesale_discount", 0)
-    elif customer_status == "partner":
-        status_discount = status_discounts.get("partner_discount", 0)
-    else:
-        status_discount = status_discounts.get("retail_discount", 0)
-    
-    total_discount = status_discount + individual_discount
-    
+    # Only payment method discounts are used
     payment_settings = await db.settings.find_one({"key": "payment_settings"})
     payment_discounts = payment_settings.get("value", {}) if payment_settings else {}
     payment_method = data.payment_method or "cash"
@@ -153,41 +139,36 @@ async def create_order(data: OrderCreate, user=Depends(get_current_user)):
     products_map = {p["id"]: p for p in products}
     
     items = []
-    original_total = 0
-    discounted_total = 0
+    subtotal = 0
     
     for cart_item in cart["items"]:
         product = products_map.get(cart_item["product_id"])
         if product:
-            original_price = product["price"]
-            discounted_price = original_price * (1 - total_discount / 100) if total_discount > 0 else original_price
-            
+            price = product["price"]
             item_data = {
                 "product_id": cart_item["product_id"],
                 "name": product["name"],
                 "article": product["article"],
                 "manufacturer": product.get("manufacturer"),
-                "price": round(discounted_price, 2),
-                "original_price": original_price,
-                "discount_percent": total_discount,
+                "price": price,
                 "quantity": cart_item["quantity"],
                 "image_url": product.get("image_url")
             }
             items.append(item_data)
-            original_total += original_price * cart_item["quantity"]
-            discounted_total += discounted_price * cart_item["quantity"]
+            subtotal += price * cart_item["quantity"]
     
+    # Apply payment method discount
+    total = subtotal
     if payment_discount > 0:
-        discounted_total = discounted_total * (1 - payment_discount / 100)
+        total = subtotal * (1 - payment_discount / 100)
     
     order_id = str(uuid.uuid4())
     order = {
         "id": order_id,
         "user_id": user["id"],
         "items": items,
-        "total": round(discounted_total, 2),
-        "original_total": round(original_total, 2),
-        "applied_discount": total_discount,
+        "total": round(total, 2),
+        "subtotal": round(subtotal, 2),
         "payment_discount": payment_discount,
         "status": "new",
         "full_name": data.full_name,
