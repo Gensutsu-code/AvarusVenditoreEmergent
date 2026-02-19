@@ -262,9 +262,6 @@ export default function AdminPage() {
         axios.get(`${API}/admin/bonus/programs`),
         axios.get(`${API}/admin/bonus/history`),
         axios.get(`${API}/partners`),
-        axios.get(`${API}/admin/discount-settings`),
-        axios.get(`${API}/admin/status-requests`),
-        axios.get(`${API}/admin/discount-requests`),
         axios.get(`${API}/admin/prize-redemptions`),
         axios.get(`${API}/admin/payment-settings`),
         axios.get(`${API}/admin/news`)
@@ -280,9 +277,6 @@ export default function AdminPage() {
       setBonusPrograms(bonusProgramsRes.data.programs || []);
       setBonusHistory(bonusHistoryRes.data.history || []);
       setPartners(partnersRes.data || []);
-      setDiscountSettings(discountRes.data || { retail_discount: 0, wholesale_discount: 0 });
-      setStatusRequests(statusReqRes.data || []);
-      setDiscountRequests(discountReqRes.data || []);
       setPrizeRedemptions(prizeRedemptionsRes.data?.redemptions || []);
       setPaymentSettings(paymentRes.data || { 
         card_discount: 0, crypto_discount: 0, cash_discount: 0,
