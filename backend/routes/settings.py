@@ -1,62 +1,42 @@
-"""Settings routes (discounts, payments, promo banner, telegram)"""
+"""Settings routes (payments, promo banner, telegram)"""
 from fastapi import APIRouter, HTTPException, Depends
 from typing import Optional
 
 from database import db, get_current_user
-from models import DiscountSettingsUpdate, PaymentMethodSettings, TelegramSettings, PromoBannerUpdate
+from models import PaymentMethodSettings, TelegramSettings, PromoBannerUpdate
 
 router = APIRouter(tags=["settings"])
 
 
-# ==================== DISCOUNT SETTINGS ====================
+# ==================== DISCOUNT SETTINGS (DEPRECATED - kept for compatibility) ====================
 
 @router.get("/discount-settings")
 async def get_discount_settings():
-    """Get discount settings for each status (public)"""
-    defaults = {
+    """Deprecated - returns empty discounts"""
+    return {
         "retail_discount": 0,
         "wholesale_discount": 0,
-        "partner_discount": 0,
-        "wholesale_threshold": 50000,
-        "partner_threshold": 200000
+        "partner_discount": 0
     }
-    settings = await db.settings.find_one({"key": "discount_settings"})
-    if settings:
-        val = settings.get("value", {})
-        return {**defaults, **val}
-    return defaults
 
 
 @router.get("/admin/discount-settings")
 async def get_admin_discount_settings(user=Depends(get_current_user)):
+    """Deprecated - returns empty discounts"""
     if user.get("role") != "admin":
         raise HTTPException(status_code=403, detail="Admin access required")
-    
-    defaults = {
+    return {
         "retail_discount": 0,
         "wholesale_discount": 0,
-        "partner_discount": 0,
-        "wholesale_threshold": 50000,
-        "partner_threshold": 200000
+        "partner_discount": 0
     }
-    settings = await db.settings.find_one({"key": "discount_settings"})
-    if settings:
-        val = settings.get("value", {})
-        return {**defaults, **val}
-    return defaults
 
 
 @router.put("/admin/discount-settings")
-async def update_discount_settings(data: DiscountSettingsUpdate, user=Depends(get_current_user)):
+async def update_discount_settings(user=Depends(get_current_user)):
+    """Deprecated - does nothing"""
     if user.get("role") != "admin":
         raise HTTPException(status_code=403, detail="Admin access required")
-    
-    settings_data = data.model_dump()
-    await db.settings.update_one(
-        {"key": "discount_settings"},
-        {"$set": {"value": settings_data}},
-        upsert=True
-    )
     return {"success": True}
 
 
