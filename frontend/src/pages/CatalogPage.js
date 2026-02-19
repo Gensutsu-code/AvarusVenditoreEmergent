@@ -14,27 +14,9 @@ import { RelatedProducts } from '../components/RelatedProducts';
 
 const API = `${process.env.REACT_APP_BACKEND_URL}/api`;
 
-// Price display component with discount
-const PriceDisplay = ({ price, discount, formatPrice, showDualPrice = false }) => {
-  if (discount <= 0) {
-    return <span className="text-xl font-bold text-zinc-900">{formatPrice(price)} ₽</span>;
-  }
-  
-  const discountedPrice = Math.round(price * (1 - discount / 100));
-  
-  return (
-    <div className="flex flex-col items-end">
-      <div className="flex items-center gap-1.5">
-        <span className="text-[10px] uppercase tracking-wide text-zinc-400">Розничная</span>
-        <span className="text-sm text-red-400 line-through">{formatPrice(price)} ₽</span>
-      </div>
-      <div className="flex items-center gap-1.5">
-        <span className="text-[10px] uppercase tracking-wide text-green-600 font-semibold">Ваша цена</span>
-        <span className="text-xl font-bold text-green-600">{formatPrice(discountedPrice)} ₽</span>
-        <span className="text-[10px] bg-green-100 text-green-700 px-1.5 py-0.5 rounded font-bold">-{discount}%</span>
-      </div>
-    </div>
-  );
+// Simple price display component
+const PriceDisplay = ({ price, formatPrice }) => {
+  return <span className="text-xl font-bold text-zinc-900">{formatPrice(price)} ₽</span>;
 };
 
 // ProductCard component for reuse
@@ -42,7 +24,7 @@ const ProductCard = ({
   product, 
   quantities, 
   updateQuantity, 
-  handleAddToCart, 
+  handleAddToCart,
   setSelectedProduct, 
   formatPrice, 
   getDeliveryText,
