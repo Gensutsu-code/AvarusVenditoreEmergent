@@ -159,8 +159,6 @@ async def create_admin_user(data: AdminUserCreate, user=Depends(get_current_user
         "address": data.address,
         "address_comment": data.address_comment,
         "role": data.role,
-        "customer_status": "retail",
-        "individual_discount": 0,
         "created_at": datetime.now(timezone.utc).isoformat()
     }
     await db.users.insert_one(new_user)
