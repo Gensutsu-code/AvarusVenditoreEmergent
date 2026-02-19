@@ -1414,63 +1414,6 @@ export default function AdminPage() {
                             </div>
                           </div>
                           
-                          {/* Discount Settings for User */}
-                          {u.role !== 'admin' && (
-                            <div className="bg-white p-4 rounded-lg border border-orange-200">
-                              <h4 className="font-bold text-sm text-orange-600 uppercase mb-3 flex items-center gap-2">
-                                <Percent className="w-4 h-4" /> Скидки и статус
-                              </h4>
-                              <div className="space-y-4">
-                                <div>
-                                  <Label className="text-xs text-zinc-500">Статус клиента</Label>
-                                  <select
-                                    value={u.customer_status || 'retail'}
-                                    onChange={(e) => handleSaveUserDiscount(u.id, e.target.value, u.individual_discount || 0)}
-                                    className="w-full mt-1 p-2 border border-zinc-200 rounded-lg text-sm"
-                                  >
-                                    <option value="retail">Розница</option>
-                                    <option value="wholesale">Опт</option>
-                                    <option value="partner">Партнёр</option>
-                                  </select>
-                                </div>
-                                <div>
-                                  <Label className="text-xs text-zinc-500">Скидка по статусу</Label>
-                                  <div className="mt-1 p-2 bg-zinc-50 rounded-lg text-sm font-bold text-orange-600">
-                                    {u.customer_status === 'partner' ? discountSettings.partner_discount : 
-                                     u.customer_status === 'wholesale' ? discountSettings.wholesale_discount : 
-                                     discountSettings.retail_discount}%
-                                  </div>
-                                </div>
-                                <div>
-                                  <Label className="text-xs text-zinc-500">Индивидуальная скидка (%)</Label>
-                                  <div className="flex items-center gap-2 mt-1">
-                                    <Input
-                                      type="number"
-                                      min="0"
-                                      max="100"
-                                      value={u.individual_discount || 0}
-                                      onChange={(e) => {
-                                        const newDiscount = parseFloat(e.target.value) || 0;
-                                        setUsers(prev => prev.map(user => user.id === u.id ? {...user, individual_discount: newDiscount} : user));
-                                      }}
-                                      onBlur={(e) => handleSaveUserDiscount(u.id, u.customer_status || 'retail', parseFloat(e.target.value) || 0)}
-                                      className="w-24"
-                                    />
-                                    <span className="text-zinc-500">%</span>
-                                  </div>
-                                </div>
-                                <div className="p-3 bg-green-50 rounded-lg">
-                                  <p className="text-xs text-zinc-500">Итоговая скидка:</p>
-                                  <p className="text-xl font-bold text-green-600">
-                                    {((u.customer_status === 'partner' ? discountSettings.partner_discount :
-                                       u.customer_status === 'wholesale' ? discountSettings.wholesale_discount : 
-                                       discountSettings.retail_discount) + (u.individual_discount || 0)).toFixed(1)}%
-                                  </p>
-                                </div>
-                              </div>
-                            </div>
-                          )}
-                          
                           {/* Order Statistics */}
                           <div className="bg-white p-4 rounded-lg border border-zinc-200">
                             <h4 className="font-bold text-sm text-zinc-500 uppercase mb-3 flex items-center gap-2">
