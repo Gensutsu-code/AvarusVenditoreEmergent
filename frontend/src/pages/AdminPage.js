@@ -919,7 +919,7 @@ export default function AdminPage() {
     telegram: { icon: Send, label: 'TG' },
     import: { icon: FileSpreadsheet, label: 'Импорт' },
     bonus: { icon: Gift, label: 'Бонусы', badge: bonusPrograms.reduce((sum, p) => sum + (p.pending_requests || 0), 0) },
-    discounts: { icon: Percent, label: 'Скидки' },
+    discounts: { icon: CreditCard, label: 'Оплата' },
     news: { icon: FileText, label: 'Новости' },
     partners: { icon: Image, label: 'Партнёры' }
   };
