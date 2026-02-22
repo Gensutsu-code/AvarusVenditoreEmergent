@@ -28,29 +28,6 @@ export default function AccountPage() {
   const [saving, setSaving] = useState(false);
   const [uploadingAvatar, setUploadingAvatar] = useState(false);
   const [showPasswords, setShowPasswords] = useState(false);
-  const [discountSettings, setDiscountSettings] = useState({ retail_discount: 0, wholesale_discount: 0, partner_discount: 0, wholesale_threshold: 50000, partner_threshold: 200000 });
-  const [myRequests, setMyRequests] = useState({ status_request: null, discount_request: null });
-  const [discountRequestForm, setDiscountRequestForm] = useState({ requested_discount: '', reason: '' });
-  const [orderStats, setOrderStats] = useState({ total_spent: 0 });
-
-  // Fetch discount settings and user requests
-  useEffect(() => {
-    const fetchData = async () => {
-      try {
-        const [settingsRes, requestsRes, statsRes] = await Promise.all([
-          axios.get(`${API}/discount-settings`),
-          axios.get(`${API}/my-requests`).catch(() => ({ data: { status_request: null, discount_request: null } })),
-          axios.get(`${API}/orders/stats`).catch(() => ({ data: { delivered_total: 0 } }))
-        ]);
-        setDiscountSettings(settingsRes.data);
-        setMyRequests(requestsRes.data);
-        setOrderStats({ total_spent: statsRes.data?.delivered_total || 0 });
-      } catch (err) {
-        console.error('Failed to fetch data');
-      }
-    };
-    fetchData();
-  }, []);
 
   useEffect(() => {
     if (authLoading) return;
