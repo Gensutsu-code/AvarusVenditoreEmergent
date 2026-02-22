@@ -9,14 +9,9 @@ import axios from 'axios';
 const API = `${process.env.REACT_APP_BACKEND_URL}/api`;
 
 export default function CartPage() {
-  const { cart, updateQuantity, removeFromCart, cartTotal } = useCart();
+  const { cart, updateQuantity, removeFromCart } = useCart();
   const { user } = useAuth();
   const navigate = useNavigate();
-  const [discountSettings, setDiscountSettings] = useState({ retail_discount: 0, wholesale_discount: 0, partner_discount: 0 });
-
-  useEffect(() => {
-    axios.get(`${API}/discount-settings`).then(res => setDiscountSettings(res.data)).catch(() => {});
-  }, []);
 
   const formatPrice = (price) => new Intl.NumberFormat('ru-RU').format(Math.round(price));
 
