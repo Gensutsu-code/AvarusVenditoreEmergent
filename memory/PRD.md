@@ -95,8 +95,21 @@ E-commerce platform for selling heavy vehicle parts with:
 https://checkout-terms.preview.emergentagent.com
 
 ## Pending/Future Tasks
-- Frontend refactoring: Split AdminPage.js into components
+- ~~Frontend refactoring: Split AdminPage.js into components~~ (DONE - reduced from 4917 to 3947 lines)
 - Payment gateway integrations (Stripe, etc.)
+
+## Completed Refactoring (February 22, 2025)
+Extracted 8 components from AdminPage.js:
+- `PromoTab.js` - Promo banner management
+- `TelegramTab.js` - Telegram notification settings
+- `ImportTab.js` - Product import/export
+- `StatsTab.js` - Analytics dashboard
+- `DiscountsTab.js` - Payment settings and crypto wallets
+- `TermsTab.js` - Terms of Service editor
+- `NotificationsTab.js` - Email notification settings
+- `PartnersTab.js` - Partners management
+
+Result: AdminPage.js reduced from ~4917 lines to ~3947 lines (~20% reduction)
 
 ## Notes
 - Resend API is in test mode - emails can only be sent to verified addresses
