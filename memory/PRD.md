@@ -13,31 +13,20 @@ E-commerce platform for selling heavy vehicle parts with:
 ## Architecture
 
 ### Backend (FastAPI + MongoDB)
-**Refactored Structure (February 2025):**
 ```
 /app/backend/
-├── server.py           # Main entry point (~70 lines)
-├── database.py         # MongoDB connection, auth helpers
+├── server.py           # Main entry point
+├── database.py         # MongoDB connection
 ├── models.py           # Pydantic models
-├── routes/
-│   ├── auth.py         # Authentication
-│   ├── products.py     # Products & categories
-│   ├── orders.py       # Cart, orders, favorites
-│   ├── admin.py        # Admin user/order management
-│   ├── settings.py     # Payment settings
-│   ├── news.py, chat.py, bonus.py, etc.
+├── routes/             # API routes (auth, products, orders, admin, etc.)
 ```
 
 ### Frontend (React)
 ```
 /app/frontend/src/
 ├── pages/
-│   ├── AdminPage.js    # Admin panel - tab "Оплата"
-│   ├── CheckoutPage.js # Checkout - only payment method discounts
-│   ├── AccountPage.js  # User profile - clean, no status/discount info
-│   ├── CatalogPage.js  # Single price display
-│   ├── CartPage.js     # Single price display
-│   ├── FavoritesPage.js # Single price display
+│   ├── CheckoutPage.js # Checkout with terms agreement
+│   ├── AdminPage.js    # Admin panel
 │   └── ...
 ```
 
@@ -45,54 +34,37 @@ E-commerce platform for selling heavy vehicle parts with:
 
 ### Session: February 11, 2025
 
-#### REMOVED Features:
-1. **Customer Statuses** - retail, wholesale, partner
-2. **Status-based Discounts** - discounts based on customer status
-3. **Individual Discounts** - per-user individual discounts
-4. **Double Prices** - all strikethrough/original price displays removed
-5. **Status upgrade requests** - removed from user profile
-6. **Personal discount requests** - removed from user profile
+#### Terms of Service Agreement (NEW)
+- Added checkbox for agreeing to terms on checkout page
+- Clickable link "правилами предоставления услуг" opens modal
+- Modal contains 8 sections of terms:
+  1. Общие положения
+  2. Оформление заказа
+  3. Цены и оплата
+  4. Доставка
+  5. Возврат и обмен
+  6. Гарантии
+  7. Конфиденциальность
+  8. Контактная информация
+- "Принять и согласиться" button automatically checks checkbox
+- Order button disabled until terms accepted
 
-#### KEPT Features:
-- ✅ Payment Method Discounts (cash, card, crypto)
-- ✅ Payment Method Toggle (enable/disable)
-- ✅ Crypto wallet settings
-
-#### Admin Panel Changes:
-- Tab renamed from "Скидки" to "Оплата"
-- Contains only: Payment method settings + Crypto wallets
-
-#### User Profile Changes:
-- Removed: Status card, discount card, status upgrade request, personal discount request
-- Kept: Avatar, name, email, password change
-
-#### Pricing Display:
-- All pages now show single price only
-- No strikethrough prices
-- No "Your price" vs "Retail price" comparisons
-
-## API Endpoints Summary
-
-### Public
-- `GET /api/products` - Product list (single price)
-- `GET /api/payment-settings` - Payment method settings
-
-### Auth Required
-- `POST /api/orders` - Create order (applies only payment discount)
-
-### Admin Required
-- `PUT /api/admin/payment-settings` - Update payment settings
+#### Earlier Changes:
+- Removed customer statuses (retail, wholesale, partner)
+- Removed individual discounts
+- Removed double prices
+- Renamed "Скидки" tab to "Оплата" in admin
+- Backend refactoring completed
 
 ## Test Credentials
 - **Admin:** admin@avarus.ru / admin123
 
-## Pricing Logic (Current)
-```
-subtotal = sum(item.price * item.quantity)
-finalTotal = subtotal * (1 - paymentDiscount / 100)
-```
-
-No status-based or individual discounts. Single price everywhere.
+## Data Test IDs
+- `terms-checkbox` - Terms agreement checkbox
+- `terms-link` - Link to open terms modal
+- `terms-modal` - Modal with terms content
+- `accept-terms-btn` - Accept button in modal
+- `place-order-btn` - Place order button
 
 ## Preview URL
 https://checkout-refactor-2.preview.emergentagent.com
