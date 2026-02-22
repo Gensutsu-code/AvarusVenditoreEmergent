@@ -15,6 +15,8 @@ from .partners import router as partners_router
 from .telegram import router as telegram_router
 from .payments import router as payments_router
 from .documents import router as documents_router
+from .terms import router as terms_router
+from .notifications import router as notifications_router
 
 # Create main API router
 api_router = APIRouter(prefix="/api")
@@ -33,5 +35,7 @@ api_router.include_router(partners_router)
 api_router.include_router(telegram_router)
 api_router.include_router(payments_router)
 api_router.include_router(documents_router)
+api_router.include_router(terms_router)
+api_router.include_router(notifications_router)
 
 __all__ = ["api_router"]
