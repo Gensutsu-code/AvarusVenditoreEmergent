@@ -190,6 +190,21 @@ export default function AdminPage() {
   const adminChatFileRef = useRef(null);
   const [adminChatUploading, setAdminChatUploading] = useState(false);
 
+  // Terms of Service state
+  const [termsSections, setTermsSections] = useState([]);
+  const [termsSaving, setTermsSaving] = useState(false);
+
+  // Email notifications state
+  const [notificationSettings, setNotificationSettings] = useState({
+    order_status_enabled: true,
+    promotions_enabled: true,
+    order_confirmation_enabled: true,
+    resend_configured: false
+  });
+  const [testEmail, setTestEmail] = useState('');
+  const [bulkEmailForm, setBulkEmailForm] = useState({ subject: '', html_content: '' });
+  const [sendingEmail, setSendingEmail] = useState(false);
+
   useEffect(() => {
     if (authLoading) return;
     if (!user) {
