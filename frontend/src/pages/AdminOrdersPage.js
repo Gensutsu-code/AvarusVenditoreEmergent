@@ -626,19 +626,6 @@ export default function AdminOrdersPage() {
                       {new Intl.NumberFormat('ru-RU').format(calculateOrderTotal(editingOrder.items || [], editingOrder.order_discount_percent || 0))} ₽
                     </p>
                   </div>
-                  {(editingOrder.order_discount_percent > 0 || editingOrder.items?.some(i => i.discount_percent > 0)) && (
-                    <div className="text-right">
-                      <p className="text-xs text-zinc-500 line-through">
-                        {new Intl.NumberFormat('ru-RU').format(editingOrder.items?.reduce((s, i) => s + i.price * i.quantity, 0) || 0)} ₽
-                      </p>
-                      <p className="text-sm text-green-600">
-                        Экономия: {new Intl.NumberFormat('ru-RU').format(
-                          (editingOrder.items?.reduce((s, i) => s + i.price * i.quantity, 0) || 0) - 
-                          calculateOrderTotal(editingOrder.items || [], editingOrder.order_discount_percent || 0)
-                        )} ₽
-                      </p>
-                    </div>
-                  )}
                 </div>
               </div>
 
