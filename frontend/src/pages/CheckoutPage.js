@@ -44,6 +44,8 @@ export default function CheckoutPage() {
   const [txHash, setTxHash] = useState('');
   const [cryptoStep, setCryptoStep] = useState(null); // null | 'pay' | 'submitted'
   const [form, setForm] = useState({ full_name: '', address: '', phone: '', comment: '' });
+  const [agreedToTerms, setAgreedToTerms] = useState(false);
+  const [showTermsModal, setShowTermsModal] = useState(false);
 
   // Check if payment method is enabled
   const isPaymentMethodEnabled = (method) => paymentSettings[`${method}_enabled`] !== false;
