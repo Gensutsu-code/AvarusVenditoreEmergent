@@ -4,7 +4,7 @@ import axios from 'axios';
 import { 
   Users, Package, ShoppingBag, TrendingUp, User,
   Plus, Pencil, Trash2, Save, Eye, FolderOpen, Megaphone, Upload, Image,
-  MessageCircle, Send, BarChart3, Download, FileSpreadsheet, Pin, Tag, X, Copy, Gift, Award, ChevronDown, Paperclip, Play, ZoomIn, ZoomOut, Settings, ChevronLeft, ChevronRight, Percent, CreditCard, FileText, Mail, Bell, RotateCcw
+  MessageCircle, Send, BarChart3, Download, FileSpreadsheet, Pin, Tag, X, Copy, Gift, Award, ChevronDown, Paperclip, Play, ZoomIn, ZoomOut, Settings, ChevronLeft, ChevronRight, CreditCard, FileText, Mail, Bell
 } from 'lucide-react';
 import { Button } from '../components/ui/button';
 import { Input } from '../components/ui/input';
@@ -15,6 +15,18 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from '../components/
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '../components/ui/tabs';
 import { useAuth } from '../context/AuthContext';
 import { toast } from 'sonner';
+
+// Import admin tab components
+import {
+  PromoTab,
+  TelegramTab,
+  ImportTab,
+  StatsTab,
+  DiscountsTab,
+  TermsTab,
+  NotificationsTab,
+  PartnersTab
+} from '../components/admin';
 
 const API = `${process.env.REACT_APP_BACKEND_URL}/api`;
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
