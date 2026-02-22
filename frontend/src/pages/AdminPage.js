@@ -877,7 +877,9 @@ export default function AdminPage() {
     bonus: { icon: Gift, label: 'Бонусы', badge: bonusPrograms.reduce((sum, p) => sum + (p.pending_requests || 0), 0) },
     discounts: { icon: CreditCard, label: 'Оплата' },
     news: { icon: FileText, label: 'Новости' },
-    partners: { icon: Image, label: 'Партнёры' }
+    partners: { icon: Image, label: 'Партнёры' },
+    terms: { icon: FileText, label: 'Правила' },
+    notifications: { icon: Mail, label: 'Рассылки' }
   };
 
   if (authLoading || loading) {
