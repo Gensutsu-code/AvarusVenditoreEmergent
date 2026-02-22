@@ -1,11 +1,12 @@
 import { useState, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import axios from 'axios';
-import { ArrowLeft, CheckCircle, Banknote, MessageSquare, CreditCard, Wallet, Copy, ExternalLink, Loader2, Clock } from 'lucide-react';
+import { ArrowLeft, CheckCircle, Banknote, MessageSquare, CreditCard, Wallet, Copy, ExternalLink, Loader2, Clock, FileText, X } from 'lucide-react';
 import { Button } from '../components/ui/button';
 import { Input } from '../components/ui/input';
 import { Label } from '../components/ui/label';
 import { Textarea } from '../components/ui/textarea';
+import { Dialog, DialogContent } from '../components/ui/dialog';
 import { useCart } from '../context/CartContext';
 import { useAuth } from '../context/AuthContext';
 import { toast } from 'sonner';
