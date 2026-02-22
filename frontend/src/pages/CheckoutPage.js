@@ -429,7 +429,10 @@ export default function CheckoutPage() {
               <div className="w-10 h-10 rounded-full bg-orange-100 flex items-center justify-center">
                 <FileText className="w-5 h-5 text-orange-600" />
               </div>
-              <DialogTitle className="text-xl font-bold text-zinc-900">Правила предоставления услуг</DialogTitle>
+              <div>
+                <DialogTitle className="text-xl font-bold text-zinc-900">Правила предоставления услуг</DialogTitle>
+                <DialogDescription className="sr-only">Ознакомьтесь с правилами предоставления услуг магазина</DialogDescription>
+              </div>
             </div>
           </div>
           
