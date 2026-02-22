@@ -1935,143 +1935,24 @@ export default function AdminPage() {
           </TabsContent>
 
           {/* Telegram Tab */}
-          <TabsContent value="telegram" className="p-6">
-            <div className="max-w-xl space-y-6">
-              <div>
-                <h2 className="text-lg font-semibold mb-2">Уведомления в Telegram</h2>
-                <p className="text-sm text-zinc-500 mb-4">
-                  Получайте уведомления о новых заказах в Telegram. Создайте бота через @BotFather и получите токен.
-                </p>
-              </div>
-
-              <div className="flex items-center gap-3">
-                <Switch
-                  checked={telegramSettings.enabled}
-                  onCheckedChange={(checked) => setTelegramSettings({ ...telegramSettings, enabled: checked })}
-                />
-                <Label>Включить уведомления</Label>
-              </div>
-
-              <div>
-                <Label className="text-xs font-bold uppercase text-zinc-500">Bot Token</Label>
-                <Input
-                  value={telegramSettings.bot_token}
-                  onChange={(e) => setTelegramSettings({ ...telegramSettings, bot_token: e.target.value })}
-                  placeholder="123456:ABC-DEF1234ghIkl-zyx57W2v1u123ew11"
-                  className="mt-1 font-mono text-sm"
-                />
-                <p className="text-xs text-zinc-400 mt-1">Получите токен у @BotFather в Telegram</p>
-              </div>
-
-              <div>
-                <Label className="text-xs font-bold uppercase text-zinc-500">Chat ID</Label>
-                <Input
-                  value={telegramSettings.chat_id}
-                  onChange={(e) => setTelegramSettings({ ...telegramSettings, chat_id: e.target.value })}
-                  placeholder="-1001234567890"
-                  className="mt-1 font-mono text-sm"
-                />
-                <p className="text-xs text-zinc-400 mt-1">ID чата или канала для уведомлений. Узнайте его через @userinfobot</p>
-              </div>
-
-              <div className="flex gap-3">
-                <Button onClick={handleSaveTelegram} className="bg-orange-500 hover:bg-orange-600">
-                  <Save className="w-4 h-4 mr-2" />
-                  Сохранить
-                </Button>
-                <Button 
-                  variant="outline" 
-                  onClick={handleTestTelegram}
-                  disabled={!telegramSettings.enabled || !telegramSettings.bot_token || !telegramSettings.chat_id}
-                >
-                  <Send className="w-4 h-4 mr-2" />
-                  Тест
-                </Button>
-              </div>
-            </div>
+          <TabsContent value="telegram">
+            <TelegramTab
+              telegramSettings={telegramSettings}
+              setTelegramSettings={setTelegramSettings}
+              handleSaveTelegram={handleSaveTelegram}
+              handleTestTelegram={handleTestTelegram}
+            />
           </TabsContent>
 
           {/* Import Tab */}
-          <TabsContent value="import" className="p-6">
-            <div className="max-w-2xl space-y-6">
-              <div>
-                <h2 className="text-lg font-semibold mb-2">Импорт/Экспорт товаров</h2>
-                <p className="text-sm text-zinc-500">
-                  Загружайте товары из CSV файла или экспортируйте текущий каталог.
-                </p>
-              </div>
-
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                {/* Import */}
-                <div className="border border-zinc-200 p-4">
-                  <h3 className="font-semibold mb-3 flex items-center gap-2">
-                    <Upload className="w-5 h-5" />
-                    Импорт товаров
-                  </h3>
-                  <p className="text-sm text-zinc-500 mb-4">
-                    CSV файл с разделителем ; (точка с запятой)
-                  </p>
-                  <input
-                    type="file"
-                    ref={importFileRef}
-                    onChange={handleImportProducts}
-                    accept=".csv"
-                    className="hidden"
-                  />
-                  <Button 
-                    onClick={() => importFileRef.current?.click()}
-                    disabled={uploading}
-                    className="w-full"
-                    variant="outline"
-                  >
-                    <Upload className="w-4 h-4 mr-2" />
-                    {uploading ? 'Загрузка...' : 'Выбрать CSV файл'}
-                  </Button>
-
-                  {importResult && (
-                    <div className="mt-4 p-3 bg-zinc-50 border border-zinc-200 text-sm">
-                      <p className="text-green-600">✓ Импортировано: {importResult.imported}</p>
-                      <p className="text-blue-600">↻ Обновлено: {importResult.updated}</p>
-                      {importResult.total_errors > 0 && (
-                        <>
-                          <p className="text-red-600 mt-2">✕ Ошибок: {importResult.total_errors}</p>
-                          <ul className="text-xs text-red-500 mt-1">
-                            {importResult.errors.slice(0, 5).map((err, i) => (
-                              <li key={i}>{err}</li>
-                            ))}
-                          </ul>
-                        </>
-                      )}
-                    </div>
-                  )}
-                </div>
-
-                {/* Export */}
-                <div className="border border-zinc-200 p-4">
-                  <h3 className="font-semibold mb-3 flex items-center gap-2">
-                    <Download className="w-5 h-5" />
-                    Экспорт товаров
-                  </h3>
-                  <p className="text-sm text-zinc-500 mb-4">
-                    Скачать все товары в формате CSV
-                  </p>
-                  <Button onClick={handleExportProducts} variant="outline" className="w-full">
-                    <Download className="w-4 h-4 mr-2" />
-                    Скачать CSV ({products.length} товаров)
-                  </Button>
-                </div>
-              </div>
-
-              {/* CSV format help */}
-              <div className="border border-zinc-200 p-4 bg-zinc-50">
-                <h3 className="font-semibold mb-2">Формат CSV файла</h3>
-                <p className="text-xs text-zinc-500 mb-2">Обязательные колонки: article, name. Разделитель: ; (точка с запятой)</p>
-                <div className="bg-white border border-zinc-200 p-2 font-mono text-xs overflow-x-auto">
-                  <p>article;name;price;stock;delivery_days;description;category_id;image_url</p>
-                  <p className="text-zinc-400">MAN-PG-001;Поршневая группа MAN;45000;10;3;Описание;id-категории;https://...</p>
-                </div>
-              </div>
-            </div>
+          <TabsContent value="import">
+            <ImportTab
+              products={products}
+              uploading={uploading}
+              importResult={importResult}
+              handleImportProducts={handleImportProducts}
+              handleExportProducts={handleExportProducts}
+            />
           </TabsContent>
 
           {/* Bonus Program Tab - Multiple Programs */}
