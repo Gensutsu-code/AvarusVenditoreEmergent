@@ -342,11 +342,41 @@ export default function CheckoutPage() {
               </div>
             </div>
 
-            <Button type="submit" disabled={loading}
-              className="w-full bg-orange-500 hover:bg-orange-600 text-white font-bold uppercase tracking-wide h-12" data-testid="place-order-btn">
+            {/* Terms agreement checkbox */}
+            <div className="flex items-start gap-3 p-4 bg-zinc-50 rounded-lg border border-zinc-200">
+              <input 
+                type="checkbox" 
+                id="terms-agreement"
+                checked={agreedToTerms}
+                onChange={(e) => setAgreedToTerms(e.target.checked)}
+                className="w-5 h-5 mt-0.5 rounded border-zinc-300 text-orange-500 focus:ring-orange-500 cursor-pointer"
+                data-testid="terms-checkbox"
+              />
+              <label htmlFor="terms-agreement" className="text-sm text-zinc-600 cursor-pointer">
+                Я ознакомился и согласен с{' '}
+                <button 
+                  type="button"
+                  onClick={() => setShowTermsModal(true)}
+                  className="text-orange-600 hover:text-orange-700 underline font-medium"
+                  data-testid="terms-link"
+                >
+                  правилами предоставления услуг
+                </button>
+              </label>
+            </div>
+
+            <Button type="submit" disabled={loading || !agreedToTerms}
+              className={`w-full font-bold uppercase tracking-wide h-12 ${
+                agreedToTerms 
+                  ? 'bg-orange-500 hover:bg-orange-600 text-white' 
+                  : 'bg-zinc-300 text-zinc-500 cursor-not-allowed'
+              }`} data-testid="place-order-btn">
               {loading ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : null}
               {loading ? 'Оформление...' : paymentMethod === 'card' ? 'Оплатить картой' : paymentMethod === 'crypto' ? 'Перейти к оплате' : 'Подтвердить заказ'}
             </Button>
+            {!agreedToTerms && (
+              <p className="text-xs text-zinc-500 text-center">Для оформления заказа необходимо согласиться с правилами</p>
+            )}
           </form>
 
           {/* Order summary */}
