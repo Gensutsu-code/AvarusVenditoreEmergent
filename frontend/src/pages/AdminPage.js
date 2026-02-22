@@ -869,6 +869,123 @@ export default function AdminPage() {
     localStorage.setItem('adminTabOrder', JSON.stringify(newOrder));
   };
 
+  // Handler functions for refactored components
+  
+  // Payment settings handlers
+  const handleSavePaymentSettings = async () => {
+    try {
+      await axios.put(`${API}/admin/payment-settings`, paymentSettings);
+      toast.success('Настройки оплаты сохранены');
+    } catch (err) { toast.error('Ошибка сохранения'); }
+  };
+
+  const handleSaveCryptoWallets = async () => {
+    try {
+      await axios.put(`${API}/admin/crypto-wallets`, cryptoWallets);
+      toast.success('Кошельки сохранены');
+    } catch (err) { toast.error('Ошибка'); }
+  };
+
+  // Terms handlers
+  const handleSaveTerms = async () => {
+    setTermsSaving(true);
+    try {
+      await axios.put(`${API}/admin/terms`, { sections: termsSections });
+      toast.success('Правила сохранены');
+    } catch (err) {
+      toast.error('Ошибка сохранения');
+    } finally {
+      setTermsSaving(false);
+    }
+  };
+
+  const handleResetTerms = async () => {
+    if (window.confirm('Сбросить правила к значениям по умолчанию?')) {
+      try {
+        await axios.post(`${API}/admin/terms/reset`);
+        const termsRes = await axios.get(`${API}/admin/terms`);
+        setTermsSections(termsRes.data.sections || []);
+        toast.success('Правила сброшены');
+      } catch (err) {
+        toast.error('Ошибка сброса');
+      }
+    }
+  };
+
+  // Notification handlers
+  const handleSaveNotificationSettings = async () => {
+    try {
+      await axios.put(`${API}/admin/notification-settings`, {
+        order_status_enabled: notificationSettings.order_status_enabled,
+        promotions_enabled: notificationSettings.promotions_enabled,
+        order_confirmation_enabled: notificationSettings.order_confirmation_enabled
+      });
+      toast.success('Настройки сохранены');
+    } catch (err) {
+      toast.error('Ошибка сохранения');
+    }
+  };
+
+  const handleSendTestEmail = async () => {
+    if (!testEmail) {
+      toast.error('Введите email');
+      return;
+    }
+    setSendingEmail(true);
+    try {
+      await axios.post(`${API}/admin/email/test`, { email: testEmail });
+      toast.success(`Тестовое письмо отправлено на ${testEmail}`);
+      setTestEmail('');
+    } catch (err) {
+      toast.error(err.response?.data?.detail || 'Ошибка отправки');
+    } finally {
+      setSendingEmail(false);
+    }
+  };
+
+  const handleSendBulkEmail = async () => {
+    if (!bulkEmailForm.subject || !bulkEmailForm.html_content) {
+      toast.error('Заполните тему и содержание письма');
+      return;
+    }
+    if (!window.confirm(`Отправить рассылку всем пользователям (${users.length})?`)) return;
+    
+    setSendingEmail(true);
+    try {
+      const res = await axios.post(`${API}/admin/email/send-bulk`, bulkEmailForm);
+      toast.success(res.data.message);
+      setBulkEmailForm({ subject: '', html_content: '' });
+    } catch (err) {
+      toast.error(err.response?.data?.detail || 'Ошибка рассылки');
+    } finally {
+      setSendingEmail(false);
+    }
+  };
+
+  // Partners handlers
+  const handleAddDefaultPartners = async () => {
+    try {
+      await axios.post(`${API}/admin/partners/seed`);
+      toast.success('Партнёры по умолчанию добавлены');
+      const partnersRes = await axios.get(`${API}/partners`);
+      setPartners(partnersRes.data || []);
+    } catch (err) {
+      toast.error('Ошибка');
+    }
+  };
+
+  const handleDeletePartner = async (partnerId) => {
+    if (window.confirm('Удалить партнёра?')) {
+      try {
+        await axios.delete(`${API}/admin/partners/${partnerId}`);
+        setPartners(prev => prev.filter(p => p.id !== partnerId));
+        toast.success('Партнёр удалён');
+      } catch (err) {
+        toast.error('Ошибка удаления');
+      }
+    }
+  };
+
   const resetTabOrder = () => {
     setTabOrder(defaultTabOrder);
     localStorage.removeItem('adminTabOrder');
