@@ -297,6 +297,10 @@ export default function AdminPage() {
       setNewsList(newsRes.data || []);
       // Fetch crypto wallets separately
       try { const cw = await axios.get(`${API}/admin/crypto-wallets`); setCryptoWallets(cw.data); } catch(e) {}
+      // Fetch terms of service
+      try { const termsRes = await axios.get(`${API}/admin/terms`); setTermsSections(termsRes.data.sections || []); } catch(e) {}
+      // Fetch notification settings
+      try { const notifRes = await axios.get(`${API}/admin/notification-settings`); setNotificationSettings(notifRes.data); } catch(e) {}
     } catch (err) {
       console.error('Failed to fetch admin data', err);
       toast.error('Ошибка загрузки данных');
