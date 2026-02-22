@@ -335,7 +335,11 @@ async def send_test_email(data: TestEmailRequest, user=Depends(get_current_user)
     if result.get("status") == "success":
         return {"message": f"Тестовое письмо отправлено на {data.email}"}
     else:
-        raise HTTPException(status_code=500, detail=f"Ошибка отправки: {result.get('error')}")
+        error_msg = result.get('error', 'Неизвестная ошибка')
+        # Handle common Resend errors
+        if "only send testing emails" in error_msg.lower():
+            raise HTTPException(status_code=400, detail="Resend в тестовом режиме. Для отправки на другие адреса подтвердите домен на resend.com/domains")
+        raise HTTPException(status_code=500, detail=f"Ошибка отправки: {error_msg}")
 
 
 @router.post("/admin/email/send-bulk")
