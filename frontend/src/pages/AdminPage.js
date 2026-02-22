@@ -3707,6 +3707,331 @@ export default function AdminPage() {
               )}
             </div>
           </TabsContent>
+
+          {/* Terms of Service Tab */}
+          <TabsContent value="terms" className="p-6">
+            <div className="space-y-6">
+              <div className="flex justify-between items-center">
+                <div>
+                  <h2 className="text-lg font-semibold">Правила предоставления услуг</h2>
+                  <p className="text-sm text-zinc-500">Редактируйте текст правил, который отображается при оформлении заказа</p>
+                </div>
+                <div className="flex gap-2">
+                  <Button
+                    variant="outline"
+                    onClick={async () => {
+                      if (window.confirm('Сбросить правила к значениям по умолчанию?')) {
+                        try {
+                          await axios.post(`${API}/admin/terms/reset`);
+                          const termsRes = await axios.get(`${API}/admin/terms`);
+                          setTermsSections(termsRes.data.sections || []);
+                          toast.success('Правила сброшены');
+                        } catch (err) {
+                          toast.error('Ошибка сброса');
+                        }
+                      }
+                    }}
+                  >
+                    <RotateCcw className="w-4 h-4 mr-2" />
+                    Сбросить
+                  </Button>
+                  <Button
+                    onClick={async () => {
+                      setTermsSaving(true);
+                      try {
+                        await axios.put(`${API}/admin/terms`, { sections: termsSections });
+                        toast.success('Правила сохранены');
+                      } catch (err) {
+                        toast.error('Ошибка сохранения');
+                      } finally {
+                        setTermsSaving(false);
+                      }
+                    }}
+                    disabled={termsSaving}
+                    className="bg-orange-500 hover:bg-orange-600"
+                    data-testid="save-terms-btn"
+                  >
+                    <Save className="w-4 h-4 mr-2" />
+                    {termsSaving ? 'Сохранение...' : 'Сохранить'}
+                  </Button>
+                </div>
+              </div>
+
+              <div className="space-y-4">
+                {termsSections.map((section, index) => (
+                  <div key={section.id} className="border border-zinc-200 bg-white p-4 rounded-lg">
+                    <div className="flex items-center gap-4 mb-3">
+                      <div className="flex-1">
+                        <Label className="text-xs font-bold uppercase text-zinc-500">Заголовок раздела</Label>
+                        <Input
+                          value={section.title}
+                          onChange={(e) => {
+                            const newSections = [...termsSections];
+                            newSections[index] = { ...newSections[index], title: e.target.value };
+                            setTermsSections(newSections);
+                          }}
+                          className="mt-1"
+                          data-testid={`terms-title-${index}`}
+                        />
+                      </div>
+                      <div className="w-20">
+                        <Label className="text-xs font-bold uppercase text-zinc-500">Порядок</Label>
+                        <Input
+                          type="number"
+                          value={section.order}
+                          onChange={(e) => {
+                            const newSections = [...termsSections];
+                            newSections[index] = { ...newSections[index], order: parseInt(e.target.value) || 0 };
+                            setTermsSections(newSections);
+                          }}
+                          className="mt-1"
+                        />
+                      </div>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => {
+                          if (window.confirm('Удалить раздел?')) {
+                            setTermsSections(termsSections.filter((_, i) => i !== index));
+                          }
+                        }}
+                        className="text-red-500 hover:text-red-600 mt-5"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </Button>
+                    </div>
+                    <div>
+                      <Label className="text-xs font-bold uppercase text-zinc-500">Содержание</Label>
+                      <Textarea
+                        value={section.content}
+                        onChange={(e) => {
+                          const newSections = [...termsSections];
+                          newSections[index] = { ...newSections[index], content: e.target.value };
+                          setTermsSections(newSections);
+                        }}
+                        className="mt-1 min-h-[150px] font-mono text-sm"
+                        data-testid={`terms-content-${index}`}
+                      />
+                    </div>
+                  </div>
+                ))}
+              </div>
+
+              <Button
+                variant="outline"
+                onClick={() => {
+                  const newId = `section_${Date.now()}`;
+                  setTermsSections([
+                    ...termsSections,
+                    {
+                      id: newId,
+                      title: `${termsSections.length + 1}. Новый раздел`,
+                      content: '',
+                      order: termsSections.length + 1
+                    }
+                  ]);
+                }}
+                className="w-full"
+              >
+                <Plus className="w-4 h-4 mr-2" />
+                Добавить раздел
+              </Button>
+            </div>
+          </TabsContent>
+
+          {/* Email Notifications Tab */}
+          <TabsContent value="notifications" className="p-6">
+            <div className="space-y-6">
+              <div>
+                <h2 className="text-lg font-semibold">Email-уведомления</h2>
+                <p className="text-sm text-zinc-500">Настройте автоматические email-уведомления для клиентов</p>
+              </div>
+
+              {/* Resend Status */}
+              <div className={`p-4 rounded-lg border ${notificationSettings.resend_configured ? 'bg-green-50 border-green-200' : 'bg-yellow-50 border-yellow-200'}`}>
+                <div className="flex items-center gap-3">
+                  <div className={`w-3 h-3 rounded-full ${notificationSettings.resend_configured ? 'bg-green-500' : 'bg-yellow-500'}`}></div>
+                  <div>
+                    <p className={`font-medium ${notificationSettings.resend_configured ? 'text-green-800' : 'text-yellow-800'}`}>
+                      {notificationSettings.resend_configured ? 'Resend API настроен' : 'Resend API не настроен'}
+                    </p>
+                    <p className="text-sm text-zinc-500">
+                      {notificationSettings.resend_configured 
+                        ? 'Email-уведомления будут отправляться автоматически' 
+                        : 'Добавьте RESEND_API_KEY в настройки сервера для активации'}
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              {/* Notification Settings */}
+              <div className="bg-white border border-zinc-200 rounded-lg p-6 space-y-4">
+                <h3 className="font-semibold text-zinc-900 mb-4 flex items-center gap-2">
+                  <Bell className="w-5 h-5 text-orange-500" />
+                  Типы уведомлений
+                </h3>
+
+                <div className="space-y-4">
+                  <div className="flex items-center justify-between p-3 bg-zinc-50 rounded-lg">
+                    <div>
+                      <p className="font-medium text-zinc-900">Подтверждение заказа</p>
+                      <p className="text-sm text-zinc-500">Отправляется после оформления заказа</p>
+                    </div>
+                    <Switch
+                      checked={notificationSettings.order_confirmation_enabled}
+                      onCheckedChange={(checked) => setNotificationSettings({ ...notificationSettings, order_confirmation_enabled: checked })}
+                      data-testid="notif-order-confirmation"
+                    />
+                  </div>
+
+                  <div className="flex items-center justify-between p-3 bg-zinc-50 rounded-lg">
+                    <div>
+                      <p className="font-medium text-zinc-900">Статус заказа</p>
+                      <p className="text-sm text-zinc-500">Отправляется при изменении статуса</p>
+                    </div>
+                    <Switch
+                      checked={notificationSettings.order_status_enabled}
+                      onCheckedChange={(checked) => setNotificationSettings({ ...notificationSettings, order_status_enabled: checked })}
+                      data-testid="notif-order-status"
+                    />
+                  </div>
+
+                  <div className="flex items-center justify-between p-3 bg-zinc-50 rounded-lg">
+                    <div>
+                      <p className="font-medium text-zinc-900">Промо-рассылки</p>
+                      <p className="text-sm text-zinc-500">Разрешить отправку промо-писем</p>
+                    </div>
+                    <Switch
+                      checked={notificationSettings.promotions_enabled}
+                      onCheckedChange={(checked) => setNotificationSettings({ ...notificationSettings, promotions_enabled: checked })}
+                      data-testid="notif-promotions"
+                    />
+                  </div>
+                </div>
+
+                <Button
+                  onClick={async () => {
+                    try {
+                      await axios.put(`${API}/admin/notification-settings`, {
+                        order_status_enabled: notificationSettings.order_status_enabled,
+                        promotions_enabled: notificationSettings.promotions_enabled,
+                        order_confirmation_enabled: notificationSettings.order_confirmation_enabled
+                      });
+                      toast.success('Настройки сохранены');
+                    } catch (err) {
+                      toast.error('Ошибка сохранения');
+                    }
+                  }}
+                  className="w-full bg-orange-500 hover:bg-orange-600 mt-4"
+                  data-testid="save-notification-settings"
+                >
+                  <Save className="w-4 h-4 mr-2" />
+                  Сохранить настройки
+                </Button>
+              </div>
+
+              {/* Test Email */}
+              <div className="bg-white border border-zinc-200 rounded-lg p-6">
+                <h3 className="font-semibold text-zinc-900 mb-4 flex items-center gap-2">
+                  <Mail className="w-5 h-5 text-blue-500" />
+                  Тестовое письмо
+                </h3>
+                <div className="flex gap-3">
+                  <Input
+                    type="email"
+                    value={testEmail}
+                    onChange={(e) => setTestEmail(e.target.value)}
+                    placeholder="email@example.com"
+                    className="flex-1"
+                    data-testid="test-email-input"
+                  />
+                  <Button
+                    onClick={async () => {
+                      if (!testEmail) {
+                        toast.error('Введите email');
+                        return;
+                      }
+                      setSendingEmail(true);
+                      try {
+                        await axios.post(`${API}/admin/email/test`, { email: testEmail });
+                        toast.success(`Тестовое письмо отправлено на ${testEmail}`);
+                        setTestEmail('');
+                      } catch (err) {
+                        toast.error(err.response?.data?.detail || 'Ошибка отправки');
+                      } finally {
+                        setSendingEmail(false);
+                      }
+                    }}
+                    disabled={sendingEmail || !notificationSettings.resend_configured}
+                    className="bg-blue-500 hover:bg-blue-600"
+                    data-testid="send-test-email-btn"
+                  >
+                    {sendingEmail ? 'Отправка...' : 'Отправить тест'}
+                  </Button>
+                </div>
+              </div>
+
+              {/* Bulk Email */}
+              <div className="bg-white border border-zinc-200 rounded-lg p-6">
+                <h3 className="font-semibold text-zinc-900 mb-4 flex items-center gap-2">
+                  <Send className="w-5 h-5 text-purple-500" />
+                  Массовая рассылка
+                </h3>
+                <div className="space-y-4">
+                  <div>
+                    <Label className="text-xs font-bold uppercase text-zinc-500">Тема письма</Label>
+                    <Input
+                      value={bulkEmailForm.subject}
+                      onChange={(e) => setBulkEmailForm({ ...bulkEmailForm, subject: e.target.value })}
+                      placeholder="Специальное предложение от AVOPT.STORE!"
+                      className="mt-1"
+                      data-testid="bulk-email-subject"
+                    />
+                  </div>
+                  <div>
+                    <Label className="text-xs font-bold uppercase text-zinc-500">Содержание письма (HTML)</Label>
+                    <Textarea
+                      value={bulkEmailForm.html_content}
+                      onChange={(e) => setBulkEmailForm({ ...bulkEmailForm, html_content: e.target.value })}
+                      placeholder="<p>Уважаемые клиенты!</p><p>Рады сообщить вам о...</p>"
+                      className="mt-1 min-h-[150px] font-mono text-sm"
+                      data-testid="bulk-email-content"
+                    />
+                    <p className="text-xs text-zinc-400 mt-1">Поддерживается HTML-разметка. Письмо будет оформлено в фирменном стиле.</p>
+                  </div>
+                  <Button
+                    onClick={async () => {
+                      if (!bulkEmailForm.subject || !bulkEmailForm.html_content) {
+                        toast.error('Заполните тему и содержание письма');
+                        return;
+                      }
+                      if (!window.confirm(`Отправить рассылку всем пользователям (${users.length})?`)) return;
+                      
+                      setSendingEmail(true);
+                      try {
+                        const res = await axios.post(`${API}/admin/email/send-bulk`, bulkEmailForm);
+                        toast.success(res.data.message);
+                        setBulkEmailForm({ subject: '', html_content: '' });
+                      } catch (err) {
+                        toast.error(err.response?.data?.detail || 'Ошибка рассылки');
+                      } finally {
+                        setSendingEmail(false);
+                      }
+                    }}
+                    disabled={sendingEmail || !notificationSettings.resend_configured || !notificationSettings.promotions_enabled}
+                    className="w-full bg-purple-500 hover:bg-purple-600"
+                    data-testid="send-bulk-email-btn"
+                  >
+                    <Send className="w-4 h-4 mr-2" />
+                    {sendingEmail ? 'Отправка...' : `Отправить всем (${users.length} получателей)`}
+                  </Button>
+                  {!notificationSettings.promotions_enabled && (
+                    <p className="text-sm text-yellow-600 text-center">Промо-рассылки отключены в настройках</p>
+                  )}
+                </div>
+              </div>
+            </div>
+          </TabsContent>
         </Tabs>
       </div>
 
