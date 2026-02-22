@@ -67,4 +67,4 @@ E-commerce platform for selling heavy vehicle parts with:
 - `place-order-btn` - Place order button
 
 ## Preview URL
-https://checkout-refactor-2.preview.emergentagent.com
+https://checkout-terms.preview.emergentagent.com
