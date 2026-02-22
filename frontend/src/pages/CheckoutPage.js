@@ -46,6 +46,7 @@ export default function CheckoutPage() {
   const [form, setForm] = useState({ full_name: '', address: '', phone: '', comment: '' });
   const [agreedToTerms, setAgreedToTerms] = useState(false);
   const [showTermsModal, setShowTermsModal] = useState(false);
+  const [termsSections, setTermsSections] = useState([]);
 
   // Check if payment method is enabled
   const isPaymentMethodEnabled = (method) => paymentSettings[`${method}_enabled`] !== false;
@@ -64,6 +65,8 @@ export default function CheckoutPage() {
       }
     }).catch(() => {});
     axios.get(`${API}/crypto-wallets`).then(res => setCryptoWallets(res.data)).catch(() => {});
+    // Fetch terms of service
+    axios.get(`${API}/terms`).then(res => setTermsSections(res.data.sections || [])).catch(() => {});
   }, [user]);
 
   const fetchLastShipping = async () => {
