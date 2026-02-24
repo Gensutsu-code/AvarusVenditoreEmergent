@@ -532,17 +532,17 @@ export default function CatalogPage() {
         {/* Categories - show when no search/category selected */}
         {!searchQuery && !categoryId && categories.length > 0 && (
           <div className="mb-8">
-            <h2 className="text-lg font-semibold text-zinc-900 mb-4">Категории</h2>
+            <h2 className="text-lg font-semibold text-zinc-100 mb-4">Категории</h2>
             <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
               {categories.map((category) => (
                 <button
                   key={category.id}
                   onClick={() => selectCategory(category.id)}
-                  className="group border border-zinc-200 bg-white hover:border-zinc-400 transition-colors p-4 text-left"
+                  className="group glass-card hover:border-orange-500/30 transition-all duration-300 p-4 text-left"
                   data-testid={`category-${category.id}`}
                 >
                   {category.image_url && (
-                    <div className="aspect-square bg-zinc-100 mb-3 overflow-hidden">
+                    <div className="aspect-square bg-zinc-800/50 mb-3 overflow-hidden rounded-xl">
                       <img 
                         src={category.image_url} 
                         alt={category.name}
@@ -550,7 +550,7 @@ export default function CatalogPage() {
                       />
                     </div>
                   )}
-                  <h3 className="font-medium text-zinc-900 group-hover:text-orange-500 transition-colors flex items-center justify-between">
+                  <h3 className="font-medium text-zinc-100 group-hover:text-orange-400 transition-colors flex items-center justify-between">
                     {category.name}
                     <ArrowRight className="w-4 h-4 opacity-0 group-hover:opacity-100 transition-opacity" />
                   </h3>
@@ -563,19 +563,20 @@ export default function CatalogPage() {
         {/* Content */}
         {!searchQuery && !categoryId ? (
           <div className="text-center py-16" data-testid="search-prompt">
-            <Search className="w-16 h-16 mx-auto text-zinc-300 mb-4" />
-            <p className="text-zinc-500 text-lg">
+            <Search className="w-16 h-16 mx-auto text-zinc-700 mb-4" />
+            <p className="text-zinc-400 text-lg">
               Введите название или артикул, либо выберите категорию
             </p>
           </div>
         ) : loading ? (
-          <div className="text-center py-12 text-zinc-500" data-testid="loading">
+          <div className="text-center py-12 text-zinc-400" data-testid="loading">
+            <div className="w-8 h-8 border-2 border-orange-500/30 border-t-orange-500 rounded-full animate-spin mx-auto mb-4"></div>
             Загрузка...
           </div>
         ) : products.length === 0 && alternatives.length === 0 ? (
           <div className="text-center py-12" data-testid="no-products">
-            <p className="text-zinc-500 mb-4">Товары не найдены</p>
-            <Button onClick={clearFilters} variant="outline">
+            <p className="text-zinc-400 mb-4">Товары не найдены</p>
+            <Button onClick={clearFilters} variant="outline" className="border-zinc-700 text-zinc-300 hover:bg-zinc-800 rounded-xl">
               Сбросить фильтры
             </Button>
           </div>
