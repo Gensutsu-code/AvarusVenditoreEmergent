@@ -31,14 +31,14 @@ const ProductCard = ({
   isAlternative = false
 }) => (
   <div 
-    className={`border bg-white hover:border-zinc-300 transition-colors ${isAlternative ? 'border-orange-200' : 'border-zinc-200'}`}
+    className={`glass-card rounded-2xl overflow-hidden transition-all duration-300 hover:scale-[1.01] hover:border-orange-500/30 ${isAlternative ? 'border-orange-500/20' : ''}`}
     data-testid={`product-card-${product.id}`}
   >
     <div className="flex items-center gap-4 p-4">
       {/* Image - clickable */}
       <button
         onClick={() => setSelectedProduct(product)}
-        className="w-24 h-24 flex-shrink-0 bg-zinc-100 overflow-hidden hover:opacity-80 transition-opacity"
+        className="w-24 h-24 flex-shrink-0 bg-zinc-800/50 rounded-xl overflow-hidden hover:opacity-80 transition-opacity"
         data-testid={`product-image-${product.id}`}
       >
         {product.image_url ? (
