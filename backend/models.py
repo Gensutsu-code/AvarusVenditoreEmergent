@@ -154,6 +154,7 @@ class OrderCreate(BaseModel):
     phone: str
     comment: Optional[str] = None
     payment_method: Optional[str] = "cash"
+    pay_with_balance: Optional[bool] = False
 
 class OrderItemUpdate(BaseModel):
     product_id: str
