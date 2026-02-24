@@ -1,11 +1,12 @@
 import { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
-import { User, Mail, Lock, Phone, MapPin, Save, Eye, EyeOff, Camera, Trash2, MessageSquare, Percent, Tag, ArrowUpCircle, FileText } from 'lucide-react';
+import { User, Mail, Lock, Phone, MapPin, Save, Eye, EyeOff, Camera, Trash2, MessageSquare, FileText, Wallet, CreditCard, Plus, History } from 'lucide-react';
 import { Button } from '../components/ui/button';
 import { Input } from '../components/ui/input';
 import { Label } from '../components/ui/label';
 import { Textarea } from '../components/ui/textarea';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '../components/ui/dialog';
 import { useAuth } from '../context/AuthContext';
 import { toast } from 'sonner';
 
@@ -28,6 +29,18 @@ export default function AccountPage() {
   const [saving, setSaving] = useState(false);
   const [uploadingAvatar, setUploadingAvatar] = useState(false);
   const [showPasswords, setShowPasswords] = useState(false);
+  
+  // Balance states
+  const [balance, setBalance] = useState(0);
+  const [balanceHistory, setBalanceHistory] = useState([]);
+  const [showTopupModal, setShowTopupModal] = useState(false);
+  const [showHistoryModal, setShowHistoryModal] = useState(false);
+  const [topupAmount, setTopupAmount] = useState('');
+  const [topupMethod, setTopupMethod] = useState('card');
+  const [cryptoChain, setCryptoChain] = useState('eth');
+  const [cryptoWallets, setCryptoWallets] = useState({});
+  const [prepaymentSettings, setPrepaymentSettings] = useState({});
+  const [topupLoading, setTopupLoading] = useState(false);
 
   useEffect(() => {
     if (authLoading) return;
@@ -48,7 +61,75 @@ export default function AccountPage() {
       address: user.address || '',
       address_comment: user.address_comment || ''
     }));
+    
+    // Fetch balance and settings
+    fetchBalance();
+    fetchPrepaymentSettings();
+    fetchCryptoWallets();
   }, [user, authLoading, navigate]);
+
+  const fetchBalance = async () => {
+    try {
+      const res = await axios.get(`${API}/user/balance`);
+      setBalance(res.data.balance || 0);
+    } catch (err) {}
+  };
+
+  const fetchBalanceHistory = async () => {
+    try {
+      const res = await axios.get(`${API}/user/balance/history`);
+      setBalanceHistory(res.data.transactions || []);
+    } catch (err) {}
+  };
+
+  const fetchPrepaymentSettings = async () => {
+    try {
+      const res = await axios.get(`${API}/prepayment-settings`);
+      setPrepaymentSettings(res.data);
+    } catch (err) {}
+  };
+
+  const fetchCryptoWallets = async () => {
+    try {
+      const res = await axios.get(`${API}/crypto-wallets`);
+      setCryptoWallets(res.data);
+    } catch (err) {}
+  };
+
+  const handleTopup = async () => {
+    const amount = parseFloat(topupAmount);
+    if (!amount || amount < (prepaymentSettings.min_topup_amount || 500)) {
+      toast.error(`Минимальная сумма: ${prepaymentSettings.min_topup_amount || 500}₽`);
+      return;
+    }
+    if (amount > (prepaymentSettings.max_topup_amount || 100000)) {
+      toast.error(`Максимальная сумма: ${prepaymentSettings.max_topup_amount || 100000}₽`);
+      return;
+    }
+    
+    setTopupLoading(true);
+    try {
+      const res = await axios.post(`${API}/user/balance/topup`, {
+        amount,
+        method: topupMethod,
+        crypto_chain: topupMethod === 'crypto' ? cryptoChain : null
+      });
+      
+      if (res.data.status === 'completed') {
+        toast.success(res.data.message);
+        setBalance(res.data.new_balance);
+        setShowTopupModal(false);
+        setTopupAmount('');
+      } else if (res.data.status === 'pending') {
+        // Crypto payment - show wallet address
+        toast.info(`Переведите средства на адрес и подтвердите транзакцию`);
+      }
+    } catch (err) {
+      toast.error(err.response?.data?.detail || 'Ошибка пополнения');
+    } finally {
+      setTopupLoading(false);
+    }
+  };
 
   const handleSaveProfile = async () => {
     setSaving(true);
