@@ -454,7 +454,7 @@ export default function CheckoutPage() {
         open={showCryptoModal}
         onClose={() => setShowCryptoModal(false)}
         orderId={orderId}
-        amountRub={finalTotal}
+        amountRub={cryptoPaymentAmount}
         onSuccess={handleCryptoSuccess}
       />
     </>
