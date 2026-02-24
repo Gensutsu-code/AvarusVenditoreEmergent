@@ -162,12 +162,46 @@ async def create_order(data: OrderCreate, user=Depends(get_current_user)):
     if payment_discount > 0:
         total = subtotal * (1 - payment_discount / 100)
     
+    total = round(total, 2)
+    
+    # Check if paying with balance
+    pay_with_balance = getattr(data, 'pay_with_balance', False) if hasattr(data, 'pay_with_balance') else False
+    paid_from_balance = 0
+    
+    if pay_with_balance:
+        # Get user balance
+        user_data = await db.users.find_one({"id": user["id"]}, {"_id": 0, "balance": 1})
+        user_balance = user_data.get("balance", 0) if user_data else 0
+        
+        if user_balance < total:
+            raise HTTPException(status_code=400, detail=f"Недостаточно средств на балансе. Баланс: {user_balance}₽, Сумма: {total}₽")
+        
+        # Deduct from balance
+        await db.users.update_one(
+            {"id": user["id"]},
+            {"$inc": {"balance": -total}}
+        )
+        paid_from_balance = total
+        
+        # Create balance transaction
+        balance_transaction = {
+            "id": str(uuid.uuid4()),
+            "user_id": user["id"],
+            "type": "payment",
+            "amount": -total,
+            "method": "balance",
+            "status": "completed",
+            "created_at": datetime.now(timezone.utc).isoformat(),
+            "description": f"Оплата заказа"
+        }
+        await db.balance_transactions.insert_one(balance_transaction)
+    
     order_id = str(uuid.uuid4())
     order = {
         "id": order_id,
         "user_id": user["id"],
         "items": items,
-        "total": round(total, 2),
+        "total": total,
         "subtotal": round(subtotal, 2),
         "payment_discount": payment_discount,
         "status": "new",
@@ -175,12 +209,21 @@ async def create_order(data: OrderCreate, user=Depends(get_current_user)):
         "address": data.address,
         "phone": data.phone,
         "comment": data.comment,
-        "payment_method": payment_method,
+        "payment_method": "balance" if pay_with_balance else payment_method,
+        "paid_from_balance": paid_from_balance,
         "created_at": datetime.now(timezone.utc).isoformat()
     }
+    
+    # Link balance transaction to order
+    if pay_with_balance:
+        await db.balance_transactions.update_one(
+            {"id": balance_transaction["id"]},
+            {"$set": {"order_id": order_id}}
+        )
+    
     await db.orders.insert_one(order)
     
-    await create_admin_activity(user["id"], user.get("name", ""), "order", f"Новый заказ #{order_id[:8]} на {round(discounted_total, 2)} ₽")
+    await create_admin_activity(user["id"], user.get("name", ""), "order", f"Новый заказ #{order_id[:8]} на {total} ₽")
     await create_notification(user["id"], "order", "Заказ оформлен", f"Ваш заказ #{order_id[:8]} принят в обработку", "/orders")
     
     for cart_item in cart["items"]:
