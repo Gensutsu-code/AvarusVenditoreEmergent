@@ -2,20 +2,74 @@ import React from 'react';
 import { Button } from '../ui/button';
 import { Input } from '../ui/input';
 import { Label } from '../ui/label';
-import { Save, CreditCard, Settings } from 'lucide-react';
+import { Save, CreditCard, Settings, Wallet } from 'lucide-react';
 
 export default function DiscountsTab({
   paymentSettings,
   setPaymentSettings,
   cryptoWallets,
   setCryptoWallets,
+  prepaymentSettings,
+  setPrepaymentSettings,
   handleSavePaymentSettings,
-  handleSaveCryptoWallets
+  handleSaveCryptoWallets,
+  handleSavePrepaymentSettings
 }) {
   return (
     <div className="p-6">
       <div className="space-y-6">
         <h2 className="text-lg font-semibold">Настройки оплаты</h2>
+        
+        {/* Prepayment Settings */}
+        <div className="bg-white border border-zinc-200 rounded-xl p-6 space-y-4">
+          <h3 className="font-semibold text-zinc-800 flex items-center gap-2">
+            <Wallet className="w-5 h-5 text-purple-500" />
+            Предоплата (Баланс)
+          </h3>
+          <p className="text-sm text-zinc-500">Настройка системы пополнения баланса и оплаты с баланса</p>
+          
+          <div className="flex items-center gap-4 p-3 bg-purple-50 rounded-lg">
+            <label className="relative inline-flex items-center cursor-pointer">
+              <input type="checkbox" className="sr-only peer" 
+                checked={prepaymentSettings?.prepayment_enabled !== false}
+                onChange={(e) => setPrepaymentSettings({...prepaymentSettings, prepayment_enabled: e.target.checked})} />
+              <div className="w-11 h-6 bg-zinc-300 peer-checked:bg-purple-500 rounded-full peer peer-checked:after:translate-x-full after:content-[''] after:absolute after:top-0.5 after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all"></div>
+            </label>
+            <div>
+              <p className="font-medium text-zinc-900">Система предоплаты включена</p>
+              <p className="text-xs text-zinc-500">Пользователи могут пополнять баланс и оплачивать с него</p>
+            </div>
+          </div>
+          
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <Label className="text-xs font-bold uppercase text-zinc-500">Мин. сумма пополнения (₽)</Label>
+              <Input 
+                type="number" 
+                min="0" 
+                value={prepaymentSettings?.min_topup_amount || 500}
+                onChange={(e) => setPrepaymentSettings({...prepaymentSettings, min_topup_amount: parseFloat(e.target.value) || 0})}
+                className="mt-1"
+                data-testid="min-topup-amount"
+              />
+            </div>
+            <div>
+              <Label className="text-xs font-bold uppercase text-zinc-500">Макс. сумма пополнения (₽)</Label>
+              <Input 
+                type="number" 
+                min="0" 
+                value={prepaymentSettings?.max_topup_amount || 100000}
+                onChange={(e) => setPrepaymentSettings({...prepaymentSettings, max_topup_amount: parseFloat(e.target.value) || 0})}
+                className="mt-1"
+                data-testid="max-topup-amount"
+              />
+            </div>
+          </div>
+          
+          <Button onClick={handleSavePrepaymentSettings} className="bg-purple-500 hover:bg-purple-600" data-testid="save-prepayment-settings-btn">
+            <Save className="w-4 h-4 mr-2" /> Сохранить настройки предоплаты
+          </Button>
+        </div>
         
         {/* Payment methods and discounts */}
         <div className="bg-white border border-zinc-200 rounded-xl p-6 space-y-4">
