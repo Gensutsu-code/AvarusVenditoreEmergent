@@ -38,6 +38,7 @@ export default function CheckoutPage() {
   const [txHash, setTxHash] = useState('');
   const [cryptoStep, setCryptoStep] = useState(null); // null | 'modal' | 'submitted'
   const [showCryptoModal, setShowCryptoModal] = useState(false);
+  const [cryptoPaymentAmount, setCryptoPaymentAmount] = useState(0);
   const [form, setForm] = useState({ full_name: '', address: '', phone: '', comment: '' });
   const [agreedToTerms, setAgreedToTerms] = useState(false);
   const [showTermsModal, setShowTermsModal] = useState(false);
