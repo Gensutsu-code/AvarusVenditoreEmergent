@@ -71,13 +71,13 @@ export default function DiscountsTab({
           </Button>
         </div>
         
-        {/* Payment methods and discounts */}
+        {/* Payment methods and adjustments */}
         <div className="bg-white border border-zinc-200 rounded-xl p-6 space-y-4">
           <h3 className="font-semibold text-zinc-800 flex items-center gap-2">
             <CreditCard className="w-5 h-5 text-green-500" />
-            Способы оплаты и скидки
+            Способы оплаты и корректировки цены
           </h3>
-          <p className="text-sm text-zinc-500">Включение/отключение способов оплаты и скидки за выбор способа оплаты</p>
+          <p className="text-sm text-zinc-500">Включение/отключение способов оплаты. Отрицательное значение = скидка, положительное = наценка</p>
           
           <div className="grid grid-cols-3 gap-4 mt-4">
             <div className={`p-4 rounded-lg border ${paymentSettings.cash_enabled !== false ? 'bg-zinc-50 border-zinc-200' : 'bg-red-50 border-red-200'}`}>
@@ -91,12 +91,16 @@ export default function DiscountsTab({
                 </label>
               </div>
               <div className="flex items-center gap-2">
-                <span className="text-xs text-zinc-500">Скидка:</span>
-                <Input type="number" min="0" max="100" value={paymentSettings.cash_discount || 0}
-                  onChange={(e) => setPaymentSettings({...paymentSettings, cash_discount: parseFloat(e.target.value) || 0})}
+                <span className="text-xs text-zinc-500">Цена:</span>
+                <Input type="number" min="-50" max="50" value={paymentSettings.cash_adjustment ?? -15}
+                  onChange={(e) => setPaymentSettings({...paymentSettings, cash_adjustment: parseFloat(e.target.value) || 0})}
                   className="w-20 h-8 text-sm" disabled={paymentSettings.cash_enabled === false} />
                 <span className="text-zinc-500 text-sm">%</span>
               </div>
+              <p className={`text-xs mt-1 ${(paymentSettings.cash_adjustment ?? -15) < 0 ? 'text-green-600' : (paymentSettings.cash_adjustment ?? -15) > 0 ? 'text-red-600' : 'text-zinc-400'}`}>
+                {(paymentSettings.cash_adjustment ?? -15) < 0 ? `Скидка ${Math.abs(paymentSettings.cash_adjustment ?? -15)}%` : 
+                 (paymentSettings.cash_adjustment ?? -15) > 0 ? `Наценка +${paymentSettings.cash_adjustment}%` : 'Без изменений'}
+              </p>
               {paymentSettings.cash_enabled === false && (
                 <p className="text-xs text-red-500 mt-2">Временно недоступно</p>
               )}
@@ -113,12 +117,16 @@ export default function DiscountsTab({
                 </label>
               </div>
               <div className="flex items-center gap-2">
-                <span className="text-xs text-zinc-500">Скидка:</span>
-                <Input type="number" min="0" max="100" value={paymentSettings.card_discount || 0}
-                  onChange={(e) => setPaymentSettings({...paymentSettings, card_discount: parseFloat(e.target.value) || 0})}
+                <span className="text-xs text-zinc-500">Цена:</span>
+                <Input type="number" min="-50" max="50" value={paymentSettings.card_adjustment ?? 0}
+                  onChange={(e) => setPaymentSettings({...paymentSettings, card_adjustment: parseFloat(e.target.value) || 0})}
                   className="w-20 h-8 text-sm" disabled={paymentSettings.card_enabled === false} />
                 <span className="text-zinc-500 text-sm">%</span>
               </div>
+              <p className={`text-xs mt-1 ${(paymentSettings.card_adjustment ?? 0) < 0 ? 'text-green-600' : (paymentSettings.card_adjustment ?? 0) > 0 ? 'text-red-600' : 'text-zinc-400'}`}>
+                {(paymentSettings.card_adjustment ?? 0) < 0 ? `Скидка ${Math.abs(paymentSettings.card_adjustment ?? 0)}%` : 
+                 (paymentSettings.card_adjustment ?? 0) > 0 ? `Наценка +${paymentSettings.card_adjustment}%` : 'Без изменений'}
+              </p>
               {paymentSettings.card_enabled === false && (
                 <p className="text-xs text-red-500 mt-2">Временно недоступно</p>
               )}
@@ -135,13 +143,44 @@ export default function DiscountsTab({
                 </label>
               </div>
               <div className="flex items-center gap-2">
-                <span className="text-xs text-zinc-500">Скидка:</span>
-                <Input type="number" min="0" max="100" value={paymentSettings.crypto_discount || 0}
-                  onChange={(e) => setPaymentSettings({...paymentSettings, crypto_discount: parseFloat(e.target.value) || 0})}
+                <span className="text-xs text-zinc-500">Цена:</span>
+                <Input type="number" min="-50" max="50" value={paymentSettings.crypto_adjustment ?? -20}
+                  onChange={(e) => setPaymentSettings({...paymentSettings, crypto_adjustment: parseFloat(e.target.value) || 0})}
                   className="w-20 h-8 text-sm" disabled={paymentSettings.crypto_enabled === false} />
                 <span className="text-zinc-500 text-sm">%</span>
               </div>
+              <p className={`text-xs mt-1 ${(paymentSettings.crypto_adjustment ?? -20) < 0 ? 'text-green-600' : (paymentSettings.crypto_adjustment ?? -20) > 0 ? 'text-red-600' : 'text-zinc-400'}`}>
+                {(paymentSettings.crypto_adjustment ?? -20) < 0 ? `Скидка ${Math.abs(paymentSettings.crypto_adjustment ?? -20)}%` : 
+                 (paymentSettings.crypto_adjustment ?? -20) > 0 ? `Наценка +${paymentSettings.crypto_adjustment}%` : 'Без изменений'}
+              </p>
               {paymentSettings.crypto_enabled === false && (
+                <p className="text-xs text-red-500 mt-2">Временно недоступно</p>
+              )}
+            </div>
+
+            {/* Balance payment */}
+            <div className={`p-4 rounded-lg border ${paymentSettings.balance_enabled !== false ? 'bg-purple-50 border-purple-100' : 'bg-red-50 border-red-200'}`}>
+              <div className="flex items-center justify-between mb-3">
+                <Label className="text-xs font-bold uppercase text-purple-600">Баланс</Label>
+                <label className="relative inline-flex items-center cursor-pointer">
+                  <input type="checkbox" className="sr-only peer" 
+                    checked={paymentSettings.balance_enabled !== false}
+                    onChange={(e) => setPaymentSettings({...paymentSettings, balance_enabled: e.target.checked})} />
+                  <div className="w-9 h-5 bg-zinc-300 peer-checked:bg-green-500 rounded-full peer peer-checked:after:translate-x-full after:content-[''] after:absolute after:top-0.5 after:left-[2px] after:bg-white after:rounded-full after:h-4 after:w-4 after:transition-all"></div>
+                </label>
+              </div>
+              <div className="flex items-center gap-2">
+                <span className="text-xs text-zinc-500">Цена:</span>
+                <Input type="number" min="-50" max="50" value={paymentSettings.balance_adjustment ?? 0}
+                  onChange={(e) => setPaymentSettings({...paymentSettings, balance_adjustment: parseFloat(e.target.value) || 0})}
+                  className="w-20 h-8 text-sm" disabled={paymentSettings.balance_enabled === false} />
+                <span className="text-zinc-500 text-sm">%</span>
+              </div>
+              <p className={`text-xs mt-1 ${(paymentSettings.balance_adjustment ?? 0) < 0 ? 'text-green-600' : (paymentSettings.balance_adjustment ?? 0) > 0 ? 'text-red-600' : 'text-zinc-400'}`}>
+                {(paymentSettings.balance_adjustment ?? 0) < 0 ? `Скидка ${Math.abs(paymentSettings.balance_adjustment ?? 0)}%` : 
+                 (paymentSettings.balance_adjustment ?? 0) > 0 ? `Наценка +${paymentSettings.balance_adjustment}%` : 'Без изменений'}
+              </p>
+              {paymentSettings.balance_enabled === false && (
                 <p className="text-xs text-red-500 mt-2">Временно недоступно</p>
               )}
             </div>
