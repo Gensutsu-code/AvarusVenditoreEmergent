@@ -140,7 +140,8 @@ export default function CheckoutPage() {
         }
         setSuccess(true);
       } else if (paymentMethod === 'crypto') {
-        // Open crypto payment modal
+        // Save amount before cart is cleared, then open crypto payment modal
+        setCryptoPaymentAmount(finalTotal);
         setShowCryptoModal(true);
       } else {
         setSuccess(true);
