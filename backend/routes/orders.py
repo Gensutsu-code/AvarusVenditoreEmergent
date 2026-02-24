@@ -193,7 +193,7 @@ async def create_order(data: OrderCreate, user=Depends(get_current_user)):
             "method": "balance",
             "status": "completed",
             "created_at": datetime.now(timezone.utc).isoformat(),
-            "description": f"Оплата заказа"
+            "description": "Оплата заказа"
         }
         await db.balance_transactions.insert_one(balance_transaction)
     
