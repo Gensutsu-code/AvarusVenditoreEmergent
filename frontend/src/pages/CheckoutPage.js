@@ -30,13 +30,13 @@ export default function CheckoutPage() {
   const [orderId, setOrderId] = useState(null);
   const [paymentMethod, setPaymentMethod] = useState('cash');
   const [paymentSettings, setPaymentSettings] = useState({ 
-    card_discount: 0, crypto_discount: 0, cash_discount: 0,
-    card_enabled: true, crypto_enabled: true, cash_enabled: true
+    card_adjustment: 0, crypto_adjustment: -20, cash_adjustment: -15, balance_adjustment: 0,
+    card_enabled: true, crypto_enabled: true, cash_enabled: true, balance_enabled: true
   });
   const [cryptoWallets, setCryptoWallets] = useState({});
   const [selectedChain, setSelectedChain] = useState('bsc');
   const [txHash, setTxHash] = useState('');
-  const [cryptoStep, setCryptoStep] = useState(null); // null | 'modal' | 'submitted'
+  const [cryptoStep, setCryptoStep] = useState(null);
   const [showCryptoModal, setShowCryptoModal] = useState(false);
   const [cryptoPaymentAmount, setCryptoPaymentAmount] = useState(0);
   const [form, setForm] = useState({ full_name: '', address: '', phone: '', comment: '' });
