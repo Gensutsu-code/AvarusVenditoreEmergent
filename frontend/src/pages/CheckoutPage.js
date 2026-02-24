@@ -18,7 +18,7 @@ const SITE_URL = process.env.REACT_APP_BACKEND_URL;
 const PAYMENT_METHODS = [
   { id: 'cash', label: 'Наличные', desc: 'Оплата при получении', icon: Banknote, color: 'green' },
   { id: 'card', label: 'Банковская карта', desc: 'Онлайн оплата картой (ЮKassa)', icon: CreditCard, color: 'blue' },
-  { id: 'crypto', label: 'Криптовалюта', desc: 'Оплата через MetaMask/кошелёк', icon: Wallet, color: 'amber' },
+  { id: 'crypto', label: 'Криптовалюта', desc: 'USDT/USDC через MetaMask', icon: Wallet, color: 'amber' },
 ];
 
 const CHAINS = [
