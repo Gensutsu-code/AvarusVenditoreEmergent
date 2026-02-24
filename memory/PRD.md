@@ -19,10 +19,11 @@ E-commerce platform for selling heavy vehicle parts with:
 ├── database.py         # MongoDB connection
 ├── models.py           # Pydantic models
 ├── routes/             # API routes
-│   ├── balance.py      # Balance/prepayment system
-│   ├── terms.py        # Terms of Service CRUD
-│   ├── notifications.py # Email notifications with Resend
-│   ├── orders.py       # Orders with balance payment support
+│   ├── crypto_payments.py  # NEW: MetaMask crypto payment system
+│   ├── balance.py          # Balance/prepayment system
+│   ├── terms.py            # Terms of Service CRUD
+│   ├── notifications.py    # Email notifications with Resend
+│   ├── orders.py           # Orders with balance payment support
 │   └── ...
 ```
 
@@ -30,124 +31,121 @@ E-commerce platform for selling heavy vehicle parts with:
 ```
 /app/frontend/src/
 ├── pages/
-│   ├── AccountPage.js  # User profile with balance card
-│   ├── CheckoutPage.js # Checkout with balance payment option
-│   ├── AdminPage.js    # Admin panel
+│   ├── AccountPage.js      # User profile with balance card
+│   ├── CheckoutPage.js     # Checkout with crypto payment modal
+│   ├── AdminPage.js        # Admin panel
 │   └── ...
-├── components/admin/   # Extracted admin tab components
-│   ├── PromoTab.js
-│   ├── TelegramTab.js
-│   ├── TermsTab.js
-│   ├── NotificationsTab.js
-│   └── ...
+├── components/
+│   ├── CryptoPaymentModal.js  # NEW: MetaMask crypto payment UI
+│   └── admin/
+│       ├── CryptoSettingsTab.js  # NEW: Admin crypto settings
+│       └── ...
 ```
 
 ## What's Been Implemented
 
 ### Session: February 24, 2026
 
-#### Prepayment/Balance System (NEW - COMPLETED)
-Full mock prepayment system allowing users to manage account balance:
+#### Crypto Payment System with MetaMask (NEW - COMPLETED)
+Full crypto payment system with direct wallet connection:
+
+**Supported Networks:**
+- BNB Smart Chain (BSC)
+- Base
+- Polygon
+
+**Supported Tokens:**
+- USDT
+- USDC
 
 **Backend APIs:**
-- `GET /api/user/balance` - Get user's current balance
-- `POST /api/user/balance/topup` - Top up balance (card = instant, crypto = pending)
-- `GET /api/user/balance/history` - Get transaction history
-- `POST /api/user/balance/confirm-crypto` - Confirm crypto topup with tx_hash
-- `GET /api/prepayment-settings` - Public prepayment settings
-- `GET/PUT /api/admin/prepayment-settings` - Admin settings management
-- `GET /api/admin/balance-transactions` - Admin view all transactions
+- `GET /api/crypto/chains` - Get supported chains and tokens
+- `GET /api/crypto/price?amount_rub=X` - Convert RUB to USD (no markup)
+- `POST /api/crypto/payment/create` - Create payment request
+- `POST /api/crypto/payment/verify` - Verify transaction on blockchain
+- `GET /api/crypto/payment/{id}` - Get payment status
+- `GET/PUT /api/admin/crypto/settings` - Admin settings (receiving address, enable/disable)
+- `GET /api/admin/crypto/payments` - Admin view all crypto payments
 
 **Frontend Features:**
-- Balance card on `/account` page showing current balance
-- "Пополнить" (Top up) button with modal
-- Quick amount buttons (1000, 3000, 5000, 10000₽)
-- Card and Crypto payment method selection
-- Crypto network selection (ETH, BSC, Base, TRC20)
-- Balance history modal showing all transactions
-- "Оплата с баланса" (Pay from balance) option on checkout
-- Balance deduction on order with full transaction logging
+- CryptoPaymentModal component with:
+  - Network selection (BSC, Base, Polygon)
+  - Token selection (USDT, USDC)
+  - Real-time RUB to USD conversion via CoinGecko API
+  - MetaMask wallet connection
+  - Automatic network switching
+  - Transaction submission and verification
+- Admin CryptoSettingsTab with:
+  - Enable/disable crypto payments
+  - Configure receiving wallet address
+  - View recent crypto payments
 
-**Testing Status:** PASSED (100% backend, 100% frontend)
+**Technical Details:**
+- Uses ethers.js for wallet interaction
+- ERC20 token transfers directly to merchant wallet
+- Automatic blockchain verification using Web3.py
+- Real-time exchange rates from CoinGecko (no markup)
 
-### Session: February 22, 2025
+**Testing Status:** PASSED (100% backend - 17/17, 100% frontend)
 
-#### Editable Terms of Service
-- Admin panel "Правила" tab for editing terms sections
-- CRUD API for terms: GET /api/terms, PUT /api/admin/terms
-- Reset to default functionality
-- Checkout page modal fetches terms dynamically
+#### Prepayment/Balance System (COMPLETED)
+- Balance card on `/account` page
+- Top-up functionality (card instant, crypto pending)
+- Balance history with transaction log
+- "Pay from balance" option on checkout
 
-#### Email Notifications System
-- Resend integration for sending transactional emails
-- Admin panel "Рассылки" tab with notification toggles
-- Test email functionality
-- Bulk email/promotional emails form
+### Previous Sessions
 
-#### AdminPage.js Refactoring
-Extracted 8 components from AdminPage.js:
-- `PromoTab.js` - Promo banner management
-- `TelegramTab.js` - Telegram notification settings
-- `StatsTab.js` - Analytics dashboard
-- `DiscountsTab.js` - Payment settings and crypto wallets
-- `TermsTab.js` - Terms of Service editor
-- `NotificationsTab.js` - Email notification settings
-- `PartnersTab.js` - Partners management
-- `BonusTab.js` - Bonus programs
+#### Editable Terms of Service (DONE)
+- Admin panel "Правила" tab for editing terms
+- Dynamic ToS loading on checkout
 
-### Session: February 11, 2025
-- Terms of Service agreement checkbox on checkout
-- Removed customer statuses and individual discounts
-- Backend refactoring completed
+#### Email Notifications System (DONE)
+- Resend integration for transactional emails
+- Admin panel toggle controls
+
+#### AdminPage.js Refactoring (DONE)
+- Extracted 8+ components to `/app/frontend/src/components/admin/`
 
 ## Test Credentials
-- **Admin:** admin@example.com / admin123
+- **Admin:** admin@avarus.ru / admin123
 - **User:** test@example.com / password123
 
 ## Data Test IDs
 
-### Balance/Prepayment System
-- `account-page` - Account page container
-- `balance-amount` - Balance display
-- `topup-btn` - Open topup modal button
-- `balance-history-btn` - Open history modal button
-- `topup-modal` - Topup modal container
-- `topup-amount-input` - Topup amount input
-- `topup-card-method` - Card payment option
-- `topup-crypto-method` - Crypto payment option
-- `confirm-topup-btn` - Confirm topup button
-- `history-modal` - History modal container
-- `payment-method-balance` - Balance payment option on checkout
+### Crypto Payment System
+- `crypto-payment-modal` - Modal container
+- `chain-bsc`, `chain-base`, `chain-polygon` - Chain selection buttons
+- `token-usdt`, `token-usdc` - Token selection buttons
+- `proceed-to-payment-btn` - Continue to wallet connect
+- `connect-wallet-btn` - MetaMask connect button
+- `execute-payment-btn` - Execute payment button
+- `payment-success-close-btn` - Close success modal
 
-### Checkout/Terms
-- `terms-checkbox` - Terms agreement checkbox
-- `terms-link` - Link to open terms modal
-- `terms-modal` - Modal with terms content
-- `accept-terms-btn` - Accept button in modal
-- `place-order-btn` - Place order button
-- `checkout-success` - Success page container
-
-### Admin Panel
-- `save-terms-btn` - Save terms button
-- `notif-order-confirmation` - Order confirmation toggle
-- `notif-order-status` - Order status toggle
-- `notif-promotions` - Promotions toggle
-- `test-email-input` - Test email input
-- `send-test-email-btn` - Send test email button
+### Admin Crypto Settings
+- `crypto-settings-tab` - Tab container
+- `crypto-enabled-switch` - Enable/disable toggle
+- `receiving-address-input` - Wallet address input
+- `save-crypto-settings-btn` - Save button
 
 ## Preview URL
 https://balance-checkout.preview.emergentagent.com
 
+## Configured Receiving Wallet
+**Address:** 0x742d35Cc6634C0532925a3b844Bc454e4438f44e
+
 ## Pending/Future Tasks
 
 ### P1 - Upcoming
-- **Extract ChatTab from AdminPage.js** - The ChatTab content is still inline within AdminPage.js. Should be extracted to `/app/frontend/src/components/admin/ChatTab.js`
+- **Extract ChatTab from AdminPage.js** - Move chat logic to separate component
 
 ### P2 - Future
-- **Real Payment Gateway Integration** - Integrate Stripe or other payment systems to replace the mock prepayment system
-- **Additional email templates** - More customizable email templates for different notification types
+- **Real Payment Gateway Integration** - Integrate Stripe for fiat payments
+- **Transaction confirmation emails** - Send email when crypto payment verified
+- **Multi-language support** - Add English language option
 
 ## Notes
-- **Prepayment is MOCKED:** Card payments instantly credit balance, no real payment processing
-- **Resend API is in sandbox mode:** Emails can only be sent to verified addresses
-- **To enable full email:** Verify domain at resend.com/domains
+- **Crypto payments:** Direct token transfers (USDT/USDC) to merchant wallet
+- **Exchange rate:** Real-time via CoinGecko API, no markup
+- **Blockchain verification:** Automatic using Web3.py
+- **MetaMask:** Required for crypto payments
