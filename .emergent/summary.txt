@@ -1,34 +1,45 @@
 <analysis>**original_problem_statement:**
-The user's initial request was to fix bugs, add features, and refactor the codebase. This evolved through several stages:
-1.  Remove a complex discount and customer status system.
-2.  Add a mandatory Terms of Service checkbox on the checkout page.
-3.  Implement editable Terms of Service and an email notification system (using Resend) managed from the admin panel.
-4.  Refactor the monolithic  into smaller, reusable components.
-5.  Merge the Products and Categories tabs in the admin panel into a single Catalog tab.
-6.  (Latest Request) Implement a prepayment/balance system for customers. This should be a mock implementation with settings managed in the admin panel, allowing users to top up their balance and use it to pay for orders.
+The user initially requested bug fixes and feature additions to an e-commerce platform. The project evolved to implement a mock prepayment/balance system for customers. After completing that, the user requested a full-featured cryptocurrency payment system using MetaMask. Following that, the user provided a large set of new requirements:
+
+1.  **Functional Changes:**
+    *   Unpaid orders (for payment methods requiring external confirmation, like crypto) should be canceled and items returned to the cart if the user abandons the payment.
+    *   Reinstate a configurable percentage-based markup for crypto payments, editable in the admin panel.
+    *   Allow payment methods to have either a positive surcharge or a negative discount (e.g., +10% for card, -10% for cash), configurable in the admin panel.
+    *   Fix a bug where the notification counter only decreases after clicking read all, not when reading a single notification.
+
+2.  **Redesign & Restructuring:**
+    *   Perform a full-site redesign (user-facing pages and admin panel) to a glassmorphism aesthetic with more animations and a modern feel.
+    *   Restructure the admin panel by merging and separating tabs for better organization:
+        *   Merge Payment + Crypto → Payments.
+        *   Merge Analytics + Clients → CRM.
+        *   Merge Promo + news + newsletters.
+        *   Merge TG + import + partners + rules → Settings.
+        *   Move Orders and Chats to their own dedicated pages, removing them from the tab layout.
 
 **User's preferred language**: Russian
 
 **what currently exists?**
-The application is a stable full-stack e-commerce platform. The following features have been fully implemented and tested: editable Terms of Service, a Resend-based email notification system, and a merged Catalog tab in the admin panel. The  component has been significantly refactored, with most of its tabs extracted into separate components, reducing its size and complexity. The implementation of a new mock prepayment system has begun: the backend APIs are created, and the frontend UI for admin settings, the user's account page, and the checkout page have been added.
+The application is a full-stack e-commerce platform. The previously requested mock prepayment system and a new cryptocurrency payment system (with a MetaMask modal flow) are fully implemented and have passed tests. All functional changes requested by the user (order cancellation, payment method adjustments, crypto markup, notification counter fix) have been implemented on the backend and integrated into the frontend logic.
+
+A major site-wide redesign to a glassmorphism theme is currently in progress. The core theme files (, ) have been set up. Several key user-facing pages have already been restyled: , , , , and . The rest of the site, including , , and the entire admin panel, remains in the old style.
 
 **Last working item**:
--   **Last item agent was working:** Implementing the user-facing part of the prepayment system. The agent added the UI for displaying the user's balance and a Top-up button on the . It then visually verified that this new UI section renders correctly for a regular user. The full end-to-end functionality (topping up, seeing the balance update, using the balance for a purchase) has not been implemented or tested yet.
+-   **Last item agent was working:** Continuing the site-wide glassmorphism redesign. The agent had just finished redesigning the  and was about to start on the , having viewed the file to assess its structure.
 -   **Status:** IN PROGRESS
 -   **Agent Testing Done:** N
 -   **Which testing method agent to use?** both
 -   **User Testing Done:** N
 
 **All Pending/In progress Issue list**:
-There are no outstanding bugs or issues. All work is focused on new feature development.
+There are no known bugs. All pending work is related to completing the in-progress redesign and restructuring tasks.
 
 **In progress Task List**:
--   **Task 1: Complete Prepayment System Implementation (P0)**
-    -   **Where to resume:** The basic UI is in place. The next step is to implement the functionality behind the Top up and History buttons on  and fully test the end-to-end flow.
-        -   Implement the top-up modal logic in  to call the  endpoint.
-        -   Implement the history modal to fetch and display transactions from .
-        -   Verify that placing an order with the Pay from balance checkbox correctly deducts the amount from the user's balance.
-    -   **What will be achieved with this?** A complete, testable mock prepayment feature as requested by the user.
+-   **Task 1: Complete Glassmorphism Redesign (P0)**
+    -   **Where to resume:** Start by redesigning  to match the new glassmorphism style.
+    -   **What will be achieved with this?** A visually consistent user experience across the entire application. The following pages/areas are known to still require redesign:
+        -   
+        -   
+        -   The entire admin section, starting with  and all its child tab components (, , etc.).
     -   **Status:** IN PROGRESS
     -   **Should Test frontend/backend/both after fix?** both
     -   **Blocked on something:** No
@@ -36,17 +47,25 @@ There are no outstanding bugs or issues. All work is focused on new feature deve
 **Upcoming and Future Tasks**
 
 **Upcoming Tasks:**
--   **Task 1: Complete  Refactoring (P1)**
-    -   The  content is still inline within  because it was deemed too complex to extract during the initial refactoring pass. This task involves creating  and moving all related logic and JSX into it.
+-   **Task 1: Restructure Admin Panel (P1)**
+    -   As per the user's request, reorganize the tabs in . This involves:
+        -   Merging component logic for Payment and Crypto into a new Payments tab.
+        -   Performing similar merges for CRM, Marketing (e.g., promo/news/newsletters), and Settings groups.
+        -   Extracting the Orders and Chat functionalities from the tabbed interface into their own dedicated, full-screen pages.
+-   **Task 2: Complete  Refactoring (P2)**
+    -   The  content is still inline within . This should be extracted into its own component, , as part of the admin panel overhaul.
 
 **Future Tasks:**
--   **Task 2: Real Payment Gateway Integration (P2)**
-    -   Integrate actual payment systems (e.g., Stripe) to replace the mock prepayment system, allowing for real financial transactions.
+-   **Task 3: Real Payment Gateway Integration (P2)**
+    -   Integrate actual payment systems (e.g., Stripe) to replace the mock prepayment and crypto systems, allowing for real financial transactions.
 
 **Completed work in this session**
--   **Editable ToS & Email Notifications (DONE):** Implemented backend APIs and frontend admin UI to manage Terms of Service content and Resend email notification settings. The checkout page now dynamically loads the ToS content. Tested successfully with the testing agent.
--   ** Refactoring (DONE):** Extracted most tabs (, , , , , , , ) from the monolithic  into individual components in . This reduced the file's line count by approximately 1000 lines.
--   **Admin Tabs Merged (DONE):** Combined the Products and Categories tabs into a single Catalog tab for a more streamlined admin experience.
+-   **Mock Prepayment System (DONE):** Fully implemented and tested the user balance system, including top-up, history, and payment at checkout.
+-   **Cryptocurrency Payment System (DONE):** Implemented a full flow for crypto payments: admin settings for wallet address, live rate conversion, and a frontend modal for connecting with MetaMask.
+-   **Order Cancellation (DONE):** Added a backend endpoint and frontend logic to cancel an order and return items to the cart if the payment process is abandoned.
+-   **Payment Method Adjustments (DONE):** Refactored the payment method settings to support both positive surcharges and negative discounts, configurable in the admin panel.
+-   **Notification Counter Fix (DONE):** Fixed the frontend logic to correctly decrement the notification count when a single notification is read.
+-   **Glassmorphism Redesign (IN PROGRESS):** Initiated a site-wide redesign. Set up the theme and  for animations. Redesigned the , , , , and .
 
 **Earlier issues found/mentioned but not fixed**
 None.
@@ -59,78 +78,72 @@ None.
 
 **Key Technical Concepts**
 -   **Backend:** FastAPI, Python, PostgreSQL.
--   **Frontend:** React, JavaScript, Material-UI (MUI).
--   **Integrations:** Resend for sending emails.
+-   **Frontend:** React, JavaScript, Material-UI (MUI), TailwindCSS.
+-   **Animations:** .
+-   **Crypto:**  library for frontend-backend interaction (though full Web3 integration on the frontend for MetaMask is in ).
 
 **key DB schema**
--   : Now includes a  field (float).
--   : Logic updated to handle payment from balance.
--   : New model/table to store settings like min/max top-up amounts and wallet addresses.
--   : New model/table to store editable ToS content.
--   : New model/table to store toggles for email notifications.
+-   : The  field was replaced with  (Float) to allow both surcharges and discounts.
+-   : New model/table to store  (String) and  (Float).
 
 **changes in tech stack**
--   None.
+-   Added  for frontend animations.
+-   Added  for backend crypto-related utilities.
 
 **All files of reference**
--   : New file for all prepayment backend logic.
--   : New file for ToS logic.
--   : New file for email notification logic.
--   : Modified to handle balance payments.
--   : Partially refactored; logic for prepayment settings added.
--   : Modified to house the prepayment settings UI.
--   : Modified to add the user-facing balance card and top-up modals.
--   : Modified to add the Pay from balance option.
+-   **New Files:** , , , .
+-   **Heavily Modified:** , , , , , , , , , .
 
 **Areas that need refactoring**:
--   : While significantly improved, the large  component logic still resides within this file and should be extracted for consistency.
+-   : The entire component needs to be restructured as per the user's request (merging tabs, extracting Orders/Chat). The  logic also still needs to be extracted into its own component.
 
 **key api endpoints**
--   : Manage ToS content.
--   : Manage email notification toggles.
--   : Send a test email.
--   : Get user balance and create a top-up transaction.
--   : Get user's balance transaction history.
--   : Manage prepayment system settings.
+-   : Cancels an order and returns items to the user's cart.
+-   : Fetches the current crypto exchange rate, including the admin-configured markup.
+-   : Manages the crypto wallet address and markup percentage.
+-   : Marks a single notification as read.
+-   : Updated to save and retrieve the  value.
 
 **Critical Info for New Agent**
-1.  **Prepayment is a MOCK:** The current implementation does not involve real money. It's a simulated balance system.
-2.  **Admin Credentials:** The password for  was found to be .
-3.  **Resend Sandbox:** The Resend integration is in sandbox mode. It can only send emails *to* the verified email address associated with the API key, otherwise it will fail. The backend handles this by returning a specific error.
-4.  **Refactoring is Incomplete:** The  was deliberately left inside  due to its complexity. Completing this is an upcoming task.
+1.  **Redesign is In-Progress:** The application is in a transitional state with a mix of new glassmorphism and old styles. The primary task is to complete this redesign for all remaining pages.
+2.  **Admin Restructuring is Pending:** The user has requested a significant reorganization of the admin panel tabs. This task has not been started.
+3.  **Functional Changes are Backend-Complete:** The logic for order cancellation, payment surcharges/discounts, and the notification fix is implemented on the backend and has been wired into the frontend. However, it requires full end-to-end testing, especially after the redesign is complete.
 
 **documents and test reports created in this job**
--    (Updated with latest completed tasks and future roadmap)
--    (Successful test report for the ToS & Email Notification features)
+-    (Updated multiple times)
+-    (Successful test of the prepayment system)
+-    (Successful test of the new crypto payment system)
 
 **Last 10 User Messages and any pending HUMAN messages**
-1.  **User:** Let's resume the prepayment feature. **Status: In Progress**
-2.  **User:** Merged the products and categories tabs. **Status: Completed**
-3.  **User:** Postpone the prepayment task. Merge the Products and Categories tabs into one. **Status: Completed**
-4.  **User:** Confirmed requirements for the prepayment feature (mock mode, admin settings, etc.). **Status: In Progress**
-5.  **User:** Requested a prepayment system. **Status: In Progress**
-6.  **User:** Confirmed the plan to refactor . **Status: Completed**
-7.  **User:** Asked to refactor  by splitting it into components. **Status: Completed**
-8.  **User:** Подтверждаю план (I confirm the plan) for implementing ToS and email features. **Status: Completed**
-9.  **User:** Confirmed the plan and provided the Resend API key. **Status: Completed**
-10. **System:** Asked user to confirm the plan for editable ToS and email notifications. **Status: Completed**
+1.  **User:** продолжи (continue) - *Request to continue the redesign.*
+2.  **System:** Finished session, summarizing work on redesign.
+3.  **User:** продолжи (continue) - *Request to continue work after the functional changes were done.*
+4.  **System:** Finished session, proposing to defer the large redesign task.
+5.  **User:** Убери наценку +3% в конвертации оплаты криптой (Remove the +3% markup).
+6.  **User:** User confirmed the flow for crypto payments, including a +3% markup and on-chain verification.
+7.  **User:** Requested a full crypto payment system (MetaMask, smart contract, multi-chain).
+8.  **System:** Finished implementing the prepayment system.
+9.  **User:** подтверждаю план (I confirm the plan) - *Initial confirmation to complete the prepayment feature.*
+10. **User:** Provided a large list of requirements: order cancellation, payment adjustments, return of crypto markup, notification fix, full site redesign, and admin panel restructuring. **Status: In Progress**.
 
 **Project Health Check:**
--   **Working:** The application is stable. All previously completed features are functional.
--   **In Progress:** The new prepayment system is partially built but not yet functional or tested end-to-end.
+-   **Broken:** None.
+-   **Mocked:** Prepayment system, Cryptocurrency payment system (no real on-chain transactions are processed, it's a UI/backend mock).
 
 **3rd Party Integrations**
--   **Resend:** Implemented for email notifications (in sandbox mode).
+-   **Resend:** For email notifications.
+-   **web3.py:** Used on the backend for crypto utility functions.
+-   **framer-motion:** Used on the frontend for UI animations.
 
 **Testing status**
--   **Testing agent used after significant changes:** YES. Used successfully for the editable ToS and email notification features.
+-   **Testing agent used after significant changes:** YES. It was used successfully to validate the prepayment and crypto payment features before the redesign began.
 -   **Troubleshoot agent used after agent stuck in loop:** NO
 -   **Test files created:** None.
 -   **Known regressions:** None.
 
 **Credentials to test flow:**
--   **Admin:**  / 
+-   **Admin:**  /  (or  / )
 -   **User:**  / 
 
 **What agent forgot to execute**
-The agent has not forgotten any tasks. The refactoring of the  was a conscious decision to postpone due to complexity, and the prepayment feature is the current active task.</analysis>
+-   The agent has correctly prioritized the work based on user requests. The admin panel restructuring, which was part of the user's last major request, has been correctly identified as an upcoming task to be addressed after the more immediate redesign work is further along.</analysis>

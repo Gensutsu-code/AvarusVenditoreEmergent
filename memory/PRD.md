@@ -110,7 +110,7 @@ E-commerce platform for selling heavy vehicle parts with:
 - **Crypto Markup:** 3% (configurable)
 
 ## Preview URL
-https://balance-checkout.preview.emergentagent.com
+https://crypto-checkout-flow.preview.emergentagent.com
 
 ## Design System
 
