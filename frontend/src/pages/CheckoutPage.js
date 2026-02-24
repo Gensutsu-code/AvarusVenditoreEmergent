@@ -108,6 +108,10 @@ export default function CheckoutPage() {
     e.preventDefault();
     if (!form.full_name.trim() || !form.address.trim() || !form.phone.trim()) { toast.error('Заполните все обязательные поля'); return; }
     setLoading(true);
+    
+    // Save the final total before cart is cleared
+    const orderAmount = finalTotal;
+    
     try {
       const res = await axios.post(`${API}/orders`, { 
         ...form, 
@@ -116,20 +120,21 @@ export default function CheckoutPage() {
       });
       const newOrderId = res.data.id;
       setOrderId(newOrderId);
-      await fetchCart();
       
       if (payWithBalance) {
         // Balance payment - instant success
+        await fetchCart();
         setSuccess(true);
         toast.success('Заказ оплачен с баланса!');
         return;
       }
 
       if (paymentMethod === 'card') {
+        await fetchCart();
         // Redirect to YuKassa
         try {
           const payRes = await axios.post(`${API}/payments/yookassa/create`, {
-            order_id: newOrderId, amount: finalTotal, return_url: `${SITE_URL}/orders`
+            order_id: newOrderId, amount: orderAmount, return_url: `${SITE_URL}/orders`
           });
           if (payRes.data.confirmation_url) {
             window.location.href = payRes.data.confirmation_url;
@@ -140,10 +145,12 @@ export default function CheckoutPage() {
         }
         setSuccess(true);
       } else if (paymentMethod === 'crypto') {
-        // Save amount before cart is cleared, then open crypto payment modal
-        setCryptoPaymentAmount(finalTotal);
+        // Open crypto payment modal with saved amount
+        setCryptoPaymentAmount(orderAmount);
         setShowCryptoModal(true);
+        // Don't clear cart yet - will be done after successful payment
       } else {
+        await fetchCart();
         setSuccess(true);
         toast.success('Заказ оформлен!');
       }
