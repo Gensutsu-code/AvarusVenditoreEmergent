@@ -2,39 +2,28 @@
 @tailwind components;
 @tailwind utilities;
 
-body {
-  margin: 0;
-  font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
-}
-
-code {
-  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
-}
-
 @layer base {
   :root {
-    --background: 0 0% 100%;
-    --foreground: 240 10% 4%;
-    --card: 0 0% 100%;
-    --card-foreground: 240 10% 4%;
-    --popover: 0 0% 100%;
-    --popover-foreground: 240 10% 4%;
+    --background: 240 10% 4%;
+    --foreground: 0 0% 95%;
+    --card: 240 6% 10%;
+    --card-foreground: 0 0% 95%;
+    --popover: 240 6% 10%;
+    --popover-foreground: 0 0% 95%;
     --primary: 25 95% 53%;
     --primary-foreground: 0 0% 100%;
-    --secondary: 240 5% 96%;
-    --secondary-foreground: 240 6% 10%;
-    --muted: 240 5% 96%;
-    --muted-foreground: 240 4% 46%;
-    --accent: 240 5% 96%;
-    --accent-foreground: 240 6% 10%;
+    --secondary: 240 4% 16%;
+    --secondary-foreground: 0 0% 95%;
+    --muted: 240 4% 16%;
+    --muted-foreground: 240 5% 65%;
+    --accent: 240 4% 16%;
+    --accent-foreground: 0 0% 95%;
     --destructive: 0 84% 60%;
     --destructive-foreground: 0 0% 98%;
-    --border: 240 6% 90%;
-    --input: 240 6% 90%;
+    --border: 240 4% 16%;
+    --input: 240 4% 16%;
     --ring: 25 95% 53%;
-    --radius: 0;
+    --radius: 0.75rem;
   }
 }
 
@@ -42,48 +31,168 @@ code {
   * {
     @apply border-border;
   }
+  html {
+    scroll-behavior: smooth;
+  }
   body {
-    @apply bg-background text-foreground;
+    @apply bg-zinc-950 text-zinc-100;
+    font-family: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
   }
 }
 
-/* Custom styles for truck parts store */
-.price-tag {
+code {
   font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
-  font-weight: 700;
-  letter-spacing: -0.025em;
 }
 
-.category-card {
-  @apply border border-zinc-200 bg-white transition-colors hover:border-zinc-400;
+/* Glassmorphism utility classes */
+@layer components {
+  .glass {
+    @apply bg-white/5 backdrop-blur-xl border border-white/10 shadow-glass;
+  }
+  
+  .glass-card {
+    @apply bg-zinc-900/60 backdrop-blur-xl border border-white/10 shadow-glass rounded-2xl;
+  }
+  
+  .glass-button {
+    @apply bg-white/10 backdrop-blur-md border border-white/20 hover:bg-white/20 transition-all duration-300;
+  }
+  
+  .glass-input {
+    @apply bg-zinc-800/50 backdrop-blur-sm border border-zinc-700/50 focus:border-orange-500/50 focus:ring-2 focus:ring-orange-500/20 transition-all duration-300 rounded-xl;
+  }
+  
+  .gradient-border {
+    position: relative;
+  }
+  
+  .gradient-border::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    border-radius: inherit;
+    padding: 1px;
+    background: linear-gradient(135deg, rgba(249, 115, 22, 0.5), rgba(249, 115, 22, 0.1));
+    -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+    -webkit-mask-composite: xor;
+    mask-composite: exclude;
+    pointer-events: none;
+  }
+  
+  .btn-primary {
+    @apply bg-gradient-to-r from-orange-500 to-orange-600 text-white font-bold uppercase tracking-wide px-8 py-3 rounded-xl 
+           hover:from-orange-600 hover:to-orange-700 hover:shadow-glow 
+           active:scale-[0.98] transition-all duration-300;
+  }
+  
+  .btn-secondary {
+    @apply bg-zinc-800/50 backdrop-blur-sm border border-zinc-700/50 text-zinc-100 font-medium px-6 py-3 rounded-xl
+           hover:bg-zinc-700/50 hover:border-zinc-600/50
+           active:scale-[0.98] transition-all duration-300;
+  }
+  
+  .input-field {
+    @apply bg-zinc-800/50 backdrop-blur-sm border border-zinc-700/50 rounded-xl px-4 py-3
+           focus:border-orange-500/50 focus:ring-2 focus:ring-orange-500/20 
+           placeholder:text-zinc-500 transition-all duration-300;
+  }
+  
+  .card-hover {
+    @apply transition-all duration-300 hover:scale-[1.02] hover:shadow-glass-lg;
+  }
+  
+  .price-tag {
+    font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+    font-weight: 700;
+    letter-spacing: -0.025em;
+    @apply text-orange-400;
+  }
+  
+  .category-card {
+    @apply glass-card p-6 transition-all duration-300 hover:scale-[1.02] hover:border-orange-500/30 cursor-pointer;
+  }
+  
+  .product-card {
+    @apply glass-card p-4 transition-all duration-300 hover:scale-[1.02] hover:border-orange-500/30;
+  }
+  
+  .nav-link {
+    @apply relative text-zinc-400 hover:text-white transition-colors duration-300;
+  }
+  
+  .nav-link::after {
+    content: '';
+    @apply absolute bottom-0 left-0 w-0 h-0.5 bg-orange-500 transition-all duration-300;
+  }
+  
+  .nav-link:hover::after,
+  .nav-link.active::after {
+    @apply w-full;
+  }
+  
+  .nav-link.active {
+    @apply text-white;
+  }
 }
 
-.product-card {
-  @apply border border-zinc-200 bg-white p-4 transition-colors hover:border-zinc-400;
+/* Animations */
+@layer utilities {
+  .animate-in {
+    animation: fade-up 0.4s ease-out forwards;
+  }
+  
+  .stagger-1 { animation-delay: 0.1s; }
+  .stagger-2 { animation-delay: 0.2s; }
+  .stagger-3 { animation-delay: 0.3s; }
+  .stagger-4 { animation-delay: 0.4s; }
+  .stagger-5 { animation-delay: 0.5s; }
 }
 
-.btn-primary {
-  @apply bg-orange-500 text-white font-bold uppercase tracking-wide h-12 px-8 hover:bg-orange-600 transition-colors;
+/* Custom scrollbar */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
 }
 
-.input-field {
-  @apply border-zinc-300 bg-zinc-50 h-12 focus:ring-2 focus:ring-orange-500 focus:border-transparent;
+::-webkit-scrollbar-track {
+  @apply bg-zinc-900;
 }
 
-/* Admin panel scrollbar styling */
-.overflow-x-auto::-webkit-scrollbar {
-  height: 6px;
+::-webkit-scrollbar-thumb {
+  @apply bg-zinc-700 rounded-full;
 }
 
-.overflow-x-auto::-webkit-scrollbar-track {
-  background: #f4f4f5;
+::-webkit-scrollbar-thumb:hover {
+  @apply bg-zinc-600;
 }
 
-.overflow-x-auto::-webkit-scrollbar-thumb {
-  background: #d4d4d8;
-  border-radius: 3px;
+/* Selection */
+::selection {
+  @apply bg-orange-500/30 text-white;
 }
 
-.overflow-x-auto::-webkit-scrollbar-thumb:hover {
-  background: #a1a1aa;
+/* Focus visible */
+:focus-visible {
+  @apply outline-none ring-2 ring-orange-500/50 ring-offset-2 ring-offset-zinc-950;
+}
+
+/* Smooth transitions for all interactive elements */
+button, a, input, select, textarea {
+  @apply transition-all duration-200;
+}
+
+/* Admin panel specific */
+.admin-sidebar {
+  @apply glass-card rounded-none border-r border-white/10;
+}
+
+.admin-tab {
+  @apply flex items-center gap-3 px-4 py-3 rounded-xl text-zinc-400 
+         hover:text-white hover:bg-white/5 transition-all duration-300;
+}
+
+.admin-tab.active {
+  @apply text-white bg-orange-500/20 border border-orange-500/30;
 }
