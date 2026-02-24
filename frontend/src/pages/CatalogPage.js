@@ -16,7 +16,7 @@ const API = `${process.env.REACT_APP_BACKEND_URL}/api`;
 
 // Simple price display component
 const PriceDisplay = ({ price, formatPrice }) => {
-  return <span className="text-xl font-bold text-zinc-900">{formatPrice(price)} ₽</span>;
+  return <span className="text-xl font-bold text-orange-400">{formatPrice(price)} ₽</span>;
 };
 
 // ProductCard component for reuse
