@@ -291,7 +291,7 @@ export default function CheckoutPage() {
                 
                 {/* Regular payment methods */}
                 {PAYMENT_METHODS.map(method => {
-                  const discount = getPaymentDiscount(method.id);
+                  const adjustment = getPaymentAdjustment(method.id);
                   const isEnabled = isPaymentMethodEnabled(method.id);
                   const isSelected = !payWithBalance && paymentMethod === method.id;
                   const Icon = method.icon;
@@ -326,8 +326,12 @@ export default function CheckoutPage() {
                           {!isEnabled ? 'Временно недоступно' : method.desc}
                         </p>
                       </div>
-                      {isEnabled && discount > 0 && (
-                        <span className="bg-green-100 text-green-700 text-xs font-bold px-2.5 py-1 rounded-full">-{discount}%</span>
+                      {isEnabled && adjustment !== 0 && (
+                        <span className={`text-xs font-bold px-2.5 py-1 rounded-full ${
+                          adjustment < 0 ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'
+                        }`}>
+                          {adjustment < 0 ? `-${Math.abs(adjustment)}%` : `+${adjustment}%`}
+                        </span>
                       )}
                       <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center ${
                         !isEnabled ? 'border-zinc-300' : isSelected ? 'border-orange-500' : 'border-zinc-300'
