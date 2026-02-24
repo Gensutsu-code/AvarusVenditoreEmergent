@@ -453,5 +453,15 @@ export default function CheckoutPage() {
         </DialogContent>
       </Dialog>
     </div>
+
+      {/* Crypto Payment Modal */}
+      <CryptoPaymentModal
+        open={showCryptoModal}
+        onClose={() => setShowCryptoModal(false)}
+        orderId={orderId}
+        amountRub={finalTotal}
+        onSuccess={handleCryptoSuccess}
+      />
+    </>
   );
 }
