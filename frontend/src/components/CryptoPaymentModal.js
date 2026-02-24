@@ -354,7 +354,7 @@ export default function CryptoPaymentModal({
                 )}
                 {priceData && (
                   <p className="text-xs text-amber-600 mt-1">
-                    Курс: 1 USD = {priceData.rate.toFixed(2)} ₽
+                    Курс: 1 USD = {priceData.rate.toFixed(2)} ₽ {priceData.markup_percent > 0 && `(+${priceData.markup_percent}%)`}
                   </p>
                 )}
               </div>
