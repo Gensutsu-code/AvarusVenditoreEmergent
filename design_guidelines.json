@@ -1,168 +1,194 @@
 {
-  "identity": {
-    "name": "E1: The Anti-AI Designer",
-    "archetype": "The Performance Pro (Industrial Variant)",
-    "core_philosophy": "Fusion over Imitation. Function is Beauty.",
-    "tone": "Utilitarian, Precise, Reliable, Industrial"
+  "project_name": "Heavy Vehicle Parts - Glassmorphism Redesign",
+  "theme": "dark",
+  "design_philosophy": {
+    "core_concept": "Industrial Glassmorphism",
+    "emotional_tone": "Premium, Robust, Futuristic, High-Performance",
+    "key_principles": [
+      "Glassmorphism: Use translucency to create depth and hierarchy.",
+      "Neon Accents: Electric Orange for primary actions to signal power and warning.",
+      "Fluid Motion: Everything must animate smoothly (hover, enter, exit).",
+      "No Sharp Corners: Rounded corners (xl or 2xl) but not pill-shaped for everything.",
+      "Data Density: High density for admin, spacious for marketing."
+    ]
   },
-  "theme_strategy": {
-    "mode": "light",
-    "justification": "User requested light theme. Fits the 'clean workshop' aesthetic better than dark mode for this specific B2B/utilitarian context."
+  "typography": {
+    "headings": {
+      "font_family": "Chivo, sans-serif",
+      "weights": ["700", "900"],
+      "usage": "Use for all page titles, section headers, and hero text. Tight tracking (-0.02em)."
+    },
+    "body": {
+      "font_family": "Outfit, sans-serif",
+      "weights": ["300", "400", "500"],
+      "usage": "Use for all body text, UI labels, and data tables. Clean and legible."
+    },
+    "mono": {
+      "font_family": "JetBrains Mono, monospace",
+      "usage": "Use for part numbers, technical specs, and code snippets."
+    }
   },
   "colors": {
     "palette": {
       "background": {
-        "default": "#FFFFFF",
-        "subtle": "#F4F4F5",
-        "active": "#E4E4E7"
+        "default": "#09090b",
+        "secondary": "#18181b",
+        "glass": "rgba(24, 24, 27, 0.6)"
       },
       "foreground": {
-        "default": "#09090B",
-        "muted": "#71717A",
-        "inverse": "#FFFFFF"
+        "default": "#fafafa",
+        "muted": "#a1a1aa",
+        "inverse": "#09090b"
       },
       "primary": {
-        "default": "#F97316",
-        "foreground": "#FFFFFF",
-        "hover": "#EA580C"
+        "default": "#f97316",
+        "hover": "#ea580c",
+        "foreground": "#ffffff"
+      },
+      "secondary": {
+        "default": "#27272a",
+        "foreground": "#fafafa"
+      },
+      "accent": {
+        "default": "#f97316",
+        "glass": "rgba(249, 115, 22, 0.1)"
       },
       "border": {
-        "default": "#E4E4E7",
-        "strong": "#A1A1AA"
+        "default": "rgba(255, 255, 255, 0.1)",
+        "hover": "rgba(255, 255, 255, 0.2)"
       },
-      "destructive": {
-        "default": "#EF4444",
-        "foreground": "#FFFFFF"
+      "status": {
+        "success": "#22c55e",
+        "warning": "#eab308",
+        "error": "#ef4444",
+        "info": "#3b82f6"
       }
     },
-    "rules": [
-      "NO GRADIENTS. Flat, solid colors only.",
-      "Use 'Zinc' scale from Tailwind for all greys.",
-      "Primary color (Orange) is for ACTIONS only (Buttons, Links). Never for decoration.",
-      "Borders are essential. Use them to define structure (Grid Borders)."
-    ]
-  },
-  "typography": {
-    "font_family": {
-      "headings": "system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif",
-      "body": "system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif",
-      "mono": "ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace"
-    },
-    "styles": {
-      "h1": "text-4xl md:text-5xl font-bold tracking-tighter uppercase text-zinc-950",
-      "h2": "text-2xl md:text-3xl font-bold tracking-tight uppercase text-zinc-900",
-      "h3": "text-xl font-semibold tracking-tight text-zinc-900",
-      "body": "text-base font-normal text-zinc-700 leading-relaxed",
-      "label": "text-xs font-bold uppercase tracking-widest text-zinc-500",
-      "price": "font-mono text-lg font-bold tracking-tight text-zinc-900"
-    }
-  },
-  "layout": {
-    "grid_system": "Bento Grid Mode B (High Density)",
-    "container": "max-w-7xl mx-auto px-4 sm:px-6 lg:px-8",
-    "spacing": {
-      "section": "py-16 md:py-24",
-      "element": "gap-4 md:gap-6"
-    },
-    "rules": [
-      "Use 'border-collapse' style grids for catalogs.",
-      "Visible borders between grid items (border-r border-b).",
-      "Dense layouts. Avoid excessive whitespace in data-heavy areas (tables, lists).",
-      "Mobile-first: Stack columns on mobile, expand to 3-4 columns on desktop."
-    ]
-  },
-  "components": {
-    "style_guide": {
-      "radius": "rounded-none",
-      "shadows": "none",
-      "borders": "border border-zinc-200",
-      "animation": "transition-colors duration-200 ease-out"
-    },
-    "specifics": {
-      "buttons": "uppercase font-bold tracking-wide rounded-none h-12 px-8 hover:translate-y-[-1px] active:translate-y-[1px] transition-transform",
-      "cards": "bg-white border border-zinc-200 p-6 hover:border-zinc-400 transition-colors rounded-none",
-      "inputs": "rounded-none border-zinc-300 focus:ring-2 focus:ring-orange-500 focus:border-transparent h-12 bg-zinc-50",
-      "badges": "rounded-none uppercase tracking-wider font-bold text-[10px] px-2 py-1"
+    "gradients": {
+      "glass_surface": "linear-gradient(145deg, rgba(255,255,255,0.05) 0%, rgba(255,255,255,0.01) 100%)",
+      "primary_glow": "radial-gradient(circle at center, rgba(249,115,22,0.15) 0%, rgba(0,0,0,0) 70%)"
     }
   },
   "visual_enhancers": {
-    "textures": "Subtle noise overlay (opacity 0.02) on backgrounds to reduce digital sterility.",
-    "icons": "Lucide React (Stroke width 1.5px for elegance, 2px for bold actions).",
-    "micro_interactions": "Buttons scale slightly down on click. Links have a heavy underline on hover."
-  },
-  "media": {
-    "image_style": "High contrast, desaturated or black & white for atmospheric shots. Product shots on pure white or light grey backgrounds.",
-    "aspect_ratios": {
-      "product": "aspect-square object-contain p-4 bg-white",
-      "hero": "aspect-[21/9] object-cover grayscale hover:grayscale-0 transition-all duration-700"
+    "glassmorphism": {
+      "classes": "bg-zinc-900/40 backdrop-blur-xl border border-white/10 shadow-2xl",
+      "heavy_glass": "bg-zinc-950/70 backdrop-blur-2xl border border-white/5",
+      "light_glass": "bg-white/5 backdrop-blur-md border border-white/10"
+    },
+    "borders": {
+      "radius": "rounded-xl",
+      "width": "border",
+      "color": "border-white/10"
+    },
+    "shadows": {
+      "card": "0 8px 32px 0 rgba(0, 0, 0, 0.36)",
+      "glow": "0 0 20px rgba(249, 115, 22, 0.3)"
+    },
+    "textures": {
+      "noise": "url('/assets/noise.png')",
+      "mesh_gradient": "Use subtle moving gradients in the background"
     }
   },
-  "image_urls": {
-    "hero": [
-      {
-        "url": "https://images.unsplash.com/photo-1541659141637-92ac0cf3819b",
-        "description": "Front of heavy duty truck",
-        "category": "hero"
-      }
+  "layout_strategies": {
+    "general": {
+      "container": "max-w-7xl mx-auto px-4 sm:px-6 lg:px-8",
+      "spacing": "Generous padding (p-6, p-8) for cards to allow the glass effect to breathe."
+    },
+    "grid_system": {
+      "catalog": "grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6",
+      "dashboard": "grid grid-cols-1 md:grid-cols-12 gap-6",
+      "bento": "Use col-span-2 or row-span-2 for featured items."
+    }
+  },
+  "component_guidelines": {
+    "buttons": {
+      "primary": "bg-orange-500 hover:bg-orange-600 text-white rounded-xl px-6 py-3 font-semibold shadow-[0_0_15px_rgba(249,115,22,0.4)] transition-all hover:scale-[1.02]",
+      "secondary": "bg-white/5 hover:bg-white/10 text-white border border-white/10 rounded-xl px-6 py-3 backdrop-blur-md transition-all",
+      "ghost": "hover:bg-white/5 text-zinc-400 hover:text-white rounded-lg px-4 py-2 transition-colors"
+    },
+    "cards": {
+      "default": "group relative overflow-hidden rounded-2xl bg-zinc-900/40 border border-white/10 backdrop-blur-xl transition-all hover:border-orange-500/50 hover:shadow-[0_0_30px_rgba(249,115,22,0.1)]",
+      "interactive": "cursor-pointer hover:-translate-y-1 hover:shadow-2xl transition-all duration-300"
+    },
+    "inputs": {
+      "style": "bg-zinc-950/50 border border-white/10 text-white placeholder:text-zinc-500 rounded-xl focus:ring-2 focus:ring-orange-500/50 focus:border-orange-500 transition-all"
+    },
+    "navigation": {
+      "sidebar": "fixed left-0 top-0 h-full w-64 bg-zinc-950/80 backdrop-blur-xl border-r border-white/5 z-50",
+      "header": "sticky top-0 w-full z-40 bg-zinc-950/60 backdrop-blur-2xl border-b border-white/5"
+    }
+  },
+  "navigation_structure": {
+    "user": [
+      {"label": "Catalog", "path": "/catalog"},
+      {"label": "Orders", "path": "/orders"},
+      {"label": "Bonus", "path": "/bonus"},
+      {"label": "News", "path": "/news"},
+      {"label": "Favorites", "path": "/favorites"},
+      {"label": "Cart", "path": "/cart"},
+      {"label": "Account", "path": "/account"}
     ],
-    "categories": [
-      {
-        "name": "Engine",
-        "url": "https://images.unsplash.com/photo-1695597802538-bcb2bd533d19",
-        "description": "Truck engine parts"
-      },
-      {
-        "name": "Transmission",
-        "url": "https://images.unsplash.com/photo-1763738173457-2a874a207215",
-        "description": "Gearbox transmission"
-      },
-      {
-        "name": "Brakes",
-        "url": "https://images.unsplash.com/photo-1629220640507-6548fe7ee769",
-        "description": "Brake disc/caliper"
-      },
-      {
-        "name": "Suspension",
-        "url": "https://images.unsplash.com/photo-1666508330099-0c7c6ab0e332",
-        "description": "Suspension undercarriage"
-      },
-      {
-        "name": "Electric",
-        "url": "https://images.unsplash.com/photo-1661463678303-dfb9e5f0929c",
-        "description": "Tail lights/Electric"
-      },
-      {
-        "name": "Body",
-        "url": "https://images.unsplash.com/photo-1594920687401-e70050947ea5",
-        "description": "Bumper/Body parts"
-      }
+    "admin": [
+      {"label": "Dashboard", "path": "/admin", "icon": "LayoutDashboard"},
+      {"label": "Orders", "path": "/admin/orders", "icon": "ShoppingCart"},
+      {"label": "Chats", "path": "/admin/chats", "icon": "MessageSquare"},
+      {"label": "CRM", "path": "/admin/crm", "sub_items": ["Analytics", "Clients"], "icon": "Users"},
+      {"label": "Payments", "path": "/admin/payments", "sub_items": ["General", "Crypto"], "icon": "Wallet"},
+      {"label": "Marketing", "path": "/admin/marketing", "sub_items": ["Promotions", "News", "Newsletters"], "icon": "Megaphone"},
+      {"label": "Settings", "path": "/admin/settings", "sub_items": ["TG", "Import", "Partners", "Rules"], "icon": "Settings"}
     ]
   },
+  "assets": {
+    "images": [
+      {
+        "category": "hero_background",
+        "url": "https://images.unsplash.com/photo-1757981989497-fa816e1f1634?crop=entropy&cs=srgb&fm=jpg&ixid=M3w4NjA1NDh8MHwxfHNlYXJjaHwxfHxoZWF2eSUyMHRydWNrJTIwZW5naW5lJTIwaW5kdXN0cmlhbCUyMGdlYXJzJTIwbWVjaGFuaWMlMjB3b3Jrc2hvcCUyMGZ1dHVyaXN0aWMlMjB0cnVja3xlbnwwfHx8fDE3NzE5NzMzNTF8MA&ixlib=rb-4.1.0&q=85",
+        "description": "Complex industrial machinery for hero section background"
+      },
+      {
+        "category": "tech_texture",
+        "url": "https://images.unsplash.com/photo-1657368146328-086bbdeb2527?crop=entropy&cs=srgb&fm=jpg&ixid=M3w4NjA1NDh8MHwxfHNlYXJjaHwyfHxoZWF2eSUyMHRydWNrJTIwZW5naW5lJTIwaW5kdXN0cmlhbCUyMGdlYXJzJTIwbWVjaGFuaWMlMjB3b3Jrc2hvcCUyMGZ1dHVyaXN0aWMlMjB0cnVja3xlbnwwfHx8fDE3NzE5NzMzNTF8MA&ixlib=rb-4.1.0&q=85",
+        "description": "Machine with wires for tech texture overlays"
+      }
+    ],
+    "icons": "Use lucide-react. Stroke width 1.5px for elegance."
+  },
+  "animations": {
+    "library": "framer-motion",
+    "instructions": "Install framer-motion: `yarn add framer-motion`",
+    "patterns": {
+      "page_transition": {
+        "initial": { "opacity": 0, "y": 20 },
+        "animate": { "opacity": 1, "y": 0 },
+        "exit": { "opacity": 0, "y": -20 },
+        "transition": { "duration": 0.3, "ease": "easeOut" }
+      },
+      "hover_card": {
+        "scale": 1.02,
+        "transition": { "type": "spring", "stiffness": 300 }
+      },
+      "list_item": {
+        "hidden": { "opacity": 0, "x": -20 },
+        "show": { "opacity": 1, "x": 0 }
+      }
+    }
+  },
   "instructions_to_main_agent": [
-    "IMPLEMENTATION PRIORITY: Functionality > Aesthetics. This is a tool for mechanics.",
-    "Use the 'Zinc' color scale from Tailwind for a neutral, industrial look.",
-    "Avoid rounded corners. Use 'rounded-none' or 'rounded-sm' for a sharp, precise feel.",
-    "Ensure high contrast for all text. Accessibility is key for this audience.",
-    "Use the provided image URLs for the respective categories.",
-    "For the 'Catalog' page, use a dense grid layout (Mode B).",
-    "For the 'Product' page, focus on the image and the 'Add to Cart' button.",
-    "Do not use 'About Us' or other fluff pages. Stick to the requested functionality.",
-    "Add 'data-testid' to all interactive elements."
+    "1. INSTALLATION: Install `framer-motion` immediately.",
+    "2. THEME SETUP: Update `tailwind.config.js` to include the custom colors (zinc-950, orange-500) and animations.",
+    "3. GLOBAL STYLES: Update `index.css` to set the dark background `#09090b` as default and add global glass styles.",
+    "4. COMPONENT UPDATE: Refactor `Header`, `Sidebar`, and `Card` components to use the glassmorphism classes defined above.",
+    "5. ADMIN REFACTOR: Update the Admin Sidebar to reflect the new merged structure (CRM, Payments, Marketing, Settings).",
+    "6. ANIMATION: Wrap page content in `motion.div` for smooth transitions. Use `AnimatePresence` in `App.js` if possible.",
+    "7. IMAGES: Use the provided industrial images for backgrounds/hero sections. Use gradients/overlays to ensure text readability.",
+    "8. ACCESSIBILITY: Ensure all text on glass backgrounds has sufficient contrast (use white or zinc-200).",
+    "9. FILE EXTENSIONS: Continue using .js/.jsx as per the project structure."
   ],
-  "universal_guidelines": [
-    "Dark colors look good when used independently without gradients. DO NOT use dark colors as gradients",
-    "Don't make generic centered layouts, simplistic gradients, and uniform styling.",
-    "Create depth through layered design elements with z-index hierarchy",
-    "Use glass-morphism effects with backdrop filters (12-24px blur) sparingly, only for sticky headers.",
-    "You MUST NOT apply universal transition. Eg: `transition: all`. This results in breaking transforms.",
-    "You MUST NOT center align the app container.",
-    "Always use modern button styles like pill-shaped, or sharp button with interaction animations & color relevant to the app style",
-    "NEVER: use AI assistant Emoji characters like 🤖🧠 etc for icons.",
-    "Every interaction needs micro-animations - hover states, transitions.",
-    "Use 2-3x more spacing than feels comfortable. Cramped designs look cheap.",
-    "Prioritize using pre-existing components from src/components/ui when applicable",
-    "Components MUST use named exports",
-    "Pages MUST use default exports",
-    "Use `sonner` for toasts"
+  "UNIVERSAL_GUIDELINES": [
+    "Do not use generic gradients. Use subtle noise or mesh gradients.",
+    "Avoid sharp corners. Use `rounded-xl` or `rounded-2xl`.",
+    "Interactive elements MUST have hover states.",
+    "Use `data-testid` for all interactive elements.",
+    "Ensure the app feels 'heavy' and 'premium' - no flimsy borders or light shadows."
   ]
 }
