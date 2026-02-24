@@ -158,10 +158,10 @@ async def create_order(data: OrderCreate, user=Depends(get_current_user)):
             items.append(item_data)
             subtotal += price * cart_item["quantity"]
     
-    # Apply payment method discount
+    # Apply payment method adjustment (negative = discount, positive = surcharge)
     total = subtotal
-    if payment_discount > 0:
-        total = subtotal * (1 - payment_discount / 100)
+    if payment_adjustment != 0:
+        total = subtotal * (1 + payment_adjustment / 100)
     
     total = round(total, 2)
     
