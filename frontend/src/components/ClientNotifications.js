@@ -51,7 +51,20 @@ export const ClientNotifications = () => {
     } catch (err) {}
   };
 
-  const handleClick = (notif) => {
+  const handleClick = async (notif) => {
+    // Mark as read if not already
+    if (!notif.read) {
+      try {
+        await axios.put(`${API}/my-notifications/${notif.id}/read`);
+        setData(prev => ({
+          ...prev,
+          notifications: prev.notifications.map(n => 
+            n.id === notif.id ? { ...n, read: true } : n
+          ),
+          unread_count: Math.max(0, prev.unread_count - 1)
+        }));
+      } catch (err) {}
+    }
     setOpen(false);
     if (notif.link) navigate(notif.link);
   };
