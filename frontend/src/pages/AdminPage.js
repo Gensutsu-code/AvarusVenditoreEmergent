@@ -208,6 +208,13 @@ export default function AdminPage() {
   const [termsSections, setTermsSections] = useState([]);
   const [termsSaving, setTermsSaving] = useState(false);
 
+  // Prepayment settings state
+  const [prepaymentSettings, setPrepaymentSettings] = useState({
+    prepayment_enabled: true,
+    min_topup_amount: 500,
+    max_topup_amount: 100000
+  });
+
   // Email notifications state
   const [notificationSettings, setNotificationSettings] = useState({
     order_status_enabled: true,
