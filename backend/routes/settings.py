@@ -46,8 +46,8 @@ async def update_discount_settings(user=Depends(get_current_user)):
 async def get_payment_settings():
     """Get payment method settings (public)"""
     defaults = {
-        "card_discount": 0, "crypto_discount": 0, "cash_discount": 0,
-        "card_enabled": True, "crypto_enabled": True, "cash_enabled": True
+        "card_adjustment": 0, "crypto_adjustment": -20, "cash_adjustment": -15, "balance_adjustment": 0,
+        "card_enabled": True, "crypto_enabled": True, "cash_enabled": True, "balance_enabled": True
     }
     settings = await db.settings.find_one({"key": "payment_settings"})
     if settings:
@@ -61,8 +61,8 @@ async def get_admin_payment_settings(user=Depends(get_current_user)):
     if user.get("role") != "admin":
         raise HTTPException(status_code=403, detail="Admin access required")
     defaults = {
-        "card_discount": 0, "crypto_discount": 0, "cash_discount": 0,
-        "card_enabled": True, "crypto_enabled": True, "cash_enabled": True
+        "card_adjustment": 0, "crypto_adjustment": -20, "cash_adjustment": -15, "balance_adjustment": 0,
+        "card_enabled": True, "crypto_enabled": True, "cash_enabled": True, "balance_enabled": True
     }
     settings = await db.settings.find_one({"key": "payment_settings"})
     if settings:
@@ -72,16 +72,18 @@ async def get_admin_payment_settings(user=Depends(get_current_user)):
 
 
 @router.put("/admin/payment-settings")
-async def update_payment_settings(data: PaymentMethodSettings, user=Depends(get_current_user)):
+async def update_payment_settings(data: dict, user=Depends(get_current_user)):
     if user.get("role") != "admin":
         raise HTTPException(status_code=403, detail="Admin access required")
     settings_data = {
-        "card_discount": data.card_discount,
-        "crypto_discount": data.crypto_discount,
-        "cash_discount": data.cash_discount,
-        "card_enabled": data.card_enabled,
-        "crypto_enabled": data.crypto_enabled,
-        "cash_enabled": data.cash_enabled
+        "card_adjustment": data.get("card_adjustment", 0),
+        "crypto_adjustment": data.get("crypto_adjustment", -20),
+        "cash_adjustment": data.get("cash_adjustment", -15),
+        "balance_adjustment": data.get("balance_adjustment", 0),
+        "card_enabled": data.get("card_enabled", True),
+        "crypto_enabled": data.get("crypto_enabled", True),
+        "cash_enabled": data.get("cash_enabled", True),
+        "balance_enabled": data.get("balance_enabled", True)
     }
     await db.settings.update_one(
         {"key": "payment_settings"},
