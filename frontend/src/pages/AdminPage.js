@@ -2980,8 +2980,11 @@ export default function AdminPage() {
               setPaymentSettings={setPaymentSettings}
               cryptoWallets={cryptoWallets}
               setCryptoWallets={setCryptoWallets}
+              prepaymentSettings={prepaymentSettings}
+              setPrepaymentSettings={setPrepaymentSettings}
               handleSavePaymentSettings={handleSavePaymentSettings}
               handleSaveCryptoWallets={handleSaveCryptoWallets}
+              handleSavePrepaymentSettings={handleSavePrepaymentSettings}
             />
           </TabsContent>
 
