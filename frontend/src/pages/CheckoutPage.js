@@ -170,81 +170,7 @@ export default function CheckoutPage() {
 
   if (authLoading || cartLoading) return null;
   if (!user) { navigate('/login'); return null; }
-  if (cart.items.length === 0 && !success && !cryptoStep && !loading) { navigate('/cart'); return null; }
-
-  // Crypto payment step
-  if (cryptoStep === 'submitted') {
-    return (
-      <div className="min-h-screen flex items-center justify-center" data-testid="crypto-submitted">
-        <div className="text-center max-w-md px-4">
-          <Clock className="w-16 h-16 mx-auto text-amber-500 mb-4" />
-          <h1 className="text-2xl font-bold text-zinc-900 mb-2">Ожидание подтверждения</h1>
-          <p className="text-zinc-500 mb-4">Ваш крипто-платёж отправлен на проверку администратору.</p>
-          <p className="text-sm text-zinc-400 font-mono mb-6">TX: {txHash.slice(0, 20)}...</p>
-          <div className="flex gap-4 justify-center">
-            <Link to="/orders"><Button variant="outline">Мои заказы</Button></Link>
-            <Link to="/catalog"><Button className="bg-orange-500 hover:bg-orange-600 text-white">В каталог</Button></Link>
-          </div>
-        </div>
-      </div>
-    );
-  }
-
-  if (cryptoStep === 'pay') {
-    const walletAddr = cryptoWallets[`${selectedChain}_address`];
-    const chain = CHAINS.find(c => c.id === selectedChain);
-    return (
-      <div className="min-h-screen" data-testid="crypto-payment-page">
-        <div className="max-w-2xl mx-auto px-4 py-8">
-          <h1 className="text-2xl font-bold mb-6">Оплата криптовалютой</h1>
-          <div className="bg-amber-50 border border-amber-200 rounded-xl p-6 mb-6">
-            <p className="font-semibold text-amber-800 mb-2">Заказ #{orderId?.slice(0, 8)}</p>
-            <p className="text-2xl font-bold text-zinc-900 mb-4">{formatPrice(finalTotal)} ₽</p>
-            
-            <Label className="text-xs font-bold uppercase text-zinc-500 mb-2 block">Выберите сеть</Label>
-            <div className="grid grid-cols-4 gap-2 mb-4">
-              {CHAINS.map(c => (
-                <button key={c.id} onClick={() => setSelectedChain(c.id)}
-                  className={`p-3 rounded-lg border-2 text-center text-sm font-medium transition-all ${selectedChain === c.id ? 'border-amber-500 bg-amber-100' : 'border-zinc-200 hover:border-zinc-300'}`}>
-                  {c.name}<br /><span className="text-xs text-zinc-500">{c.symbol}</span>
-                </button>
-              ))}
-            </div>
-
-            {walletAddr ? (
-              <div className="bg-white rounded-lg p-4 border border-amber-200 mb-4">
-                <Label className="text-xs font-bold uppercase text-zinc-500">Адрес для оплаты ({chain?.name})</Label>
-                <div className="flex items-center gap-2 mt-2">
-                  <code className="flex-1 text-sm font-mono bg-zinc-50 p-2 rounded break-all">{walletAddr}</code>
-                  <Button size="sm" variant="outline" onClick={() => copyToClipboard(walletAddr)}><Copy className="w-4 h-4" /></Button>
-                </div>
-              </div>
-            ) : (
-              <p className="text-red-600 text-sm mb-4">Кошелёк для сети {chain?.name} не настроен</p>
-            )}
-
-            {selectedChain !== 'trc' && window.ethereum && (
-              <Button onClick={connectMetaMask} className="w-full bg-amber-500 hover:bg-amber-600 text-white mb-4" data-testid="connect-metamask-btn">
-                <Wallet className="w-4 h-4 mr-2" /> Оплатить через MetaMask
-              </Button>
-            )}
-
-            <div className="mt-4">
-              <Label className="text-xs font-bold uppercase text-zinc-500">Хеш транзакции (TX Hash)</Label>
-              <div className="flex gap-2 mt-2">
-                <Input value={txHash} onChange={(e) => setTxHash(e.target.value)} placeholder="0x..." className="flex-1 font-mono" data-testid="tx-hash-input" />
-              </div>
-            </div>
-          </div>
-
-          <Button onClick={handleCryptoSubmit} disabled={loading || !txHash.trim()} className="w-full bg-green-500 hover:bg-green-600 text-white h-12 font-bold" data-testid="submit-crypto-btn">
-            {loading ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : null}
-            Подтвердить оплату
-          </Button>
-        </div>
-      </div>
-    );
-  }
+  if (cart.items.length === 0 && !success && !showCryptoModal && !loading) { navigate('/cart'); return null; }
 
   if (success) {
     return (
@@ -264,6 +190,7 @@ export default function CheckoutPage() {
   }
 
   return (
+    <>
     <div className="min-h-screen" data-testid="checkout-page">
       <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <div className="mb-8">
