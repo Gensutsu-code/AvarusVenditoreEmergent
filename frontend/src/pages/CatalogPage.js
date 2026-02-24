@@ -462,11 +462,11 @@ export default function CatalogPage() {
   const currentCategory = categories.find(c => c.id === categoryId);
 
   return (
-    <div className="min-h-screen" data-testid="catalog-page">
+    <div className="min-h-screen bg-zinc-950" data-testid="catalog-page">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Header */}
         <div className="mb-8">
-          <h1 className="text-2xl md:text-3xl font-bold tracking-tight uppercase text-zinc-900 mb-6">
+          <h1 className="text-2xl md:text-3xl font-bold tracking-tight uppercase text-zinc-100 mb-6">
             {currentCategory ? currentCategory.name : 'Поиск запчастей'}
           </h1>
           
