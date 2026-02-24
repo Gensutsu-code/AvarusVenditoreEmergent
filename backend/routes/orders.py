@@ -130,9 +130,10 @@ async def create_order(data: OrderCreate, user=Depends(get_current_user)):
     
     # Only payment method discounts are used
     payment_settings = await db.settings.find_one({"key": "payment_settings"})
-    payment_discounts = payment_settings.get("value", {}) if payment_settings else {}
+    payment_adjustments = payment_settings.get("value", {}) if payment_settings else {}
     payment_method = data.payment_method or "cash"
-    payment_discount = payment_discounts.get(f"{payment_method}_discount", 0)
+    # Get payment adjustment (can be negative for discount or positive for surcharge)
+    payment_adjustment = payment_adjustments.get(f"{payment_method}_adjustment", 0)
     
     product_ids = [item["product_id"] for item in cart["items"]]
     products = await db.products.find({"id": {"$in": product_ids}}, {"_id": 0}).to_list(100)
