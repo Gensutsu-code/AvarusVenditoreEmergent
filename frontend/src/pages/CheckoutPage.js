@@ -161,9 +161,10 @@ export default function CheckoutPage() {
     }
   };
 
-  const handleCryptoSuccess = (txHash) => {
+  const handleCryptoSuccess = async (txHash) => {
     setTxHash(txHash);
     setShowCryptoModal(false);
+    await fetchCart(); // Clear cart after successful payment
     setSuccess(true);
     toast.success('Заказ оплачен криптовалютой!');
   };
