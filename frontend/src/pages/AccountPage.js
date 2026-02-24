@@ -467,6 +467,167 @@ export default function AccountPage() {
           </div>
         </div>
       </div>
+
+      {/* Topup Modal */}
+      <Dialog open={showTopupModal} onOpenChange={setShowTopupModal}>
+        <DialogContent className="max-w-md" data-testid="topup-modal">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Wallet className="w-5 h-5 text-purple-500" />
+              Пополнение баланса
+            </DialogTitle>
+          </DialogHeader>
+          
+          <div className="space-y-4 mt-4">
+            <div>
+              <Label className="text-xs font-bold uppercase text-zinc-500">Сумма пополнения (₽)</Label>
+              <Input
+                type="number"
+                value={topupAmount}
+                onChange={(e) => setTopupAmount(e.target.value)}
+                placeholder={`Мин. ${prepaymentSettings.min_topup_amount || 500}₽`}
+                className="mt-1 text-lg"
+                data-testid="topup-amount-input"
+              />
+              <p className="text-xs text-zinc-400 mt-1">
+                Мин: {prepaymentSettings.min_topup_amount || 500}₽ / Макс: {(prepaymentSettings.max_topup_amount || 100000).toLocaleString('ru-RU')}₽
+              </p>
+            </div>
+
+            {/* Quick amounts */}
+            <div className="flex gap-2">
+              {[1000, 3000, 5000, 10000].map(amount => (
+                <Button
+                  key={amount}
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setTopupAmount(amount.toString())}
+                  className={topupAmount === amount.toString() ? 'border-purple-500 bg-purple-50' : ''}
+                >
+                  {amount.toLocaleString('ru-RU')}₽
+                </Button>
+              ))}
+            </div>
+
+            <div>
+              <Label className="text-xs font-bold uppercase text-zinc-500">Способ оплаты</Label>
+              <div className="grid grid-cols-2 gap-3 mt-2">
+                <button
+                  onClick={() => setTopupMethod('card')}
+                  className={`p-4 border rounded-lg flex flex-col items-center gap-2 transition-colors ${
+                    topupMethod === 'card' ? 'border-purple-500 bg-purple-50' : 'border-zinc-200 hover:border-zinc-300'
+                  }`}
+                  data-testid="topup-card-method"
+                >
+                  <CreditCard className={`w-6 h-6 ${topupMethod === 'card' ? 'text-purple-500' : 'text-zinc-400'}`} />
+                  <span className="text-sm font-medium">Карта</span>
+                  <span className="text-xs text-zinc-400">Моментально</span>
+                </button>
+                <button
+                  onClick={() => setTopupMethod('crypto')}
+                  className={`p-4 border rounded-lg flex flex-col items-center gap-2 transition-colors ${
+                    topupMethod === 'crypto' ? 'border-purple-500 bg-purple-50' : 'border-zinc-200 hover:border-zinc-300'
+                  }`}
+                  data-testid="topup-crypto-method"
+                >
+                  <Wallet className={`w-6 h-6 ${topupMethod === 'crypto' ? 'text-purple-500' : 'text-zinc-400'}`} />
+                  <span className="text-sm font-medium">Криптовалюта</span>
+                  <span className="text-xs text-zinc-400">USDT, ETH</span>
+                </button>
+              </div>
+            </div>
+
+            {topupMethod === 'crypto' && (
+              <div>
+                <Label className="text-xs font-bold uppercase text-zinc-500">Сеть</Label>
+                <div className="flex gap-2 mt-2 flex-wrap">
+                  {[
+                    { id: 'eth', name: 'ETH', address: cryptoWallets.eth_address },
+                    { id: 'bsc', name: 'BSC', address: cryptoWallets.bsc_address },
+                    { id: 'base', name: 'Base', address: cryptoWallets.base_address },
+                    { id: 'trc', name: 'TRC20', address: cryptoWallets.trc_address }
+                  ].filter(c => c.address).map(chain => (
+                    <Button
+                      key={chain.id}
+                      variant="outline"
+                      size="sm"
+                      onClick={() => setCryptoChain(chain.id)}
+                      className={cryptoChain === chain.id ? 'border-purple-500 bg-purple-50' : ''}
+                    >
+                      {chain.name}
+                    </Button>
+                  ))}
+                </div>
+                {cryptoWallets[`${cryptoChain}_address`] && (
+                  <div className="mt-3 p-3 bg-zinc-100 rounded-lg">
+                    <p className="text-xs text-zinc-500 mb-1">Адрес для перевода:</p>
+                    <p className="font-mono text-xs break-all select-all">
+                      {cryptoWallets[`${cryptoChain}_address`]}
+                    </p>
+                  </div>
+                )}
+              </div>
+            )}
+
+            <Button
+              onClick={handleTopup}
+              disabled={topupLoading || !topupAmount}
+              className="w-full bg-purple-500 hover:bg-purple-600"
+              data-testid="confirm-topup-btn"
+            >
+              {topupLoading ? 'Обработка...' : `Пополнить на ${topupAmount ? parseFloat(topupAmount).toLocaleString('ru-RU') : 0}₽`}
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* History Modal */}
+      <Dialog open={showHistoryModal} onOpenChange={setShowHistoryModal}>
+        <DialogContent className="max-w-lg max-h-[80vh] overflow-hidden flex flex-col" data-testid="history-modal">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <History className="w-5 h-5 text-purple-500" />
+              История баланса
+            </DialogTitle>
+          </DialogHeader>
+          
+          <div className="flex-1 overflow-y-auto mt-4">
+            {balanceHistory.length === 0 ? (
+              <div className="text-center py-8 text-zinc-400">
+                <Wallet className="w-12 h-12 mx-auto mb-2 opacity-50" />
+                <p>История операций пуста</p>
+              </div>
+            ) : (
+              <div className="space-y-3">
+                {balanceHistory.map((tx) => (
+                  <div key={tx.id} className="flex items-center justify-between p-3 bg-zinc-50 rounded-lg">
+                    <div className="flex items-center gap-3">
+                      <div className={`w-10 h-10 rounded-full flex items-center justify-center ${
+                        tx.type === 'topup' ? 'bg-green-100' : 'bg-red-100'
+                      }`}>
+                        {tx.type === 'topup' ? (
+                          <Plus className={`w-5 h-5 text-green-600`} />
+                        ) : (
+                          <CreditCard className={`w-5 h-5 text-red-600`} />
+                        )}
+                      </div>
+                      <div>
+                        <p className="font-medium text-zinc-900">{tx.description || tx.type}</p>
+                        <p className="text-xs text-zinc-400">
+                          {new Date(tx.created_at).toLocaleString('ru-RU')}
+                        </p>
+                      </div>
+                    </div>
+                    <div className={`font-bold ${tx.amount > 0 ? 'text-green-600' : 'text-red-600'}`}>
+                      {tx.amount > 0 ? '+' : ''}{tx.amount.toLocaleString('ru-RU')}₽
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
