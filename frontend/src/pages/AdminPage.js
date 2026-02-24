@@ -923,6 +923,16 @@ export default function AdminPage() {
     }
   };
 
+  // Prepayment settings handler
+  const handleSavePrepaymentSettings = async () => {
+    try {
+      await axios.put(`${API}/admin/prepayment-settings`, prepaymentSettings);
+      toast.success('Настройки предоплаты сохранены');
+    } catch (err) {
+      toast.error('Ошибка сохранения');
+    }
+  };
+
   // Notification handlers
   const handleSaveNotificationSettings = async () => {
     try {
