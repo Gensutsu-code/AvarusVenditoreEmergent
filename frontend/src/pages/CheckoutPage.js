@@ -47,12 +47,20 @@ export default function CheckoutPage() {
   const [agreedToTerms, setAgreedToTerms] = useState(false);
   const [showTermsModal, setShowTermsModal] = useState(false);
   const [termsSections, setTermsSections] = useState([]);
+  
+  // Balance payment state
+  const [userBalance, setUserBalance] = useState(0);
+  const [payWithBalance, setPayWithBalance] = useState(false);
+  const [prepaymentSettings, setPrepaymentSettings] = useState({ prepayment_enabled: true });
 
   // Check if payment method is enabled
   const isPaymentMethodEnabled = (method) => paymentSettings[`${method}_enabled`] !== false;
 
   useEffect(() => {
-    if (user) fetchLastShipping();
+    if (user) {
+      fetchLastShipping();
+      fetchUserBalance();
+    }
     axios.get(`${API}/payment-settings`).then(res => {
       setPaymentSettings(res.data);
       // Auto-select first enabled payment method
@@ -67,7 +75,16 @@ export default function CheckoutPage() {
     axios.get(`${API}/crypto-wallets`).then(res => setCryptoWallets(res.data)).catch(() => {});
     // Fetch terms of service
     axios.get(`${API}/terms`).then(res => setTermsSections(res.data.sections || [])).catch(() => {});
+    // Fetch prepayment settings
+    axios.get(`${API}/prepayment-settings`).then(res => setPrepaymentSettings(res.data)).catch(() => {});
   }, [user]);
+
+  const fetchUserBalance = async () => {
+    try {
+      const res = await axios.get(`${API}/user/balance`);
+      setUserBalance(res.data.balance || 0);
+    } catch {}
+  };
 
   const fetchLastShipping = async () => {
     try {
