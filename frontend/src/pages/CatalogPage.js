@@ -478,14 +478,14 @@ export default function CatalogPage() {
                 placeholder="Введите название или артикул..."
                 value={searchInput}
                 onChange={(e) => setSearchInput(e.target.value)}
-                className="pr-10 h-12 bg-zinc-50 border-zinc-200 text-base"
+                className="pr-10 h-12 bg-zinc-800/50 border-zinc-700/50 text-zinc-100 placeholder:text-zinc-500 rounded-xl focus:border-orange-500/50"
                 data-testid="catalog-search-input"
               />
               {searchInput && (
                 <button 
                   type="button"
                   onClick={() => setSearchInput('')}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-zinc-400 hover:text-zinc-600"
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-zinc-500 hover:text-zinc-300"
                 >
                   <X className="w-5 h-5" />
                 </button>
@@ -493,7 +493,7 @@ export default function CatalogPage() {
             </div>
             <Button 
               type="submit"
-              className="bg-orange-500 hover:bg-orange-600 text-white font-bold uppercase h-12 px-6"
+              className="bg-gradient-to-r from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700 text-white font-bold uppercase h-12 px-6 rounded-xl shadow-glow transition-all duration-300"
               data-testid="catalog-search-btn"
             >
               <Search className="w-5 h-5 mr-2" />
@@ -505,22 +505,22 @@ export default function CatalogPage() {
           {(searchQuery || categoryId) && (
             <div className="flex items-center gap-2 mt-4">
               {searchQuery && (
-                <span className="inline-flex items-center gap-2 bg-zinc-100 px-3 py-2 text-sm">
+                <span className="inline-flex items-center gap-2 bg-zinc-800/50 border border-zinc-700/50 rounded-xl px-3 py-2 text-sm text-zinc-300">
                   Поиск: &quot;{searchQuery}&quot;
                   <button onClick={() => {
                     const params = new URLSearchParams(searchParams);
                     params.delete('search');
                     setSearchParams(params);
                     setSearchInput('');
-                  }} className="hover:text-red-500">
+                  }} className="hover:text-red-400">
                     <X className="w-4 h-4" />
                   </button>
                 </span>
               )}
               {categoryId && currentCategory && (
-                <span className="inline-flex items-center gap-2 bg-zinc-100 px-3 py-2 text-sm">
+                <span className="inline-flex items-center gap-2 bg-zinc-800/50 border border-zinc-700/50 rounded-xl px-3 py-2 text-sm text-zinc-300">
                   {currentCategory.name}
-                  <button onClick={clearFilters} className="hover:text-red-500">
+                  <button onClick={clearFilters} className="hover:text-red-400">
                     <X className="w-4 h-4" />
                   </button>
                 </span>
