@@ -399,15 +399,15 @@ export default function CheckoutPage() {
               })}
             </div>
             <div className="border-t border-zinc-200 pt-4 space-y-2">
-              {currentPaymentDiscount > 0 && (
+              {currentPaymentAdjustment !== 0 && (
                 <>
                   <div className="flex justify-between text-sm text-zinc-600">
                     <span>Подытог:</span>
                     <span>{formatPrice(subtotal)} ₽</span>
                   </div>
-                  <div className="flex justify-between text-sm text-green-600">
-                    <span>Скидка за оплату ({currentPaymentDiscount}%):</span>
-                    <span>-{formatPrice(subtotal - finalTotal)} ₽</span>
+                  <div className={`flex justify-between text-sm ${currentPaymentAdjustment < 0 ? 'text-green-600' : 'text-red-600'}`}>
+                    <span>{currentPaymentAdjustment < 0 ? 'Скидка' : 'Наценка'} за оплату ({Math.abs(currentPaymentAdjustment)}%):</span>
+                    <span>{currentPaymentAdjustment < 0 ? '-' : '+'}{formatPrice(Math.abs(finalTotal - subtotal))} ₽</span>
                   </div>
                 </>
               )}
