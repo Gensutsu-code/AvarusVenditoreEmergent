@@ -21,13 +21,6 @@ const PAYMENT_METHODS = [
   { id: 'crypto', label: 'Криптовалюта', desc: 'USDT/USDC через MetaMask', icon: Wallet, color: 'amber' },
 ];
 
-const CHAINS = [
-  { id: 'eth', name: 'Ethereum', symbol: 'ETH', chainId: '0x1', explorer: 'https://etherscan.io/tx/' },
-  { id: 'bsc', name: 'BSC', symbol: 'BNB', chainId: '0x38', explorer: 'https://bscscan.com/tx/' },
-  { id: 'base', name: 'Base', symbol: 'ETH', chainId: '0x2105', explorer: 'https://basescan.org/tx/' },
-  { id: 'trc', name: 'TRON', symbol: 'TRX', chainId: null, explorer: 'https://tronscan.org/#/transaction/' },
-];
-
 export default function CheckoutPage() {
   const navigate = useNavigate();
   const { cart, cartTotal, fetchCart, loading: cartLoading } = useCart();
