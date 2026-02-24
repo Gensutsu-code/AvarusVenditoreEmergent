@@ -92,7 +92,7 @@ E-commerce platform for selling heavy vehicle parts with:
 - `send-bulk-email-btn` - Send bulk email button
 
 ## Preview URL
-https://checkout-terms.preview.emergentagent.com
+https://balance-checkout.preview.emergentagent.com
 
 ## Pending/Future Tasks
 - ~~Frontend refactoring: Split AdminPage.js into components~~ (DONE - reduced from 4917 to 3947 lines)
