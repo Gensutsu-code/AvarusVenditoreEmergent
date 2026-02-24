@@ -133,10 +133,12 @@ export default function AdminPage() {
   const [viewingOrder, setViewingOrder] = useState(null);
   
   // Tab order state
-  const defaultTabOrder = ['products', 'categories', 'orders', 'users', 'promo', 'stats', 'chat', 'telegram', 'import', 'bonus', 'discounts', 'news', 'partners', 'terms', 'notifications'];
+  const defaultTabOrder = ['products', 'orders', 'users', 'promo', 'stats', 'chat', 'telegram', 'import', 'bonus', 'discounts', 'news', 'partners', 'terms', 'notifications'];
   const [tabOrder, setTabOrder] = useState(() => {
     const saved = localStorage.getItem('adminTabOrder');
-    return saved ? JSON.parse(saved) : defaultTabOrder;
+    // Filter out 'categories' from saved order if it exists
+    const order = saved ? JSON.parse(saved) : defaultTabOrder;
+    return order.filter(tab => tab !== 'categories');
   });
   const [activeTab, setActiveTab] = useState('products');
   const [editingTabOrder, setEditingTabOrder] = useState(false);
