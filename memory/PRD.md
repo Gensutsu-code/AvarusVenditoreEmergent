@@ -19,8 +19,10 @@ E-commerce platform for selling heavy vehicle parts with:
 ├── database.py         # MongoDB connection
 ├── models.py           # Pydantic models
 ├── routes/             # API routes
+│   ├── balance.py      # Balance/prepayment system
 │   ├── terms.py        # Terms of Service CRUD
 │   ├── notifications.py # Email notifications with Resend
+│   ├── orders.py       # Orders with balance payment support
 │   └── ...
 ```
 
@@ -28,89 +30,124 @@ E-commerce platform for selling heavy vehicle parts with:
 ```
 /app/frontend/src/
 ├── pages/
-│   ├── CheckoutPage.js # Checkout with terms agreement
-│   ├── AdminPage.js    # Admin panel with terms & notifications tabs
+│   ├── AccountPage.js  # User profile with balance card
+│   ├── CheckoutPage.js # Checkout with balance payment option
+│   ├── AdminPage.js    # Admin panel
+│   └── ...
+├── components/admin/   # Extracted admin tab components
+│   ├── PromoTab.js
+│   ├── TelegramTab.js
+│   ├── TermsTab.js
+│   ├── NotificationsTab.js
 │   └── ...
 ```
 
 ## What's Been Implemented
 
+### Session: February 24, 2026
+
+#### Prepayment/Balance System (NEW - COMPLETED)
+Full mock prepayment system allowing users to manage account balance:
+
+**Backend APIs:**
+- `GET /api/user/balance` - Get user's current balance
+- `POST /api/user/balance/topup` - Top up balance (card = instant, crypto = pending)
+- `GET /api/user/balance/history` - Get transaction history
+- `POST /api/user/balance/confirm-crypto` - Confirm crypto topup with tx_hash
+- `GET /api/prepayment-settings` - Public prepayment settings
+- `GET/PUT /api/admin/prepayment-settings` - Admin settings management
+- `GET /api/admin/balance-transactions` - Admin view all transactions
+
+**Frontend Features:**
+- Balance card on `/account` page showing current balance
+- "Пополнить" (Top up) button with modal
+- Quick amount buttons (1000, 3000, 5000, 10000₽)
+- Card and Crypto payment method selection
+- Crypto network selection (ETH, BSC, Base, TRC20)
+- Balance history modal showing all transactions
+- "Оплата с баланса" (Pay from balance) option on checkout
+- Balance deduction on order with full transaction logging
+
+**Testing Status:** PASSED (100% backend, 100% frontend)
+
 ### Session: February 22, 2025
 
-#### Editable Terms of Service (NEW)
+#### Editable Terms of Service
 - Admin panel "Правила" tab for editing terms sections
 - CRUD API for terms: GET /api/terms, PUT /api/admin/terms
 - Reset to default functionality
-- Sections include: title, content, order
-- Checkout page modal fetches terms dynamically from API
+- Checkout page modal fetches terms dynamically
 
-#### Email Notifications System (NEW)
+#### Email Notifications System
 - Resend integration for sending transactional emails
-- Admin panel "Рассылки" tab with:
-  - Notification type toggles (Order confirmation, Order status, Promo)
-  - Test email functionality
-  - Bulk email/promotional emails form
-- API endpoints:
-  - GET/PUT /api/admin/notification-settings
-  - POST /api/admin/email/test
-  - POST /api/admin/email/send-bulk
-- Email templates for order confirmation and status updates
+- Admin panel "Рассылки" tab with notification toggles
+- Test email functionality
+- Bulk email/promotional emails form
 
-### Session: February 11, 2025
-
-#### Terms of Service Agreement
-- Added checkbox for agreeing to terms on checkout page
-- Clickable link "правилами предоставления услуг" opens modal
-- Modal contains 8 sections of terms (dynamic from API)
-- "Принять и согласиться" button automatically checks checkbox
-- Order button disabled until terms accepted
-
-#### Earlier Changes:
-- Removed customer statuses (retail, wholesale, partner)
-- Removed individual discounts
-- Removed double prices
-- Renamed "Скидки" tab to "Оплата" in admin
-- Backend refactoring completed
-
-## Test Credentials
-- **Admin:** admin@avarus.ru / admin123
-
-## Data Test IDs
-- `terms-checkbox` - Terms agreement checkbox
-- `terms-link` - Link to open terms modal
-- `terms-modal` - Modal with terms content
-- `accept-terms-btn` - Accept button in modal
-- `place-order-btn` - Place order button
-- `save-terms-btn` - Save terms button in admin
-- `notif-order-confirmation` - Order confirmation toggle
-- `notif-order-status` - Order status toggle
-- `notif-promotions` - Promotions toggle
-- `test-email-input` - Test email input field
-- `send-test-email-btn` - Send test email button
-- `bulk-email-subject` - Bulk email subject input
-- `bulk-email-content` - Bulk email content textarea
-- `send-bulk-email-btn` - Send bulk email button
-
-## Preview URL
-https://balance-checkout.preview.emergentagent.com
-
-## Pending/Future Tasks
-- ~~Frontend refactoring: Split AdminPage.js into components~~ (DONE - reduced from 4917 to 3947 lines)
-- Payment gateway integrations (Stripe, etc.)
-
-## Completed Refactoring (February 22, 2025)
+#### AdminPage.js Refactoring
 Extracted 8 components from AdminPage.js:
 - `PromoTab.js` - Promo banner management
 - `TelegramTab.js` - Telegram notification settings
-- `ImportTab.js` - Product import/export
 - `StatsTab.js` - Analytics dashboard
 - `DiscountsTab.js` - Payment settings and crypto wallets
 - `TermsTab.js` - Terms of Service editor
 - `NotificationsTab.js` - Email notification settings
 - `PartnersTab.js` - Partners management
+- `BonusTab.js` - Bonus programs
 
-Result: AdminPage.js reduced from ~4917 lines to ~3947 lines (~20% reduction)
+### Session: February 11, 2025
+- Terms of Service agreement checkbox on checkout
+- Removed customer statuses and individual discounts
+- Backend refactoring completed
+
+## Test Credentials
+- **Admin:** admin@example.com / admin123
+- **User:** test@example.com / password123
+
+## Data Test IDs
+
+### Balance/Prepayment System
+- `account-page` - Account page container
+- `balance-amount` - Balance display
+- `topup-btn` - Open topup modal button
+- `balance-history-btn` - Open history modal button
+- `topup-modal` - Topup modal container
+- `topup-amount-input` - Topup amount input
+- `topup-card-method` - Card payment option
+- `topup-crypto-method` - Crypto payment option
+- `confirm-topup-btn` - Confirm topup button
+- `history-modal` - History modal container
+- `payment-method-balance` - Balance payment option on checkout
+
+### Checkout/Terms
+- `terms-checkbox` - Terms agreement checkbox
+- `terms-link` - Link to open terms modal
+- `terms-modal` - Modal with terms content
+- `accept-terms-btn` - Accept button in modal
+- `place-order-btn` - Place order button
+- `checkout-success` - Success page container
+
+### Admin Panel
+- `save-terms-btn` - Save terms button
+- `notif-order-confirmation` - Order confirmation toggle
+- `notif-order-status` - Order status toggle
+- `notif-promotions` - Promotions toggle
+- `test-email-input` - Test email input
+- `send-test-email-btn` - Send test email button
+
+## Preview URL
+https://balance-checkout.preview.emergentagent.com
+
+## Pending/Future Tasks
+
+### P1 - Upcoming
+- **Extract ChatTab from AdminPage.js** - The ChatTab content is still inline within AdminPage.js. Should be extracted to `/app/frontend/src/components/admin/ChatTab.js`
+
+### P2 - Future
+- **Real Payment Gateway Integration** - Integrate Stripe or other payment systems to replace the mock prepayment system
+- **Additional email templates** - More customizable email templates for different notification types
 
 ## Notes
-- Resend API is in test mode - emails can only be sent to verified addresses
-- To enable full email functionality, verify domain at resend.com/domains
+- **Prepayment is MOCKED:** Card payments instantly credit balance, no real payment processing
+- **Resend API is in sandbox mode:** Emails can only be sent to verified addresses
+- **To enable full email:** Verify domain at resend.com/domains
