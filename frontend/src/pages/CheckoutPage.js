@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import axios from 'axios';
-import { ArrowLeft, CheckCircle, Banknote, MessageSquare, CreditCard, Wallet, Loader2, FileText } from 'lucide-react';
+import { ArrowLeft, CheckCircle, Banknote, MessageSquare, CreditCard, Wallet, Loader2, FileText, Sparkles, ShoppingBag } from 'lucide-react';
 import { Button } from '../components/ui/button';
 import { Input } from '../components/ui/input';
 import { Label } from '../components/ui/label';
@@ -10,6 +10,7 @@ import { Dialog, DialogContent, DialogTitle, DialogDescription } from '../compon
 import { useCart } from '../context/CartContext';
 import { useAuth } from '../context/AuthContext';
 import { toast } from 'sonner';
+import { motion, AnimatePresence } from 'framer-motion';
 import CryptoPaymentModal from '../components/CryptoPaymentModal';
 
 const API = `${process.env.REACT_APP_BACKEND_URL}/api`;
@@ -44,12 +45,10 @@ export default function CheckoutPage() {
   const [showTermsModal, setShowTermsModal] = useState(false);
   const [termsSections, setTermsSections] = useState([]);
   
-  // Balance payment state
   const [userBalance, setUserBalance] = useState(0);
   const [payWithBalance, setPayWithBalance] = useState(false);
   const [prepaymentSettings, setPrepaymentSettings] = useState({ prepayment_enabled: true });
 
-  // Check if payment method is enabled
   const isPaymentMethodEnabled = (method) => paymentSettings[`${method}_enabled`] !== false;
 
   useEffect(() => {
@@ -59,7 +58,6 @@ export default function CheckoutPage() {
     }
     axios.get(`${API}/payment-settings`).then(res => {
       setPaymentSettings(res.data);
-      // Auto-select first enabled payment method
       if (res.data.cash_enabled !== false) {
         setPaymentMethod('cash');
       } else if (res.data.card_enabled !== false) {
@@ -69,9 +67,7 @@ export default function CheckoutPage() {
       }
     }).catch(() => {});
     axios.get(`${API}/crypto-wallets`).then(res => setCryptoWallets(res.data)).catch(() => {});
-    // Fetch terms of service
     axios.get(`${API}/terms`).then(res => setTermsSections(res.data.sections || [])).catch(() => {});
-    // Fetch prepayment settings
     axios.get(`${API}/prepayment-settings`).then(res => setPrepaymentSettings(res.data)).catch(() => {});
   }, [user]);
 
@@ -93,15 +89,11 @@ export default function CheckoutPage() {
   const getPaymentAdjustment = (method) => paymentSettings[`${method}_adjustment`] ?? (method === 'cash' ? -15 : method === 'crypto' ? -20 : 0);
   const currentPaymentAdjustment = payWithBalance ? (paymentSettings.balance_adjustment ?? 0) : getPaymentAdjustment(paymentMethod);
 
-  // Calculate subtotal (before payment adjustment)
   const subtotal = cart.items.reduce((sum, item) => sum + item.price * item.quantity, 0);
-
-  // Apply payment adjustment (negative = discount, positive = surcharge)
   const finalTotal = currentPaymentAdjustment !== 0 
     ? Math.round(subtotal * (1 + currentPaymentAdjustment / 100))
     : subtotal;
 
-  // Check if user can pay with balance
   const canPayWithBalance = prepaymentSettings.prepayment_enabled && userBalance >= finalTotal;
 
   const handleSubmit = async (e) => {
@@ -109,7 +101,6 @@ export default function CheckoutPage() {
     if (!form.full_name.trim() || !form.address.trim() || !form.phone.trim()) { toast.error('Заполните все обязательные поля'); return; }
     setLoading(true);
     
-    // Save the final total before cart is cleared
     const orderAmount = finalTotal;
     
     try {
@@ -122,7 +113,6 @@ export default function CheckoutPage() {
       setOrderId(newOrderId);
       
       if (payWithBalance) {
-        // Balance payment - instant success
         await fetchCart();
         setSuccess(true);
         toast.success('Заказ оплачен с баланса!');
@@ -131,7 +121,6 @@ export default function CheckoutPage() {
 
       if (paymentMethod === 'card') {
         await fetchCart();
-        // Redirect to YuKassa
         try {
           const payRes = await axios.post(`${API}/payments/yookassa/create`, {
             order_id: newOrderId, amount: orderAmount, return_url: `${SITE_URL}/orders`
@@ -145,10 +134,8 @@ export default function CheckoutPage() {
         }
         setSuccess(true);
       } else if (paymentMethod === 'crypto') {
-        // Open crypto payment modal with saved amount
         setCryptoPaymentAmount(orderAmount);
         setShowCryptoModal(true);
-        // Don't clear cart yet - will be done after successful payment
       } else {
         await fetchCart();
         setSuccess(true);
@@ -164,17 +151,16 @@ export default function CheckoutPage() {
   const handleCryptoSuccess = async (txHash) => {
     setTxHash(txHash);
     setShowCryptoModal(false);
-    await fetchCart(); // Clear cart after successful payment
+    await fetchCart();
     setSuccess(true);
     toast.success('Заказ оплачен криптовалютой!');
   };
 
   const handleCryptoClose = async () => {
-    // Cancel unpaid order and return items to cart
     if (orderId) {
       try {
         await axios.post(`${API}/orders/${orderId}/cancel`);
-        await fetchCart(); // Refresh cart to show returned items
+        await fetchCart();
         toast.info('Заказ отменён. Товары возвращены в корзину.');
       } catch (err) {
         console.error('Failed to cancel order:', err);
@@ -192,19 +178,80 @@ export default function CheckoutPage() {
 
   if (success) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-zinc-950" data-testid="checkout-success">
-        <div className="text-center max-w-md px-4">
-          <div className="w-20 h-20 mx-auto bg-green-500/10 rounded-full flex items-center justify-center mb-4">
-            <CheckCircle className="w-10 h-10 text-green-400" />
-          </div>
-          <h1 className="text-2xl font-bold text-zinc-100 mb-2">Заказ оформлен!</h1>
-          <p className="text-zinc-400 mb-2">Номер заказа: <span className="font-mono font-semibold text-orange-400">{orderId?.slice(0, 8)}</span></p>
-          <p className="text-zinc-500 mb-6">Мы свяжемся с вами для подтверждения.</p>
-          <div className="flex gap-4 justify-center">
-            <Link to="/account"><Button variant="outline" className="border-zinc-700 text-zinc-300 hover:bg-zinc-800 rounded-xl">Мои заказы</Button></Link>
-            <Link to="/catalog"><Button className="bg-gradient-to-r from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700 text-white rounded-xl">Продолжить покупки</Button></Link>
-          </div>
+      <div className="min-h-screen bg-zinc-950 flex items-center justify-center px-4" data-testid="checkout-success">
+        {/* Background effects */}
+        <div className="fixed inset-0 overflow-hidden pointer-events-none">
+          <motion.div 
+            className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] rounded-full bg-green-500/10 blur-3xl"
+            animate={{ scale: [1, 1.2, 1], opacity: [0.3, 0.5, 0.3] }}
+            transition={{ duration: 4, repeat: Infinity }}
+          />
         </div>
+        
+        <motion.div 
+          className="relative text-center max-w-md"
+          initial={{ opacity: 0, scale: 0.9 }}
+          animate={{ opacity: 1, scale: 1 }}
+          transition={{ duration: 0.5 }}
+        >
+          <motion.div 
+            className="w-24 h-24 mx-auto bg-gradient-to-br from-green-500/20 to-green-600/20 rounded-3xl flex items-center justify-center mb-6 border border-green-500/30"
+            initial={{ scale: 0 }}
+            animate={{ scale: 1, rotate: [0, 10, 0] }}
+            transition={{ duration: 0.5, delay: 0.2 }}
+          >
+            <CheckCircle className="w-12 h-12 text-green-400" />
+          </motion.div>
+          <motion.h1 
+            className="text-3xl font-bold text-white mb-3"
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.3 }}
+          >
+            Заказ оформлен!
+          </motion.h1>
+          <motion.p 
+            className="text-zinc-400 mb-2"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ delay: 0.4 }}
+          >
+            Номер заказа: <span className="font-mono font-semibold text-orange-400">{orderId?.slice(0, 8)}</span>
+          </motion.p>
+          <motion.p 
+            className="text-zinc-500 mb-8"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ delay: 0.5 }}
+          >
+            Мы свяжемся с вами для подтверждения.
+          </motion.p>
+          <motion.div 
+            className="flex gap-4 justify-center"
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.6 }}
+          >
+            <Link to="/account">
+              <motion.button 
+                className="px-6 py-3 rounded-xl border border-zinc-700 text-zinc-300 hover:bg-zinc-800/50 font-medium transition-all duration-300"
+                whileHover={{ scale: 1.02 }}
+                whileTap={{ scale: 0.98 }}
+              >
+                Мои заказы
+              </motion.button>
+            </Link>
+            <Link to="/catalog">
+              <motion.button 
+                className="px-6 py-3 rounded-xl bg-gradient-to-r from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700 text-white font-bold transition-all duration-300 shadow-lg shadow-orange-500/20"
+                whileHover={{ scale: 1.02, boxShadow: '0 0 30px rgba(249, 115, 22, 0.4)' }}
+                whileTap={{ scale: 0.98 }}
+              >
+                Продолжить покупки
+              </motion.button>
+            </Link>
+          </motion.div>
+        </motion.div>
       </div>
     );
   }
@@ -212,46 +259,98 @@ export default function CheckoutPage() {
   return (
     <>
     <div className="min-h-screen bg-zinc-950" data-testid="checkout-page">
-      <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <div className="mb-8">
-          <Link to="/cart" className="inline-flex items-center gap-2 text-zinc-500 hover:text-orange-400 transition-colors mb-4">
-            <ArrowLeft className="w-4 h-4" /> Назад в корзину
+      {/* Background effects */}
+      <div className="fixed inset-0 overflow-hidden pointer-events-none">
+        <motion.div 
+          className="absolute top-20 right-20 w-96 h-96 rounded-full bg-orange-500/5 blur-3xl"
+          animate={{ scale: [1, 1.2, 1], opacity: [0.3, 0.5, 0.3] }}
+          transition={{ duration: 8, repeat: Infinity }}
+        />
+        <motion.div 
+          className="absolute bottom-20 left-20 w-80 h-80 rounded-full bg-purple-500/5 blur-3xl"
+          animate={{ scale: [1.2, 1, 1.2], opacity: [0.3, 0.5, 0.3] }}
+          transition={{ duration: 10, repeat: Infinity }}
+        />
+      </div>
+
+      <div className="relative max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <motion.div 
+          className="mb-8"
+          initial={{ opacity: 0, y: -20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.5 }}
+        >
+          <Link to="/cart" className="inline-flex items-center gap-2 text-zinc-500 hover:text-orange-400 transition-colors mb-4 group">
+            <ArrowLeft className="w-4 h-4 group-hover:-translate-x-1 transition-transform" /> 
+            Назад в корзину
           </Link>
-          <h1 className="text-2xl md:text-3xl font-bold tracking-tight uppercase text-zinc-100">Оформление заказа</h1>
-        </div>
+          <h1 className="text-2xl md:text-3xl font-bold tracking-tight uppercase">
+            <span className="bg-gradient-to-r from-orange-400 to-orange-600 bg-clip-text text-transparent">
+              Оформление заказа
+            </span>
+          </h1>
+        </motion.div>
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-          <form onSubmit={handleSubmit} className="space-y-6">
-            <div>
-              <Label htmlFor="full_name" className="text-xs font-bold uppercase tracking-widest text-zinc-500">ФИО получателя *</Label>
-              <Input id="full_name" value={form.full_name} onChange={(e) => setForm({ ...form, full_name: e.target.value })}
-                placeholder="Иванов Иван Иванович" className="mt-2 h-12 bg-zinc-50" required data-testid="checkout-fullname" />
-            </div>
-            <div>
-              <Label htmlFor="address" className="text-xs font-bold uppercase tracking-widest text-zinc-500">Адрес доставки *</Label>
-              <Input id="address" value={form.address} onChange={(e) => setForm({ ...form, address: e.target.value })}
-                placeholder="Город, улица, дом, квартира" className="mt-2 h-12 bg-zinc-50" required data-testid="checkout-address" />
-            </div>
-            <div>
-              <Label htmlFor="phone" className="text-xs font-bold uppercase tracking-widest text-zinc-500">Телефон *</Label>
-              <Input id="phone" type="tel" value={form.phone} onChange={(e) => setForm({ ...form, phone: e.target.value })}
-                placeholder="+7 (___) ___-__-__" className="mt-2 h-12 bg-zinc-50" required data-testid="checkout-phone" />
-            </div>
-            <div>
-              <Label htmlFor="comment" className="text-xs font-bold uppercase tracking-widest text-zinc-500 flex items-center gap-2">
-                <MessageSquare className="w-4 h-4" /> Комментарий
-              </Label>
-              <Textarea id="comment" value={form.comment} onChange={(e) => setForm({ ...form, comment: e.target.value })}
-                placeholder="Пожелания..." className="mt-2 bg-zinc-50 min-h-[60px]" data-testid="checkout-comment" />
-            </div>
+          {/* Form */}
+          <motion.form 
+            onSubmit={handleSubmit} 
+            className="space-y-6"
+            initial={{ opacity: 0, x: -20 }}
+            animate={{ opacity: 1, x: 0 }}
+            transition={{ duration: 0.5, delay: 0.1 }}
+          >
+            {/* Shipping info */}
+            <motion.div 
+              className="glass-card p-6 space-y-5"
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.2 }}
+            >
+              <h2 className="text-sm font-bold uppercase tracking-widest text-zinc-500 flex items-center gap-2">
+                <ShoppingBag className="w-4 h-4" />
+                Данные доставки
+              </h2>
+              
+              <div>
+                <Label htmlFor="full_name" className="text-xs font-bold uppercase tracking-widest text-zinc-500 mb-2 block">ФИО получателя *</Label>
+                <Input id="full_name" value={form.full_name} onChange={(e) => setForm({ ...form, full_name: e.target.value })}
+                  placeholder="Иванов Иван Иванович" className="glass-input h-12 text-white placeholder:text-zinc-600" required data-testid="checkout-fullname" />
+              </div>
+              <div>
+                <Label htmlFor="address" className="text-xs font-bold uppercase tracking-widest text-zinc-500 mb-2 block">Адрес доставки *</Label>
+                <Input id="address" value={form.address} onChange={(e) => setForm({ ...form, address: e.target.value })}
+                  placeholder="Город, улица, дом, квартира" className="glass-input h-12 text-white placeholder:text-zinc-600" required data-testid="checkout-address" />
+              </div>
+              <div>
+                <Label htmlFor="phone" className="text-xs font-bold uppercase tracking-widest text-zinc-500 mb-2 block">Телефон *</Label>
+                <Input id="phone" type="tel" value={form.phone} onChange={(e) => setForm({ ...form, phone: e.target.value })}
+                  placeholder="+7 (___) ___-__-__" className="glass-input h-12 text-white placeholder:text-zinc-600" required data-testid="checkout-phone" />
+              </div>
+              <div>
+                <Label htmlFor="comment" className="text-xs font-bold uppercase tracking-widest text-zinc-500 flex items-center gap-2 mb-2">
+                  <MessageSquare className="w-4 h-4" /> Комментарий
+                </Label>
+                <Textarea id="comment" value={form.comment} onChange={(e) => setForm({ ...form, comment: e.target.value })}
+                  placeholder="Пожелания к доставке..." className="glass-input min-h-[80px] text-white placeholder:text-zinc-600" data-testid="checkout-comment" />
+              </div>
+            </motion.div>
 
             {/* Payment method selection */}
-            <div>
-              <Label className="text-xs font-bold uppercase tracking-widest text-zinc-500 mb-3 block">Способ оплаты</Label>
-              <div className="space-y-2">
+            <motion.div 
+              className="glass-card p-6"
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.3 }}
+            >
+              <Label className="text-sm font-bold uppercase tracking-widest text-zinc-500 mb-4 block flex items-center gap-2">
+                <CreditCard className="w-4 h-4" />
+                Способ оплаты
+              </Label>
+              <div className="space-y-3">
                 {/* Balance payment option */}
                 {prepaymentSettings.prepayment_enabled && userBalance > 0 && (
-                  <button 
+                  <motion.button 
                     type="button" 
                     onClick={() => {
                       if (canPayWithBalance) {
@@ -260,35 +359,42 @@ export default function CheckoutPage() {
                         toast.error(`Недостаточно средств. Баланс: ${formatPrice(userBalance)}₽`);
                       }
                     }}
-                    className={`w-full flex items-center gap-4 p-4 rounded-lg border-2 transition-all text-left ${
+                    className={`w-full flex items-center gap-4 p-4 rounded-xl border transition-all duration-300 text-left ${
                       payWithBalance 
-                        ? 'border-purple-500 bg-purple-50' 
+                        ? 'bg-purple-500/10 border-purple-500/50' 
                         : canPayWithBalance
-                          ? 'border-zinc-200 bg-white hover:border-purple-300'
-                          : 'border-zinc-200 bg-zinc-50 opacity-70'
-                    }`} 
+                          ? 'bg-white/5 border-white/10 hover:bg-white/10'
+                          : 'bg-zinc-800/30 border-zinc-700/30 opacity-60'
+                    }`}
+                    whileHover={canPayWithBalance ? { scale: 1.01 } : {}}
+                    whileTap={canPayWithBalance ? { scale: 0.99 } : {}}
                     data-testid="payment-method-balance"
                   >
-                    <div className={`w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0 ${
-                      payWithBalance ? 'bg-purple-500 text-white' : 'bg-purple-100 text-purple-600'
+                    <div className={`w-12 h-12 rounded-xl flex items-center justify-center flex-shrink-0 ${
+                      payWithBalance ? 'bg-purple-500/20' : 'bg-zinc-700/50'
                     }`}>
-                      <Wallet className="w-5 h-5" />
+                      <Sparkles className={`w-6 h-6 ${payWithBalance ? 'text-purple-400' : 'text-zinc-500'}`} />
                     </div>
                     <div className="flex-1">
-                      <p className={`font-semibold ${payWithBalance ? 'text-purple-700' : 'text-zinc-800'}`}>
+                      <p className={`font-semibold ${payWithBalance ? 'text-purple-300' : 'text-zinc-300'}`}>
                         Оплата с баланса
                       </p>
                       <p className="text-xs text-zinc-500">
-                        Баланс: <span className={canPayWithBalance ? 'text-green-600 font-semibold' : 'text-red-500'}>{formatPrice(userBalance)}₽</span>
-                        {!canPayWithBalance && <span className="text-red-500"> (недостаточно)</span>}
+                        Баланс: <span className={canPayWithBalance ? 'text-green-400 font-semibold' : 'text-red-400'}>{formatPrice(userBalance)}₽</span>
+                        {!canPayWithBalance && <span className="text-red-400"> (недостаточно)</span>}
                       </p>
                     </div>
-                    <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center ${
-                      payWithBalance ? 'border-purple-500' : 'border-zinc-300'
+                    <div className={`w-6 h-6 rounded-full border-2 flex items-center justify-center ${
+                      payWithBalance ? 'border-purple-500' : 'border-zinc-600'
                     }`}>
-                      {payWithBalance && <div className="w-3 h-3 rounded-full bg-purple-500" />}
+                      {payWithBalance && <motion.div 
+                        className="w-3 h-3 rounded-full bg-purple-500"
+                        initial={{ scale: 0 }}
+                        animate={{ scale: 1 }}
+                        transition={{ duration: 0.2 }}
+                      />}
                     </div>
-                  </button>
+                  </motion.button>
                 )}
                 
                 {/* Regular payment methods */}
@@ -298,7 +404,9 @@ export default function CheckoutPage() {
                   const isSelected = !payWithBalance && paymentMethod === method.id;
                   const Icon = method.icon;
                   return (
-                    <button key={method.id} type="button" 
+                    <motion.button 
+                      key={method.id} 
+                      type="button" 
                       onClick={() => {
                         if (isEnabled) {
                           setPayWithBalance(false);
@@ -306,186 +414,265 @@ export default function CheckoutPage() {
                         }
                       }}
                       disabled={!isEnabled}
-                      className={`w-full flex items-center gap-4 p-4 rounded-lg border-2 transition-all text-left ${
+                      className={`w-full flex items-center gap-4 p-4 rounded-xl border transition-all duration-300 text-left ${
                         !isEnabled 
-                          ? 'border-zinc-200 bg-zinc-100 opacity-60 cursor-not-allowed' 
+                          ? 'bg-zinc-800/30 border-zinc-700/30 opacity-50 cursor-not-allowed' 
                           : isSelected 
-                            ? 'border-orange-500 bg-orange-50' 
-                            : 'border-zinc-200 bg-white hover:border-zinc-300'
-                      }`} data-testid={`payment-method-${method.id}`}>
-                      <div className={`w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0 ${
+                            ? 'bg-orange-500/10 border-orange-500/50' 
+                            : 'bg-white/5 border-white/10 hover:bg-white/10'
+                      }`}
+                      whileHover={isEnabled ? { scale: 1.01 } : {}}
+                      whileTap={isEnabled ? { scale: 0.99 } : {}}
+                      data-testid={`payment-method-${method.id}`}
+                    >
+                      <div className={`w-12 h-12 rounded-xl flex items-center justify-center flex-shrink-0 ${
                         !isEnabled 
-                          ? 'bg-zinc-200 text-zinc-400'
+                          ? 'bg-zinc-700/50'
                           : isSelected 
-                            ? 'bg-orange-500 text-white' 
-                            : 'bg-zinc-100 text-zinc-600'
-                      }`}><Icon className="w-5 h-5" /></div>
+                            ? 'bg-orange-500/20' 
+                            : 'bg-zinc-700/50'
+                      }`}>
+                        <Icon className={`w-6 h-6 ${
+                          !isEnabled ? 'text-zinc-600' : isSelected ? 'text-orange-400' : 'text-zinc-500'
+                        }`} />
+                      </div>
                       <div className="flex-1">
-                        <p className={`font-semibold ${!isEnabled ? 'text-zinc-400' : isSelected ? 'text-orange-700' : 'text-zinc-800'}`}>
+                        <p className={`font-semibold ${!isEnabled ? 'text-zinc-600' : isSelected ? 'text-orange-300' : 'text-zinc-300'}`}>
                           {method.label}
                         </p>
-                        <p className={`text-xs ${!isEnabled ? 'text-red-400 font-medium' : 'text-zinc-500'}`}>
+                        <p className={`text-xs ${!isEnabled ? 'text-red-400/70 font-medium' : 'text-zinc-500'}`}>
                           {!isEnabled ? 'Временно недоступно' : method.desc}
                         </p>
                       </div>
                       {isEnabled && adjustment !== 0 && (
-                        <span className={`text-xs font-bold px-2.5 py-1 rounded-full ${
-                          adjustment < 0 ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'
+                        <span className={`text-xs font-bold px-3 py-1.5 rounded-full ${
+                          adjustment < 0 ? 'bg-green-500/20 text-green-400' : 'bg-red-500/20 text-red-400'
                         }`}>
                           {adjustment < 0 ? `-${Math.abs(adjustment)}%` : `+${adjustment}%`}
                         </span>
                       )}
-                      <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center ${
-                        !isEnabled ? 'border-zinc-300' : isSelected ? 'border-orange-500' : 'border-zinc-300'
+                      <div className={`w-6 h-6 rounded-full border-2 flex items-center justify-center ${
+                        !isEnabled ? 'border-zinc-700' : isSelected ? 'border-orange-500' : 'border-zinc-600'
                       }`}>
-                        {isSelected && isEnabled && <div className="w-3 h-3 rounded-full bg-orange-500" />}
+                        {isSelected && isEnabled && <motion.div 
+                          className="w-3 h-3 rounded-full bg-orange-500"
+                          initial={{ scale: 0 }}
+                          animate={{ scale: 1 }}
+                          transition={{ duration: 0.2 }}
+                        />}
                       </div>
-                    </button>
+                    </motion.button>
                   );
                 })}
               </div>
-            </div>
+            </motion.div>
 
-            {/* Terms agreement checkbox */}
-            <div className="flex items-start gap-3 p-4 bg-zinc-50 rounded-lg border border-zinc-200">
-              <input 
-                type="checkbox" 
-                id="terms-agreement"
-                checked={agreedToTerms}
-                onChange={(e) => setAgreedToTerms(e.target.checked)}
-                className="w-5 h-5 mt-0.5 rounded border-zinc-300 text-orange-500 focus:ring-orange-500 cursor-pointer"
-                data-testid="terms-checkbox"
-              />
-              <label htmlFor="terms-agreement" className="text-sm text-zinc-600 cursor-pointer">
-                Я ознакомился и согласен с{' '}
-                <button 
+            {/* Terms agreement */}
+            <motion.div 
+              className="glass-card p-5"
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.4 }}
+            >
+              <div className="flex items-start gap-4">
+                <motion.button
                   type="button"
-                  onClick={() => setShowTermsModal(true)}
-                  className="text-orange-600 hover:text-orange-700 underline font-medium"
-                  data-testid="terms-link"
+                  onClick={() => setAgreedToTerms(!agreedToTerms)}
+                  className={`w-6 h-6 rounded-lg border-2 flex items-center justify-center flex-shrink-0 mt-0.5 transition-all duration-300 ${
+                    agreedToTerms 
+                      ? 'bg-orange-500 border-orange-500' 
+                      : 'border-zinc-600 hover:border-zinc-500'
+                  }`}
+                  whileTap={{ scale: 0.9 }}
+                  data-testid="terms-checkbox"
                 >
-                  правилами предоставления услуг
-                </button>
-              </label>
-            </div>
+                  <AnimatePresence>
+                    {agreedToTerms && (
+                      <motion.svg 
+                        className="w-4 h-4 text-white" 
+                        fill="none" 
+                        viewBox="0 0 24 24" 
+                        stroke="currentColor"
+                        initial={{ scale: 0 }}
+                        animate={{ scale: 1 }}
+                        exit={{ scale: 0 }}
+                      >
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
+                      </motion.svg>
+                    )}
+                  </AnimatePresence>
+                </motion.button>
+                <label className="text-sm text-zinc-400 cursor-pointer" onClick={() => setAgreedToTerms(!agreedToTerms)}>
+                  Я ознакомился и согласен с{' '}
+                  <button 
+                    type="button"
+                    onClick={(e) => { e.stopPropagation(); setShowTermsModal(true); }}
+                    className="text-orange-400 hover:text-orange-300 underline font-medium transition-colors"
+                    data-testid="terms-link"
+                  >
+                    правилами предоставления услуг
+                  </button>
+                </label>
+              </div>
+            </motion.div>
 
-            <Button type="submit" disabled={loading || !agreedToTerms}
-              className={`w-full font-bold uppercase tracking-wide h-12 ${
-                agreedToTerms 
-                  ? 'bg-orange-500 hover:bg-orange-600 text-white' 
-                  : 'bg-zinc-300 text-zinc-500 cursor-not-allowed'
-              }`} data-testid="place-order-btn">
-              {loading ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : null}
-              {loading ? 'Оформление...' : paymentMethod === 'card' ? 'Оплатить картой' : paymentMethod === 'crypto' ? 'Перейти к оплате' : 'Подтвердить заказ'}
-            </Button>
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.5 }}
+              whileHover={{ scale: agreedToTerms ? 1.01 : 1 }}
+              whileTap={{ scale: agreedToTerms ? 0.99 : 1 }}
+            >
+              <Button type="submit" disabled={loading || !agreedToTerms}
+                className={`w-full font-bold uppercase tracking-wide h-14 rounded-xl text-lg transition-all duration-300 ${
+                  agreedToTerms 
+                    ? 'bg-gradient-to-r from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700 text-white shadow-lg shadow-orange-500/20' 
+                    : 'bg-zinc-800 text-zinc-500 cursor-not-allowed'
+                }`} data-testid="place-order-btn">
+                {loading ? <Loader2 className="w-5 h-5 animate-spin mr-2" /> : null}
+                {loading ? 'Оформление...' : payWithBalance ? 'Оплатить с баланса' : paymentMethod === 'card' ? 'Оплатить картой' : paymentMethod === 'crypto' ? 'Перейти к оплате' : 'Подтвердить заказ'}
+              </Button>
+            </motion.div>
             {!agreedToTerms && (
-              <p className="text-xs text-zinc-500 text-center">Для оформления заказа необходимо согласиться с правилами</p>
+              <motion.p 
+                className="text-xs text-zinc-600 text-center"
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                transition={{ delay: 0.6 }}
+              >
+                Для оформления заказа необходимо согласиться с правилами
+              </motion.p>
             )}
-          </form>
+          </motion.form>
 
           {/* Order summary */}
-          <div className="border border-zinc-200 rounded-xl p-6 h-fit sticky top-20">
-            <h2 className="text-xs font-bold uppercase tracking-widest text-zinc-500 mb-4">Ваш заказ</h2>
-            <div className="space-y-3 mb-6">
-              {cart.items.map(item => {
-                return (
-                <div key={item.product_id} className="flex gap-3 text-sm border-b border-zinc-100 pb-3">
+          <motion.div 
+            className="glass-card p-6 h-fit sticky top-24"
+            initial={{ opacity: 0, x: 20 }}
+            animate={{ opacity: 1, x: 0 }}
+            transition={{ duration: 0.5, delay: 0.2 }}
+          >
+            <h2 className="text-sm font-bold uppercase tracking-widest text-zinc-500 mb-5 flex items-center gap-2">
+              <ShoppingBag className="w-4 h-4" />
+              Ваш заказ
+            </h2>
+            <div className="space-y-4 mb-6">
+              {cart.items.map((item, index) => (
+                <motion.div 
+                  key={item.product_id} 
+                  className="flex gap-4 text-sm border-b border-zinc-800/50 pb-4"
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: 0.3 + index * 0.05 }}
+                >
                   <div className="flex-1">
-                    {item.manufacturer && <p className="text-xs font-bold text-orange-600">{item.manufacturer}</p>}
-                    <p className="text-zinc-900 font-medium">{item.name}</p>
-                    <p className="text-zinc-500 text-xs">{item.quantity} шт. × {formatPrice(item.price)} ₽</p>
+                    {item.manufacturer && <p className="text-xs font-bold text-orange-400 mb-1">{item.manufacturer}</p>}
+                    <p className="text-zinc-200 font-medium">{item.name}</p>
+                    <p className="text-zinc-500 text-xs mt-1">{item.quantity} шт. × {formatPrice(item.price)} ₽</p>
                   </div>
-                  <span className="font-semibold whitespace-nowrap">{formatPrice(item.price * item.quantity)} ₽</span>
-                </div>
-                );
-              })}
+                  <span className="font-bold text-zinc-200 whitespace-nowrap">{formatPrice(item.price * item.quantity)} ₽</span>
+                </motion.div>
+              ))}
             </div>
-            <div className="border-t border-zinc-200 pt-4 space-y-2">
+            <div className="border-t border-zinc-700/50 pt-5 space-y-3">
               {currentPaymentAdjustment !== 0 && (
                 <>
-                  <div className="flex justify-between text-sm text-zinc-600">
+                  <div className="flex justify-between text-sm text-zinc-400">
                     <span>Подытог:</span>
                     <span>{formatPrice(subtotal)} ₽</span>
                   </div>
-                  <div className={`flex justify-between text-sm ${currentPaymentAdjustment < 0 ? 'text-green-600' : 'text-red-600'}`}>
-                    <span>{currentPaymentAdjustment < 0 ? 'Скидка' : 'Наценка'} за оплату ({Math.abs(currentPaymentAdjustment)}%):</span>
+                  <div className={`flex justify-between text-sm ${currentPaymentAdjustment < 0 ? 'text-green-400' : 'text-red-400'}`}>
+                    <span>{currentPaymentAdjustment < 0 ? 'Скидка' : 'Наценка'} ({Math.abs(currentPaymentAdjustment)}%):</span>
                     <span>{currentPaymentAdjustment < 0 ? '-' : '+'}{formatPrice(Math.abs(finalTotal - subtotal))} ₽</span>
                   </div>
                 </>
               )}
-              <div className="flex justify-between">
-                <span className="font-semibold">Итого:</span>
-                <span className="text-xl font-bold text-zinc-900" data-testid="checkout-total">{formatPrice(finalTotal)} ₽</span>
+              <div className="flex justify-between items-center pt-2">
+                <span className="font-bold text-zinc-300">Итого:</span>
+                <motion.span 
+                  className="text-2xl font-bold bg-gradient-to-r from-orange-400 to-orange-500 bg-clip-text text-transparent"
+                  data-testid="checkout-total"
+                  key={finalTotal}
+                  initial={{ scale: 1.1 }}
+                  animate={{ scale: 1 }}
+                  transition={{ duration: 0.2 }}
+                >
+                  {formatPrice(finalTotal)} ₽
+                </motion.span>
               </div>
             </div>
-          </div>
+          </motion.div>
         </div>
       </div>
 
       {/* Terms Modal */}
       <Dialog open={showTermsModal} onOpenChange={setShowTermsModal}>
-        <DialogContent className="max-w-2xl max-h-[80vh] overflow-hidden flex flex-col" data-testid="terms-modal">
-          <div className="flex items-center justify-between pb-4 border-b border-zinc-200">
+        <DialogContent className="max-w-2xl max-h-[80vh] overflow-hidden flex flex-col bg-zinc-900/95 backdrop-blur-xl border border-white/10 rounded-2xl" data-testid="terms-modal">
+          <div className="flex items-center justify-between pb-4 border-b border-zinc-700/50">
             <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-full bg-orange-100 flex items-center justify-center">
-                <FileText className="w-5 h-5 text-orange-600" />
+              <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-orange-500/20 to-orange-600/20 flex items-center justify-center border border-orange-500/30">
+                <FileText className="w-6 h-6 text-orange-400" />
               </div>
               <div>
-                <DialogTitle className="text-xl font-bold text-zinc-900">Правила предоставления услуг</DialogTitle>
+                <DialogTitle className="text-xl font-bold text-white">Правила предоставления услуг</DialogTitle>
                 <DialogDescription className="sr-only">Ознакомьтесь с правилами предоставления услуг магазина</DialogDescription>
               </div>
             </div>
           </div>
           
-          <div className="flex-1 overflow-y-auto py-4 space-y-6 text-sm text-zinc-700">
+          <div className="flex-1 overflow-y-auto py-4 space-y-6 text-sm text-zinc-300">
             {termsSections.length > 0 ? (
               termsSections.map((section) => (
                 <section key={section.id}>
-                  <h3 className="font-bold text-zinc-900 mb-2">{section.title}</h3>
+                  <h3 className="font-bold text-white mb-2">{section.title}</h3>
                   {section.content.split('\n\n').map((paragraph, idx) => (
-                    <p key={idx} className="mb-2 whitespace-pre-line">{paragraph}</p>
+                    <p key={idx} className="mb-2 whitespace-pre-line text-zinc-400">{paragraph}</p>
                   ))}
                 </section>
               ))
             ) : (
               <div className="text-center text-zinc-500 py-8">
+                <Loader2 className="w-6 h-6 animate-spin mx-auto mb-2" />
                 Загрузка правил...
               </div>
             )}
           </div>
 
-          <div className="pt-4 border-t border-zinc-200 flex gap-3">
-            <Button 
+          <div className="pt-4 border-t border-zinc-700/50 flex gap-3">
+            <motion.button
               onClick={() => {
                 setAgreedToTerms(true);
                 setShowTermsModal(false);
               }}
-              className="flex-1 bg-orange-500 hover:bg-orange-600 text-white"
+              className="flex-1 h-12 bg-gradient-to-r from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700 text-white font-bold rounded-xl transition-all duration-300"
+              whileHover={{ scale: 1.01 }}
+              whileTap={{ scale: 0.99 }}
               data-testid="accept-terms-btn"
             >
               Принять и согласиться
-            </Button>
-            <Button 
-              variant="outline" 
+            </motion.button>
+            <motion.button
               onClick={() => setShowTermsModal(false)}
-              className="flex-1"
+              className="flex-1 h-12 border border-zinc-700 text-zinc-300 hover:bg-zinc-800/50 rounded-xl font-medium transition-all duration-300"
+              whileHover={{ scale: 1.01 }}
+              whileTap={{ scale: 0.99 }}
               data-testid="close-terms-btn"
             >
               Закрыть
-            </Button>
+            </motion.button>
           </div>
         </DialogContent>
       </Dialog>
     </div>
 
-      {/* Crypto Payment Modal */}
-      <CryptoPaymentModal
-        open={showCryptoModal}
-        onClose={handleCryptoClose}
-        orderId={orderId}
-        amountRub={cryptoPaymentAmount}
-        onSuccess={handleCryptoSuccess}
-      />
+    {/* Crypto Payment Modal */}
+    <CryptoPaymentModal
+      open={showCryptoModal}
+      onClose={handleCryptoClose}
+      orderId={orderId}
+      amountRub={cryptoPaymentAmount}
+      onSuccess={handleCryptoSuccess}
+    />
     </>
   );
 }
