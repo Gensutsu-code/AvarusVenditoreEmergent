@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
-import { User, Mail, Lock, Phone, MapPin, Save, Eye, EyeOff, Camera, Trash2, MessageSquare, FileText, Wallet, CreditCard, Plus, History } from 'lucide-react';
+import { User, Mail, Lock, Phone, MapPin, Save, Eye, EyeOff, Camera, Trash2, MessageSquare, Wallet, CreditCard, Plus, History, Sparkles, Shield } from 'lucide-react';
 import { Button } from '../components/ui/button';
 import { Input } from '../components/ui/input';
 import { Label } from '../components/ui/label';
@@ -9,6 +9,7 @@ import { Textarea } from '../components/ui/textarea';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '../components/ui/dialog';
 import { useAuth } from '../context/AuthContext';
 import { toast } from 'sonner';
+import { motion, AnimatePresence } from 'framer-motion';
 
 const API = `${process.env.REACT_APP_BACKEND_URL}/api`;
 
@@ -48,7 +49,6 @@ export default function AccountPage() {
       navigate('/login');
       return;
     }
-    // Redirect admin to admin profile
     if (user.role === 'admin') {
       navigate('/admin/profile');
       return;
@@ -62,7 +62,6 @@ export default function AccountPage() {
       address_comment: user.address_comment || ''
     }));
     
-    // Fetch balance and settings
     fetchBalance();
     fetchPrepaymentSettings();
     fetchCryptoWallets();
@@ -121,7 +120,6 @@ export default function AccountPage() {
         setShowTopupModal(false);
         setTopupAmount('');
       } else if (res.data.status === 'pending') {
-        // Crypto payment - show wallet address
         toast.info(`Переведите средства на адрес и подтвердите транзакцию`);
       }
     } catch (err) {
@@ -223,66 +221,133 @@ export default function AccountPage() {
 
   if (authLoading) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="text-zinc-500">Загрузка...</div>
+      <div className="min-h-screen bg-zinc-950 flex items-center justify-center">
+        <motion.div 
+          className="w-8 h-8 border-2 border-orange-500 border-t-transparent rounded-full"
+          animate={{ rotate: 360 }}
+          transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
+        />
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-zinc-50" data-testid="account-page">
-      <div className="max-w-2xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <h1 className="text-2xl md:text-3xl font-bold tracking-tight uppercase text-zinc-900 mb-6">
-          Мой профиль
-        </h1>
+    <div className="min-h-screen bg-zinc-950" data-testid="account-page">
+      {/* Background effects */}
+      <div className="fixed inset-0 overflow-hidden pointer-events-none">
+        <motion.div 
+          className="absolute top-20 right-20 w-96 h-96 rounded-full bg-orange-500/5 blur-3xl"
+          animate={{ scale: [1, 1.2, 1], opacity: [0.3, 0.5, 0.3] }}
+          transition={{ duration: 8, repeat: Infinity }}
+        />
+        <motion.div 
+          className="absolute bottom-20 left-20 w-80 h-80 rounded-full bg-purple-500/5 blur-3xl"
+          animate={{ scale: [1.2, 1, 1.2], opacity: [0.3, 0.5, 0.3] }}
+          transition={{ duration: 10, repeat: Infinity }}
+        />
+      </div>
+
+      <div className="relative max-w-2xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <motion.h1 
+          className="text-2xl md:text-3xl font-bold tracking-tight uppercase text-white mb-8"
+          initial={{ opacity: 0, y: -20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.5 }}
+        >
+          <span className="bg-gradient-to-r from-orange-400 to-orange-600 bg-clip-text text-transparent">
+            Мой профиль
+          </span>
+        </motion.h1>
 
         <div className="space-y-6">
           {/* Balance Card */}
           {prepaymentSettings.prepayment_enabled !== false && (
-            <div className="bg-gradient-to-r from-purple-500 to-purple-600 rounded-xl border border-purple-400 shadow-lg p-6 text-white">
-              <div className="flex items-center justify-between">
+            <motion.div 
+              className="glass-card p-6 relative overflow-hidden"
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.5, delay: 0.1 }}
+            >
+              {/* Animated gradient background */}
+              <div className="absolute inset-0 bg-gradient-to-br from-purple-600/20 via-purple-500/10 to-transparent" />
+              <motion.div 
+                className="absolute -top-20 -right-20 w-40 h-40 bg-purple-500/20 rounded-full blur-3xl"
+                animate={{ scale: [1, 1.3, 1] }}
+                transition={{ duration: 4, repeat: Infinity }}
+              />
+              
+              <div className="relative flex items-center justify-between">
                 <div>
-                  <p className="text-purple-200 text-sm font-medium uppercase tracking-wider">Баланс</p>
-                  <p className="text-3xl font-bold mt-1" data-testid="balance-amount">
-                    {balance.toLocaleString('ru-RU')} ₽
+                  <p className="text-purple-300/80 text-xs font-medium uppercase tracking-wider flex items-center gap-2">
+                    <Sparkles className="w-4 h-4" />
+                    Баланс
                   </p>
+                  <motion.p 
+                    className="text-4xl font-bold mt-2 bg-gradient-to-r from-white to-purple-200 bg-clip-text text-transparent"
+                    data-testid="balance-amount"
+                    key={balance}
+                    initial={{ scale: 1.1 }}
+                    animate={{ scale: 1 }}
+                    transition={{ duration: 0.3 }}
+                  >
+                    {balance.toLocaleString('ru-RU')} ₽
+                  </motion.p>
                 </div>
                 <div className="flex gap-2">
-                  <Button
+                  <motion.button
                     onClick={() => { fetchBalanceHistory(); setShowHistoryModal(true); }}
-                    variant="ghost"
-                    className="text-white hover:bg-white/20"
+                    className="p-3 rounded-xl bg-white/5 hover:bg-white/10 border border-white/10 text-purple-300 transition-all duration-300"
+                    whileHover={{ scale: 1.05 }}
+                    whileTap={{ scale: 0.95 }}
                     data-testid="balance-history-btn"
                   >
                     <History className="w-5 h-5" />
-                  </Button>
-                  <Button
+                  </motion.button>
+                  <motion.button
                     onClick={() => setShowTopupModal(true)}
-                    className="bg-white text-purple-600 hover:bg-purple-50"
+                    className="px-4 py-3 rounded-xl bg-gradient-to-r from-purple-500 to-purple-600 hover:from-purple-600 hover:to-purple-700 text-white font-medium flex items-center gap-2 shadow-lg shadow-purple-500/20 transition-all duration-300"
+                    whileHover={{ scale: 1.02, boxShadow: '0 0 30px rgba(168, 85, 247, 0.4)' }}
+                    whileTap={{ scale: 0.98 }}
                     data-testid="topup-btn"
                   >
-                    <Plus className="w-4 h-4 mr-2" />
+                    <Plus className="w-4 h-4" />
                     Пополнить
-                  </Button>
+                  </motion.button>
                 </div>
               </div>
-              <p className="text-purple-200 text-xs mt-3">
+              <p className="relative text-purple-300/60 text-xs mt-4">
                 Оплачивайте заказы с баланса без комиссии
               </p>
-            </div>
+            </motion.div>
           )}
 
           {/* Avatar & Profile Info Card */}
-          <div className="bg-white rounded-xl border border-zinc-200 shadow-sm overflow-hidden">
-            <div className="bg-gradient-to-r from-orange-500 to-orange-600 px-6 py-6">
-              <div className="flex items-center gap-4">
+          <motion.div 
+            className="glass-card overflow-hidden"
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.5, delay: 0.2 }}
+          >
+            {/* Header with gradient */}
+            <div className="relative bg-gradient-to-r from-orange-600/30 via-orange-500/20 to-transparent px-6 py-8">
+              <motion.div 
+                className="absolute -top-10 -right-10 w-32 h-32 bg-orange-500/20 rounded-full blur-3xl"
+                animate={{ scale: [1, 1.2, 1] }}
+                transition={{ duration: 5, repeat: Infinity }}
+              />
+              
+              <div className="relative flex items-center gap-5">
                 {/* Avatar */}
-                <div className="relative group">
-                  <div className="w-20 h-20 rounded-full bg-white/20 flex items-center justify-center overflow-hidden border-4 border-white/30">
+                <motion.div 
+                  className="relative group"
+                  whileHover={{ scale: 1.05 }}
+                  transition={{ duration: 0.2 }}
+                >
+                  <div className="w-24 h-24 rounded-2xl bg-zinc-800/80 backdrop-blur-sm flex items-center justify-center overflow-hidden border-2 border-orange-500/30 shadow-lg shadow-orange-500/10">
                     {user?.avatar_url ? (
                       <img src={user.avatar_url} alt="Avatar" className="w-full h-full object-cover" />
                     ) : (
-                      <User className="w-10 h-10 text-white" />
+                      <User className="w-12 h-12 text-orange-400/60" />
                     )}
                   </div>
                   <input
@@ -292,36 +357,48 @@ export default function AccountPage() {
                     onChange={handleAvatarUpload}
                     className="hidden"
                   />
-                  <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
-                    <div className="flex gap-1">
-                      <button
-                        onClick={() => avatarInputRef.current?.click()}
-                        disabled={uploadingAvatar}
-                        className="p-2 bg-black/50 rounded-full text-white hover:bg-black/70"
-                      >
-                        <Camera className="w-4 h-4" />
-                      </button>
-                      {user?.avatar_url && (
-                        <button
-                          onClick={handleDeleteAvatar}
-                          className="p-2 bg-red-500/80 rounded-full text-white hover:bg-red-600"
+                  <AnimatePresence>
+                    <motion.div 
+                      className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 bg-black/50 rounded-2xl"
+                      initial={{ opacity: 0 }}
+                      whileHover={{ opacity: 1 }}
+                    >
+                      <div className="flex gap-2">
+                        <motion.button
+                          onClick={() => avatarInputRef.current?.click()}
+                          disabled={uploadingAvatar}
+                          className="p-2 bg-orange-500/80 rounded-xl text-white hover:bg-orange-500"
+                          whileHover={{ scale: 1.1 }}
+                          whileTap={{ scale: 0.9 }}
                         >
-                          <Trash2 className="w-4 h-4" />
-                        </button>
-                      )}
-                    </div>
-                  </div>
-                </div>
-                <div className="text-white">
-                  <h2 className="text-xl font-bold">{user?.name || 'Пользователь'}</h2>
-                  <p className="text-orange-200 text-sm">{user?.email}</p>
+                          <Camera className="w-5 h-5" />
+                        </motion.button>
+                        {user?.avatar_url && (
+                          <motion.button
+                            onClick={handleDeleteAvatar}
+                            className="p-2 bg-red-500/80 rounded-xl text-white hover:bg-red-500"
+                            whileHover={{ scale: 1.1 }}
+                            whileTap={{ scale: 0.9 }}
+                          >
+                            <Trash2 className="w-5 h-5" />
+                          </motion.button>
+                        )}
+                      </div>
+                    </motion.div>
+                  </AnimatePresence>
+                </motion.div>
+                
+                <div>
+                  <h2 className="text-2xl font-bold text-white">{user?.name || 'Пользователь'}</h2>
+                  <p className="text-orange-300/70 text-sm mt-1">{user?.email}</p>
                 </div>
               </div>
             </div>
             
-            <div className="p-6 pt-4 space-y-4">
+            {/* Form fields */}
+            <div className="p-6 space-y-5">
               <div>
-                <Label className="text-xs font-bold uppercase text-zinc-500 flex items-center gap-2">
+                <Label className="text-xs font-bold uppercase text-zinc-500 flex items-center gap-2 mb-2">
                   <User className="w-4 h-4" />
                   Имя
                 </Label>
@@ -329,25 +406,25 @@ export default function AccountPage() {
                   value={formData.name}
                   onChange={(e) => setFormData({ ...formData, name: e.target.value })}
                   placeholder="Введите имя"
-                  className="mt-1"
+                  className="glass-input h-12 text-white placeholder:text-zinc-500"
                 />
               </div>
               
               <div>
-                <Label className="text-xs font-bold uppercase text-zinc-500 flex items-center gap-2">
+                <Label className="text-xs font-bold uppercase text-zinc-500 flex items-center gap-2 mb-2">
                   <Mail className="w-4 h-4" />
                   Email
                 </Label>
                 <Input
                   value={formData.email}
                   disabled
-                  className="mt-1 bg-zinc-50 cursor-not-allowed"
+                  className="glass-input h-12 text-zinc-400 bg-zinc-800/30 cursor-not-allowed"
                 />
-                <p className="text-xs text-zinc-400 mt-1">Email нельзя изменить</p>
+                <p className="text-xs text-zinc-600 mt-1">Email нельзя изменить</p>
               </div>
               
               <div>
-                <Label className="text-xs font-bold uppercase text-zinc-500 flex items-center gap-2">
+                <Label className="text-xs font-bold uppercase text-zinc-500 flex items-center gap-2 mb-2">
                   <Phone className="w-4 h-4" />
                   Телефон
                 </Label>
@@ -355,12 +432,12 @@ export default function AccountPage() {
                   value={formData.phone}
                   onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
                   placeholder="+7 (XXX) XXX-XX-XX"
-                  className="mt-1"
+                  className="glass-input h-12 text-white placeholder:text-zinc-500"
                 />
               </div>
               
               <div>
-                <Label className="text-xs font-bold uppercase text-zinc-500 flex items-center gap-2">
+                <Label className="text-xs font-bold uppercase text-zinc-500 flex items-center gap-2 mb-2">
                   <MapPin className="w-4 h-4" />
                   Адрес доставки
                 </Label>
@@ -368,12 +445,12 @@ export default function AccountPage() {
                   value={formData.address}
                   onChange={(e) => setFormData({ ...formData, address: e.target.value })}
                   placeholder="Город, улица, дом, квартира"
-                  className="mt-1"
+                  className="glass-input h-12 text-white placeholder:text-zinc-500"
                 />
               </div>
 
               <div>
-                <Label className="text-xs font-bold uppercase text-zinc-500 flex items-center gap-2">
+                <Label className="text-xs font-bold uppercase text-zinc-500 flex items-center gap-2 mb-2">
                   <MessageSquare className="w-4 h-4" />
                   Комментарий к адресу
                 </Label>
@@ -381,247 +458,299 @@ export default function AccountPage() {
                   value={formData.address_comment}
                   onChange={(e) => setFormData({ ...formData, address_comment: e.target.value })}
                   placeholder="Код домофона, этаж, ориентиры..."
-                  className="mt-1 min-h-[80px]"
+                  className="glass-input min-h-[80px] text-white placeholder:text-zinc-500"
                 />
               </div>
               
-              <Button 
-                onClick={handleSaveProfile}
-                disabled={saving}
-                className="w-full bg-orange-500 hover:bg-orange-600"
+              <motion.div
+                whileHover={{ scale: 1.01 }}
+                whileTap={{ scale: 0.99 }}
               >
-                <Save className="w-4 h-4 mr-2" />
-                {saving ? 'Сохранение...' : 'Сохранить изменения'}
-              </Button>
+                <Button 
+                  onClick={handleSaveProfile}
+                  disabled={saving}
+                  className="w-full h-12 bg-gradient-to-r from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700 text-white font-bold uppercase tracking-wide rounded-xl shadow-lg shadow-orange-500/20 transition-all duration-300"
+                >
+                  <Save className="w-4 h-4 mr-2" />
+                  {saving ? 'Сохранение...' : 'Сохранить изменения'}
+                </Button>
+              </motion.div>
             </div>
-          </div>
+          </motion.div>
 
           {/* Password Change Card */}
-          <div className="bg-white rounded-xl border border-zinc-200 shadow-sm overflow-hidden">
-            <div className="bg-gradient-to-r from-zinc-700 to-zinc-800 px-6 py-4">
+          <motion.div 
+            className="glass-card overflow-hidden"
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.5, delay: 0.3 }}
+          >
+            <div className="relative bg-gradient-to-r from-zinc-800/50 to-transparent px-6 py-6">
               <div className="flex items-center justify-between">
-                <div className="flex items-center gap-3">
-                  <div className="w-12 h-12 bg-white/20 rounded-full flex items-center justify-center">
-                    <Lock className="w-6 h-6 text-white" />
+                <div className="flex items-center gap-4">
+                  <div className="w-14 h-14 rounded-xl bg-zinc-700/50 flex items-center justify-center border border-zinc-600/30">
+                    <Shield className="w-7 h-7 text-zinc-300" />
                   </div>
                   <div>
                     <h2 className="text-lg font-bold text-white">Безопасность</h2>
-                    <p className="text-zinc-300 text-sm">Смена пароля</p>
+                    <p className="text-zinc-500 text-sm">Смена пароля</p>
                   </div>
                 </div>
-                <Button
-                  variant="ghost"
-                  size="sm"
+                <motion.button
                   onClick={() => setShowPasswords(!showPasswords)}
-                  className="text-white hover:bg-white/10"
+                  className="p-3 rounded-xl bg-white/5 hover:bg-white/10 border border-white/10 text-zinc-400 transition-all duration-300"
+                  whileHover={{ scale: 1.05 }}
+                  whileTap={{ scale: 0.95 }}
                 >
                   {showPasswords ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
-                </Button>
+                </motion.button>
               </div>
             </div>
             
-            <div className="p-6 space-y-4">
+            <div className="p-6 space-y-5">
               <div>
-                <Label className="text-xs font-bold uppercase text-zinc-500">Текущий пароль</Label>
+                <Label className="text-xs font-bold uppercase text-zinc-500 mb-2 block">Текущий пароль</Label>
                 <Input
                   type={showPasswords ? 'text' : 'password'}
                   value={formData.current_password}
                   onChange={(e) => setFormData({ ...formData, current_password: e.target.value })}
                   placeholder="••••••••"
-                  className="mt-1"
+                  className="glass-input h-12 text-white placeholder:text-zinc-600"
                 />
               </div>
               
               <div>
-                <Label className="text-xs font-bold uppercase text-zinc-500">Новый пароль</Label>
+                <Label className="text-xs font-bold uppercase text-zinc-500 mb-2 block">Новый пароль</Label>
                 <Input
                   type={showPasswords ? 'text' : 'password'}
                   value={formData.new_password}
                   onChange={(e) => setFormData({ ...formData, new_password: e.target.value })}
                   placeholder="Минимум 6 символов"
-                  className="mt-1"
+                  className="glass-input h-12 text-white placeholder:text-zinc-600"
                 />
               </div>
               
               <div>
-                <Label className="text-xs font-bold uppercase text-zinc-500">Подтвердите новый пароль</Label>
+                <Label className="text-xs font-bold uppercase text-zinc-500 mb-2 block">Подтвердите новый пароль</Label>
                 <Input
                   type={showPasswords ? 'text' : 'password'}
                   value={formData.confirm_password}
                   onChange={(e) => setFormData({ ...formData, confirm_password: e.target.value })}
                   placeholder="Повторите пароль"
-                  className="mt-1"
+                  className="glass-input h-12 text-white placeholder:text-zinc-600"
                 />
               </div>
               
-              <Button 
-                onClick={handleChangePassword}
-                disabled={saving || !formData.current_password || !formData.new_password}
-                variant="outline"
-                className="w-full"
+              <motion.div
+                whileHover={{ scale: 1.01 }}
+                whileTap={{ scale: 0.99 }}
               >
-                <Lock className="w-4 h-4 mr-2" />
-                {saving ? 'Изменение...' : 'Изменить пароль'}
-              </Button>
+                <Button 
+                  onClick={handleChangePassword}
+                  disabled={saving || !formData.current_password || !formData.new_password}
+                  variant="outline"
+                  className="w-full h-12 border-zinc-700 text-zinc-300 hover:bg-zinc-800/50 rounded-xl font-medium transition-all duration-300"
+                >
+                  <Lock className="w-4 h-4 mr-2" />
+                  {saving ? 'Изменение...' : 'Изменить пароль'}
+                </Button>
+              </motion.div>
             </div>
-          </div>
+          </motion.div>
         </div>
       </div>
 
       {/* Topup Modal */}
       <Dialog open={showTopupModal} onOpenChange={setShowTopupModal}>
-        <DialogContent className="max-w-md" data-testid="topup-modal">
+        <DialogContent className="max-w-md bg-zinc-900/95 backdrop-blur-xl border border-white/10 rounded-2xl" data-testid="topup-modal">
           <DialogHeader>
-            <DialogTitle className="flex items-center gap-2">
-              <Wallet className="w-5 h-5 text-purple-500" />
+            <DialogTitle className="flex items-center gap-3 text-white">
+              <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-purple-500 to-purple-600 flex items-center justify-center">
+                <Wallet className="w-5 h-5 text-white" />
+              </div>
               Пополнение баланса
             </DialogTitle>
           </DialogHeader>
           
-          <div className="space-y-4 mt-4">
+          <div className="space-y-5 mt-4">
             <div>
-              <Label className="text-xs font-bold uppercase text-zinc-500">Сумма пополнения (₽)</Label>
+              <Label className="text-xs font-bold uppercase text-zinc-500 mb-2 block">Сумма пополнения (₽)</Label>
               <Input
                 type="number"
                 value={topupAmount}
                 onChange={(e) => setTopupAmount(e.target.value)}
                 placeholder={`Мин. ${prepaymentSettings.min_topup_amount || 500}₽`}
-                className="mt-1 text-lg"
+                className="glass-input h-14 text-xl text-white placeholder:text-zinc-600"
                 data-testid="topup-amount-input"
               />
-              <p className="text-xs text-zinc-400 mt-1">
+              <p className="text-xs text-zinc-500 mt-2">
                 Мин: {prepaymentSettings.min_topup_amount || 500}₽ / Макс: {(prepaymentSettings.max_topup_amount || 100000).toLocaleString('ru-RU')}₽
               </p>
             </div>
 
             {/* Quick amounts */}
-            <div className="flex gap-2">
+            <div className="flex gap-2 flex-wrap">
               {[1000, 3000, 5000, 10000].map(amount => (
-                <Button
+                <motion.button
                   key={amount}
-                  variant="outline"
-                  size="sm"
                   onClick={() => setTopupAmount(amount.toString())}
-                  className={topupAmount === amount.toString() ? 'border-purple-500 bg-purple-50' : ''}
+                  className={`px-4 py-2.5 rounded-xl text-sm font-medium transition-all duration-300 ${
+                    topupAmount === amount.toString() 
+                      ? 'bg-purple-500/20 border-purple-500/50 text-purple-300' 
+                      : 'bg-white/5 border-white/10 text-zinc-400 hover:bg-white/10'
+                  } border`}
+                  whileHover={{ scale: 1.02 }}
+                  whileTap={{ scale: 0.98 }}
                 >
                   {amount.toLocaleString('ru-RU')}₽
-                </Button>
+                </motion.button>
               ))}
             </div>
 
             <div>
-              <Label className="text-xs font-bold uppercase text-zinc-500">Способ оплаты</Label>
-              <div className="grid grid-cols-2 gap-3 mt-2">
-                <button
+              <Label className="text-xs font-bold uppercase text-zinc-500 mb-3 block">Способ оплаты</Label>
+              <div className="grid grid-cols-2 gap-3">
+                <motion.button
                   onClick={() => setTopupMethod('card')}
-                  className={`p-4 border rounded-lg flex flex-col items-center gap-2 transition-colors ${
-                    topupMethod === 'card' ? 'border-purple-500 bg-purple-50' : 'border-zinc-200 hover:border-zinc-300'
+                  className={`p-4 rounded-xl border flex flex-col items-center gap-2 transition-all duration-300 ${
+                    topupMethod === 'card' 
+                      ? 'bg-purple-500/10 border-purple-500/50' 
+                      : 'bg-white/5 border-white/10 hover:bg-white/10'
                   }`}
+                  whileHover={{ scale: 1.02 }}
+                  whileTap={{ scale: 0.98 }}
                   data-testid="topup-card-method"
                 >
-                  <CreditCard className={`w-6 h-6 ${topupMethod === 'card' ? 'text-purple-500' : 'text-zinc-400'}`} />
-                  <span className="text-sm font-medium">Карта</span>
-                  <span className="text-xs text-zinc-400">Моментально</span>
-                </button>
-                <button
+                  <CreditCard className={`w-6 h-6 ${topupMethod === 'card' ? 'text-purple-400' : 'text-zinc-500'}`} />
+                  <span className={`text-sm font-medium ${topupMethod === 'card' ? 'text-purple-300' : 'text-zinc-400'}`}>Карта</span>
+                  <span className="text-xs text-zinc-600">Моментально</span>
+                </motion.button>
+                <motion.button
                   onClick={() => setTopupMethod('crypto')}
-                  className={`p-4 border rounded-lg flex flex-col items-center gap-2 transition-colors ${
-                    topupMethod === 'crypto' ? 'border-purple-500 bg-purple-50' : 'border-zinc-200 hover:border-zinc-300'
+                  className={`p-4 rounded-xl border flex flex-col items-center gap-2 transition-all duration-300 ${
+                    topupMethod === 'crypto' 
+                      ? 'bg-purple-500/10 border-purple-500/50' 
+                      : 'bg-white/5 border-white/10 hover:bg-white/10'
                   }`}
+                  whileHover={{ scale: 1.02 }}
+                  whileTap={{ scale: 0.98 }}
                   data-testid="topup-crypto-method"
                 >
-                  <Wallet className={`w-6 h-6 ${topupMethod === 'crypto' ? 'text-purple-500' : 'text-zinc-400'}`} />
-                  <span className="text-sm font-medium">Криптовалюта</span>
-                  <span className="text-xs text-zinc-400">USDT, ETH</span>
-                </button>
+                  <Wallet className={`w-6 h-6 ${topupMethod === 'crypto' ? 'text-purple-400' : 'text-zinc-500'}`} />
+                  <span className={`text-sm font-medium ${topupMethod === 'crypto' ? 'text-purple-300' : 'text-zinc-400'}`}>Криптовалюта</span>
+                  <span className="text-xs text-zinc-600">USDT, ETH</span>
+                </motion.button>
               </div>
             </div>
 
             {topupMethod === 'crypto' && (
-              <div>
-                <Label className="text-xs font-bold uppercase text-zinc-500">Сеть</Label>
-                <div className="flex gap-2 mt-2 flex-wrap">
+              <motion.div
+                initial={{ opacity: 0, height: 0 }}
+                animate={{ opacity: 1, height: 'auto' }}
+                exit={{ opacity: 0, height: 0 }}
+              >
+                <Label className="text-xs font-bold uppercase text-zinc-500 mb-2 block">Сеть</Label>
+                <div className="flex gap-2 flex-wrap">
                   {[
                     { id: 'eth', name: 'ETH', address: cryptoWallets.eth_address },
                     { id: 'bsc', name: 'BSC', address: cryptoWallets.bsc_address },
                     { id: 'base', name: 'Base', address: cryptoWallets.base_address },
                     { id: 'trc', name: 'TRC20', address: cryptoWallets.trc_address }
                   ].filter(c => c.address).map(chain => (
-                    <Button
+                    <motion.button
                       key={chain.id}
-                      variant="outline"
-                      size="sm"
                       onClick={() => setCryptoChain(chain.id)}
-                      className={cryptoChain === chain.id ? 'border-purple-500 bg-purple-50' : ''}
+                      className={`px-4 py-2 rounded-xl text-sm font-medium transition-all duration-300 ${
+                        cryptoChain === chain.id 
+                          ? 'bg-purple-500/20 border-purple-500/50 text-purple-300' 
+                          : 'bg-white/5 border-white/10 text-zinc-400 hover:bg-white/10'
+                      } border`}
+                      whileHover={{ scale: 1.02 }}
+                      whileTap={{ scale: 0.98 }}
                     >
                       {chain.name}
-                    </Button>
+                    </motion.button>
                   ))}
                 </div>
                 {cryptoWallets[`${cryptoChain}_address`] && (
-                  <div className="mt-3 p-3 bg-zinc-100 rounded-lg">
+                  <div className="mt-3 p-4 bg-zinc-800/50 rounded-xl border border-zinc-700/50">
                     <p className="text-xs text-zinc-500 mb-1">Адрес для перевода:</p>
-                    <p className="font-mono text-xs break-all select-all">
+                    <p className="font-mono text-xs break-all text-zinc-300 select-all">
                       {cryptoWallets[`${cryptoChain}_address`]}
                     </p>
                   </div>
                 )}
-              </div>
+              </motion.div>
             )}
 
-            <Button
-              onClick={handleTopup}
-              disabled={topupLoading || !topupAmount}
-              className="w-full bg-purple-500 hover:bg-purple-600"
-              data-testid="confirm-topup-btn"
+            <motion.div
+              whileHover={{ scale: 1.01 }}
+              whileTap={{ scale: 0.99 }}
             >
-              {topupLoading ? 'Обработка...' : `Пополнить на ${topupAmount ? parseFloat(topupAmount).toLocaleString('ru-RU') : 0}₽`}
-            </Button>
+              <Button
+                onClick={handleTopup}
+                disabled={topupLoading || !topupAmount}
+                className="w-full h-12 bg-gradient-to-r from-purple-500 to-purple-600 hover:from-purple-600 hover:to-purple-700 text-white font-bold rounded-xl shadow-lg shadow-purple-500/20 transition-all duration-300"
+                data-testid="confirm-topup-btn"
+              >
+                {topupLoading ? 'Обработка...' : `Пополнить на ${topupAmount ? parseFloat(topupAmount).toLocaleString('ru-RU') : 0}₽`}
+              </Button>
+            </motion.div>
           </div>
         </DialogContent>
       </Dialog>
 
       {/* History Modal */}
       <Dialog open={showHistoryModal} onOpenChange={setShowHistoryModal}>
-        <DialogContent className="max-w-lg max-h-[80vh] overflow-hidden flex flex-col" data-testid="history-modal">
+        <DialogContent className="max-w-lg max-h-[80vh] overflow-hidden flex flex-col bg-zinc-900/95 backdrop-blur-xl border border-white/10 rounded-2xl" data-testid="history-modal">
           <DialogHeader>
-            <DialogTitle className="flex items-center gap-2">
-              <History className="w-5 h-5 text-purple-500" />
+            <DialogTitle className="flex items-center gap-3 text-white">
+              <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-purple-500 to-purple-600 flex items-center justify-center">
+                <History className="w-5 h-5 text-white" />
+              </div>
               История баланса
             </DialogTitle>
           </DialogHeader>
           
           <div className="flex-1 overflow-y-auto mt-4">
             {balanceHistory.length === 0 ? (
-              <div className="text-center py-8 text-zinc-400">
-                <Wallet className="w-12 h-12 mx-auto mb-2 opacity-50" />
-                <p>История операций пуста</p>
+              <div className="text-center py-12">
+                <div className="w-16 h-16 mx-auto mb-4 rounded-2xl bg-zinc-800/50 flex items-center justify-center">
+                  <Wallet className="w-8 h-8 text-zinc-600" />
+                </div>
+                <p className="text-zinc-500">История операций пуста</p>
               </div>
             ) : (
               <div className="space-y-3">
-                {balanceHistory.map((tx) => (
-                  <div key={tx.id} className="flex items-center justify-between p-3 bg-zinc-50 rounded-lg">
+                {balanceHistory.map((tx, index) => (
+                  <motion.div 
+                    key={tx.id} 
+                    className="flex items-center justify-between p-4 bg-zinc-800/30 rounded-xl border border-zinc-700/30"
+                    initial={{ opacity: 0, x: -20 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    transition={{ delay: index * 0.05 }}
+                  >
                     <div className="flex items-center gap-3">
-                      <div className={`w-10 h-10 rounded-full flex items-center justify-center ${
-                        tx.type === 'topup' ? 'bg-green-100' : 'bg-red-100'
+                      <div className={`w-12 h-12 rounded-xl flex items-center justify-center ${
+                        tx.type === 'topup' ? 'bg-green-500/10' : 'bg-red-500/10'
                       }`}>
                         {tx.type === 'topup' ? (
-                          <Plus className={`w-5 h-5 text-green-600`} />
+                          <Plus className="w-5 h-5 text-green-400" />
                         ) : (
-                          <CreditCard className={`w-5 h-5 text-red-600`} />
+                          <CreditCard className="w-5 h-5 text-red-400" />
                         )}
                       </div>
                       <div>
-                        <p className="font-medium text-zinc-900">{tx.description || tx.type}</p>
-                        <p className="text-xs text-zinc-400">
+                        <p className="font-medium text-zinc-200">{tx.description || tx.type}</p>
+                        <p className="text-xs text-zinc-500">
                           {new Date(tx.created_at).toLocaleString('ru-RU')}
                         </p>
                       </div>
                     </div>
-                    <div className={`font-bold ${tx.amount > 0 ? 'text-green-600' : 'text-red-600'}`}>
+                    <div className={`font-bold text-lg ${tx.amount > 0 ? 'text-green-400' : 'text-red-400'}`}>
                       {tx.amount > 0 ? '+' : ''}{tx.amount.toLocaleString('ru-RU')}₽
                     </div>
-                  </div>
+                  </motion.div>
                 ))}
               </div>
             )}
