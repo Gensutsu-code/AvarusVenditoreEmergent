@@ -40,5 +40,6 @@ api_router.include_router(documents_router)
 api_router.include_router(terms_router)
 api_router.include_router(notifications_router)
 api_router.include_router(balance_router)
+api_router.include_router(crypto_payments_router)
 
 __all__ = ["api_router"]
