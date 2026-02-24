@@ -169,6 +169,21 @@ export default function CheckoutPage() {
     toast.success('Заказ оплачен криптовалютой!');
   };
 
+  const handleCryptoClose = async () => {
+    // Cancel unpaid order and return items to cart
+    if (orderId) {
+      try {
+        await axios.post(`${API}/orders/${orderId}/cancel`);
+        await fetchCart(); // Refresh cart to show returned items
+        toast.info('Заказ отменён. Товары возвращены в корзину.');
+      } catch (err) {
+        console.error('Failed to cancel order:', err);
+      }
+    }
+    setShowCryptoModal(false);
+    setOrderId(null);
+  };
+
   const copyToClipboard = (text) => { navigator.clipboard.writeText(text); toast.success('Скопировано!'); };
 
   if (authLoading || cartLoading) return null;
