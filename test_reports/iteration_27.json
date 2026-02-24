@@ -1,0 +1,125 @@
+{
+  "summary": "Comprehensive testing of Balance/Prepayment System completed. All 17 backend API tests passed (100%). Frontend testing verified: account page balance display, topup modal, history modal, and checkout page balance payment option. Successfully placed order with balance payment - balance was correctly deducted and transaction recorded.",
+
+  "backend_issues": {
+    "critical": [],
+    "minor": []
+  },
+
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [],
+    "design_issues": []
+  },
+
+  "passed_tests": {
+    "backend_api_tests": [
+      "GET /api/prepayment-settings - Public endpoint returns settings (no auth required)",
+      "GET /api/user/balance - Returns 401/403 without auth",
+      "GET /api/user/balance - Returns current user balance with auth",
+      "GET /api/user/balance/history - Returns 401/403 without auth", 
+      "GET /api/user/balance/history - Returns transaction history",
+      "POST /api/user/balance/topup - Returns 401/403 without auth",
+      "POST /api/user/balance/topup - Rejects amount below minimum (400)",
+      "POST /api/user/balance/topup - Rejects amount above maximum (400)",
+      "POST /api/user/balance/topup - Card topup succeeds instantly (mock mode)",
+      "POST /api/user/balance/topup - Crypto topup creates pending transaction",
+      "Topup transactions appear in balance history",
+      "GET /api/admin/prepayment-settings - Returns 401/403 without admin auth",
+      "GET /api/admin/prepayment-settings - Returns settings for admin",
+      "PUT /api/admin/prepayment-settings - Updates settings successfully",
+      "GET /api/admin/balance-transactions - Returns 401/403 without admin auth",
+      "GET /api/admin/balance-transactions - Returns all transactions with user info",
+      "Balance payment integration verified on order creation"
+    ],
+    "frontend_account_page_tests": [
+      "Account page loads with data-testid='account-page'",
+      "Balance card displays current balance (e.g., '6,500 ₽')",
+      "Topup button (Пополнить) visible and clickable",
+      "History button visible and clickable",
+      "Topup modal opens with amount input",
+      "Quick amount buttons work (1000₽, 3000₽, 5000₽, 10000₽)",
+      "Card and Crypto payment methods selectable",
+      "Card topup succeeds - balance increases immediately",
+      "History modal shows all transactions with type, amount, date",
+      "Topup transactions appear in history with positive amounts",
+      "Payment transactions appear in history with negative amounts"
+    ],
+    "frontend_checkout_page_tests": [
+      "Checkout page loads with balance payment option visible",
+      "Balance option shows current balance amount",
+      "Balance option can be selected (purple highlight)",
+      "When balance selected, no payment discount applied",
+      "Form fields work (fullname, address, phone, comment)",
+      "Terms checkbox works",
+      "Place order button enabled after terms acceptance",
+      "Order with balance payment succeeds",
+      "Success message shows 'Заказ оплачен с баланса!'",
+      "Balance deducted after order (6,500₽ → 3,500₽ for 3,000₽ order)",
+      "Payment transaction recorded in balance history"
+    ]
+  },
+
+  "test_report_links": [
+    "/app/backend/tests/test_balance_prepayment.py",
+    "/app/test_reports/pytest/pytest_balance_prepayment.xml"
+  ],
+
+  "action_items": [],
+
+  "critical_code_review_comments": [
+    "Balance routes properly exclude MongoDB _id from responses",
+    "Topup validation correctly enforces min/max amounts from settings",
+    "Card topup correctly credits balance immediately (mock mode by design)",
+    "Order creation correctly deducts balance and creates transaction record",
+    "Balance transaction linked to order_id for audit trail",
+    "Frontend correctly shows balance payment option only when prepayment_enabled=true and balance > 0"
+  ],
+
+  "updated_files": [
+    "/app/backend/tests/test_balance_prepayment.py"
+  ],
+
+  "success_rate": {
+    "backend": "100% (17/17 API tests passed)",
+    "frontend": "100% (All account page and checkout balance features working)"
+  },
+
+  "test_credentials": {
+    "user": {"email": "test@example.com", "password": "password123"},
+    "admin": {"email": "admin@avarus.ru", "password": "admin123"}
+  },
+
+  "seed_data_creation": "Created balance topup transactions during testing (card and crypto topups)",
+
+  "retest_needed": false,
+
+  "should_main_agent_self_test": false,
+
+  "context_for_next_testing_agent": "Balance/Prepayment system fully functional. User has balance of 3,500₽ after test order. Mock payment mode means card topups credit instantly. Crypto topups without tx_hash create pending transactions. Balance payment on checkout deducts from user balance and records transaction. Admin can manage prepayment settings (enable/disable, min/max amounts) and view all transactions.",
+
+  "features_verified": {
+    "user_balance_display": "PASS - Shows balance on /account page",
+    "topup_modal": "PASS - Opens and allows card/crypto topup",
+    "topup_card_instant": "PASS - Card topup credits immediately (MOCKED)",
+    "topup_crypto_pending": "PASS - Creates pending transaction",
+    "balance_history": "PASS - Shows all transactions with type and amount",
+    "checkout_balance_option": "PASS - Shows when balance > 0 and prepayment enabled",
+    "order_with_balance": "PASS - Deducts balance and records transaction",
+    "admin_prepayment_settings": "PASS - Get and update settings",
+    "admin_view_transactions": "PASS - View all transactions with user info"
+  },
+
+  "mocked_features": {
+    "card_topup": "MOCKED - Card payments instantly credit balance without real payment processing",
+    "crypto_topup": "MOCKED - Crypto with tx_hash immediately credits balance"
+  },
+
+  "data_testid_coverage": {
+    "account_page": ["account-page", "balance-amount", "topup-btn", "balance-history-btn"],
+    "topup_modal": ["topup-modal", "topup-amount-input", "topup-card-method", "topup-crypto-method", "confirm-topup-btn"],
+    "history_modal": ["history-modal"],
+    "checkout_page": ["checkout-page", "payment-method-balance", "payment-method-cash", "payment-method-card", "payment-method-crypto", "checkout-fullname", "checkout-address", "checkout-phone", "checkout-comment", "terms-checkbox", "place-order-btn"],
+    "success_page": ["checkout-success"]
+  }
+}
