@@ -996,8 +996,7 @@ export default function AdminPage() {
 
   // Tab configuration
   const tabConfig = {
-    products: { icon: Package, label: 'Товары', count: products.length },
-    categories: { icon: FolderOpen, label: 'Категории', count: categories.length },
+    products: { icon: Package, label: 'Каталог', count: products.length },
     orders: { icon: ShoppingBag, label: 'Заказы', count: orders.length },
     users: { icon: Users, label: 'Клиенты', count: users.length },
     promo: { icon: Megaphone, label: 'Акции' },
