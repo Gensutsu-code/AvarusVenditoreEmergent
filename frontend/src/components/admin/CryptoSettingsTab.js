@@ -185,14 +185,32 @@ export default function CryptoSettingsTab() {
             )}
           </div>
 
-          {/* Current Rate Display */}
-          {currentRate && (
-            <div className="p-4 bg-zinc-50 rounded-lg">
-              <p className="text-sm text-zinc-500">
-                Текущий курс: <span className="font-semibold">1 USD = {currentRate.toFixed(2)} ₽</span>
-              </p>
+          {/* Markup */}
+          <div>
+            <Label className="text-xs font-bold uppercase text-zinc-500">
+              Наценка к курсу (%)
+            </Label>
+            <div className="flex items-center gap-4 mt-2">
+              <Input
+                type="number"
+                step="0.1"
+                min="0"
+                max="50"
+                value={settings.markup_percent || 3}
+                onChange={(e) => setSettings({ ...settings, markup_percent: parseFloat(e.target.value) || 0 })}
+                className="w-24"
+                data-testid="markup-input"
+              />
+              {currentRate && (
+                <p className="text-sm text-zinc-500">
+                  Текущий курс: 1 USD = {currentRate.toFixed(2)} ₽
+                </p>
+              )}
             </div>
-          )}
+            <p className="text-xs text-zinc-400 mt-1">
+              Рекомендуется 3-5% для покрытия комиссий и волатильности
+            </p>
+          </div>
 
           {/* Save Button */}
           <Button
