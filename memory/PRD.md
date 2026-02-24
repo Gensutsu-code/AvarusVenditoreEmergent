@@ -8,7 +8,7 @@ E-commerce platform for selling heavy vehicle parts with:
 - Admin panel for managing products, orders, users
 - Bonus programs
 - Chat support with Telegram integration
-- Payment methods (cash, card, crypto) with discounts per payment method
+- Multiple payment methods with configurable price adjustments
 
 ## Architecture
 
@@ -19,11 +19,12 @@ E-commerce platform for selling heavy vehicle parts with:
 ├── database.py         # MongoDB connection
 ├── models.py           # Pydantic models
 ├── routes/             # API routes
-│   ├── crypto_payments.py  # NEW: MetaMask crypto payment system
+│   ├── crypto_payments.py  # MetaMask crypto payment system
 │   ├── balance.py          # Balance/prepayment system
 │   ├── terms.py            # Terms of Service CRUD
 │   ├── notifications.py    # Email notifications with Resend
-│   ├── orders.py           # Orders with balance payment support
+│   ├── orders.py           # Orders with cancel/return to cart
+│   ├── settings.py         # Payment adjustments (+/- %)
 │   └── ...
 ```
 
@@ -31,14 +32,16 @@ E-commerce platform for selling heavy vehicle parts with:
 ```
 /app/frontend/src/
 ├── pages/
-│   ├── AccountPage.js      # User profile with balance card
-│   ├── CheckoutPage.js     # Checkout with crypto payment modal
+│   ├── AccountPage.js      # User profile with balance
+│   ├── CheckoutPage.js     # Checkout with payment adjustments
 │   ├── AdminPage.js        # Admin panel
 │   └── ...
 ├── components/
-│   ├── CryptoPaymentModal.js  # NEW: MetaMask crypto payment UI
+│   ├── CryptoPaymentModal.js  # MetaMask payment UI
+│   ├── ClientNotifications.js # Fixed notification counter
 │   └── admin/
-│       ├── CryptoSettingsTab.js  # NEW: Admin crypto settings
+│       ├── CryptoSettingsTab.js  # Crypto settings with markup
+│       ├── DiscountsTab.js       # Payment adjustments (+/-)
 │       └── ...
 ```
 
@@ -46,106 +49,100 @@ E-commerce platform for selling heavy vehicle parts with:
 
 ### Session: February 24, 2026
 
-#### Crypto Payment System with MetaMask (NEW - COMPLETED)
-Full crypto payment system with direct wallet connection:
+#### Payment Method Price Adjustments (NEW - COMPLETED)
+- Changed from "discounts only" to full +/- price adjustments
+- Negative value = discount (e.g., -10% for cash)
+- Positive value = surcharge (e.g., +10% for card)
+- All values configurable in admin panel per payment method:
+  - Cash: configurable (default -10%)
+  - Card: configurable (default 0%)
+  - Crypto: configurable (default -15%)
+  - Balance: configurable (default 0%)
 
-**Supported Networks:**
-- BNB Smart Chain (BSC)
-- Base
-- Polygon
+**APIs:**
+- `GET /api/payment-settings` - Returns all adjustments
+- `PUT /api/admin/payment-settings` - Update adjustments
 
-**Supported Tokens:**
-- USDT
-- USDC
+#### Order Cancellation and Cart Return (NEW - COMPLETED)
+- Unpaid orders can be cancelled
+- Items automatically return to cart
+- Stock is restored
 
-**Backend APIs:**
-- `GET /api/crypto/chains` - Get supported chains and tokens
-- `GET /api/crypto/price?amount_rub=X` - Convert RUB to USD (no markup)
-- `POST /api/crypto/payment/create` - Create payment request
-- `POST /api/crypto/payment/verify` - Verify transaction on blockchain
-- `GET /api/crypto/payment/{id}` - Get payment status
-- `GET/PUT /api/admin/crypto/settings` - Admin settings (receiving address, enable/disable)
-- `GET /api/admin/crypto/payments` - Admin view all crypto payments
+**API:**
+- `POST /api/orders/{id}/cancel` - Cancel order and return items to cart
 
-**Frontend Features:**
-- CryptoPaymentModal component with:
-  - Network selection (BSC, Base, Polygon)
-  - Token selection (USDT, USDC)
-  - Real-time RUB to USD conversion via CoinGecko API
-  - MetaMask wallet connection
-  - Automatic network switching
-  - Transaction submission and verification
-- Admin CryptoSettingsTab with:
-  - Enable/disable crypto payments
-  - Configure receiving wallet address
-  - View recent crypto payments
+#### Notification Counter Fix (COMPLETED)
+- Clicking individual notification now marks it as read
+- Counter decreases immediately without requiring "read all"
 
-**Technical Details:**
-- Uses ethers.js for wallet interaction
-- ERC20 token transfers directly to merchant wallet
-- Automatic blockchain verification using Web3.py
-- Real-time exchange rates from CoinGecko (no markup)
+**API:**
+- `PUT /api/my-notifications/{id}/read` - Mark single notification as read
 
-**Testing Status:** PASSED (100% backend - 17/17, 100% frontend)
+#### Crypto Payment Markup (UPDATED)
+- Returned +3% markup to crypto conversion
+- Markup percentage configurable in admin panel
+- Default: 3%
+
+#### Glassmorphism Design (IN PROGRESS)
+- Updated tailwind.config.js with new animations and colors
+- Updated index.css with glassmorphism utility classes
+- Dark theme foundation laid
+- Full component redesign pending
+
+### Previously Completed
+
+#### Crypto Payment System (COMPLETED)
+- MetaMask wallet connection
+- USDT/USDC on BSC, Base, Polygon
+- Automatic blockchain verification
+- Configurable receiving address
 
 #### Prepayment/Balance System (COMPLETED)
-- Balance card on `/account` page
-- Top-up functionality (card instant, crypto pending)
-- Balance history with transaction log
-- "Pay from balance" option on checkout
-
-### Previous Sessions
-
-#### Editable Terms of Service (DONE)
-- Admin panel "Правила" tab for editing terms
-- Dynamic ToS loading on checkout
-
-#### Email Notifications System (DONE)
-- Resend integration for transactional emails
-- Admin panel toggle controls
-
-#### AdminPage.js Refactoring (DONE)
-- Extracted 8+ components to `/app/frontend/src/components/admin/`
+- User balance display and top-up
+- Balance payment option at checkout
+- Transaction history
 
 ## Test Credentials
 - **Admin:** admin@avarus.ru / admin123
 - **User:** test@example.com / password123
 
-## Data Test IDs
-
-### Crypto Payment System
-- `crypto-payment-modal` - Modal container
-- `chain-bsc`, `chain-base`, `chain-polygon` - Chain selection buttons
-- `token-usdt`, `token-usdc` - Token selection buttons
-- `proceed-to-payment-btn` - Continue to wallet connect
-- `connect-wallet-btn` - MetaMask connect button
-- `execute-payment-btn` - Execute payment button
-- `payment-success-close-btn` - Close success modal
-
-### Admin Crypto Settings
-- `crypto-settings-tab` - Tab container
-- `crypto-enabled-switch` - Enable/disable toggle
-- `receiving-address-input` - Wallet address input
-- `save-crypto-settings-btn` - Save button
+## Current Payment Settings (as configured)
+- **Cash:** -10% discount, enabled
+- **Card:** +10% surcharge, enabled
+- **Crypto:** -15% discount, enabled
+- **Balance:** 0%, enabled
+- **Crypto Markup:** 3%
 
 ## Preview URL
 https://balance-checkout.preview.emergentagent.com
 
-## Configured Receiving Wallet
-**Address:** 0x742d35Cc6634C0532925a3b844Bc454e4438f44e
+## Pending Tasks
 
-## Pending/Future Tasks
+### P0 - Critical (Next Session)
+1. **Complete Glassmorphism Redesign**
+   - Refactor all page components for dark theme
+   - Update all cards, buttons, inputs to glass style
+   - Add animations to all interactive elements
+   - Admin panel restructuring:
+     - "Оплата" + "Крипто" → "Платежи"
+     - "Аналитика" + "Клиенты" → "CRM"
+     - "Акции" + "Новости" + "Рассылки" → "Маркетинг"
+     - "TG" + "Импорт" + "Партнеры" + "Правила" → "Настройки"
+   - Orders → separate page
+   - Chats → separate page
 
-### P1 - Upcoming
-- **Extract ChatTab from AdminPage.js** - Move chat logic to separate component
+### P1 - Important
+2. **YooKassa Payment Return Handling**
+   - Handle incomplete card payments
+   - Return items to cart if payment not completed
 
 ### P2 - Future
-- **Real Payment Gateway Integration** - Integrate Stripe for fiat payments
-- **Transaction confirmation emails** - Send email when crypto payment verified
-- **Multi-language support** - Add English language option
+3. **Real Payment Gateway Integration** - Stripe
+4. **Email notifications for crypto payments**
+5. **Multi-language support**
 
-## Notes
-- **Crypto payments:** Direct token transfers (USDT/USDC) to merchant wallet
-- **Exchange rate:** Real-time via CoinGecko API, no markup
-- **Blockchain verification:** Automatic using Web3.py
-- **MetaMask:** Required for crypto payments
+## Technical Notes
+- framer-motion installed for animations
+- Glassmorphism CSS variables configured
+- Dark theme foundation ready in index.css
+- tailwind.config.js updated with new keyframes and colors
