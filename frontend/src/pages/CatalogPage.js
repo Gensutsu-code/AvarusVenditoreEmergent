@@ -279,7 +279,7 @@ const ProductModalContent = ({
             </div>
           </div>
 
-          <div className="border-t border-zinc-200 pt-4 flex items-center justify-between">
+          <div className="border-t border-zinc-700/50 pt-4 flex items-center justify-between">
             <PriceDisplay 
               price={product.price} 
               formatPrice={formatPrice} 
@@ -289,19 +289,19 @@ const ProductModalContent = ({
 
           {/* Quantity + Add to cart */}
           <div className="flex items-center gap-3">
-            <div className="flex items-center border border-zinc-200">
+            <div className="flex items-center bg-zinc-800/50 rounded-xl overflow-hidden border border-zinc-700/50">
               <button 
                 onClick={() => updateQuantity(product.id, -1)}
-                className="p-3 hover:bg-zinc-100"
+                className="p-3 hover:bg-zinc-700/50 transition-colors text-zinc-300"
               >
                 <Minus className="w-4 h-4" />
               </button>
-              <span className="px-4 min-w-[50px] text-center font-semibold">
+              <span className="px-4 min-w-[50px] text-center font-semibold text-zinc-100">
                 {quantities[product.id] || 1}
               </span>
               <button 
                 onClick={() => updateQuantity(product.id, 1)}
-                className="p-3 hover:bg-zinc-100"
+                className="p-3 hover:bg-zinc-700/50 transition-colors text-zinc-300"
               >
                 <Plus className="w-4 h-4" />
               </button>
@@ -310,7 +310,7 @@ const ProductModalContent = ({
             <Button
               onClick={() => handleAddToCart(product)}
               disabled={product.stock === 0}
-              className="flex-1 bg-orange-500 hover:bg-orange-600 text-white font-bold uppercase h-12"
+              className="flex-1 bg-gradient-to-r from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700 text-white font-bold uppercase h-12 rounded-xl shadow-glow transition-all duration-300"
               data-testid="modal-add-to-cart"
             >
               <ShoppingCart className="w-5 h-5 mr-2" />
