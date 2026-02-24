@@ -95,25 +95,39 @@ export default function CheckoutPage() {
 
   const formatPrice = (price) => new Intl.NumberFormat('ru-RU').format(Math.round(price));
   const getPaymentDiscount = (method) => paymentSettings[`${method}_discount`] || 0;
-  const currentPaymentDiscount = getPaymentDiscount(paymentMethod);
+  const currentPaymentDiscount = payWithBalance ? 0 : getPaymentDiscount(paymentMethod);
 
   // Calculate subtotal (before payment discount)
   const subtotal = cart.items.reduce((sum, item) => sum + item.price * item.quantity, 0);
 
-  // Apply payment discount only
+  // Apply payment discount only (not for balance payments)
   const finalTotal = currentPaymentDiscount > 0 
     ? Math.round(subtotal * (1 - currentPaymentDiscount / 100))
     : subtotal;
+
+  // Check if user can pay with balance
+  const canPayWithBalance = prepaymentSettings.prepayment_enabled && userBalance >= finalTotal;
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (!form.full_name.trim() || !form.address.trim() || !form.phone.trim()) { toast.error('Заполните все обязательные поля'); return; }
     setLoading(true);
     try {
-      const res = await axios.post(`${API}/orders`, { ...form, payment_method: paymentMethod });
+      const res = await axios.post(`${API}/orders`, { 
+        ...form, 
+        payment_method: payWithBalance ? 'balance' : paymentMethod,
+        pay_with_balance: payWithBalance
+      });
       const newOrderId = res.data.id;
       setOrderId(newOrderId);
       await fetchCart();
+      
+      if (payWithBalance) {
+        // Balance payment - instant success
+        setSuccess(true);
+        toast.success('Заказ оплачен с баланса!');
+        return;
+      }
 
       if (paymentMethod === 'card') {
         // Redirect to YuKassa
