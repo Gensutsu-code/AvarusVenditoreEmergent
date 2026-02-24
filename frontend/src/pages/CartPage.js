@@ -1,12 +1,10 @@
 import { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { Trash2, ArrowLeft, ShoppingCart } from 'lucide-react';
+import { Trash2, ArrowLeft, ShoppingCart, Minus, Plus, Package } from 'lucide-react';
 import { Button } from '../components/ui/button';
 import { useCart } from '../context/CartContext';
 import { useAuth } from '../context/AuthContext';
-import axios from 'axios';
-
-const API = `${process.env.REACT_APP_BACKEND_URL}/api`;
+import { motion, AnimatePresence } from 'framer-motion';
 
 export default function CartPage() {
   const { cart, updateQuantity, removeFromCart } = useCart();
@@ -20,97 +18,181 @@ export default function CartPage() {
 
   if (!user) {
     return (
-      <div className="min-h-screen flex items-center justify-center" data-testid="cart-login-required">
-        <div className="text-center">
-          <ShoppingCart className="w-16 h-16 mx-auto text-zinc-300 mb-4" />
-          <p className="text-zinc-500 text-lg mb-4">Для просмотра корзины необходимо войти</p>
+      <div className="min-h-screen flex items-center justify-center bg-zinc-950" data-testid="cart-login-required">
+        <motion.div 
+          className="text-center"
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+        >
+          <ShoppingCart className="w-16 h-16 mx-auto text-zinc-700 mb-4" />
+          <p className="text-zinc-400 text-lg mb-4">Для просмотра корзины необходимо войти</p>
           <Link to="/login">
-            <Button className="bg-orange-500 hover:bg-orange-600">Войти</Button>
+            <Button className="bg-gradient-to-r from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700 text-white rounded-xl">Войти</Button>
           </Link>
-        </div>
+        </motion.div>
       </div>
     );
   }
 
   if (cart.items.length === 0) {
     return (
-      <div className="min-h-screen" data-testid="cart-empty">
+      <div className="min-h-screen bg-zinc-950" data-testid="cart-empty">
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-          <Link to="/catalog" className="inline-flex items-center gap-2 text-zinc-500 hover:text-zinc-900 transition-colors mb-4">
+          <Link to="/catalog" className="inline-flex items-center gap-2 text-zinc-500 hover:text-orange-400 transition-colors mb-4">
             <ArrowLeft className="w-4 h-4" /> Продолжить покупки
           </Link>
-          <h1 className="text-2xl md:text-3xl font-bold tracking-tight uppercase text-zinc-900 mb-8">Корзина</h1>
-          <div className="text-center py-16 border border-zinc-200 bg-white">
-            <ShoppingCart className="w-16 h-16 mx-auto text-zinc-300 mb-4" />
-            <p className="text-zinc-500 text-lg mb-4">Корзина пуста</p>
-            <p className="text-zinc-400 text-sm mb-6">Добавьте товары из каталога</p>
+          <h1 className="text-2xl md:text-3xl font-bold tracking-tight uppercase text-zinc-100 mb-8">Корзина</h1>
+          <motion.div 
+            className="glass-card text-center py-16"
+            initial={{ opacity: 0, scale: 0.95 }}
+            animate={{ opacity: 1, scale: 1 }}
+          >
+            <ShoppingCart className="w-16 h-16 mx-auto text-zinc-700 mb-4" />
+            <p className="text-zinc-400 text-lg mb-4">Корзина пуста</p>
+            <p className="text-zinc-500 text-sm mb-6">Добавьте товары из каталога</p>
             <Link to="/catalog">
-              <Button className="bg-orange-500 hover:bg-orange-600 text-white">Перейти в каталог</Button>
+              <Button className="bg-gradient-to-r from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700 text-white rounded-xl">Перейти в каталог</Button>
             </Link>
-          </div>
+          </motion.div>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen" data-testid="cart-page">
+    <div className="min-h-screen bg-zinc-950" data-testid="cart-page">
       <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <Link to="/catalog" className="inline-flex items-center gap-2 text-zinc-500 hover:text-zinc-900 transition-colors mb-4">
+        <Link to="/catalog" className="inline-flex items-center gap-2 text-zinc-500 hover:text-orange-400 transition-colors mb-4">
           <ArrowLeft className="w-4 h-4" /> Продолжить покупки
         </Link>
-        <h1 className="text-2xl md:text-3xl font-bold tracking-tight uppercase text-zinc-900 mb-8">Корзина</h1>
+        
+        <motion.h1 
+          className="text-2xl md:text-3xl font-bold tracking-tight uppercase text-zinc-100 mb-8"
+          initial={{ opacity: 0, x: -20 }}
+          animate={{ opacity: 1, x: 0 }}
+        >
+          Корзина <span className="text-orange-400">({cart.items.length})</span>
+        </motion.h1>
 
-        <div className="space-y-3" data-testid="cart-items">
-          {cart.items.map((item) => (
-            <div key={item.product_id} className="border border-zinc-200 bg-white hover:border-zinc-300 transition-colors" data-testid={`cart-item-${item.product_id}`}>
-              <div className="flex items-center gap-4 p-4">
-                <div className="w-16 h-16 flex-shrink-0 bg-zinc-100 overflow-hidden">
-                  {item.image_url ? (
-                    <img src={item.image_url} alt={item.name} className="w-full h-full object-cover" />
-                  ) : (
-                    <div className="w-full h-full flex items-center justify-center text-zinc-300">
-                      <ShoppingCart className="w-6 h-6" />
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+          {/* Cart Items */}
+          <div className="lg:col-span-2 space-y-4">
+            <AnimatePresence mode="popLayout">
+              {cart.items.map((item, index) => (
+                <motion.div
+                  key={item.product_id}
+                  layout
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, x: -100 }}
+                  transition={{ duration: 0.3, delay: index * 0.05 }}
+                  className="glass-card p-4"
+                  data-testid={`cart-item-${item.product_id}`}
+                >
+                  <div className="flex items-center gap-4">
+                    {/* Image */}
+                    <Link to={`/catalog?search=${item.article}`} className="flex-shrink-0">
+                      <div className="w-20 h-20 bg-zinc-800/50 rounded-xl overflow-hidden">
+                        {item.image_url ? (
+                          <img src={item.image_url} alt={item.name} className="w-full h-full object-cover" />
+                        ) : (
+                          <div className="w-full h-full flex items-center justify-center text-zinc-600">
+                            <Package className="w-8 h-8" />
+                          </div>
+                        )}
+                      </div>
+                    </Link>
+
+                    {/* Info */}
+                    <div className="flex-1 min-w-0">
+                      <Link to={`/catalog?search=${item.article}`} className="hover:text-orange-400 transition-colors">
+                        <h3 className="font-semibold text-zinc-100 line-clamp-2 mb-1">{item.name}</h3>
+                      </Link>
+                      <p className="text-xs font-mono text-zinc-500">{item.article}</p>
                     </div>
-                  )}
-                </div>
 
-                <div className="flex-1 min-w-0">
-                  {item.manufacturer && <p className="text-sm font-bold text-orange-600">{item.manufacturer}</p>}
-                  <p className="text-sm font-mono font-semibold text-zinc-600">Арт: {item.article}</p>
-                  <Link to={`/product/${item.product_id}`} className="font-semibold text-zinc-900 hover:text-orange-500 transition-colors line-clamp-1">{item.name}</Link>
-                  <div className="mt-1">
-                    <span className="font-bold text-zinc-900">{formatPrice(item.price)} ₽</span>
-                  </div>
-                </div>
-
-                <div className="flex items-center gap-2">
-                  <div className="flex items-center border border-zinc-200">
-                    <button onClick={() => updateQuantity(item.product_id, Math.max(1, item.quantity - 1))} className="px-3 py-1 text-sm hover:bg-zinc-100" data-testid={`decrease-${item.product_id}`}>−</button>
-                    <span className="px-3 py-1 min-w-[40px] text-center text-sm font-semibold">{item.quantity}</span>
-                    <button onClick={() => updateQuantity(item.product_id, item.quantity + 1)} className="px-3 py-1 text-sm hover:bg-zinc-100" data-testid={`increase-${item.product_id}`}>+</button>
+                    {/* Price */}
+                    <div className="text-right">
+                      <p className="font-bold text-lg text-orange-400">{formatPrice(item.price * item.quantity)} ₽</p>
+                      <p className="text-xs text-zinc-500">{formatPrice(item.price)} × {item.quantity}</p>
+                    </div>
                   </div>
 
-                  <span className="font-bold text-zinc-900 min-w-[80px] text-right">{formatPrice(item.price * item.quantity)} ₽</span>
+                  {/* Controls */}
+                  <div className="flex items-center justify-between mt-4 pt-4 border-t border-zinc-800/50">
+                    {/* Quantity */}
+                    <div className="flex items-center bg-zinc-800/50 rounded-xl overflow-hidden border border-zinc-700/50">
+                      <motion.button
+                        whileTap={{ scale: 0.9 }}
+                        onClick={() => updateQuantity(item.product_id, item.quantity - 1)}
+                        className="p-2 hover:bg-zinc-700/50 transition-colors text-zinc-400"
+                      >
+                        <Minus className="w-4 h-4" />
+                      </motion.button>
+                      <span className="px-4 font-semibold text-zinc-100 min-w-[40px] text-center">{item.quantity}</span>
+                      <motion.button
+                        whileTap={{ scale: 0.9 }}
+                        onClick={() => updateQuantity(item.product_id, item.quantity + 1)}
+                        className="p-2 hover:bg-zinc-700/50 transition-colors text-zinc-400"
+                      >
+                        <Plus className="w-4 h-4" />
+                      </motion.button>
+                    </div>
 
-                  <button onClick={() => removeFromCart(item.product_id)} className="p-2 text-zinc-400 hover:text-red-500 transition-colors" data-testid={`remove-${item.product_id}`}>
-                    <Trash2 className="w-5 h-5" />
-                  </button>
+                    {/* Remove */}
+                    <motion.button
+                      whileHover={{ scale: 1.1 }}
+                      whileTap={{ scale: 0.9 }}
+                      onClick={() => removeFromCart(item.product_id)}
+                      className="p-2 text-zinc-500 hover:text-red-400 hover:bg-red-500/10 rounded-xl transition-all"
+                      data-testid={`remove-item-${item.product_id}`}
+                    >
+                      <Trash2 className="w-5 h-5" />
+                    </motion.button>
+                  </div>
+                </motion.div>
+              ))}
+            </AnimatePresence>
+          </div>
+
+          {/* Summary */}
+          <div className="lg:col-span-1">
+            <motion.div 
+              className="glass-card p-6 sticky top-24"
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.2 }}
+            >
+              <h2 className="text-lg font-bold text-zinc-100 mb-4">Итого</h2>
+              
+              <div className="space-y-3 mb-6">
+                <div className="flex justify-between text-sm">
+                  <span className="text-zinc-400">Товары ({cart.items.length})</span>
+                  <span className="text-zinc-100">{formatPrice(cartTotal)} ₽</span>
+                </div>
+                <div className="border-t border-zinc-800/50 pt-3">
+                  <div className="flex justify-between">
+                    <span className="font-semibold text-zinc-100">Итого:</span>
+                    <span className="text-xl font-bold text-orange-400">{formatPrice(cartTotal)} ₽</span>
+                  </div>
                 </div>
               </div>
-            </div>
-          ))}
-        </div>
 
-        <div className="mt-6 border border-zinc-200 p-6">
-          <div className="flex items-center justify-between mb-6">
-            <span className="text-lg font-semibold text-zinc-900">Итого:</span>
-            <span className="price-tag text-2xl text-zinc-900" data-testid="cart-total">{formatPrice(cartTotal)} ₽</span>
+              <motion.div whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}>
+                <Button
+                  onClick={() => navigate('/checkout')}
+                  className="w-full bg-gradient-to-r from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700 text-white font-bold uppercase h-12 rounded-xl shadow-glow transition-all duration-300"
+                  data-testid="checkout-button"
+                >
+                  Оформить заказ
+                </Button>
+              </motion.div>
+
+              <p className="text-xs text-zinc-500 text-center mt-4">
+                Скидки и наценки за способ оплаты будут применены на следующем шаге
+              </p>
+            </motion.div>
           </div>
-          <p className="text-xs text-zinc-500 mb-4">Скидка за способ оплаты применится при оформлении заказа</p>
-          <Button onClick={() => navigate('/checkout')} className="w-full bg-orange-500 hover:bg-orange-600 text-white font-bold uppercase tracking-wide h-12" data-testid="checkout-btn">
-            Оформить заказ
-          </Button>
         </div>
       </div>
     </div>
