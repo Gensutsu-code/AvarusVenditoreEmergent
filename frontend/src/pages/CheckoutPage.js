@@ -41,9 +41,10 @@ export default function CheckoutPage() {
     card_enabled: true, crypto_enabled: true, cash_enabled: true
   });
   const [cryptoWallets, setCryptoWallets] = useState({});
-  const [selectedChain, setSelectedChain] = useState('eth');
+  const [selectedChain, setSelectedChain] = useState('bsc');
   const [txHash, setTxHash] = useState('');
-  const [cryptoStep, setCryptoStep] = useState(null); // null | 'pay' | 'submitted'
+  const [cryptoStep, setCryptoStep] = useState(null); // null | 'modal' | 'submitted'
+  const [showCryptoModal, setShowCryptoModal] = useState(false);
   const [form, setForm] = useState({ full_name: '', address: '', phone: '', comment: '' });
   const [agreedToTerms, setAgreedToTerms] = useState(false);
   const [showTermsModal, setShowTermsModal] = useState(false);
