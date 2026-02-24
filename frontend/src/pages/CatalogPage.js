@@ -60,14 +60,14 @@ const ProductCard = ({
         className="flex-1 text-left min-w-0"
       >
         {product.manufacturer && (
-          <p className="text-sm font-bold text-orange-600 mb-0.5">{product.manufacturer}</p>
+          <p className="text-sm font-bold text-orange-400 mb-0.5">{product.manufacturer}</p>
         )}
-        <p className="text-sm font-mono font-semibold text-zinc-600 mb-1">Арт: {product.article}</p>
-        <h3 className="font-semibold text-zinc-900 hover:text-orange-500 transition-colors line-clamp-1">
+        <p className="text-sm font-mono font-semibold text-zinc-500 mb-1">Арт: {product.article}</p>
+        <h3 className="font-semibold text-zinc-100 hover:text-orange-400 transition-colors line-clamp-1">
           {product.name}
         </h3>
         {isAlternative && product.cross_articles && (
-          <p className="text-xs text-zinc-400 mt-1 line-clamp-1">
+          <p className="text-xs text-zinc-500 mt-1 line-clamp-1">
             Кросс: {product.cross_articles}
           </p>
         )}
@@ -75,7 +75,7 @@ const ProductCard = ({
 
       {/* Stock */}
       <div className="hidden sm:block text-center min-w-[80px]">
-        <p className={`text-sm font-semibold ${product.stock > 0 ? 'text-green-600' : 'text-red-500'}`}>
+        <p className={`text-sm font-semibold ${product.stock > 0 ? 'text-green-400' : 'text-red-400'}`}>
           {product.stock > 0 ? `${product.stock} шт.` : 'Нет'}
         </p>
         <p className="text-xs text-zinc-400">в наличии</p>
