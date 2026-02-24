@@ -200,19 +200,23 @@ async def get_supported_chains():
 
 @router.get("/crypto/price")
 async def get_crypto_price(amount_rub: float):
-    """Convert RUB amount to USDT/USDC without markup"""
+    """Convert RUB amount to USDT/USDC with configurable markup"""
+    settings = await get_crypto_settings()
+    markup = settings.get("markup_percent", 3.0)
+    
     # Get current rate
     usd_rub_rate = await get_crypto_price_usd()
     
-    # Convert RUB to USD (no markup)
+    # Convert RUB to USD and add markup
     amount_usd = amount_rub / usd_rub_rate
+    amount_with_markup = amount_usd * (1 + markup / 100)
     
     return {
         "amount_rub": amount_rub,
-        "amount_usd": round(amount_usd, 2),
+        "amount_usd": round(amount_with_markup, 2),
         "rate": usd_rub_rate,
-        "markup_percent": 0,
-        "token_amount": round(amount_usd, 6),  # USDT/USDC have 6 decimals (mostly)
+        "markup_percent": markup,
+        "token_amount": round(amount_with_markup, 6),
         "decimals": 6
     }
 
