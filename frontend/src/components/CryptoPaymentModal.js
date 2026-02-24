@@ -343,21 +343,22 @@ export default function CryptoPaymentModal({
         {/* Step: Select chain and token */}
         {step === 'select' && (
           <div className="space-y-4 mt-4">
-            {/* Amount display */}
-            <div className="bg-amber-50 border border-amber-200 rounded-lg p-4 text-center">
-              <p className="text-sm text-amber-700">Сумма к оплате</p>
-              <p className="text-2xl font-bold text-amber-900">{formatPrice(amountRub)} ₽</p>
-              {priceData && (
-                <p className="text-lg font-semibold text-amber-700 mt-1">
-                  ≈ {priceData.token_amount.toFixed(2)} USD
-                </p>
-              )}
-              {priceData && (
-                <p className="text-xs text-amber-600 mt-1">
-                  Курс: 1 USD = {priceData.rate.toFixed(2)} ₽ (+{priceData.markup_percent}%)
-                </p>
-              )}
-            </div>
+            {priceData && (
+              <div className="bg-amber-50 border border-amber-200 rounded-lg p-4 text-center">
+                <p className="text-sm text-amber-700">Сумма к оплате</p>
+                <p className="text-2xl font-bold text-amber-900">{formatPrice(amountRub)} ₽</p>
+                {priceData && (
+                  <p className="text-lg font-semibold text-amber-700 mt-1">
+                    ≈ {priceData.token_amount.toFixed(2)} USD
+                  </p>
+                )}
+                {priceData && (
+                  <p className="text-xs text-amber-600 mt-1">
+                    Курс: 1 USD = {priceData.rate.toFixed(2)} ₽
+                  </p>
+                )}
+              </div>
+            )}
 
             {/* Chain selection */}
             <div>
