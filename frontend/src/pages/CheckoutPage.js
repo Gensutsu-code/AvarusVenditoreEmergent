@@ -192,15 +192,17 @@ export default function CheckoutPage() {
 
   if (success) {
     return (
-      <div className="min-h-screen flex items-center justify-center" data-testid="checkout-success">
+      <div className="min-h-screen flex items-center justify-center bg-zinc-950" data-testid="checkout-success">
         <div className="text-center max-w-md px-4">
-          <CheckCircle className="w-16 h-16 mx-auto text-green-500 mb-4" />
-          <h1 className="text-2xl font-bold text-zinc-900 mb-2">Заказ оформлен!</h1>
-          <p className="text-zinc-500 mb-2">Номер заказа: <span className="font-mono font-semibold">{orderId?.slice(0, 8)}</span></p>
+          <div className="w-20 h-20 mx-auto bg-green-500/10 rounded-full flex items-center justify-center mb-4">
+            <CheckCircle className="w-10 h-10 text-green-400" />
+          </div>
+          <h1 className="text-2xl font-bold text-zinc-100 mb-2">Заказ оформлен!</h1>
+          <p className="text-zinc-400 mb-2">Номер заказа: <span className="font-mono font-semibold text-orange-400">{orderId?.slice(0, 8)}</span></p>
           <p className="text-zinc-500 mb-6">Мы свяжемся с вами для подтверждения.</p>
           <div className="flex gap-4 justify-center">
-            <Link to="/account"><Button variant="outline">Мои заказы</Button></Link>
-            <Link to="/catalog"><Button className="bg-orange-500 hover:bg-orange-600 text-white">Продолжить покупки</Button></Link>
+            <Link to="/account"><Button variant="outline" className="border-zinc-700 text-zinc-300 hover:bg-zinc-800 rounded-xl">Мои заказы</Button></Link>
+            <Link to="/catalog"><Button className="bg-gradient-to-r from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700 text-white rounded-xl">Продолжить покупки</Button></Link>
           </div>
         </div>
       </div>
@@ -209,13 +211,13 @@ export default function CheckoutPage() {
 
   return (
     <>
-    <div className="min-h-screen" data-testid="checkout-page">
+    <div className="min-h-screen bg-zinc-950" data-testid="checkout-page">
       <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <div className="mb-8">
-          <Link to="/cart" className="inline-flex items-center gap-2 text-zinc-500 hover:text-zinc-900 transition-colors mb-4">
+          <Link to="/cart" className="inline-flex items-center gap-2 text-zinc-500 hover:text-orange-400 transition-colors mb-4">
             <ArrowLeft className="w-4 h-4" /> Назад в корзину
           </Link>
-          <h1 className="text-2xl md:text-3xl font-bold tracking-tight uppercase text-zinc-900">Оформление заказа</h1>
+          <h1 className="text-2xl md:text-3xl font-bold tracking-tight uppercase text-zinc-100">Оформление заказа</h1>
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
