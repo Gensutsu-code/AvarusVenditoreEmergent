@@ -331,14 +331,62 @@ export default function CheckoutPage() {
             <div>
               <Label className="text-xs font-bold uppercase tracking-widest text-zinc-500 mb-3 block">Способ оплаты</Label>
               <div className="space-y-2">
+                {/* Balance payment option */}
+                {prepaymentSettings.prepayment_enabled && userBalance > 0 && (
+                  <button 
+                    type="button" 
+                    onClick={() => {
+                      if (canPayWithBalance) {
+                        setPayWithBalance(true);
+                      } else {
+                        toast.error(`Недостаточно средств. Баланс: ${formatPrice(userBalance)}₽`);
+                      }
+                    }}
+                    className={`w-full flex items-center gap-4 p-4 rounded-lg border-2 transition-all text-left ${
+                      payWithBalance 
+                        ? 'border-purple-500 bg-purple-50' 
+                        : canPayWithBalance
+                          ? 'border-zinc-200 bg-white hover:border-purple-300'
+                          : 'border-zinc-200 bg-zinc-50 opacity-70'
+                    }`} 
+                    data-testid="payment-method-balance"
+                  >
+                    <div className={`w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0 ${
+                      payWithBalance ? 'bg-purple-500 text-white' : 'bg-purple-100 text-purple-600'
+                    }`}>
+                      <Wallet className="w-5 h-5" />
+                    </div>
+                    <div className="flex-1">
+                      <p className={`font-semibold ${payWithBalance ? 'text-purple-700' : 'text-zinc-800'}`}>
+                        Оплата с баланса
+                      </p>
+                      <p className="text-xs text-zinc-500">
+                        Баланс: <span className={canPayWithBalance ? 'text-green-600 font-semibold' : 'text-red-500'}>{formatPrice(userBalance)}₽</span>
+                        {!canPayWithBalance && <span className="text-red-500"> (недостаточно)</span>}
+                      </p>
+                    </div>
+                    <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center ${
+                      payWithBalance ? 'border-purple-500' : 'border-zinc-300'
+                    }`}>
+                      {payWithBalance && <div className="w-3 h-3 rounded-full bg-purple-500" />}
+                    </div>
+                  </button>
+                )}
+                
+                {/* Regular payment methods */}
                 {PAYMENT_METHODS.map(method => {
                   const discount = getPaymentDiscount(method.id);
                   const isEnabled = isPaymentMethodEnabled(method.id);
-                  const isSelected = paymentMethod === method.id;
+                  const isSelected = !payWithBalance && paymentMethod === method.id;
                   const Icon = method.icon;
                   return (
                     <button key={method.id} type="button" 
-                      onClick={() => isEnabled && setPaymentMethod(method.id)}
+                      onClick={() => {
+                        if (isEnabled) {
+                          setPayWithBalance(false);
+                          setPaymentMethod(method.id);
+                        }
+                      }}
                       disabled={!isEnabled}
                       className={`w-full flex items-center gap-4 p-4 rounded-lg border-2 transition-all text-left ${
                         !isEnabled 
