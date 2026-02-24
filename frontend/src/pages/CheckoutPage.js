@@ -146,7 +146,8 @@ export default function CheckoutPage() {
         }
         setSuccess(true);
       } else if (paymentMethod === 'crypto') {
-        setCryptoStep('pay');
+        // Open crypto payment modal
+        setShowCryptoModal(true);
       } else {
         setSuccess(true);
         toast.success('Заказ оформлен!');
