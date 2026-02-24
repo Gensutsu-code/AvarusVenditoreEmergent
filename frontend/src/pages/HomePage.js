@@ -1,8 +1,9 @@
 import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import axios from 'axios';
-import { Search } from 'lucide-react';
+import { Search, ArrowRight, Truck, Shield, Clock, Package } from 'lucide-react';
 import { PopularProducts } from '../components/PopularProducts';
+import { motion } from 'framer-motion';
 
 const API = `${process.env.REACT_APP_BACKEND_URL}/api`;
 
@@ -15,11 +16,17 @@ const DEFAULT_PARTNERS = [
   { name: 'BPW', description: 'Ходовая часть', image_url: 'https://customer-assets.emergentagent.com/job_heavy-vehicle/artifacts/qjidmkpu_Screenshot%20%285%29.png' },
 ];
 
+const FEATURES = [
+  { icon: Truck, title: 'Быстрая доставка', desc: 'По всей России' },
+  { icon: Shield, title: 'Гарантия качества', desc: 'Проверенные поставщики' },
+  { icon: Clock, title: 'Оперативность', desc: 'Отгрузка в день заказа' },
+  { icon: Package, title: 'Широкий выбор', desc: '10 000+ позиций' },
+];
+
 export default function HomePage() {
   const [partners, setPartners] = useState(DEFAULT_PARTNERS);
 
   useEffect(() => {
-    // Fetch partners
     const loadPartners = async () => {
       try {
         const res = await axios.get(`${API}/partners`);
@@ -34,84 +41,141 @@ export default function HomePage() {
   }, []);
 
   return (
-    <div className="min-h-screen" data-testid="home-page">
-      {/* Hero */}
-      <div className="bg-zinc-900 text-white">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 md:py-20">
+    <div className="min-h-screen bg-zinc-950" data-testid="home-page">
+      {/* Hero Section */}
+      <div className="relative overflow-hidden">
+        {/* Background gradient */}
+        <div className="absolute inset-0 bg-gradient-to-br from-orange-600/20 via-zinc-950 to-zinc-950" />
+        <div className="absolute top-0 right-0 w-1/2 h-full bg-gradient-to-l from-orange-500/10 to-transparent" />
+        
+        {/* Animated circles */}
+        <motion.div 
+          className="absolute top-20 right-20 w-96 h-96 rounded-full bg-orange-500/5 blur-3xl"
+          animate={{ scale: [1, 1.2, 1], opacity: [0.3, 0.5, 0.3] }}
+          transition={{ duration: 8, repeat: Infinity }}
+        />
+        
+        <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16 md:py-24">
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
             {/* Left side - text */}
-            <div>
-              <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold tracking-tighter uppercase mb-4">
-                Запчасти для грузовиков
-              </h1>
-              <p className="text-zinc-400 text-lg max-w-xl mb-8">
-                Оригинальные и аналоговые запчасти для MAN, Volvo, Scania, Mercedes, DAF, IVECO
-              </p>
-              <Link 
-                to="/catalog"
-                className="inline-flex items-center gap-2 bg-orange-500 hover:bg-orange-600 text-white font-bold uppercase tracking-wide px-8 py-3 transition-colors"
-                data-testid="go-to-search-btn"
+            <motion.div
+              initial={{ opacity: 0, x: -50 }}
+              animate={{ opacity: 1, x: 0 }}
+              transition={{ duration: 0.6 }}
+            >
+              <motion.h1 
+                className="text-4xl md:text-5xl lg:text-6xl font-bold tracking-tighter uppercase mb-6"
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.6, delay: 0.2 }}
               >
-                <Search className="w-5 h-5" />
-                К покупкам
-              </Link>
-            </div>
+                <span className="text-white">Запчасти для</span>
+                <br />
+                <span className="bg-gradient-to-r from-orange-400 to-orange-600 bg-clip-text text-transparent">
+                  грузовиков
+                </span>
+              </motion.h1>
+              
+              <motion.p 
+                className="text-zinc-400 text-lg max-w-xl mb-8"
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.6, delay: 0.3 }}
+              >
+                Оригинальные и аналоговые запчасти для MAN, Volvo, Scania, Mercedes, DAF, IVECO
+              </motion.p>
+              
+              <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.6, delay: 0.4 }}
+              >
+                <Link to="/catalog" data-testid="go-to-search-btn">
+                  <motion.button
+                    className="group inline-flex items-center gap-3 bg-gradient-to-r from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700 text-white font-bold uppercase tracking-wide px-8 py-4 rounded-2xl shadow-glow transition-all duration-300"
+                    whileHover={{ scale: 1.02, boxShadow: '0 0 40px rgba(249, 115, 22, 0.4)' }}
+                    whileTap={{ scale: 0.98 }}
+                  >
+                    <Search className="w-5 h-5" />
+                    К покупкам
+                    <ArrowRight className="w-5 h-5 transition-transform group-hover:translate-x-1" />
+                  </motion.button>
+                </Link>
+              </motion.div>
+            </motion.div>
 
             {/* Right side - brands showcase */}
             {partners.length > 0 && (
-              <div className="hidden lg:block">
-                <div className="bg-zinc-800/50 border border-zinc-700 p-6 rounded-sm">
+              <motion.div 
+                className="hidden lg:block"
+                initial={{ opacity: 0, x: 50 }}
+                animate={{ opacity: 1, x: 0 }}
+                transition={{ duration: 0.6, delay: 0.3 }}
+              >
+                <div className="glass-card p-6">
                   <p className="text-xs uppercase tracking-widest text-zinc-500 mb-4 text-center">
                     Работаем с ведущими производителями
                   </p>
                   <div className="grid grid-cols-3 gap-3">
-                    {partners.slice(0, 6).map((partner) => (
-                      <a
+                    {partners.slice(0, 6).map((partner, index) => (
+                      <motion.a
                         key={partner.id || partner.name}
                         href={partner.link || '#'}
                         target={partner.link ? '_blank' : undefined}
                         rel={partner.link ? 'noopener noreferrer' : undefined}
-                        className="bg-zinc-800 border border-zinc-700 p-3 hover:border-orange-500/50 transition-colors group overflow-hidden block"
+                        className="bg-zinc-800/50 border border-white/5 p-4 hover:border-orange-500/30 transition-all duration-300 rounded-xl overflow-hidden block group"
+                        initial={{ opacity: 0, y: 20 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ duration: 0.4, delay: 0.4 + index * 0.1 }}
+                        whileHover={{ scale: 1.05, backgroundColor: 'rgba(249, 115, 22, 0.1)' }}
                       >
                         {partner.image_url && (
                           <div className="w-full h-12 mb-2 flex items-center justify-center">
                             <img 
                               src={partner.image_url} 
                               alt={partner.name}
-                              className="max-w-full max-h-full object-contain"
+                              className="max-w-full max-h-full object-contain filter brightness-90 group-hover:brightness-110 transition-all"
                             />
                           </div>
                         )}
                         <div className="text-center">
-                          <div className="text-xs font-medium text-white truncate">
+                          <div className="text-xs font-medium text-zinc-200 truncate">
                             {partner.name}
                           </div>
                           <div className="text-[10px] text-zinc-500 truncate">
                             {partner.description}
                           </div>
                         </div>
-                      </a>
+                      </motion.a>
                     ))}
                   </div>
                   <p className="text-xs text-zinc-600 mt-4 text-center">
                     Только проверенные поставщики
                   </p>
                 </div>
-              </div>
+              </motion.div>
             )}
           </div>
 
           {/* Mobile brands - horizontal scroll */}
           {partners.length > 0 && (
-            <div className="lg:hidden mt-8 -mx-4 px-4 overflow-x-auto">
+            <motion.div 
+              className="lg:hidden mt-8 -mx-4 px-4 overflow-x-auto scrollbar-hide"
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.6, delay: 0.5 }}
+            >
               <div className="flex gap-3 pb-2">
-                {partners.map((partner) => (
-                  <a
+                {partners.map((partner, index) => (
+                  <motion.a
                     key={partner.id || partner.name}
                     href={partner.link || '#'}
                     target={partner.link ? '_blank' : undefined}
                     rel={partner.link ? 'noopener noreferrer' : undefined}
-                    className="flex-shrink-0 bg-zinc-800 border border-zinc-700 p-3 text-center min-w-[100px] block"
+                    className="flex-shrink-0 glass-card p-4 text-center min-w-[100px] block"
+                    initial={{ opacity: 0, x: 20 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    transition={{ duration: 0.4, delay: 0.3 + index * 0.05 }}
                   >
                     {partner.image_url && (
                       <div className="w-full h-10 mb-2 flex items-center justify-center">
@@ -122,49 +186,81 @@ export default function HomePage() {
                         />
                       </div>
                     )}
-                    <div className="text-xs font-medium text-white truncate">{partner.name}</div>
+                    <div className="text-xs font-medium text-zinc-200 truncate">{partner.name}</div>
                     <div className="text-[10px] text-zinc-500 truncate">{partner.description}</div>
-                  </a>
+                  </motion.a>
                 ))}
               </div>
-            </div>
+            </motion.div>
           )}
+        </div>
+      </div>
+
+      {/* Features Section */}
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+          {FEATURES.map((feature, index) => (
+            <motion.div
+              key={feature.title}
+              className="glass-card p-6 text-center group hover:border-orange-500/30 transition-all duration-300"
+              initial={{ opacity: 0, y: 30 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
+              transition={{ duration: 0.5, delay: index * 0.1 }}
+              whileHover={{ y: -5 }}
+            >
+              <div className="w-12 h-12 mx-auto mb-4 rounded-xl bg-orange-500/10 flex items-center justify-center group-hover:bg-orange-500/20 transition-colors">
+                <feature.icon className="w-6 h-6 text-orange-400" />
+              </div>
+              <h3 className="font-semibold text-zinc-100 mb-1">{feature.title}</h3>
+              <p className="text-xs text-zinc-500">{feature.desc}</p>
+            </motion.div>
+          ))}
         </div>
       </div>
 
       {/* Popular Products */}
       <PopularProducts />
 
-      {/* About */}
+      {/* About Section */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
-        <h2 className="text-2xl md:text-3xl font-bold tracking-tight uppercase text-zinc-900 mb-8">
-          О компании
-        </h2>
-        
-        <div className="prose prose-zinc max-w-none">
-          <p className="text-lg text-zinc-700 mb-6">
-            <strong>avarus-Venditore</strong> — поставщик запчастей для грузовых автомобилей по всей России. 
-            Мы специализируемся на комплектующих для коммерческого транспорта и предлагаем решения, 
-            которые выдерживают реальные нагрузки и большие пробеги.
-          </p>
+        <motion.div
+          initial={{ opacity: 0, y: 30 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true }}
+          transition={{ duration: 0.6 }}
+        >
+          <h2 className="text-2xl md:text-3xl font-bold tracking-tight uppercase text-zinc-100 mb-8">
+            О компании
+          </h2>
           
-          <p className="text-zinc-600 mb-6">
-            В ассортименте — проверенные детали от надёжных производителей. Каждая позиция проходит 
-            контроль качества, чтобы техника работала стабильно и без простоев. Мы не продаём 
-            сомнительные аналоги и точно знаем, что поставляем.
-          </p>
-          
-          <p className="text-zinc-600 mb-6">
-            За счёт прямых поставок и оптимальной логистики мы удерживаем низкие и честные цены 
-            без потери качества. Отгрузка осуществляется быстро, доставка работает по всем регионам 
-            России — от крупных городов до удалённых направлений.
-          </p>
-          
-          <p className="text-zinc-700 font-medium">
-            <strong>avarus-Venditore</strong> — это запчасти, на которые можно положиться, сроки, 
-            которые соблюдаются, и сервис, ориентированный на результат.
-          </p>
-        </div>
+          <div className="glass-card p-8">
+            <div className="prose prose-invert max-w-none">
+              <p className="text-lg text-zinc-300 mb-6">
+                <span className="text-orange-400 font-semibold">avarus-Venditore</span> — поставщик запчастей для грузовых автомобилей по всей России. 
+                Мы специализируемся на комплектующих для коммерческого транспорта и предлагаем решения, 
+                которые выдерживают реальные нагрузки и большие пробеги.
+              </p>
+              
+              <p className="text-zinc-400 mb-6">
+                В ассортименте — проверенные детали от надёжных производителей. Каждая позиция проходит 
+                контроль качества, чтобы техника работала стабильно и без простоев. Мы не продаём 
+                сомнительные аналоги и точно знаем, что поставляем.
+              </p>
+              
+              <p className="text-zinc-400 mb-6">
+                За счёт прямых поставок и оптимальной логистики мы удерживаем низкие и честные цены 
+                без потери качества. Отгрузка осуществляется быстро, доставка работает по всем регионам 
+                России — от крупных городов до удалённых направлений.
+              </p>
+              
+              <p className="text-zinc-300 font-medium">
+                <span className="text-orange-400 font-semibold">avarus-Venditore</span> — это запчасти, на которые можно положиться, сроки, 
+                которые соблюдаются, и сервис, ориентированный на результат.
+              </p>
+            </div>
+          </div>
+        </motion.div>
       </div>
     </div>
   );
