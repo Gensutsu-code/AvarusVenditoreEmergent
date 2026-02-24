@@ -18,6 +18,7 @@ from .documents import router as documents_router
 from .terms import router as terms_router
 from .notifications import router as notifications_router
 from .balance import router as balance_router
+from .crypto_payments import router as crypto_payments_router
 
 # Create main API router
 api_router = APIRouter(prefix="/api")
