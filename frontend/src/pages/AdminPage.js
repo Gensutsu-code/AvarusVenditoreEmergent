@@ -322,6 +322,8 @@ export default function AdminPage() {
       try { const termsRes = await axios.get(`${API}/admin/terms`); setTermsSections(termsRes.data.sections || []); } catch(e) {}
       // Fetch notification settings
       try { const notifRes = await axios.get(`${API}/admin/notification-settings`); setNotificationSettings(notifRes.data); } catch(e) {}
+      // Fetch prepayment settings
+      try { const prepayRes = await axios.get(`${API}/admin/prepayment-settings`); setPrepaymentSettings(prepayRes.data); } catch(e) {}
     } catch (err) {
       console.error('Failed to fetch admin data', err);
       toast.error('Ошибка загрузки данных');
