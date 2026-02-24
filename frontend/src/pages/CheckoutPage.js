@@ -475,7 +475,7 @@ export default function CheckoutPage() {
       {/* Crypto Payment Modal */}
       <CryptoPaymentModal
         open={showCryptoModal}
-        onClose={() => setShowCryptoModal(false)}
+        onClose={handleCryptoClose}
         orderId={orderId}
         amountRub={cryptoPaymentAmount}
         onSuccess={handleCryptoSuccess}
