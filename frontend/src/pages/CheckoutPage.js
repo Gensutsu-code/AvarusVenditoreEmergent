@@ -90,15 +90,15 @@ export default function CheckoutPage() {
   };
 
   const formatPrice = (price) => new Intl.NumberFormat('ru-RU').format(Math.round(price));
-  const getPaymentDiscount = (method) => paymentSettings[`${method}_discount`] || 0;
-  const currentPaymentDiscount = payWithBalance ? 0 : getPaymentDiscount(paymentMethod);
+  const getPaymentAdjustment = (method) => paymentSettings[`${method}_adjustment`] ?? (method === 'cash' ? -15 : method === 'crypto' ? -20 : 0);
+  const currentPaymentAdjustment = payWithBalance ? (paymentSettings.balance_adjustment ?? 0) : getPaymentAdjustment(paymentMethod);
 
-  // Calculate subtotal (before payment discount)
+  // Calculate subtotal (before payment adjustment)
   const subtotal = cart.items.reduce((sum, item) => sum + item.price * item.quantity, 0);
 
-  // Apply payment discount only (not for balance payments)
-  const finalTotal = currentPaymentDiscount > 0 
-    ? Math.round(subtotal * (1 - currentPaymentDiscount / 100))
+  // Apply payment adjustment (negative = discount, positive = surcharge)
+  const finalTotal = currentPaymentAdjustment !== 0 
+    ? Math.round(subtotal * (1 + currentPaymentAdjustment / 100))
     : subtotal;
 
   // Check if user can pay with balance
