@@ -408,3 +408,68 @@ async def mark_notifications_read(user=Depends(get_current_user)):
         {"$set": {"read": True}}
     )
     return {"success": True}
+
+
+
+@router.put("/my-notifications/{notification_id}/read")
+async def mark_notification_read(notification_id: str, user=Depends(get_current_user)):
+    """Mark single notification as read"""
+    result = await db.notifications.update_one(
+        {"id": notification_id, "user_id": user["id"]},
+        {"$set": {"read": True}}
+    )
+    if result.modified_count == 0:
+        raise HTTPException(status_code=404, detail="Notification not found")
+    return {"success": True}
+
+
+@router.post("/orders/{order_id}/cancel")
+async def cancel_order(order_id: str, user=Depends(get_current_user)):
+    """Cancel unpaid order and return items to cart"""
+    order = await db.orders.find_one({"id": order_id, "user_id": user["id"]}, {"_id": 0})
+    if not order:
+        raise HTTPException(status_code=404, detail="Order not found")
+    
+    # Only allow cancellation of unpaid orders
+    if order.get("payment_status") == "paid" or order.get("paid_from_balance", 0) > 0:
+        raise HTTPException(status_code=400, detail="Cannot cancel paid order")
+    
+    if order.get("status") not in ["new", "pending"]:
+        raise HTTPException(status_code=400, detail="Cannot cancel order in this status")
+    
+    # Return items to cart
+    cart = await db.carts.find_one({"user_id": user["id"]})
+    if not cart:
+        cart = {"user_id": user["id"], "items": []}
+    
+    existing_items = {item["product_id"]: item for item in cart.get("items", [])}
+    
+    for order_item in order.get("items", []):
+        product_id = order_item.get("product_id")
+        quantity = order_item.get("quantity", 1)
+        
+        if product_id in existing_items:
+            existing_items[product_id]["quantity"] += quantity
+        else:
+            existing_items[product_id] = {"product_id": product_id, "quantity": quantity}
+        
+        # Restore stock
+        await db.products.update_one(
+            {"id": product_id},
+            {"$inc": {"stock": quantity}}
+        )
+    
+    # Update cart
+    await db.carts.update_one(
+        {"user_id": user["id"]},
+        {"$set": {"items": list(existing_items.values())}},
+        upsert=True
+    )
+    
+    # Update order status
+    await db.orders.update_one(
+        {"id": order_id},
+        {"$set": {"status": "cancelled", "cancelled_at": datetime.now(timezone.utc).isoformat()}}
+    )
+    
+    return {"success": True, "message": "Order cancelled and items returned to cart"}
