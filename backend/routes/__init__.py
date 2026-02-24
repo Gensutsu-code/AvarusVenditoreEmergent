@@ -17,6 +17,7 @@ from .payments import router as payments_router
 from .documents import router as documents_router
 from .terms import router as terms_router
 from .notifications import router as notifications_router
+from .balance import router as balance_router
 
 # Create main API router
 api_router = APIRouter(prefix="/api")
@@ -37,5 +38,6 @@ api_router.include_router(payments_router)
 api_router.include_router(documents_router)
 api_router.include_router(terms_router)
 api_router.include_router(notifications_router)
+api_router.include_router(balance_router)
 
 __all__ = ["api_router"]
