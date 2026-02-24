@@ -237,6 +237,41 @@ export default function AccountPage() {
         </h1>
 
         <div className="space-y-6">
+          {/* Balance Card */}
+          {prepaymentSettings.prepayment_enabled !== false && (
+            <div className="bg-gradient-to-r from-purple-500 to-purple-600 rounded-xl border border-purple-400 shadow-lg p-6 text-white">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-purple-200 text-sm font-medium uppercase tracking-wider">Баланс</p>
+                  <p className="text-3xl font-bold mt-1" data-testid="balance-amount">
+                    {balance.toLocaleString('ru-RU')} ₽
+                  </p>
+                </div>
+                <div className="flex gap-2">
+                  <Button
+                    onClick={() => { fetchBalanceHistory(); setShowHistoryModal(true); }}
+                    variant="ghost"
+                    className="text-white hover:bg-white/20"
+                    data-testid="balance-history-btn"
+                  >
+                    <History className="w-5 h-5" />
+                  </Button>
+                  <Button
+                    onClick={() => setShowTopupModal(true)}
+                    className="bg-white text-purple-600 hover:bg-purple-50"
+                    data-testid="topup-btn"
+                  >
+                    <Plus className="w-4 h-4 mr-2" />
+                    Пополнить
+                  </Button>
+                </div>
+              </div>
+              <p className="text-purple-200 text-xs mt-3">
+                Оплачивайте заказы с баланса без комиссии
+              </p>
+            </div>
+          )}
+
           {/* Avatar & Profile Info Card */}
           <div className="bg-white rounded-xl border border-zinc-200 shadow-sm overflow-hidden">
             <div className="bg-gradient-to-r from-orange-500 to-orange-600 px-6 py-6">
