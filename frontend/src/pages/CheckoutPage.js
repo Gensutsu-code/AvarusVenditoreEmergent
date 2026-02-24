@@ -159,43 +159,11 @@ export default function CheckoutPage() {
     }
   };
 
-  const handleCryptoSubmit = async () => {
-    if (!txHash.trim()) { toast.error('Введите хеш транзакции'); return; }
-    setLoading(true);
-    try {
-      await axios.post(`${API}/payments/crypto/submit`, { order_id: orderId, chain: selectedChain, tx_hash: txHash.trim() });
-      setCryptoStep('submitted');
-      toast.success('Транзакция отправлена на проверку!');
-    } catch (err) {
-      toast.error(err.response?.data?.detail || 'Ошибка');
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const connectMetaMask = async () => {
-    if (!window.ethereum) { toast.error('MetaMask не установлен'); return; }
-    try {
-      const accounts = await window.ethereum.request({ method: 'eth_requestAccounts' });
-      const chain = CHAINS.find(c => c.id === selectedChain);
-      if (chain?.chainId) {
-        try { await window.ethereum.request({ method: 'wallet_switchEthereumChain', params: [{ chainId: chain.chainId }] }); } catch {}
-      }
-      const walletAddr = cryptoWallets[`${selectedChain}_address`];
-      if (!walletAddr) { toast.error('Кошелёк для этой сети не настроен'); return; }
-      
-      // Use ethers to send transaction
-      const { ethers } = await import('ethers');
-      const provider = new ethers.BrowserProvider(window.ethereum);
-      const signer = await provider.getSigner();
-      
-      // For simplicity, send native token. Amount conversion would need an oracle in production.
-      const tx = await signer.sendTransaction({ to: walletAddr, value: ethers.parseEther('0.001') }); // Placeholder amount
-      setTxHash(tx.hash);
-      toast.success(`Транзакция отправлена: ${tx.hash.slice(0, 10)}...`);
-    } catch (err) {
-      toast.error(err.message || 'Ошибка MetaMask');
-    }
+  const handleCryptoSuccess = (txHash) => {
+    setTxHash(txHash);
+    setShowCryptoModal(false);
+    setSuccess(true);
+    toast.success('Заказ оплачен криптовалютой!');
   };
 
   const copyToClipboard = (text) => { navigator.clipboard.writeText(text); toast.success('Скопировано!'); };
