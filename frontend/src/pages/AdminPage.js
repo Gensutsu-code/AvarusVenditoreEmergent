@@ -3165,9 +3165,6 @@ export default function AdminPage() {
             <CRMTab
               users={users}
               stats={stats}
-              extendedStats={extendedStats}
-              statsPeriod={statsPeriod}
-              setStatsPeriod={setStatsPeriod}
               formatPrice={formatPrice}
               handleEditUser={handleEditUser}
               handleDeleteUser={handleDeleteUser}
