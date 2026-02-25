@@ -218,8 +218,14 @@ export const Header = () => {
                   compact={true}
                 />
               </div>
-              <NavLink to="/catalog" data-testid="search-page-link" className="p-2 rounded-lg hover:bg-teal-50 transition-colors flex-shrink-0">
-                <Search className="w-5 h-5 text-teal-600" />
+              <NavLink to="/catalog" data-testid="search-page-link">
+                <motion.div 
+                  className="w-10 h-10 rounded-xl flex items-center justify-center bg-gradient-to-br from-teal-50 to-emerald-50 text-teal-600 border-2 border-teal-200 hover:border-teal-400 hover:shadow-lg hover:shadow-teal-500/20 transition-all duration-300"
+                  whileHover={{ scale: 1.05 }}
+                  whileTap={{ scale: 0.95 }}
+                >
+                  <Search className="w-5 h-5" />
+                </motion.div>
               </NavLink>
             </div>
           )}
