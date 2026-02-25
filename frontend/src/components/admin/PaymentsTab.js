@@ -256,6 +256,47 @@ export const PaymentsTab = ({
           animate={{ opacity: 1, y: 0 }}
           className="space-y-6"
         >
+          {/* Crypto Payment Settings */}
+          <div className={`p-5 rounded-xl space-y-4 ${isDark ? 'bg-zinc-800/50 border border-zinc-700/50 backdrop-blur-sm' : 'border border-zinc-200 bg-white'}`}>
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <div className={`w-10 h-10 rounded-lg flex items-center justify-center ${isDark ? 'bg-amber-500/20' : 'bg-amber-100'}`}>
+                  <Wallet className={`w-5 h-5 ${isDark ? 'text-amber-400' : 'text-amber-600'}`} />
+                </div>
+                <div>
+                  <h3 className={`font-semibold ${isDark ? 'text-zinc-100' : ''}`}>Оплата криптовалютой</h3>
+                  <p className={`text-xs ${isDark ? 'text-zinc-500' : 'text-zinc-500'}`}>USDT/USDC на разных сетях</p>
+                </div>
+              </div>
+              <Switch
+                checked={paymentSettings.crypto_enabled !== false}
+                onCheckedChange={(checked) => setPaymentSettings({ ...paymentSettings, crypto_enabled: checked })}
+              />
+            </div>
+            
+            <div className="pt-2 border-t border-zinc-200">
+              <Label className={`text-xs ${isDark ? 'text-zinc-500' : 'text-zinc-500'}`}>Наценка/Скидка (%)</Label>
+              <div className="flex items-center gap-2 mt-1">
+                <Input
+                  type="number"
+                  value={paymentSettings.crypto_adjustment || 0}
+                  onChange={(e) => setPaymentSettings({ ...paymentSettings, crypto_adjustment: parseFloat(e.target.value) || 0 })}
+                  className={`w-24 ${isDark ? 'bg-zinc-900/50 border-zinc-700 text-zinc-100' : ''}`}
+                />
+                <span className={`text-sm ${isDark ? 'text-zinc-400' : 'text-zinc-500'}`}>
+                  {(paymentSettings.crypto_adjustment || 0) > 0 ? '+' : ''}{paymentSettings.crypto_adjustment || 0}%
+                </span>
+              </div>
+              <p className={`text-xs mt-1 ${isDark ? 'text-zinc-600' : 'text-zinc-400'}`}>
+                Отрицательное значение = скидка, положительное = наценка
+              </p>
+            </div>
+
+            <Button onClick={handleSavePaymentSettings} variant="outline" size="sm" className={isDark ? 'border-zinc-700 text-zinc-300' : ''}>
+              Сохранить настройки оплаты
+            </Button>
+          </div>
+
           {/* Crypto Wallets */}
           <div className={`p-5 rounded-xl space-y-4 ${isDark ? 'bg-zinc-800/50 border border-zinc-700/50 backdrop-blur-sm' : 'border border-zinc-200 bg-white'}`}>
             <h3 className={`font-semibold flex items-center gap-2 ${isDark ? 'text-zinc-100' : ''}`}>
