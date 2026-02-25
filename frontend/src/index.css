@@ -195,7 +195,7 @@ code {
   }
   
   html.light-theme .category-card {
-    @apply p-6 transition-all duration-300 hover:scale-[1.02] hover:border-green-400/50 cursor-pointer;
+    @apply p-6 transition-all duration-300 hover:scale-[1.02] hover:border-teal-400/50 cursor-pointer;
   }
   
   .product-card {
@@ -203,7 +203,7 @@ code {
   }
   
   html.light-theme .product-card {
-    @apply p-4 transition-all duration-300 hover:scale-[1.02] hover:border-green-400/50;
+    @apply p-4 transition-all duration-300 hover:scale-[1.02] hover:border-teal-400/50;
   }
   
   .nav-link {
