@@ -154,6 +154,8 @@ export const FloatingPromoBanner = () => {
           </motion.button>
         )}
       </AnimatePresence>
+        </div>
+      </div>
     </div>
   );
 };
