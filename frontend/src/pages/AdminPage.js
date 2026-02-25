@@ -2021,17 +2021,6 @@ export default function AdminPage() {
             />
           </TabsContent>
 
-          {/* Import Tab */}
-          <TabsContent value="import">
-            <ImportTab
-              products={products}
-              uploading={uploading}
-              importResult={importResult}
-              handleImportProducts={handleImportProducts}
-              handleExportProducts={handleExportProducts}
-            />
-          </TabsContent>
-
           {/* Bonus Program Tab - Multiple Programs */}
           <TabsContent value="bonus" className="p-6">
             <div className="space-y-6">
