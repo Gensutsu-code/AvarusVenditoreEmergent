@@ -44,8 +44,12 @@ export const CRMTab = ({
     switch (status) {
       case 'vip': return 'VIP';
       case 'wholesale': return 'Оптовик';
-      default: return 'Розница';
+      default: return 'Пользователь';
     }
+  };
+
+  const toggleUserExpand = (userId) => {
+    setExpandedUser(expandedUser === userId ? null : userId);
   };
 
   return (
