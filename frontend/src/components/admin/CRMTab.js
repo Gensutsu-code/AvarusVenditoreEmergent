@@ -536,7 +536,7 @@ export const CRMTab = ({
                           animate={{ opacity: 1, x: 0 }}
                           transition={{ delay: index * 0.1 }}
                         >
-                          <span className="w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold bg-gradient-to-br from-orange-500 to-red-500 text-white">
+                          <span className="w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold bg-gradient-to-br from-amber-500 to-orange-500 text-white">
                             {index + 1}
                           </span>
                           <div className="flex-1 min-w-0">
