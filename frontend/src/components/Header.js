@@ -251,9 +251,6 @@ export const Header = () => {
                     <NavLink to="/news" data-testid="news-link">
                       <Newspaper className="w-4 h-4" />
                     </NavLink>
-                    <NavLink to="/favorites" data-testid="favorites-link">
-                      <Heart className="w-4 h-4" />
-                    </NavLink>
                     <NavLink to="/cart" data-testid="cart-link">
                       <span className="relative">
                         <ShoppingCart className="w-4 h-4" />
@@ -268,19 +265,8 @@ export const Header = () => {
                         )}
                       </span>
                     </NavLink>
-                    <NavLink to="/account" data-testid="account-link">
-                      <User className="w-4 h-4" />
-                    </NavLink>
-                    <ClientNotifications />
-                    <Button 
-                      variant="ghost" 
-                      size="sm" 
-                      onClick={logout}
-                      className="rounded-xl transition-all duration-300 text-slate-500 hover:text-red-500 hover:bg-red-100"
-                      data-testid="logout-button"
-                    >
-                      <LogOut className="w-4 h-4" />
-                    </Button>
+                    {/* Expandable Profile Menu */}
+                    <ExpandableProfileMenu onLogout={logout} />
                   </>
                 )}
               </>
