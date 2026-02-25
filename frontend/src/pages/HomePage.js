@@ -171,20 +171,27 @@ export default function HomePage() {
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.6, delay: 0.5 }}
             >
-              <div className="flex gap-3 pb-2">
+              <div className="flex items-center gap-2 mb-3">
+                <div className="h-px flex-1 bg-gradient-to-r from-transparent to-teal-200"></div>
+                <p className="text-xs uppercase tracking-widest text-teal-600 font-semibold px-2">
+                  Партнёры
+                </p>
+                <div className="h-px flex-1 bg-gradient-to-l from-transparent to-teal-200"></div>
+              </div>
+              <div className="flex gap-2 pb-2">
                 {partners.map((partner, index) => (
                   <motion.a
                     key={partner.id || partner.name}
                     href={partner.link || '#'}
                     target={partner.link ? '_blank' : undefined}
                     rel={partner.link ? 'noopener noreferrer' : undefined}
-                    className="flex-shrink-0 glass-card p-4 text-center min-w-[100px] block"
+                    className="flex-shrink-0 bg-white/80 backdrop-blur-sm border border-white/50 rounded-xl p-3 text-center min-w-[90px] shadow-sm"
                     initial={{ opacity: 0, x: 20 }}
                     animate={{ opacity: 1, x: 0 }}
                     transition={{ duration: 0.4, delay: 0.3 + index * 0.05 }}
                   >
                     {partner.image_url && (
-                      <div className="w-full h-10 mb-2 flex items-center justify-center">
+                      <div className="w-full h-8 mb-1.5 flex items-center justify-center">
                         <img 
                           src={partner.image_url} 
                           alt={partner.name}
@@ -192,8 +199,7 @@ export default function HomePage() {
                         />
                       </div>
                     )}
-                    <div className="text-xs font-medium truncate text-slate-700">{partner.name}</div>
-                    <div className="text-[10px] truncate text-slate-500">{partner.description}</div>
+                    <div className="text-[10px] font-semibold truncate text-slate-700">{partner.name}</div>
                   </motion.a>
                 ))}
               </div>
