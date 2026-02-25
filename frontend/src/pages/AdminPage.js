@@ -1022,6 +1022,28 @@ export default function AdminPage() {
     }
   };
 
+  const handleSavePartner = async () => {
+    if (!editingPartner?.name) {
+      toast.error('Введите название партнёра');
+      return;
+    }
+    try {
+      if (isNewPartner) {
+        const res = await axios.post(`${API}/admin/partners`, editingPartner);
+        setPartners(prev => [...prev, res.data]);
+        toast.success('Партнёр добавлен');
+      } else {
+        const res = await axios.put(`${API}/admin/partners/${editingPartner.id}`, editingPartner);
+        setPartners(prev => prev.map(p => p.id === editingPartner.id ? res.data : p));
+        toast.success('Партнёр обновлён');
+      }
+      setEditingPartner(null);
+      setIsNewPartner(false);
+    } catch (err) {
+      toast.error('Ошибка сохранения');
+    }
+  };
+
   const resetTabOrder = () => {
     setTabOrder(defaultTabOrder);
     localStorage.removeItem('adminTabOrder');
