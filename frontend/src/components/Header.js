@@ -137,11 +137,43 @@ export const Header = () => {
                       <User className="w-4 h-4" />
                     </NavLink>
                     <ClientNotifications />
+                    {/* Theme Toggle */}
+                    <motion.button
+                      onClick={toggleTheme}
+                      className={`p-2 rounded-xl transition-all duration-300 ${isDark ? 'text-zinc-400 hover:text-yellow-400 hover:bg-yellow-500/10' : 'text-slate-500 hover:text-slate-700 hover:bg-slate-200/50'}`}
+                      whileHover={{ scale: 1.05, rotate: 15 }}
+                      whileTap={{ scale: 0.95 }}
+                      data-testid="theme-toggle"
+                    >
+                      <AnimatePresence mode="wait">
+                        {isDark ? (
+                          <motion.div
+                            key="sun"
+                            initial={{ rotate: -90, opacity: 0 }}
+                            animate={{ rotate: 0, opacity: 1 }}
+                            exit={{ rotate: 90, opacity: 0 }}
+                            transition={{ duration: 0.2 }}
+                          >
+                            <Sun className="w-4 h-4" />
+                          </motion.div>
+                        ) : (
+                          <motion.div
+                            key="moon"
+                            initial={{ rotate: 90, opacity: 0 }}
+                            animate={{ rotate: 0, opacity: 1 }}
+                            exit={{ rotate: -90, opacity: 0 }}
+                            transition={{ duration: 0.2 }}
+                          >
+                            <Moon className="w-4 h-4" />
+                          </motion.div>
+                        )}
+                      </AnimatePresence>
+                    </motion.button>
                     <Button 
                       variant="ghost" 
                       size="sm" 
                       onClick={logout}
-                      className="text-zinc-400 hover:text-red-400 hover:bg-red-500/10 rounded-xl transition-all duration-300"
+                      className={`rounded-xl transition-all duration-300 ${isDark ? 'text-zinc-400 hover:text-red-400 hover:bg-red-500/10' : 'text-slate-500 hover:text-red-500 hover:bg-red-100'}`}
                       data-testid="logout-button"
                     >
                       <LogOut className="w-4 h-4" />
