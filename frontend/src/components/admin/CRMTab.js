@@ -253,8 +253,8 @@ export const CRMTab = ({
                               <p className="text-xl font-bold text-blue-500">{formatPrice(user.orders_count > 0 ? Math.round((user.total_spent || 0) / user.orders_count) : 0)} ₽</p>
                               <p className={`text-xs ${isDark ? 'text-zinc-500' : 'text-zinc-500'}`}>Средний чек</p>
                             </div>
-                            <div className={`p-3 rounded-lg text-center ${isDark ? 'bg-purple-500/10' : 'bg-purple-50'}`}>
-                              <p className="text-2xl font-bold text-purple-500">{user.total_items || 0}</p>
+                            <div className={`p-3 rounded-lg text-center ${isDark ? 'bg-emerald-500/10' : 'bg-emerald-50'}`}>
+                              <p className="text-2xl font-bold text-emerald-500">{user.total_items || 0}</p>
                               <p className={`text-xs ${isDark ? 'text-zinc-500' : 'text-zinc-500'}`}>Товаров</p>
                             </div>
                           </div>
