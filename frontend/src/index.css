@@ -115,7 +115,7 @@ code {
   }
   
   html.light-theme .glass-input {
-    @apply bg-white/70 backdrop-blur-sm border border-cyan-200/50 focus:border-green-400 focus:ring-2 focus:ring-green-400/30 transition-all duration-300 rounded-xl text-slate-800 placeholder:text-slate-400;
+    @apply bg-white/70 backdrop-blur-sm border border-cyan-200/50 focus:border-teal-400 focus:ring-2 focus:ring-teal-400/30 transition-all duration-300 rounded-xl text-slate-800 placeholder:text-slate-400;
   }
   
   .gradient-border {
