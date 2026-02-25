@@ -3324,6 +3324,11 @@ export default function AdminPage() {
 
           {/* Email Notifications Tab */}
           <TabsContent value="notifications">
+            <motion.div 
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.3, ease: "easeOut" }}
+            >
             <NotificationsTab
               notificationSettings={notificationSettings}
               setNotificationSettings={setNotificationSettings}
@@ -3337,12 +3342,18 @@ export default function AdminPage() {
               handleSendTestEmail={handleSendTestEmail}
               handleSendBulkEmail={handleSendBulkEmail}
             />
+            </motion.div>
           </TabsContent>
 
           {/* NEW COMBINED TABS */}
           
           {/* Payments Tab - combines payment methods, prepayment, crypto */}
           <TabsContent value="payments" className="p-6">
+            <motion.div 
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.3, ease: "easeOut" }}
+            >
             <PaymentsTab
               paymentSettings={paymentSettings}
               setPaymentSettings={setPaymentSettings}
@@ -3352,10 +3363,16 @@ export default function AdminPage() {
               handleSavePrepaymentSettings={handleSavePrepaymentSettings}
               isDark={isDark}
             />
+            </motion.div>
           </TabsContent>
 
           {/* CRM Tab - combines users and analytics */}
           <TabsContent value="crm" className="p-6">
+            <motion.div 
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.3, ease: "easeOut" }}
+            >
             <CRMTab
               users={users}
               stats={stats}
@@ -3364,10 +3381,16 @@ export default function AdminPage() {
               handleDeleteUser={handleDeleteUser}
               isDark={isDark}
             />
+            </motion.div>
           </TabsContent>
 
           {/* Marketing Tab - combines promo, news, newsletters */}
           <TabsContent value="marketing" className="p-6">
+            <motion.div 
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.3, ease: "easeOut" }}
+            >
             <MarketingTab
               promoBanner={promoBanner}
               setPromoBanner={setPromoBanner}
@@ -3392,10 +3415,16 @@ export default function AdminPage() {
               users={users}
               isDark={isDark}
             />
+            </motion.div>
           </TabsContent>
 
           {/* Settings Tab - combines telegram, partners, terms */}
           <TabsContent value="settings" className="p-6">
+            <motion.div 
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.3, ease: "easeOut" }}
+            >
             <SettingsTab
               telegramConfig={telegramSettings}
               setTelegramConfig={setTelegramSettings}
