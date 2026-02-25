@@ -3173,7 +3173,7 @@ export default function AdminPage() {
             <SettingsTab
               telegramConfig={telegramSettings}
               setTelegramConfig={setTelegramSettings}
-              handleSaveTelegramConfig={handleSaveTelegramSettings}
+              handleSaveTelegramConfig={handleSaveTelegram}
               uploading={uploading}
               importResult={importResult}
               setImportResult={setImportResult}
