@@ -331,9 +331,9 @@ export default function AccountPage() {
             transition={{ duration: 0.5, delay: 0.2 }}
           >
             {/* Header with gradient */}
-            <div className="relative bg-gradient-to-r from-orange-600/30 via-orange-500/20 to-transparent px-6 py-8">
+            <div className="relative bg-gradient-to-r from-teal-500/20 via-teal-400/10 to-transparent px-6 py-8">
               <motion.div 
-                className="absolute -top-10 -right-10 w-32 h-32 bg-orange-500/20 rounded-full blur-3xl"
+                className="absolute -top-10 -right-10 w-32 h-32 bg-teal-500/20 rounded-full blur-3xl"
                 animate={{ scale: [1, 1.2, 1] }}
                 transition={{ duration: 5, repeat: Infinity }}
               />
