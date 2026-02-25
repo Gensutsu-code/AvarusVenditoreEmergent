@@ -465,11 +465,11 @@ export default function CatalogPage() {
   const currentCategory = categories.find(c => c.id === categoryId);
 
   return (
-    <div className={`min-h-screen ${isDark ? 'bg-zinc-950' : ''}`} data-testid="catalog-page">
+    <div className="min-h-screen" data-testid="catalog-page">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Header */}
         <div className="mb-8">
-          <h1 className={`text-2xl md:text-3xl font-bold tracking-tight uppercase mb-6 ${isDark ? 'text-zinc-100' : 'text-slate-800'}`}>
+          <h1 className="text-2xl md:text-3xl font-bold tracking-tight uppercase mb-6 text-slate-800">
             {currentCategory ? currentCategory.name : 'Поиск запчастей'}
           </h1>
           
@@ -481,14 +481,14 @@ export default function CatalogPage() {
                 placeholder="Введите название или артикул..."
                 value={searchInput}
                 onChange={(e) => setSearchInput(e.target.value)}
-                className={`pr-10 h-12 rounded-xl ${isDark ? 'bg-zinc-800/50 border-zinc-700/50 text-zinc-100 placeholder:text-zinc-500 focus:border-orange-500/50' : 'bg-white/70 border-cyan-200/50 text-slate-800 placeholder:text-slate-400 focus:border-teal-400'}`}
+                className="pr-10 h-12 rounded-xl bg-white/70 border-cyan-200/50 text-slate-800 placeholder:text-slate-400 focus:border-teal-400"
                 data-testid="catalog-search-input"
               />
               {searchInput && (
                 <button 
                   type="button"
                   onClick={() => setSearchInput('')}
-                  className={`absolute right-3 top-1/2 -translate-y-1/2 ${isDark ? 'text-zinc-500 hover:text-zinc-300' : 'text-slate-400 hover:text-slate-600'}`}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600"
                 >
                   <X className="w-5 h-5" />
                 </button>
@@ -496,7 +496,7 @@ export default function CatalogPage() {
             </div>
             <Button 
               type="submit"
-              className={`font-bold uppercase h-12 px-6 rounded-xl shadow-lg transition-all duration-300 ${isDark ? 'bg-gradient-to-r from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700 shadow-orange-500/20' : 'bg-gradient-to-r from-teal-500 to-emerald-500 hover:from-teal-600 hover:to-emerald-600 shadow-teal-500/30'} text-white`}
+              className="font-bold uppercase h-12 px-6 rounded-xl shadow-lg transition-all duration-300 bg-gradient-to-r from-teal-500 to-emerald-500 hover:from-teal-600 hover:to-emerald-600 shadow-teal-500/30 text-white"
               data-testid="catalog-search-btn"
             >
               <Search className="w-5 h-5 mr-2" />
@@ -508,7 +508,7 @@ export default function CatalogPage() {
           {(searchQuery || categoryId) && (
             <div className="flex items-center gap-2 mt-4">
               {searchQuery && (
-                <span className={`inline-flex items-center gap-2 rounded-xl px-3 py-2 text-sm ${isDark ? 'bg-zinc-800/50 border border-zinc-700/50 text-zinc-300' : 'bg-white/60 border border-cyan-200/50 text-slate-600'}`}>
+                <span className="inline-flex items-center gap-2 rounded-xl px-3 py-2 text-sm bg-white/60 border border-cyan-200/50 text-slate-600">
                   Поиск: &quot;{searchQuery}&quot;
                   <button onClick={() => {
                     const params = new URLSearchParams(searchParams);
@@ -521,7 +521,7 @@ export default function CatalogPage() {
                 </span>
               )}
               {categoryId && currentCategory && (
-                <span className={`inline-flex items-center gap-2 rounded-xl px-3 py-2 text-sm ${isDark ? 'bg-zinc-800/50 border border-zinc-700/50 text-zinc-300' : 'bg-white/60 border border-cyan-200/50 text-slate-600'}`}>
+                <span className="inline-flex items-center gap-2 rounded-xl px-3 py-2 text-sm bg-white/60 border border-cyan-200/50 text-slate-600">
                   {currentCategory.name}
                   <button onClick={clearFilters} className="hover:text-red-400">
                     <X className="w-4 h-4" />
@@ -535,19 +535,19 @@ export default function CatalogPage() {
         {/* Categories - show when no search/category selected */}
         {!searchQuery && !categoryId && categories.length > 0 && (
           <div className="mb-8">
-            <h2 className={`text-lg font-semibold mb-4 ${isDark ? 'text-zinc-100' : 'text-slate-800'}`}>Категории</h2>
+            <h2 className="text-lg font-semibold mb-4 text-slate-800">Категории</h2>
             <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
               {categories.map((category) => (
                 <motion.button
                   key={category.id}
                   onClick={() => selectCategory(category.id)}
-                  className={`group glass-card transition-all duration-300 p-4 text-left ${isDark ? 'hover:border-orange-500/30' : 'hover:border-teal-400/50'}`}
+                  className="group glass-card transition-all duration-300 p-4 text-left hover:border-teal-400/50"
                   data-testid={`category-${category.id}`}
                   whileHover={{ scale: 1.02 }}
                   whileTap={{ scale: 0.98 }}
                 >
                   {category.image_url && (
-                    <div className={`aspect-square mb-3 overflow-hidden rounded-xl ${isDark ? 'bg-zinc-800/50' : 'bg-slate-100'}`}>
+                    <div className="aspect-square mb-3 overflow-hidden rounded-xl bg-slate-100">
                       <img 
                         src={category.image_url} 
                         alt={category.name}
@@ -555,7 +555,7 @@ export default function CatalogPage() {
                       />
                     </div>
                   )}
-                  <h3 className={`font-medium transition-colors flex items-center justify-between ${isDark ? 'text-zinc-100 group-hover:text-orange-400' : 'text-slate-800 group-hover:text-teal-600'}`}>
+                  <h3 className="font-medium transition-colors flex items-center justify-between text-slate-800 group-hover:text-teal-600">
                     {category.name}
                     <ArrowRight className="w-4 h-4 opacity-0 group-hover:opacity-100 transition-opacity" />
                   </h3>
@@ -568,14 +568,14 @@ export default function CatalogPage() {
         {/* Content */}
         {!searchQuery && !categoryId ? (
           <div className="text-center py-16" data-testid="search-prompt">
-            <Search className={`w-16 h-16 mx-auto mb-4 ${isDark ? 'text-zinc-700' : 'text-slate-300'}`} />
-            <p className={isDark ? 'text-zinc-400' : 'text-slate-500'}>
+            <Search className="w-16 h-16 mx-auto mb-4 text-slate-300" />
+            <p className="text-slate-500">
               Введите название или артикул, либо выберите категорию
             </p>
           </div>
         ) : loading ? (
-          <div className={`text-center py-12 ${isDark ? 'text-zinc-400' : 'text-slate-500'}`} data-testid="loading">
-            <div className={`w-8 h-8 border-2 rounded-full animate-spin mx-auto mb-4 ${isDark ? 'border-orange-500/30 border-t-orange-500' : 'border-teal-500/30 border-t-teal-500'}`}></div>
+          <div className="text-center py-12 text-slate-500" data-testid="loading">
+            <div className="w-8 h-8 border-2 rounded-full animate-spin mx-auto mb-4 border-teal-500/30 border-t-teal-500"></div>
             Загрузка...
           </div>
         ) : products.length === 0 && alternatives.length === 0 ? (
