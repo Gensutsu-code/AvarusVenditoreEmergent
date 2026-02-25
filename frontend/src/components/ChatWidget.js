@@ -319,7 +319,7 @@ export const ChatWidget = () => {
       {/* Chat button */}
       <button
         onClick={() => setIsOpen(true)}
-        className="fixed bottom-6 left-6 bg-gradient-to-r from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700 text-white p-5 rounded-full shadow-lg z-40 transition-all hover:scale-105 hover:shadow-xl"
+        className="fixed bottom-6 left-6 bg-gradient-to-r from-teal-500 to-emerald-500 hover:from-teal-600 hover:to-emerald-600 text-white p-5 rounded-full shadow-lg z-40 transition-all hover:scale-105 hover:shadow-xl shadow-teal-500/30"
         data-testid="chat-widget-button"
       >
         <MessageCircle className="w-7 h-7" />
@@ -333,16 +333,16 @@ export const ChatWidget = () => {
       {/* Chat window */}
       {isOpen && (
         <div 
-          className="fixed bottom-6 left-6 w-80 sm:w-96 bg-white border border-zinc-200 shadow-2xl z-50 flex flex-col rounded-lg overflow-hidden"
+          className="fixed bottom-6 left-6 w-80 sm:w-96 bg-white border border-slate-200 shadow-2xl z-50 flex flex-col rounded-2xl overflow-hidden"
           style={{ height: '500px' }}
           data-testid="chat-widget"
         >
           {/* Header */}
-          <div className="flex items-center justify-between px-4 py-3 bg-gradient-to-r from-orange-500 to-orange-600 text-white">
+          <div className="flex items-center justify-between px-4 py-3 bg-gradient-to-r from-teal-500 to-emerald-500 text-white">
             <div>
               <h3 className="font-semibold">Онлайн-чат</h3>
-              <p className="text-xs text-orange-100 flex items-center gap-1">
-                <span className="w-2 h-2 bg-green-400 rounded-full animate-pulse"></span>
+              <p className="text-xs text-teal-100 flex items-center gap-1">
+                <span className="w-2 h-2 bg-green-300 rounded-full animate-pulse"></span>
                 Поддержка avopt.store
               </p>
             </div>
@@ -356,13 +356,13 @@ export const ChatWidget = () => {
           </div>
 
           {/* Messages */}
-          <div className="flex-1 overflow-y-auto p-4 space-y-4 bg-gradient-to-b from-zinc-50 to-white">
+          <div className="flex-1 overflow-y-auto p-4 space-y-4 bg-gradient-to-b from-slate-50 to-white">
             {messages.length === 0 ? (
-              <div className="text-center text-zinc-400 text-sm py-8">
-                <div className="w-16 h-16 mx-auto mb-3 bg-orange-100 rounded-full flex items-center justify-center">
-                  <MessageCircle className="w-8 h-8 text-orange-500" />
+              <div className="text-center text-slate-400 text-sm py-8">
+                <div className="w-16 h-16 mx-auto mb-3 bg-teal-100 rounded-full flex items-center justify-center">
+                  <MessageCircle className="w-8 h-8 text-teal-500" />
                 </div>
-                <p className="font-medium text-zinc-600">Напишите нам!</p>
+                <p className="font-medium text-slate-600">Напишите нам!</p>
                 <p className="text-xs mt-1">Мы ответим как можно скорее</p>
               </div>
             ) : (
@@ -370,7 +370,7 @@ export const ChatWidget = () => {
                 <div key={date}>
                   {/* Date divider */}
                   <div className="flex items-center justify-center my-3">
-                    <span className="text-xs text-zinc-400 bg-white px-3 py-1 rounded-full border border-zinc-100">
+                    <span className="text-xs text-slate-400 bg-white px-3 py-1 rounded-full border border-slate-100">
                       {formatDate(msgs[0].created_at)}
                     </span>
                   </div>
@@ -383,12 +383,12 @@ export const ChatWidget = () => {
                       <div
                         className={`max-w-[85%] px-3 py-2 text-sm ${
                           msg.sender_type === 'user'
-                            ? 'bg-gradient-to-r from-orange-500 to-orange-600 text-white rounded-2xl rounded-br-sm'
-                            : 'bg-white border border-zinc-200 text-zinc-800 rounded-2xl rounded-bl-sm shadow-sm'
+                            ? 'bg-gradient-to-r from-teal-500 to-emerald-500 text-white rounded-2xl rounded-br-sm'
+                            : 'bg-white border border-slate-200 text-slate-800 rounded-2xl rounded-bl-sm shadow-sm'
                         }`}
                       >
                         {msg.sender_type === 'admin' && (
-                          <p className="text-xs font-semibold text-orange-500 mb-1">Поддержка</p>
+                          <p className="text-xs font-semibold text-teal-500 mb-1">Поддержка</p>
                         )}
                         
                         {/* Image message - small thumbnail with click to enlarge */}
