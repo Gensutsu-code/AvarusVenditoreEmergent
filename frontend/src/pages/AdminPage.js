@@ -2411,7 +2411,7 @@ export default function AdminPage() {
                       <Gift className="w-4 h-4" />
                       Запросы на призы
                       {prizeRedemptions.filter(r => r.status === 'pending').length > 0 && (
-                        <span className="text-xs px-1.5 py-0.5 rounded-full bg-rose-500 text-white animate-pulse">
+                        <span className="text-xs px-1.5 py-0.5 rounded-full bg-emerald-500 text-white animate-pulse">
                           {prizeRedemptions.filter(r => r.status === 'pending').length}
                         </span>
                       )}
