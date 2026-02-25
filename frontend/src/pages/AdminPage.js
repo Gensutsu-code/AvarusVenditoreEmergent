@@ -123,6 +123,7 @@ export default function AdminPage() {
   const [stats, setStats] = useState(null);
   const [products, setProducts] = useState([]);
   const [categories, setCategories] = useState([]);
+  const [selectedCategoryId, setSelectedCategoryId] = useState(null); // For filtering products by category
   const [users, setUsers] = useState([]);
   const [orders, setOrders] = useState([]);
   const [promoBanner, setPromoBanner] = useState({ enabled: false, text: '', link: '', bg_color: '#f97316', height: 40, image: null, image_position: 'left' });
