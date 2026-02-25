@@ -364,7 +364,7 @@ export const CRMTab = ({
             <div className="flex items-center gap-3">
               <Calendar className={`w-5 h-5 ${isDark ? 'text-zinc-500' : 'text-teal-500'}`} />
               <Select value={statsPeriod} onValueChange={setStatsPeriod}>
-                <SelectTrigger className="w-48 border-slate-200">
+                <SelectTrigger className={`w-48 ${isDark ? 'border-zinc-700 bg-zinc-800/50' : 'border-slate-200'}`}>
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
@@ -375,188 +375,227 @@ export const CRMTab = ({
                 </SelectContent>
               </Select>
             </div>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={fetchAnalytics}
+              disabled={loadingAnalytics}
+              className={isDark ? 'border-zinc-700' : ''}
+            >
+              <RefreshCw className={`w-4 h-4 mr-1 ${loadingAnalytics ? 'animate-spin' : ''}`} />
+              Обновить
+            </Button>
           </div>
 
-          {/* Main Stats Cards */}
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-            <motion.div 
-              className="glass-card p-5 bg-gradient-to-br from-teal-500/10 to-teal-500/5"
-              whileHover={{ scale: 1.02 }}
-              transition={{ duration: 0.2 }}
-            >
-              <p className="text-teal-600 text-sm font-medium">Заказов</p>
-              <p className="text-3xl font-bold mt-1 text-slate-800">{extendedStats?.orders_count || 0}</p>
-              <p className="text-xs text-slate-500 mt-1">выполнено: {extendedStats?.completed_orders || 0}</p>
-            </motion.div>
-            <motion.div 
-              className="glass-card p-5 bg-gradient-to-br from-emerald-500/10 to-emerald-500/5"
-              whileHover={{ scale: 1.02 }}
-              transition={{ duration: 0.2 }}
-            >
-              <p className="text-emerald-600 text-sm font-medium">Выручка</p>
-              <p className="text-2xl font-bold mt-1 text-slate-800">{formatPrice(extendedStats?.revenue || 0)} ₽</p>
-            </motion.div>
-            <motion.div 
-              className="glass-card p-5 bg-gradient-to-br from-blue-500/10 to-blue-500/5"
-              whileHover={{ scale: 1.02 }}
-              transition={{ duration: 0.2 }}
-            >
-              <p className="text-blue-600 text-sm font-medium">Средний чек</p>
-              <p className="text-2xl font-bold mt-1 text-slate-800">{formatPrice(extendedStats?.avg_order || 0)} ₽</p>
-            </motion.div>
-            <motion.div 
-              className="glass-card p-5 bg-gradient-to-br from-orange-500/10 to-orange-500/5"
-              whileHover={{ scale: 1.02 }}
-              transition={{ duration: 0.2 }}
-            >
-              <p className="text-orange-600 text-sm font-medium">Новых клиентов</p>
-              <p className="text-3xl font-bold mt-1 text-slate-800">{extendedStats?.new_users || 0}</p>
-            </motion.div>
-          </div>
-
-          {/* Conversion Rate */}
-          <div className="glass-card p-5">
-            <div className="flex items-center justify-between mb-3">
-              <h3 className="font-semibold text-slate-700 flex items-center gap-2">
-                <TrendingUp className="w-5 h-5 text-teal-500" />
-                Конверсия
-              </h3>
-              <span className="text-2xl font-bold text-teal-600">{extendedStats?.conversion_rate || 0}%</span>
+          {loadingAnalytics && !analyticsData ? (
+            <div className={`p-12 text-center ${isDark ? 'text-zinc-500' : 'text-slate-500'}`}>
+              <RefreshCw className="w-8 h-8 animate-spin mx-auto mb-2" />
+              <p>Загрузка аналитики...</p>
             </div>
-            <div className="w-full bg-slate-200 rounded-full h-3">
-              <motion.div 
-                className="bg-gradient-to-r from-teal-500 to-emerald-500 h-3 rounded-full"
-                initial={{ width: 0 }}
-                animate={{ width: `${Math.min(extendedStats?.conversion_rate || 0, 100)}%` }}
-                transition={{ duration: 1, ease: "easeOut" }}
-              />
-            </div>
-            <p className="text-xs text-slate-500 mt-2">Процент выполненных заказов от общего числа</p>
-          </div>
-
-          {/* Orders by Status */}
-          <div className="glass-card p-5">
-            <h3 className="font-semibold text-slate-700 flex items-center gap-2 mb-4">
-              <BarChart3 className="w-5 h-5 text-teal-500" />
-              Заказы по статусам
-            </h3>
-            <div className="grid grid-cols-5 gap-3">
-              {[
-                { key: 'new', label: 'Новые', color: 'bg-yellow-500', count: extendedStats?.orders_by_status?.new || 0 },
-                { key: 'processing', label: 'В работе', color: 'bg-blue-500', count: extendedStats?.orders_by_status?.processing || 0 },
-                { key: 'shipped', label: 'Отправлен', color: 'bg-purple-500', count: extendedStats?.orders_by_status?.shipped || 0 },
-                { key: 'delivered', label: 'Доставлен', color: 'bg-green-500', count: extendedStats?.orders_by_status?.delivered || 0 },
-                { key: 'cancelled', label: 'Отменён', color: 'bg-red-500', count: extendedStats?.orders_by_status?.cancelled || 0 },
-              ].map(status => (
+          ) : analyticsData ? (
+            <>
+              {/* Main Stats Cards */}
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                 <motion.div 
-                  key={status.key}
-                  className="text-center p-3 rounded-xl bg-slate-50"
-                  whileHover={{ scale: 1.05 }}
+                  className={`p-5 rounded-xl ${isDark ? 'bg-teal-500/10 border border-teal-500/20' : 'bg-gradient-to-br from-teal-500/10 to-teal-500/5 border border-teal-100'}`}
+                  whileHover={{ scale: 1.02 }}
+                  transition={{ duration: 0.2 }}
                 >
-                  <div className={`w-3 h-3 ${status.color} rounded-full mx-auto mb-2`} />
-                  <p className="text-2xl font-bold text-slate-800">{status.count}</p>
-                  <p className="text-xs text-slate-500">{status.label}</p>
+                  <div className="flex items-center gap-2 mb-2">
+                    <ShoppingBag className={`w-5 h-5 ${isDark ? 'text-teal-400' : 'text-teal-600'}`} />
+                    <p className={`text-sm font-medium ${isDark ? 'text-teal-400' : 'text-teal-600'}`}>Заказов</p>
+                  </div>
+                  <p className={`text-3xl font-bold ${isDark ? 'text-zinc-100' : 'text-slate-800'}`}>{analyticsData.summary?.total_orders || 0}</p>
+                  <p className={`text-xs mt-1 ${isDark ? 'text-zinc-500' : 'text-slate-500'}`}>выполнено: {analyticsData.summary?.completed_orders || 0}</p>
                 </motion.div>
-              ))}
-            </div>
-          </div>
-
-          <div className="grid md:grid-cols-2 gap-6">
-            {/* Top Products */}
-            <div className="glass-card p-5">
-              <h3 className="font-semibold text-slate-700 flex items-center gap-2 mb-4">
-                <Package className="w-5 h-5 text-teal-500" />
-                Топ товаров
-              </h3>
-              {extendedStats?.top_products && extendedStats.top_products.length > 0 ? (
-                <div className="space-y-3">
-                  {extendedStats.top_products.slice(0, 5).map((product, index) => (
-                    <motion.div 
-                      key={product._id || index} 
-                      className="flex items-center gap-3 p-2 rounded-lg hover:bg-slate-50 transition-colors"
-                      initial={{ opacity: 0, x: -20 }}
-                      animate={{ opacity: 1, x: 0 }}
-                      transition={{ delay: index * 0.1 }}
-                    >
-                      <span className="w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold bg-gradient-to-br from-teal-500 to-emerald-500 text-white">
-                        {index + 1}
-                      </span>
-                      <span className="flex-1 truncate text-slate-700">{product.name || '—'}</span>
-                      <span className="font-bold text-teal-600">{product.quantity || product.sold || 0} шт.</span>
-                    </motion.div>
-                  ))}
-                </div>
-              ) : (
-                <p className="text-slate-400 text-center py-4">Нет данных</p>
-              )}
-            </div>
-
-            {/* Top Customers */}
-            <div className="glass-card p-5">
-              <h3 className="font-semibold text-slate-700 flex items-center gap-2 mb-4">
-                <Users className="w-5 h-5 text-teal-500" />
-                Топ клиентов
-              </h3>
-              {extendedStats?.top_customers && extendedStats.top_customers.length > 0 ? (
-                <div className="space-y-3">
-                  {extendedStats.top_customers.slice(0, 5).map((customer, index) => (
-                    <motion.div 
-                      key={customer.user_id || index} 
-                      className="flex items-center gap-3 p-2 rounded-lg hover:bg-slate-50 transition-colors"
-                      initial={{ opacity: 0, x: -20 }}
-                      animate={{ opacity: 1, x: 0 }}
-                      transition={{ delay: index * 0.1 }}
-                    >
-                      <span className="w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold bg-gradient-to-br from-orange-500 to-red-500 text-white">
-                        {index + 1}
-                      </span>
-                      <div className="flex-1 min-w-0">
-                        <p className="text-slate-700 font-medium truncate">{customer.name || '—'}</p>
-                        <p className="text-xs text-slate-400 truncate">{customer.email}</p>
-                      </div>
-                      <div className="text-right">
-                        <p className="font-bold text-emerald-600">{formatPrice(customer.total_spent || 0)} ₽</p>
-                        <p className="text-xs text-slate-400">{customer.orders_count} заказов</p>
-                      </div>
-                    </motion.div>
-                  ))}
-                </div>
-              ) : (
-                <p className="text-slate-400 text-center py-4">Нет данных</p>
-              )}
-            </div>
-          </div>
-
-          {/* Sales Chart (simple bar representation) */}
-          {extendedStats?.sales_by_day && extendedStats.sales_by_day.length > 0 && (
-            <div className="glass-card p-5">
-              <h3 className="font-semibold text-slate-700 flex items-center gap-2 mb-4">
-                <BarChart3 className="w-5 h-5 text-teal-500" />
-                Продажи по дням
-              </h3>
-              <div className="flex items-end gap-1 h-32">
-                {extendedStats.sales_by_day.slice(-14).map((day, index) => {
-                  const maxRevenue = Math.max(...extendedStats.sales_by_day.map(d => d.revenue || 0), 1);
-                  const height = ((day.revenue || 0) / maxRevenue) * 100;
-                  return (
-                    <motion.div
-                      key={index}
-                      className="flex-1 flex flex-col items-center gap-1"
-                      initial={{ height: 0 }}
-                      animate={{ height: 'auto' }}
-                      transition={{ delay: index * 0.05 }}
-                    >
-                      <motion.div 
-                        className="w-full bg-gradient-to-t from-teal-500 to-emerald-400 rounded-t-sm"
-                        style={{ height: `${Math.max(height, 4)}%` }}
-                        whileHover={{ scale: 1.1 }}
-                        title={`${day.date}: ${formatPrice(day.revenue || 0)} ₽`}
-                      />
-                      <span className="text-[10px] text-slate-400">{day.date}</span>
-                    </motion.div>
-                  );
-                })}
+                <motion.div 
+                  className={`p-5 rounded-xl ${isDark ? 'bg-emerald-500/10 border border-emerald-500/20' : 'bg-gradient-to-br from-emerald-500/10 to-emerald-500/5 border border-emerald-100'}`}
+                  whileHover={{ scale: 1.02 }}
+                  transition={{ duration: 0.2 }}
+                >
+                  <div className="flex items-center gap-2 mb-2">
+                    <DollarSign className={`w-5 h-5 ${isDark ? 'text-emerald-400' : 'text-emerald-600'}`} />
+                    <p className={`text-sm font-medium ${isDark ? 'text-emerald-400' : 'text-emerald-600'}`}>Выручка</p>
+                  </div>
+                  <p className={`text-2xl font-bold ${isDark ? 'text-zinc-100' : 'text-slate-800'}`}>{formatPrice(analyticsData.summary?.total_revenue || 0)} ₽</p>
+                </motion.div>
+                <motion.div 
+                  className={`p-5 rounded-xl ${isDark ? 'bg-blue-500/10 border border-blue-500/20' : 'bg-gradient-to-br from-blue-500/10 to-blue-500/5 border border-blue-100'}`}
+                  whileHover={{ scale: 1.02 }}
+                  transition={{ duration: 0.2 }}
+                >
+                  <div className="flex items-center gap-2 mb-2">
+                    <Target className={`w-5 h-5 ${isDark ? 'text-blue-400' : 'text-blue-600'}`} />
+                    <p className={`text-sm font-medium ${isDark ? 'text-blue-400' : 'text-blue-600'}`}>Средний чек</p>
+                  </div>
+                  <p className={`text-2xl font-bold ${isDark ? 'text-zinc-100' : 'text-slate-800'}`}>{formatPrice(analyticsData.summary?.avg_order_value || 0)} ₽</p>
+                </motion.div>
+                <motion.div 
+                  className={`p-5 rounded-xl ${isDark ? 'bg-orange-500/10 border border-orange-500/20' : 'bg-gradient-to-br from-orange-500/10 to-orange-500/5 border border-orange-100'}`}
+                  whileHover={{ scale: 1.02 }}
+                  transition={{ duration: 0.2 }}
+                >
+                  <div className="flex items-center gap-2 mb-2">
+                    <Users className={`w-5 h-5 ${isDark ? 'text-orange-400' : 'text-orange-600'}`} />
+                    <p className={`text-sm font-medium ${isDark ? 'text-orange-400' : 'text-orange-600'}`}>Новых клиентов</p>
+                  </div>
+                  <p className={`text-3xl font-bold ${isDark ? 'text-zinc-100' : 'text-slate-800'}`}>{analyticsData.summary?.new_customers || 0}</p>
+                </motion.div>
               </div>
+
+              {/* Conversion Rate */}
+              <div className={`p-5 rounded-xl ${isDark ? 'bg-zinc-800/50 border border-zinc-700' : 'bg-white border border-slate-200'}`}>
+                <div className="flex items-center justify-between mb-3">
+                  <h3 className={`font-semibold flex items-center gap-2 ${isDark ? 'text-zinc-200' : 'text-slate-700'}`}>
+                    <TrendingUp className={`w-5 h-5 ${isDark ? 'text-teal-400' : 'text-teal-500'}`} />
+                    Конверсия
+                  </h3>
+                  <span className={`text-2xl font-bold ${isDark ? 'text-teal-400' : 'text-teal-600'}`}>{analyticsData.summary?.conversion_rate || 0}%</span>
+                </div>
+                <div className={`w-full rounded-full h-3 ${isDark ? 'bg-zinc-700' : 'bg-slate-200'}`}>
+                  <motion.div 
+                    className="bg-gradient-to-r from-teal-500 to-emerald-500 h-3 rounded-full"
+                    initial={{ width: 0 }}
+                    animate={{ width: `${Math.min(analyticsData.summary?.conversion_rate || 0, 100)}%` }}
+                    transition={{ duration: 1, ease: "easeOut" }}
+                  />
+                </div>
+                <p className={`text-xs mt-2 ${isDark ? 'text-zinc-500' : 'text-slate-500'}`}>Процент выполненных заказов от общего числа</p>
+              </div>
+
+              {/* Orders by Status */}
+              <div className={`p-5 rounded-xl ${isDark ? 'bg-zinc-800/50 border border-zinc-700' : 'bg-white border border-slate-200'}`}>
+                <h3 className={`font-semibold flex items-center gap-2 mb-4 ${isDark ? 'text-zinc-200' : 'text-slate-700'}`}>
+                  <BarChart3 className={`w-5 h-5 ${isDark ? 'text-teal-400' : 'text-teal-500'}`} />
+                  Заказы по статусам
+                </h3>
+                <div className="grid grid-cols-5 gap-3">
+                  {[
+                    { key: 'new', label: 'Новые', color: 'bg-yellow-500', count: analyticsData.orders_by_status?.new || 0 },
+                    { key: 'processing', label: 'В работе', color: 'bg-blue-500', count: analyticsData.orders_by_status?.processing || 0 },
+                    { key: 'shipped', label: 'Отправлен', color: 'bg-purple-500', count: analyticsData.orders_by_status?.shipped || 0 },
+                    { key: 'delivered', label: 'Доставлен', color: 'bg-green-500', count: analyticsData.orders_by_status?.delivered || 0 },
+                    { key: 'cancelled', label: 'Отменён', color: 'bg-red-500', count: analyticsData.orders_by_status?.cancelled || 0 },
+                  ].map(status => (
+                    <motion.div 
+                      key={status.key}
+                      className={`text-center p-3 rounded-xl ${isDark ? 'bg-zinc-700/50' : 'bg-slate-50'}`}
+                      whileHover={{ scale: 1.05 }}
+                    >
+                      <div className={`w-3 h-3 ${status.color} rounded-full mx-auto mb-2`} />
+                      <p className={`text-2xl font-bold ${isDark ? 'text-zinc-100' : 'text-slate-800'}`}>{status.count}</p>
+                      <p className={`text-xs ${isDark ? 'text-zinc-500' : 'text-slate-500'}`}>{status.label}</p>
+                    </motion.div>
+                  ))}
+                </div>
+              </div>
+
+              <div className="grid md:grid-cols-2 gap-6">
+                {/* Top Products */}
+                <div className={`p-5 rounded-xl ${isDark ? 'bg-zinc-800/50 border border-zinc-700' : 'bg-white border border-slate-200'}`}>
+                  <h3 className={`font-semibold flex items-center gap-2 mb-4 ${isDark ? 'text-zinc-200' : 'text-slate-700'}`}>
+                    <Package className={`w-5 h-5 ${isDark ? 'text-teal-400' : 'text-teal-500'}`} />
+                    Топ товаров
+                  </h3>
+                  {analyticsData.top_products && analyticsData.top_products.length > 0 ? (
+                    <div className="space-y-3">
+                      {analyticsData.top_products.slice(0, 5).map((product, index) => (
+                        <motion.div 
+                          key={product._id || index} 
+                          className={`flex items-center gap-3 p-2 rounded-lg transition-colors ${isDark ? 'hover:bg-zinc-700/50' : 'hover:bg-slate-50'}`}
+                          initial={{ opacity: 0, x: -20 }}
+                          animate={{ opacity: 1, x: 0 }}
+                          transition={{ delay: index * 0.1 }}
+                        >
+                          <span className="w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold bg-gradient-to-br from-teal-500 to-emerald-500 text-white">
+                            {index + 1}
+                          </span>
+                          <span className={`flex-1 truncate ${isDark ? 'text-zinc-300' : 'text-slate-700'}`}>{product.name || '—'}</span>
+                          <span className={`font-bold ${isDark ? 'text-teal-400' : 'text-teal-600'}`}>{product.quantity || 0} шт.</span>
+                        </motion.div>
+                      ))}
+                    </div>
+                  ) : (
+                    <p className={`text-center py-4 ${isDark ? 'text-zinc-500' : 'text-slate-400'}`}>Нет данных</p>
+                  )}
+                </div>
+
+                {/* Top Customers */}
+                <div className={`p-5 rounded-xl ${isDark ? 'bg-zinc-800/50 border border-zinc-700' : 'bg-white border border-slate-200'}`}>
+                  <h3 className={`font-semibold flex items-center gap-2 mb-4 ${isDark ? 'text-zinc-200' : 'text-slate-700'}`}>
+                    <Users className={`w-5 h-5 ${isDark ? 'text-teal-400' : 'text-teal-500'}`} />
+                    Топ клиентов
+                  </h3>
+                  {analyticsData.top_customers && analyticsData.top_customers.length > 0 ? (
+                    <div className="space-y-3">
+                      {analyticsData.top_customers.slice(0, 5).map((customer, index) => (
+                        <motion.div 
+                          key={customer.user_id || index} 
+                          className={`flex items-center gap-3 p-2 rounded-lg transition-colors ${isDark ? 'hover:bg-zinc-700/50' : 'hover:bg-slate-50'}`}
+                          initial={{ opacity: 0, x: -20 }}
+                          animate={{ opacity: 1, x: 0 }}
+                          transition={{ delay: index * 0.1 }}
+                        >
+                          <span className="w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold bg-gradient-to-br from-orange-500 to-red-500 text-white">
+                            {index + 1}
+                          </span>
+                          <div className="flex-1 min-w-0">
+                            <p className={`font-medium truncate ${isDark ? 'text-zinc-200' : 'text-slate-700'}`}>{customer.name || '—'}</p>
+                            <p className={`text-xs truncate ${isDark ? 'text-zinc-500' : 'text-slate-400'}`}>{customer.email}</p>
+                          </div>
+                          <div className="text-right">
+                            <p className={`font-bold ${isDark ? 'text-emerald-400' : 'text-emerald-600'}`}>{formatPrice(customer.total_spent || 0)} ₽</p>
+                            <p className={`text-xs ${isDark ? 'text-zinc-500' : 'text-slate-400'}`}>{customer.orders_count} заказов</p>
+                          </div>
+                        </motion.div>
+                      ))}
+                    </div>
+                  ) : (
+                    <p className={`text-center py-4 ${isDark ? 'text-zinc-500' : 'text-slate-400'}`}>Нет данных</p>
+                  )}
+                </div>
+              </div>
+
+              {/* Sales Chart (simple bar representation) */}
+              {analyticsData.sales_by_day && analyticsData.sales_by_day.length > 0 && (
+                <div className={`p-5 rounded-xl ${isDark ? 'bg-zinc-800/50 border border-zinc-700' : 'bg-white border border-slate-200'}`}>
+                  <h3 className={`font-semibold flex items-center gap-2 mb-4 ${isDark ? 'text-zinc-200' : 'text-slate-700'}`}>
+                    <BarChart3 className={`w-5 h-5 ${isDark ? 'text-teal-400' : 'text-teal-500'}`} />
+                    Продажи по дням
+                  </h3>
+                  <div className="flex items-end gap-1 h-32">
+                    {analyticsData.sales_by_day.slice(-14).map((day, index) => {
+                      const maxRevenue = Math.max(...analyticsData.sales_by_day.map(d => d.revenue || 0), 1);
+                      const height = ((day.revenue || 0) / maxRevenue) * 100;
+                      return (
+                        <motion.div
+                          key={index}
+                          className="flex-1 flex flex-col items-center gap-1"
+                          initial={{ height: 0 }}
+                          animate={{ height: 'auto' }}
+                          transition={{ delay: index * 0.05 }}
+                        >
+                          <motion.div 
+                            className="w-full bg-gradient-to-t from-teal-500 to-emerald-400 rounded-t-sm cursor-pointer"
+                            style={{ height: `${Math.max(height, 4)}%` }}
+                            whileHover={{ scale: 1.1 }}
+                            title={`${day.date}: ${formatPrice(day.revenue || 0)} ₽`}
+                          />
+                          <span className={`text-[10px] ${isDark ? 'text-zinc-500' : 'text-slate-400'}`}>{day.date}</span>
+                        </motion.div>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
+            </>
+          ) : (
+            <div className={`p-12 text-center ${isDark ? 'text-zinc-500' : 'text-slate-500'}`}>
+              <BarChart3 className="w-12 h-12 mx-auto mb-2 opacity-50" />
+              <p>Нет данных для отображения</p>
+              <Button onClick={fetchAnalytics} variant="outline" size="sm" className="mt-4">
+                Загрузить аналитику
+              </Button>
             </div>
           )}
         </motion.div>
