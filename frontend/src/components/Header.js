@@ -26,7 +26,7 @@ export const Header = () => {
         to={to} 
         className={`relative px-3 py-2 text-sm font-medium transition-all duration-300 rounded-xl
           ${isActive 
-            ? isDark ? 'text-orange-400 bg-orange-500/10' : 'text-green-600 bg-green-500/10'
+            ? isDark ? 'text-orange-400 bg-orange-500/10' : 'text-teal-600 bg-teal-500/10'
             : isDark ? 'text-zinc-400 hover:text-white hover:bg-white/5' : 'text-slate-500 hover:text-slate-800 hover:bg-white/50'
           } ${className}`}
       >
@@ -213,7 +213,7 @@ export const Header = () => {
                 </motion.button>
                 <Link to="/login" data-testid="login-link">
                   <motion.div whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}>
-                    <Button className={`font-bold uppercase tracking-wide rounded-xl shadow-glow transition-all duration-300 ${isDark ? 'bg-gradient-to-r from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700 text-white' : 'bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 text-white'}`}>
+                    <Button className={`font-bold uppercase tracking-wide rounded-xl shadow-glow transition-all duration-300 ${isDark ? 'bg-gradient-to-r from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700 text-white' : 'bg-gradient-to-r from-teal-500 to-emerald-500 hover:from-green-600 hover:to-emerald-700 text-white'}`}>
                       Войти
                     </Button>
                   </motion.div>
