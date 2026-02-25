@@ -180,13 +180,13 @@ const ProductModalContent = ({
   return (
     <>
       <DialogHeader>
-        <DialogTitle className="text-xl font-bold">{product.name}</DialogTitle>
+        <DialogTitle className="text-xl font-bold text-slate-800">{product.name}</DialogTitle>
       </DialogHeader>
       
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-4">
         {/* Image Gallery with Slideshow */}
         <div className="space-y-2">
-          <div className="relative aspect-square bg-zinc-100 overflow-hidden group">
+          <div className="relative aspect-square bg-slate-100 rounded-xl overflow-hidden group">
             {allImages.length > 0 ? (
               <>
                 <img 
@@ -200,28 +200,28 @@ const ProductModalContent = ({
                   <>
                     <button
                       onClick={prevImage}
-                      className="absolute left-2 top-1/2 -translate-y-1/2 bg-black/50 hover:bg-black/70 text-white p-2 rounded-full opacity-0 group-hover:opacity-100 transition-opacity"
+                      className="absolute left-2 top-1/2 -translate-y-1/2 bg-white/80 hover:bg-white text-slate-800 p-2 rounded-full opacity-0 group-hover:opacity-100 transition-opacity shadow-lg"
                       data-testid="prev-image"
                     >
                       <ChevronLeft className="w-5 h-5" />
                     </button>
                     <button
                       onClick={nextImage}
-                      className="absolute right-2 top-1/2 -translate-y-1/2 bg-black/50 hover:bg-black/70 text-white p-2 rounded-full opacity-0 group-hover:opacity-100 transition-opacity"
+                      className="absolute right-2 top-1/2 -translate-y-1/2 bg-white/80 hover:bg-white text-slate-800 p-2 rounded-full opacity-0 group-hover:opacity-100 transition-opacity shadow-lg"
                       data-testid="next-image"
                     >
                       <ChevronRight className="w-5 h-5" />
                     </button>
                     
                     {/* Image counter */}
-                    <div className="absolute bottom-2 right-2 bg-black/50 text-white text-xs px-2 py-1 rounded">
+                    <div className="absolute bottom-2 right-2 bg-white/80 text-slate-700 text-xs px-2 py-1 rounded-lg">
                       {currentImageIndex + 1} / {allImages.length}
                     </div>
                   </>
                 )}
               </>
             ) : (
-              <div className="w-full h-full flex items-center justify-center text-zinc-300">
+              <div className="w-full h-full flex items-center justify-center text-slate-300">
                 <Package className="w-16 h-16" />
               </div>
             )}
@@ -234,8 +234,8 @@ const ProductModalContent = ({
                 <button
                   key={idx}
                   onClick={() => setCurrentImageIndex(idx)}
-                  className={`flex-shrink-0 w-16 h-16 border-2 overflow-hidden transition-colors ${
-                    idx === currentImageIndex ? 'border-orange-500' : 'border-zinc-200 hover:border-zinc-400'
+                  className={`flex-shrink-0 w-16 h-16 border-2 rounded-lg overflow-hidden transition-colors ${
+                    idx === currentImageIndex ? 'border-teal-500' : 'border-slate-200 hover:border-slate-400'
                   }`}
                 >
                   <img src={img} alt={`${product.name} ${idx + 1}`} className="w-full h-full object-cover" />
@@ -250,38 +250,38 @@ const ProductModalContent = ({
           {/* Manufacturer and Article */}
           <div className="space-y-1">
             {product.manufacturer && (
-              <p className="text-base font-bold text-orange-600">
+              <p className="text-base font-bold text-teal-600">
                 {product.manufacturer}
               </p>
             )}
-            <p className="text-base font-mono font-semibold text-zinc-700">
+            <p className="text-base font-mono font-semibold text-slate-600">
               Артикул: {product.article}
             </p>
           </div>
 
           {product.description && (
-            <p className="text-zinc-600">
+            <p className="text-slate-600">
               {product.description}
             </p>
           )}
 
           <div className="space-y-2 text-sm">
             <div className="flex justify-between">
-              <span className="text-zinc-500">Наличие:</span>
-              <span className={product.stock > 0 ? 'text-green-600 font-semibold' : 'text-red-500'}>
+              <span className="text-slate-500">Наличие:</span>
+              <span className={product.stock > 0 ? 'text-emerald-600 font-semibold' : 'text-red-500'}>
                 {product.stock > 0 ? `${product.stock} шт.` : 'Нет в наличии'}
               </span>
             </div>
             <div className="flex justify-between">
-              <span className="text-zinc-500">Доставка:</span>
-              <span className="flex items-center gap-1">
+              <span className="text-slate-500">Доставка:</span>
+              <span className="flex items-center gap-1 text-slate-600">
                 <Truck className="w-4 h-4" />
                 {getDeliveryText(product.delivery_days || 3)}
               </span>
             </div>
           </div>
 
-          <div className="border-t border-zinc-700/50 pt-4 flex items-center justify-between">
+          <div className="border-t border-slate-200 pt-4 flex items-center justify-between">
             <PriceDisplay 
               price={product.price} 
               formatPrice={formatPrice} 
@@ -291,19 +291,19 @@ const ProductModalContent = ({
 
           {/* Quantity + Add to cart */}
           <div className="flex items-center gap-3">
-            <div className="flex items-center bg-zinc-800/50 rounded-xl overflow-hidden border border-zinc-700/50">
+            <div className="flex items-center bg-white/50 rounded-xl overflow-hidden border border-slate-200">
               <button 
                 onClick={() => updateQuantity(product.id, -1)}
-                className="p-3 hover:bg-zinc-700/50 transition-colors text-zinc-300"
+                className="p-3 hover:bg-slate-100 transition-colors text-slate-600"
               >
                 <Minus className="w-4 h-4" />
               </button>
-              <span className="px-4 min-w-[50px] text-center font-semibold text-zinc-100">
+              <span className="px-4 min-w-[50px] text-center font-semibold text-slate-800">
                 {quantities[product.id] || 1}
               </span>
               <button 
                 onClick={() => updateQuantity(product.id, 1)}
-                className="p-3 hover:bg-zinc-700/50 transition-colors text-zinc-300"
+                className="p-3 hover:bg-slate-100 transition-colors text-slate-600"
               >
                 <Plus className="w-4 h-4" />
               </button>
@@ -312,7 +312,7 @@ const ProductModalContent = ({
             <Button
               onClick={() => handleAddToCart(product)}
               disabled={product.stock === 0}
-              className="flex-1 bg-gradient-to-r from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700 text-white font-bold uppercase h-12 rounded-xl shadow-glow transition-all duration-300"
+              className="flex-1 bg-gradient-to-r from-teal-500 to-emerald-500 hover:from-teal-600 hover:to-emerald-600 text-white font-bold uppercase h-12 rounded-xl shadow-lg shadow-teal-500/30 transition-all duration-300"
               data-testid="modal-add-to-cart"
             >
               <ShoppingCart className="w-5 h-5 mr-2" />
