@@ -182,14 +182,26 @@ export default function CartPage() {
                         whileTap={{ scale: 0.9 }}
                         onClick={() => updateQuantity(item.product_id, item.quantity - 1)}
                         className="p-2.5 hover:bg-slate-100 transition-colors text-slate-500"
+                        data-testid={`decrease-qty-${item.product_id}`}
                       >
                         <Minus className="w-4 h-4" />
                       </motion.button>
-                      <span className="px-4 font-bold text-slate-800 min-w-[40px] text-center">{item.quantity}</span>
+                      <input
+                        type="number"
+                        min="1"
+                        value={item.quantity}
+                        onChange={(e) => {
+                          const val = parseInt(e.target.value) || 1;
+                          updateQuantity(item.product_id, val);
+                        }}
+                        className="w-14 text-center font-bold text-slate-800 bg-transparent border-0 focus:outline-none focus:ring-0 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                        data-testid={`qty-input-${item.product_id}`}
+                      />
                       <motion.button
                         whileTap={{ scale: 0.9 }}
                         onClick={() => updateQuantity(item.product_id, item.quantity + 1)}
                         className="p-2.5 hover:bg-slate-100 transition-colors text-slate-500"
+                        data-testid={`increase-qty-${item.product_id}`}
                       >
                         <Plus className="w-4 h-4" />
                       </motion.button>
