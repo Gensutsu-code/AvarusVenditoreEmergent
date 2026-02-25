@@ -209,10 +209,10 @@ export const Header = () => {
             </motion.h1>
           </Link>
           
-          {/* Search Field - with left margin to align with inner content (p-6 = 24px) */}
+          {/* Search Field - left edge, wider */}
           {user && !isAdmin && (
-            <div className="hidden md:flex items-center gap-2 ml-4">
-              <div className="w-64">
+            <div className="hidden md:flex items-center gap-2">
+              <div className="w-72">
                 <SearchDropdown 
                   placeholder="Поиск..." 
                   compact={true}
