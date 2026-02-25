@@ -1526,7 +1526,7 @@ export default function AdminPage() {
                         <div className="flex items-center gap-2">
                           <span className="font-medium">{u.name}</span>
                           <span className={`text-xs font-bold px-2 py-0.5 rounded ${
-                            u.role === 'admin' ? 'bg-purple-100 text-purple-800' : 'bg-zinc-100 text-zinc-600'
+                            u.role === 'admin' ? 'bg-teal-100 text-teal-800' : 'bg-zinc-100 text-zinc-600'
                           }`}>
                             {u.role === 'admin' ? 'Админ' : 'Пользователь'}
                           </span>
