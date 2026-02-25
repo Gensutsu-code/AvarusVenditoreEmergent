@@ -220,7 +220,7 @@ code {
   }
   
   html.light-theme .nav-link::after {
-    @apply bg-green-500;
+    @apply bg-teal-500;
   }
   
   .nav-link:hover::after,
