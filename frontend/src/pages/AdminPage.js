@@ -189,6 +189,7 @@ export default function AdminPage() {
   const [bonusHistory, setBonusHistory] = useState([]);
   const [issueBonusModal, setIssueBonusModal] = useState(null); // { programId, userId, userName, amount }
   const [bonusCodeInput, setBonusCodeInput] = useState('');
+  const [bonusSubTab, setBonusSubTab] = useState('history'); // 'history' or 'prizes'
   
   // Bonus states
   const [issuingBonus, setIssuingBonus] = useState(false);
