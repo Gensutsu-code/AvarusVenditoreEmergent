@@ -1484,10 +1484,16 @@ export default function AdminPage() {
                 </tbody>
               </table>
             </div>
+            </motion.div>
           </TabsContent>
 
           {/* Users Tab */}
           <TabsContent value="users" className="p-6">
+            <motion.div 
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.3, ease: "easeOut" }}
+            >
             <div className="flex justify-between items-center mb-4">
               <h2 className="text-lg font-semibold">Управление пользователями ({users.length})</h2>
               <Button onClick={openNewUser} className="bg-teal-500 hover:bg-teal-600" data-testid="add-user-btn">
