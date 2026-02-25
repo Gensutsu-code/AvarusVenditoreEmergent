@@ -1177,7 +1177,7 @@ export default function AdminPage() {
                 const config = tabConfig[tabId];
                 const IconComponent = config.icon;
                 return (
-                  <div key={tabId} className="flex items-center gap-1 bg-white border border-orange-200 rounded-lg px-2 py-1.5">
+                  <div key={tabId} className="flex items-center gap-1 bg-white border border-teal-200 rounded-lg px-2 py-1.5">
                     <button 
                       onClick={() => moveTab(tabId, 'left')}
                       disabled={index === 0}
