@@ -154,9 +154,27 @@ export const Header = () => {
   const { cartCount } = useCart();
   const location = useLocation();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-  const [profileExpanded, setProfileExpanded] = useState(false);
+  const [notificationCount, setNotificationCount] = useState(0);
   
   const isAdmin = user?.role === 'admin';
+
+  // Fetch notification count for profile badge
+  useEffect(() => {
+    if (user && !isAdmin) {
+      const fetchNotificationCount = async () => {
+        try {
+          const res = await fetch(`${process.env.REACT_APP_BACKEND_URL}/api/my-notifications`, {
+            headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` }
+          });
+          const data = await res.json();
+          setNotificationCount(data.unread_count || 0);
+        } catch (err) {}
+      };
+      fetchNotificationCount();
+      const interval = setInterval(fetchNotificationCount, 15000);
+      return () => clearInterval(interval);
+    }
+  }, [user, isAdmin]);
 
   const NavLink = ({ to, children, className = '' }) => {
     const isActive = location.pathname === to;
