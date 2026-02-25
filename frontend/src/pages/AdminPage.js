@@ -1319,7 +1319,7 @@ export default function AdminPage() {
                       <p className="text-sm text-slate-500">{products.length} позиций</p>
                     </div>
                   </div>
-                  <Button onClick={openNewProduct} className="bg-gradient-to-r from-teal-500 to-emerald-500 hover:from-orange-600 hover:to-amber-600 text-white shadow-lg shadow-teal-500/20" data-testid="add-product-btn">
+                  <Button onClick={openNewProduct} className="bg-gradient-to-r from-teal-500 to-emerald-500 hover:from-teal-600 hover:to-emerald-600 text-white shadow-lg shadow-teal-500/20" data-testid="add-product-btn">
                     <Plus className="w-4 h-4 mr-2" />
                     Добавить товар
                   </Button>
