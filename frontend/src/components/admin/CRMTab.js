@@ -116,45 +116,119 @@ export const CRMTab = ({
             </div>
           </div>
 
-          {/* Users table */}
-          <div className="overflow-x-auto">
-            <table className="w-full text-sm">
-              <thead>
-                <tr className={`border-b ${isDark ? 'bg-zinc-800/30 border-zinc-700' : 'bg-zinc-50 border-zinc-200'}`}>
-                  <th className={`text-left py-3 px-4 font-medium ${isDark ? 'text-zinc-400' : 'text-zinc-600'}`}>Клиент</th>
-                  <th className={`text-left py-3 px-4 font-medium ${isDark ? 'text-zinc-400' : 'text-zinc-600'}`}>Email</th>
-                  <th className={`text-left py-3 px-4 font-medium ${isDark ? 'text-zinc-400' : 'text-zinc-600'}`}>Телефон</th>
-                  <th className={`text-left py-3 px-4 font-medium ${isDark ? 'text-zinc-400' : 'text-zinc-600'}`}>Статус</th>
-                  <th className={`text-left py-3 px-4 font-medium ${isDark ? 'text-zinc-400' : 'text-zinc-600'}`}>Баланс</th>
-                  <th className={`text-left py-3 px-4 font-medium ${isDark ? 'text-zinc-400' : 'text-zinc-600'}`}>Регистрация</th>
-                </tr>
-              </thead>
-              <tbody>
-                {users.filter(u => u.role !== 'admin').map((user) => (
-                  <tr key={user.id} className={`border-b transition-colors ${isDark ? 'border-zinc-800 hover:bg-zinc-800/30' : 'border-zinc-100 hover:bg-zinc-50'}`}>
-                    <td className="py-3 px-4">
-                      <div className="flex items-center gap-3">
-                        <div className={`w-8 h-8 rounded-full flex items-center justify-center font-medium ${isDark ? 'bg-orange-500/20 text-orange-400' : 'bg-orange-100 text-orange-600'}`}>
-                          {user.name?.charAt(0)?.toUpperCase() || 'U'}
-                        </div>
-                        <span className={`font-medium ${isDark ? 'text-zinc-100' : ''}`}>{user.name || 'Без имени'}</span>
+          {/* Users list - Card style */}
+          <div className={`rounded-xl overflow-hidden ${isDark ? 'bg-zinc-800/50 border border-zinc-700/50' : 'border border-zinc-200 bg-white'}`}>
+            {users.filter(u => u.role !== 'admin').map((user) => (
+              <div key={user.id}>
+                {/* User card header */}
+                <div 
+                  onClick={() => toggleUserExpand(user.id)}
+                  className={`flex items-center justify-between p-4 cursor-pointer transition-colors ${
+                    expandedUser === user.id 
+                      ? isDark ? 'bg-orange-500/10 border-b border-orange-500/20' : 'bg-orange-50 border-b border-orange-200'
+                      : isDark ? 'hover:bg-zinc-700/30 border-b border-zinc-700' : 'hover:bg-zinc-50 border-b border-zinc-100'
+                  }`}
+                >
+                  <div className="flex items-center gap-4">
+                    {/* Avatar */}
+                    <div className={`w-10 h-10 rounded-full flex items-center justify-center overflow-hidden ${isDark ? 'bg-zinc-700' : 'bg-zinc-100'}`}>
+                      {user.avatar ? (
+                        <img src={user.avatar} alt={user.name} className="w-full h-full object-cover" />
+                      ) : (
+                        <Users className={`w-5 h-5 ${isDark ? 'text-zinc-500' : 'text-zinc-400'}`} />
+                      )}
+                    </div>
+                    {/* Name and email */}
+                    <div>
+                      <div className="flex items-center gap-2">
+                        <span className={`font-medium ${isDark ? 'text-zinc-100' : ''}`}>
+                          {user.name || 'Без имени'}
+                        </span>
+                        <span className={`text-xs font-bold px-2 py-0.5 rounded ${getStatusColor(user.customer_status)}`}>
+                          {getStatusLabel(user.customer_status)}
+                        </span>
                       </div>
-                    </td>
-                    <td className={`py-3 px-4 ${isDark ? 'text-zinc-400' : 'text-zinc-600'}`}>{user.email}</td>
-                    <td className={`py-3 px-4 ${isDark ? 'text-zinc-400' : 'text-zinc-600'}`}>{user.phone || '—'}</td>
-                    <td className="py-3 px-4">
-                      <span className={`text-xs px-2 py-1 rounded-full font-medium ${getStatusColor(user.customer_status)}`}>
-                        {getStatusLabel(user.customer_status)}
-                      </span>
-                    </td>
-                    <td className={`py-3 px-4 font-medium ${isDark ? 'text-zinc-100' : ''}`}>{formatPrice(user.balance || 0)} ₽</td>
-                    <td className={`py-3 px-4 text-xs ${isDark ? 'text-zinc-500' : 'text-zinc-500'}`}>
-                      {user.created_at ? new Date(user.created_at).toLocaleDateString('ru-RU') : '—'}
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+                      <p className={`text-sm ${isDark ? 'text-zinc-500' : 'text-zinc-500'}`}>
+                        {user.email}
+                      </p>
+                    </div>
+                  </div>
+                  
+                  {/* Right side - orders info and actions */}
+                  <div className="flex items-center gap-6">
+                    <div className="text-right">
+                      <p className={`font-mono font-bold ${isDark ? 'text-zinc-100' : 'text-zinc-900'}`}>
+                        {user.orders_count || 0} заказов
+                      </p>
+                      <p className={`text-sm ${isDark ? 'text-zinc-500' : 'text-zinc-500'}`}>
+                        {formatPrice(user.total_spent || 0)} ₽
+                      </p>
+                    </div>
+                    <div className="flex items-center gap-1">
+                      <Button 
+                        variant="ghost" 
+                        size="sm"
+                        onClick={(e) => { e.stopPropagation(); handleEditUser && handleEditUser(user); }}
+                        data-testid={`edit-user-${user.id}`}
+                      >
+                        <Pencil className="w-4 h-4" />
+                      </Button>
+                      <Button 
+                        variant="ghost" 
+                        size="sm"
+                        className="text-red-500 hover:text-red-600"
+                        onClick={(e) => { e.stopPropagation(); handleDeleteUser && handleDeleteUser(user.id); }}
+                        data-testid={`delete-user-${user.id}`}
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </Button>
+                      <ChevronDown className={`w-5 h-5 text-zinc-400 transition-transform ${expandedUser === user.id ? 'rotate-180' : ''}`} />
+                    </div>
+                  </div>
+                </div>
+                
+                {/* Expanded details */}
+                <AnimatePresence>
+                  {expandedUser === user.id && (
+                    <motion.div
+                      initial={{ height: 0, opacity: 0 }}
+                      animate={{ height: 'auto', opacity: 1 }}
+                      exit={{ height: 0, opacity: 0 }}
+                      transition={{ duration: 0.2 }}
+                      className={`overflow-hidden ${isDark ? 'bg-zinc-800/30' : 'bg-zinc-50'}`}
+                    >
+                      <div className="p-4 grid grid-cols-2 md:grid-cols-4 gap-4">
+                        <div>
+                          <p className={`text-xs font-medium ${isDark ? 'text-zinc-500' : 'text-zinc-500'}`}>Телефон</p>
+                          <p className={`font-medium ${isDark ? 'text-zinc-200' : ''}`}>{user.phone || '—'}</p>
+                        </div>
+                        <div>
+                          <p className={`text-xs font-medium ${isDark ? 'text-zinc-500' : 'text-zinc-500'}`}>Баланс</p>
+                          <p className={`font-medium ${isDark ? 'text-zinc-200' : ''}`}>{formatPrice(user.balance || 0)} ₽</p>
+                        </div>
+                        <div>
+                          <p className={`text-xs font-medium ${isDark ? 'text-zinc-500' : 'text-zinc-500'}`}>Бонусы</p>
+                          <p className={`font-medium ${isDark ? 'text-zinc-200' : ''}`}>{user.bonus_balance || 0} бонусов</p>
+                        </div>
+                        <div>
+                          <p className={`text-xs font-medium ${isDark ? 'text-zinc-500' : 'text-zinc-500'}`}>Дата регистрации</p>
+                          <p className={`font-medium ${isDark ? 'text-zinc-200' : ''}`}>
+                            {user.created_at ? new Date(user.created_at).toLocaleDateString('ru-RU') : '—'}
+                          </p>
+                        </div>
+                      </div>
+                    </motion.div>
+                  )}
+                </AnimatePresence>
+              </div>
+            ))}
+            
+            {users.filter(u => u.role !== 'admin').length === 0 && (
+              <div className={`p-8 text-center ${isDark ? 'text-zinc-500' : 'text-zinc-500'}`}>
+                <Users className="w-12 h-12 mx-auto mb-2 opacity-50" />
+                <p>Клиентов пока нет</p>
+              </div>
+            )}
           </div>
         </motion.div>
       )}
