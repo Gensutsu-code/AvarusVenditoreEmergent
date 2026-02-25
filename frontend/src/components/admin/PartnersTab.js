@@ -27,8 +27,11 @@ export default function PartnersTab({
   const isNew = isNewPartner !== undefined ? isNewPartner : localIsNewPartner;
   const setIsNew = setIsNewPartner || setLocalIsNewPartner;
 
-  const handleSavePartner = async () => {
-    // This would be handled by parent component
+  const onSavePartner = async () => {
+    // Call parent's save handler if provided
+    if (handleSavePartner) {
+      await handleSavePartner();
+    }
     if (setEditingPartner) {
       setEditingPartner(null);
     }
@@ -45,7 +48,7 @@ export default function PartnersTab({
             </Button>
             <Button 
               onClick={() => {
-                setIsNewPartner(true);
+                setIsNew(true);
                 setEditingPartner && setEditingPartner({ name: '', description: '', image_url: '', link: '', order: partners.length });
               }}
               className="bg-orange-500 hover:bg-orange-600"
