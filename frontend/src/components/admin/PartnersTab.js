@@ -181,7 +181,7 @@ export default function PartnersTab({
                   <Button variant="outline" onClick={() => setEditingPartner(null)} className={isDark ? 'border-zinc-700 text-zinc-300' : ''}>
                     Отмена
                   </Button>
-                  <Button onClick={handleSavePartner} className="bg-orange-500 hover:bg-orange-600">
+                  <Button onClick={onSavePartner} className="bg-orange-500 hover:bg-orange-600">
                     <Save className="w-4 h-4 mr-2" />
                     Сохранить
                   </Button>
