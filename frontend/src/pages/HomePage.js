@@ -71,7 +71,7 @@ export default function HomePage() {
                 <span className="text-slate-800">Запчасти для</span>
                 <br />
                 <span className="bg-gradient-to-r from-teal-500 to-emerald-500 bg-clip-text text-transparent">
-                  грузовиков
+                  грузовых авто и прицепов
                 </span>
               </motion.h1>
               
