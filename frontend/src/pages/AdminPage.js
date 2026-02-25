@@ -3114,6 +3114,88 @@ export default function AdminPage() {
               handleSendBulkEmail={handleSendBulkEmail}
             />
           </TabsContent>
+
+          {/* NEW COMBINED TABS */}
+          
+          {/* Payments Tab - combines payment methods, prepayment, crypto */}
+          <TabsContent value="payments" className="p-6">
+            <PaymentsTab
+              paymentSettings={paymentSettings}
+              setPaymentSettings={setPaymentSettings}
+              handleSavePaymentSettings={handleSavePaymentSettings}
+              prepaymentSettings={prepaymentSettings}
+              setPrepaymentSettings={setPrepaymentSettings}
+              handleSavePrepaymentSettings={handleSavePrepaymentSettings}
+              cryptoWallets={cryptoWallets}
+              setCryptoWallets={setCryptoWallets}
+              handleSaveCryptoWallets={handleSaveCryptoWallets}
+            />
+          </TabsContent>
+
+          {/* CRM Tab - combines users and analytics */}
+          <TabsContent value="crm" className="p-6">
+            <CRMTab
+              users={users}
+              stats={stats}
+              extendedStats={extendedStats}
+              statsPeriod={statsPeriod}
+              setStatsPeriod={setStatsPeriod}
+              formatPrice={formatPrice}
+            />
+          </TabsContent>
+
+          {/* Marketing Tab - combines promo, news, newsletters */}
+          <TabsContent value="marketing" className="p-6">
+            <MarketingTab
+              promoBanner={promoBanner}
+              setPromoBanner={setPromoBanner}
+              handleSavePromoBanner={handleSavePromoBanner}
+              bonusPrograms={bonusPrograms}
+              setBonusPrograms={setBonusPrograms}
+              news={news}
+              setNews={setNews}
+              notificationSettings={notificationSettings}
+              setNotificationSettings={setNotificationSettings}
+              handleSaveNotificationSettings={handleSaveNotificationSettings}
+              testEmail={testEmail}
+              setTestEmail={setTestEmail}
+              handleSendTestEmail={handleSendTestEmail}
+              bulkEmailForm={bulkEmailForm}
+              setBulkEmailForm={setBulkEmailForm}
+              handleSendBulkEmail={handleSendBulkEmail}
+              sendingEmail={sendingEmail}
+              users={users}
+            />
+          </TabsContent>
+
+          {/* Settings Tab - combines telegram, import, partners, terms */}
+          <TabsContent value="settings" className="p-6">
+            <SettingsTab
+              telegramConfig={telegramConfig}
+              setTelegramConfig={setTelegramConfig}
+              handleSaveTelegramConfig={handleSaveTelegramConfig}
+              uploading={uploading}
+              importResult={importResult}
+              setImportResult={setImportResult}
+              handleImportProducts={handleImportProducts}
+              handleExportProducts={handleExportProducts}
+              importFileRef={importFileRef}
+              partners={partners}
+              setPartners={setPartners}
+              editingPartner={editingPartner}
+              setEditingPartner={setEditingPartner}
+              handleAddDefaultPartners={handleAddDefaultPartners}
+              handleDeletePartner={handleDeletePartner}
+              handlePartnerImageUpload={handlePartnerImageUpload}
+              partnerImageUploading={partnerImageUploading}
+              partnerImageRef={partnerImageRef}
+              termsSections={termsSections}
+              setTermsSections={setTermsSections}
+              handleSaveTerms={handleSaveTerms}
+              handleResetTerms={handleResetTerms}
+              termsSaving={termsSaving}
+            />
+          </TabsContent>
         </Tabs>
       </div>
 
