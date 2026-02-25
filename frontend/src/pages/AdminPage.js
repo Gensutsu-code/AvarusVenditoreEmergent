@@ -2483,7 +2483,7 @@ export default function AdminPage() {
                       <div className="space-y-3">
                         {prizeRedemptions.map(redemption => (
                           <div key={redemption.id} className={`p-4 rounded-xl border transition-all hover:shadow-md ${
-                            redemption.status === 'pending' ? 'bg-gradient-to-r from-amber-50 to-yellow-50 border-amber-200' :
+                            redemption.status === 'pending' ? 'bg-gradient-to-r from-yellow-50 to-amber-50 border-yellow-200' :
                             redemption.status === 'approved' ? 'bg-gradient-to-r from-emerald-50 to-green-50 border-emerald-200' :
                             redemption.status === 'issued' ? 'bg-gradient-to-r from-blue-50 to-cyan-50 border-blue-200' :
                             'bg-gradient-to-r from-red-50 to-rose-50 border-red-200'
