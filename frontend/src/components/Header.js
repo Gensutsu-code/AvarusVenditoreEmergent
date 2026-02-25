@@ -198,8 +198,8 @@ export const Header = () => {
     <header className="sticky top-0 z-50 backdrop-blur-xl border-b bg-white/70 border-cyan-200/50" data-testid="header">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex items-center justify-between h-16 gap-4">
-          {/* Logo */}
-          <div className="flex items-center">
+          {/* Logo + Search */}
+          <div className="flex items-center gap-4">
             <Link to={isAdmin ? "/admin" : "/"} className="flex-shrink-0 group" data-testid="logo-link">
               <motion.h1 
                 className="text-xl font-bold uppercase tracking-tight bg-gradient-to-r from-emerald-500 to-teal-600 bg-clip-text text-transparent"
@@ -210,7 +210,20 @@ export const Header = () => {
               </motion.h1>
             </Link>
             
-            {/* Promo Banner moved to content area */}
+            {/* Search Field - left side, only for non-admin users */}
+            {user && !isAdmin && (
+              <div className="hidden md:flex items-center gap-2">
+                <div className="w-56">
+                  <SearchDropdown 
+                    placeholder="Поиск..." 
+                    compact={true}
+                  />
+                </div>
+                <NavLink to="/catalog" data-testid="search-page-link" className="p-2 rounded-lg hover:bg-teal-50 transition-colors">
+                  <Search className="w-5 h-5 text-teal-600" />
+                </NavLink>
+              </div>
+            )}
           </div>
           
           {/* Admin indicator (only for admin) - center */}
