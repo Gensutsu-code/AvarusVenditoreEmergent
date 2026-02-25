@@ -20,7 +20,7 @@ export default function ProductsTab({
     <div className="p-6">
       <div className="flex justify-between items-center mb-4">
         <h2 className="text-lg font-semibold">Управление товарами</h2>
-        <Button onClick={openNewProduct} className="bg-orange-500 hover:bg-orange-600" data-testid="add-product-btn">
+        <Button onClick={openNewProduct} className="bg-teal-500 hover:bg-teal-600" data-testid="add-product-btn">
           <Plus className="w-4 h-4 mr-2" />
           Добавить товар
         </Button>
@@ -55,7 +55,7 @@ export default function ProductsTab({
                   </div>
                 </td>
                 <td className="py-2 px-2 font-medium">{product.name}</td>
-                <td className="py-2 px-2 font-semibold text-orange-600">{product.manufacturer || '—'}</td>
+                <td className="py-2 px-2 font-semibold text-teal-600">{product.manufacturer || '—'}</td>
                 <td className="py-2 px-2 font-mono font-semibold text-zinc-600">{product.article}</td>
                 <td className="py-2 px-2 text-zinc-500">{getCategoryName(product.category_id)}</td>
                 <td className="py-2 px-2 text-right font-mono">{formatPrice(product.price)} ₽</td>

@@ -102,7 +102,7 @@ export default function ImportTab({
         {/* CSV format help */}
         <div className={`p-5 rounded-xl ${isDark ? 'bg-zinc-800/30 border border-zinc-700/30' : 'border border-zinc-200 bg-zinc-50'}`}>
           <h3 className={`font-semibold mb-2 flex items-center gap-2 ${isDark ? 'text-zinc-100' : ''}`}>
-            <FileSpreadsheet className={`w-5 h-5 ${isDark ? 'text-orange-400' : 'text-orange-500'}`} />
+            <FileSpreadsheet className={`w-5 h-5 ${isDark ? 'text-teal-400' : 'text-teal-500'}`} />
             Формат CSV файла
           </h3>
           <p className={`text-xs mb-2 ${isDark ? 'text-zinc-500' : 'text-zinc-500'}`}>

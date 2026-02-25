@@ -58,7 +58,7 @@ export default function UsersTab({
             onChange={(e) => setUserSearch(e.target.value)}
             className="w-64"
           />
-          <Button onClick={openNewUser} className="bg-orange-500 hover:bg-orange-600" data-testid="add-user-btn">
+          <Button onClick={openNewUser} className="bg-teal-500 hover:bg-teal-600" data-testid="add-user-btn">
             <Plus className="w-4 h-4 mr-2" />
             Добавить
           </Button>
@@ -93,7 +93,7 @@ export default function UsersTab({
                       <div>
                         <p className="font-medium">{user.name}</p>
                         {user.role === 'admin' && (
-                          <span className="text-xs text-orange-600 font-bold">Администратор</span>
+                          <span className="text-xs text-teal-600 font-bold">Администратор</span>
                         )}
                       </div>
                     </div>

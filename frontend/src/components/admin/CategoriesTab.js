@@ -12,7 +12,7 @@ export default function CategoriesTab({
     <div className="p-6">
       <div className="flex justify-between items-center mb-4">
         <h2 className="text-lg font-semibold">Управление категориями</h2>
-        <Button onClick={openNewCategory} className="bg-orange-500 hover:bg-orange-600" data-testid="add-category-btn">
+        <Button onClick={openNewCategory} className="bg-teal-500 hover:bg-teal-600" data-testid="add-category-btn">
           <Plus className="w-4 h-4 mr-2" />
           Добавить категорию
         </Button>
