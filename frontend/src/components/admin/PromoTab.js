@@ -127,7 +127,7 @@ export default function PromoTab({
                       variant={promoBanner.image_position === 'left' ? 'default' : 'outline'}
                       size="sm"
                       onClick={() => setPromoBanner({ ...promoBanner, image_position: 'left' })}
-                      className={promoBanner.image_position === 'left' ? 'bg-orange-500 hover:bg-orange-600' : ''}
+                      className={promoBanner.image_position === 'left' ? 'bg-teal-500 hover:bg-teal-600' : ''}
                     >
                       <ChevronLeft className="w-4 h-4 mr-1" />
                       Слева
@@ -137,7 +137,7 @@ export default function PromoTab({
                       variant={promoBanner.image_position === 'right' ? 'default' : 'outline'}
                       size="sm"
                       onClick={() => setPromoBanner({ ...promoBanner, image_position: 'right' })}
-                      className={promoBanner.image_position === 'right' ? 'bg-orange-500 hover:bg-orange-600' : ''}
+                      className={promoBanner.image_position === 'right' ? 'bg-teal-500 hover:bg-teal-600' : ''}
                     >
                       Справа
                       <ChevronRight className="w-4 h-4 ml-1" />
@@ -174,7 +174,7 @@ export default function PromoTab({
           </div>
         )}
 
-        <Button onClick={handleSavePromoBanner} className="bg-orange-500 hover:bg-orange-600" data-testid="save-promo-btn">
+        <Button onClick={handleSavePromoBanner} className="bg-teal-500 hover:bg-teal-600" data-testid="save-promo-btn">
           <Save className="w-4 h-4 mr-2" />
           Сохранить баннер
         </Button>

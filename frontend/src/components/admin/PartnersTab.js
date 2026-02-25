@@ -51,7 +51,7 @@ export default function PartnersTab({
                 setIsNew(true);
                 setEditingPartner && setEditingPartner({ name: '', description: '', image_url: '', link: '', order: partners.length });
               }}
-              className="bg-orange-500 hover:bg-orange-600"
+              className="bg-teal-500 hover:bg-teal-600"
             >
               <Plus className="w-4 h-4 mr-2" />
               Добавить партнёра
@@ -81,7 +81,7 @@ export default function PartnersTab({
                 <h3 className={`font-semibold ${isDark ? 'text-zinc-100' : 'text-zinc-900'}`}>{partner.name}</h3>
                 <p className={`text-sm truncate ${isDark ? 'text-zinc-500' : 'text-zinc-500'}`}>{partner.description}</p>
                 {partner.link && (
-                  <a href={partner.link} target="_blank" rel="noopener noreferrer" className="text-xs text-orange-500 hover:underline truncate block">
+                  <a href={partner.link} target="_blank" rel="noopener noreferrer" className="text-xs text-teal-500 hover:underline truncate block">
                     {partner.link}
                   </a>
                 )}
@@ -181,7 +181,7 @@ export default function PartnersTab({
                   <Button variant="outline" onClick={() => setEditingPartner(null)} className={isDark ? 'border-zinc-700 text-zinc-300' : ''}>
                     Отмена
                   </Button>
-                  <Button onClick={onSavePartner} className="bg-orange-500 hover:bg-orange-600">
+                  <Button onClick={onSavePartner} className="bg-teal-500 hover:bg-teal-600">
                     <Save className="w-4 h-4 mr-2" />
                     Сохранить
                   </Button>

@@ -56,7 +56,7 @@ export default function NotificationsTab({
         {/* Notification Settings */}
         <div className={`rounded-lg p-6 space-y-4 ${isDark ? 'bg-zinc-800/50 border border-zinc-700/50 backdrop-blur-sm' : 'bg-white border border-zinc-200'}`}>
           <h3 className={`font-semibold mb-4 flex items-center gap-2 ${isDark ? 'text-zinc-100' : 'text-zinc-900'}`}>
-            <Bell className={`w-5 h-5 ${isDark ? 'text-orange-400' : 'text-orange-500'}`} />
+            <Bell className={`w-5 h-5 ${isDark ? 'text-teal-400' : 'text-teal-500'}`} />
             Типы уведомлений
           </h3>
 
@@ -100,7 +100,7 @@ export default function NotificationsTab({
 
           <Button
             onClick={handleSaveNotificationSettings}
-            className={`w-full mt-4 ${isDark ? 'bg-orange-500/90 hover:bg-orange-500' : 'bg-orange-500 hover:bg-orange-600'}`}
+            className={`w-full mt-4 ${isDark ? 'bg-teal-500/90 hover:bg-teal-500' : 'bg-teal-500 hover:bg-teal-600'}`}
             data-testid="save-notification-settings"
           >
             <Save className="w-4 h-4 mr-2" />

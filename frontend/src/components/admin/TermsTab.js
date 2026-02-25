@@ -31,7 +31,7 @@ export default function TermsTab({
             <Button
               onClick={handleSaveTerms}
               disabled={termsSaving}
-              className="bg-orange-500 hover:bg-orange-600"
+              className="bg-teal-500 hover:bg-teal-600"
               data-testid="save-terms-btn"
             >
               <Save className="w-4 h-4 mr-2" />

@@ -53,7 +53,7 @@ export default function TelegramTab({
         </div>
 
         <div className="flex gap-3">
-          <Button onClick={handleSaveTelegram} className="bg-orange-500 hover:bg-orange-600">
+          <Button onClick={handleSaveTelegram} className="bg-teal-500 hover:bg-teal-600">
             <Save className="w-4 h-4 mr-2" />
             Сохранить
           </Button>

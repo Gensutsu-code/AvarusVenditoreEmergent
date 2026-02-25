@@ -66,12 +66,12 @@ export default function NewsTab({ newsList, setNewsList }) {
     <div className="p-6">
       <div className="flex justify-between items-center mb-4">
         <h2 className="text-lg font-semibold flex items-center gap-2">
-          <FileText className="w-5 h-5 text-orange-500" />
+          <FileText className="w-5 h-5 text-teal-500" />
           Управление новостями
         </h2>
         <Button 
           onClick={() => setIsCreating(true)} 
-          className="bg-orange-500 hover:bg-orange-600"
+          className="bg-teal-500 hover:bg-teal-600"
           disabled={isCreating}
         >
           <Plus className="w-4 h-4 mr-2" />
