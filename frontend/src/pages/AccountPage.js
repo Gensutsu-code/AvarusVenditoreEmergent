@@ -400,7 +400,7 @@ export default function AccountPage() {
             {/* Form fields */}
             <div className="p-6 space-y-5">
               <div>
-                <Label className="text-xs font-bold uppercase text-zinc-500 flex items-center gap-2 mb-2">
+                <Label className="text-xs font-bold uppercase text-slate-500 flex items-center gap-2 mb-2">
                   <User className="w-4 h-4" />
                   Имя
                 </Label>
@@ -408,25 +408,25 @@ export default function AccountPage() {
                   value={formData.name}
                   onChange={(e) => setFormData({ ...formData, name: e.target.value })}
                   placeholder="Введите имя"
-                  className="glass-input h-12 text-white placeholder:text-zinc-500"
+                  className="h-12 border-slate-200"
                 />
               </div>
               
               <div>
-                <Label className="text-xs font-bold uppercase text-zinc-500 flex items-center gap-2 mb-2">
+                <Label className="text-xs font-bold uppercase text-slate-500 flex items-center gap-2 mb-2">
                   <Mail className="w-4 h-4" />
                   Email
                 </Label>
                 <Input
                   value={formData.email}
                   disabled
-                  className="glass-input h-12 text-zinc-400 bg-zinc-800/30 cursor-not-allowed"
+                  className="h-12 bg-slate-100 text-slate-500 cursor-not-allowed"
                 />
-                <p className="text-xs text-zinc-600 mt-1">Email нельзя изменить</p>
+                <p className="text-xs text-slate-400 mt-1">Email нельзя изменить</p>
               </div>
               
               <div>
-                <Label className="text-xs font-bold uppercase text-zinc-500 flex items-center gap-2 mb-2">
+                <Label className="text-xs font-bold uppercase text-slate-500 flex items-center gap-2 mb-2">
                   <Phone className="w-4 h-4" />
                   Телефон
                 </Label>
@@ -434,12 +434,12 @@ export default function AccountPage() {
                   value={formData.phone}
                   onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
                   placeholder="+7 (XXX) XXX-XX-XX"
-                  className="glass-input h-12 text-white placeholder:text-zinc-500"
+                  className="h-12 border-slate-200"
                 />
               </div>
               
               <div>
-                <Label className="text-xs font-bold uppercase text-zinc-500 flex items-center gap-2 mb-2">
+                <Label className="text-xs font-bold uppercase text-slate-500 flex items-center gap-2 mb-2">
                   <MapPin className="w-4 h-4" />
                   Адрес доставки
                 </Label>
@@ -447,12 +447,12 @@ export default function AccountPage() {
                   value={formData.address}
                   onChange={(e) => setFormData({ ...formData, address: e.target.value })}
                   placeholder="Город, улица, дом, квартира"
-                  className="glass-input h-12 text-white placeholder:text-zinc-500"
+                  className="h-12 border-slate-200"
                 />
               </div>
 
               <div>
-                <Label className="text-xs font-bold uppercase text-zinc-500 flex items-center gap-2 mb-2">
+                <Label className="text-xs font-bold uppercase text-slate-500 flex items-center gap-2 mb-2">
                   <MessageSquare className="w-4 h-4" />
                   Комментарий к адресу
                 </Label>
@@ -460,7 +460,7 @@ export default function AccountPage() {
                   value={formData.address_comment}
                   onChange={(e) => setFormData({ ...formData, address_comment: e.target.value })}
                   placeholder="Код домофона, этаж, ориентиры..."
-                  className="glass-input min-h-[80px] text-white placeholder:text-zinc-500"
+                  className="min-h-[80px] border-slate-200"
                 />
               </div>
               
@@ -471,7 +471,7 @@ export default function AccountPage() {
                 <Button 
                   onClick={handleSaveProfile}
                   disabled={saving}
-                  className="w-full h-12 bg-gradient-to-r from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700 text-white font-bold uppercase tracking-wide rounded-xl shadow-lg shadow-orange-500/20 transition-all duration-300"
+                  className="w-full h-12 bg-gradient-to-r from-teal-500 to-emerald-500 hover:from-teal-600 hover:to-emerald-600 text-white font-bold uppercase tracking-wide rounded-xl shadow-lg shadow-teal-500/20 transition-all duration-300"
                 >
                   <Save className="w-4 h-4 mr-2" />
                   {saving ? 'Сохранение...' : 'Сохранить изменения'}
