@@ -274,10 +274,10 @@ export const Header = () => {
                     >
                       <LogOut className="w-4 h-4" />
                     </Button>
-                  </>
+                  </div>
                 ) : (
-                  /* User Navigation */
-                  <>
+                  /* User Navigation - 4 icons evenly distributed */
+                  <div className="flex items-center justify-evenly flex-1">
                     <NavLink to="/catalog" data-testid="search-link" className="md:hidden">
                       <Search className="w-4 h-4" />
                     </NavLink>
