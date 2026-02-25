@@ -41,19 +41,17 @@ export default function HomePage() {
     loadPartners();
   }, []);
 
-  const { isDark } = useTheme();
-
   return (
-    <div className={`min-h-screen ${isDark ? 'bg-zinc-950' : ''}`} data-testid="home-page">
+    <div className="min-h-screen" data-testid="home-page">
       {/* Hero Section */}
       <div className="relative overflow-hidden">
         {/* Background gradient */}
-        <div className={`absolute inset-0 ${isDark ? 'bg-gradient-to-br from-orange-600/20 via-zinc-950 to-zinc-950' : 'bg-gradient-to-br from-green-300/30 via-transparent to-pink-200/30'}`} />
-        <div className={`absolute top-0 right-0 w-1/2 h-full ${isDark ? 'bg-gradient-to-l from-orange-500/10 to-transparent' : 'bg-gradient-to-l from-cyan-200/30 to-transparent'}`} />
+        <div className="absolute inset-0 bg-gradient-to-br from-green-300/30 via-transparent to-pink-200/30" />
+        <div className="absolute top-0 right-0 w-1/2 h-full bg-gradient-to-l from-cyan-200/30 to-transparent" />
         
         {/* Animated circles */}
         <motion.div 
-          className={`absolute top-20 right-20 w-96 h-96 rounded-full ${isDark ? 'bg-orange-500/5' : 'bg-teal-400/20'} blur-3xl`}
+          className="absolute top-20 right-20 w-96 h-96 rounded-full bg-teal-400/20 blur-3xl"
           animate={{ scale: [1, 1.2, 1], opacity: [0.3, 0.5, 0.3] }}
           transition={{ duration: 8, repeat: Infinity }}
         />
@@ -72,15 +70,15 @@ export default function HomePage() {
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.6, delay: 0.2 }}
               >
-                <span className={isDark ? 'text-white' : 'text-slate-800'}>Запчасти для</span>
+                <span className="text-slate-800">Запчасти для</span>
                 <br />
-                <span className={`bg-gradient-to-r ${isDark ? 'from-orange-400 to-orange-600' : 'from-teal-500 to-emerald-500'} bg-clip-text text-transparent`}>
+                <span className="bg-gradient-to-r from-teal-500 to-emerald-500 bg-clip-text text-transparent">
                   грузовиков
                 </span>
               </motion.h1>
               
               <motion.p 
-                className={`text-lg max-w-xl mb-8 ${isDark ? 'text-zinc-400' : 'text-slate-600'}`}
+                className="text-lg max-w-xl mb-8 text-slate-600"
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.6, delay: 0.3 }}
@@ -95,8 +93,8 @@ export default function HomePage() {
               >
                 <Link to="/catalog" data-testid="go-to-search-btn">
                   <motion.button
-                    className={`group inline-flex items-center gap-3 ${isDark ? 'bg-gradient-to-r from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700 shadow-glow' : 'bg-gradient-to-r from-teal-500 to-emerald-500 hover:from-green-600 hover:to-emerald-700 shadow-lg shadow-teal-500/30'} text-white font-bold uppercase tracking-wide px-8 py-4 rounded-2xl transition-all duration-300`}
-                    whileHover={{ scale: 1.02, boxShadow: isDark ? '0 0 40px rgba(249, 115, 22, 0.4)' : '0 0 40px rgba(0, 255, 0, 0.3)' }}
+                    className="group inline-flex items-center gap-3 bg-gradient-to-r from-teal-500 to-emerald-500 hover:from-teal-600 hover:to-emerald-600 shadow-lg shadow-teal-500/30 text-white font-bold uppercase tracking-wide px-8 py-4 rounded-2xl transition-all duration-300"
+                    whileHover={{ scale: 1.02, boxShadow: '0 0 40px rgba(20, 184, 166, 0.4)' }}
                     whileTap={{ scale: 0.98 }}
                   >
                     <Search className="w-5 h-5" />
