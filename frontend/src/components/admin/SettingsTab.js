@@ -90,6 +90,7 @@ export const SettingsTab = ({
             telegramSettings={telegramConfig || { enabled: false, bot_token: '', chat_id: '' }}
             setTelegramSettings={setTelegramConfig}
             handleSaveTelegram={handleSaveTelegramConfig}
+            handleTestTelegram={handleTestTelegram}
             isDark={isDark}
           />
         </motion.div>
