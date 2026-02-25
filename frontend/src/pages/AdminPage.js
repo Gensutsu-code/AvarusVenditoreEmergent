@@ -666,7 +666,7 @@ export default function AdminPage() {
   // Promo banner handler
   const handleSavePromoBanner = async () => {
     try {
-      await axios.put(`${API}/promo-banner`, promoBanner);
+      await axios.put(`${API}/admin/promo-banner`, promoBanner);
       toast.success('Баннер обновлён');
     } catch (err) {
       toast.error('Ошибка сохранения');
