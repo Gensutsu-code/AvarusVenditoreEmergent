@@ -38,23 +38,33 @@ const ProductCard = ({
   >
     <div className="flex items-center gap-4 p-4">
       {/* Image - clickable */}
-      <Link
-        to={`/product/${product.id}`}
-        className="w-24 h-24 flex-shrink-0 bg-slate-100 rounded-xl overflow-hidden hover:opacity-80 transition-opacity"
-        data-testid={`product-image-${product.id}`}
-      >
-        {product.image_url ? (
-          <img 
-            src={product.image_url} 
-            alt={product.name}
-            className="w-full h-full object-cover"
-          />
-        ) : (
-          <div className="w-full h-full flex items-center justify-center text-slate-300">
-            <Package className="w-8 h-8" />
-          </div>
-        )}
-      </Link>
+      <div className="relative group">
+        <Link
+          to={`/product/${product.id}`}
+          className="w-24 h-24 flex-shrink-0 bg-slate-100 rounded-xl overflow-hidden block"
+          data-testid={`product-image-${product.id}`}
+        >
+          {product.image_url ? (
+            <img 
+              src={product.image_url} 
+              alt={product.name}
+              className="w-full h-full object-cover"
+            />
+          ) : (
+            <div className="w-full h-full flex items-center justify-center text-slate-300">
+              <Package className="w-8 h-8" />
+            </div>
+          )}
+        </Link>
+        {/* Quick View button */}
+        <button
+          onClick={() => setSelectedProduct(product)}
+          className="absolute inset-0 flex items-center justify-center bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity rounded-xl"
+          data-testid={`quick-view-${product.id}`}
+        >
+          <Eye className="w-6 h-6 text-white" />
+        </button>
+      </div>
 
       {/* Info - clickable */}
       <Link
