@@ -210,8 +210,7 @@ export const Header = () => {
               </motion.h1>
             </Link>
             
-            {/* Promo Banner - Left side, only for non-admin */}
-            {!isAdmin && <HeaderPromoBanner />}
+            {/* Promo Banner moved below header - see FloatingPromoBanner */}
           </div>
           
           {/* Admin indicator (only for admin) - center */}
