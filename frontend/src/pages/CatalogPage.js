@@ -346,7 +346,6 @@ export default function CatalogPage() {
   
   const { addToCart } = useCart();
   const { user } = useAuth();
-  const { isDark } = useTheme();
   const navigate = useNavigate();
 
   const searchQuery = searchParams.get('search');
