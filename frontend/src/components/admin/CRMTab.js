@@ -75,8 +75,8 @@ export const CRMTab = ({
               className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all ${
                 activeSubTab === tab.id
                   ? isDark 
-                    ? 'bg-orange-500/20 text-orange-400 border border-orange-500/30' 
-                    : 'bg-orange-500 text-white'
+                    ? 'bg-teal-500/20 text-teal-400 border border-teal-500/30' 
+                    : 'bg-teal-500 text-white'
                   : isDark
                     ? 'bg-zinc-800/50 text-zinc-400 hover:bg-zinc-700/50 border border-zinc-700/50'
                     : 'bg-zinc-100 text-zinc-600 hover:bg-zinc-200'
