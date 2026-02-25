@@ -1104,7 +1104,7 @@ export default function AdminPage() {
             variant="outline"
             size="sm"
             onClick={() => setEditingTabOrder(!editingTabOrder)}
-            className={`${editingTabOrder ? 'bg-orange-100 border-orange-500' : ''} ${isDark ? 'border-zinc-700 text-zinc-300 hover:bg-zinc-800' : ''}`}
+            className={`${editingTabOrder ? 'bg-teal-100 border-teal-500' : ''} ${isDark ? 'border-zinc-700 text-zinc-300 hover:bg-zinc-800' : ''}`}
           >
             <Settings className="w-4 h-4 mr-1" />
             {editingTabOrder ? 'Готово' : 'Настроить вкладки'}
