@@ -241,8 +241,8 @@ export const CRMTab = ({
                             Статистика заказов
                           </h4>
                           <div className="grid grid-cols-2 gap-3 mb-4">
-                            <div className={`p-3 rounded-lg text-center ${isDark ? 'bg-orange-500/10' : 'bg-orange-50'}`}>
-                              <p className="text-2xl font-bold text-orange-500">{user.orders_count || 0}</p>
+                            <div className={`p-3 rounded-lg text-center ${isDark ? 'bg-teal-500/10' : 'bg-teal-50'}`}>
+                              <p className="text-2xl font-bold text-teal-500">{user.orders_count || 0}</p>
                               <p className={`text-xs ${isDark ? 'text-zinc-500' : 'text-zinc-500'}`}>Заказов</p>
                             </div>
                             <div className={`p-3 rounded-lg text-center ${isDark ? 'bg-green-500/10' : 'bg-green-50'}`}>
