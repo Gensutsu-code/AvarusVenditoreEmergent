@@ -85,10 +85,10 @@ export const ClientNotifications = ({ onClose }) => {
     <div className="relative" ref={ref} data-testid="client-notifications">
       <button 
         onClick={() => setOpen(!open)} 
-        className="relative p-2.5 rounded-xl bg-white/90 backdrop-blur-sm border border-slate-200 text-slate-500 hover:text-amber-500 hover:bg-amber-50 hover:border-amber-200 transition-all duration-200 shadow-sm hover:shadow-md hover:scale-110" 
+        className="relative w-10 h-10 rounded-xl bg-white/95 backdrop-blur-sm border border-slate-200 text-slate-500 hover:text-amber-500 hover:bg-amber-50 hover:border-amber-200 transition-all duration-200 shadow-lg hover:shadow-xl hover:scale-105 flex items-center justify-center" 
         data-testid="client-notifications-bell"
       >
-        <Bell className="w-4 h-4" />
+        <Bell className="w-5 h-5" />
         {data.unread_count > 0 && (
           <span className="absolute -top-1 -right-1 bg-red-500 text-white text-[10px] min-w-[16px] h-[16px] flex items-center justify-center font-bold rounded-full px-1">
             {data.unread_count > 99 ? '99+' : data.unread_count}
