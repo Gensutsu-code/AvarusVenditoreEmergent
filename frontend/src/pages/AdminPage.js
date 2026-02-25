@@ -1641,8 +1641,8 @@ export default function AdminPage() {
                                 <p className="text-lg font-bold text-blue-600">{formatPrice(userDetails.statistics.avg_order_value)} ₽</p>
                                 <p className="text-xs text-zinc-500">Средний чек</p>
                               </div>
-                              <div className="bg-purple-50 p-3 rounded text-center">
-                                <p className="text-lg font-bold text-purple-600">{userDetails.statistics.total_items}</p>
+                              <div className="bg-emerald-50 p-3 rounded text-center">
+                                <p className="text-lg font-bold text-emerald-600">{userDetails.statistics.total_items}</p>
                                 <p className="text-xs text-zinc-500">Товаров</p>
                               </div>
                             </div>
