@@ -308,9 +308,13 @@ const ProductModalContent = ({
               >
                 <Minus className="w-4 h-4" />
               </button>
-              <span className="px-4 min-w-[50px] text-center font-semibold text-slate-800">
-                {quantities[product.id] || 1}
-              </span>
+              <input
+                type="number"
+                min="1"
+                value={quantities[product.id] || 1}
+                onChange={(e) => setQuantityDirect(product.id, e.target.value)}
+                className="w-12 text-center font-semibold text-slate-800 bg-transparent border-0 focus:outline-none focus:ring-0 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+              />
               <button 
                 onClick={() => updateQuantity(product.id, 1)}
                 className="p-3 hover:bg-slate-100 transition-colors text-slate-600"
