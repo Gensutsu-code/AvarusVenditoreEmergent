@@ -2258,7 +2258,7 @@ export default function AdminPage() {
                                       </span>
                                     </td>
                                     <td className="py-3 px-6 text-center">
-                                      <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold bg-gradient-to-r from-purple-100 to-violet-100 text-purple-700">
+                                      <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold bg-gradient-to-r from-teal-100 to-emerald-100 text-teal-700">
                                         {pu.current_level?.name || 'Бронза'}
                                       </span>
                                     </td>
