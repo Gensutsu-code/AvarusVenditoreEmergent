@@ -2223,9 +2223,9 @@ export default function AdminPage() {
                       {selectedProgramId === program.id && (
                         <div className="border-t border-slate-100">
                           <div className="bg-gradient-to-r from-slate-50 to-white px-6 py-3 flex items-center gap-2">
-                            <Users className="w-4 h-4 text-purple-500" />
+                            <Users className="w-4 h-4 text-teal-500" />
                             <span className="text-sm font-medium text-slate-600">Пользователи программы</span>
-                            <span className="text-xs bg-purple-100 text-purple-600 px-2 py-0.5 rounded-full">{programUsers.length}</span>
+                            <span className="text-xs bg-teal-100 text-teal-600 px-2 py-0.5 rounded-full">{programUsers.length}</span>
                           </div>
                           <div className="overflow-x-auto max-h-[400px] overflow-y-auto">
                             <table className="w-full">
