@@ -1610,7 +1610,7 @@ export default function AdminPage() {
                               </div>
                               <div className="flex justify-between">
                                 <span className="text-zinc-500">Роль:</span>
-                                <span className={`font-bold ${userDetails.user.role === 'admin' ? 'text-purple-600' : 'text-zinc-600'}`}>
+                                <span className={`font-bold ${userDetails.user.role === 'admin' ? 'text-teal-600' : 'text-zinc-600'}`}>
                                   {userDetails.user.role === 'admin' ? 'Администратор' : 'Пользователь'}
                                 </span>
                               </div>
