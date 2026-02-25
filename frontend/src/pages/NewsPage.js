@@ -5,6 +5,31 @@ import { motion, AnimatePresence } from 'framer-motion';
 
 const API = `${process.env.REACT_APP_BACKEND_URL}/api`;
 
+// Function to make URLs in text clickable
+const linkifyText = (text) => {
+  if (!text) return '';
+  const urlRegex = /(https?:\/\/[^\s<]+)/g;
+  const parts = text.split(urlRegex);
+  
+  return parts.map((part, index) => {
+    if (part.match(urlRegex)) {
+      return (
+        <a 
+          key={index}
+          href={part}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="text-teal-600 hover:text-teal-500 underline transition-colors"
+          onClick={(e) => e.stopPropagation()}
+        >
+          {part}
+        </a>
+      );
+    }
+    return part;
+  });
+};
+
 export default function NewsPage() {
   const [news, setNews] = useState([]);
   const [selectedArticle, setSelectedArticle] = useState(null);
@@ -71,7 +96,7 @@ export default function NewsPage() {
               </div>
               <h1 className="text-3xl font-bold text-slate-800 mb-6">{selectedArticle.title}</h1>
               <div className="prose prose-slate max-w-none text-slate-600 whitespace-pre-wrap leading-relaxed">
-                {selectedArticle.content}
+                {linkifyText(selectedArticle.content)}
               </div>
             </div>
           </motion.article>
