@@ -316,7 +316,7 @@ export const Header = () => {
                     </NavLink>
                     {/* Expandable Profile Menu */}
                     <ExpandableProfileMenu onLogout={logout} unreadCount={notificationCount} />
-                  </>
+                  </div>
                 )}
               </>
             ) : (
