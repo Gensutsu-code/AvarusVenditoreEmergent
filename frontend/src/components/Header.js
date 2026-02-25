@@ -12,7 +12,6 @@ import { motion, AnimatePresence } from 'framer-motion';
 // Expandable Profile Menu Component
 const ExpandableProfileMenu = ({ onLogout }) => {
   const [isExpanded, setIsExpanded] = useState(false);
-  const [clickCount, setClickCount] = useState(0);
   const navigate = useNavigate();
   const menuRef = useRef(null);
   const timeoutRef = useRef(null);
@@ -22,7 +21,6 @@ const ExpandableProfileMenu = ({ onLogout }) => {
     const handleClickOutside = (event) => {
       if (menuRef.current && !menuRef.current.contains(event.target)) {
         setIsExpanded(false);
-        setClickCount(0);
       }
     };
     document.addEventListener('mousedown', handleClickOutside);
@@ -33,97 +31,113 @@ const ExpandableProfileMenu = ({ onLogout }) => {
     if (!isExpanded) {
       // First click - expand
       setIsExpanded(true);
-      setClickCount(1);
-      // Auto-close after 3 seconds of inactivity
+      // Auto-close after 4 seconds of inactivity
       if (timeoutRef.current) clearTimeout(timeoutRef.current);
       timeoutRef.current = setTimeout(() => {
         setIsExpanded(false);
-        setClickCount(0);
-      }, 3000);
+      }, 4000);
     } else {
       // Second click - navigate to profile
       setIsExpanded(false);
-      setClickCount(0);
       navigate('/account');
     }
   };
 
   const handleItemClick = (action) => {
     setIsExpanded(false);
-    setClickCount(0);
     if (timeoutRef.current) clearTimeout(timeoutRef.current);
     if (typeof action === 'function') {
       action();
     }
   };
 
-  return (
-    <div ref={menuRef} className="relative flex items-center">
-      {/* Left side - Logout (expands left) */}
-      <AnimatePresence>
-        {isExpanded && (
-          <motion.button
-            initial={{ opacity: 0, x: 20, scale: 0.8 }}
-            animate={{ opacity: 1, x: 0, scale: 1 }}
-            exit={{ opacity: 0, x: 20, scale: 0.8 }}
-            transition={{ duration: 0.2, ease: "easeOut" }}
-            onClick={() => handleItemClick(onLogout)}
-            className="p-2.5 rounded-xl text-slate-500 hover:text-red-500 hover:bg-red-50 transition-all mr-1"
-            data-testid="logout-button"
-          >
-            <LogOut className="w-4 h-4" />
-          </motion.button>
-        )}
-      </AnimatePresence>
+  const iconVariants = {
+    hidden: { opacity: 0, scale: 0.3 },
+    visible: (custom) => ({
+      opacity: 1,
+      scale: 1,
+      transition: {
+        type: "spring",
+        stiffness: 400,
+        damping: 20,
+        delay: custom * 0.08
+      }
+    }),
+    exit: (custom) => ({
+      opacity: 0,
+      scale: 0.3,
+      transition: {
+        duration: 0.15,
+        delay: custom * 0.03
+      }
+    })
+  };
 
+  return (
+    <div ref={menuRef} className="relative">
       {/* Center - Profile button */}
       <motion.button
         onClick={handleProfileClick}
-        className={`relative p-2.5 rounded-xl transition-all duration-300 ${
+        className={`relative p-2.5 rounded-xl transition-colors duration-300 ${
           isExpanded 
-            ? 'bg-teal-500 text-white shadow-lg shadow-teal-500/30' 
-            : 'text-slate-500 hover:text-slate-800 hover:bg-white/50'
+            ? 'bg-gradient-to-br from-teal-500 to-emerald-500 text-white shadow-lg shadow-teal-500/40' 
+            : 'text-slate-500 hover:text-teal-600 hover:bg-teal-50'
         }`}
+        whileHover={{ scale: 1.1 }}
         whileTap={{ scale: 0.95 }}
         data-testid="profile-menu-trigger"
       >
         <User className="w-4 h-4" />
-        {isExpanded && (
-          <motion.div
-            className="absolute -bottom-1 left-1/2 -translate-x-1/2 w-1 h-1 rounded-full bg-white"
-            initial={{ scale: 0 }}
-            animate={{ scale: 1 }}
-          />
-        )}
       </motion.button>
 
-      {/* Right side - Notifications & Favorites (expands right) */}
+      {/* Expanded icons - absolutely positioned */}
       <AnimatePresence>
         {isExpanded && (
           <>
+            {/* Left side - Favorites & Notifications */}
             <motion.div
-              initial={{ opacity: 0, x: -20, scale: 0.8 }}
-              animate={{ opacity: 1, x: 0, scale: 1 }}
-              exit={{ opacity: 0, x: -20, scale: 0.8 }}
-              transition={{ duration: 0.2, ease: "easeOut", delay: 0.05 }}
-              className="ml-1"
+              className="absolute right-full top-1/2 -translate-y-1/2 mr-2 flex items-center gap-1"
+              initial="hidden"
+              animate="visible"
+              exit="exit"
             >
-              <ClientNotifications onClose={() => handleItemClick(() => {})} />
-            </motion.div>
-            <motion.div
-              initial={{ opacity: 0, x: -20, scale: 0.8 }}
-              animate={{ opacity: 1, x: 0, scale: 1 }}
-              exit={{ opacity: 0, x: -20, scale: 0.8 }}
-              transition={{ duration: 0.2, ease: "easeOut", delay: 0.1 }}
-            >
-              <Link 
-                to="/favorites" 
-                onClick={() => handleItemClick(() => {})}
-                className="p-2.5 rounded-xl text-slate-500 hover:text-pink-500 hover:bg-pink-50 transition-all inline-flex"
-                data-testid="favorites-link"
+              <motion.div
+                custom={1}
+                variants={iconVariants}
               >
-                <Heart className="w-4 h-4" />
-              </Link>
+                <Link 
+                  to="/favorites" 
+                  onClick={() => handleItemClick(() => {})}
+                  className="p-2.5 rounded-xl bg-white/90 backdrop-blur-sm border border-slate-200 text-slate-500 hover:text-pink-500 hover:bg-pink-50 hover:border-pink-200 transition-all duration-200 inline-flex shadow-sm hover:shadow-md hover:scale-110"
+                  data-testid="favorites-link"
+                >
+                  <Heart className="w-4 h-4" />
+                </Link>
+              </motion.div>
+              <motion.div
+                custom={0}
+                variants={iconVariants}
+              >
+                <ClientNotifications onClose={() => handleItemClick(() => {})} />
+              </motion.div>
+            </motion.div>
+
+            {/* Right side - Logout */}
+            <motion.div
+              className="absolute left-full top-1/2 -translate-y-1/2 ml-2"
+              initial="hidden"
+              animate="visible"
+              exit="exit"
+            >
+              <motion.button
+                custom={0}
+                variants={iconVariants}
+                onClick={() => handleItemClick(onLogout)}
+                className="p-2.5 rounded-xl bg-white/90 backdrop-blur-sm border border-slate-200 text-slate-500 hover:text-red-500 hover:bg-red-50 hover:border-red-200 transition-all duration-200 shadow-sm hover:shadow-md hover:scale-110"
+                data-testid="logout-button"
+              >
+                <LogOut className="w-4 h-4" />
+              </motion.button>
             </motion.div>
           </>
         )}
