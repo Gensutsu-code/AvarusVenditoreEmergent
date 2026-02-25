@@ -626,12 +626,12 @@ export default function CatalogPage() {
             {alternatives.length > 0 && (
               <div>
                 <div className="flex items-center gap-3 mb-4">
-                  <div className="w-1 h-6 bg-orange-500"></div>
-                  <h2 className="text-lg font-bold text-zinc-900">
+                  <div className="w-1 h-6 bg-teal-500"></div>
+                  <h2 className="text-lg font-bold text-slate-800">
                     Возможные замены ({alternatives.length})
                   </h2>
                 </div>
-                <p className="text-sm text-zinc-500 mb-4">
+                <p className="text-sm text-slate-500 mb-4">
                   Товары, у которых артикул &quot;{searchQuery}&quot; указан в кросс-номерах
                 </p>
                 
