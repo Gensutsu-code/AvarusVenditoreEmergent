@@ -191,15 +191,15 @@ export default function AdminProfilePage() {
                 </div>
                 <div className="text-white">
                   <h2 className="text-xl font-bold">{user?.name || 'Администратор'}</h2>
-                  <p className="text-purple-200 text-sm">{user?.email}</p>
-                  <p className="text-purple-300 text-xs mt-1">Администратор</p>
+                  <p className="text-teal-100 text-sm">{user?.email}</p>
+                  <p className="text-teal-200 text-xs mt-1">Администратор</p>
                 </div>
               </div>
             </div>
             
             <div className="p-6 space-y-4">
               <div>
-                <Label className="text-xs font-bold uppercase text-zinc-500 flex items-center gap-2">
+                <Label className="text-xs font-bold uppercase text-slate-500 flex items-center gap-2">
                   <User className="w-4 h-4" />
                   Никнейм
                 </Label>
@@ -207,27 +207,27 @@ export default function AdminProfilePage() {
                   value={formData.name}
                   onChange={(e) => setFormData({ ...formData, name: e.target.value })}
                   placeholder="Введите никнейм"
-                  className="mt-1"
+                  className="mt-1 border-slate-200"
                 />
               </div>
               
               <div>
-                <Label className="text-xs font-bold uppercase text-zinc-500 flex items-center gap-2">
+                <Label className="text-xs font-bold uppercase text-slate-500 flex items-center gap-2">
                   <Mail className="w-4 h-4" />
                   Email
                 </Label>
                 <Input
                   value={formData.email}
                   disabled
-                  className="mt-1 bg-zinc-50 cursor-not-allowed"
+                  className="mt-1 bg-slate-50 cursor-not-allowed text-slate-500"
                 />
-                <p className="text-xs text-zinc-400 mt-1">Email нельзя изменить</p>
+                <p className="text-xs text-slate-400 mt-1">Email нельзя изменить</p>
               </div>
               
               <Button 
                 onClick={handleSaveProfile}
                 disabled={saving}
-                className="w-full bg-purple-500 hover:bg-purple-600"
+                className="w-full bg-teal-500 hover:bg-teal-600"
               >
                 <Save className="w-4 h-4 mr-2" />
                 {saving ? 'Сохранение...' : 'Сохранить изменения'}
