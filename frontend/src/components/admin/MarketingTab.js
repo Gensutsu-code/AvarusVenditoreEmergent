@@ -11,6 +11,9 @@ export const MarketingTab = ({
   promoBanner,
   setPromoBanner,
   handleSavePromoBanner,
+  uploading,
+  handlePromoImageUpload,
+  promoFileRef,
   bonusPrograms,
   setBonusPrograms,
   
