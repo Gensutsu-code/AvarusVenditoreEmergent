@@ -63,9 +63,44 @@ async def get_admin_users(user=Depends(get_current_user)):
     users = await db.users.find({}, {"_id": 0}).to_list(1000)
     
     for u in users:
-        user_orders = await db.orders.find({"user_id": u["id"]}, {"_id": 0}).to_list(1000)
+        user_orders = await db.orders.find({"user_id": u["id"]}, {"_id": 0}).sort("created_at", -1).to_list(1000)
+        
+        # Basic stats
+        u["orders_count"] = len(user_orders)
         u["total_orders"] = len(user_orders)
         u["total_spent"] = sum(o.get("total", 0) for o in user_orders)
+        u["total_items"] = sum(sum(item.get("quantity", 0) for item in o.get("items", [])) for o in user_orders)
+        
+        # Order dates
+        order_dates = [o.get("created_at") for o in user_orders if o.get("created_at")]
+        u["first_order_date"] = min(order_dates) if order_dates else None
+        u["last_order_date"] = max(order_dates) if order_dates else None
+        
+        # Popular products for this user
+        product_count = defaultdict(lambda: {"name": "", "sku": "", "quantity": 0})
+        for o in user_orders:
+            for item in o.get("items", []):
+                pid = item.get("product_id") or item.get("article", "")
+                product_count[pid]["name"] = item.get("name", "")
+                product_count[pid]["sku"] = item.get("article", "")
+                product_count[pid]["quantity"] += item.get("quantity", 1)
+        
+        u["popular_products"] = sorted(
+            [{"product_id": k, **v} for k, v in product_count.items()],
+            key=lambda x: x["quantity"], reverse=True
+        )[:3]
+        
+        # Recent orders (last 3)
+        u["recent_orders"] = [
+            {
+                "id": o.get("id", ""),
+                "status": o.get("status", "pending"),
+                "total": o.get("total", 0),
+                "created_at": o.get("created_at")
+            }
+            for o in user_orders[:3]
+        ]
+        
         if "password" in u:
             del u["password"]
     
