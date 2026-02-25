@@ -125,39 +125,6 @@ export const PaymentsTab = ({
               </div>
             </div>
 
-            {/* Crypto payment */}
-            <div className={`p-5 rounded-xl ${isDark ? 'bg-zinc-800/50 border border-zinc-700/50 backdrop-blur-sm' : 'border border-zinc-200 bg-white'}`}>
-              <div className="flex items-center justify-between mb-4">
-                <div className="flex items-center gap-3">
-                  <div className={`w-10 h-10 rounded-lg flex items-center justify-center ${isDark ? 'bg-amber-500/20' : 'bg-amber-100'}`}>
-                    <Wallet className={`w-5 h-5 ${isDark ? 'text-amber-400' : 'text-amber-600'}`} />
-                  </div>
-                  <div>
-                    <h3 className={`font-semibold ${isDark ? 'text-zinc-100' : ''}`}>Криптовалюта</h3>
-                    <p className={`text-xs ${isDark ? 'text-zinc-500' : 'text-zinc-500'}`}>USDT/USDC</p>
-                  </div>
-                </div>
-                <Switch
-                  checked={paymentSettings.crypto_enabled !== false}
-                  onCheckedChange={(checked) => setPaymentSettings({ ...paymentSettings, crypto_enabled: checked })}
-                />
-              </div>
-              <div>
-                <Label className={`text-xs ${isDark ? 'text-zinc-500' : 'text-zinc-500'}`}>Наценка/Скидка (%)</Label>
-                <div className="flex items-center gap-2 mt-1">
-                  <Input
-                    type="number"
-                    value={paymentSettings.crypto_adjustment || 0}
-                    onChange={(e) => setPaymentSettings({ ...paymentSettings, crypto_adjustment: parseFloat(e.target.value) || 0 })}
-                    className={`w-24 ${isDark ? 'bg-zinc-900/50 border-zinc-700 text-zinc-100' : ''}`}
-                  />
-                  <span className={`text-sm ${isDark ? 'text-zinc-400' : 'text-zinc-500'}`}>
-                    {(paymentSettings.crypto_adjustment || 0) > 0 ? '+' : ''}{paymentSettings.crypto_adjustment || 0}%
-                  </span>
-                </div>
-              </div>
-            </div>
-
             {/* Balance payment */}
             <div className={`p-5 rounded-xl ${isDark ? 'bg-zinc-800/50 border border-zinc-700/50 backdrop-blur-sm' : 'border border-zinc-200 bg-white'}`}>
               <div className="flex items-center justify-between mb-4">
