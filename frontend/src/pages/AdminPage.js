@@ -3158,6 +3158,9 @@ export default function AdminPage() {
               promoBanner={promoBanner}
               setPromoBanner={setPromoBanner}
               handleSavePromoBanner={handleSavePromoBanner}
+              uploading={uploading}
+              handlePromoImageUpload={handlePromoImageUpload}
+              promoFileRef={promoFileRef}
               bonusPrograms={bonusPrograms}
               setBonusPrograms={setBonusPrograms}
               news={newsList}
