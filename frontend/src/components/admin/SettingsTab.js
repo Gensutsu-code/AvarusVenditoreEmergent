@@ -1,25 +1,17 @@
 import { useState } from 'react';
-import { Settings, Send, Upload, Image, FileText, Users } from 'lucide-react';
+import { Send, Image, FileText } from 'lucide-react';
 import { motion } from 'framer-motion';
 
 // Import existing components
-import { TelegramTab, ImportTab, PartnersTab, TermsTab } from './index';
+import { TelegramTab, PartnersTab, TermsTab } from './index';
 
-// Sub-tab component for Settings section (TG + Import + Partners + Rules)
+// Sub-tab component for Settings section (TG + Partners + Rules)
 export const SettingsTab = ({
   // Telegram props
   telegramConfig,
   setTelegramConfig,
   handleSaveTelegramConfig,
   handleTestTelegram,
-  
-  // Import props
-  uploading,
-  importResult,
-  setImportResult,
-  handleImportProducts,
-  handleExportProducts,
-  importFileRef,
   
   // Partners props
   partners,
@@ -48,7 +40,6 @@ export const SettingsTab = ({
 
   const subTabs = [
     { id: 'telegram', label: 'Telegram', icon: Send },
-    { id: 'import', label: 'Импорт/Экспорт', icon: Upload },
     { id: 'partners', label: 'Партнёры', icon: Image },
     { id: 'terms', label: 'Правила', icon: FileText },
   ];
