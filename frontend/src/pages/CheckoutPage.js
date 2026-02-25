@@ -550,12 +550,12 @@ export default function CheckoutPage() {
 
           {/* Order summary */}
           <motion.div 
-            className="glass-card p-6 h-fit sticky top-24"
+            className="bg-white/80 backdrop-blur-sm rounded-2xl border border-slate-200/50 shadow-sm p-6 h-fit sticky top-24"
             initial={{ opacity: 0, x: 20 }}
             animate={{ opacity: 1, x: 0 }}
             transition={{ duration: 0.5, delay: 0.2 }}
           >
-            <h2 className="text-sm font-bold uppercase tracking-widest text-zinc-500 mb-5 flex items-center gap-2">
+            <h2 className="text-sm font-bold uppercase tracking-widest text-teal-600 mb-5 flex items-center gap-2">
               <ShoppingBag className="w-4 h-4" />
               Ваш заказ
             </h2>
@@ -563,37 +563,37 @@ export default function CheckoutPage() {
               {cart.items.map((item, index) => (
                 <motion.div 
                   key={item.product_id} 
-                  className="flex gap-4 text-sm border-b border-zinc-800/50 pb-4"
+                  className="flex gap-4 text-sm border-b border-slate-200 pb-4"
                   initial={{ opacity: 0, y: 10 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ delay: 0.3 + index * 0.05 }}
                 >
                   <div className="flex-1">
-                    {item.manufacturer && <p className="text-xs font-bold text-teal-400 mb-1">{item.manufacturer}</p>}
-                    <p className="text-zinc-200 font-medium">{item.name}</p>
-                    <p className="text-zinc-500 text-xs mt-1">{item.quantity} шт. × {formatPrice(item.price)} ₽</p>
+                    {item.manufacturer && <p className="text-xs font-bold text-teal-600 mb-1">{item.manufacturer}</p>}
+                    <p className="text-slate-800 font-medium">{item.name}</p>
+                    <p className="text-slate-500 text-xs mt-1">{item.quantity} шт. × {formatPrice(item.price)} ₽</p>
                   </div>
-                  <span className="font-bold text-zinc-200 whitespace-nowrap">{formatPrice(item.price * item.quantity)} ₽</span>
+                  <span className="font-bold text-slate-800 whitespace-nowrap">{formatPrice(item.price * item.quantity)} ₽</span>
                 </motion.div>
               ))}
             </div>
-            <div className="border-t border-zinc-700/50 pt-5 space-y-3">
+            <div className="border-t border-slate-200 pt-5 space-y-3">
               {currentPaymentAdjustment !== 0 && (
                 <>
-                  <div className="flex justify-between text-sm text-zinc-400">
+                  <div className="flex justify-between text-sm text-slate-600">
                     <span>Подытог:</span>
                     <span>{formatPrice(subtotal)} ₽</span>
                   </div>
-                  <div className={`flex justify-between text-sm ${currentPaymentAdjustment < 0 ? 'text-green-400' : 'text-red-400'}`}>
+                  <div className={`flex justify-between text-sm font-medium ${currentPaymentAdjustment < 0 ? 'text-emerald-600' : 'text-rose-600'}`}>
                     <span>{currentPaymentAdjustment < 0 ? 'Скидка' : 'Наценка'} ({Math.abs(currentPaymentAdjustment)}%):</span>
                     <span>{currentPaymentAdjustment < 0 ? '-' : '+'}{formatPrice(Math.abs(finalTotal - subtotal))} ₽</span>
                   </div>
                 </>
               )}
               <div className="flex justify-between items-center pt-2">
-                <span className="font-bold text-zinc-300">Итого:</span>
+                <span className="font-bold text-slate-700">Итого:</span>
                 <motion.span 
-                  className="text-2xl font-bold bg-gradient-to-r from-teal-400 to-emerald-400 bg-clip-text text-transparent"
+                  className="text-2xl font-bold bg-gradient-to-r from-teal-500 to-emerald-500 bg-clip-text text-transparent"
                   data-testid="checkout-total"
                   key={finalTotal}
                   initial={{ scale: 1.1 }}
