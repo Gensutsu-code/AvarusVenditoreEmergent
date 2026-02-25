@@ -49,9 +49,9 @@ export const CRMTab = ({
   // Customer role colors
   const getStatusColor = (role) => {
     if (isDark) {
-      return role === 'admin' ? 'bg-orange-500/20 text-orange-400' : 'bg-teal-500/20 text-teal-400';
+      return role === 'admin' ? 'bg-teal-500/20 text-teal-400' : 'bg-emerald-500/20 text-emerald-400';
     }
-    return role === 'admin' ? 'bg-orange-100 text-orange-700' : 'bg-teal-100 text-teal-700';
+    return role === 'admin' ? 'bg-teal-100 text-teal-700' : 'bg-emerald-100 text-emerald-700';
   };
 
   const getStatusLabel = (role) => {
