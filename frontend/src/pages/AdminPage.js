@@ -2288,7 +2288,7 @@ export default function AdminPage() {
                                 {programUsers.map((pu) => (
                                   <tr 
                                     key={pu.id} 
-                                    className={`transition-colors ${pu.bonus_requested ? 'bg-gradient-to-r from-amber-50 to-transparent' : 'hover:bg-slate-50'}`}
+                                    className={`transition-colors ${pu.bonus_requested ? 'bg-gradient-to-r from-teal-50 to-transparent' : 'hover:bg-slate-50'}`}
                                   >
                                     <td className="py-3 px-6">
                                       <div className="flex items-center gap-2">
