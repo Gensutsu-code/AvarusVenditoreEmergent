@@ -53,7 +53,7 @@ export default function HomePage() {
         
         {/* Animated circles */}
         <motion.div 
-          className={`absolute top-20 right-20 w-96 h-96 rounded-full ${isDark ? 'bg-orange-500/5' : 'bg-green-400/20'} blur-3xl`}
+          className={`absolute top-20 right-20 w-96 h-96 rounded-full ${isDark ? 'bg-orange-500/5' : 'bg-teal-400/20'} blur-3xl`}
           animate={{ scale: [1, 1.2, 1], opacity: [0.3, 0.5, 0.3] }}
           transition={{ duration: 8, repeat: Infinity }}
         />
@@ -74,7 +74,7 @@ export default function HomePage() {
               >
                 <span className={isDark ? 'text-white' : 'text-slate-800'}>Запчасти для</span>
                 <br />
-                <span className={`bg-gradient-to-r ${isDark ? 'from-orange-400 to-orange-600' : 'from-green-500 to-emerald-600'} bg-clip-text text-transparent`}>
+                <span className={`bg-gradient-to-r ${isDark ? 'from-orange-400 to-orange-600' : 'from-teal-500 to-emerald-500'} bg-clip-text text-transparent`}>
                   грузовиков
                 </span>
               </motion.h1>
@@ -95,7 +95,7 @@ export default function HomePage() {
               >
                 <Link to="/catalog" data-testid="go-to-search-btn">
                   <motion.button
-                    className={`group inline-flex items-center gap-3 ${isDark ? 'bg-gradient-to-r from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700 shadow-glow' : 'bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 shadow-lg shadow-green-500/30'} text-white font-bold uppercase tracking-wide px-8 py-4 rounded-2xl transition-all duration-300`}
+                    className={`group inline-flex items-center gap-3 ${isDark ? 'bg-gradient-to-r from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700 shadow-glow' : 'bg-gradient-to-r from-teal-500 to-emerald-500 hover:from-green-600 hover:to-emerald-700 shadow-lg shadow-teal-500/30'} text-white font-bold uppercase tracking-wide px-8 py-4 rounded-2xl transition-all duration-300`}
                     whileHover={{ scale: 1.02, boxShadow: isDark ? '0 0 40px rgba(249, 115, 22, 0.4)' : '0 0 40px rgba(0, 255, 0, 0.3)' }}
                     whileTap={{ scale: 0.98 }}
                   >
@@ -212,8 +212,8 @@ export default function HomePage() {
               transition={{ duration: 0.5, delay: index * 0.1 }}
               whileHover={{ y: -5 }}
             >
-              <div className={`w-12 h-12 mx-auto mb-4 rounded-xl flex items-center justify-center transition-colors ${isDark ? 'bg-orange-500/10 group-hover:bg-orange-500/20' : 'bg-green-500/10 group-hover:bg-green-500/20'}`}>
-                <feature.icon className={`w-6 h-6 ${isDark ? 'text-orange-400' : 'text-green-600'}`} />
+              <div className={`w-12 h-12 mx-auto mb-4 rounded-xl flex items-center justify-center transition-colors ${isDark ? 'bg-orange-500/10 group-hover:bg-orange-500/20' : 'bg-teal-500/10 group-hover:bg-teal-500/20'}`}>
+                <feature.icon className={`w-6 h-6 ${isDark ? 'text-orange-400' : 'text-teal-600'}`} />
               </div>
               <h3 className={`font-semibold mb-1 ${isDark ? 'text-zinc-100' : 'text-slate-800'}`}>{feature.title}</h3>
               <p className={`text-xs ${isDark ? 'text-zinc-500' : 'text-slate-500'}`}>{feature.desc}</p>
@@ -240,7 +240,7 @@ export default function HomePage() {
           <div className="glass-card p-8">
             <div className="max-w-none">
               <p className={`text-lg mb-6 ${isDark ? 'text-zinc-300' : 'text-slate-700'}`}>
-                <span className={`font-semibold ${isDark ? 'text-orange-400' : 'text-green-600'}`}>avarus-Venditore</span> — поставщик запчастей для грузовых автомобилей по всей России. 
+                <span className={`font-semibold ${isDark ? 'text-orange-400' : 'text-teal-600'}`}>avarus-Venditore</span> — поставщик запчастей для грузовых автомобилей по всей России. 
                 Мы специализируемся на комплектующих для коммерческого транспорта и предлагаем решения, 
                 которые выдерживают реальные нагрузки и большие пробеги.
               </p>
@@ -258,7 +258,7 @@ export default function HomePage() {
               </p>
               
               <p className={`font-medium ${isDark ? 'text-zinc-300' : 'text-slate-700'}`}>
-                <span className={`font-semibold ${isDark ? 'text-orange-400' : 'text-green-600'}`}>avarus-Venditore</span> — это запчасти, на которые можно положиться, сроки, 
+                <span className={`font-semibold ${isDark ? 'text-orange-400' : 'text-teal-600'}`}>avarus-Venditore</span> — это запчасти, на которые можно положиться, сроки, 
                 которые соблюдаются, и сервис, ориентированный на результат.
               </p>
             </div>
