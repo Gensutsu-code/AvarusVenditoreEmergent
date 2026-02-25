@@ -52,7 +52,7 @@ export const SettingsTab = ({
   return (
     <div className="space-y-6">
       {/* Sub-tabs */}
-      <div className="flex gap-2 border-b border-zinc-200 pb-4">
+      <div className={`flex gap-2 border-b pb-4 ${isDark ? 'border-zinc-700' : 'border-zinc-200'}`}>
         {subTabs.map((tab) => {
           const Icon = tab.icon;
           return (
@@ -61,8 +61,12 @@ export const SettingsTab = ({
               onClick={() => setActiveSubTab(tab.id)}
               className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all ${
                 activeSubTab === tab.id
-                  ? 'bg-orange-500 text-white'
-                  : 'bg-zinc-100 text-zinc-600 hover:bg-zinc-200'
+                  ? isDark 
+                    ? 'bg-orange-500/20 text-orange-400 border border-orange-500/30' 
+                    : 'bg-orange-500 text-white'
+                  : isDark
+                    ? 'bg-zinc-800/50 text-zinc-400 hover:bg-zinc-700/50 border border-zinc-700/50'
+                    : 'bg-zinc-100 text-zinc-600 hover:bg-zinc-200'
               }`}
             >
               <Icon className="w-4 h-4" />
@@ -82,6 +86,7 @@ export const SettingsTab = ({
             telegramSettings={telegramConfig || { enabled: false, bot_token: '', chat_id: '' }}
             setTelegramSettings={setTelegramConfig}
             handleSaveTelegram={handleSaveTelegramConfig}
+            isDark={isDark}
           />
         </motion.div>
       )}
@@ -99,6 +104,7 @@ export const SettingsTab = ({
             handleImportProducts={handleImportProducts}
             handleExportProducts={handleExportProducts}
             importFileRef={importFileRef}
+            isDark={isDark}
           />
         </motion.div>
       )}
@@ -119,6 +125,7 @@ export const SettingsTab = ({
             handlePartnerImageUpload={handlePartnerImageUpload}
             partnerImageUploading={partnerImageUploading}
             partnerImageRef={partnerImageRef}
+            isDark={isDark}
           />
         </motion.div>
       )}
@@ -135,6 +142,7 @@ export const SettingsTab = ({
             handleSaveTerms={handleSaveTerms}
             handleResetTerms={handleResetTerms}
             termsSaving={termsSaving}
+            isDark={isDark}
           />
         </motion.div>
       )}
