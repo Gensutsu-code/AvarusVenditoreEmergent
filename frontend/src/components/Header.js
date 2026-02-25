@@ -10,7 +10,7 @@ import { useState, useRef, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 
 // Expandable Profile Menu Component
-const ExpandableProfileMenu = ({ onLogout, onExpandChange }) => {
+const ExpandableProfileMenu = ({ onLogout, onExpandChange, unreadCount = 0 }) => {
   const [isExpanded, setIsExpanded] = useState(false);
   const navigate = useNavigate();
   const menuRef = useRef(null);
@@ -57,94 +57,91 @@ const ExpandableProfileMenu = ({ onLogout, onExpandChange }) => {
   };
 
   const iconVariants = {
-    hidden: { opacity: 0, scale: 0.3 },
+    hidden: { opacity: 0, scale: 0.5, y: -10 },
     visible: (custom) => ({
       opacity: 1,
       scale: 1,
+      y: 0,
       transition: {
         type: "spring",
-        stiffness: 400,
-        damping: 20,
-        delay: custom * 0.08
+        stiffness: 350,
+        damping: 25,
+        delay: custom * 0.07
       }
     }),
-    exit: (custom) => ({
+    exit: {
       opacity: 0,
-      scale: 0.3,
+      scale: 0.5,
+      y: -10,
       transition: {
-        duration: 0.15,
-        delay: custom * 0.03
+        duration: 0.15
       }
-    })
+    }
   };
 
   return (
-    <div ref={menuRef} className="relative flex items-center">
-      {/* Left side - Favorites & Notifications */}
-      <AnimatePresence>
-        {isExpanded && (
-          <motion.div
-            className="flex items-center gap-1 mr-2"
-            initial="hidden"
-            animate="visible"
-            exit="exit"
-          >
-            <motion.div
-              custom={1}
-              variants={iconVariants}
-            >
-              <Link 
-                to="/favorites" 
-                onClick={() => handleItemClick(() => {})}
-                className="p-2.5 rounded-xl bg-white/90 backdrop-blur-sm border border-slate-200 text-slate-500 hover:text-pink-500 hover:bg-pink-50 hover:border-pink-200 transition-all duration-200 inline-flex shadow-sm hover:shadow-md hover:scale-110"
-                data-testid="favorites-link"
-              >
-                <Heart className="w-4 h-4" />
-              </Link>
-            </motion.div>
-            <motion.div
-              custom={0}
-              variants={iconVariants}
-            >
-              <ClientNotifications onClose={() => handleItemClick(() => {})} />
-            </motion.div>
-          </motion.div>
-        )}
-      </AnimatePresence>
-
-      {/* Center - Profile button */}
+    <div ref={menuRef} className="relative">
+      {/* Profile button - larger and more prominent */}
       <motion.button
         onClick={handleProfileClick}
-        className={`relative p-2.5 rounded-xl transition-colors duration-300 ${
+        className={`relative p-3 rounded-2xl transition-all duration-300 ${
           isExpanded 
-            ? 'bg-gradient-to-br from-teal-500 to-emerald-500 text-white shadow-lg shadow-teal-500/40' 
-            : 'text-slate-500 hover:text-teal-600 hover:bg-teal-50'
+            ? 'bg-gradient-to-br from-teal-500 to-emerald-500 text-white shadow-xl shadow-teal-500/40 scale-105' 
+            : 'bg-gradient-to-br from-teal-50 to-emerald-50 text-teal-600 border-2 border-teal-200 hover:border-teal-400 hover:shadow-lg hover:shadow-teal-500/20'
         }`}
         whileHover={{ scale: 1.1 }}
         whileTap={{ scale: 0.95 }}
         data-testid="profile-menu-trigger"
       >
-        <User className="w-4 h-4" />
+        <User className="w-5 h-5" />
+        {/* Unread notification badge */}
+        {!isExpanded && unreadCount > 0 && (
+          <motion.span 
+            initial={{ scale: 0 }}
+            animate={{ scale: 1 }}
+            className="absolute -top-1 -right-1 bg-red-500 text-white text-[10px] min-w-[18px] h-[18px] flex items-center justify-center font-bold rounded-full px-1 shadow-sm"
+          >
+            {unreadCount > 99 ? '99+' : unreadCount}
+          </motion.span>
+        )}
       </motion.button>
 
-      {/* Right side - Logout */}
+      {/* Dropdown menu - expands downward */}
       <AnimatePresence>
         {isExpanded && (
           <motion.div
-            className="ml-2"
+            className="absolute right-0 top-full mt-2 flex flex-col gap-2 z-50"
             initial="hidden"
             animate="visible"
             exit="exit"
           >
-            <motion.button
-              custom={0}
-              variants={iconVariants}
-              onClick={() => handleItemClick(onLogout)}
-              className="p-2.5 rounded-xl bg-white/90 backdrop-blur-sm border border-slate-200 text-slate-500 hover:text-red-500 hover:bg-red-50 hover:border-red-200 transition-all duration-200 shadow-sm hover:shadow-md hover:scale-110"
-              data-testid="logout-button"
-            >
-              <LogOut className="w-4 h-4" />
-            </motion.button>
+            {/* 1. Notifications */}
+            <motion.div custom={0} variants={iconVariants}>
+              <ClientNotifications onClose={() => handleItemClick(() => {})} />
+            </motion.div>
+
+            {/* 2. Favorites */}
+            <motion.div custom={1} variants={iconVariants}>
+              <Link 
+                to="/favorites" 
+                onClick={() => handleItemClick(() => {})}
+                className="flex items-center justify-center p-3 rounded-xl bg-white/95 backdrop-blur-sm border border-slate-200 text-slate-500 hover:text-pink-500 hover:bg-pink-50 hover:border-pink-300 transition-all duration-200 shadow-lg hover:shadow-xl hover:scale-105"
+                data-testid="favorites-link"
+              >
+                <Heart className="w-5 h-5" />
+              </Link>
+            </motion.div>
+
+            {/* 3. Logout - reddish tint */}
+            <motion.div custom={2} variants={iconVariants}>
+              <button
+                onClick={() => handleItemClick(onLogout)}
+                className="flex items-center justify-center p-3 rounded-xl bg-red-50 backdrop-blur-sm border border-red-200 text-red-400 hover:text-red-600 hover:bg-red-100 hover:border-red-400 transition-all duration-200 shadow-lg hover:shadow-xl hover:scale-105"
+                data-testid="logout-button"
+              >
+                <LogOut className="w-5 h-5" />
+              </button>
+            </motion.div>
           </motion.div>
         )}
       </AnimatePresence>
