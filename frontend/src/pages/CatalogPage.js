@@ -465,11 +465,11 @@ export default function CatalogPage() {
   const currentCategory = categories.find(c => c.id === categoryId);
 
   return (
-    <div className="min-h-screen bg-zinc-950" data-testid="catalog-page">
+    <div className={`min-h-screen ${isDark ? 'bg-zinc-950' : ''}`} data-testid="catalog-page">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Header */}
         <div className="mb-8">
-          <h1 className="text-2xl md:text-3xl font-bold tracking-tight uppercase text-zinc-100 mb-6">
+          <h1 className={`text-2xl md:text-3xl font-bold tracking-tight uppercase mb-6 ${isDark ? 'text-zinc-100' : 'text-slate-800'}`}>
             {currentCategory ? currentCategory.name : 'Поиск запчастей'}
           </h1>
           
@@ -481,14 +481,14 @@ export default function CatalogPage() {
                 placeholder="Введите название или артикул..."
                 value={searchInput}
                 onChange={(e) => setSearchInput(e.target.value)}
-                className="pr-10 h-12 bg-zinc-800/50 border-zinc-700/50 text-zinc-100 placeholder:text-zinc-500 rounded-xl focus:border-orange-500/50"
+                className={`pr-10 h-12 rounded-xl ${isDark ? 'bg-zinc-800/50 border-zinc-700/50 text-zinc-100 placeholder:text-zinc-500 focus:border-orange-500/50' : 'bg-white/70 border-cyan-200/50 text-slate-800 placeholder:text-slate-400 focus:border-teal-400'}`}
                 data-testid="catalog-search-input"
               />
               {searchInput && (
                 <button 
                   type="button"
                   onClick={() => setSearchInput('')}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-zinc-500 hover:text-zinc-300"
+                  className={`absolute right-3 top-1/2 -translate-y-1/2 ${isDark ? 'text-zinc-500 hover:text-zinc-300' : 'text-slate-400 hover:text-slate-600'}`}
                 >
                   <X className="w-5 h-5" />
                 </button>
@@ -496,7 +496,7 @@ export default function CatalogPage() {
             </div>
             <Button 
               type="submit"
-              className="bg-gradient-to-r from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700 text-white font-bold uppercase h-12 px-6 rounded-xl shadow-glow transition-all duration-300"
+              className={`font-bold uppercase h-12 px-6 rounded-xl shadow-lg transition-all duration-300 ${isDark ? 'bg-gradient-to-r from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700 shadow-orange-500/20' : 'bg-gradient-to-r from-teal-500 to-emerald-500 hover:from-teal-600 hover:to-emerald-600 shadow-teal-500/30'} text-white`}
               data-testid="catalog-search-btn"
             >
               <Search className="w-5 h-5 mr-2" />
@@ -508,7 +508,7 @@ export default function CatalogPage() {
           {(searchQuery || categoryId) && (
             <div className="flex items-center gap-2 mt-4">
               {searchQuery && (
-                <span className="inline-flex items-center gap-2 bg-zinc-800/50 border border-zinc-700/50 rounded-xl px-3 py-2 text-sm text-zinc-300">
+                <span className={`inline-flex items-center gap-2 rounded-xl px-3 py-2 text-sm ${isDark ? 'bg-zinc-800/50 border border-zinc-700/50 text-zinc-300' : 'bg-white/60 border border-cyan-200/50 text-slate-600'}`}>
                   Поиск: &quot;{searchQuery}&quot;
                   <button onClick={() => {
                     const params = new URLSearchParams(searchParams);
