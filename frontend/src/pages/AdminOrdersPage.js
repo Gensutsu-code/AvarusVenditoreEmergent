@@ -573,66 +573,71 @@ export default function AdminOrdersPage() {
 
       {/* Edit Order Dialog */}
       <Dialog open={!!editingOrder} onOpenChange={() => setEditingOrder(null)}>
-        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto bg-white/95 backdrop-blur-sm border-slate-200/50 rounded-2xl">
           <DialogHeader>
-            <DialogTitle>Редактировать заказ #{editingOrder?.id?.slice(0, 8)}</DialogTitle>
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-teal-500 to-emerald-500 flex items-center justify-center">
+                <Pencil className="w-5 h-5 text-white" />
+              </div>
+              <DialogTitle className="text-xl font-bold text-slate-800">Редактировать заказ #{editingOrder?.id?.slice(0, 8)}</DialogTitle>
+            </div>
           </DialogHeader>
           {editingOrder && (
             <div className="space-y-4">
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="text-xs font-bold uppercase text-zinc-500">Получатель</label>
+                  <label className="text-xs font-bold uppercase text-teal-600">Получатель</label>
                   <Input
                     value={editingOrder.full_name || ''}
                     onChange={(e) => setEditingOrder({...editingOrder, full_name: e.target.value})}
-                    className="mt-1"
+                    className="mt-1 rounded-xl border-slate-200 focus:border-teal-400 focus:ring-teal-200"
                   />
                 </div>
                 <div>
-                  <label className="text-xs font-bold uppercase text-zinc-500">Телефон</label>
+                  <label className="text-xs font-bold uppercase text-teal-600">Телефон</label>
                   <Input
                     value={editingOrder.phone || ''}
                     onChange={(e) => setEditingOrder({...editingOrder, phone: e.target.value})}
-                    className="mt-1"
+                    className="mt-1 rounded-xl border-slate-200 focus:border-teal-400 focus:ring-teal-200"
                   />
                 </div>
               </div>
 
               <div>
-                <label className="text-xs font-bold uppercase text-zinc-500">Адрес</label>
+                <label className="text-xs font-bold uppercase text-teal-600">Адрес</label>
                 <Input
                   value={editingOrder.address || ''}
                   onChange={(e) => setEditingOrder({...editingOrder, address: e.target.value})}
-                  className="mt-1"
+                  className="mt-1 rounded-xl border-slate-200 focus:border-teal-400 focus:ring-teal-200"
                 />
               </div>
 
               <div>
-                <label className="text-xs font-bold uppercase text-zinc-500">Комментарий к заказу</label>
+                <label className="text-xs font-bold uppercase text-teal-600">Комментарий к заказу</label>
                 <Input
                   value={editingOrder.comment || ''}
                   onChange={(e) => setEditingOrder({...editingOrder, comment: e.target.value})}
-                  className="mt-1"
+                  className="mt-1 rounded-xl border-slate-200 focus:border-teal-400 focus:ring-teal-200"
                   placeholder="Комментарий от клиента..."
                 />
               </div>
 
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="text-xs font-bold uppercase text-zinc-500">Дата и время заказа</label>
+                  <label className="text-xs font-bold uppercase text-teal-600">Дата и время заказа</label>
                   <Input
                     type="datetime-local"
                     value={editingOrder.created_at ? editingOrder.created_at.slice(0, 16) : ''}
                     onChange={(e) => setEditingOrder({...editingOrder, created_at: e.target.value ? new Date(e.target.value).toISOString() : editingOrder.created_at})}
-                    className="mt-1"
+                    className="mt-1 rounded-xl border-slate-200 focus:border-teal-400 focus:ring-teal-200"
                   />
                 </div>
                 <div>
-                  <label className="text-xs font-bold uppercase text-zinc-500">Статус</label>
+                  <label className="text-xs font-bold uppercase text-teal-600">Статус</label>
                   <select
                     value={editingOrder.status}
                     onChange={(e) => setEditingOrder({...editingOrder, status: e.target.value})}
-                    className="mt-1 w-full h-10 px-3 border border-zinc-200 bg-white rounded"
+                    className="mt-1 w-full h-10 px-3 border border-slate-200 bg-white rounded-xl focus:border-teal-400 focus:ring-1 focus:ring-teal-200 outline-none"
                   >
                     {ORDER_STATUSES.map(status => (
                       <option key={status.value} value={status.value}>{status.label}</option>
@@ -642,57 +647,57 @@ export default function AdminOrdersPage() {
               </div>
 
               {/* Order Items with editable prices and discounts */}
-              <div className="border-t pt-4">
-                <label className="text-xs font-bold uppercase text-zinc-500 mb-3 block">Товары в заказе</label>
+              <div className="border-t border-slate-200 pt-4">
+                <label className="text-xs font-bold uppercase text-teal-600 mb-3 block">Товары в заказе</label>
                 <div className="space-y-3">
                   {editingOrder.items?.map((item, idx) => (
-                    <div key={idx} className="bg-zinc-50 p-3 rounded-lg border border-zinc-200">
+                    <div key={idx} className="bg-gradient-to-r from-slate-50 to-teal-50/30 p-4 rounded-xl border border-slate-200">
                       <div className="flex items-start gap-3">
                         {item.image_url && (
-                          <img src={item.image_url} alt={item.name} className="w-12 h-12 object-cover rounded" />
+                          <img src={item.image_url} alt={item.name} className="w-14 h-14 object-cover rounded-lg border border-slate-200" />
                         )}
                         <div className="flex-1 min-w-0">
-                          <p className="font-medium text-sm truncate">{item.name}</p>
-                          <p className="text-xs text-zinc-500">{item.article}</p>
+                          <p className="font-medium text-sm truncate text-slate-800">{item.name}</p>
+                          <p className="text-xs text-slate-500">{item.article}</p>
                         </div>
                       </div>
-                      <div className="grid grid-cols-4 gap-2 mt-2">
+                      <div className="grid grid-cols-4 gap-3 mt-3">
                         <div>
-                          <label className="text-xs text-zinc-400">Цена (₽)</label>
+                          <label className="text-xs text-slate-500">Цена (₽)</label>
                           <Input
                             type="number"
                             value={item.price}
                             onChange={(e) => handleUpdateOrderItem(idx, 'price', e.target.value)}
-                            className="mt-1 h-8 text-sm"
+                            className="mt-1 h-9 text-sm rounded-lg border-slate-200 focus:border-teal-400"
                             min={0}
                           />
                         </div>
                         <div>
-                          <label className="text-xs text-zinc-400">Кол-во</label>
+                          <label className="text-xs text-slate-500">Кол-во</label>
                           <Input
                             type="number"
                             value={item.quantity}
                             onChange={(e) => handleUpdateOrderItem(idx, 'quantity', e.target.value)}
-                            className="mt-1 h-8 text-sm"
+                            className="mt-1 h-9 text-sm rounded-lg border-slate-200 focus:border-teal-400"
                             min={1}
                           />
                         </div>
                         <div>
-                          <label className="text-xs text-zinc-400 flex items-center gap-1">
+                          <label className="text-xs text-slate-500 flex items-center gap-1">
                             <Percent className="w-3 h-3" /> Скидка
                           </label>
                           <Input
                             type="number"
                             value={item.discount_percent || 0}
                             onChange={(e) => handleUpdateOrderItem(idx, 'discount_percent', e.target.value)}
-                            className="mt-1 h-8 text-sm"
+                            className="mt-1 h-9 text-sm rounded-lg border-slate-200 focus:border-teal-400"
                             min={0}
                             max={100}
                           />
                         </div>
                         <div>
-                          <label className="text-xs text-zinc-400">Сумма</label>
-                          <p className="mt-1 h-8 flex items-center text-sm font-bold">
+                          <label className="text-xs text-slate-500">Сумма</label>
+                          <p className="mt-1 h-9 flex items-center text-sm font-bold text-teal-600">
                             {new Intl.NumberFormat('ru-RU').format(
                               item.price * item.quantity * (1 - (item.discount_percent || 0) / 100)
                             )} ₽
@@ -700,7 +705,7 @@ export default function AdminOrdersPage() {
                         </div>
                       </div>
                       {(item.discount_percent || 0) > 0 && (
-                        <p className="text-xs text-green-600 mt-1">
+                        <p className="text-xs text-emerald-600 mt-2 font-medium">
                           Скидка {item.discount_percent}%: -{new Intl.NumberFormat('ru-RU').format(item.price * item.quantity * (item.discount_percent / 100))} ₽
                         </p>
                       )}
@@ -710,9 +715,9 @@ export default function AdminOrdersPage() {
               </div>
 
               {/* Order-level discount */}
-              <div className="border-t pt-4">
-                <div className="bg-orange-50 p-4 rounded-lg border border-orange-200">
-                  <Label className="text-xs font-bold uppercase text-orange-600 flex items-center gap-2">
+              <div className="border-t border-slate-200 pt-4">
+                <div className="bg-gradient-to-r from-amber-50 to-orange-50 p-4 rounded-xl border border-amber-200">
+                  <Label className="text-xs font-bold uppercase text-amber-600 flex items-center gap-2">
                     <Percent className="w-4 h-4" /> Скидка на весь заказ
                   </Label>
                   <div className="flex items-center gap-3 mt-2">
@@ -720,32 +725,32 @@ export default function AdminOrdersPage() {
                       type="number"
                       value={editingOrder.order_discount_percent || 0}
                       onChange={(e) => setEditingOrder({...editingOrder, order_discount_percent: parseFloat(e.target.value) || 0})}
-                      className="w-24"
+                      className="w-24 rounded-lg border-amber-200 focus:border-amber-400"
                       min={0}
                       max={100}
                     />
-                    <span className="text-zinc-500">%</span>
+                    <span className="text-amber-600 font-medium">%</span>
                   </div>
                 </div>
               </div>
 
-              <div className="bg-green-50 p-4 border border-green-200 rounded-lg">
+              <div className="bg-gradient-to-r from-teal-50 to-emerald-50 p-4 border border-teal-200 rounded-xl">
                 <div className="flex justify-between items-center">
                   <div>
-                    <p className="text-sm text-green-600">Итого со скидками:</p>
-                    <p className="text-2xl font-bold font-mono text-green-700">
+                    <p className="text-sm text-teal-600 font-medium">Итого со скидками:</p>
+                    <p className="text-2xl font-bold font-mono bg-gradient-to-r from-teal-600 to-emerald-600 bg-clip-text text-transparent">
                       {new Intl.NumberFormat('ru-RU').format(calculateOrderTotal(editingOrder.items || [], editingOrder.order_discount_percent || 0))} ₽
                     </p>
                   </div>
                 </div>
               </div>
 
-              <div className="flex gap-2 pt-4">
-                <Button variant="outline" onClick={() => setEditingOrder(null)} className="flex-1">
+              <div className="flex gap-3 pt-4">
+                <Button variant="outline" onClick={() => setEditingOrder(null)} className="flex-1 rounded-xl border-slate-200 hover:bg-slate-50">
                   <X className="w-4 h-4 mr-2" />
                   Отмена
                 </Button>
-                <Button onClick={handleSaveOrder} className="flex-1 bg-orange-500 hover:bg-orange-600">
+                <Button onClick={handleSaveOrder} className="flex-1 bg-gradient-to-r from-teal-500 to-emerald-500 hover:from-teal-600 hover:to-emerald-600 rounded-xl">
                   <Save className="w-4 h-4 mr-2" />
                   Сохранить
                 </Button>
