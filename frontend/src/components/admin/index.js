@@ -12,3 +12,9 @@ export { default as DiscountsTab } from './DiscountsTab';
 export { default as TermsTab } from './TermsTab';
 export { default as NotificationsTab } from './NotificationsTab';
 export { default as PartnersTab } from './PartnersTab';
+
+// Combined tabs for restructured admin panel
+export { default as PaymentsTab } from './PaymentsTab';
+export { default as CRMTab } from './CRMTab';
+export { default as MarketingTab } from './MarketingTab';
+export { default as SettingsTab } from './SettingsTab';
