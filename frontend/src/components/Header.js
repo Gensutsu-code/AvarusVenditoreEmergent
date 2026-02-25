@@ -210,7 +210,8 @@ export const Header = () => {
               </motion.h1>
             </Link>
             
-            {/* Promo Banner moved below header - see FloatingPromoBanner */}
+            {/* Promo Banner - inline with logo */}
+            {!isAdmin && <HeaderPromoBanner />}
           </div>
           
           {/* Admin indicator (only for admin) - center */}
