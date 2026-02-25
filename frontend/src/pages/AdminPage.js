@@ -2122,9 +2122,9 @@ export default function AdminPage() {
 
               {/* Programs List */}
               {bonusPrograms.length === 0 ? (
-                <div className="bg-white/80 backdrop-blur-sm border border-dashed border-purple-200 rounded-2xl p-12 text-center">
-                  <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-purple-100 to-violet-100 flex items-center justify-center mx-auto mb-4">
-                    <Gift className="w-8 h-8 text-purple-400" />
+                <div className="bg-white/80 backdrop-blur-sm border border-dashed border-teal-200 rounded-2xl p-12 text-center">
+                  <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-teal-100 to-emerald-100 flex items-center justify-center mx-auto mb-4">
+                    <Gift className="w-8 h-8 text-teal-400" />
                   </div>
                   <p className="text-slate-600 font-medium">Нет бонусных программ</p>
                   <p className="text-sm text-slate-400 mt-1">Создайте первую программу для начала работы</p>
