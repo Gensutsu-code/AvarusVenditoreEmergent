@@ -85,11 +85,21 @@ export const Header = () => {
                     <NavLink to="/admin/profile" data-testid="admin-profile-link">
                       <User className="w-4 h-4" />
                     </NavLink>
+                    {/* Theme Toggle for Admin */}
+                    <motion.button
+                      onClick={toggleTheme}
+                      className={`p-2 rounded-xl transition-all duration-300 ${isDark ? 'text-zinc-400 hover:text-yellow-400 hover:bg-yellow-500/10' : 'text-slate-500 hover:text-slate-700 hover:bg-slate-200/50'}`}
+                      whileHover={{ scale: 1.05, rotate: 15 }}
+                      whileTap={{ scale: 0.95 }}
+                      data-testid="admin-theme-toggle"
+                    >
+                      {isDark ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
+                    </motion.button>
                     <Button 
                       variant="ghost" 
                       size="sm" 
                       onClick={logout}
-                      className="text-zinc-400 hover:text-red-400 hover:bg-red-500/10 rounded-xl transition-all duration-300"
+                      className={`rounded-xl transition-all duration-300 ${isDark ? 'text-zinc-400 hover:text-red-400 hover:bg-red-500/10' : 'text-slate-500 hover:text-red-500 hover:bg-red-100'}`}
                       data-testid="logout-button"
                     >
                       <LogOut className="w-4 h-4" />
