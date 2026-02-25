@@ -116,14 +116,14 @@ export default function CryptoSettingsTab() {
     <div className="space-y-6" data-testid="crypto-settings-tab">
       {/* Settings Section */}
       <div className="bg-white rounded-xl border border-zinc-200 shadow-sm overflow-hidden">
-        <div className="bg-gradient-to-r from-amber-500 to-amber-600 px-6 py-4">
+        <div className="bg-gradient-to-r from-teal-500 to-emerald-500 px-6 py-4">
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 bg-white/20 rounded-full flex items-center justify-center">
               <Settings className="w-5 h-5 text-white" />
             </div>
             <div>
               <h2 className="text-lg font-bold text-white">Настройки криптоплатежей</h2>
-              <p className="text-amber-100 text-sm">USDT/USDC на BSC, Base, Polygon</p>
+              <p className="text-teal-100 text-sm">USDT/USDC на BSC, Base, Polygon</p>
             </div>
           </div>
         </div>
