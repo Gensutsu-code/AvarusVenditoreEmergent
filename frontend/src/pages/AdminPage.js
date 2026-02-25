@@ -1918,7 +1918,7 @@ export default function AdminPage() {
                           <div
                             className={`max-w-[70%] px-3 py-2 rounded-lg text-sm relative ${
                               msg.sender_type === 'admin'
-                                ? 'bg-orange-500 text-white'
+                                ? 'bg-teal-500 text-white'
                                 : 'bg-white border border-zinc-200'
                             }`}
                           >
