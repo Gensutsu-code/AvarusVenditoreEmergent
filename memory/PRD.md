@@ -1,50 +1,49 @@
 # PRD - E-commerce Platform "AVOPT.STORE"
 
 ## Original Problem Statement
-E-commerce platform for truck spare parts with full admin panel restructuring.
+E-commerce platform for truck spare parts with full admin panel restructuring and glassmorphism design.
 
 ## What's Been Implemented
 
 ### December 2025 - Latest Session
 
-#### Promo Banner Improvements (COMPLETED)
-- ✅ Moved banner to LEFT side of header (next to logo)
-- ✅ Banner now expands LEFT-TO-RIGHT with smooth spring animation
-- ✅ Collapse animation with rotating sparkle icon
-- ✅ Beautiful new design with shadow and sparkle icon
-- ✅ X button no longer redirects - just collapses banner
-- ✅ Banner state persisted in sessionStorage
+#### Admin Panel Restructuring (COMPLETED ✅)
+Merged tabs into 4 main categories + 2 separate pages:
 
-#### Theme Colors Update (COMPLETED)
-- ✅ Removed orange from light theme
-- ✅ Light theme now uses TEAL/EMERALD colors:
-  - Primary: teal-500 to emerald-500
-  - Accents: teal-600
-  - Focus rings: teal-400
-- ✅ Dark theme keeps orange accents
+**New Tab Structure:**
+1. **Каталог** - Products and categories management
+2. **Бонусы** - Bonus programs  
+3. **Платежи** (NEW) - Combines:
+   - Способы оплаты (card, cash, crypto, balance)
+   - Предоплата (prepayment settings)
+   - Криптовалюта (crypto wallets)
+4. **CRM** (NEW) - Combines:
+   - Клиенты (users list with status)
+   - Аналитика (statistics)
+5. **Маркетинг** (NEW) - Combines:
+   - Акции и баннер
+   - Новости
+   - Рассылки
+6. **Настройки** (NEW) - Combines:
+   - Telegram
+   - Импорт/Экспорт
+   - Партнёры
+   - Правила
 
-#### Admin Panel Restructuring (IN PROGRESS)
-- ✅ Created AdminChatsPage.js - separate page for chats
-- ✅ Added /admin/chats route
-- ✅ Added "Чаты" link in admin navigation
-- ✅ Orders already on separate page (/admin/orders)
+**Separate Pages:**
+- `/admin/orders` - Orders management
+- `/admin/chats` - Chat with customers (NEW)
 
-**New Admin Navigation:**
-- Панель (main admin)
-- Заказы (orders - separate page)
-- Чаты (chats - new separate page)
-- Профиль
+#### Admin Panel Dark Theme (COMPLETED ✅)
+- Admin page now supports dark/light themes
+- Dark background with glassmorphism tabs container
+- Orange gradient title in dark mode
 
-**Tab Structure to implement:**
-1. **Payments** = Payment methods + Prepayment + Crypto wallets
-2. **CRM** = Clients list + Analytics
-3. **Marketing** = Promo banner + News + Newsletters
-4. **Settings** = Telegram + Import/Export + Partners + Terms
-
-#### Previous Session Work
-- Theme switching (dark/light)
-- Glassmorphism redesign for user pages
-- Bug fixes (banner save, bonus system)
+#### Previous Work (COMPLETED)
+- Promo banner moved to header left side
+- Banner expands left-to-right with spring animation
+- Light theme uses teal/emerald instead of orange
+- Theme toggle in all pages
 
 ## Tech Stack
 - **Frontend**: React, TailwindCSS, Shadcn/UI, Framer Motion
@@ -52,20 +51,23 @@ E-commerce platform for truck spare parts with full admin panel restructuring.
 - **Database**: MongoDB
 
 ## Key Files
-- `/app/frontend/src/components/HeaderPromoBanner.js` - Banner with animations
-- `/app/frontend/src/pages/AdminChatsPage.js` - New chat page
-- `/app/frontend/src/components/Header.js` - Navigation with chat link
-- `/app/frontend/src/index.css` - Theme styles (teal for light)
+- `/app/frontend/src/pages/AdminPage.js` - Restructured admin
+- `/app/frontend/src/pages/AdminChatsPage.js` - Chats page
+- `/app/frontend/src/components/admin/PaymentsTab.js` - Combined payments
+- `/app/frontend/src/components/admin/CRMTab.js` - Combined CRM
+- `/app/frontend/src/components/admin/MarketingTab.js` - Combined marketing
+- `/app/frontend/src/components/admin/SettingsTab.js` - Combined settings
 
 ## Prioritized Backlog
 
 ### P0 (High Priority)
-- [ ] Complete AdminPage tab restructuring (merge tabs into Payments, CRM, Marketing, Settings)
-- [ ] Apply glassmorphism design to AdminPage
+- [x] Admin panel restructuring ✅
+- [x] Admin dark theme support ✅
+- [ ] Apply full glassmorphism to admin tab contents
 
 ### P1 (Medium Priority)  
 - [ ] ProductPage redesign
-- [ ] More animations throughout
+- [ ] Admin mobile responsiveness
 
 ### P2 (Future)
 - [ ] Real payment integration
@@ -76,15 +78,7 @@ E-commerce platform for truck spare parts with full admin panel restructuring.
 - **Admin**: admin@avarus.ru / admin
 
 ## Routes
-- `/` - Home
-- `/catalog` - Products
-- `/cart` - Cart
-- `/checkout` - Checkout
-- `/login` - Login
-- `/register` - Register
-- `/account` - User profile
-- `/bonus` - Bonus programs
-- `/admin` - Admin panel
-- `/admin/orders` - Orders management
-- `/admin/chats` - Chat with customers (NEW)
+- `/admin` - Admin panel (restructured tabs)
+- `/admin/orders` - Orders management (separate page)
+- `/admin/chats` - Chat with customers (NEW separate page)
 - `/admin/profile` - Admin profile
