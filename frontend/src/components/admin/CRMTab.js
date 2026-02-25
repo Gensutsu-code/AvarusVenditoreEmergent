@@ -1,0 +1,214 @@
+import { useState } from 'react';
+import { Users, BarChart3, TrendingUp, Calendar, UserCheck, UserX } from 'lucide-react';
+import { Button } from '../../components/ui/button';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../../components/ui/select';
+import { motion } from 'framer-motion';
+
+// Sub-tab component for CRM section (Analytics + Clients)
+export const CRMTab = ({
+  users,
+  stats,
+  extendedStats,
+  statsPeriod,
+  setStatsPeriod,
+  formatPrice,
+  isDark = false
+}) => {
+  const [activeSubTab, setActiveSubTab] = useState('clients');
+
+  const subTabs = [
+    { id: 'clients', label: 'Клиенты', icon: Users },
+    { id: 'analytics', label: 'Аналитика', icon: BarChart3 },
+  ];
+
+  // Customer status colors
+  const getStatusColor = (status) => {
+    switch (status) {
+      case 'vip': return 'bg-purple-100 text-purple-700';
+      case 'wholesale': return 'bg-blue-100 text-blue-700';
+      default: return 'bg-zinc-100 text-zinc-700';
+    }
+  };
+
+  const getStatusLabel = (status) => {
+    switch (status) {
+      case 'vip': return 'VIP';
+      case 'wholesale': return 'Оптовик';
+      default: return 'Розница';
+    }
+  };
+
+  return (
+    <div className="space-y-6">
+      {/* Sub-tabs */}
+      <div className="flex gap-2 border-b border-zinc-200 pb-4">
+        {subTabs.map((tab) => {
+          const Icon = tab.icon;
+          return (
+            <button
+              key={tab.id}
+              onClick={() => setActiveSubTab(tab.id)}
+              className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all ${
+                activeSubTab === tab.id
+                  ? 'bg-orange-500 text-white'
+                  : 'bg-zinc-100 text-zinc-600 hover:bg-zinc-200'
+              }`}
+            >
+              <Icon className="w-4 h-4" />
+              {tab.label}
+              {tab.id === 'clients' && (
+                <span className="ml-1 text-xs bg-white/20 px-1.5 py-0.5 rounded-full">
+                  {users.length}
+                </span>
+              )}
+            </button>
+          );
+        })}
+      </div>
+
+      {/* Clients List */}
+      {activeSubTab === 'clients' && (
+        <motion.div
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="space-y-4"
+        >
+          {/* Summary cards */}
+          <div className="grid grid-cols-3 gap-4 mb-6">
+            <div className="p-4 bg-green-50 border border-green-100 rounded-xl">
+              <div className="flex items-center gap-2 text-green-600 mb-1">
+                <UserCheck className="w-4 h-4" />
+                <span className="text-xs font-medium">Активные</span>
+              </div>
+              <p className="text-2xl font-bold text-green-700">{users.filter(u => u.role !== 'admin').length}</p>
+            </div>
+            <div className="p-4 bg-purple-50 border border-purple-100 rounded-xl">
+              <div className="flex items-center gap-2 text-purple-600 mb-1">
+                <TrendingUp className="w-4 h-4" />
+                <span className="text-xs font-medium">VIP</span>
+              </div>
+              <p className="text-2xl font-bold text-purple-700">{users.filter(u => u.customer_status === 'vip').length}</p>
+            </div>
+            <div className="p-4 bg-blue-50 border border-blue-100 rounded-xl">
+              <div className="flex items-center gap-2 text-blue-600 mb-1">
+                <Users className="w-4 h-4" />
+                <span className="text-xs font-medium">Оптовики</span>
+              </div>
+              <p className="text-2xl font-bold text-blue-700">{users.filter(u => u.customer_status === 'wholesale').length}</p>
+            </div>
+          </div>
+
+          {/* Users table */}
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="bg-zinc-50 border-b border-zinc-200">
+                  <th className="text-left py-3 px-4 font-medium text-zinc-600">Клиент</th>
+                  <th className="text-left py-3 px-4 font-medium text-zinc-600">Email</th>
+                  <th className="text-left py-3 px-4 font-medium text-zinc-600">Телефон</th>
+                  <th className="text-left py-3 px-4 font-medium text-zinc-600">Статус</th>
+                  <th className="text-left py-3 px-4 font-medium text-zinc-600">Баланс</th>
+                  <th className="text-left py-3 px-4 font-medium text-zinc-600">Регистрация</th>
+                </tr>
+              </thead>
+              <tbody>
+                {users.filter(u => u.role !== 'admin').map((user) => (
+                  <tr key={user.id} className="border-b border-zinc-100 hover:bg-zinc-50 transition-colors">
+                    <td className="py-3 px-4">
+                      <div className="flex items-center gap-3">
+                        <div className="w-8 h-8 bg-orange-100 rounded-full flex items-center justify-center text-orange-600 font-medium">
+                          {user.name?.charAt(0)?.toUpperCase() || 'U'}
+                        </div>
+                        <span className="font-medium">{user.name || 'Без имени'}</span>
+                      </div>
+                    </td>
+                    <td className="py-3 px-4 text-zinc-600">{user.email}</td>
+                    <td className="py-3 px-4 text-zinc-600">{user.phone || '—'}</td>
+                    <td className="py-3 px-4">
+                      <span className={`text-xs px-2 py-1 rounded-full font-medium ${getStatusColor(user.customer_status)}`}>
+                        {getStatusLabel(user.customer_status)}
+                      </span>
+                    </td>
+                    <td className="py-3 px-4 font-medium">{formatPrice(user.balance || 0)} ₽</td>
+                    <td className="py-3 px-4 text-zinc-500 text-xs">
+                      {user.created_at ? new Date(user.created_at).toLocaleDateString('ru-RU') : '—'}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </motion.div>
+      )}
+
+      {/* Analytics */}
+      {activeSubTab === 'analytics' && (
+        <motion.div
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="space-y-6"
+        >
+          {/* Period selector */}
+          <div className="flex items-center gap-3">
+            <Calendar className="w-5 h-5 text-zinc-400" />
+            <Select value={statsPeriod} onValueChange={setStatsPeriod}>
+              <SelectTrigger className="w-48">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="today">Сегодня</SelectItem>
+                <SelectItem value="week">Неделя</SelectItem>
+                <SelectItem value="month">Месяц</SelectItem>
+                <SelectItem value="year">Год</SelectItem>
+                <SelectItem value="all">Всё время</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+
+          {/* Stats cards */}
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+            <div className="p-5 bg-gradient-to-br from-blue-500 to-blue-600 rounded-xl text-white">
+              <p className="text-blue-100 text-sm">Заказов</p>
+              <p className="text-3xl font-bold mt-1">{extendedStats?.orders_count || 0}</p>
+            </div>
+            <div className="p-5 bg-gradient-to-br from-green-500 to-green-600 rounded-xl text-white">
+              <p className="text-green-100 text-sm">Выручка</p>
+              <p className="text-2xl font-bold mt-1">{formatPrice(extendedStats?.revenue || 0)} ₽</p>
+            </div>
+            <div className="p-5 bg-gradient-to-br from-purple-500 to-purple-600 rounded-xl text-white">
+              <p className="text-purple-100 text-sm">Средний чек</p>
+              <p className="text-2xl font-bold mt-1">{formatPrice(extendedStats?.avg_order || 0)} ₽</p>
+            </div>
+            <div className="p-5 bg-gradient-to-br from-orange-500 to-orange-600 rounded-xl text-white">
+              <p className="text-orange-100 text-sm">Новых клиентов</p>
+              <p className="text-3xl font-bold mt-1">{extendedStats?.new_users || 0}</p>
+            </div>
+          </div>
+
+          {/* Top products */}
+          {extendedStats?.top_products && extendedStats.top_products.length > 0 && (
+            <div className="p-5 border border-zinc-200 rounded-xl bg-white">
+              <h3 className="font-semibold mb-4 flex items-center gap-2">
+                <TrendingUp className="w-5 h-5 text-orange-500" />
+                Топ товаров
+              </h3>
+              <div className="space-y-3">
+                {extendedStats.top_products.slice(0, 5).map((product, index) => (
+                  <div key={product.id} className="flex items-center gap-3">
+                    <span className="w-6 h-6 bg-orange-100 rounded-full flex items-center justify-center text-xs font-bold text-orange-600">
+                      {index + 1}
+                    </span>
+                    <span className="flex-1 truncate">{product.name}</span>
+                    <span className="font-medium">{product.sold} шт.</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+        </motion.div>
+      )}
+    </div>
+  );
+};
+
+export default CRMTab;
