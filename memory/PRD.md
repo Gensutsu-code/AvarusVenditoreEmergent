@@ -1,159 +1,127 @@
-# AVOPT.STORE - E-Commerce Platform for Heavy Vehicle Parts
+# PRD - E-commerce Platform "AVOPT.STORE"
 
 ## Original Problem Statement
-E-commerce platform for selling heavy vehicle parts with:
-- Product catalog with categories
-- Shopping cart and checkout
+E-commerce platform for truck spare parts with:
+- Product catalog with search and filters
 - User authentication and profiles
-- Admin panel for managing products, orders, users
-- Bonus programs
-- Chat support with Telegram integration
-- Multiple payment methods with configurable price adjustments
-- Glassmorphism UI redesign
+- Shopping cart and checkout
+- Order management
+- Admin panel for products, orders, users management
+- Mock prepayment/balance system
+- Cryptocurrency payment system (MetaMask)
+- Full site redesign with glassmorphism aesthetic
+- Theme switching (dark/light)
 
-## Architecture
+## User Personas
+1. **Customers** - Browse products, place orders, manage account balance
+2. **Administrators** - Manage products, orders, users, payment settings
 
-### Backend (FastAPI + MongoDB)
-```
-/app/backend/
-├── server.py           # Main entry point
-├── database.py         # MongoDB connection
-├── models.py           # Pydantic models
-├── routes/             # API routes
-│   ├── crypto_payments.py  # MetaMask crypto payment system
-│   ├── balance.py          # Balance/prepayment system
-│   ├── orders.py           # Orders with cancel/return to cart
-│   ├── settings.py         # Payment adjustments (+/- %)
-│   └── ...
-```
+## Core Requirements
 
-### Frontend (React + Framer Motion)
-```
-/app/frontend/src/
-├── pages/              # Glassmorphism redesigned pages
-│   ├── HomePage.js     # ✅ Redesigned
-│   ├── LoginPage.js    # ✅ Redesigned
-│   ├── CartPage.js     # ✅ Redesigned
-│   ├── CatalogPage.js  # ✅ Partially redesigned
-│   ├── CheckoutPage.js # ⏳ Needs completion
-│   └── AdminPage.js    # ⏳ Needs restructuring
-├── components/
-│   ├── Header.js       # ✅ Redesigned
-│   ├── ProductCard.js  # ✅ Redesigned
-│   ├── PopularProducts.js # ✅ Redesigned
-│   └── ...
-```
+### User-Facing Features
+- [x] Product catalog with search, filters, categories
+- [x] User registration and authentication
+- [x] Shopping cart functionality
+- [x] Checkout with multiple payment methods
+- [x] User profile management
+- [x] Balance/prepayment system
+- [x] Cryptocurrency payments (MetaMask)
+- [x] Order tracking
+- [x] Notifications
+
+### Admin Features
+- [x] Product CRUD operations
+- [x] Order management
+- [x] User management
+- [x] Payment settings (adjustments/discounts)
+- [x] Crypto wallet settings
+- [x] Analytics dashboard
 
 ## What's Been Implemented
 
-### Session: February 24, 2026
+### December 2025 - Session Updates:
 
-#### Functional Improvements (COMPLETED)
-1. **Payment Method Price Adjustments**
-   - Changed from "discounts only" to full +/- price adjustments
-   - Negative value = discount (e.g., -10% for cash)
-   - Positive value = surcharge (e.g., +10% for card)
-   - All configurable in admin panel
-
-2. **Order Cancellation and Cart Return**
-   - Unpaid orders can be cancelled
-   - Items automatically return to cart
-   - Stock is restored
-   - API: `POST /api/orders/{id}/cancel`
-
-3. **Notification Counter Fix**
-   - Clicking individual notification marks it as read
-   - Counter decreases immediately
-   - API: `PUT /api/my-notifications/{id}/read`
-
-4. **Crypto Payment Markup (+3%)**
-   - Returned configurable markup to crypto conversion
-   - Adjustable in admin panel
+#### Theme Switching Feature (COMPLETED)
+- Created ThemeContext for managing dark/light themes
+- Added theme toggle button in Header (Sun/Moon icons)
+- Implemented localStorage persistence for theme preference
+- **Light theme colors** (as requested by user):
+  - Background gradient: RGB(224,255,255) → RGB(255,192,203) → RGB(240,255,255)
+  - Primary accents: Green (green-500 to emerald-600)
+  - Text: slate-800
+  - Cards: white/60 with cyan borders
+- **Dark theme colors**:
+  - Background: zinc-950
+  - Primary accents: Orange (orange-500 to orange-600)
+  - Text: zinc-100
+  - Cards: zinc-900/60 with white/10 borders
+- CSS variables properly configured for both themes
+- Glassmorphism effects work in both themes
 
 #### Glassmorphism Redesign (IN PROGRESS)
+Completed pages:
+- [x] HomePage - Hero section, features, about
+- [x] LoginPage - Glass card, gradient background
+- [x] RegisterPage - Glass card, animations
+- [x] CatalogPage - Product cards, filters
+- [x] CartPage - Item list, summary
+- [x] CheckoutPage - Form, payment methods, summary
+- [x] AccountPage - Profile, balance, security
 
-**Completed:**
-- Header.js - Dark theme with gradient logo, framer-motion animations
-- HomePage.js - Full glassmorphism with animated hero section
-- LoginPage.js - Glass card with animated background
-- CartPage.js - Glass cards with motion animations
-- ProductCard.js - Glass effect with hover animations
-- PopularProducts.js - Grid with glass cards
-- CatalogPage.js - Partial update (search, categories)
-- tailwind.config.js - Extended with glass utilities, keyframes
-- index.css - Glassmorphism utility classes, dark theme variables
+Remaining pages:
+- [ ] AdminPage and all admin tabs
+- [ ] ProductPage (single product view)
 
-**Pending:**
-- CheckoutPage.js - Full redesign
-- AccountPage.js - Full redesign
-- AdminPage.js - Full restructuring + redesign
-- RegisterPage.js - Full redesign
-- OrdersPage.js - Full redesign
+#### Previous Session Completions:
+- Mock prepayment system (user balance top-up)
+- Cryptocurrency payment system (MetaMask modal)
+- Order cancellation with cart restoration
+- Payment method adjustments (surcharges/discounts)
+- Notification counter fix
 
-**Admin Panel Restructuring (PENDING):**
-- "Оплата" + "Крипто" → "Платежи"
-- "Аналитика" + "Клиенты" → "CRM"
-- "Акции" + "Новости" + "Рассылки" → "Маркетинг"
-- "TG" + "Импорт" + "Партнеры" + "Правила" → "Настройки"
-- Orders → separate page
-- Chats → separate page
+## Tech Stack
+- **Frontend**: React, TailwindCSS, Shadcn/UI, Framer Motion
+- **Backend**: FastAPI, Python
+- **Database**: MongoDB
+- **Auth**: JWT
+
+## Key Files
+- `/app/frontend/src/context/ThemeContext.js` - Theme management
+- `/app/frontend/src/components/Header.js` - Navigation with theme toggle
+- `/app/frontend/src/index.css` - Theme CSS variables and glassmorphism styles
+- `/app/frontend/tailwind.config.js` - Tailwind theme configuration
+
+## Mocked Features
+- **Prepayment system** - Simulates balance top-up (card/crypto)
+- **Crypto payments** - MetaMask flow without real transactions
+
+## Prioritized Backlog
+
+### P0 (High Priority)
+- [ ] Complete AdminPage glassmorphism redesign
+- [ ] Admin panel restructuring (merge tabs as requested)
+
+### P1 (Medium Priority)
+- [ ] ProductPage redesign
+- [ ] More animations on page transitions
+- [ ] Mobile responsiveness improvements
+
+### P2 (Future)
+- [ ] Real payment integration (Stripe/YooKassa)
+- [ ] Real crypto payment processing
+- [ ] Email notifications (Resend integration ready)
 
 ## Test Credentials
-- **Admin:** admin@avarus.ru / admin123
-- **User:** test@example.com / password123
+- **User**: newtest@example.com / password123
+- **Admin**: admin@avarus.ru / admin
 
-## Current Payment Settings
-- **Cash:** Adjustable (default -15%)
-- **Card:** Adjustable (default 0%)
-- **Crypto:** Adjustable (default -20%)
-- **Balance:** Adjustable (default 0%)
-- **Crypto Markup:** 3% (configurable)
-
-## Preview URL
-https://crypto-checkout-flow.preview.emergentagent.com
-
-## Design System
-
-### Color Palette (Dark Glassmorphism)
-- Background: zinc-950 (#09090b)
-- Primary: orange-500 (#f97316) to orange-600
-- Glass: white/5 to white/10 with backdrop-blur-xl
-- Text: zinc-100 (primary), zinc-400 (secondary), zinc-500 (muted)
-- Borders: white/10
-
-### Components
-- Buttons: Gradient with shadow-glow, rounded-xl
-- Cards: glass-card class (bg-zinc-900/60 backdrop-blur-xl border-white/10)
-- Inputs: bg-zinc-800/50 border-zinc-700/50 rounded-xl
-- Animations: framer-motion for all interactions
-
-## Pending Tasks
-
-### P0 - Critical (Continue Next Session)
-1. **Complete Glassmorphism Redesign**
-   - CheckoutPage.js
-   - AccountPage.js  
-   - RegisterPage.js
-   - OrdersPage.js
-   - All remaining components
-
-2. **Admin Panel Restructuring**
-   - Merge tabs as specified
-   - Create separate Orders page
-   - Create separate Chats page
-   - Apply glassmorphism to admin UI
-
-### P1 - Important
-3. **YooKassa Payment Return Handling**
-   - Handle incomplete card payments
-   - Return items to cart if payment not completed
-
-### P2 - Future
-4. **Real Payment Gateway Integration** - Stripe
-5. **Multi-language support**
-
-## Technical Notes
-- framer-motion installed for animations
-- Glassmorphism CSS variables configured in index.css
-- Dark theme foundation ready
-- tailwind.config.js extended with custom animations and colors
+## API Endpoints Reference
+- `POST /api/auth/login` - User login
+- `POST /api/auth/register` - User registration
+- `GET/PUT /api/auth/profile` - Profile management
+- `GET/POST /api/user/balance` - Balance operations
+- `GET /api/products` - Product listing
+- `POST /api/orders` - Create order
+- `POST /api/orders/{id}/cancel` - Cancel order
+- `GET/POST /api/admin/payment-settings` - Payment configuration
+- `GET/POST /api/admin/crypto-settings` - Crypto wallet settings
