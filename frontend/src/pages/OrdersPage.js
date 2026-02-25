@@ -3,10 +3,11 @@ import { Link, useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import { 
   Package, ChevronDown, ChevronUp, TrendingUp, ShoppingBag, 
-  DollarSign, BarChart3, Star, ArrowLeft, Wallet, Award, CalendarDays
+  Wallet, BarChart3, Star, CalendarDays
 } from 'lucide-react';
 import { Button } from '../components/ui/button';
 import { useAuth } from '../context/AuthContext';
+import { motion, AnimatePresence } from 'framer-motion';
 
 const API = `${process.env.REACT_APP_BACKEND_URL}/api`;
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
@@ -20,11 +21,11 @@ const STATUS_LABELS = {
 };
 
 const STATUS_COLORS = {
-  pending: 'bg-yellow-100 text-yellow-800',
-  processing: 'bg-blue-100 text-blue-800',
-  shipped: 'bg-purple-100 text-purple-800',
-  delivered: 'bg-green-100 text-green-800',
-  cancelled: 'bg-red-100 text-red-800'
+  pending: 'bg-amber-100 text-amber-700',
+  processing: 'bg-blue-100 text-blue-700',
+  shipped: 'bg-purple-100 text-purple-700',
+  delivered: 'bg-emerald-100 text-emerald-700',
+  cancelled: 'bg-red-100 text-red-700'
 };
 
 export default function OrdersPage() {
@@ -36,9 +37,7 @@ export default function OrdersPage() {
   const [expandedOrders, setExpandedOrders] = useState({});
 
   useEffect(() => {
-    // Wait for auth loading to complete
     if (authLoading) return;
-    
     if (!user) {
       navigate('/login');
       return;
@@ -68,9 +67,7 @@ export default function OrdersPage() {
     }));
   };
 
-  const formatPrice = (price) => {
-    return new Intl.NumberFormat('ru-RU').format(price);
-  };
+  const formatPrice = (price) => new Intl.NumberFormat('ru-RU').format(price);
 
   const formatDate = (dateStr) => {
     return new Date(dateStr).toLocaleDateString('ru-RU', {
@@ -89,34 +86,76 @@ export default function OrdersPage() {
   if (!user) return null;
 
   return (
-    <div className="min-h-screen bg-zinc-50" data-testid="orders-page">
-      <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+    <div className="min-h-screen relative" data-testid="orders-page">
+      {/* Background effects */}
+      <div className="fixed inset-0 overflow-hidden pointer-events-none">
+        <motion.div 
+          className="absolute top-20 right-20 w-96 h-96 rounded-full bg-teal-400/20 blur-3xl"
+          animate={{ scale: [1, 1.2, 1], opacity: [0.2, 0.4, 0.2] }}
+          transition={{ duration: 8, repeat: Infinity }}
+        />
+        <motion.div 
+          className="absolute bottom-20 left-20 w-80 h-80 rounded-full bg-emerald-400/20 blur-3xl"
+          animate={{ scale: [1.2, 1, 1.2], opacity: [0.2, 0.4, 0.2] }}
+          transition={{ duration: 10, repeat: Infinity }}
+        />
+      </div>
+
+      <div className="relative max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Header */}
-        <div className="mb-8">
-          <h1 className="text-2xl md:text-3xl font-bold tracking-tight uppercase text-zinc-900">
-            Мои заказы
-          </h1>
-        </div>
+        <motion.div 
+          className="flex items-center gap-4 mb-8"
+          initial={{ opacity: 0, y: -20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.5 }}
+        >
+          <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-teal-400 to-emerald-500 flex items-center justify-center shadow-lg shadow-teal-500/30">
+            <Package className="w-6 h-6 text-white" />
+          </div>
+          <div>
+            <h1 className="text-2xl md:text-3xl font-bold tracking-tight text-slate-800">
+              Мои заказы
+            </h1>
+            <p className="text-sm text-slate-500">
+              {orders.length > 0 ? `${orders.length} заказов` : 'История покупок'}
+            </p>
+          </div>
+        </motion.div>
 
         {loading ? (
-          <div className="text-center py-12 text-zinc-500">Загрузка...</div>
+          <div className="text-center py-12">
+            <div className="w-10 h-10 border-3 border-teal-500/30 border-t-teal-500 rounded-full animate-spin mx-auto mb-4"></div>
+            <p className="text-slate-500">Загрузка...</p>
+          </div>
         ) : orders.length === 0 ? (
-          <div className="text-center py-16 border border-zinc-200 bg-white" data-testid="no-orders">
-            <Package className="w-16 h-16 mx-auto text-zinc-300 mb-4" />
-            <p className="text-zinc-500 text-lg mb-4">У вас пока нет заказов</p>
+          <motion.div 
+            className="text-center py-16 glass-card"
+            initial={{ opacity: 0, scale: 0.9 }}
+            animate={{ opacity: 1, scale: 1 }}
+            transition={{ duration: 0.5 }}
+            data-testid="no-orders"
+          >
+            <Package className="w-20 h-20 mx-auto text-slate-300 mb-4" />
+            <p className="text-slate-500 text-lg mb-6">У вас пока нет заказов</p>
             <Link to="/catalog">
-              <Button className="bg-orange-500 hover:bg-orange-600">
+              <Button className="bg-gradient-to-r from-teal-500 to-emerald-500 hover:from-teal-600 hover:to-emerald-600 text-white shadow-lg shadow-teal-500/30 rounded-xl">
                 Перейти в каталог
               </Button>
             </Link>
-          </div>
+          </motion.div>
         ) : (
           <div className="space-y-6">
-            {/* Extended Statistics Summary */}
+            {/* Statistics Summary */}
             {stats && stats.total_orders > 0 && (
-              <div className="border border-zinc-200 bg-white" data-testid="orders-stats">
+              <motion.div 
+                className="glass-card overflow-hidden"
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.5 }}
+                data-testid="orders-stats"
+              >
                 {/* Stats Header */}
-                <div className="bg-gradient-to-r from-zinc-800 to-zinc-900 px-6 py-4">
+                <div className="bg-gradient-to-r from-teal-500 to-emerald-500 px-6 py-4">
                   <h2 className="text-white font-bold flex items-center gap-2">
                     <BarChart3 className="w-5 h-5" />
                     Статистика заказов
@@ -126,59 +165,37 @@ export default function OrdersPage() {
                 <div className="p-6">
                   {/* Main Stats Cards */}
                   <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
-                    <div className="bg-gradient-to-br from-orange-50 to-orange-100 p-4 rounded-lg">
-                      <ShoppingBag className="w-5 h-5 text-orange-500 mb-2" />
-                      <p className="text-2xl font-bold text-zinc-900">{stats.total_orders}</p>
-                      <p className="text-xs text-zinc-500">Всего заказов</p>
+                    <div className="bg-gradient-to-br from-teal-50 to-teal-100 p-4 rounded-xl border border-teal-200/50">
+                      <ShoppingBag className="w-5 h-5 text-teal-600 mb-2" />
+                      <p className="text-2xl font-bold text-slate-800">{stats.total_orders}</p>
+                      <p className="text-xs text-slate-500">Всего заказов</p>
                     </div>
-                    <div className="bg-gradient-to-br from-green-50 to-green-100 p-4 rounded-lg">
-                      <Wallet className="w-5 h-5 text-green-500 mb-2" />
-                      <p className="text-2xl font-bold text-zinc-900">{formatPrice(stats.total_spent)} ₽</p>
-                      <p className="text-xs text-zinc-500">Общая сумма</p>
+                    <div className="bg-gradient-to-br from-emerald-50 to-emerald-100 p-4 rounded-xl border border-emerald-200/50">
+                      <Wallet className="w-5 h-5 text-emerald-600 mb-2" />
+                      <p className="text-2xl font-bold text-slate-800">{formatPrice(stats.total_spent)} ₽</p>
+                      <p className="text-xs text-slate-500">Общая сумма</p>
                     </div>
-                    <div className="bg-gradient-to-br from-blue-50 to-blue-100 p-4 rounded-lg">
-                      <TrendingUp className="w-5 h-5 text-blue-500 mb-2" />
-                      <p className="text-2xl font-bold text-zinc-900">{formatPrice(stats.avg_order_value)} ₽</p>
-                      <p className="text-xs text-zinc-500">Средний чек</p>
+                    <div className="bg-gradient-to-br from-blue-50 to-blue-100 p-4 rounded-xl border border-blue-200/50">
+                      <TrendingUp className="w-5 h-5 text-blue-600 mb-2" />
+                      <p className="text-2xl font-bold text-slate-800">{formatPrice(stats.avg_order_value)} ₽</p>
+                      <p className="text-xs text-slate-500">Средний чек</p>
                     </div>
-                    <div className="bg-gradient-to-br from-purple-50 to-purple-100 p-4 rounded-lg">
-                      <Package className="w-5 h-5 text-purple-500 mb-2" />
-                      <p className="text-2xl font-bold text-zinc-900">{stats.total_items}</p>
-                      <p className="text-xs text-zinc-500">Товаров куплено</p>
+                    <div className="bg-gradient-to-br from-purple-50 to-purple-100 p-4 rounded-xl border border-purple-200/50">
+                      <Package className="w-5 h-5 text-purple-600 mb-2" />
+                      <p className="text-2xl font-bold text-slate-800">{stats.total_items}</p>
+                      <p className="text-xs text-slate-500">Товаров куплено</p>
                     </div>
                   </div>
                   
-                  {/* Secondary Stats */}
-                  <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
-                    <div className="bg-zinc-50 p-3 rounded-lg border border-zinc-100">
-                      <p className="text-xs text-zinc-400 mb-1">Доставлено</p>
-                      <p className="font-bold text-green-600">{formatPrice(stats.delivered_total || 0)} ₽</p>
-                    </div>
-                    <div className="bg-zinc-50 p-3 rounded-lg border border-zinc-100">
-                      <p className="text-xs text-zinc-400 mb-1">В работе</p>
-                      <p className="font-bold text-orange-600">{formatPrice(stats.pending_total || 0)} ₽</p>
-                    </div>
-                    <div className="bg-zinc-50 p-3 rounded-lg border border-zinc-100">
-                      <p className="text-xs text-zinc-400 mb-1">Видов товаров</p>
-                      <p className="font-bold text-zinc-700">{stats.total_products_types || 0}</p>
-                    </div>
-                    <div className="bg-zinc-50 p-3 rounded-lg border border-zinc-100">
-                      <p className="text-xs text-zinc-400 mb-1">Клиент с</p>
-                      <p className="font-bold text-zinc-700">
-                        {stats.first_order_date ? new Date(stats.first_order_date).toLocaleDateString('ru-RU', { month: 'short', year: 'numeric' }) : '—'}
-                      </p>
-                    </div>
-                  </div>
-
                   {/* Status breakdown */}
                   {Object.keys(stats.by_status || {}).length > 0 && (
                     <div className="mb-6">
-                      <p className="text-xs font-bold uppercase text-zinc-400 mb-2">По статусу</p>
+                      <p className="text-xs font-bold uppercase text-slate-400 mb-2">По статусу</p>
                       <div className="flex flex-wrap gap-2">
                         {Object.entries(stats.by_status).map(([status, count]) => (
                           <span 
                             key={status} 
-                            className={`px-3 py-1 text-xs font-bold ${STATUS_COLORS[status] || 'bg-zinc-100'}`}
+                            className={`px-3 py-1.5 text-xs font-bold rounded-lg ${STATUS_COLORS[status] || 'bg-slate-100 text-slate-700'}`}
                           >
                             {STATUS_LABELS[status] || status}: {count}
                           </span>
@@ -190,21 +207,21 @@ export default function OrdersPage() {
                   {/* Favorite Products */}
                   {stats.favorite_products && stats.favorite_products.length > 0 && (
                     <div className="mb-6">
-                      <p className="text-xs font-bold uppercase text-zinc-400 mb-3 flex items-center gap-1">
+                      <p className="text-xs font-bold uppercase text-slate-400 mb-3 flex items-center gap-1">
                         <Star className="w-3 h-3" /> Часто заказываемые товары
                       </p>
                       <div className="space-y-2">
                         {stats.favorite_products.slice(0, 3).map((product, idx) => (
-                          <div key={idx} className="flex items-center justify-between bg-zinc-50 p-2 rounded">
+                          <div key={idx} className="flex items-center justify-between bg-slate-50 p-3 rounded-xl border border-slate-100">
                             <div className="flex items-center gap-2">
-                              <span className="text-xs font-mono text-orange-500 bg-orange-50 px-1.5 py-0.5 rounded">
+                              <span className="text-xs font-mono text-teal-600 bg-teal-50 px-2 py-1 rounded-lg">
                                 {product.article}
                               </span>
-                              <span className="text-sm text-zinc-700 truncate max-w-[200px]">{product.name}</span>
+                              <span className="text-sm text-slate-700 truncate max-w-[200px]">{product.name}</span>
                             </div>
                             <div className="text-right">
-                              <span className="text-sm font-bold text-zinc-900">{product.count} шт.</span>
-                              <span className="text-xs text-zinc-400 ml-2">({formatPrice(product.total_spent)} ₽)</span>
+                              <span className="text-sm font-bold text-slate-800">{product.count} шт.</span>
+                              <span className="text-xs text-slate-400 ml-2">({formatPrice(product.total_spent)} ₽)</span>
                             </div>
                           </div>
                         ))}
@@ -215,22 +232,23 @@ export default function OrdersPage() {
                   {/* Monthly chart */}
                   {stats.by_month && stats.by_month.length > 0 && (
                     <div>
-                      <p className="text-xs font-bold uppercase text-zinc-400 mb-3 flex items-center gap-1">
+                      <p className="text-xs font-bold uppercase text-slate-400 mb-3 flex items-center gap-1">
                         <CalendarDays className="w-3 h-3" /> Динамика по месяцам
                       </p>
-                      <div className="flex items-end gap-1 sm:gap-2 h-28 bg-zinc-50 p-3 rounded-lg">
+                      <div className="flex items-end gap-2 h-28 bg-slate-50 p-4 rounded-xl border border-slate-100">
                         {stats.by_month.map((month, idx) => {
                           const maxTotal = Math.max(...stats.by_month.map(m => m.total));
                           const heightPercent = maxTotal > 0 ? (month.total / maxTotal) * 100 : 0;
                           return (
                             <div key={idx} className="flex-1 flex flex-col items-center">
-                              <p className="text-[9px] text-zinc-500 mb-1">{formatPrice(month.total)}</p>
-                              <div 
-                                className="w-full bg-gradient-to-t from-orange-500 to-orange-400 rounded-t transition-all hover:from-orange-600 hover:to-orange-500 cursor-pointer"
+                              <p className="text-[9px] text-slate-400 mb-1">{formatPrice(month.total)}</p>
+                              <motion.div 
+                                className="w-full bg-gradient-to-t from-teal-500 to-emerald-400 rounded-t-lg cursor-pointer"
                                 style={{ height: `${Math.max(heightPercent, 8)}%`, minHeight: '8px' }}
                                 title={`${month.orders} заказов на ${formatPrice(month.total)} ₽`}
+                                whileHover={{ scale: 1.05 }}
                               />
-                              <p className="text-[10px] text-zinc-400 mt-1">{formatMonth(month.month)}</p>
+                              <p className="text-[10px] text-slate-400 mt-1">{formatMonth(month.month)}</p>
                             </div>
                           );
                         })}
@@ -238,133 +256,149 @@ export default function OrdersPage() {
                     </div>
                   )}
                 </div>
-              </div>
+              </motion.div>
             )}
 
             {/* Orders List */}
             <div className="space-y-4" data-testid="orders-list">
-              {orders.map((order) => (
-                <div 
-                  key={order.id} 
-                  className="border border-zinc-200 bg-white overflow-hidden"
-                  data-testid={`order-${order.id}`}
-                >
-                  {/* Order header */}
-                  <div 
-                    className="flex flex-wrap items-center justify-between gap-4 p-4 bg-zinc-50 cursor-pointer hover:bg-zinc-100 transition-colors"
-                    onClick={() => toggleOrderExpanded(order.id)}
+              <AnimatePresence>
+                {orders.map((order, index) => (
+                  <motion.div 
+                    key={order.id} 
+                    className="glass-card overflow-hidden"
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ duration: 0.4, delay: index * 0.1 }}
+                    data-testid={`order-${order.id}`}
                   >
-                    <div className="flex items-center gap-4">
-                      <div>
-                        <p className="font-semibold text-zinc-900">
-                          Заказ #{order.id.slice(0, 8)}
-                        </p>
-                        <p className="text-sm text-zinc-500">
-                          {formatDate(order.created_at)}
-                        </p>
-                      </div>
-                    </div>
-                    <div className="flex items-center gap-4">
-                      <span className="font-mono font-semibold text-zinc-900">
-                        {formatPrice(order.total)} ₽
-                      </span>
-                      <span className={`px-3 py-1 text-xs font-bold uppercase ${STATUS_COLORS[order.status] || 'bg-zinc-100'}`}>
-                        {STATUS_LABELS[order.status] || order.status}
-                      </span>
-                      {expandedOrders[order.id] ? (
-                        <ChevronUp className="w-5 h-5 text-zinc-400" />
-                      ) : (
-                        <ChevronDown className="w-5 h-5 text-zinc-400" />
-                      )}
-                    </div>
-                  </div>
-
-                  {/* Expanded order details */}
-                  {expandedOrders[order.id] && (
-                    <div className="p-4 border-t border-zinc-200">
-                      {/* Delivery info */}
-                      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-4 text-sm">
+                    {/* Order header */}
+                    <div 
+                      className="flex flex-wrap items-center justify-between gap-4 p-4 cursor-pointer hover:bg-slate-50/50 transition-colors"
+                      onClick={() => toggleOrderExpanded(order.id)}
+                    >
+                      <div className="flex items-center gap-4">
                         <div>
-                          <p className="text-zinc-500 text-xs uppercase">Получатель</p>
-                          <p className="font-medium">{order.full_name}</p>
-                        </div>
-                        <div>
-                          <p className="text-zinc-500 text-xs uppercase">Телефон</p>
-                          <p className="font-medium">{order.phone}</p>
-                        </div>
-                        <div>
-                          <p className="text-zinc-500 text-xs uppercase">Адрес</p>
-                          <p className="font-medium">{order.address}</p>
+                          <p className="font-semibold text-slate-800">
+                            Заказ #{order.id.slice(0, 8)}
+                          </p>
+                          <p className="text-sm text-slate-500">
+                            {formatDate(order.created_at)}
+                          </p>
                         </div>
                       </div>
+                      <div className="flex items-center gap-4">
+                        <span className="font-mono font-bold text-teal-600 text-lg">
+                          {formatPrice(order.total)} ₽
+                        </span>
+                        <span className={`px-3 py-1.5 text-xs font-bold uppercase rounded-lg ${STATUS_COLORS[order.status] || 'bg-slate-100'}`}>
+                          {STATUS_LABELS[order.status] || order.status}
+                        </span>
+                        <motion.div
+                          animate={{ rotate: expandedOrders[order.id] ? 180 : 0 }}
+                          transition={{ duration: 0.3 }}
+                        >
+                          <ChevronDown className="w-5 h-5 text-slate-400" />
+                        </motion.div>
+                      </div>
+                    </div>
 
-                      {/* Order comment */}
-                      {order.comment && (
-                        <div className="mb-4 p-3 bg-amber-50 border border-amber-200 rounded-lg">
-                          <p className="text-amber-800 text-xs uppercase font-bold mb-1">Комментарий к заказу</p>
-                          <p className="text-amber-900 text-sm">{order.comment}</p>
-                        </div>
-                      )}
-
-                      {/* Order items with full details */}
-                      <div className="border border-zinc-200 divide-y divide-zinc-100">
-                        {order.items.map((item, idx) => (
-                          <div key={idx} className="flex gap-4 p-3">
-                            {/* Product image */}
-                            <div className="w-16 h-16 flex-shrink-0 bg-zinc-100 overflow-hidden">
-                              {item.image_url ? (
-                                <img 
-                                  src={item.image_url.startsWith('http') ? item.image_url : `${BACKEND_URL}${item.image_url}`} 
-                                  alt={item.name}
-                                  className="w-full h-full object-cover"
-                                />
-                              ) : (
-                                <div className="w-full h-full flex items-center justify-center text-zinc-300">
-                                  <Package className="w-6 h-6" />
-                                </div>
-                              )}
-                            </div>
-                            
-                            {/* Product info */}
-                            <div className="flex-1 min-w-0">
-                              <p className="font-medium text-zinc-900">{item.name}</p>
-                              <div className="flex flex-wrap gap-x-4 gap-y-1 mt-1">
-                                {item.manufacturer && (
-                                  <p className="text-sm font-semibold text-orange-600">{item.manufacturer}</p>
-                                )}
-                                {item.article && (
-                                  <p className="text-sm font-mono font-semibold text-zinc-600">Арт: {item.article}</p>
-                                )}
+                    {/* Expanded order details */}
+                    <AnimatePresence>
+                      {expandedOrders[order.id] && (
+                        <motion.div
+                          initial={{ height: 0, opacity: 0 }}
+                          animate={{ height: 'auto', opacity: 1 }}
+                          exit={{ height: 0, opacity: 0 }}
+                          transition={{ duration: 0.3 }}
+                          className="border-t border-slate-200/50"
+                        >
+                          <div className="p-4">
+                            {/* Delivery info */}
+                            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-4 text-sm">
+                              <div className="bg-slate-50 p-3 rounded-xl">
+                                <p className="text-slate-400 text-xs uppercase mb-1">Получатель</p>
+                                <p className="font-medium text-slate-800">{order.full_name}</p>
                               </div>
-                              <p className="text-sm text-zinc-500 mt-1">
-                                {formatPrice(item.price)} ₽ × {item.quantity} шт.
-                              </p>
+                              <div className="bg-slate-50 p-3 rounded-xl">
+                                <p className="text-slate-400 text-xs uppercase mb-1">Телефон</p>
+                                <p className="font-medium text-slate-800">{order.phone}</p>
+                              </div>
+                              <div className="bg-slate-50 p-3 rounded-xl">
+                                <p className="text-slate-400 text-xs uppercase mb-1">Адрес</p>
+                                <p className="font-medium text-slate-800">{order.address}</p>
+                              </div>
                             </div>
-                            
-                            {/* Item total */}
-                            <div className="text-right">
-                              <p className="font-mono font-semibold">
-                                {formatPrice(item.price * item.quantity)} ₽
-                              </p>
+
+                            {/* Order comment */}
+                            {order.comment && (
+                              <div className="mb-4 p-4 bg-amber-50 border border-amber-200 rounded-xl">
+                                <p className="text-amber-700 text-xs uppercase font-bold mb-1">Комментарий к заказу</p>
+                                <p className="text-amber-800 text-sm">{order.comment}</p>
+                              </div>
+                            )}
+
+                            {/* Order items */}
+                            <div className="border border-slate-200 rounded-xl divide-y divide-slate-100 overflow-hidden">
+                              {order.items.map((item, idx) => (
+                                <div key={idx} className="flex gap-4 p-4 bg-white">
+                                  {/* Product image */}
+                                  <div className="w-16 h-16 flex-shrink-0 bg-slate-100 rounded-xl overflow-hidden">
+                                    {item.image_url ? (
+                                      <img 
+                                        src={item.image_url.startsWith('http') ? item.image_url : `${BACKEND_URL}${item.image_url}`} 
+                                        alt={item.name}
+                                        className="w-full h-full object-cover"
+                                      />
+                                    ) : (
+                                      <div className="w-full h-full flex items-center justify-center text-slate-300">
+                                        <Package className="w-6 h-6" />
+                                      </div>
+                                    )}
+                                  </div>
+                                  
+                                  {/* Product info */}
+                                  <div className="flex-1 min-w-0">
+                                    <p className="font-medium text-slate-800">{item.name}</p>
+                                    <div className="flex flex-wrap gap-x-4 gap-y-1 mt-1">
+                                      {item.manufacturer && (
+                                        <p className="text-sm font-semibold text-teal-600">{item.manufacturer}</p>
+                                      )}
+                                      {item.article && (
+                                        <p className="text-sm font-mono text-slate-500">Арт: {item.article}</p>
+                                      )}
+                                    </div>
+                                    <p className="text-sm text-slate-400 mt-1">
+                                      {formatPrice(item.price)} ₽ × {item.quantity} шт.
+                                    </p>
+                                  </div>
+                                  
+                                  {/* Item total */}
+                                  <div className="text-right">
+                                    <p className="font-mono font-bold text-teal-600">
+                                      {formatPrice(item.price * item.quantity)} ₽
+                                    </p>
+                                  </div>
+                                </div>
+                              ))}
+                            </div>
+
+                            {/* Order total */}
+                            <div className="flex justify-between items-center mt-4 pt-4 border-t border-slate-200/50">
+                              <span className="text-slate-500 text-sm">Оплата: наличными при получении</span>
+                              <div className="text-right">
+                                <span className="text-sm text-slate-400">Итого: </span>
+                                <span className="font-mono text-2xl font-bold text-teal-600">
+                                  {formatPrice(order.total)} ₽
+                                </span>
+                              </div>
                             </div>
                           </div>
-                        ))}
-                      </div>
-
-                      {/* Order total */}
-                      <div className="flex justify-between items-center mt-4 pt-4 border-t border-zinc-200">
-                        <span className="text-zinc-500">Оплата: наличными при получении</span>
-                        <div className="text-right">
-                          <span className="text-sm text-zinc-500">Итого: </span>
-                          <span className="font-mono text-xl font-bold text-zinc-900">
-                            {formatPrice(order.total)} ₽
-                          </span>
-                        </div>
-                      </div>
-                    </div>
-                  )}
-                </div>
-              ))}
+                        </motion.div>
+                      )}
+                    </AnimatePresence>
+                  </motion.div>
+                ))}
+              </AnimatePresence>
             </div>
           </div>
         )}
