@@ -521,7 +521,7 @@ export default function CatalogPage() {
                 </span>
               )}
               {categoryId && currentCategory && (
-                <span className="inline-flex items-center gap-2 bg-zinc-800/50 border border-zinc-700/50 rounded-xl px-3 py-2 text-sm text-zinc-300">
+                <span className={`inline-flex items-center gap-2 rounded-xl px-3 py-2 text-sm ${isDark ? 'bg-zinc-800/50 border border-zinc-700/50 text-zinc-300' : 'bg-white/60 border border-cyan-200/50 text-slate-600'}`}>
                   {currentCategory.name}
                   <button onClick={clearFilters} className="hover:text-red-400">
                     <X className="w-4 h-4" />
@@ -535,17 +535,19 @@ export default function CatalogPage() {
         {/* Categories - show when no search/category selected */}
         {!searchQuery && !categoryId && categories.length > 0 && (
           <div className="mb-8">
-            <h2 className="text-lg font-semibold text-zinc-100 mb-4">Категории</h2>
+            <h2 className={`text-lg font-semibold mb-4 ${isDark ? 'text-zinc-100' : 'text-slate-800'}`}>Категории</h2>
             <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
               {categories.map((category) => (
-                <button
+                <motion.button
                   key={category.id}
                   onClick={() => selectCategory(category.id)}
-                  className="group glass-card hover:border-orange-500/30 transition-all duration-300 p-4 text-left"
+                  className={`group glass-card transition-all duration-300 p-4 text-left ${isDark ? 'hover:border-orange-500/30' : 'hover:border-teal-400/50'}`}
                   data-testid={`category-${category.id}`}
+                  whileHover={{ scale: 1.02 }}
+                  whileTap={{ scale: 0.98 }}
                 >
                   {category.image_url && (
-                    <div className="aspect-square bg-zinc-800/50 mb-3 overflow-hidden rounded-xl">
+                    <div className={`aspect-square mb-3 overflow-hidden rounded-xl ${isDark ? 'bg-zinc-800/50' : 'bg-slate-100'}`}>
                       <img 
                         src={category.image_url} 
                         alt={category.name}
@@ -553,11 +555,11 @@ export default function CatalogPage() {
                       />
                     </div>
                   )}
-                  <h3 className="font-medium text-zinc-100 group-hover:text-orange-400 transition-colors flex items-center justify-between">
+                  <h3 className={`font-medium transition-colors flex items-center justify-between ${isDark ? 'text-zinc-100 group-hover:text-orange-400' : 'text-slate-800 group-hover:text-teal-600'}`}>
                     {category.name}
                     <ArrowRight className="w-4 h-4 opacity-0 group-hover:opacity-100 transition-opacity" />
                   </h3>
-                </button>
+                </motion.button>
               ))}
             </div>
           </div>
@@ -566,20 +568,20 @@ export default function CatalogPage() {
         {/* Content */}
         {!searchQuery && !categoryId ? (
           <div className="text-center py-16" data-testid="search-prompt">
-            <Search className="w-16 h-16 mx-auto text-zinc-700 mb-4" />
-            <p className="text-zinc-400 text-lg">
+            <Search className={`w-16 h-16 mx-auto mb-4 ${isDark ? 'text-zinc-700' : 'text-slate-300'}`} />
+            <p className={isDark ? 'text-zinc-400' : 'text-slate-500'}>
               Введите название или артикул, либо выберите категорию
             </p>
           </div>
         ) : loading ? (
-          <div className="text-center py-12 text-zinc-400" data-testid="loading">
-            <div className="w-8 h-8 border-2 border-orange-500/30 border-t-orange-500 rounded-full animate-spin mx-auto mb-4"></div>
+          <div className={`text-center py-12 ${isDark ? 'text-zinc-400' : 'text-slate-500'}`} data-testid="loading">
+            <div className={`w-8 h-8 border-2 rounded-full animate-spin mx-auto mb-4 ${isDark ? 'border-orange-500/30 border-t-orange-500' : 'border-teal-500/30 border-t-teal-500'}`}></div>
             Загрузка...
           </div>
         ) : products.length === 0 && alternatives.length === 0 ? (
           <div className="text-center py-12" data-testid="no-products">
-            <p className="text-zinc-400 mb-4">Товары не найдены</p>
-            <Button onClick={clearFilters} variant="outline" className="border-zinc-700 text-zinc-300 hover:bg-zinc-800 rounded-xl">
+            <p className={`mb-4 ${isDark ? 'text-zinc-400' : 'text-slate-500'}`}>Товары не найдены</p>
+            <Button onClick={clearFilters} variant="outline" className={`rounded-xl ${isDark ? 'border-zinc-700 text-zinc-300 hover:bg-zinc-800' : 'border-slate-300 text-slate-600 hover:bg-slate-100'}`}>
               Сбросить фильтры
             </Button>
           </div>
