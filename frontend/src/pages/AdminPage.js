@@ -3184,6 +3184,11 @@ export default function AdminPage() {
 
           {/* Payment Settings Tab */}
           <TabsContent value="discounts">
+            <motion.div 
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.3, ease: "easeOut" }}
+            >
             <DiscountsTab
               paymentSettings={paymentSettings}
               setPaymentSettings={setPaymentSettings}
@@ -3195,13 +3200,19 @@ export default function AdminPage() {
               handleSaveCryptoWallets={handleSaveCryptoWallets}
               handleSavePrepaymentSettings={handleSavePrepaymentSettings}
             />
+            </motion.div>
           </TabsContent>
 
           {/* Partners Tab */}
 
           {/* News Tab */}
           <TabsContent value="news" className="p-6">
-            <div className="space-y-6">
+            <motion.div 
+              className="space-y-6"
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.3, ease: "easeOut" }}
+            >
               <div className="flex items-center justify-between">
                 <h2 className="text-lg font-semibold">Управление новостями</h2>
                 <Button onClick={() => { setEditingNews(null); setNewsForm({ title: '', content: '', image_url: '' }); document.getElementById('news-form')?.scrollIntoView(); }} className="bg-teal-500 hover:bg-teal-600" data-testid="add-news-btn">
