@@ -131,8 +131,8 @@ export const PaymentsTab = ({
             <div className={`p-5 rounded-xl ${isDark ? 'bg-zinc-800/50 border border-zinc-700/50 backdrop-blur-sm' : 'border border-zinc-200 bg-white'}`}>
               <div className="flex items-center justify-between mb-4">
                 <div className="flex items-center gap-3">
-                  <div className={`w-10 h-10 rounded-lg flex items-center justify-center ${isDark ? 'bg-amber-500/20' : 'bg-amber-100'}`}>
-                    <Wallet className={`w-5 h-5 ${isDark ? 'text-amber-400' : 'text-amber-600'}`} />
+                  <div className={`w-10 h-10 rounded-lg flex items-center justify-center ${isDark ? 'bg-teal-500/20' : 'bg-teal-100'}`}>
+                    <Wallet className={`w-5 h-5 ${isDark ? 'text-teal-400' : 'text-teal-600'}`} />
                   </div>
                   <div>
                     <h3 className={`font-semibold ${isDark ? 'text-zinc-100' : ''}`}>Криптовалюта</h3>
