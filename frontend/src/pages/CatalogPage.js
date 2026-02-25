@@ -101,30 +101,30 @@ const ProductCard = ({
       <div className="flex items-center gap-2">
         <FavoritesButton productId={product.id} size="sm" />
         
-        <div className="flex items-center border border-zinc-200">
+        <div className="flex items-center border border-slate-200 rounded-xl bg-white/50">
           <button 
             onClick={() => updateQuantity(product.id, -1)}
-            className="p-2 hover:bg-zinc-100"
+            className="p-2 hover:bg-slate-100 rounded-l-xl transition-colors"
             data-testid={`qty-minus-${product.id}`}
           >
-            <Minus className="w-4 h-4" />
+            <Minus className="w-4 h-4 text-slate-600" />
           </button>
-          <span className="px-3 min-w-[40px] text-center text-sm font-semibold">
+          <span className="px-3 min-w-[40px] text-center text-sm font-semibold text-slate-800">
             {quantities[product.id] || 1}
           </span>
           <button 
             onClick={() => updateQuantity(product.id, 1)}
-            className="p-2 hover:bg-zinc-100"
+            className="p-2 hover:bg-slate-100 rounded-r-xl transition-colors"
             data-testid={`qty-plus-${product.id}`}
           >
-            <Plus className="w-4 h-4" />
+            <Plus className="w-4 h-4 text-slate-600" />
           </button>
         </div>
 
         <Button
           onClick={() => handleAddToCart(product)}
           disabled={product.stock === 0}
-          className="bg-orange-500 hover:bg-orange-600 text-white"
+          className="bg-gradient-to-r from-teal-500 to-emerald-500 hover:from-teal-600 hover:to-emerald-600 text-white rounded-xl shadow-lg shadow-teal-500/30"
           data-testid={`add-to-cart-${product.id}`}
         >
           <ShoppingCart className="w-5 h-5" />
@@ -134,10 +134,10 @@ const ProductCard = ({
 
     {/* Mobile info */}
     <div className="sm:hidden flex items-center justify-between px-4 pb-4 text-sm">
-      <span className={product.stock > 0 ? 'text-green-600' : 'text-red-500'}>
+      <span className={product.stock > 0 ? 'text-emerald-600' : 'text-red-500'}>
         {product.stock > 0 ? `В наличии: ${product.stock} шт.` : 'Нет в наличии'}
       </span>
-      <span className="text-zinc-500 flex items-center gap-1">
+      <span className="text-slate-500 flex items-center gap-1">
         <Truck className="w-4 h-4" />
         {getDeliveryText(product.delivery_days || 3)}
       </span>
