@@ -277,46 +277,48 @@ export const Header = () => {
                   </div>
                 ) : (
                   /* User Navigation - 4 icons evenly distributed */
-                  <div className="flex items-center justify-evenly flex-1">
-                    <NavLink to="/catalog" data-testid="search-link" className="md:hidden">
-                      <Search className="w-4 h-4" />
-                    </NavLink>
-                    <NavLink to="/orders" data-testid="orders-link">
-                      <span className="flex items-center gap-2">
-                        <Package className="w-4 h-4" />
-                        <span className="hidden lg:inline">Заказы</span>
-                      </span>
-                    </NavLink>
-                    <NavLink to="/bonus" data-testid="bonus-link">
-                      <span className="flex items-center gap-2 text-teal-500">
-                        <Gift className="w-4 h-4" />
-                        <span className="hidden lg:inline">Бонусы</span>
-                      </span>
-                    </NavLink>
-                    <NavLink to="/news" data-testid="news-link">
-                      <span className="flex items-center gap-2">
-                        <Newspaper className="w-4 h-4" />
-                        <span className="hidden lg:inline">Новости</span>
-                      </span>
-                    </NavLink>
-                    <NavLink to="/cart" data-testid="cart-link">
-                      <span className="flex items-center gap-2 relative">
-                        <ShoppingCart className="w-4 h-4" />
-                        <span className="hidden lg:inline">Корзина</span>
-                        {cartCount > 0 && (
-                          <motion.span 
-                            initial={{ scale: 0 }}
-                            animate={{ scale: 1 }}
-                            className="absolute -top-2 -right-2 lg:relative lg:top-0 lg:right-0 lg:ml-1 bg-teal-500 text-white text-xs w-4 h-4 flex items-center justify-center font-bold rounded-full"
-                          >
-                            {cartCount}
-                          </motion.span>
-                        )}
-                      </span>
-                    </NavLink>
+                  <>
+                    <div className="flex items-center justify-evenly flex-1">
+                      <NavLink to="/catalog" data-testid="search-link" className="md:hidden">
+                        <Search className="w-4 h-4" />
+                      </NavLink>
+                      <NavLink to="/orders" data-testid="orders-link">
+                        <span className="flex items-center gap-2">
+                          <Package className="w-4 h-4" />
+                          <span className="hidden lg:inline">Заказы</span>
+                        </span>
+                      </NavLink>
+                      <NavLink to="/bonus" data-testid="bonus-link">
+                        <span className="flex items-center gap-2 text-teal-500">
+                          <Gift className="w-4 h-4" />
+                          <span className="hidden lg:inline">Бонусы</span>
+                        </span>
+                      </NavLink>
+                      <NavLink to="/news" data-testid="news-link">
+                        <span className="flex items-center gap-2">
+                          <Newspaper className="w-4 h-4" />
+                          <span className="hidden lg:inline">Новости</span>
+                        </span>
+                      </NavLink>
+                      <NavLink to="/cart" data-testid="cart-link">
+                        <span className="flex items-center gap-2 relative">
+                          <ShoppingCart className="w-4 h-4" />
+                          <span className="hidden lg:inline">Корзина</span>
+                          {cartCount > 0 && (
+                            <motion.span 
+                              initial={{ scale: 0 }}
+                              animate={{ scale: 1 }}
+                              className="absolute -top-2 -right-2 lg:relative lg:top-0 lg:right-0 lg:ml-1 bg-teal-500 text-white text-xs w-4 h-4 flex items-center justify-center font-bold rounded-full"
+                            >
+                              {cartCount}
+                            </motion.span>
+                          )}
+                        </span>
+                      </NavLink>
+                    </div>
                     {/* Expandable Profile Menu */}
                     <ExpandableProfileMenu onLogout={logout} unreadCount={notificationCount} />
-                  </div>
+                  </>
                 )}
               </>
             ) : (
