@@ -43,7 +43,7 @@ export default function CheckoutPage() {
   const [showCryptoModal, setShowCryptoModal] = useState(false);
   const [cryptoPaymentAmount, setCryptoPaymentAmount] = useState(0);
   const [form, setForm] = useState({ full_name: '', address: '', phone: '', comment: '' });
-  const [agreedToTerms, setAgreedToTerms] = useState(false);
+  const [agreedToTerms, setAgreedToTerms] = useState(true);
   const [showTermsModal, setShowTermsModal] = useState(false);
   const [termsSections, setTermsSections] = useState([]);
   
