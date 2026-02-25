@@ -265,7 +265,14 @@ export const Header = () => {
                 ) : (
                   /* User Navigation */
                   <>
-                    <NavLink to="/catalog" data-testid="search-link">
+                    {/* Mini Search Field */}
+                    <div className="hidden md:block w-64">
+                      <SearchDropdown 
+                        placeholder="Поиск запчастей..." 
+                        compact={true}
+                      />
+                    </div>
+                    <NavLink to="/catalog" data-testid="search-link" className="md:hidden">
                       <Search className="w-4 h-4" />
                     </NavLink>
                     <NavLink to="/orders" data-testid="orders-link">
