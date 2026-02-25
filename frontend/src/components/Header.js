@@ -1,7 +1,8 @@
 import { Link, useLocation } from 'react-router-dom';
-import { ShoppingCart, User, Search, LogOut, Settings, Heart, Package, ClipboardList, Gift, Newspaper, Menu, X } from 'lucide-react';
+import { ShoppingCart, User, Search, LogOut, Settings, Heart, Package, ClipboardList, Gift, Newspaper, Menu, X, Sun, Moon } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { useCart } from '../context/CartContext';
+import { useTheme } from '../context/ThemeContext';
 import { Button } from './ui/button';
 import { AdminNotifications } from './AdminNotifications';
 import { ClientNotifications } from './ClientNotifications';
@@ -11,6 +12,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 export const Header = () => {
   const { user, logout } = useAuth();
   const { cartCount } = useCart();
+  const { isDark, toggleTheme } = useTheme();
   const location = useLocation();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   
@@ -23,15 +25,15 @@ export const Header = () => {
         to={to} 
         className={`relative px-3 py-2 text-sm font-medium transition-all duration-300 rounded-xl
           ${isActive 
-            ? 'text-orange-400 bg-orange-500/10' 
-            : 'text-zinc-400 hover:text-white hover:bg-white/5'
+            ? isDark ? 'text-orange-400 bg-orange-500/10' : 'text-green-600 bg-green-500/10'
+            : isDark ? 'text-zinc-400 hover:text-white hover:bg-white/5' : 'text-slate-500 hover:text-slate-800 hover:bg-white/50'
           } ${className}`}
       >
         {children}
         {isActive && (
           <motion.div
             layoutId="activeTab"
-            className="absolute bottom-0 left-1/2 -translate-x-1/2 w-1 h-1 rounded-full bg-orange-500"
+            className={`absolute bottom-0 left-1/2 -translate-x-1/2 w-1 h-1 rounded-full ${isDark ? 'bg-orange-500' : 'bg-green-500'}`}
           />
         )}
       </Link>
@@ -39,13 +41,13 @@ export const Header = () => {
   };
 
   return (
-    <header className="sticky top-0 z-50 bg-zinc-950/80 backdrop-blur-xl border-b border-white/10" data-testid="header">
+    <header className={`sticky top-0 z-50 backdrop-blur-xl border-b ${isDark ? 'bg-zinc-950/80 border-white/10' : 'bg-white/70 border-cyan-200/50'}`} data-testid="header">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex items-center justify-between h-16 gap-4">
           {/* Logo */}
           <Link to={isAdmin ? "/admin" : "/"} className="flex-shrink-0 group" data-testid="logo-link">
             <motion.h1 
-              className="text-xl font-bold uppercase tracking-tight bg-gradient-to-r from-orange-400 to-orange-600 bg-clip-text text-transparent"
+              className={`text-xl font-bold uppercase tracking-tight bg-gradient-to-r ${isDark ? 'from-orange-400 to-orange-600' : 'from-green-500 to-emerald-600'} bg-clip-text text-transparent`}
               whileHover={{ scale: 1.02 }}
               transition={{ duration: 0.2 }}
             >
@@ -55,7 +57,7 @@ export const Header = () => {
 
           {/* Center - Brand name or Admin indicator */}
           <div className="hidden md:block absolute left-1/2 transform -translate-x-1/2">
-            <span className={`text-sm tracking-wide ${isAdmin ? 'text-purple-400 font-medium' : 'text-zinc-500'}`}>
+            <span className={`text-sm tracking-wide ${isAdmin ? 'text-purple-400 font-medium' : isDark ? 'text-zinc-500' : 'text-slate-400'}`}>
               {isAdmin ? 'Режим администратора' : 'Avarus-Venditore'}
             </span>
           </div>
