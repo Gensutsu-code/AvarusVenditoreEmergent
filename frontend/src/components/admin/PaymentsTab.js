@@ -1,11 +1,12 @@
 import { useState } from 'react';
-import { CreditCard, Wallet, Percent, DollarSign } from 'lucide-react';
+import { CreditCard, Wallet, DollarSign } from 'lucide-react';
 import { Button } from '../../components/ui/button';
 import { Input } from '../../components/ui/input';
 import { Label } from '../../components/ui/label';
 import { Switch } from '../../components/ui/switch';
 import { toast } from 'sonner';
 import { motion } from 'framer-motion';
+import CryptoSettingsTab from './CryptoSettingsTab';
 
 // Sub-tab component for Payments section
 export const PaymentsTab = ({
@@ -15,9 +16,6 @@ export const PaymentsTab = ({
   prepaymentSettings,
   setPrepaymentSettings,
   handleSavePrepaymentSettings,
-  cryptoWallets,
-  setCryptoWallets,
-  handleSaveCryptoWallets,
   isDark = false
 }) => {
   const [activeSubTab, setActiveSubTab] = useState('methods');
@@ -25,7 +23,7 @@ export const PaymentsTab = ({
   const subTabs = [
     { id: 'methods', label: 'Способы оплаты', icon: CreditCard },
     { id: 'prepayment', label: 'Предоплата', icon: DollarSign },
-    { id: 'crypto', label: 'Криптовалюта', icon: Wallet },
+    { id: 'crypto', label: 'Крипто', icon: Wallet },
   ];
 
   return (
