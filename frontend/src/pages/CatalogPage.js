@@ -565,11 +565,16 @@ export default function CatalogPage() {
 
         {/* Content */}
         {!searchQuery && !categoryId ? (
-          <div className="text-center py-16" data-testid="search-prompt">
-            <Search className="w-16 h-16 mx-auto mb-4 text-slate-300" />
-            <p className="text-slate-500">
-              Введите название или артикул, либо выберите категорию
-            </p>
+          <div data-testid="search-prompt">
+            <div className="text-center py-8 mb-8">
+              <Search className="w-16 h-16 mx-auto mb-4 text-slate-300" />
+              <p className="text-slate-500">
+                Введите название или артикул, либо выберите категорию
+              </p>
+            </div>
+            
+            {/* Popular Products */}
+            <PopularProducts />
           </div>
         ) : loading ? (
           <div className="text-center py-12 text-slate-500" data-testid="loading">
