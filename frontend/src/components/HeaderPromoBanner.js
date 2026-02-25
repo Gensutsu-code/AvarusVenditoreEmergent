@@ -50,7 +50,7 @@ export const FloatingPromoBanner = () => {
   const bgColor = banner.bg_color || (isDark ? '#f97316' : '#10b981');
 
   return (
-    <div className="fixed top-16 left-0 right-0 z-40 pointer-events-none">
+    <div className="fixed top-20 left-0 right-0 z-40 pointer-events-none">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="pointer-events-auto inline-block">
       <AnimatePresence mode="wait" initial={false}>
