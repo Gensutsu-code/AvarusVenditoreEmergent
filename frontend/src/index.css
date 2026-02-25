@@ -67,13 +67,13 @@
   }
   
   /* Light theme - applied to html element */
-  htmlhtml.light-theme body {
+  html.light-theme body {
     @apply text-slate-800;
     background: linear-gradient(135deg, rgb(224, 255, 255) 0%, rgb(255, 192, 203) 50%, rgb(240, 255, 255) 100%);
     min-height: 100vh;
   }
   
-  htmlhtml.light-theme {
+  html.light-theme {
     background: linear-gradient(135deg, rgb(224, 255, 255) 0%, rgb(255, 192, 203) 50%, rgb(240, 255, 255) 100%);
   }
 }
@@ -260,7 +260,7 @@ code {
   @apply bg-zinc-900;
 }
 
-htmlhtml.light-theme ::-webkit-scrollbar-track {
+html.light-theme ::-webkit-scrollbar-track {
   background: rgb(224, 255, 255);
 }
 
@@ -268,7 +268,7 @@ htmlhtml.light-theme ::-webkit-scrollbar-track {
   @apply bg-zinc-700 rounded-full;
 }
 
-htmlhtml.light-theme ::-webkit-scrollbar-thumb {
+html.light-theme ::-webkit-scrollbar-thumb {
   background: rgb(255, 192, 203);
   border-radius: 9999px;
 }
@@ -277,7 +277,7 @@ htmlhtml.light-theme ::-webkit-scrollbar-thumb {
   @apply bg-zinc-600;
 }
 
-htmlhtml.light-theme ::-webkit-scrollbar-thumb:hover {
+html.light-theme ::-webkit-scrollbar-thumb:hover {
   background: rgb(255, 150, 170);
 }
 
@@ -286,7 +286,7 @@ htmlhtml.light-theme ::-webkit-scrollbar-thumb:hover {
   @apply bg-orange-500/30 text-white;
 }
 
-htmlhtml.light-theme ::selection {
+html.light-theme ::selection {
   background: rgba(0, 255, 0, 0.3);
   color: inherit;
 }
@@ -296,7 +296,7 @@ htmlhtml.light-theme ::selection {
   @apply outline-none ring-2 ring-orange-500/50 ring-offset-2 ring-offset-zinc-950;
 }
 
-htmlhtml.light-theme :focus-visible {
+html.light-theme :focus-visible {
   @apply outline-none ring-2 ring-green-400/50 ring-offset-2;
   --tw-ring-offset-color: rgb(240, 255, 255);
 }
