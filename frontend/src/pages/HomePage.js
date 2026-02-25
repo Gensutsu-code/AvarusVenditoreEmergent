@@ -201,14 +201,14 @@ export default function HomePage() {
           {FEATURES.map((feature, index) => (
             <motion.div
               key={feature.title}
-              className="glass-card p-6 text-center group transition-all duration-300 hover:border-teal-400/50"
+              className="glass-card p-6 text-center group hover:border-teal-400/50"
               initial={{ opacity: 0, y: 30 }}
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true }}
               transition={{ duration: 0.5, delay: index * 0.1 }}
-              whileHover={{ y: -5 }}
+              whileHover={{ y: -5, transition: { duration: 0.2 } }}
             >
-              <div className="w-12 h-12 mx-auto mb-4 rounded-xl flex items-center justify-center transition-colors bg-teal-500/10 group-hover:bg-teal-500/20">
+              <div className="w-12 h-12 mx-auto mb-4 rounded-xl flex items-center justify-center bg-teal-500/10 group-hover:bg-teal-500/20 transition-colors duration-300">
                 <feature.icon className="w-6 h-6 text-teal-600" />
               </div>
               <h3 className="font-semibold mb-1 text-slate-800">{feature.title}</h3>
