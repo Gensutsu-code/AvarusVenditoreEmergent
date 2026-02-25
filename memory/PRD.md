@@ -7,6 +7,22 @@ E-commerce platform for truck spare parts with full admin panel restructuring an
 
 ### December 2025 - Latest Session
 
+#### Admin Panel Bug Fix (COMPLETED ✅) - 25 Feb 2026
+- Fixed prop mismatches between parent and child components in admin panel
+- Components fixed:
+  - `SettingsTab.js` → `TelegramTab`, `ImportTab`, `PartnersTab`, `TermsTab`
+  - `MarketingTab.js` → `PromoTab`, `NotificationsTab`
+- Added missing props:
+  - `handleTestTelegram` for Telegram testing functionality
+  - `handleSavePartner`, `isNewPartner`, `setIsNewPartner` for partners management
+  - `uploading`, `handlePromoImageUpload`, `promoFileRef` for promo banner image upload
+- All 6 main tabs now work: Каталог, Бонусы, Платежи, CRM, Маркетинг, Настройки
+- All sub-tabs work correctly:
+  - Marketing: Акции и баннер, Новости, Рассылки
+  - Settings: Telegram, Импорт/Экспорт, Партнёры, Правила
+  - Payments: Способы оплаты, Предоплата, Криптовалюта
+  - CRM: Клиенты, Аналитика
+
 #### Dark Theme Removal (COMPLETED ✅)
 - Completely removed dark theme from the entire application
 - ThemeContext simplified to always return light theme
@@ -51,12 +67,16 @@ Pages updated with new light design and animations:
 - **Database**: MongoDB
 
 ## Key Files Updated
+- `/app/frontend/src/pages/AdminPage.js` - Fixed prop passing to SettingsTab/MarketingTab
+- `/app/frontend/src/components/admin/SettingsTab.js` - Added missing props
+- `/app/frontend/src/components/admin/MarketingTab.js` - Added missing props
+- `/app/frontend/src/components/admin/PromoTab.js` - Updated to receive file ref properly
+- `/app/frontend/src/components/admin/PartnersTab.js` - Updated to handle save properly
 - `/app/frontend/src/context/ThemeContext.js` - Simplified (light only)
 - `/app/frontend/src/components/Header.js` - No theme toggle
 - `/app/frontend/src/components/PopularProducts.js` - Light theme styling
 - `/app/frontend/src/pages/CatalogPage.js` - Added PopularProducts
 - `/app/frontend/src/pages/HomePage.js` - Removed PopularProducts
-- All page files updated for light theme
 
 ## Color Palette (Light Theme)
 - **Primary**: teal-500, emerald-500 (buttons, accents)
@@ -72,10 +92,10 @@ Pages updated with new light design and animations:
 - [x] Remove dark theme
 - [x] Update all pages to light theme
 - [x] Move popular products from home to catalog
+- [x] Fix admin panel tab bugs
 
 ### P1 (Medium Priority)
-- [ ] Quick View modal for products
-- [ ] Admin panel internal components styling polish
+- [ ] Quick View modal for products in catalog
 
 ### P2 (Future)
 - [ ] Real payment integration (Stripe/YooKassa)
@@ -100,5 +120,6 @@ Pages updated with new light design and animations:
 - `/admin` - Admin panel
 
 ## Test Reports
+- `/app/test_reports/iteration_32.json` - Admin panel bug fix tests (100% success)
 - `/app/test_reports/iteration_30.json` - ProductPage tests
 - `/app/test_reports/iteration_31.json` - Light theme tests
