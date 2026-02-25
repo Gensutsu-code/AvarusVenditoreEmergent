@@ -27,7 +27,7 @@
   }
 
   /* Light theme variables - User requested colors */
-  .light-theme {
+  html.light-theme {
     --background: 180 100% 97%;
     --foreground: 220 20% 20%;
     --card: 180 50% 95%;
@@ -67,13 +67,13 @@
   }
   
   /* Light theme - applied to html element */
-  html.light-theme body {
+  htmlhtml.light-theme body {
     @apply text-slate-800;
     background: linear-gradient(135deg, rgb(224, 255, 255) 0%, rgb(255, 192, 203) 50%, rgb(240, 255, 255) 100%);
     min-height: 100vh;
   }
   
-  html.light-theme {
+  htmlhtml.light-theme {
     background: linear-gradient(135deg, rgb(224, 255, 255) 0%, rgb(255, 192, 203) 50%, rgb(240, 255, 255) 100%);
   }
 }
@@ -102,19 +102,19 @@ code {
   }
   
   /* Light theme glass */
-  .light-theme .glass {
+  html.light-theme .glass {
     @apply bg-white/70 backdrop-blur-xl border border-white/50 shadow-lg;
   }
   
-  .light-theme .glass-card {
+  html.light-theme .glass-card {
     @apply bg-white/60 backdrop-blur-xl border border-cyan-200/50 shadow-lg rounded-2xl;
   }
   
-  .light-theme .glass-button {
+  html.light-theme .glass-button {
     @apply bg-white/50 backdrop-blur-md border border-cyan-200/50 hover:bg-white/80 transition-all duration-300;
   }
   
-  .light-theme .glass-input {
+  html.light-theme .glass-input {
     @apply bg-white/70 backdrop-blur-sm border border-cyan-200/50 focus:border-green-400 focus:ring-2 focus:ring-green-400/30 transition-all duration-300 rounded-xl text-slate-800 placeholder:text-slate-400;
   }
   
@@ -135,7 +135,7 @@ code {
     pointer-events: none;
   }
   
-  .light-theme .gradient-border::before {
+  html.light-theme .gradient-border::before {
     background: linear-gradient(135deg, rgba(0, 255, 0, 0.5), rgba(255, 192, 203, 0.5));
   }
   
@@ -145,7 +145,7 @@ code {
            active:scale-[0.98] transition-all duration-300;
   }
   
-  .light-theme .btn-primary {
+  html.light-theme .btn-primary {
     @apply bg-gradient-to-r from-green-400 to-emerald-500 text-white font-bold uppercase tracking-wide px-8 py-3 rounded-xl 
            hover:from-green-500 hover:to-emerald-600 hover:shadow-lg 
            active:scale-[0.98] transition-all duration-300;
@@ -157,7 +157,7 @@ code {
            active:scale-[0.98] transition-all duration-300;
   }
   
-  .light-theme .btn-secondary {
+  html.light-theme .btn-secondary {
     @apply bg-white/50 backdrop-blur-sm border border-pink-200/50 text-slate-700 font-medium px-6 py-3 rounded-xl
            hover:bg-white/80 hover:border-pink-300/50
            active:scale-[0.98] transition-all duration-300;
@@ -169,7 +169,7 @@ code {
            placeholder:text-zinc-500 transition-all duration-300;
   }
   
-  .light-theme .input-field {
+  html.light-theme .input-field {
     @apply bg-white/70 backdrop-blur-sm border border-cyan-200/50 rounded-xl px-4 py-3
            focus:border-green-400 focus:ring-2 focus:ring-green-400/30 
            placeholder:text-slate-400 text-slate-800 transition-all duration-300;
@@ -186,7 +186,7 @@ code {
     @apply text-orange-400;
   }
   
-  .light-theme .price-tag {
+  html.light-theme .price-tag {
     @apply text-green-600;
   }
   
@@ -194,7 +194,7 @@ code {
     @apply glass-card p-6 transition-all duration-300 hover:scale-[1.02] hover:border-orange-500/30 cursor-pointer;
   }
   
-  .light-theme .category-card {
+  html.light-theme .category-card {
     @apply p-6 transition-all duration-300 hover:scale-[1.02] hover:border-green-400/50 cursor-pointer;
   }
   
@@ -202,7 +202,7 @@ code {
     @apply glass-card p-4 transition-all duration-300 hover:scale-[1.02] hover:border-orange-500/30;
   }
   
-  .light-theme .product-card {
+  html.light-theme .product-card {
     @apply p-4 transition-all duration-300 hover:scale-[1.02] hover:border-green-400/50;
   }
   
@@ -210,7 +210,7 @@ code {
     @apply relative text-zinc-400 hover:text-white transition-colors duration-300;
   }
   
-  .light-theme .nav-link {
+  html.light-theme .nav-link {
     @apply relative text-slate-500 hover:text-slate-800 transition-colors duration-300;
   }
   
@@ -219,7 +219,7 @@ code {
     @apply absolute bottom-0 left-0 w-0 h-0.5 bg-orange-500 transition-all duration-300;
   }
   
-  .light-theme .nav-link::after {
+  html.light-theme .nav-link::after {
     @apply bg-green-500;
   }
   
@@ -232,7 +232,7 @@ code {
     @apply text-white;
   }
   
-  .light-theme .nav-link.active {
+  html.light-theme .nav-link.active {
     @apply text-slate-800;
   }
 }
@@ -260,7 +260,7 @@ code {
   @apply bg-zinc-900;
 }
 
-html.light-theme ::-webkit-scrollbar-track {
+htmlhtml.light-theme ::-webkit-scrollbar-track {
   background: rgb(224, 255, 255);
 }
 
@@ -268,7 +268,7 @@ html.light-theme ::-webkit-scrollbar-track {
   @apply bg-zinc-700 rounded-full;
 }
 
-html.light-theme ::-webkit-scrollbar-thumb {
+htmlhtml.light-theme ::-webkit-scrollbar-thumb {
   background: rgb(255, 192, 203);
   border-radius: 9999px;
 }
@@ -277,7 +277,7 @@ html.light-theme ::-webkit-scrollbar-thumb {
   @apply bg-zinc-600;
 }
 
-html.light-theme ::-webkit-scrollbar-thumb:hover {
+htmlhtml.light-theme ::-webkit-scrollbar-thumb:hover {
   background: rgb(255, 150, 170);
 }
 
@@ -286,7 +286,7 @@ html.light-theme ::-webkit-scrollbar-thumb:hover {
   @apply bg-orange-500/30 text-white;
 }
 
-html.light-theme ::selection {
+htmlhtml.light-theme ::selection {
   background: rgba(0, 255, 0, 0.3);
   color: inherit;
 }
@@ -296,7 +296,7 @@ html.light-theme ::selection {
   @apply outline-none ring-2 ring-orange-500/50 ring-offset-2 ring-offset-zinc-950;
 }
 
-html.light-theme :focus-visible {
+htmlhtml.light-theme :focus-visible {
   @apply outline-none ring-2 ring-green-400/50 ring-offset-2;
   --tw-ring-offset-color: rgb(240, 255, 255);
 }
