@@ -1202,28 +1202,41 @@ export default function AdminPage() {
           </div>
         )}
 
-        {/* Tabs - Dynamic Order */}
+        {/* Tabs - Dynamic Order with Full Width Distribution */}
         <Tabs value={activeTab} onValueChange={setActiveTab} className={`rounded-xl border shadow-sm overflow-hidden ${isDark ? 'bg-zinc-900/60 border-zinc-800 backdrop-blur-xl' : 'bg-white border-zinc-200'}`}>
           <div className="overflow-x-auto">
-            <TabsList className={`w-max min-w-full justify-start border-b rounded-none p-0 h-auto ${isDark ? 'border-zinc-800 bg-zinc-900/50' : 'border-zinc-200 bg-zinc-50'}`}>
+            <TabsList className={`w-full flex border-b rounded-none p-0 h-auto ${isDark ? 'border-zinc-800 bg-zinc-900/50' : 'border-zinc-200 bg-zinc-50'}`}>
               {tabOrder.map((tabId) => {
                 const config = tabConfig[tabId];
                 const IconComponent = config.icon;
+                const isActive = activeTab === tabId;
                 return (
                   <TabsTrigger 
                     key={tabId}
                     value={tabId} 
-                    className={`rounded-none border-b-2 border-transparent px-3 py-2.5 text-xs font-medium whitespace-nowrap ${isDark ? 'data-[state=active]:bg-zinc-800 data-[state=active]:border-orange-500 text-zinc-400 data-[state=active]:text-white' : 'data-[state=active]:bg-white data-[state=active]:border-orange-500'}`}
+                    className={`flex-1 flex items-center justify-center gap-2 rounded-none border-b-2 px-4 py-3 text-sm font-medium whitespace-nowrap transition-all duration-300 ${
+                      isDark 
+                        ? isActive 
+                          ? 'bg-gradient-to-t from-teal-500/10 to-transparent border-teal-500 text-teal-400' 
+                          : 'border-transparent text-zinc-400 hover:text-zinc-200 hover:bg-zinc-800/50'
+                        : isActive 
+                          ? 'bg-gradient-to-t from-teal-500/10 to-transparent border-teal-500 text-teal-700' 
+                          : 'border-transparent text-zinc-500 hover:text-zinc-700 hover:bg-zinc-100/50'
+                    }`}
                   >
-                    <IconComponent className="w-3.5 h-3.5 mr-1.5" />
-                    {config.label}
+                    <IconComponent className={`w-4 h-4 ${isActive ? (isDark ? 'text-teal-400' : 'text-teal-600') : ''}`} />
+                    <span className="hidden sm:inline">{config.label}</span>
                     {config.count !== undefined && (
-                      <span className={`ml-1 text-[10px] px-1.5 py-0.5 rounded-full ${isDark ? 'bg-zinc-700 data-[state=active]:bg-orange-500/20' : 'bg-zinc-200 data-[state=active]:bg-orange-100'}`}>
+                      <span className={`text-[10px] px-2 py-0.5 rounded-full ${
+                        isDark 
+                          ? isActive ? 'bg-teal-500/20 text-teal-300' : 'bg-zinc-700 text-zinc-400'
+                          : isActive ? 'bg-teal-100 text-teal-700' : 'bg-zinc-200 text-zinc-500'
+                      }`}>
                         {config.count}
                       </span>
                     )}
                     {config.badge > 0 && (
-                      <span className="ml-1 bg-red-500 text-white text-[10px] px-1.5 py-0.5 rounded-full animate-pulse">
+                      <span className="bg-red-500 text-white text-[10px] px-1.5 py-0.5 rounded-full animate-pulse">
                         {config.badge}
                       </span>
                     )}
