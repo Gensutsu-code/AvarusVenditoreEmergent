@@ -146,8 +146,8 @@ code {
   }
   
   html.light-theme .btn-primary {
-    @apply bg-gradient-to-r from-green-400 to-emerald-500 text-white font-bold uppercase tracking-wide px-8 py-3 rounded-xl 
-           hover:from-green-500 hover:to-emerald-600 hover:shadow-lg 
+    @apply bg-gradient-to-r from-teal-500 to-emerald-500 text-white font-bold uppercase tracking-wide px-8 py-3 rounded-xl 
+           hover:from-teal-600 hover:to-emerald-600 hover:shadow-lg 
            active:scale-[0.98] transition-all duration-300;
   }
   
