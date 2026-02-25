@@ -2392,7 +2392,7 @@ export default function AdminPage() {
                       onClick={() => setBonusSubTab && setBonusSubTab('history')}
                       className={`flex-1 px-6 py-3 text-sm font-medium transition-colors flex items-center justify-center gap-2 ${
                         (!bonusSubTab || bonusSubTab === 'history')
-                          ? 'text-amber-600 border-b-2 border-amber-500 bg-amber-50/50'
+                          ? 'text-teal-600 border-b-2 border-teal-500 bg-teal-50/50'
                           : 'text-slate-500 hover:text-slate-700 hover:bg-slate-50'
                       }`}
                     >
