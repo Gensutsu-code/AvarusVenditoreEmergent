@@ -2499,7 +2499,7 @@ export default function AdminPage() {
                                   <Clock className="w-3 h-3" />
                                   {new Date(redemption.created_at).toLocaleDateString('ru-RU')} — 
                                   <span className={`font-medium ${
-                                    redemption.status === 'pending' ? 'text-amber-600' :
+                                    redemption.status === 'pending' ? 'text-yellow-600' :
                                     redemption.status === 'approved' ? 'text-emerald-600' :
                                     redemption.status === 'issued' ? 'text-blue-600' :
                                     'text-red-600'
