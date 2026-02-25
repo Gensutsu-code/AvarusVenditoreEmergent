@@ -1,8 +1,7 @@
 import { Link, useLocation } from 'react-router-dom';
-import { ShoppingCart, User, Search, LogOut, Settings, Heart, Package, ClipboardList, Gift, Newspaper, Menu, X, Sun, Moon, MessageCircle } from 'lucide-react';
+import { ShoppingCart, User, Search, LogOut, Settings, Heart, Package, ClipboardList, Gift, Newspaper, Menu, X, MessageCircle } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { useCart } from '../context/CartContext';
-import { useTheme } from '../context/ThemeContext';
 import { Button } from './ui/button';
 import { AdminNotifications } from './AdminNotifications';
 import { ClientNotifications } from './ClientNotifications';
@@ -13,7 +12,6 @@ import { motion, AnimatePresence } from 'framer-motion';
 export const Header = () => {
   const { user, logout } = useAuth();
   const { cartCount } = useCart();
-  const { isDark, toggleTheme } = useTheme();
   const location = useLocation();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   
@@ -26,15 +24,15 @@ export const Header = () => {
         to={to} 
         className={`relative px-3 py-2 text-sm font-medium transition-all duration-300 rounded-xl
           ${isActive 
-            ? isDark ? 'text-orange-400 bg-orange-500/10' : 'text-teal-600 bg-teal-500/10'
-            : isDark ? 'text-zinc-400 hover:text-white hover:bg-white/5' : 'text-slate-500 hover:text-slate-800 hover:bg-white/50'
+            ? 'text-teal-600 bg-teal-500/10'
+            : 'text-slate-500 hover:text-slate-800 hover:bg-white/50'
           } ${className}`}
       >
         {children}
         {isActive && (
           <motion.div
             layoutId="activeTab"
-            className={`absolute bottom-0 left-1/2 -translate-x-1/2 w-1 h-1 rounded-full ${isDark ? 'bg-orange-500' : 'bg-green-500'}`}
+            className="absolute bottom-0 left-1/2 -translate-x-1/2 w-1 h-1 rounded-full bg-teal-500"
           />
         )}
       </Link>
@@ -42,14 +40,14 @@ export const Header = () => {
   };
 
   return (
-    <header className={`sticky top-0 z-50 backdrop-blur-xl border-b ${isDark ? 'bg-zinc-950/80 border-white/10' : 'bg-white/70 border-cyan-200/50'}`} data-testid="header">
+    <header className="sticky top-0 z-50 backdrop-blur-xl border-b bg-white/70 border-cyan-200/50" data-testid="header">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex items-center justify-between h-16 gap-4">
           {/* Logo + Promo Banner on left */}
           <div className="flex items-center">
             <Link to={isAdmin ? "/admin" : "/"} className="flex-shrink-0 group" data-testid="logo-link">
               <motion.h1 
-                className={`text-xl font-bold uppercase tracking-tight bg-gradient-to-r ${isDark ? 'from-orange-400 to-orange-600' : 'from-emerald-500 to-teal-600'} bg-clip-text text-transparent`}
+                className="text-xl font-bold uppercase tracking-tight bg-gradient-to-r from-emerald-500 to-teal-600 bg-clip-text text-transparent"
                 whileHover={{ scale: 1.02 }}
                 transition={{ duration: 0.2 }}
               >
@@ -64,7 +62,7 @@ export const Header = () => {
           {/* Admin indicator (only for admin) - center */}
           {isAdmin && (
             <div className="hidden md:block flex-1 text-center">
-              <span className="text-sm tracking-wide text-purple-400 font-medium">
+              <span className="text-sm tracking-wide text-purple-500 font-medium">
                 Режим администратора
               </span>
             </div>
@@ -78,7 +76,7 @@ export const Header = () => {
                   /* Admin Navigation */
                   <>
                     <NavLink to="/admin" data-testid="admin-link">
-                      <span className="flex items-center gap-2 text-purple-400">
+                      <span className="flex items-center gap-2 text-purple-500">
                         <Settings className="w-4 h-4" />
                         Панель
                       </span>
@@ -99,21 +97,11 @@ export const Header = () => {
                     <NavLink to="/admin/profile" data-testid="admin-profile-link">
                       <User className="w-4 h-4" />
                     </NavLink>
-                    {/* Theme Toggle for Admin */}
-                    <motion.button
-                      onClick={toggleTheme}
-                      className={`p-2 rounded-xl transition-all duration-300 ${isDark ? 'text-zinc-400 hover:text-yellow-400 hover:bg-yellow-500/10' : 'text-slate-500 hover:text-slate-700 hover:bg-slate-200/50'}`}
-                      whileHover={{ scale: 1.05, rotate: 15 }}
-                      whileTap={{ scale: 0.95 }}
-                      data-testid="admin-theme-toggle"
-                    >
-                      {isDark ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
-                    </motion.button>
                     <Button 
                       variant="ghost" 
                       size="sm" 
                       onClick={logout}
-                      className={`rounded-xl transition-all duration-300 ${isDark ? 'text-zinc-400 hover:text-red-400 hover:bg-red-500/10' : 'text-slate-500 hover:text-red-500 hover:bg-red-100'}`}
+                      className="rounded-xl transition-all duration-300 text-slate-500 hover:text-red-500 hover:bg-red-100"
                       data-testid="logout-button"
                     >
                       <LogOut className="w-4 h-4" />
@@ -132,7 +120,7 @@ export const Header = () => {
                       </span>
                     </NavLink>
                     <NavLink to="/bonus" data-testid="bonus-link">
-                      <span className="flex items-center gap-2 text-orange-400">
+                      <span className="flex items-center gap-2 text-orange-500">
                         <Gift className="w-4 h-4" />
                         <span className="hidden lg:inline">Бонусы</span>
                       </span>
@@ -150,7 +138,7 @@ export const Header = () => {
                           <motion.span 
                             initial={{ scale: 0 }}
                             animate={{ scale: 1 }}
-                            className="absolute -top-2 -right-2 bg-orange-500 text-white text-xs w-4 h-4 flex items-center justify-center font-bold rounded-full"
+                            className="absolute -top-2 -right-2 bg-teal-500 text-white text-xs w-4 h-4 flex items-center justify-center font-bold rounded-full"
                           >
                             {cartCount}
                           </motion.span>
@@ -161,23 +149,6 @@ export const Header = () => {
                       <User className="w-4 h-4" />
                     </NavLink>
                     <ClientNotifications />
-                    {/* Theme Toggle */}
-                    <motion.button
-                      onClick={toggleTheme}
-                      className={`p-2 rounded-xl transition-all duration-300 ${isDark ? 'text-zinc-400 hover:text-yellow-400 hover:bg-yellow-500/10' : 'text-slate-500 hover:text-slate-700 hover:bg-slate-200/50'}`}
-                      whileHover={{ scale: 1.05, rotate: 15 }}
-                      whileTap={{ scale: 0.95 }}
-                      data-testid="theme-toggle"
-                    >
-                      <AnimatePresence mode="wait">
-                        {isDark ? (
-                          <motion.div
-                            key="sun"
-                            initial={{ rotate: -90, opacity: 0 }}
-                            animate={{ rotate: 0, opacity: 1 }}
-                            exit={{ rotate: 90, opacity: 0 }}
-                            transition={{ duration: 0.2 }}
-                          >
                             <Sun className="w-4 h-4" />
                           </motion.div>
                         ) : (
