@@ -23,6 +23,13 @@ export const CRMTab = ({
 
   // Customer status colors
   const getStatusColor = (status) => {
+    if (isDark) {
+      switch (status) {
+        case 'vip': return 'bg-purple-500/20 text-purple-400';
+        case 'wholesale': return 'bg-blue-500/20 text-blue-400';
+        default: return 'bg-zinc-700/50 text-zinc-400';
+      }
+    }
     switch (status) {
       case 'vip': return 'bg-purple-100 text-purple-700';
       case 'wholesale': return 'bg-blue-100 text-blue-700';
@@ -41,7 +48,7 @@ export const CRMTab = ({
   return (
     <div className="space-y-6">
       {/* Sub-tabs */}
-      <div className="flex gap-2 border-b border-zinc-200 pb-4">
+      <div className={`flex gap-2 border-b pb-4 ${isDark ? 'border-zinc-700' : 'border-zinc-200'}`}>
         {subTabs.map((tab) => {
           const Icon = tab.icon;
           return (
@@ -50,14 +57,18 @@ export const CRMTab = ({
               onClick={() => setActiveSubTab(tab.id)}
               className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all ${
                 activeSubTab === tab.id
-                  ? 'bg-orange-500 text-white'
-                  : 'bg-zinc-100 text-zinc-600 hover:bg-zinc-200'
+                  ? isDark 
+                    ? 'bg-orange-500/20 text-orange-400 border border-orange-500/30' 
+                    : 'bg-orange-500 text-white'
+                  : isDark
+                    ? 'bg-zinc-800/50 text-zinc-400 hover:bg-zinc-700/50 border border-zinc-700/50'
+                    : 'bg-zinc-100 text-zinc-600 hover:bg-zinc-200'
               }`}
             >
               <Icon className="w-4 h-4" />
               {tab.label}
               {tab.id === 'clients' && (
-                <span className="ml-1 text-xs bg-white/20 px-1.5 py-0.5 rounded-full">
+                <span className={`ml-1 text-xs px-1.5 py-0.5 rounded-full ${isDark ? 'bg-zinc-700/50' : 'bg-white/20'}`}>
                   {users.length}
                 </span>
               )}
@@ -75,26 +86,26 @@ export const CRMTab = ({
         >
           {/* Summary cards */}
           <div className="grid grid-cols-3 gap-4 mb-6">
-            <div className="p-4 bg-green-50 border border-green-100 rounded-xl">
-              <div className="flex items-center gap-2 text-green-600 mb-1">
+            <div className={`p-4 rounded-xl ${isDark ? 'bg-green-500/10 border border-green-500/20' : 'bg-green-50 border border-green-100'}`}>
+              <div className={`flex items-center gap-2 mb-1 ${isDark ? 'text-green-400' : 'text-green-600'}`}>
                 <UserCheck className="w-4 h-4" />
                 <span className="text-xs font-medium">Активные</span>
               </div>
-              <p className="text-2xl font-bold text-green-700">{users.filter(u => u.role !== 'admin').length}</p>
+              <p className={`text-2xl font-bold ${isDark ? 'text-green-400' : 'text-green-700'}`}>{users.filter(u => u.role !== 'admin').length}</p>
             </div>
-            <div className="p-4 bg-purple-50 border border-purple-100 rounded-xl">
-              <div className="flex items-center gap-2 text-purple-600 mb-1">
+            <div className={`p-4 rounded-xl ${isDark ? 'bg-purple-500/10 border border-purple-500/20' : 'bg-purple-50 border border-purple-100'}`}>
+              <div className={`flex items-center gap-2 mb-1 ${isDark ? 'text-purple-400' : 'text-purple-600'}`}>
                 <TrendingUp className="w-4 h-4" />
                 <span className="text-xs font-medium">VIP</span>
               </div>
-              <p className="text-2xl font-bold text-purple-700">{users.filter(u => u.customer_status === 'vip').length}</p>
+              <p className={`text-2xl font-bold ${isDark ? 'text-purple-400' : 'text-purple-700'}`}>{users.filter(u => u.customer_status === 'vip').length}</p>
             </div>
-            <div className="p-4 bg-blue-50 border border-blue-100 rounded-xl">
-              <div className="flex items-center gap-2 text-blue-600 mb-1">
+            <div className={`p-4 rounded-xl ${isDark ? 'bg-blue-500/10 border border-blue-500/20' : 'bg-blue-50 border border-blue-100'}`}>
+              <div className={`flex items-center gap-2 mb-1 ${isDark ? 'text-blue-400' : 'text-blue-600'}`}>
                 <Users className="w-4 h-4" />
                 <span className="text-xs font-medium">Оптовики</span>
               </div>
-              <p className="text-2xl font-bold text-blue-700">{users.filter(u => u.customer_status === 'wholesale').length}</p>
+              <p className={`text-2xl font-bold ${isDark ? 'text-blue-400' : 'text-blue-700'}`}>{users.filter(u => u.customer_status === 'wholesale').length}</p>
             </div>
           </div>
 
@@ -102,35 +113,35 @@ export const CRMTab = ({
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
               <thead>
-                <tr className="bg-zinc-50 border-b border-zinc-200">
-                  <th className="text-left py-3 px-4 font-medium text-zinc-600">Клиент</th>
-                  <th className="text-left py-3 px-4 font-medium text-zinc-600">Email</th>
-                  <th className="text-left py-3 px-4 font-medium text-zinc-600">Телефон</th>
-                  <th className="text-left py-3 px-4 font-medium text-zinc-600">Статус</th>
-                  <th className="text-left py-3 px-4 font-medium text-zinc-600">Баланс</th>
-                  <th className="text-left py-3 px-4 font-medium text-zinc-600">Регистрация</th>
+                <tr className={`border-b ${isDark ? 'bg-zinc-800/30 border-zinc-700' : 'bg-zinc-50 border-zinc-200'}`}>
+                  <th className={`text-left py-3 px-4 font-medium ${isDark ? 'text-zinc-400' : 'text-zinc-600'}`}>Клиент</th>
+                  <th className={`text-left py-3 px-4 font-medium ${isDark ? 'text-zinc-400' : 'text-zinc-600'}`}>Email</th>
+                  <th className={`text-left py-3 px-4 font-medium ${isDark ? 'text-zinc-400' : 'text-zinc-600'}`}>Телефон</th>
+                  <th className={`text-left py-3 px-4 font-medium ${isDark ? 'text-zinc-400' : 'text-zinc-600'}`}>Статус</th>
+                  <th className={`text-left py-3 px-4 font-medium ${isDark ? 'text-zinc-400' : 'text-zinc-600'}`}>Баланс</th>
+                  <th className={`text-left py-3 px-4 font-medium ${isDark ? 'text-zinc-400' : 'text-zinc-600'}`}>Регистрация</th>
                 </tr>
               </thead>
               <tbody>
                 {users.filter(u => u.role !== 'admin').map((user) => (
-                  <tr key={user.id} className="border-b border-zinc-100 hover:bg-zinc-50 transition-colors">
+                  <tr key={user.id} className={`border-b transition-colors ${isDark ? 'border-zinc-800 hover:bg-zinc-800/30' : 'border-zinc-100 hover:bg-zinc-50'}`}>
                     <td className="py-3 px-4">
                       <div className="flex items-center gap-3">
-                        <div className="w-8 h-8 bg-orange-100 rounded-full flex items-center justify-center text-orange-600 font-medium">
+                        <div className={`w-8 h-8 rounded-full flex items-center justify-center font-medium ${isDark ? 'bg-orange-500/20 text-orange-400' : 'bg-orange-100 text-orange-600'}`}>
                           {user.name?.charAt(0)?.toUpperCase() || 'U'}
                         </div>
-                        <span className="font-medium">{user.name || 'Без имени'}</span>
+                        <span className={`font-medium ${isDark ? 'text-zinc-100' : ''}`}>{user.name || 'Без имени'}</span>
                       </div>
                     </td>
-                    <td className="py-3 px-4 text-zinc-600">{user.email}</td>
-                    <td className="py-3 px-4 text-zinc-600">{user.phone || '—'}</td>
+                    <td className={`py-3 px-4 ${isDark ? 'text-zinc-400' : 'text-zinc-600'}`}>{user.email}</td>
+                    <td className={`py-3 px-4 ${isDark ? 'text-zinc-400' : 'text-zinc-600'}`}>{user.phone || '—'}</td>
                     <td className="py-3 px-4">
                       <span className={`text-xs px-2 py-1 rounded-full font-medium ${getStatusColor(user.customer_status)}`}>
                         {getStatusLabel(user.customer_status)}
                       </span>
                     </td>
-                    <td className="py-3 px-4 font-medium">{formatPrice(user.balance || 0)} ₽</td>
-                    <td className="py-3 px-4 text-zinc-500 text-xs">
+                    <td className={`py-3 px-4 font-medium ${isDark ? 'text-zinc-100' : ''}`}>{formatPrice(user.balance || 0)} ₽</td>
+                    <td className={`py-3 px-4 text-xs ${isDark ? 'text-zinc-500' : 'text-zinc-500'}`}>
                       {user.created_at ? new Date(user.created_at).toLocaleDateString('ru-RU') : '—'}
                     </td>
                   </tr>
@@ -150,12 +161,12 @@ export const CRMTab = ({
         >
           {/* Period selector */}
           <div className="flex items-center gap-3">
-            <Calendar className="w-5 h-5 text-zinc-400" />
+            <Calendar className={`w-5 h-5 ${isDark ? 'text-zinc-500' : 'text-zinc-400'}`} />
             <Select value={statsPeriod} onValueChange={setStatsPeriod}>
-              <SelectTrigger className="w-48">
+              <SelectTrigger className={`w-48 ${isDark ? 'bg-zinc-800/50 border-zinc-700 text-zinc-100' : ''}`}>
                 <SelectValue />
               </SelectTrigger>
-              <SelectContent>
+              <SelectContent className={isDark ? 'bg-zinc-800 border-zinc-700' : ''}>
                 <SelectItem value="today">Сегодня</SelectItem>
                 <SelectItem value="week">Неделя</SelectItem>
                 <SelectItem value="month">Месяц</SelectItem>
@@ -187,19 +198,19 @@ export const CRMTab = ({
 
           {/* Top products */}
           {extendedStats?.top_products && extendedStats.top_products.length > 0 && (
-            <div className="p-5 border border-zinc-200 rounded-xl bg-white">
-              <h3 className="font-semibold mb-4 flex items-center gap-2">
-                <TrendingUp className="w-5 h-5 text-orange-500" />
+            <div className={`p-5 rounded-xl ${isDark ? 'bg-zinc-800/50 border border-zinc-700/50 backdrop-blur-sm' : 'border border-zinc-200 bg-white'}`}>
+              <h3 className={`font-semibold mb-4 flex items-center gap-2 ${isDark ? 'text-zinc-100' : ''}`}>
+                <TrendingUp className={`w-5 h-5 ${isDark ? 'text-orange-400' : 'text-orange-500'}`} />
                 Топ товаров
               </h3>
               <div className="space-y-3">
                 {extendedStats.top_products.slice(0, 5).map((product, index) => (
                   <div key={product.id} className="flex items-center gap-3">
-                    <span className="w-6 h-6 bg-orange-100 rounded-full flex items-center justify-center text-xs font-bold text-orange-600">
+                    <span className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold ${isDark ? 'bg-orange-500/20 text-orange-400' : 'bg-orange-100 text-orange-600'}`}>
                       {index + 1}
                     </span>
-                    <span className="flex-1 truncate">{product.name}</span>
-                    <span className="font-medium">{product.sold} шт.</span>
+                    <span className={`flex-1 truncate ${isDark ? 'text-zinc-300' : ''}`}>{product.name}</span>
+                    <span className={`font-medium ${isDark ? 'text-zinc-100' : ''}`}>{product.sold} шт.</span>
                   </div>
                 ))}
               </div>
