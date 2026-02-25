@@ -192,13 +192,25 @@ export const Header = () => {
                 )}
               </>
             ) : (
-              <Link to="/login" data-testid="login-link">
-                <motion.div whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}>
-                  <Button className="bg-gradient-to-r from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700 text-white font-bold uppercase tracking-wide rounded-xl shadow-glow transition-all duration-300">
-                    Войти
-                  </Button>
-                </motion.div>
-              </Link>
+              <div className="flex items-center gap-2">
+                {/* Theme Toggle for Guest */}
+                <motion.button
+                  onClick={toggleTheme}
+                  className={`p-2 rounded-xl transition-all duration-300 ${isDark ? 'text-zinc-400 hover:text-yellow-400 hover:bg-yellow-500/10' : 'text-slate-500 hover:text-slate-700 hover:bg-slate-200/50'}`}
+                  whileHover={{ scale: 1.05, rotate: 15 }}
+                  whileTap={{ scale: 0.95 }}
+                  data-testid="guest-theme-toggle"
+                >
+                  {isDark ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
+                </motion.button>
+                <Link to="/login" data-testid="login-link">
+                  <motion.div whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}>
+                    <Button className={`font-bold uppercase tracking-wide rounded-xl shadow-glow transition-all duration-300 ${isDark ? 'bg-gradient-to-r from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700 text-white' : 'bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 text-white'}`}>
+                      Войти
+                    </Button>
+                  </motion.div>
+                </Link>
+              </div>
             )}
           </div>
 
