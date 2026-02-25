@@ -1181,7 +1181,7 @@ export default function AdminPage() {
                     <button 
                       onClick={() => moveTab(tabId, 'left')}
                       disabled={index === 0}
-                      className="p-0.5 hover:bg-orange-100 rounded disabled:opacity-30"
+                      className="p-0.5 hover:bg-teal-100 rounded disabled:opacity-30"
                     >
                       <ChevronLeft className="w-4 h-4" />
                     </button>
@@ -1192,7 +1192,7 @@ export default function AdminPage() {
                     <button 
                       onClick={() => moveTab(tabId, 'right')}
                       disabled={index === tabOrder.length - 1}
-                      className="p-0.5 hover:bg-orange-100 rounded disabled:opacity-30"
+                      className="p-0.5 hover:bg-teal-100 rounded disabled:opacity-30"
                     >
                       <ChevronRight className="w-4 h-4" />
                     </button>
