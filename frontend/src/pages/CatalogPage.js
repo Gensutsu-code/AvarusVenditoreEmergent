@@ -545,18 +545,18 @@ export default function CatalogPage() {
         {!searchQuery && !categoryId && categories.length > 0 && (
           <div className="mb-8">
             <h2 className="text-lg font-semibold mb-4 text-slate-800">Категории</h2>
-            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
+            <div className="grid grid-cols-3 sm:grid-cols-4 lg:grid-cols-6 gap-3">
               {categories.map((category) => (
                 <motion.button
                   key={category.id}
                   onClick={() => selectCategory(category.id)}
-                  className="group glass-card transition-all duration-300 p-4 text-left hover:border-teal-400/50"
+                  className="group glass-card transition-all duration-300 p-3 text-left hover:border-teal-400/50"
                   data-testid={`category-${category.id}`}
                   whileHover={{ scale: 1.02 }}
                   whileTap={{ scale: 0.98 }}
                 >
                   {category.image_url && (
-                    <div className="aspect-square mb-3 overflow-hidden rounded-xl bg-slate-100">
+                    <div className="aspect-square mb-2 overflow-hidden rounded-lg bg-slate-100">
                       <img 
                         src={category.image_url} 
                         alt={category.name}
@@ -564,9 +564,9 @@ export default function CatalogPage() {
                       />
                     </div>
                   )}
-                  <h3 className="font-medium transition-colors flex items-center justify-between text-slate-800 group-hover:text-teal-600">
+                  <h3 className="font-medium text-sm transition-colors flex items-center justify-between text-slate-800 group-hover:text-teal-600">
                     {category.name}
-                    <ArrowRight className="w-4 h-4 opacity-0 group-hover:opacity-100 transition-opacity" />
+                    <ArrowRight className="w-3 h-3 opacity-0 group-hover:opacity-100 transition-opacity" />
                   </h3>
                 </motion.button>
               ))}
