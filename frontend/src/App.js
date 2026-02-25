@@ -3,6 +3,7 @@ import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { Toaster } from "./components/ui/sonner";
 import { AuthProvider, useAuth } from "./context/AuthContext";
 import { CartProvider } from "./context/CartContext";
+import { ThemeProvider, useTheme } from "./context/ThemeContext";
 import { Header } from "./components/Header";
 import { PromoBanner } from "./components/PromoBanner";
 import { ChatWidget } from "./components/ChatWidget";
