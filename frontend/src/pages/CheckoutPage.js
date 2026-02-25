@@ -261,16 +261,16 @@ export default function CheckoutPage() {
 
   return (
     <>
-    <div className={`min-h-screen ${isDark ? 'bg-zinc-950' : ''}`} data-testid="checkout-page">
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-teal-50/30 to-emerald-50/20" data-testid="checkout-page">
       {/* Background effects */}
       <div className="fixed inset-0 overflow-hidden pointer-events-none">
         <motion.div 
-          className={`absolute top-20 right-20 w-96 h-96 rounded-full ${isDark ? 'bg-orange-500/5' : 'bg-teal-400/20'} blur-3xl`}
+          className="absolute top-20 right-20 w-96 h-96 rounded-full bg-teal-400/10 blur-3xl"
           animate={{ scale: [1, 1.2, 1], opacity: [0.3, 0.5, 0.3] }}
           transition={{ duration: 8, repeat: Infinity }}
         />
         <motion.div 
-          className={`absolute bottom-20 left-20 w-80 h-80 rounded-full ${isDark ? 'bg-purple-500/5' : 'bg-pink-400/20'} blur-3xl`}
+          className="absolute bottom-20 left-20 w-80 h-80 rounded-full bg-emerald-400/10 blur-3xl"
           animate={{ scale: [1.2, 1, 1.2], opacity: [0.3, 0.5, 0.3] }}
           transition={{ duration: 10, repeat: Infinity }}
         />
@@ -283,12 +283,12 @@ export default function CheckoutPage() {
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.5 }}
         >
-          <Link to="/cart" className={`inline-flex items-center gap-2 transition-colors mb-4 group ${isDark ? 'text-zinc-500 hover:text-teal-400' : 'text-slate-500 hover:text-teal-600'}`}>
+          <Link to="/cart" className="inline-flex items-center gap-2 transition-colors mb-4 group text-slate-500 hover:text-teal-600">
             <ArrowLeft className="w-4 h-4 group-hover:-translate-x-1 transition-transform" /> 
             Назад в корзину
           </Link>
           <h1 className="text-2xl md:text-3xl font-bold tracking-tight uppercase">
-            <span className={`bg-gradient-to-r ${isDark ? 'from-orange-400 to-orange-600' : 'from-teal-500 to-emerald-500'} bg-clip-text text-transparent`}>
+            <span className="bg-gradient-to-r from-teal-500 to-emerald-500 bg-clip-text text-transparent">
               Оформление заказа
             </span>
           </h1>
@@ -305,48 +305,48 @@ export default function CheckoutPage() {
           >
             {/* Shipping info */}
             <motion.div 
-              className="glass-card p-6 space-y-5"
+              className="bg-white/80 backdrop-blur-sm rounded-2xl border border-slate-200/50 shadow-sm p-6 space-y-5"
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.2 }}
             >
-              <h2 className="text-sm font-bold uppercase tracking-widest text-zinc-500 flex items-center gap-2">
+              <h2 className="text-sm font-bold uppercase tracking-widest text-teal-600 flex items-center gap-2">
                 <ShoppingBag className="w-4 h-4" />
                 Данные доставки
               </h2>
               
               <div>
-                <Label htmlFor="full_name" className="text-xs font-bold uppercase tracking-widest text-zinc-500 mb-2 block">ФИО получателя *</Label>
+                <Label htmlFor="full_name" className="text-xs font-bold uppercase tracking-widest text-slate-500 mb-2 block">ФИО получателя *</Label>
                 <Input id="full_name" value={form.full_name} onChange={(e) => setForm({ ...form, full_name: e.target.value })}
-                  placeholder="Иванов Иван Иванович" className="glass-input h-12 text-white placeholder:text-zinc-600" required data-testid="checkout-fullname" />
+                  placeholder="Иванов Иван Иванович" className="h-12 rounded-xl border-slate-200 focus:border-teal-400 focus:ring-teal-200 text-slate-800 placeholder:text-slate-400" required data-testid="checkout-fullname" />
               </div>
               <div>
-                <Label htmlFor="address" className="text-xs font-bold uppercase tracking-widest text-zinc-500 mb-2 block">Адрес доставки *</Label>
+                <Label htmlFor="address" className="text-xs font-bold uppercase tracking-widest text-slate-500 mb-2 block">Адрес доставки *</Label>
                 <Input id="address" value={form.address} onChange={(e) => setForm({ ...form, address: e.target.value })}
-                  placeholder="Город, улица, дом, квартира" className="glass-input h-12 text-white placeholder:text-zinc-600" required data-testid="checkout-address" />
+                  placeholder="Город, улица, дом, квартира" className="h-12 rounded-xl border-slate-200 focus:border-teal-400 focus:ring-teal-200 text-slate-800 placeholder:text-slate-400" required data-testid="checkout-address" />
               </div>
               <div>
-                <Label htmlFor="phone" className="text-xs font-bold uppercase tracking-widest text-zinc-500 mb-2 block">Телефон *</Label>
+                <Label htmlFor="phone" className="text-xs font-bold uppercase tracking-widest text-slate-500 mb-2 block">Телефон *</Label>
                 <Input id="phone" type="tel" value={form.phone} onChange={(e) => setForm({ ...form, phone: e.target.value })}
-                  placeholder="+7 (___) ___-__-__" className="glass-input h-12 text-white placeholder:text-zinc-600" required data-testid="checkout-phone" />
+                  placeholder="+7 (___) ___-__-__" className="h-12 rounded-xl border-slate-200 focus:border-teal-400 focus:ring-teal-200 text-slate-800 placeholder:text-slate-400" required data-testid="checkout-phone" />
               </div>
               <div>
-                <Label htmlFor="comment" className="text-xs font-bold uppercase tracking-widest text-zinc-500 flex items-center gap-2 mb-2">
+                <Label htmlFor="comment" className="text-xs font-bold uppercase tracking-widest text-slate-500 flex items-center gap-2 mb-2">
                   <MessageSquare className="w-4 h-4" /> Комментарий
                 </Label>
                 <Textarea id="comment" value={form.comment} onChange={(e) => setForm({ ...form, comment: e.target.value })}
-                  placeholder="Пожелания к доставке..." className="glass-input min-h-[80px] text-white placeholder:text-zinc-600" data-testid="checkout-comment" />
+                  placeholder="Пожелания к доставке..." className="min-h-[80px] rounded-xl border-slate-200 focus:border-teal-400 focus:ring-teal-200 text-slate-800 placeholder:text-slate-400" data-testid="checkout-comment" />
               </div>
             </motion.div>
 
             {/* Payment method selection */}
             <motion.div 
-              className="glass-card p-6"
+              className="bg-white/80 backdrop-blur-sm rounded-2xl border border-slate-200/50 shadow-sm p-6"
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.3 }}
             >
-              <Label className="text-sm font-bold uppercase tracking-widest text-zinc-500 mb-4 block flex items-center gap-2">
+              <Label className="text-sm font-bold uppercase tracking-widest text-teal-600 mb-4 block flex items-center gap-2">
                 <CreditCard className="w-4 h-4" />
                 Способ оплаты
               </Label>
@@ -362,36 +362,36 @@ export default function CheckoutPage() {
                         toast.error(`Недостаточно средств. Баланс: ${formatPrice(userBalance)}₽`);
                       }
                     }}
-                    className={`w-full flex items-center gap-4 p-4 rounded-xl border transition-all duration-300 text-left ${
+                    className={`w-full flex items-center gap-4 p-4 rounded-xl border-2 transition-all duration-300 text-left ${
                       payWithBalance 
-                        ? 'bg-purple-500/10 border-purple-500/50' 
+                        ? 'bg-violet-50 border-violet-400 shadow-sm shadow-violet-200' 
                         : canPayWithBalance
-                          ? 'bg-white/5 border-white/10 hover:bg-white/10'
-                          : 'bg-zinc-800/30 border-zinc-700/30 opacity-60'
+                          ? 'bg-white border-slate-200 hover:border-slate-300 hover:bg-slate-50'
+                          : 'bg-slate-100 border-slate-200 opacity-60'
                     }`}
                     whileHover={canPayWithBalance ? { scale: 1.01 } : {}}
                     whileTap={canPayWithBalance ? { scale: 0.99 } : {}}
                     data-testid="payment-method-balance"
                   >
                     <div className={`w-12 h-12 rounded-xl flex items-center justify-center flex-shrink-0 ${
-                      payWithBalance ? 'bg-purple-500/20' : 'bg-zinc-700/50'
+                      payWithBalance ? 'bg-violet-100' : 'bg-slate-100'
                     }`}>
-                      <Sparkles className={`w-6 h-6 ${payWithBalance ? 'text-purple-400' : 'text-zinc-500'}`} />
+                      <Sparkles className={`w-6 h-6 ${payWithBalance ? 'text-violet-500' : 'text-slate-400'}`} />
                     </div>
                     <div className="flex-1">
-                      <p className={`font-semibold ${payWithBalance ? 'text-purple-300' : 'text-zinc-300'}`}>
+                      <p className={`font-semibold ${payWithBalance ? 'text-violet-700' : 'text-slate-700'}`}>
                         Оплата с баланса
                       </p>
-                      <p className="text-xs text-zinc-500">
-                        Баланс: <span className={canPayWithBalance ? 'text-green-400 font-semibold' : 'text-red-400'}>{formatPrice(userBalance)}₽</span>
-                        {!canPayWithBalance && <span className="text-red-400"> (недостаточно)</span>}
+                      <p className="text-xs text-slate-500">
+                        Баланс: <span className={canPayWithBalance ? 'text-emerald-600 font-semibold' : 'text-rose-500'}>{formatPrice(userBalance)}₽</span>
+                        {!canPayWithBalance && <span className="text-rose-500"> (недостаточно)</span>}
                       </p>
                     </div>
                     <div className={`w-6 h-6 rounded-full border-2 flex items-center justify-center ${
-                      payWithBalance ? 'border-purple-500' : 'border-zinc-600'
+                      payWithBalance ? 'border-violet-500' : 'border-slate-300'
                     }`}>
                       {payWithBalance && <motion.div 
-                        className="w-3 h-3 rounded-full bg-purple-500"
+                        className="w-3 h-3 rounded-full bg-violet-500"
                         initial={{ scale: 0 }}
                         animate={{ scale: 1 }}
                         transition={{ duration: 0.2 }}
@@ -417,12 +417,12 @@ export default function CheckoutPage() {
                         }
                       }}
                       disabled={!isEnabled}
-                      className={`w-full flex items-center gap-4 p-4 rounded-xl border transition-all duration-300 text-left ${
+                      className={`w-full flex items-center gap-4 p-4 rounded-xl border-2 transition-all duration-300 text-left ${
                         !isEnabled 
-                          ? 'bg-zinc-800/30 border-zinc-700/30 opacity-50 cursor-not-allowed' 
+                          ? 'bg-slate-100 border-slate-200 cursor-not-allowed' 
                           : isSelected 
-                            ? 'bg-teal-500/10 border-teal-500/50' 
-                            : 'bg-white/5 border-white/10 hover:bg-white/10'
+                            ? 'bg-teal-50 border-teal-400 shadow-sm shadow-teal-200' 
+                            : 'bg-white border-slate-200 hover:border-slate-300 hover:bg-slate-50'
                       }`}
                       whileHover={isEnabled ? { scale: 1.01 } : {}}
                       whileTap={isEnabled ? { scale: 0.99 } : {}}
@@ -430,32 +430,32 @@ export default function CheckoutPage() {
                     >
                       <div className={`w-12 h-12 rounded-xl flex items-center justify-center flex-shrink-0 ${
                         !isEnabled 
-                          ? 'bg-zinc-700/50'
+                          ? 'bg-slate-200'
                           : isSelected 
-                            ? 'bg-teal-500/20' 
-                            : 'bg-zinc-700/50'
+                            ? 'bg-teal-100' 
+                            : 'bg-slate-100'
                       }`}>
                         <Icon className={`w-6 h-6 ${
-                          !isEnabled ? 'text-zinc-600' : isSelected ? 'text-teal-400' : 'text-zinc-500'
+                          !isEnabled ? 'text-slate-400' : isSelected ? 'text-teal-600' : 'text-slate-500'
                         }`} />
                       </div>
                       <div className="flex-1">
-                        <p className={`font-semibold ${!isEnabled ? 'text-zinc-600' : isSelected ? 'text-teal-300' : 'text-zinc-300'}`}>
+                        <p className={`font-semibold ${!isEnabled ? 'text-slate-400' : isSelected ? 'text-teal-700' : 'text-slate-700'}`}>
                           {method.label}
                         </p>
-                        <p className={`text-xs ${!isEnabled ? 'text-red-400/70 font-medium' : 'text-zinc-500'}`}>
+                        <p className={`text-xs ${!isEnabled ? 'text-rose-400 font-medium' : 'text-slate-500'}`}>
                           {!isEnabled ? 'Временно недоступно' : method.desc}
                         </p>
                       </div>
                       {isEnabled && adjustment !== 0 && (
                         <span className={`text-xs font-bold px-3 py-1.5 rounded-full ${
-                          adjustment < 0 ? 'bg-teal-500/20 text-green-400' : 'bg-red-500/20 text-red-400'
+                          adjustment < 0 ? 'bg-emerald-100 text-emerald-600' : 'bg-rose-100 text-rose-600'
                         }`}>
                           {adjustment < 0 ? `-${Math.abs(adjustment)}%` : `+${adjustment}%`}
                         </span>
                       )}
                       <div className={`w-6 h-6 rounded-full border-2 flex items-center justify-center ${
-                        !isEnabled ? 'border-zinc-700' : isSelected ? 'border-teal-500' : 'border-zinc-600'
+                        !isEnabled ? 'border-slate-300' : isSelected ? 'border-teal-500' : 'border-slate-300'
                       }`}>
                         {isSelected && isEnabled && <motion.div 
                           className="w-3 h-3 rounded-full bg-teal-500"
@@ -472,7 +472,7 @@ export default function CheckoutPage() {
 
             {/* Terms agreement */}
             <motion.div 
-              className="glass-card p-5"
+              className="bg-white/80 backdrop-blur-sm rounded-2xl border border-slate-200/50 shadow-sm p-5"
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.4 }}
@@ -484,7 +484,7 @@ export default function CheckoutPage() {
                   className={`w-6 h-6 rounded-lg border-2 flex items-center justify-center flex-shrink-0 mt-0.5 transition-all duration-300 ${
                     agreedToTerms 
                       ? 'bg-teal-500 border-teal-500' 
-                      : 'border-zinc-600 hover:border-zinc-500'
+                      : 'border-slate-300 hover:border-slate-400'
                   }`}
                   whileTap={{ scale: 0.9 }}
                   data-testid="terms-checkbox"
@@ -505,12 +505,12 @@ export default function CheckoutPage() {
                     )}
                   </AnimatePresence>
                 </motion.button>
-                <label className="text-sm text-zinc-400 cursor-pointer" onClick={() => setAgreedToTerms(!agreedToTerms)}>
+                <label className="text-sm text-slate-600 cursor-pointer" onClick={() => setAgreedToTerms(!agreedToTerms)}>
                   Я ознакомился и согласен с{' '}
                   <button 
                     type="button"
                     onClick={(e) => { e.stopPropagation(); setShowTermsModal(true); }}
-                    className="text-teal-400 hover:text-teal-300 underline font-medium transition-colors"
+                    className="text-teal-600 hover:text-teal-500 underline font-medium transition-colors"
                     data-testid="terms-link"
                   >
                     правилами предоставления услуг
@@ -530,7 +530,7 @@ export default function CheckoutPage() {
                 className={`w-full font-bold uppercase tracking-wide h-14 rounded-xl text-lg transition-all duration-300 ${
                   agreedToTerms 
                     ? 'bg-gradient-to-r from-teal-500 to-emerald-500 hover:from-teal-600 hover:to-emerald-600 text-white shadow-lg shadow-teal-500/20' 
-                    : 'bg-zinc-800 text-zinc-500 cursor-not-allowed'
+                    : 'bg-slate-200 text-slate-400 cursor-not-allowed'
                 }`} data-testid="place-order-btn">
                 {loading ? <Loader2 className="w-5 h-5 animate-spin mr-2" /> : null}
                 {loading ? 'Оформление...' : payWithBalance ? 'Оплатить с баланса' : paymentMethod === 'card' ? 'Оплатить картой' : paymentMethod === 'crypto' ? 'Перейти к оплате' : 'Подтвердить заказ'}
@@ -538,7 +538,7 @@ export default function CheckoutPage() {
             </motion.div>
             {!agreedToTerms && (
               <motion.p 
-                className="text-xs text-zinc-600 text-center"
+                className="text-xs text-slate-500 text-center"
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
                 transition={{ delay: 0.6 }}
