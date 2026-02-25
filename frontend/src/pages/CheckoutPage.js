@@ -9,6 +9,7 @@ import { Textarea } from '../components/ui/textarea';
 import { Dialog, DialogContent, DialogTitle, DialogDescription } from '../components/ui/dialog';
 import { useCart } from '../context/CartContext';
 import { useAuth } from '../context/AuthContext';
+import { useTheme } from '../context/ThemeContext';
 import { toast } from 'sonner';
 import { motion, AnimatePresence } from 'framer-motion';
 import CryptoPaymentModal from '../components/CryptoPaymentModal';
@@ -26,6 +27,7 @@ export default function CheckoutPage() {
   const navigate = useNavigate();
   const { cart, cartTotal, fetchCart, loading: cartLoading } = useCart();
   const { user, loading: authLoading } = useAuth();
+  const { isDark } = useTheme();
   const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState(false);
   const [orderId, setOrderId] = useState(null);
