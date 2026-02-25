@@ -87,24 +87,6 @@ export const SettingsTab = ({
         </motion.div>
       )}
 
-      {/* Import/Export */}
-      {activeSubTab === 'import' && (
-        <motion.div
-          initial={{ opacity: 0, y: 10 }}
-          animate={{ opacity: 1, y: 0 }}
-        >
-          <ImportTab
-            uploading={uploading}
-            importResult={importResult}
-            setImportResult={setImportResult}
-            handleImportProducts={handleImportProducts}
-            handleExportProducts={handleExportProducts}
-            importFileRef={importFileRef}
-            isDark={isDark}
-          />
-        </motion.div>
-      )}
-
       {/* Partners */}
       {activeSubTab === 'partners' && (
         <motion.div
