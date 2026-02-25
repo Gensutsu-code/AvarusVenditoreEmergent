@@ -25,7 +25,11 @@ import {
   DiscountsTab,
   TermsTab,
   NotificationsTab,
-  PartnersTab
+  PartnersTab,
+  PaymentsTab,
+  CRMTab,
+  MarketingTab,
+  SettingsTab
 } from '../components/admin';
 import CryptoSettingsTab from '../components/admin/CryptoSettingsTab';
 
