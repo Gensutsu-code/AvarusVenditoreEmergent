@@ -44,6 +44,7 @@ function AppContent() {
           <Route path="/admin" element={<AdminPage />} />
           <Route path="/admin/profile" element={<AdminProfilePage />} />
           <Route path="/admin/orders" element={<AdminOrdersPage />} />
+          <Route path="/admin/chats" element={<AdminChatsPage />} />
           <Route path="/favorites" element={<FavoritesPage />} />
           <Route path="/orders" element={<OrdersPage />} />
           <Route path="/bonus" element={<BonusPage />} />
