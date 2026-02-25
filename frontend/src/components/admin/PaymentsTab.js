@@ -248,6 +248,68 @@ export const PaymentsTab = ({
           </Button>
         </motion.div>
       )}
+
+      {/* Crypto Wallets Settings */}
+      {activeSubTab === 'crypto' && (
+        <motion.div
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="space-y-6"
+        >
+          <div className={`p-5 rounded-xl space-y-4 ${isDark ? 'bg-zinc-800/50 border border-zinc-700/50 backdrop-blur-sm' : 'border border-zinc-200 bg-white'}`}>
+            <h3 className={`font-semibold flex items-center gap-2 ${isDark ? 'text-zinc-100' : ''}`}>
+              <Wallet className={`w-5 h-5 ${isDark ? 'text-amber-400' : 'text-amber-500'}`} />
+              Кошельки для приёма криптовалюты
+            </h3>
+            <p className={`text-sm ${isDark ? 'text-zinc-500' : 'text-zinc-500'}`}>
+              Укажите адреса кошельков для приёма оплаты в USDT/USDC
+            </p>
+            
+            <div className="grid gap-4">
+              <div>
+                <Label className={`text-xs font-medium ${isDark ? 'text-zinc-400' : 'text-zinc-600'}`}>ETH/ERC-20 (Ethereum)</Label>
+                <Input
+                  value={cryptoWallets?.eth_address || ''}
+                  onChange={(e) => setCryptoWallets({ ...cryptoWallets, eth_address: e.target.value })}
+                  placeholder="0x..."
+                  className={`font-mono text-sm mt-1 ${isDark ? 'bg-zinc-900/50 border-zinc-700 text-zinc-100 placeholder:text-zinc-600' : ''}`}
+                />
+              </div>
+              <div>
+                <Label className={`text-xs font-medium ${isDark ? 'text-zinc-400' : 'text-zinc-600'}`}>BSC/BEP-20 (Binance Smart Chain)</Label>
+                <Input
+                  value={cryptoWallets?.bsc_address || ''}
+                  onChange={(e) => setCryptoWallets({ ...cryptoWallets, bsc_address: e.target.value })}
+                  placeholder="0x..."
+                  className={`font-mono text-sm mt-1 ${isDark ? 'bg-zinc-900/50 border-zinc-700 text-zinc-100 placeholder:text-zinc-600' : ''}`}
+                />
+              </div>
+              <div>
+                <Label className={`text-xs font-medium ${isDark ? 'text-zinc-400' : 'text-zinc-600'}`}>Base</Label>
+                <Input
+                  value={cryptoWallets?.base_address || ''}
+                  onChange={(e) => setCryptoWallets({ ...cryptoWallets, base_address: e.target.value })}
+                  placeholder="0x..."
+                  className={`font-mono text-sm mt-1 ${isDark ? 'bg-zinc-900/50 border-zinc-700 text-zinc-100 placeholder:text-zinc-600' : ''}`}
+                />
+              </div>
+              <div>
+                <Label className={`text-xs font-medium ${isDark ? 'text-zinc-400' : 'text-zinc-600'}`}>TRC-20 (Tron)</Label>
+                <Input
+                  value={cryptoWallets?.trc_address || ''}
+                  onChange={(e) => setCryptoWallets({ ...cryptoWallets, trc_address: e.target.value })}
+                  placeholder="T..."
+                  className={`font-mono text-sm mt-1 ${isDark ? 'bg-zinc-900/50 border-zinc-700 text-zinc-100 placeholder:text-zinc-600' : ''}`}
+                />
+              </div>
+            </div>
+          </div>
+
+          <Button onClick={handleSaveCryptoWallets} className={`${isDark ? 'bg-orange-500/90 hover:bg-orange-500' : 'bg-orange-500 hover:bg-orange-600'} text-white`}>
+            Сохранить кошельки
+          </Button>
+        </motion.div>
+      )}
     </div>
   );
 };
