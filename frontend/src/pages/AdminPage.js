@@ -3158,11 +3158,6 @@ export default function AdminPage() {
             />
           </TabsContent>
 
-          {/* Crypto Settings Tab */}
-          <TabsContent value="crypto" className="p-6">
-            <CryptoSettingsTab />
-          </TabsContent>
-
           {/* CRM Tab - combines users and analytics */}
           <TabsContent value="crm" className="p-6">
             <CRMTab
