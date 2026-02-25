@@ -12,15 +12,16 @@ import { Label } from '../components/ui/label';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '../components/ui/dialog';
 import { useAuth } from '../context/AuthContext';
 import { toast } from 'sonner';
+import { motion, AnimatePresence } from 'framer-motion';
 
 const API = `${process.env.REACT_APP_BACKEND_URL}/api`;
 
 const ORDER_STATUSES = [
-  { value: 'pending', label: 'Ожидает', color: 'bg-yellow-100 text-yellow-700', icon: Clock },
-  { value: 'processing', label: 'В обработке', color: 'bg-blue-100 text-blue-700', icon: Package },
-  { value: 'shipped', label: 'Отправлен', color: 'bg-purple-100 text-purple-700', icon: Truck },
-  { value: 'delivered', label: 'Доставлен', color: 'bg-green-100 text-green-700', icon: CheckCircle },
-  { value: 'cancelled', label: 'Отменён', color: 'bg-red-100 text-red-700', icon: XCircle }
+  { value: 'pending', label: 'Ожидает', color: 'bg-amber-100 text-amber-700 border-amber-200', icon: Clock },
+  { value: 'processing', label: 'В обработке', color: 'bg-blue-100 text-blue-700 border-blue-200', icon: Package },
+  { value: 'shipped', label: 'Отправлен', color: 'bg-violet-100 text-violet-700 border-violet-200', icon: Truck },
+  { value: 'delivered', label: 'Доставлен', color: 'bg-emerald-100 text-emerald-700 border-emerald-200', icon: CheckCircle },
+  { value: 'cancelled', label: 'Отменён', color: 'bg-rose-100 text-rose-700 border-rose-200', icon: XCircle }
 ];
 
 export default function AdminOrdersPage() {
