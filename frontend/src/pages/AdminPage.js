@@ -1786,7 +1786,7 @@ export default function AdminPage() {
                     }).map((chat) => (
                       <div
                         key={chat.id}
-                        className={`relative group ${selectedChat?.id === chat.id ? 'bg-orange-50' : 'hover:bg-zinc-50'}`}
+                        className={`relative group ${selectedChat?.id === chat.id ? 'bg-teal-50' : 'hover:bg-zinc-50'}`}
                       >
                         <button
                           onClick={() => handleSelectChat(chat)}
