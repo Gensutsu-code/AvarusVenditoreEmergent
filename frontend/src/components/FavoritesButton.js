@@ -3,7 +3,6 @@ import axios from 'axios';
 import { Heart } from 'lucide-react';
 import { Button } from './ui/button';
 import { useAuth } from '../context/AuthContext';
-import { useTheme } from '../context/ThemeContext';
 import { toast } from 'sonner';
 import { motion } from 'framer-motion';
 
@@ -11,7 +10,6 @@ const API = `${process.env.REACT_APP_BACKEND_URL}/api`;
 
 export const FavoritesButton = ({ productId, className = '', size = 'default', showText = false }) => {
   const { user } = useAuth();
-  const { isDark } = useTheme();
   const [isFavorite, setIsFavorite] = useState(false);
   const [loading, setLoading] = useState(false);
 
@@ -67,10 +65,8 @@ export const FavoritesButton = ({ productId, className = '', size = 'default', s
         disabled={loading}
         className={`flex items-center justify-center gap-2 px-6 py-3 rounded-xl font-medium transition-all duration-300 flex-1 ${
           isFavorite 
-            ? 'bg-red-500/10 border border-red-500/30 text-red-500' 
-            : isDark 
-              ? 'bg-zinc-800/50 border border-zinc-700/50 text-zinc-300 hover:bg-zinc-700/50 hover:text-red-400' 
-              : 'bg-white/50 border border-slate-200 text-slate-600 hover:bg-white/80 hover:text-red-500'
+            ? 'bg-red-50 border border-red-200 text-red-500' 
+            : 'bg-white/50 border border-slate-200 text-slate-600 hover:bg-white/80 hover:text-red-500'
         } ${className}`}
         whileHover={{ scale: 1.02 }}
         whileTap={{ scale: 0.98 }}
@@ -88,7 +84,7 @@ export const FavoritesButton = ({ productId, className = '', size = 'default', s
       size={size}
       onClick={toggleFavorite}
       disabled={loading}
-      className={`${className} ${isFavorite ? 'text-red-500 hover:text-red-600' : isDark ? 'text-zinc-400 hover:text-red-500' : 'text-slate-400 hover:text-red-500'}`}
+      className={`${className} ${isFavorite ? 'text-red-500 hover:text-red-600' : 'text-slate-400 hover:text-red-500'}`}
       data-testid={`favorite-btn-${productId}`}
     >
       <Heart className={`w-5 h-5 ${isFavorite ? 'fill-current' : ''}`} />
