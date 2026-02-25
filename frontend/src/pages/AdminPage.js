@@ -2486,7 +2486,7 @@ export default function AdminPage() {
                             redemption.status === 'pending' ? 'bg-gradient-to-r from-yellow-50 to-amber-50 border-yellow-200' :
                             redemption.status === 'approved' ? 'bg-gradient-to-r from-emerald-50 to-green-50 border-emerald-200' :
                             redemption.status === 'issued' ? 'bg-gradient-to-r from-blue-50 to-cyan-50 border-blue-200' :
-                            'bg-gradient-to-r from-red-50 to-rose-50 border-red-200'
+                            'bg-gradient-to-r from-slate-50 to-slate-100 border-slate-200'
                           }`}>
                             <div className="flex items-center justify-between">
                               <div>
