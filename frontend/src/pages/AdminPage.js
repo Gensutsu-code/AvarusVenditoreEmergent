@@ -3135,6 +3135,7 @@ export default function AdminPage() {
               cryptoWallets={cryptoWallets}
               setCryptoWallets={setCryptoWallets}
               handleSaveCryptoWallets={handleSaveCryptoWallets}
+              isDark={isDark}
             />
           </TabsContent>
 
@@ -3147,6 +3148,7 @@ export default function AdminPage() {
               statsPeriod={statsPeriod}
               setStatsPeriod={setStatsPeriod}
               formatPrice={formatPrice}
+              isDark={isDark}
             />
           </TabsContent>
 
@@ -3171,6 +3173,7 @@ export default function AdminPage() {
               handleSendBulkEmail={handleSendBulkEmail}
               sendingEmail={sendingEmail}
               users={users}
+              isDark={isDark}
             />
           </TabsContent>
 
@@ -3200,6 +3203,7 @@ export default function AdminPage() {
               handleSaveTerms={handleSaveTerms}
               handleResetTerms={handleResetTerms}
               termsSaving={termsSaving}
+              isDark={isDark}
             />
           </TabsContent>
         </Tabs>
