@@ -6,6 +6,7 @@ import { CartProvider } from "./context/CartContext";
 import { ThemeProvider, useTheme } from "./context/ThemeContext";
 import { Header } from "./components/Header";
 import { ChatWidget } from "./components/ChatWidget";
+import { FloatingPromoBanner } from "./components/HeaderPromoBanner";
 
 // Pages
 import HomePage from "./pages/HomePage";
