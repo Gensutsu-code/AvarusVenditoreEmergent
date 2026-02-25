@@ -95,35 +95,11 @@ export const MarketingTab = ({
         <motion.div
           initial={{ opacity: 0, y: 10 }}
           animate={{ opacity: 1, y: 0 }}
-          className="space-y-4"
         >
-          <div className={`p-5 rounded-xl ${isDark ? 'bg-zinc-800/50 border border-zinc-700/50 backdrop-blur-sm' : 'border border-zinc-200 bg-white'}`}>
-            <h3 className={`font-semibold mb-4 flex items-center gap-2 ${isDark ? 'text-zinc-100' : ''}`}>
-              <FileText className={`w-5 h-5 ${isDark ? 'text-orange-400' : 'text-orange-500'}`} />
-              Управление новостями
-            </h3>
-            
-            {news && news.length > 0 ? (
-              <div className="space-y-3">
-                {news.map((item) => (
-                  <div key={item.id} className={`p-3 rounded-lg flex items-center justify-between ${isDark ? 'bg-zinc-800/30 border border-zinc-700/30' : 'bg-zinc-50'}`}>
-                    <div>
-                      <h4 className={`font-medium ${isDark ? 'text-zinc-100' : ''}`}>{item.title}</h4>
-                      <p className={`text-sm line-clamp-1 ${isDark ? 'text-zinc-500' : 'text-zinc-500'}`}>{item.content}</p>
-                    </div>
-                    <span className={`text-xs ${isDark ? 'text-zinc-500' : 'text-zinc-400'}`}>
-                      {new Date(item.created_at).toLocaleDateString('ru-RU')}
-                    </span>
-                  </div>
-                ))}
-              </div>
-            ) : (
-              <div className={`text-center py-8 ${isDark ? 'text-zinc-500' : 'text-zinc-500'}`}>
-                <FileText className="w-12 h-12 mx-auto mb-2 opacity-30" />
-                <p>Новостей пока нет</p>
-              </div>
-            )}
-          </div>
+          <NewsTab
+            newsList={news || []}
+            setNewsList={setNews}
+          />
         </motion.div>
       )}
 
