@@ -187,7 +187,7 @@ code {
   }
   
   html.light-theme .price-tag {
-    @apply text-green-600;
+    @apply text-teal-600;
   }
   
   .category-card {
