@@ -436,8 +436,8 @@ export const CRMTab = ({
                   transition={{ duration: 0.2 }}
                 >
                   <div className="flex items-center gap-2 mb-2">
-                    <Users className={`w-5 h-5 ${isDark ? 'text-orange-400' : 'text-orange-600'}`} />
-                    <p className={`text-sm font-medium ${isDark ? 'text-orange-400' : 'text-orange-600'}`}>Новых клиентов</p>
+                    <Users className={`w-5 h-5 ${isDark ? 'text-cyan-400' : 'text-cyan-600'}`} />
+                    <p className={`text-sm font-medium ${isDark ? 'text-cyan-400' : 'text-cyan-600'}`}>Новых клиентов</p>
                   </div>
                   <p className={`text-3xl font-bold ${isDark ? 'text-zinc-100' : 'text-slate-800'}`}>{analyticsData.summary?.new_customers || 0}</p>
                 </motion.div>
