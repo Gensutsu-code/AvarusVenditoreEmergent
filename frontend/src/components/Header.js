@@ -90,6 +90,12 @@ export const Header = () => {
                         Заказы
                       </span>
                     </NavLink>
+                    <NavLink to="/admin/chats" data-testid="admin-chats-link">
+                      <span className="flex items-center gap-2">
+                        <MessageCircle className="w-4 h-4" />
+                        Чаты
+                      </span>
+                    </NavLink>
                     <NavLink to="/admin/profile" data-testid="admin-profile-link">
                       <User className="w-4 h-4" />
                     </NavLink>
