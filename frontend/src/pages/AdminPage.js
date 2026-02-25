@@ -2380,88 +2380,106 @@ export default function AdminPage() {
             </div>
 
             {/* Prize Redemptions Management */}
-            <div className="bg-white border border-zinc-200 rounded-xl p-6">
-              <h3 className="font-semibold text-zinc-800 mb-4 flex items-center gap-2">
-                <Gift className="w-5 h-5 text-amber-500" />
-                Запросы на призы
-                {prizeRedemptions.filter(r => r.status === 'pending').length > 0 && (
-                  <span className="bg-red-500 text-white text-xs px-2 py-0.5 rounded-full">
-                    {prizeRedemptions.filter(r => r.status === 'pending').length}
-                  </span>
-                )}
-              </h3>
-              {prizeRedemptions.length === 0 ? (
-                <p className="text-sm text-zinc-400">Нет запросов на призы</p>
-              ) : (
-                <div className="space-y-3">
-                  {prizeRedemptions.map(redemption => (
-                    <div key={redemption.id} className={`p-4 rounded-lg border ${
-                      redemption.status === 'pending' ? 'bg-yellow-50 border-yellow-200' :
-                      redemption.status === 'approved' ? 'bg-green-50 border-green-200' :
-                      redemption.status === 'issued' ? 'bg-blue-50 border-blue-200' :
-                      'bg-red-50 border-red-200'
-                    }`}>
-                      <div className="flex items-center justify-between">
-                        <div>
-                          <p className="font-semibold text-zinc-800">{redemption.user_name || redemption.user_email}</p>
-                          <p className="text-sm text-zinc-600">
-                            Приз: <span className="font-medium">{redemption.prize_name}</span> ({redemption.points_cost} баллов)
-                          </p>
-                          <p className="text-xs text-zinc-400">
-                            {new Date(redemption.created_at).toLocaleDateString('ru-RU')} — 
-                            {redemption.status === 'pending' && ' Ожидает'}
-                            {redemption.status === 'approved' && ' Одобрен'}
-                            {redemption.status === 'issued' && ' Выдан'}
-                            {redemption.status === 'rejected' && ' Отклонён'}
-                          </p>
-                        </div>
-                        {redemption.status === 'pending' && (
-                          <div className="flex gap-2">
-                            <Button size="sm" className="bg-green-500 hover:bg-green-600 text-white" onClick={async () => {
-                              try {
-                                await axios.put(`${API}/admin/prize-redemptions/${redemption.id}?status=approved`);
-                                setPrizeRedemptions(prev => prev.map(r => r.id === redemption.id ? {...r, status: 'approved'} : r));
-                                toast.success('Приз одобрен');
-                              } catch (err) { toast.error('Ошибка'); }
-                            }} data-testid={`approve-prize-${redemption.id}`}>
-                              Одобрить
-                            </Button>
-                            <Button size="sm" className="bg-blue-500 hover:bg-blue-600 text-white" onClick={async () => {
+            <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
+              <div className="bg-gradient-to-r from-slate-50 to-white px-6 py-4 border-b border-slate-100 flex items-center gap-3">
+                <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-rose-500 to-pink-500 flex items-center justify-center shadow-lg shadow-rose-500/20">
+                  <Gift className="w-5 h-5 text-white" />
+                </div>
+                <div>
+                  <h3 className="font-semibold text-slate-800">Запросы на призы</h3>
+                  {prizeRedemptions.filter(r => r.status === 'pending').length > 0 && (
+                    <span className="text-sm text-rose-500 font-medium">
+                      {prizeRedemptions.filter(r => r.status === 'pending').length} ожидают обработки
+                    </span>
+                  )}
+                </div>
+              </div>
+              <div className="p-6">
+                {prizeRedemptions.length === 0 ? (
+                  <div className="text-center py-8 text-slate-400">
+                    <Gift className="w-12 h-12 mx-auto mb-2 opacity-50" />
+                    <p>Нет запросов на призы</p>
+                  </div>
+                ) : (
+                  <div className="space-y-3">
+                    {prizeRedemptions.map(redemption => (
+                      <div key={redemption.id} className={`p-4 rounded-xl border transition-all hover:shadow-md ${
+                        redemption.status === 'pending' ? 'bg-gradient-to-r from-amber-50 to-yellow-50 border-amber-200' :
+                        redemption.status === 'approved' ? 'bg-gradient-to-r from-emerald-50 to-green-50 border-emerald-200' :
+                        redemption.status === 'issued' ? 'bg-gradient-to-r from-blue-50 to-cyan-50 border-blue-200' :
+                        'bg-gradient-to-r from-red-50 to-rose-50 border-red-200'
+                      }`}>
+                        <div className="flex items-center justify-between">
+                          <div>
+                            <p className="font-semibold text-slate-800">{redemption.user_name || redemption.user_email}</p>
+                            <p className="text-sm text-slate-600 mt-0.5">
+                              Приз: <span className="font-medium text-slate-800">{redemption.prize_name}</span> 
+                              <span className="text-slate-400 ml-1">({redemption.points_cost} баллов)</span>
+                            </p>
+                            <p className="text-xs text-slate-400 mt-1 flex items-center gap-1">
+                              <Clock className="w-3 h-3" />
+                              {new Date(redemption.created_at).toLocaleDateString('ru-RU')} — 
+                              <span className={`font-medium ${
+                                redemption.status === 'pending' ? 'text-amber-600' :
+                                redemption.status === 'approved' ? 'text-emerald-600' :
+                                redemption.status === 'issued' ? 'text-blue-600' :
+                                'text-red-600'
+                              }`}>
+                                {redemption.status === 'pending' && ' Ожидает'}
+                                {redemption.status === 'approved' && ' Одобрен'}
+                                {redemption.status === 'issued' && ' Выдан'}
+                                {redemption.status === 'rejected' && ' Отклонён'}
+                              </span>
+                            </p>
+                          </div>
+                          {redemption.status === 'pending' && (
+                            <div className="flex gap-2">
+                              <Button size="sm" className="bg-gradient-to-r from-emerald-500 to-green-500 hover:from-emerald-600 hover:to-green-600 text-white shadow-sm" onClick={async () => {
+                                try {
+                                  await axios.put(`${API}/admin/prize-redemptions/${redemption.id}?status=approved`);
+                                  setPrizeRedemptions(prev => prev.map(r => r.id === redemption.id ? {...r, status: 'approved'} : r));
+                                  toast.success('Приз одобрен');
+                                } catch (err) { toast.error('Ошибка'); }
+                              }} data-testid={`approve-prize-${redemption.id}`}>
+                                Одобрить
+                              </Button>
+                              <Button size="sm" className="bg-gradient-to-r from-blue-500 to-cyan-500 hover:from-blue-600 hover:to-cyan-600 text-white shadow-sm" onClick={async () => {
+                                try {
+                                  await axios.put(`${API}/admin/prize-redemptions/${redemption.id}?status=issued`);
+                                  setPrizeRedemptions(prev => prev.map(r => r.id === redemption.id ? {...r, status: 'issued'} : r));
+                                  toast.success('Приз выдан');
+                                } catch (err) { toast.error('Ошибка'); }
+                              }} data-testid={`issue-prize-${redemption.id}`}>
+                                Выдать
+                              </Button>
+                              <Button size="sm" variant="outline" className="border-red-300 text-red-600 hover:bg-red-50" onClick={async () => {
+                                try {
+                                  await axios.put(`${API}/admin/prize-redemptions/${redemption.id}?status=rejected`);
+                                  setPrizeRedemptions(prev => prev.map(r => r.id === redemption.id ? {...r, status: 'rejected'} : r));
+                                  toast.success('Приз отклонён');
+                                } catch (err) { toast.error('Ошибка'); }
+                              }} data-testid={`reject-prize-${redemption.id}`}>
+                                Отклонить
+                              </Button>
+                            </div>
+                          )}
+                          {redemption.status === 'approved' && (
+                            <Button size="sm" className="bg-gradient-to-r from-blue-500 to-cyan-500 hover:from-blue-600 hover:to-cyan-600 text-white shadow-sm" onClick={async () => {
                               try {
                                 await axios.put(`${API}/admin/prize-redemptions/${redemption.id}?status=issued`);
                                 setPrizeRedemptions(prev => prev.map(r => r.id === redemption.id ? {...r, status: 'issued'} : r));
                                 toast.success('Приз выдан');
                               } catch (err) { toast.error('Ошибка'); }
-                            }} data-testid={`issue-prize-${redemption.id}`}>
+                            }}>
                               Выдать
                             </Button>
-                            <Button size="sm" variant="outline" className="border-red-300 text-red-600 hover:bg-red-50" onClick={async () => {
-                              try {
-                                await axios.put(`${API}/admin/prize-redemptions/${redemption.id}?status=rejected`);
-                                setPrizeRedemptions(prev => prev.map(r => r.id === redemption.id ? {...r, status: 'rejected'} : r));
-                                toast.success('Приз отклонён');
-                              } catch (err) { toast.error('Ошибка'); }
-                            }} data-testid={`reject-prize-${redemption.id}`}>
-                              Отклонить
-                            </Button>
-                          </div>
-                        )}
-                        {redemption.status === 'approved' && (
-                          <Button size="sm" className="bg-blue-500 hover:bg-blue-600 text-white" onClick={async () => {
-                            try {
-                              await axios.put(`${API}/admin/prize-redemptions/${redemption.id}?status=issued`);
-                              setPrizeRedemptions(prev => prev.map(r => r.id === redemption.id ? {...r, status: 'issued'} : r));
-                              toast.success('Приз выдан');
-                            } catch (err) { toast.error('Ошибка'); }
-                          }}>
-                            Выдать
-                          </Button>
-                        )}
+                          )}
+                        </div>
                       </div>
-                    </div>
-                  ))}
-                </div>
-              )}
+                    ))}
+                  </div>
+                )}
+              </div>
             </div>
           </TabsContent>
 
