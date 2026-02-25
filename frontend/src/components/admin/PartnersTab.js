@@ -10,8 +10,11 @@ export default function PartnersTab({
   setPartners,
   editingPartner,
   setEditingPartner,
+  isNewPartner,
+  setIsNewPartner,
   handleAddDefaultPartners,
   handleDeletePartner,
+  handleSavePartner,
   handlePartnerImageUpload,
   partnerImageUploading,
   partnerImageRef,
@@ -19,7 +22,10 @@ export default function PartnersTab({
 }) {
   const localFileRef = useRef(null);
   const fileRef = partnerImageRef || localFileRef;
-  const [isNewPartner, setIsNewPartner] = React.useState(false);
+  // Use local state if not provided from parent
+  const [localIsNewPartner, setLocalIsNewPartner] = React.useState(false);
+  const isNew = isNewPartner !== undefined ? isNewPartner : localIsNewPartner;
+  const setIsNew = setIsNewPartner || setLocalIsNewPartner;
 
   const handleSavePartner = async () => {
     // This would be handled by parent component
