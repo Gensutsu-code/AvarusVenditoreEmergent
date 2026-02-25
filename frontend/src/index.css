@@ -26,7 +26,7 @@
     --radius: 0.75rem;
   }
 
-  /* Light theme variables - User requested colors */
+  /* Light theme variables - User requested colors: teal/emerald instead of orange */
   html.light-theme {
     --background: 180 100% 97%;
     --foreground: 220 20% 20%;
@@ -34,19 +34,19 @@
     --card-foreground: 220 20% 20%;
     --popover: 180 50% 95%;
     --popover-foreground: 220 20% 20%;
-    --primary: 150 100% 40%;
+    --primary: 160 84% 39%;
     --primary-foreground: 0 0% 100%;
     --secondary: 350 100% 88%;
     --secondary-foreground: 220 20% 20%;
     --muted: 180 30% 90%;
     --muted-foreground: 220 10% 40%;
-    --accent: 350 100% 88%;
+    --accent: 160 60% 45%;
     --accent-foreground: 220 20% 20%;
     --destructive: 0 84% 60%;
     --destructive-foreground: 0 0% 98%;
     --border: 180 30% 85%;
     --input: 180 30% 90%;
-    --ring: 150 100% 40%;
+    --ring: 160 84% 39%;
   }
 }
 
