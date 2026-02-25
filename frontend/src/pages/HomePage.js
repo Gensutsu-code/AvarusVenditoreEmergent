@@ -111,45 +111,53 @@ export default function HomePage() {
                 animate={{ opacity: 1, x: 0 }}
                 transition={{ duration: 0.6, delay: 0.3 }}
               >
-                <div className="glass-card p-6">
-                  <p className="text-xs uppercase tracking-widest mb-4 text-center text-slate-500">
-                    Работаем с ведущими производителями
-                  </p>
-                  <div className="grid grid-cols-3 gap-3">
+                <div className="bg-white/80 backdrop-blur-xl border border-white/50 rounded-3xl p-6 shadow-xl shadow-teal-500/5">
+                  <div className="flex items-center justify-center gap-2 mb-5">
+                    <div className="h-px flex-1 bg-gradient-to-r from-transparent to-teal-200"></div>
+                    <p className="text-xs uppercase tracking-widest text-teal-600 font-semibold px-3">
+                      Наши партнёры
+                    </p>
+                    <div className="h-px flex-1 bg-gradient-to-l from-transparent to-teal-200"></div>
+                  </div>
+                  <div className="grid grid-cols-3 gap-2">
                     {partners.slice(0, 6).map((partner, index) => (
                       <motion.a
                         key={partner.id || partner.name}
                         href={partner.link || '#'}
                         target={partner.link ? '_blank' : undefined}
                         rel={partner.link ? 'noopener noreferrer' : undefined}
-                        className="bg-white/50 border border-slate-200 p-4 hover:border-teal-400/50 hover:bg-teal-500/5 transition-all duration-300 rounded-xl overflow-hidden block group"
-                        initial={{ opacity: 0, y: 20 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        transition={{ duration: 0.4, delay: 0.4 + index * 0.1 }}
+                        className="group relative bg-gradient-to-br from-slate-50 to-white border border-slate-100 p-3 hover:border-teal-300 hover:shadow-lg hover:shadow-teal-500/10 transition-all duration-300 rounded-xl overflow-hidden block hover:-translate-y-0.5"
+                        initial={{ opacity: 0, scale: 0.9 }}
+                        animate={{ opacity: 1, scale: 1 }}
+                        transition={{ duration: 0.3, delay: 0.4 + index * 0.08 }}
+                        whileHover={{ scale: 1.02 }}
                       >
                         {partner.image_url && (
-                          <div className="w-full h-12 mb-2 flex items-center justify-center">
+                          <div className="w-full h-10 mb-1.5 flex items-center justify-center">
                             <img 
                               src={partner.image_url} 
                               alt={partner.name}
-                              className="max-w-full max-h-full object-contain filter brightness-90 group-hover:brightness-110 transition-all"
+                              className="max-w-full max-h-full object-contain group-hover:scale-105 transition-transform duration-300"
                             />
                           </div>
                         )}
                         <div className="text-center">
-                          <div className="text-xs font-medium truncate text-slate-700">
+                          <div className="text-[11px] font-semibold text-slate-700 truncate">
                             {partner.name}
                           </div>
-                          <div className="text-[10px] truncate text-slate-500">
+                          <div className="text-[9px] text-slate-400 truncate">
                             {partner.description}
                           </div>
                         </div>
                       </motion.a>
                     ))}
                   </div>
-                  <p className="text-xs mt-4 text-center text-slate-400">
-                    Только проверенные поставщики
-                  </p>
+                  <div className="mt-4 pt-3 border-t border-slate-100 flex items-center justify-center gap-1.5">
+                    <div className="w-1.5 h-1.5 rounded-full bg-teal-500"></div>
+                    <p className="text-[10px] text-slate-400">
+                      Только проверенные поставщики
+                    </p>
+                  </div>
                 </div>
               </motion.div>
             )}
