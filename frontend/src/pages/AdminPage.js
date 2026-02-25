@@ -2137,7 +2137,7 @@ export default function AdminPage() {
                       <div 
                         className={`px-6 py-4 flex items-center justify-between cursor-pointer transition-colors ${
                           selectedProgramId === program.id 
-                            ? 'bg-gradient-to-r from-purple-50 to-violet-50 border-b border-purple-200' 
+                            ? 'bg-gradient-to-r from-teal-50 to-emerald-50 border-b border-teal-200' 
                             : 'hover:bg-slate-50'
                         }`}
                         onClick={async () => {
