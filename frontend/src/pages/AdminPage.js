@@ -1418,11 +1418,16 @@ export default function AdminPage() {
                   )}
                 </div>
               </div>
-            </div>
+            </motion.div>
           </TabsContent>
 
           {/* Orders Tab */}
           <TabsContent value="orders" className="p-6">
+            <motion.div 
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.3, ease: "easeOut" }}
+            >
             <h2 className="text-lg font-semibold mb-4">Заказы</h2>
             
             <div className="overflow-x-auto">
