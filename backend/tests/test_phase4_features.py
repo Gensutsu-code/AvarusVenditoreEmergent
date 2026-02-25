@@ -11,7 +11,7 @@ import requests
 import os
 import io
 
-BASE_URL = os.environ.get('REACT_APP_BACKEND_URL', 'https://product-details-view.preview.emergentagent.com').rstrip('/')
+BASE_URL = os.environ.get('REACT_APP_BACKEND_URL', 'https://admin-panel-fix-101.preview.emergentagent.com').rstrip('/')
 
 # Test credentials
 ADMIN_EMAIL = "admin@avarus.ru"
