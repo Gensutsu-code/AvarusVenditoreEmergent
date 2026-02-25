@@ -79,9 +79,9 @@ export const SettingsTab = ({
           animate={{ opacity: 1, y: 0 }}
         >
           <TelegramTab
-            telegramConfig={telegramConfig}
-            setTelegramConfig={setTelegramConfig}
-            handleSaveTelegramConfig={handleSaveTelegramConfig}
+            telegramSettings={telegramConfig || { enabled: false, bot_token: '', chat_id: '' }}
+            setTelegramSettings={setTelegramConfig}
+            handleSaveTelegram={handleSaveTelegramConfig}
           />
         </motion.div>
       )}
