@@ -17,25 +17,34 @@ export default function NotificationsTab({
   users,
   handleSaveNotificationSettings,
   handleSendTestEmail,
-  handleSendBulkEmail
+  handleSendBulkEmail,
+  isDark = false
 }) {
   return (
     <div className="p-6">
       <div className="space-y-6">
         <div>
-          <h2 className="text-lg font-semibold">Email-уведомления</h2>
-          <p className="text-sm text-zinc-500">Настройте автоматические email-уведомления для клиентов</p>
+          <h2 className={`text-lg font-semibold ${isDark ? 'text-zinc-100' : ''}`}>Email-уведомления</h2>
+          <p className={`text-sm ${isDark ? 'text-zinc-500' : 'text-zinc-500'}`}>Настройте автоматические email-уведомления для клиентов</p>
         </div>
 
         {/* Resend Status */}
-        <div className={`p-4 rounded-lg border ${notificationSettings.resend_configured ? 'bg-green-50 border-green-200' : 'bg-yellow-50 border-yellow-200'}`}>
+        <div className={`p-4 rounded-lg border ${
+          notificationSettings.resend_configured 
+            ? isDark ? 'bg-green-500/10 border-green-500/30' : 'bg-green-50 border-green-200'
+            : isDark ? 'bg-yellow-500/10 border-yellow-500/30' : 'bg-yellow-50 border-yellow-200'
+        }`}>
           <div className="flex items-center gap-3">
             <div className={`w-3 h-3 rounded-full ${notificationSettings.resend_configured ? 'bg-green-500' : 'bg-yellow-500'}`}></div>
             <div>
-              <p className={`font-medium ${notificationSettings.resend_configured ? 'text-green-800' : 'text-yellow-800'}`}>
+              <p className={`font-medium ${
+                notificationSettings.resend_configured 
+                  ? isDark ? 'text-green-400' : 'text-green-800'
+                  : isDark ? 'text-yellow-400' : 'text-yellow-800'
+              }`}>
                 {notificationSettings.resend_configured ? 'Resend API настроен' : 'Resend API не настроен'}
               </p>
-              <p className="text-sm text-zinc-500">
+              <p className={`text-sm ${isDark ? 'text-zinc-500' : 'text-zinc-500'}`}>
                 {notificationSettings.resend_configured 
                   ? 'Email-уведомления будут отправляться автоматически' 
                   : 'Добавьте RESEND_API_KEY в настройки сервера для активации'}
@@ -45,17 +54,17 @@ export default function NotificationsTab({
         </div>
 
         {/* Notification Settings */}
-        <div className="bg-white border border-zinc-200 rounded-lg p-6 space-y-4">
-          <h3 className="font-semibold text-zinc-900 mb-4 flex items-center gap-2">
-            <Bell className="w-5 h-5 text-orange-500" />
+        <div className={`rounded-lg p-6 space-y-4 ${isDark ? 'bg-zinc-800/50 border border-zinc-700/50 backdrop-blur-sm' : 'bg-white border border-zinc-200'}`}>
+          <h3 className={`font-semibold mb-4 flex items-center gap-2 ${isDark ? 'text-zinc-100' : 'text-zinc-900'}`}>
+            <Bell className={`w-5 h-5 ${isDark ? 'text-orange-400' : 'text-orange-500'}`} />
             Типы уведомлений
           </h3>
 
           <div className="space-y-4">
-            <div className="flex items-center justify-between p-3 bg-zinc-50 rounded-lg">
+            <div className={`flex items-center justify-between p-3 rounded-lg ${isDark ? 'bg-zinc-800/30 border border-zinc-700/30' : 'bg-zinc-50'}`}>
               <div>
-                <p className="font-medium text-zinc-900">Подтверждение заказа</p>
-                <p className="text-sm text-zinc-500">Отправляется после оформления заказа</p>
+                <p className={`font-medium ${isDark ? 'text-zinc-100' : 'text-zinc-900'}`}>Подтверждение заказа</p>
+                <p className={`text-sm ${isDark ? 'text-zinc-500' : 'text-zinc-500'}`}>Отправляется после оформления заказа</p>
               </div>
               <Switch
                 checked={notificationSettings.order_confirmation_enabled}
@@ -64,10 +73,10 @@ export default function NotificationsTab({
               />
             </div>
 
-            <div className="flex items-center justify-between p-3 bg-zinc-50 rounded-lg">
+            <div className={`flex items-center justify-between p-3 rounded-lg ${isDark ? 'bg-zinc-800/30 border border-zinc-700/30' : 'bg-zinc-50'}`}>
               <div>
-                <p className="font-medium text-zinc-900">Статус заказа</p>
-                <p className="text-sm text-zinc-500">Отправляется при изменении статуса</p>
+                <p className={`font-medium ${isDark ? 'text-zinc-100' : 'text-zinc-900'}`}>Статус заказа</p>
+                <p className={`text-sm ${isDark ? 'text-zinc-500' : 'text-zinc-500'}`}>Отправляется при изменении статуса</p>
               </div>
               <Switch
                 checked={notificationSettings.order_status_enabled}
@@ -76,10 +85,10 @@ export default function NotificationsTab({
               />
             </div>
 
-            <div className="flex items-center justify-between p-3 bg-zinc-50 rounded-lg">
+            <div className={`flex items-center justify-between p-3 rounded-lg ${isDark ? 'bg-zinc-800/30 border border-zinc-700/30' : 'bg-zinc-50'}`}>
               <div>
-                <p className="font-medium text-zinc-900">Промо-рассылки</p>
-                <p className="text-sm text-zinc-500">Разрешить отправку промо-писем</p>
+                <p className={`font-medium ${isDark ? 'text-zinc-100' : 'text-zinc-900'}`}>Промо-рассылки</p>
+                <p className={`text-sm ${isDark ? 'text-zinc-500' : 'text-zinc-500'}`}>Разрешить отправку промо-писем</p>
               </div>
               <Switch
                 checked={notificationSettings.promotions_enabled}
@@ -91,7 +100,7 @@ export default function NotificationsTab({
 
           <Button
             onClick={handleSaveNotificationSettings}
-            className="w-full bg-orange-500 hover:bg-orange-600 mt-4"
+            className={`w-full mt-4 ${isDark ? 'bg-orange-500/90 hover:bg-orange-500' : 'bg-orange-500 hover:bg-orange-600'}`}
             data-testid="save-notification-settings"
           >
             <Save className="w-4 h-4 mr-2" />
@@ -100,9 +109,9 @@ export default function NotificationsTab({
         </div>
 
         {/* Test Email */}
-        <div className="bg-white border border-zinc-200 rounded-lg p-6">
-          <h3 className="font-semibold text-zinc-900 mb-4 flex items-center gap-2">
-            <Mail className="w-5 h-5 text-blue-500" />
+        <div className={`rounded-lg p-6 ${isDark ? 'bg-zinc-800/50 border border-zinc-700/50 backdrop-blur-sm' : 'bg-white border border-zinc-200'}`}>
+          <h3 className={`font-semibold mb-4 flex items-center gap-2 ${isDark ? 'text-zinc-100' : 'text-zinc-900'}`}>
+            <Mail className={`w-5 h-5 ${isDark ? 'text-blue-400' : 'text-blue-500'}`} />
             Тестовое письмо
           </h3>
           <div className="flex gap-3">
@@ -111,7 +120,7 @@ export default function NotificationsTab({
               value={testEmail}
               onChange={(e) => setTestEmail(e.target.value)}
               placeholder="email@example.com"
-              className="flex-1"
+              className={`flex-1 ${isDark ? 'bg-zinc-900/50 border-zinc-700 text-zinc-100 placeholder:text-zinc-600' : ''}`}
               data-testid="test-email-input"
             />
             <Button
@@ -126,32 +135,32 @@ export default function NotificationsTab({
         </div>
 
         {/* Bulk Email */}
-        <div className="bg-white border border-zinc-200 rounded-lg p-6">
-          <h3 className="font-semibold text-zinc-900 mb-4 flex items-center gap-2">
-            <Send className="w-5 h-5 text-purple-500" />
+        <div className={`rounded-lg p-6 ${isDark ? 'bg-zinc-800/50 border border-zinc-700/50 backdrop-blur-sm' : 'bg-white border border-zinc-200'}`}>
+          <h3 className={`font-semibold mb-4 flex items-center gap-2 ${isDark ? 'text-zinc-100' : 'text-zinc-900'}`}>
+            <Send className={`w-5 h-5 ${isDark ? 'text-purple-400' : 'text-purple-500'}`} />
             Массовая рассылка
           </h3>
           <div className="space-y-4">
             <div>
-              <Label className="text-xs font-bold uppercase text-zinc-500">Тема письма</Label>
+              <Label className={`text-xs font-bold uppercase ${isDark ? 'text-zinc-500' : 'text-zinc-500'}`}>Тема письма</Label>
               <Input
                 value={bulkEmailForm.subject}
                 onChange={(e) => setBulkEmailForm({ ...bulkEmailForm, subject: e.target.value })}
                 placeholder="Специальное предложение от AVOPT.STORE!"
-                className="mt-1"
+                className={`mt-1 ${isDark ? 'bg-zinc-900/50 border-zinc-700 text-zinc-100 placeholder:text-zinc-600' : ''}`}
                 data-testid="bulk-email-subject"
               />
             </div>
             <div>
-              <Label className="text-xs font-bold uppercase text-zinc-500">Содержание письма (HTML)</Label>
+              <Label className={`text-xs font-bold uppercase ${isDark ? 'text-zinc-500' : 'text-zinc-500'}`}>Содержание письма (HTML)</Label>
               <Textarea
                 value={bulkEmailForm.html_content}
                 onChange={(e) => setBulkEmailForm({ ...bulkEmailForm, html_content: e.target.value })}
                 placeholder="<p>Уважаемые клиенты!</p><p>Рады сообщить вам о...</p>"
-                className="mt-1 min-h-[150px] font-mono text-sm"
+                className={`mt-1 min-h-[150px] font-mono text-sm ${isDark ? 'bg-zinc-900/50 border-zinc-700 text-zinc-100 placeholder:text-zinc-600' : ''}`}
                 data-testid="bulk-email-content"
               />
-              <p className="text-xs text-zinc-400 mt-1">Поддерживается HTML-разметка. Письмо будет оформлено в фирменном стиле.</p>
+              <p className={`text-xs mt-1 ${isDark ? 'text-zinc-600' : 'text-zinc-400'}`}>Поддерживается HTML-разметка. Письмо будет оформлено в фирменном стиле.</p>
             </div>
             <Button
               onClick={handleSendBulkEmail}
@@ -163,7 +172,7 @@ export default function NotificationsTab({
               {sendingEmail ? 'Отправка...' : `Отправить всем (${users.length} получателей)`}
             </Button>
             {!notificationSettings.promotions_enabled && (
-              <p className="text-sm text-yellow-600 text-center">Промо-рассылки отключены в настройках</p>
+              <p className={`text-sm text-center ${isDark ? 'text-yellow-400' : 'text-yellow-600'}`}>Промо-рассылки отключены в настройках</p>
             )}
           </div>
         </div>
