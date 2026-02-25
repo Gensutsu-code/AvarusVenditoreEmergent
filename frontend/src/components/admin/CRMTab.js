@@ -201,7 +201,7 @@ export const CRMTab = ({
                             </div>
                             <div className="flex justify-between">
                               <span className={`text-sm ${isDark ? 'text-zinc-500' : 'text-zinc-500'}`}>Роль:</span>
-                              <span className={`text-sm font-bold ${isDark ? 'text-zinc-200' : ''}`}>{getStatusLabel(user.customer_status)}</span>
+                              <span className={`text-sm font-bold ${isDark ? 'text-zinc-200' : ''}`}>{getStatusLabel(user.role)}</span>
                             </div>
                             <div className="flex justify-between">
                               <span className={`text-sm ${isDark ? 'text-zinc-500' : 'text-zinc-500'}`}>Дата регистрации:</span>
