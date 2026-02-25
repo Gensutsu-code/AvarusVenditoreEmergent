@@ -2376,7 +2376,7 @@ export default function AdminPage() {
                       <p className="text-sm text-slate-500">
                         {bonusHistory.length} выдач • {prizeRedemptions.length} запросов
                         {prizeRedemptions.filter(r => r.status === 'pending').length > 0 && (
-                          <span className="ml-2 text-rose-500 font-medium">
+                          <span className="ml-2 text-teal-500 font-medium">
                             ({prizeRedemptions.filter(r => r.status === 'pending').length} ожидают)
                           </span>
                         )}
