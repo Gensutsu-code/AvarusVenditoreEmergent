@@ -1136,10 +1136,10 @@ export default function AdminPage() {
                 </div>
               </div>
             </div>
-            <div className="bg-gradient-to-br from-orange-500 to-orange-600 rounded-xl p-5 text-white shadow-lg">
+            <div className="bg-gradient-to-br from-amber-500 to-orange-500 rounded-xl p-5 text-white shadow-lg">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-orange-100 text-sm font-medium">Заказов</p>
+                  <p className="text-amber-100 text-sm font-medium">Заказов</p>
                   <p className="text-3xl font-bold mt-1">{stats.total_orders}</p>
                 </div>
                 <div className="w-12 h-12 bg-white/20 rounded-full flex items-center justify-center">
@@ -1147,10 +1147,10 @@ export default function AdminPage() {
                 </div>
               </div>
             </div>
-            <div className="bg-gradient-to-br from-purple-500 to-purple-600 rounded-xl p-5 text-white shadow-lg">
+            <div className="bg-gradient-to-br from-emerald-500 to-teal-500 rounded-xl p-5 text-white shadow-lg">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-purple-100 text-sm font-medium">Выручка</p>
+                  <p className="text-emerald-100 text-sm font-medium">Выручка</p>
                   <p className="text-2xl font-bold mt-1">{formatPrice(stats.total_revenue)} ₽</p>
                 </div>
                 <div className="w-12 h-12 bg-white/20 rounded-full flex items-center justify-center">
