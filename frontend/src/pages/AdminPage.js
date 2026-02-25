@@ -1405,9 +1405,9 @@ export default function AdminPage() {
                   </div>
                 </div>
 
-                {/* Products Grid */}
+                {/* Products Grid - Compact Cards like Categories */}
                 <div className="p-6">
-                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+                  <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6 gap-4">
                     {products
                       .filter(p => selectedCategoryId ? p.category_id === selectedCategoryId : true)
                       .map((product) => (
@@ -1417,72 +1417,50 @@ export default function AdminPage() {
                           initial={{ opacity: 0, scale: 0.9 }}
                           animate={{ opacity: 1, scale: 1 }}
                           exit={{ opacity: 0, scale: 0.9 }}
-                          className="group bg-white rounded-xl border border-slate-200 shadow-sm hover:shadow-xl hover:shadow-teal-500/10 hover:-translate-y-1 transition-all duration-300 overflow-hidden"
+                          className="group relative bg-white/80 backdrop-blur-sm rounded-xl p-4 border border-white/50 shadow-sm hover:shadow-xl hover:shadow-teal-500/10 hover:-translate-y-1 transition-all duration-300 cursor-pointer"
+                          onClick={() => openEditProduct(product)}
                         >
-                          {/* Product Image */}
-                          <div className="aspect-square bg-gradient-to-br from-slate-100 to-slate-50 relative overflow-hidden">
+                          <div className="aspect-square bg-gradient-to-br from-slate-100 to-slate-50 mb-3 overflow-hidden rounded-lg relative">
                             {product.image_url ? (
                               <img src={product.image_url} alt={product.name} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" />
                             ) : (
                               <div className="w-full h-full flex items-center justify-center">
-                                <Package className="w-16 h-16 text-slate-200" />
+                                <Package className="w-10 h-10 text-slate-300" />
                               </div>
                             )}
                             {/* Stock Badge */}
-                            <div className={`absolute top-3 right-3 px-2.5 py-1 rounded-full text-xs font-semibold ${
+                            <div className={`absolute top-2 right-2 px-1.5 py-0.5 rounded-full text-[10px] font-semibold ${
                               product.stock > 10 
                                 ? 'bg-emerald-500 text-white' 
                                 : product.stock > 0 
                                   ? 'bg-yellow-500 text-white'
                                   : 'bg-red-500 text-white'
                             }`}>
-                              {product.stock > 0 ? `${product.stock} шт.` : 'Нет в наличии'}
-                            </div>
-                            {/* Action buttons on hover */}
-                            <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2">
-                              <button 
-                                className="p-3 rounded-full bg-white/90 hover:bg-white text-teal-600 transition-colors shadow-lg" 
-                                onClick={() => openEditProduct(product)}
-                                data-testid={`edit-${product.id}`}
-                              >
-                                <Pencil className="w-5 h-5" />
-                              </button>
-                              <button 
-                                className="p-3 rounded-full bg-white/90 hover:bg-white text-red-500 transition-colors shadow-lg" 
-                                onClick={() => handleDeleteProduct(product.id)}
-                                data-testid={`delete-${product.id}`}
-                              >
-                                <Trash2 className="w-5 h-5" />
-                              </button>
+                              {product.stock > 0 ? `${product.stock}` : '0'}
                             </div>
                           </div>
-
-                          {/* Product Info */}
-                          <div className="p-4">
-                            {/* Category Badge */}
-                            <span 
-                              className="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-semibold bg-teal-100 text-teal-700 mb-2 cursor-pointer hover:bg-teal-200 transition-colors"
-                              onClick={() => setSelectedCategoryId(product.category_id)}
-                            >
-                              {getCategoryName(product.category_id)}
-                            </span>
-
-                            <h4 className="font-semibold text-slate-800 line-clamp-2 mb-1">{product.name}</h4>
-                            
-                            {/* Manufacturer & Article */}
-                            <div className="flex items-center gap-2 mb-3">
-                              {product.manufacturer && (
-                                <span className="text-xs font-medium text-slate-500">{product.manufacturer}</span>
-                              )}
-                              <code className="px-1.5 py-0.5 rounded bg-slate-100 text-[10px] font-mono text-slate-500">{product.article}</code>
+                          <div className="flex items-start justify-between gap-2">
+                            <div className="min-w-0 flex-1">
+                              <h3 className="font-semibold text-sm text-slate-800 truncate">{product.name}</h3>
+                              <p className="text-xs text-teal-600 font-bold mt-0.5">
+                                {formatPrice(product.price)} ₽
+                              </p>
                             </div>
-
-                            {/* Price */}
-                            <div className="flex items-center justify-between">
-                              <div>
-                                <span className="text-xl font-bold text-slate-800">{formatPrice(product.price)}</span>
-                                <span className="text-slate-400 ml-1">₽</span>
-                              </div>
+                            <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                              <button 
+                                className="p-1.5 rounded-lg bg-slate-100 hover:bg-teal-100 text-slate-500 hover:text-teal-600 transition-colors" 
+                                onClick={(e) => { e.stopPropagation(); openEditProduct(product); }}
+                                data-testid={`edit-${product.id}`}
+                              >
+                                <Pencil className="w-3.5 h-3.5" />
+                              </button>
+                              <button 
+                                className="p-1.5 rounded-lg bg-slate-100 hover:bg-red-100 text-slate-500 hover:text-red-500 transition-colors" 
+                                onClick={(e) => { e.stopPropagation(); handleDeleteProduct(product.id); }}
+                                data-testid={`delete-${product.id}`}
+                              >
+                                <Trash2 className="w-3.5 h-3.5" />
+                              </button>
                             </div>
                           </div>
                         </motion.div>
