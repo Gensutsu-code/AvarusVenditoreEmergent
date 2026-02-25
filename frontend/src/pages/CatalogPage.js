@@ -7,7 +7,6 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from '../components/
 import { Search, X, ShoppingCart, Package, Truck, Minus, Plus, ArrowRight, Heart, ChevronLeft, ChevronRight, Percent } from 'lucide-react';
 import { useCart } from '../context/CartContext';
 import { useAuth } from '../context/AuthContext';
-import { useTheme } from '../context/ThemeContext';
 import { toast } from 'sonner';
 import { useNavigate } from 'react-router-dom';
 import { FavoritesButton } from '../components/FavoritesButton';
