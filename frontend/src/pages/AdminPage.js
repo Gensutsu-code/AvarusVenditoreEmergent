@@ -1020,23 +1020,14 @@ export default function AdminPage() {
     toast.success('Порядок вкладок сброшен');
   };
 
-  // Tab configuration
+  // Tab configuration - New restructured tabs
   const tabConfig = {
     products: { icon: Package, label: 'Каталог', count: products.length },
-    orders: { icon: ShoppingBag, label: 'Заказы', count: orders.length },
-    users: { icon: Users, label: 'Клиенты', count: users.length },
-    promo: { icon: Megaphone, label: 'Акции' },
-    stats: { icon: BarChart3, label: 'Аналитика' },
-    chat: { icon: MessageCircle, label: 'Чаты', badge: chats.reduce((sum, c) => sum + (c.unread_count || 0), 0) },
-    telegram: { icon: Send, label: 'TG' },
-    import: { icon: FileSpreadsheet, label: 'Импорт' },
     bonus: { icon: Gift, label: 'Бонусы', badge: bonusPrograms.reduce((sum, p) => sum + (p.pending_requests || 0), 0) },
-    discounts: { icon: CreditCard, label: 'Оплата' },
-    crypto: { icon: Wallet, label: 'Крипто' },
-    news: { icon: FileText, label: 'Новости' },
-    partners: { icon: Image, label: 'Партнёры' },
-    terms: { icon: FileText, label: 'Правила' },
-    notifications: { icon: Mail, label: 'Рассылки' }
+    payments: { icon: CreditCard, label: 'Платежи' },
+    crm: { icon: Users, label: 'CRM', count: users.length },
+    marketing: { icon: Megaphone, label: 'Маркетинг' },
+    settings: { icon: Settings, label: 'Настройки' }
   };
 
   if (authLoading || loading) {
