@@ -1,103 +1,90 @@
 # PRD - E-commerce Platform "AVOPT.STORE"
 
 ## Original Problem Statement
-E-commerce platform for truck spare parts with:
-- Product catalog with search and filters
-- User authentication and profiles
-- Shopping cart and checkout
-- Order management
-- Admin panel for products, orders, users management
-- Mock prepayment/balance system
-- Cryptocurrency payment system (MetaMask)
-- Full site redesign with glassmorphism aesthetic
-- Theme switching (dark/light)
-
-## User Personas
-1. **Customers** - Browse products, place orders, manage account balance
-2. **Administrators** - Manage products, orders, users, payment settings
+E-commerce platform for truck spare parts with full admin panel restructuring.
 
 ## What's Been Implemented
 
-### December 2025 - Bug Fixes & Improvements
+### December 2025 - Latest Session
 
-#### Promo Banner Fixes (COMPLETED)
-- Fixed banner save API endpoint (was `/api/promo-banner`, now correctly `/api/admin/promo-banner`)
-- Moved banner from below header into the header itself (centered between logo and icons)
-- Removed "Avarus-Venditore" center text from header
-- Added collapse/expand animation for banner:
-  - Clicking X collapses banner to a small tag icon
-  - Clicking icon expands banner back
-  - State persisted in sessionStorage
-- Banner no longer redirects on X click - just collapses
+#### Promo Banner Improvements (COMPLETED)
+- ✅ Moved banner to LEFT side of header (next to logo)
+- ✅ Banner now expands LEFT-TO-RIGHT with smooth spring animation
+- ✅ Collapse animation with rotating sparkle icon
+- ✅ Beautiful new design with shadow and sparkle icon
+- ✅ X button no longer redirects - just collapses banner
+- ✅ Banner state persisted in sessionStorage
 
-#### Theme Switching Feature (COMPLETED)
-- Created ThemeContext for managing dark/light themes
-- Added theme toggle button in Header (Sun/Moon icons)
-- Implemented localStorage persistence for theme preference
-- **Light theme colors** (as requested by user):
-  - Background gradient: RGB(224,255,255) → RGB(255,192,203) → RGB(240,255,255)
-  - Primary accents: Green (green-500 to emerald-600)
-- **Dark theme colors**:
-  - Background: zinc-950
-  - Primary accents: Orange (orange-500 to orange-600)
+#### Theme Colors Update (COMPLETED)
+- ✅ Removed orange from light theme
+- ✅ Light theme now uses TEAL/EMERALD colors:
+  - Primary: teal-500 to emerald-500
+  - Accents: teal-600
+  - Focus rings: teal-400
+- ✅ Dark theme keeps orange accents
 
-#### Glassmorphism Redesign (IN PROGRESS)
-Completed pages:
-- [x] HomePage
-- [x] LoginPage  
-- [x] RegisterPage
-- [x] CatalogPage
-- [x] CartPage
-- [x] CheckoutPage
-- [x] AccountPage
-- [x] BonusPage (partial - added theme support)
+#### Admin Panel Restructuring (IN PROGRESS)
+- ✅ Created AdminChatsPage.js - separate page for chats
+- ✅ Added /admin/chats route
+- ✅ Added "Чаты" link in admin navigation
+- ✅ Orders already on separate page (/admin/orders)
 
-Remaining pages:
-- [ ] AdminPage and all admin tabs
-- [ ] ProductPage (single product view)
+**New Admin Navigation:**
+- Панель (main admin)
+- Заказы (orders - separate page)
+- Чаты (chats - new separate page)
+- Профиль
 
-#### Previous Completions:
-- Mock prepayment system (user balance top-up)
-- Cryptocurrency payment system (MetaMask modal)
-- Order cancellation with cart restoration
-- Payment method adjustments (surcharges/discounts)
+**Tab Structure to implement:**
+1. **Payments** = Payment methods + Prepayment + Crypto wallets
+2. **CRM** = Clients list + Analytics
+3. **Marketing** = Promo banner + News + Newsletters
+4. **Settings** = Telegram + Import/Export + Partners + Terms
+
+#### Previous Session Work
+- Theme switching (dark/light)
+- Glassmorphism redesign for user pages
+- Bug fixes (banner save, bonus system)
 
 ## Tech Stack
 - **Frontend**: React, TailwindCSS, Shadcn/UI, Framer Motion
 - **Backend**: FastAPI, Python
 - **Database**: MongoDB
-- **Auth**: JWT
 
 ## Key Files
-- `/app/frontend/src/context/ThemeContext.js` - Theme management
-- `/app/frontend/src/components/Header.js` - Navigation with theme toggle
-- `/app/frontend/src/components/HeaderPromoBanner.js` - Banner in header with animations
-- `/app/frontend/src/index.css` - Theme CSS variables and glassmorphism styles
-
-## Mocked Features
-- **Prepayment system** - Simulates balance top-up (card/crypto)
-- **Crypto payments** - MetaMask flow without real transactions
+- `/app/frontend/src/components/HeaderPromoBanner.js` - Banner with animations
+- `/app/frontend/src/pages/AdminChatsPage.js` - New chat page
+- `/app/frontend/src/components/Header.js` - Navigation with chat link
+- `/app/frontend/src/index.css` - Theme styles (teal for light)
 
 ## Prioritized Backlog
 
 ### P0 (High Priority)
-- [ ] Complete AdminPage glassmorphism redesign
-- [ ] Admin panel restructuring (merge tabs as requested)
+- [ ] Complete AdminPage tab restructuring (merge tabs into Payments, CRM, Marketing, Settings)
+- [ ] Apply glassmorphism design to AdminPage
 
-### P1 (Medium Priority)
+### P1 (Medium Priority)  
 - [ ] ProductPage redesign
-- [ ] More animations on page transitions
+- [ ] More animations throughout
 
 ### P2 (Future)
-- [ ] Real payment integration (Stripe/YooKassa)
-- [ ] Real crypto payment processing
+- [ ] Real payment integration
+- [ ] Real crypto payments
 
 ## Test Credentials
 - **User**: newtest@example.com / password123
 - **Admin**: admin@avarus.ru / admin
 
-## API Endpoints Reference
-- `POST /api/auth/login` - User login
-- `GET/PUT /api/admin/promo-banner` - Banner management (admin only)
-- `GET /api/promo-banner` - Get banner settings (public)
-- `GET /api/bonus/programs` - Bonus programs (authenticated)
+## Routes
+- `/` - Home
+- `/catalog` - Products
+- `/cart` - Cart
+- `/checkout` - Checkout
+- `/login` - Login
+- `/register` - Register
+- `/account` - User profile
+- `/bonus` - Bonus programs
+- `/admin` - Admin panel
+- `/admin/orders` - Orders management
+- `/admin/chats` - Chat with customers (NEW)
+- `/admin/profile` - Admin profile
