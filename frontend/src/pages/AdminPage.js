@@ -1745,10 +1745,16 @@ export default function AdminPage() {
                 </div>
               ))}
             </div>
+            </motion.div>
           </TabsContent>
 
           {/* Promo Banner Tab */}
           <TabsContent value="promo">
+            <motion.div 
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.3, ease: "easeOut" }}
+            >
             <PromoTab
               promoBanner={promoBanner}
               setPromoBanner={setPromoBanner}
@@ -1756,20 +1762,32 @@ export default function AdminPage() {
               handlePromoImageUpload={handlePromoImageUpload}
               handleSavePromoBanner={handleSavePromoBanner}
             />
+            </motion.div>
           </TabsContent>
 
           {/* Extended Statistics Tab */}
           <TabsContent value="stats">
+            <motion.div 
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.3, ease: "easeOut" }}
+            >
             <StatsTab
               statsPeriod={statsPeriod}
               setStatsPeriod={setStatsPeriod}
               extendedStats={extendedStats}
             />
+            </motion.div>
           </TabsContent>
 
           {/* Chat Tab - Keeping inline due to complexity */}
           <TabsContent value="chat" className="p-6">
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 h-[500px]">
+            <motion.div 
+              className="grid grid-cols-1 md:grid-cols-3 gap-4 h-[500px]"
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.3, ease: "easeOut" }}
+            >
               {/* Chat list */}
               <div className="border border-zinc-200 overflow-hidden flex flex-col">
                 <div className="bg-zinc-50 px-4 py-3 border-b border-zinc-200 font-semibold text-sm flex items-center justify-between">
