@@ -2091,7 +2091,7 @@ export default function AdminPage() {
               <div className="bg-gradient-to-br from-purple-50/50 to-violet-50/30 rounded-2xl p-6 border border-purple-100/50">
                 <div className="flex justify-between items-center">
                   <div className="flex items-center gap-3">
-                    <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-teal-500 to-emerald-500 flex items-center justify-center shadow-lg shadow-purple-500/20">
+                    <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-teal-500 to-emerald-500 flex items-center justify-center shadow-lg shadow-teal-500/20">
                       <Gift className="w-6 h-6 text-white" />
                     </div>
                     <div>
@@ -2111,7 +2111,7 @@ export default function AdminPage() {
                       });
                       setIsNewProgram(true);
                     }}
-                    className="bg-gradient-to-r from-teal-500 to-emerald-500 hover:from-purple-600 hover:to-violet-600 text-white shadow-lg shadow-purple-500/20"
+                    className="bg-gradient-to-r from-teal-500 to-emerald-500 hover:from-purple-600 hover:to-violet-600 text-white shadow-lg shadow-teal-500/20"
                     data-testid="add-bonus-program-btn"
                   >
                     <Plus className="w-4 h-4 mr-2" />
