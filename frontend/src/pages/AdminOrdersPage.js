@@ -169,60 +169,130 @@ export default function AdminOrdersPage() {
 
   if (authLoading || loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="text-zinc-500">Загрузка...</div>
+      <div className="min-h-screen bg-gradient-to-br from-slate-50 via-teal-50/30 to-emerald-50/20 flex items-center justify-center">
+        <motion.div 
+          className="flex flex-col items-center gap-3"
+          initial={{ opacity: 0, scale: 0.9 }}
+          animate={{ opacity: 1, scale: 1 }}
+        >
+          <div className="w-10 h-10 border-3 border-teal-500 border-t-transparent rounded-full animate-spin" />
+          <span className="text-slate-500">Загрузка заказов...</span>
+        </motion.div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-zinc-50" data-testid="admin-orders-page">
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-teal-50/30 to-emerald-50/20" data-testid="admin-orders-page">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Header */}
-        <div className="flex items-center justify-between mb-6">
-          <h1 className="text-2xl md:text-3xl font-bold tracking-tight uppercase text-zinc-900">
-            Управление заказами
-          </h1>
-          <Button variant="outline" size="sm" onClick={fetchOrders}>
+        <motion.div 
+          className="flex items-center justify-between mb-8"
+          initial={{ opacity: 0, y: -20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.4 }}
+        >
+          <div className="flex items-center gap-4">
+            <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-teal-500 to-emerald-500 flex items-center justify-center shadow-lg shadow-teal-500/20">
+              <Package className="w-6 h-6 text-white" />
+            </div>
+            <div>
+              <h1 className="text-2xl md:text-3xl font-bold tracking-tight uppercase bg-gradient-to-r from-teal-600 to-emerald-600 bg-clip-text text-transparent">
+                Управление заказами
+              </h1>
+              <p className="text-sm text-slate-500">Всего {orders.length} заказов</p>
+            </div>
+          </div>
+          <Button 
+            variant="outline" 
+            size="sm" 
+            onClick={fetchOrders}
+            className="border-teal-200 text-teal-600 hover:bg-teal-50 hover:border-teal-300 rounded-xl"
+          >
             <RefreshCw className="w-4 h-4 mr-2" />
             Обновить
           </Button>
-        </div>
+        </motion.div>
 
         {/* Stats Cards */}
-        <div className="grid grid-cols-2 md:grid-cols-5 gap-4 mb-6">
-          <div className="bg-white rounded-xl border border-zinc-200 p-4 shadow-sm">
-            <p className="text-zinc-500 text-xs uppercase font-medium">Всего</p>
-            <p className="text-2xl font-bold mt-1">{stats.total}</p>
+        <motion.div 
+          className="grid grid-cols-2 md:grid-cols-5 gap-4 mb-8"
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.4, delay: 0.1 }}
+        >
+          <div className="bg-white/80 backdrop-blur-sm rounded-2xl border border-slate-200/50 p-4 shadow-sm hover:shadow-md transition-shadow">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-xl bg-slate-100 flex items-center justify-center">
+                <Package className="w-5 h-5 text-slate-600" />
+              </div>
+              <div>
+                <p className="text-slate-500 text-xs uppercase font-medium">Всего</p>
+                <p className="text-2xl font-bold text-slate-800">{stats.total}</p>
+              </div>
+            </div>
           </div>
-          <div className="bg-yellow-50 rounded-xl border border-yellow-200 p-4">
-            <p className="text-yellow-600 text-xs uppercase font-medium">Ожидают</p>
-            <p className="text-2xl font-bold mt-1 text-yellow-700">{stats.pending}</p>
+          <div className="bg-amber-50/80 backdrop-blur-sm rounded-2xl border border-amber-200/50 p-4 shadow-sm hover:shadow-md transition-shadow">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-xl bg-amber-100 flex items-center justify-center">
+                <Clock className="w-5 h-5 text-amber-600" />
+              </div>
+              <div>
+                <p className="text-amber-600 text-xs uppercase font-medium">Ожидают</p>
+                <p className="text-2xl font-bold text-amber-700">{stats.pending}</p>
+              </div>
+            </div>
           </div>
-          <div className="bg-blue-50 rounded-xl border border-blue-200 p-4">
-            <p className="text-blue-600 text-xs uppercase font-medium">В обработке</p>
-            <p className="text-2xl font-bold mt-1 text-blue-700">{stats.processing}</p>
+          <div className="bg-blue-50/80 backdrop-blur-sm rounded-2xl border border-blue-200/50 p-4 shadow-sm hover:shadow-md transition-shadow">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-xl bg-blue-100 flex items-center justify-center">
+                <Package className="w-5 h-5 text-blue-600" />
+              </div>
+              <div>
+                <p className="text-blue-600 text-xs uppercase font-medium">В обработке</p>
+                <p className="text-2xl font-bold text-blue-700">{stats.processing}</p>
+              </div>
+            </div>
           </div>
-          <div className="bg-green-50 rounded-xl border border-green-200 p-4">
-            <p className="text-green-600 text-xs uppercase font-medium">Доставлено</p>
-            <p className="text-2xl font-bold mt-1 text-green-700">{stats.delivered}</p>
+          <div className="bg-emerald-50/80 backdrop-blur-sm rounded-2xl border border-emerald-200/50 p-4 shadow-sm hover:shadow-md transition-shadow">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-xl bg-emerald-100 flex items-center justify-center">
+                <CheckCircle className="w-5 h-5 text-emerald-600" />
+              </div>
+              <div>
+                <p className="text-emerald-600 text-xs uppercase font-medium">Доставлено</p>
+                <p className="text-2xl font-bold text-emerald-700">{stats.delivered}</p>
+              </div>
+            </div>
           </div>
-          <div className="bg-purple-50 rounded-xl border border-purple-200 p-4">
-            <p className="text-purple-600 text-xs uppercase font-medium">Выручка</p>
-            <p className="text-xl font-bold mt-1 text-purple-700">{formatPrice(stats.totalRevenue)} ₽</p>
+          <div className="bg-gradient-to-br from-teal-50 to-emerald-50 backdrop-blur-sm rounded-2xl border border-teal-200/50 p-4 shadow-sm hover:shadow-md transition-shadow">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-teal-500 to-emerald-500 flex items-center justify-center">
+                <CreditCard className="w-5 h-5 text-white" />
+              </div>
+              <div>
+                <p className="text-teal-600 text-xs uppercase font-medium">Выручка</p>
+                <p className="text-xl font-bold bg-gradient-to-r from-teal-600 to-emerald-600 bg-clip-text text-transparent">{formatPrice(stats.totalRevenue)} ₽</p>
+              </div>
+            </div>
           </div>
-        </div>
+        </motion.div>
 
         {/* Filters */}
-        <div className="bg-white rounded-xl border border-zinc-200 shadow-sm mb-6">
+        <motion.div 
+          className="bg-white/80 backdrop-blur-sm rounded-2xl border border-slate-200/50 shadow-sm mb-6"
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.4, delay: 0.2 }}
+        >
           <div className="p-4 flex flex-col sm:flex-row gap-4">
             <div className="relative flex-1">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-400" />
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
               <Input
                 placeholder="Поиск по номеру, имени, телефону..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="pl-10"
+                className="pl-10 rounded-xl border-slate-200 focus:border-teal-400 focus:ring-teal-200"
               />
             </div>
             <div className="flex gap-2 flex-wrap">
@@ -230,7 +300,7 @@ export default function AdminOrdersPage() {
                 variant={statusFilter === 'all' ? 'default' : 'outline'}
                 size="sm"
                 onClick={() => setStatusFilter('all')}
-                className={statusFilter === 'all' ? 'bg-zinc-800' : ''}
+                className={`rounded-xl ${statusFilter === 'all' ? 'bg-gradient-to-r from-teal-500 to-emerald-500 border-0' : 'border-slate-200 hover:border-teal-300'}`}
               >
                 Все
               </Button>
@@ -240,30 +310,43 @@ export default function AdminOrdersPage() {
                   variant={statusFilter === status.value ? 'default' : 'outline'}
                   size="sm"
                   onClick={() => setStatusFilter(status.value)}
-                  className={statusFilter === status.value ? status.color.replace('100', '500').replace('700', 'white') : ''}
+                  className={`rounded-xl ${statusFilter === status.value ? status.color : 'border-slate-200 hover:border-slate-300'}`}
                 >
                   {status.label}
                 </Button>
               ))}
             </div>
           </div>
-        </div>
+        </motion.div>
 
         {/* Orders List */}
         <div className="space-y-4">
+          <AnimatePresence>
           {filteredOrders.length === 0 ? (
-            <div className="bg-white rounded-xl border border-zinc-200 p-12 text-center">
-              <Package className="w-12 h-12 text-zinc-300 mx-auto mb-4" />
-              <p className="text-zinc-500">Заказы не найдены</p>
-            </div>
+            <motion.div 
+              className="bg-white/80 backdrop-blur-sm rounded-2xl border border-slate-200/50 p-12 text-center"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+            >
+              <div className="w-16 h-16 rounded-2xl bg-slate-100 flex items-center justify-center mx-auto mb-4">
+                <Package className="w-8 h-8 text-slate-400" />
+              </div>
+              <p className="text-slate-500">Заказы не найдены</p>
+            </motion.div>
           ) : (
-            filteredOrders.map(order => {
+            filteredOrders.map((order, index) => {
               const statusInfo = getStatusInfo(order.status);
               const StatusIcon = statusInfo.icon;
               const isExpanded = expandedOrders[order.id];
               
               return (
-                <div key={order.id} className="bg-white rounded-xl border border-zinc-200 shadow-sm overflow-hidden">
+                <motion.div 
+                  key={order.id} 
+                  className="bg-white/80 backdrop-blur-sm rounded-2xl border border-slate-200/50 shadow-sm overflow-hidden hover:shadow-md transition-shadow"
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ duration: 0.3, delay: index * 0.05 }}
+                >
                   {/* Order Header */}
                   <div 
                     className="p-4 cursor-pointer hover:bg-zinc-50 transition-colors"
