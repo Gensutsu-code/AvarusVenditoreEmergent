@@ -502,13 +502,27 @@ async def get_admin_stats_extended(user=Depends(get_current_user)):
     }
 
 
+# Analytics cache for performance optimization
+_analytics_cache = {}
+_analytics_cache_time = {}
+ANALYTICS_CACHE_TTL = 300  # 5 minutes
+
 @router.get("/analytics/detailed")
 async def get_detailed_analytics(period: str = "month", user=Depends(get_current_user)):
-    """Get detailed analytics for CRM dashboard"""
+    """Get detailed analytics for CRM dashboard - OPTIMIZED"""
     if user.get("role") != "admin":
         raise HTTPException(status_code=403, detail="Admin access required")
     
     from datetime import timedelta
+    import time
+    
+    # Check cache first
+    cache_key = f"analytics_{period}"
+    current_time = time.time()
+    if cache_key in _analytics_cache and cache_key in _analytics_cache_time:
+        if current_time - _analytics_cache_time[cache_key] < ANALYTICS_CACHE_TTL:
+            return _analytics_cache[cache_key]
+    
     now = datetime.now(timezone.utc)
     
     # Calculate date range based on period
@@ -525,53 +539,36 @@ async def get_detailed_analytics(period: str = "month", user=Depends(get_current
     
     start_str = start_date.isoformat()
     
-    # Basic stats
-    total_orders = await db.orders.count_documents({"created_at": {"$gte": start_str}})
-    completed_orders = await db.orders.count_documents({"created_at": {"$gte": start_str}, "status": "delivered"})
-    cancelled_orders = await db.orders.count_documents({"created_at": {"$gte": start_str}, "status": "cancelled"})
-    new_customers = await db.users.count_documents({"created_at": {"$gte": start_str}, "role": {"$ne": "admin"}})
-    
-    # Revenue
-    revenue_pipeline = [
+    # OPTIMIZED: Single aggregation for all basic stats + status counts
+    stats_pipeline = [
         {"$match": {"created_at": {"$gte": start_str}}},
-        {"$group": {"_id": None, "total": {"$sum": "$total"}}}
+        {"$group": {
+            "_id": None,
+            "total_orders": {"$sum": 1},
+            "total_revenue": {"$sum": "$total"},
+            "new_count": {"$sum": {"$cond": [{"$eq": ["$status", "new"]}, 1, 0]}},
+            "processing_count": {"$sum": {"$cond": [{"$eq": ["$status", "processing"]}, 1, 0]}},
+            "shipped_count": {"$sum": {"$cond": [{"$eq": ["$status", "shipped"]}, 1, 0]}},
+            "delivered_count": {"$sum": {"$cond": [{"$eq": ["$status", "delivered"]}, 1, 0]}},
+            "cancelled_count": {"$sum": {"$cond": [{"$eq": ["$status", "cancelled"]}, 1, 0]}}
+        }}
     ]
-    revenue_result = await db.orders.aggregate(revenue_pipeline).to_list(1)
-    total_revenue = revenue_result[0]["total"] if revenue_result else 0
     
-    # Average order value
-    avg_order = total_revenue / total_orders if total_orders > 0 else 0
+    # OPTIMIZED: Single aggregation for daily sales (instead of 30+ queries)
+    daily_sales_pipeline = [
+        {"$match": {"created_at": {"$gte": start_str}}},
+        {"$addFields": {
+            "date_only": {"$substr": ["$created_at", 0, 10]}
+        }},
+        {"$group": {
+            "_id": "$date_only",
+            "orders": {"$sum": 1},
+            "revenue": {"$sum": "$total"}
+        }},
+        {"$sort": {"_id": 1}}
+    ]
     
-    # Conversion rate (completed / total)
-    conversion_rate = (completed_orders / total_orders * 100) if total_orders > 0 else 0
-    
-    # Sales by day (last 30 days for chart)
-    days_data = []
-    for i in range(min(30, (now - start_date).days + 1)):
-        day = now - timedelta(days=i)
-        day_start = day.replace(hour=0, minute=0, second=0, microsecond=0).isoformat()
-        day_end = day.replace(hour=23, minute=59, second=59, microsecond=999999).isoformat()
-        
-        day_orders = await db.orders.count_documents({
-            "created_at": {"$gte": day_start, "$lte": day_end}
-        })
-        
-        day_revenue_pipeline = [
-            {"$match": {"created_at": {"$gte": day_start, "$lte": day_end}}},
-            {"$group": {"_id": None, "total": {"$sum": "$total"}}}
-        ]
-        day_revenue_result = await db.orders.aggregate(day_revenue_pipeline).to_list(1)
-        day_revenue = day_revenue_result[0]["total"] if day_revenue_result else 0
-        
-        days_data.append({
-            "date": day.strftime("%d.%m"),
-            "orders": day_orders,
-            "revenue": day_revenue
-        })
-    
-    days_data.reverse()
-    
-    # Top products
+    # Top products aggregation (already optimized)
     top_products_pipeline = [
         {"$match": {"created_at": {"$gte": start_str}}},
         {"$unwind": "$items"},
@@ -584,9 +581,8 @@ async def get_detailed_analytics(period: str = "month", user=Depends(get_current
         {"$sort": {"quantity": -1}},
         {"$limit": 5}
     ]
-    top_products = await db.orders.aggregate(top_products_pipeline).to_list(5)
     
-    # Top customers
+    # OPTIMIZED: Top customers with user lookup in single aggregation
     top_customers_pipeline = [
         {"$match": {"created_at": {"$gte": start_str}}},
         {"$group": {
@@ -597,31 +593,74 @@ async def get_detailed_analytics(period: str = "month", user=Depends(get_current
         {"$sort": {"total_spent": -1}},
         {"$limit": 5}
     ]
-    top_customers_raw = await db.orders.aggregate(top_customers_pipeline).to_list(5)
     
-    # Enrich with user data
-    top_customers = []
-    for c in top_customers_raw:
-        user_data = await db.users.find_one({"id": c["_id"]}, {"_id": 0, "name": 1, "email": 1})
-        if user_data:
-            top_customers.append({
-                "user_id": c["_id"],
-                "name": user_data.get("name", "—"),
-                "email": user_data.get("email", "—"),
-                "total_spent": c["total_spent"],
-                "orders_count": c["orders_count"]
-            })
+    # Execute all aggregations in parallel
+    stats_result, daily_sales_result, top_products, top_customers_raw, new_customers = await asyncio.gather(
+        db.orders.aggregate(stats_pipeline).to_list(1),
+        db.orders.aggregate(daily_sales_pipeline).to_list(365),
+        db.orders.aggregate(top_products_pipeline).to_list(5),
+        db.orders.aggregate(top_customers_pipeline).to_list(5),
+        db.users.count_documents({"created_at": {"$gte": start_str}, "role": {"$ne": "admin"}})
+    )
     
-    # Orders by status
-    status_stats = {
-        "new": await db.orders.count_documents({"created_at": {"$gte": start_str}, "status": "new"}),
-        "processing": await db.orders.count_documents({"created_at": {"$gte": start_str}, "status": "processing"}),
-        "shipped": await db.orders.count_documents({"created_at": {"$gte": start_str}, "status": "shipped"}),
-        "delivered": await db.orders.count_documents({"created_at": {"$gte": start_str}, "status": "delivered"}),
-        "cancelled": await db.orders.count_documents({"created_at": {"$gte": start_str}, "status": "cancelled"})
+    # Process stats result
+    stats = stats_result[0] if stats_result else {
+        "total_orders": 0, "total_revenue": 0,
+        "new_count": 0, "processing_count": 0, "shipped_count": 0,
+        "delivered_count": 0, "cancelled_count": 0
     }
     
-    return {
+    total_orders = stats.get("total_orders", 0)
+    total_revenue = stats.get("total_revenue", 0)
+    completed_orders = stats.get("delivered_count", 0)
+    cancelled_orders = stats.get("cancelled_count", 0)
+    
+    avg_order = total_revenue / total_orders if total_orders > 0 else 0
+    conversion_rate = (completed_orders / total_orders * 100) if total_orders > 0 else 0
+    
+    # Process daily sales into proper format
+    daily_sales_map = {d["_id"]: d for d in daily_sales_result}
+    days_data = []
+    for i in range(min(30, (now - start_date).days + 1)):
+        day = now - timedelta(days=i)
+        day_key = day.strftime("%Y-%m-%d")
+        day_data = daily_sales_map.get(day_key, {"orders": 0, "revenue": 0})
+        days_data.append({
+            "date": day.strftime("%d.%m"),
+            "orders": day_data.get("orders", 0),
+            "revenue": day_data.get("revenue", 0)
+        })
+    days_data.reverse()
+    
+    # Batch fetch user data for top customers (instead of N queries)
+    user_ids = [c["_id"] for c in top_customers_raw]
+    users_data = await db.users.find(
+        {"id": {"$in": user_ids}},
+        {"_id": 0, "id": 1, "name": 1, "email": 1}
+    ).to_list(5)
+    users_map = {u["id"]: u for u in users_data}
+    
+    top_customers = []
+    for c in top_customers_raw:
+        user_data = users_map.get(c["_id"], {})
+        top_customers.append({
+            "user_id": c["_id"],
+            "name": user_data.get("name", "—"),
+            "email": user_data.get("email", "—"),
+            "total_spent": c["total_spent"],
+            "orders_count": c["orders_count"]
+        })
+    
+    # Orders by status from the single aggregation
+    status_stats = {
+        "new": stats.get("new_count", 0),
+        "processing": stats.get("processing_count", 0),
+        "shipped": stats.get("shipped_count", 0),
+        "delivered": stats.get("delivered_count", 0),
+        "cancelled": stats.get("cancelled_count", 0)
+    }
+    
+    result = {
         "period": period,
         "summary": {
             "total_orders": total_orders,
@@ -637,3 +676,9 @@ async def get_detailed_analytics(period: str = "month", user=Depends(get_current
         "top_customers": top_customers,
         "orders_by_status": status_stats
     }
+    
+    # Cache the result
+    _analytics_cache[cache_key] = result
+    _analytics_cache_time[cache_key] = current_time
+    
+    return result
