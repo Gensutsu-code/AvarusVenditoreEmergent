@@ -3521,52 +3521,57 @@ export default function AdminPage() {
         </Tabs>
       </div>
 
-      {/* Edit Product Modal */}
+      {/* Edit Product Modal - Modern Design */}
       <Dialog open={!!editingProduct} onOpenChange={() => setEditingProduct(null)}>
-        <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto" data-testid="product-edit-modal">
-          <DialogHeader>
-            <DialogTitle>{isNewProduct ? 'Добавить товар' : 'Редактировать товар'}</DialogTitle>
+        <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto bg-gradient-to-br from-white to-slate-50" data-testid="product-edit-modal">
+          <DialogHeader className="border-b border-slate-100 pb-4">
+            <DialogTitle className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-teal-500 to-emerald-500 flex items-center justify-center shadow-lg shadow-teal-500/20">
+                <Package className="w-5 h-5 text-white" />
+              </div>
+              <span className="text-slate-800">{isNewProduct ? 'Добавить товар' : 'Редактировать товар'}</span>
+            </DialogTitle>
           </DialogHeader>
           
           {editingProduct && (
-            <div className="space-y-4 mt-4">
+            <div className="space-y-5 mt-4">
               <div>
-                <Label className="text-xs font-bold uppercase text-zinc-500">Название *</Label>
+                <Label className="text-xs font-semibold uppercase text-teal-600">Название *</Label>
                 <Input
                   value={editingProduct.name}
                   onChange={(e) => setEditingProduct({ ...editingProduct, name: e.target.value })}
-                  className="mt-1"
+                  className="mt-1.5 border-slate-200 focus:border-teal-500 focus:ring-teal-500"
                   data-testid="product-name-input"
                 />
               </div>
               
               <div>
-                <Label className="text-xs font-bold uppercase text-zinc-500">Артикул *</Label>
+                <Label className="text-xs font-semibold uppercase text-teal-600">Артикул *</Label>
                 <Input
                   value={editingProduct.article}
                   onChange={(e) => setEditingProduct({ ...editingProduct, article: e.target.value })}
-                  className="mt-1"
+                  className="mt-1.5 border-slate-200 focus:border-teal-500 focus:ring-teal-500 font-mono"
                   data-testid="product-article-input"
                 />
               </div>
 
               <div>
-                <Label className="text-xs font-bold uppercase text-zinc-500">Производитель</Label>
+                <Label className="text-xs font-semibold uppercase text-teal-600">Производитель</Label>
                 <Input
                   value={editingProduct.manufacturer || ''}
                   onChange={(e) => setEditingProduct({ ...editingProduct, manufacturer: e.target.value })}
                   placeholder="Например: SACHS, BPW, MAN"
-                  className="mt-1"
+                  className="mt-1.5 border-slate-200 focus:border-teal-500 focus:ring-teal-500"
                   data-testid="product-manufacturer-input"
                 />
               </div>
 
               <div>
-                <Label className="text-xs font-bold uppercase text-zinc-500">Категория</Label>
+                <Label className="text-xs font-semibold uppercase text-teal-600">Категория</Label>
                 <select
                   value={editingProduct.category_id || ''}
                   onChange={(e) => setEditingProduct({ ...editingProduct, category_id: e.target.value || null })}
-                  className="mt-1 w-full h-10 px-3 border border-zinc-200 bg-white"
+                  className="mt-1.5 w-full h-10 px-3 border border-slate-200 bg-white rounded-md focus:border-teal-500 focus:ring-1 focus:ring-teal-500 outline-none"
                   data-testid="product-category-select"
                 >
                   <option value="">Без категории</option>
@@ -3576,42 +3581,42 @@ export default function AdminPage() {
                 </select>
               </div>
 
-              <div className="grid grid-cols-3 gap-4">
+              <div className="grid grid-cols-3 gap-4 p-4 bg-slate-50 rounded-xl">
                 <div>
-                  <Label className="text-xs font-bold uppercase text-zinc-500">Цена *</Label>
+                  <Label className="text-xs font-semibold uppercase text-teal-600">Цена *</Label>
                   <Input
                     type="number"
                     value={editingProduct.price}
                     onChange={(e) => setEditingProduct({ ...editingProduct, price: parseFloat(e.target.value) || 0 })}
-                    className="mt-1"
+                    className="mt-1.5 border-slate-200 focus:border-teal-500 focus:ring-teal-500"
                     data-testid="product-price-input"
                   />
                 </div>
                 <div>
-                  <Label className="text-xs font-bold uppercase text-zinc-500">Наличие</Label>
+                  <Label className="text-xs font-semibold uppercase text-teal-600">Наличие</Label>
                   <Input
                     type="number"
                     value={editingProduct.stock}
                     onChange={(e) => setEditingProduct({ ...editingProduct, stock: parseInt(e.target.value) || 0 })}
-                    className="mt-1"
+                    className="mt-1.5 border-slate-200 focus:border-teal-500 focus:ring-teal-500"
                     data-testid="product-stock-input"
                   />
                 </div>
                 <div>
-                  <Label className="text-xs font-bold uppercase text-zinc-500">Доставка (дней)</Label>
+                  <Label className="text-xs font-semibold uppercase text-teal-600">Доставка</Label>
                   <Input
                     type="number"
                     value={editingProduct.delivery_days}
                     onChange={(e) => setEditingProduct({ ...editingProduct, delivery_days: parseInt(e.target.value) || 3 })}
-                    className="mt-1"
+                    className="mt-1.5 border-slate-200 focus:border-teal-500 focus:ring-teal-500"
                     data-testid="product-delivery-input"
                   />
                 </div>
               </div>
 
               <div>
-                <Label className="text-xs font-bold uppercase text-zinc-500">Изображения</Label>
-                <div className="mt-1 space-y-3">
+                <Label className="text-xs font-semibold uppercase text-teal-600">Изображения</Label>
+                <div className="mt-1.5 space-y-3">
                   <input
                     type="file"
                     ref={productFileRef}
@@ -3620,18 +3625,16 @@ export default function AdminPage() {
                     multiple
                     className="hidden"
                   />
-                  <div className="flex gap-2">
-                    <Button 
-                      type="button" 
-                      variant="outline" 
-                      onClick={() => productFileRef.current?.click()}
-                      disabled={uploading}
-                      className="flex-1"
-                    >
-                      <Upload className="w-4 h-4 mr-2" />
-                      {uploading ? 'Загрузка...' : 'Загрузить изображения'}
-                    </Button>
-                  </div>
+                  <Button 
+                    type="button" 
+                    variant="outline" 
+                    onClick={() => productFileRef.current?.click()}
+                    disabled={uploading}
+                    className="w-full border-dashed border-2 border-teal-200 hover:border-teal-400 hover:bg-teal-50"
+                  >
+                    <Upload className="w-4 h-4 mr-2 text-teal-500" />
+                    {uploading ? 'Загрузка...' : 'Загрузить изображения'}
+                  </Button>
                   
                   {/* Image gallery */}
                   {(editingProduct.images?.length > 0 || editingProduct.image_url) && (
@@ -3639,16 +3642,16 @@ export default function AdminPage() {
                       {/* Main image first */}
                       {editingProduct.image_url && (
                         <div className="relative group">
-                          <div className="aspect-square bg-zinc-100 overflow-hidden border-2 border-orange-500">
+                          <div className="aspect-square bg-slate-100 overflow-hidden rounded-lg border-2 border-teal-500">
                             <img src={editingProduct.image_url} alt="Main" className="w-full h-full object-cover" />
                           </div>
-                          <span className="absolute top-1 left-1 bg-orange-500 text-white text-[10px] px-1 py-0.5">
+                          <span className="absolute top-1 left-1 bg-teal-500 text-white text-[10px] px-1.5 py-0.5 rounded">
                             Главное
                           </span>
                           <button
                             type="button"
                             onClick={() => handleRemoveImage(editingProduct.image_url)}
-                            className="absolute top-1 right-1 bg-red-500 text-white p-1 rounded opacity-0 group-hover:opacity-100 transition-opacity"
+                            className="absolute top-1 right-1 bg-red-500 text-white p-1 rounded-full opacity-0 group-hover:opacity-100 transition-opacity"
                           >
                             <Trash2 className="w-3 h-3" />
                           </button>
@@ -3660,20 +3663,20 @@ export default function AdminPage() {
                         .filter(img => img !== editingProduct.image_url)
                         .map((img, idx) => (
                           <div key={idx} className="relative group">
-                            <div className="aspect-square bg-zinc-100 overflow-hidden border border-zinc-200 hover:border-zinc-400">
+                            <div className="aspect-square bg-slate-100 overflow-hidden rounded-lg border border-slate-200 hover:border-teal-300">
                               <img src={img} alt={`Product ${idx + 2}`} className="w-full h-full object-cover" />
                             </div>
                             <button
                               type="button"
                               onClick={() => handleSetMainImage(img)}
-                              className="absolute bottom-1 left-1 bg-blue-500 text-white text-[10px] px-1 py-0.5 opacity-0 group-hover:opacity-100 transition-opacity"
+                              className="absolute bottom-1 left-1 bg-teal-500 text-white text-[10px] px-1.5 py-0.5 rounded opacity-0 group-hover:opacity-100 transition-opacity"
                             >
-                              Сделать главным
+                              Главное
                             </button>
                             <button
                               type="button"
                               onClick={() => handleRemoveImage(img)}
-                              className="absolute top-1 right-1 bg-red-500 text-white p-1 rounded opacity-0 group-hover:opacity-100 transition-opacity"
+                              className="absolute top-1 right-1 bg-red-500 text-white p-1 rounded-full opacity-0 group-hover:opacity-100 transition-opacity"
                             >
                               <Trash2 className="w-3 h-3" />
                             </button>
@@ -3684,7 +3687,7 @@ export default function AdminPage() {
                   
                   <Input
                     placeholder="Или вставьте URL и нажмите Enter..."
-                    className="text-sm"
+                    className="text-sm border-slate-200 focus:border-teal-500 focus:ring-teal-500"
                     data-testid="product-image-input"
                     onKeyDown={(e) => {
                       if (e.key === 'Enter') {
@@ -3703,39 +3706,38 @@ export default function AdminPage() {
                       }
                     }}
                   />
-                  <p className="text-xs text-zinc-400">Загрузите несколько изображений или добавьте URL. Первое изображение будет главным.</p>
+                  <p className="text-xs text-slate-400">Загрузите несколько изображений или добавьте URL</p>
                 </div>
               </div>
 
               <div>
-                <Label className="text-xs font-bold uppercase text-zinc-500">Описание</Label>
+                <Label className="text-xs font-semibold uppercase text-teal-600">Описание</Label>
                 <Textarea
                   value={editingProduct.description || ''}
                   onChange={(e) => setEditingProduct({ ...editingProduct, description: e.target.value })}
-                  className="mt-1"
+                  className="mt-1.5 border-slate-200 focus:border-teal-500 focus:ring-teal-500"
                   rows={3}
                   data-testid="product-description-input"
                 />
               </div>
 
               <div>
-                <Label className="text-xs font-bold uppercase text-zinc-500">Кросс-номера (аналоги)</Label>
+                <Label className="text-xs font-semibold uppercase text-teal-600">Кросс-номера (аналоги)</Label>
                 <Textarea
                   value={editingProduct.cross_articles || ''}
                   onChange={(e) => setEditingProduct({ ...editingProduct, cross_articles: e.target.value })}
-                  placeholder="Артикулы аналогов через запятую или с новой строки. Например: MAN-001, SACHS-002"
-                  className="mt-1 font-mono text-sm"
-                  rows={3}
+                  placeholder="Артикулы аналогов через запятую или с новой строки"
+                  className="mt-1.5 font-mono text-sm border-slate-200 focus:border-teal-500 focus:ring-teal-500"
+                  rows={2}
                   data-testid="product-cross-articles-input"
                 />
-                <p className="text-xs text-zinc-400 mt-1">Позволяет находить товар по артикулам аналогов в поиске</p>
               </div>
 
-              <div className="flex justify-end gap-2 pt-4">
-                <Button variant="outline" onClick={() => setEditingProduct(null)}>
+              <div className="flex justify-end gap-2 pt-4 border-t border-slate-100">
+                <Button variant="outline" onClick={() => setEditingProduct(null)} className="border-slate-200">
                   Отмена
                 </Button>
-                <Button onClick={handleSaveProduct} className="bg-teal-500 hover:bg-teal-600" data-testid="save-product-btn">
+                <Button onClick={handleSaveProduct} className="bg-gradient-to-r from-teal-500 to-emerald-500 hover:from-teal-600 hover:to-emerald-600 shadow-lg shadow-teal-500/20" data-testid="save-product-btn">
                   <Save className="w-4 h-4 mr-2" />
                   Сохранить
                 </Button>
