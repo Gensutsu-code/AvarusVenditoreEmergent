@@ -569,7 +569,7 @@ export default function CheckoutPage() {
                   transition={{ delay: 0.3 + index * 0.05 }}
                 >
                   <div className="flex-1">
-                    {item.manufacturer && <p className="text-xs font-bold text-orange-400 mb-1">{item.manufacturer}</p>}
+                    {item.manufacturer && <p className="text-xs font-bold text-teal-400 mb-1">{item.manufacturer}</p>}
                     <p className="text-zinc-200 font-medium">{item.name}</p>
                     <p className="text-zinc-500 text-xs mt-1">{item.quantity} шт. × {formatPrice(item.price)} ₽</p>
                   </div>
