@@ -610,38 +610,38 @@ export default function CheckoutPage() {
 
       {/* Terms Modal */}
       <Dialog open={showTermsModal} onOpenChange={setShowTermsModal}>
-        <DialogContent className="max-w-2xl max-h-[80vh] overflow-hidden flex flex-col bg-zinc-900/95 backdrop-blur-xl border border-white/10 rounded-2xl" data-testid="terms-modal">
-          <div className="flex items-center justify-between pb-4 border-b border-zinc-700/50">
+        <DialogContent className="max-w-2xl max-h-[80vh] overflow-hidden flex flex-col bg-white/95 backdrop-blur-xl border border-slate-200 rounded-2xl" data-testid="terms-modal">
+          <div className="flex items-center justify-between pb-4 border-b border-slate-200">
             <div className="flex items-center gap-3">
-              <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-teal-500/20 to-emerald-500/20 flex items-center justify-center border border-teal-500/30">
-                <FileText className="w-6 h-6 text-teal-400" />
+              <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-teal-100 to-emerald-100 flex items-center justify-center border border-teal-200">
+                <FileText className="w-6 h-6 text-teal-600" />
               </div>
               <div>
-                <DialogTitle className="text-xl font-bold text-white">Правила предоставления услуг</DialogTitle>
+                <DialogTitle className="text-xl font-bold text-slate-800">Правила предоставления услуг</DialogTitle>
                 <DialogDescription className="sr-only">Ознакомьтесь с правилами предоставления услуг магазина</DialogDescription>
               </div>
             </div>
           </div>
           
-          <div className="flex-1 overflow-y-auto py-4 space-y-6 text-sm text-zinc-300">
+          <div className="flex-1 overflow-y-auto py-4 space-y-6 text-sm text-slate-600">
             {termsSections.length > 0 ? (
               termsSections.map((section) => (
                 <section key={section.id}>
-                  <h3 className="font-bold text-white mb-2">{section.title}</h3>
+                  <h3 className="font-bold text-slate-800 mb-2">{section.title}</h3>
                   {section.content.split('\n\n').map((paragraph, idx) => (
-                    <p key={idx} className="mb-2 whitespace-pre-line text-zinc-400">{paragraph}</p>
+                    <p key={idx} className="mb-2 whitespace-pre-line text-slate-600">{paragraph}</p>
                   ))}
                 </section>
               ))
             ) : (
-              <div className="text-center text-zinc-500 py-8">
+              <div className="text-center text-slate-500 py-8">
                 <Loader2 className="w-6 h-6 animate-spin mx-auto mb-2" />
                 Загрузка правил...
               </div>
             )}
           </div>
 
-          <div className="pt-4 border-t border-zinc-700/50 flex gap-3">
+          <div className="pt-4 border-t border-slate-200 flex gap-3">
             <motion.button
               onClick={() => {
                 setAgreedToTerms(true);
