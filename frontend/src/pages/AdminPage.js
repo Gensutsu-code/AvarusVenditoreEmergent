@@ -21,7 +21,6 @@ import { toast } from 'sonner';
 import {
   PromoTab,
   TelegramTab,
-  ImportTab,
   StatsTab,
   DiscountsTab,
   TermsTab,
