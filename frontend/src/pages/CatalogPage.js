@@ -580,8 +580,8 @@ export default function CatalogPage() {
           </div>
         ) : products.length === 0 && alternatives.length === 0 ? (
           <div className="text-center py-12" data-testid="no-products">
-            <p className={`mb-4 ${isDark ? 'text-zinc-400' : 'text-slate-500'}`}>Товары не найдены</p>
-            <Button onClick={clearFilters} variant="outline" className={`rounded-xl ${isDark ? 'border-zinc-700 text-zinc-300 hover:bg-zinc-800' : 'border-slate-300 text-slate-600 hover:bg-slate-100'}`}>
+            <p className="mb-4 text-slate-500">Товары не найдены</p>
+            <Button onClick={clearFilters} variant="outline" className="rounded-xl border-slate-300 text-slate-600 hover:bg-slate-100">
               Сбросить фильтры
             </Button>
           </div>
