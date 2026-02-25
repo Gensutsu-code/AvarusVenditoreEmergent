@@ -56,12 +56,21 @@ export const Header = () => {
             </motion.h1>
           </Link>
 
-          {/* Center - Brand name or Admin indicator */}
-          <div className="hidden md:block absolute left-1/2 transform -translate-x-1/2">
-            <span className={`text-sm tracking-wide ${isAdmin ? 'text-purple-400 font-medium' : isDark ? 'text-zinc-500' : 'text-slate-400'}`}>
-              {isAdmin ? 'Режим администратора' : 'Avarus-Venditore'}
-            </span>
-          </div>
+          {/* Center - Promo Banner (only for non-admin) */}
+          {!isAdmin && (
+            <div className="hidden md:flex flex-1 justify-center px-4">
+              <HeaderPromoBanner />
+            </div>
+          )}
+          
+          {/* Admin indicator (only for admin) */}
+          {isAdmin && (
+            <div className="hidden md:block flex-1 text-center">
+              <span className="text-sm tracking-wide text-purple-400 font-medium">
+                Режим администратора
+              </span>
+            </div>
+          )}
 
           {/* Desktop Navigation */}
           <div className="hidden md:flex items-center gap-1">
