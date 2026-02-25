@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import axios from 'axios';
+import { motion, AnimatePresence } from 'framer-motion';
 import { 
   Users, Package, ShoppingBag, TrendingUp, User,
   Plus, Pencil, Trash2, Save, Eye, FolderOpen, Megaphone, Upload, Image,
