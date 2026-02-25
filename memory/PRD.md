@@ -5,126 +5,71 @@ E-commerce platform for truck spare parts with full admin panel restructuring an
 
 ## What's Been Implemented
 
-### February 2026 - Latest Session
+### February 2026 - Session 2 (25 Feb 2026)
 
-#### Quick View Feature (COMPLETED ✅) - 25 Feb 2026
+#### Admin Panel Redesign (COMPLETED)
+- Tabs now distributed evenly across full container width using flex-1
+- Improved visual styling with teal accents for active tabs
+- Smooth transitions between tabs
+- Files: `/app/frontend/src/pages/AdminPage.js`
+
+#### CRM Analytics (COMPLETED)
+- Full analytics dashboard with comprehensive data
+- Fetches data from `/api/admin/analytics/detailed` endpoint
+- Shows: Orders count, Revenue, Avg Order Value, Conversion Rate
+- Shows: Orders by status (new/processing/shipped/delivered/cancelled)
+- Shows: Top Products, Top Customers
+- Shows: Sales by day chart
+- Period filter: week/month/quarter/year
+- Files: `/app/frontend/src/components/admin/CRMTab.js`, `/app/backend/routes/admin.py`
+
+#### Simplified User Roles (COMPLETED)
+- Removed VIP, Wholesaler and other status labels
+- Only two roles: "Admin" and "Client"
+- CRM displays "Клиент" for non-admin users
+- Files: `/app/frontend/src/components/admin/CRMTab.js`
+
+#### Payment Flow - Return to Cart (COMPLETED)
+- Backend endpoint: POST /api/orders/{order_id}/return-to-cart
+- Returns items to cart WITHOUT cancelling the order
+- Used when crypto payment modal is closed
+- Files: `/app/backend/routes/orders.py`, `/app/frontend/src/pages/CheckoutPage.js`
+
+### February 2026 - Session 1 (25 Feb 2026)
+
+#### Quick View Feature (COMPLETED)
 - Added Quick View button (Eye icon) on product images in catalog
-- Hover over product image reveals Quick View button
-- Click opens modal with full product details:
-  - Large product image with gallery navigation
-  - Manufacturer and article number
-  - Description
-  - Stock availability
-  - Delivery time
-  - Price
-  - Quantity selector
-  - "Add to Cart" button
-  - Related products section
-- File modified: `/app/frontend/src/pages/CatalogPage.js`
+- Modal with full product details
+- Files: `/app/frontend/src/pages/CatalogPage.js`
 
-#### CRM Client Cards Enhancement (COMPLETED ✅) - 25 Feb 2026
-- Redesigned client cards in admin CRM tab
-- Expandable cards with 3-column layout:
-  - **Personal Data**: Name, Email, Phone, Address, Role, Registration date
-  - **Order Statistics**: Orders count, Total spent, Average order, Items count, Balance, Bonuses, First/Last order dates
-  - **Popular Products & Recent Orders**: Top 3 products, Last 3 orders with status
-- Added backend API to fetch extended user data (orders_count, total_spent, popular_products, recent_orders)
-- Files modified: 
-  - `/app/frontend/src/components/admin/CRMTab.js`
-  - `/app/backend/routes/admin.py`
+#### CRM Client Cards Enhancement (COMPLETED)
+- Expandable cards with 3-column layout
+- Personal Data, Order Statistics, Popular Products & Recent Orders
+- Files: `/app/frontend/src/components/admin/CRMTab.js`, `/app/backend/routes/admin.py`
 
-#### Admin Panel Restructuring (COMPLETED ✅) - 25 Feb 2026
-- Moved "Crypto" tab inside "Payments" as sub-tab
-- Removed "Import/Export" tab from Settings
-- Settings now has: Telegram, Partners, Rules
-- Payments now has: Payment Methods, Prepayment, Crypto
-- Fixed all prop mismatches in admin components
-
-#### Admin Panel Full Audit (COMPLETED ✅) - 25 Feb 2026
-- Fixed NewsTab in MarketingTab to use full component with add/edit/delete
-- All 6 main tabs verified working: Каталог, Бонусы, Платежи, CRM, Маркетинг, Настройки
-- All sub-tabs verified working:
-  - Маркетинг: Акции и баннер, Новости (with full CRUD), Рассылки
-  - Настройки: Telegram, Партнёры, Правила
-  - Платежи: Способы оплаты, Предоплата, Крипто
-  - CRM: Клиенты (expandable cards), Аналитика
-- 100% test success rate
-
-#### Admin Panel Bug Fix (COMPLETED ✅) - 25 Feb 2026
-- Fixed prop mismatches between parent and child components
-- All 6 main tabs work: Каталог, Бонусы, Платежи, CRM, Маркетинг, Настройки
-
-### December 2025 - Previous Session
-
-#### Dark Theme Removal (COMPLETED ✅)
-- Completely removed dark theme from the entire application
-- ThemeContext simplified to always return light theme
-
-#### Popular Products Relocation (COMPLETED ✅)
-- Moved PopularProducts from HomePage to CatalogPage
-
-#### ProductPage Creation (COMPLETED ✅)
-- Created `/product/:id` route with full product details
-- Glassmorphism design
-
-#### All Pages Light Theme Update (COMPLETED ✅)
-Pages updated with new light design and animations:
-- HomePage - hero section, features, about
-- CatalogPage - search, categories, product list, popular products
-- ProductPage - product details with glassmorphism
-- CartPage - glassmorphism cards, animations
-- CheckoutPage - form styling
-- OrdersPage - statistics, order list
-- FavoritesPage - product cards
-- NewsPage - article list and detail view
-- LoginPage / RegisterPage - glassmorphism forms
-- AccountPage - user profile
-- BonusPage - bonus programs
-- AdminPage - dashboard with colored stats cards
+#### Admin Panel Restructuring (COMPLETED)
+- "Crypto" tab moved inside "Payments" as sub-tab
+- "Import/Export" tab removed from Settings
+- Settings: Telegram, Partners, Rules
+- Payments: Payment Methods, Prepayment, Crypto
 
 ## Tech Stack
 - **Frontend**: React, TailwindCSS, Shadcn/UI, Framer Motion
 - **Backend**: FastAPI, Python
 - **Database**: MongoDB
+- **3rd Party**: CoinGecko (real-time crypto rates), Resend (emails)
 
-## Key Files Updated
-- `/app/frontend/src/pages/AdminPage.js` - Fixed prop passing to SettingsTab/MarketingTab
-- `/app/frontend/src/components/admin/SettingsTab.js` - Added missing props
-- `/app/frontend/src/components/admin/MarketingTab.js` - Added missing props
-- `/app/frontend/src/components/admin/PromoTab.js` - Updated to receive file ref properly
-- `/app/frontend/src/components/admin/PartnersTab.js` - Updated to handle save properly
-- `/app/frontend/src/context/ThemeContext.js` - Simplified (light only)
-- `/app/frontend/src/components/Header.js` - No theme toggle
-- `/app/frontend/src/components/PopularProducts.js` - Light theme styling
-- `/app/frontend/src/pages/CatalogPage.js` - Added PopularProducts
-- `/app/frontend/src/pages/HomePage.js` - Removed PopularProducts
+## Key API Endpoints
+- `POST /api/orders/{order_id}/return-to-cart` - Return items to cart without cancelling order
+- `GET /api/admin/analytics/detailed?period=month` - CRM analytics data
+- `GET /api/admin/users` - Users list with order stats
 
 ## Color Palette (Light Theme)
 - **Primary**: teal-500, emerald-500 (buttons, accents)
 - **Text**: slate-800 (headings), slate-600 (body), slate-400 (muted)
 - **Background**: gradient cyan/pink, white/70 glassmorphism
-- **Success**: emerald-500
-- **Warning**: amber-500
-- **Error**: red-500
-
-## Prioritized Backlog
-
-### P0 (High Priority) - DONE ✅
-- [x] Remove dark theme
-- [x] Update all pages to light theme
-- [x] Move popular products from home to catalog
-- [x] Fix admin panel tab bugs
-
-### P1 (Medium Priority) - DONE ✅
-- [x] Quick View modal for products in catalog
-
-### P2 (Future)
-- [ ] Real payment integration (Stripe/YooKassa)
-- [ ] Real crypto payments
-- [ ] Customer reviews system
 
 ## Test Credentials
-- **User**: newtest@example.com / password123
 - **Admin**: admin@avarus.ru / admin
 
 ## Routes
@@ -135,12 +80,22 @@ Pages updated with new light design and animations:
 - `/checkout` - Checkout
 - `/account` - User account
 - `/orders` - User orders
-- `/favorites` - User favorites
-- `/news` - News
-- `/bonus` - Bonus programs
 - `/admin` - Admin panel
 
 ## Test Reports
-- `/app/test_reports/iteration_32.json` - Admin panel bug fix tests (100% success)
-- `/app/test_reports/iteration_30.json` - ProductPage tests
-- `/app/test_reports/iteration_31.json` - Light theme tests
+- `/app/test_reports/iteration_34.json` - Latest tests (100% success)
+
+## Mocked Systems
+- Prepayment/Balance topup - MOCKED
+- Crypto payment verification - MOCKED (uses real-time rate from CoinGecko)
+
+## P0 Features (DONE)
+- [x] Admin panel tabs full width
+- [x] CRM Analytics working
+- [x] Simplified user roles
+- [x] Return to cart on payment close
+
+## P2 Features (Future)
+- [ ] Real payment gateway (Stripe/YooKassa)
+- [ ] Real crypto payment verification
+- [ ] Analytics performance optimization (currently ~9s load time)
