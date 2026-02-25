@@ -10,7 +10,7 @@ import { useState, useRef, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 
 // Expandable Profile Menu Component
-const ExpandableProfileMenu = ({ onLogout, onExpandChange, unreadCount = 0 }) => {
+const ExpandableProfileMenu = ({ onLogout, unreadCount = 0 }) => {
   const [isExpanded, setIsExpanded] = useState(false);
   const navigate = useNavigate();
   const menuRef = useRef(null);
@@ -21,35 +21,27 @@ const ExpandableProfileMenu = ({ onLogout, onExpandChange, unreadCount = 0 }) =>
     const handleClickOutside = (event) => {
       if (menuRef.current && !menuRef.current.contains(event.target)) {
         setIsExpanded(false);
-        onExpandChange?.(false);
       }
     };
     document.addEventListener('mousedown', handleClickOutside);
     return () => document.removeEventListener('mousedown', handleClickOutside);
-  }, [onExpandChange]);
+  }, []);
 
   const handleProfileClick = () => {
     if (!isExpanded) {
-      // First click - expand
       setIsExpanded(true);
-      onExpandChange?.(true);
-      // Auto-close after 4 seconds of inactivity
       if (timeoutRef.current) clearTimeout(timeoutRef.current);
       timeoutRef.current = setTimeout(() => {
         setIsExpanded(false);
-        onExpandChange?.(false);
       }, 4000);
     } else {
-      // Second click - navigate to profile
       setIsExpanded(false);
-      onExpandChange?.(false);
       navigate('/account');
     }
   };
 
   const handleItemClick = (action) => {
     setIsExpanded(false);
-    onExpandChange?.(false);
     if (timeoutRef.current) clearTimeout(timeoutRef.current);
     if (typeof action === 'function') {
       action();
@@ -73,28 +65,25 @@ const ExpandableProfileMenu = ({ onLogout, onExpandChange, unreadCount = 0 }) =>
       opacity: 0,
       scale: 0.5,
       y: -10,
-      transition: {
-        duration: 0.15
-      }
+      transition: { duration: 0.15 }
     }
   };
 
   return (
     <div ref={menuRef} className="relative">
-      {/* Profile button - larger and more prominent */}
+      {/* Profile button */}
       <motion.button
         onClick={handleProfileClick}
-        className={`relative p-3 rounded-2xl transition-all duration-300 ${
+        className={`relative w-10 h-10 rounded-xl flex items-center justify-center transition-all duration-300 ${
           isExpanded 
-            ? 'bg-gradient-to-br from-teal-500 to-emerald-500 text-white shadow-xl shadow-teal-500/40 scale-105' 
+            ? 'bg-gradient-to-br from-teal-500 to-emerald-500 text-white shadow-xl shadow-teal-500/40' 
             : 'bg-gradient-to-br from-teal-50 to-emerald-50 text-teal-600 border-2 border-teal-200 hover:border-teal-400 hover:shadow-lg hover:shadow-teal-500/20'
         }`}
-        whileHover={{ scale: 1.1 }}
+        whileHover={{ scale: 1.08 }}
         whileTap={{ scale: 0.95 }}
         data-testid="profile-menu-trigger"
       >
         <User className="w-5 h-5" />
-        {/* Unread notification badge */}
         {!isExpanded && unreadCount > 0 && (
           <motion.span 
             initial={{ scale: 0 }}
@@ -106,11 +95,11 @@ const ExpandableProfileMenu = ({ onLogout, onExpandChange, unreadCount = 0 }) =>
         )}
       </motion.button>
 
-      {/* Dropdown menu - expands downward */}
+      {/* Dropdown menu */}
       <AnimatePresence>
         {isExpanded && (
           <motion.div
-            className="absolute right-0 top-full mt-2 flex flex-col gap-2 z-50"
+            className="absolute right-0 top-full mt-2 flex flex-col items-center gap-2 z-50"
             initial="hidden"
             animate="visible"
             exit="exit"
@@ -125,18 +114,18 @@ const ExpandableProfileMenu = ({ onLogout, onExpandChange, unreadCount = 0 }) =>
               <Link 
                 to="/favorites" 
                 onClick={() => handleItemClick(() => {})}
-                className="flex items-center justify-center p-3 rounded-xl bg-white/95 backdrop-blur-sm border border-slate-200 text-slate-500 hover:text-pink-500 hover:bg-pink-50 hover:border-pink-300 transition-all duration-200 shadow-lg hover:shadow-xl hover:scale-105"
+                className="w-10 h-10 rounded-xl bg-white/95 backdrop-blur-sm border border-slate-200 text-slate-500 hover:text-pink-500 hover:bg-pink-50 hover:border-pink-300 transition-all duration-200 shadow-lg hover:shadow-xl hover:scale-105 flex items-center justify-center"
                 data-testid="favorites-link"
               >
                 <Heart className="w-5 h-5" />
               </Link>
             </motion.div>
 
-            {/* 3. Logout - reddish tint */}
+            {/* 3. Logout */}
             <motion.div custom={2} variants={iconVariants}>
               <button
                 onClick={() => handleItemClick(onLogout)}
-                className="flex items-center justify-center p-3 rounded-xl bg-red-50 backdrop-blur-sm border border-red-200 text-red-400 hover:text-red-600 hover:bg-red-100 hover:border-red-400 transition-all duration-200 shadow-lg hover:shadow-xl hover:scale-105"
+                className="w-10 h-10 rounded-xl bg-red-50 backdrop-blur-sm border border-red-200 text-red-400 hover:text-red-600 hover:bg-red-100 hover:border-red-400 transition-all duration-200 shadow-lg hover:shadow-xl hover:scale-105 flex items-center justify-center"
                 data-testid="logout-button"
               >
                 <LogOut className="w-5 h-5" />
