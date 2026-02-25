@@ -2310,7 +2310,7 @@ export default function AdminPage() {
                                     </td>
                                     <td className="py-3 px-6 text-center">
                                       {pu.bonus_requested ? (
-                                        <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold bg-amber-100 text-amber-700 animate-pulse">
+                                        <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold bg-teal-100 text-teal-700 animate-pulse">
                                           Ожидает
                                         </span>
                                       ) : pu.current_amount >= (program.min_threshold || 0) ? (
