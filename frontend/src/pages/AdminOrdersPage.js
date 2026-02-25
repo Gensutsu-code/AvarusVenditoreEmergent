@@ -349,28 +349,28 @@ export default function AdminOrdersPage() {
                 >
                   {/* Order Header */}
                   <div 
-                    className="p-4 cursor-pointer hover:bg-zinc-50 transition-colors"
+                    className="p-4 cursor-pointer hover:bg-slate-50/50 transition-colors"
                     onClick={() => toggleExpand(order.id)}
                   >
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-4">
-                        <div className={`w-10 h-10 rounded-full flex items-center justify-center ${statusInfo.color}`}>
+                        <div className={`w-11 h-11 rounded-xl flex items-center justify-center border ${statusInfo.color}`}>
                           <StatusIcon className="w-5 h-5" />
                         </div>
                         <div>
                           <div className="flex items-center gap-2">
-                            <span className="font-mono font-bold">#{order.id?.slice(0, 8)}</span>
-                            <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${statusInfo.color}`}>
+                            <span className="font-mono font-bold text-slate-800">#{order.id?.slice(0, 8)}</span>
+                            <span className={`px-2.5 py-1 rounded-lg text-xs font-medium border ${statusInfo.color}`}>
                               {statusInfo.label}
                             </span>
                           </div>
-                          <div className="flex items-center gap-3 text-sm text-zinc-500 mt-1">
+                          <div className="flex items-center gap-3 text-sm text-slate-500 mt-1">
                             <span className="flex items-center gap-1">
-                              <User className="w-3 h-3" />
+                              <User className="w-3.5 h-3.5" />
                               {order.customer_name}
                             </span>
                             <span className="flex items-center gap-1">
-                              <Calendar className="w-3 h-3" />
+                              <Calendar className="w-3.5 h-3.5" />
                               {formatDate(order.created_at)}
                             </span>
                           </div>
@@ -378,51 +378,69 @@ export default function AdminOrdersPage() {
                       </div>
                       <div className="flex items-center gap-4">
                         <div className="text-right">
-                          <p className="font-bold text-lg">{formatPrice(order.total)} ₽</p>
-                          <p className="text-xs text-zinc-400">{order.items?.length || 0} товаров</p>
+                          <p className="font-bold text-lg text-slate-800">{formatPrice(order.total)} ₽</p>
+                          <p className="text-xs text-slate-400">{order.items?.length || 0} товаров</p>
                         </div>
-                        {isExpanded ? <ChevronUp className="w-5 h-5 text-zinc-400" /> : <ChevronDown className="w-5 h-5 text-zinc-400" />}
+                        <motion.div
+                          animate={{ rotate: isExpanded ? 180 : 0 }}
+                          transition={{ duration: 0.2 }}
+                        >
+                          <ChevronDown className="w-5 h-5 text-slate-400" />
+                        </motion.div>
                       </div>
                     </div>
                   </div>
                   
                   {/* Expanded Content */}
+                  <AnimatePresence>
                   {isExpanded && (
-                    <div className="border-t border-zinc-200">
+                    <motion.div 
+                      className="border-t border-slate-200/50"
+                      initial={{ height: 0, opacity: 0 }}
+                      animate={{ height: 'auto', opacity: 1 }}
+                      exit={{ height: 0, opacity: 0 }}
+                      transition={{ duration: 0.3 }}
+                    >
                       {/* Customer Info */}
-                      <div className="p-4 bg-zinc-50 grid grid-cols-1 md:grid-cols-3 gap-4">
+                      <div className="p-4 bg-gradient-to-r from-slate-50 to-teal-50/30 grid grid-cols-1 md:grid-cols-3 gap-4">
                         <div className="flex items-center gap-2">
-                          <User className="w-4 h-4 text-zinc-400" />
-                          <span className="text-sm">{order.full_name}</span>
+                          <div className="w-8 h-8 rounded-lg bg-white border border-slate-200 flex items-center justify-center">
+                            <User className="w-4 h-4 text-teal-500" />
+                          </div>
+                          <span className="text-sm text-slate-700">{order.full_name}</span>
                         </div>
                         <div className="flex items-center gap-2">
-                          <Phone className="w-4 h-4 text-zinc-400" />
-                          <span className="text-sm">{order.phone}</span>
+                          <div className="w-8 h-8 rounded-lg bg-white border border-slate-200 flex items-center justify-center">
+                            <Phone className="w-4 h-4 text-teal-500" />
+                          </div>
+                          <span className="text-sm text-slate-700">{order.phone}</span>
                         </div>
                         <div className="flex items-center gap-2">
-                          <MapPin className="w-4 h-4 text-zinc-400" />
-                          <span className="text-sm truncate max-w-xs">{order.address}</span>
+                          <div className="w-8 h-8 rounded-lg bg-white border border-slate-200 flex items-center justify-center">
+                            <MapPin className="w-4 h-4 text-teal-500" />
+                          </div>
+                          <span className="text-sm truncate max-w-xs text-slate-700">{order.address}</span>
                         </div>
                       </div>
                       
                       {/* Items */}
                       <div className="p-4">
-                        <p className="text-xs font-bold uppercase text-zinc-500 mb-2">Товары</p>
+                        <p className="text-xs font-bold uppercase text-teal-600 mb-3">Товары</p>
                         <div className="space-y-2">
                           {order.items?.map((item, idx) => (
-                            <div key={idx} className="flex items-center justify-between py-2 border-b border-zinc-100 last:border-0">
+                            <div key={idx} className="flex items-center justify-between py-3 border-b border-slate-100 last:border-0">
                               <div className="flex items-center gap-3">
                                 {item.image_url && (
-                                  <img src={item.image_url} alt="" className="w-10 h-10 object-cover rounded" />
+                                  <img src={item.image_url} alt="" className="w-12 h-12 object-cover rounded-lg border border-slate-200" />
                                 )}
                                 <div>
-                                  <p className="font-medium text-sm">{item.name}</p>
-                                  <p className="text-xs text-zinc-400">{item.article}</p>
+                                  <p className="font-medium text-sm text-slate-800">{item.name}</p>
+                                  <p className="text-xs text-slate-400">{item.article}</p>
                                 </div>
                               </div>
                               <div className="text-right">
-                                <p className="font-medium">{formatPrice(item.price)} ₽ × {item.quantity}</p>
-                                <p className="text-sm text-zinc-500">{formatPrice(item.price * item.quantity)} ₽</p>
+                                <p className="font-medium text-slate-700">{formatPrice(item.price)} ₽ × {item.quantity}</p>
+                                <p className="text-sm font-bold text-teal-600">{formatPrice(item.price * item.quantity)} ₽</p>
                               </div>
                             </div>
                           ))}
@@ -430,13 +448,13 @@ export default function AdminOrdersPage() {
                       </div>
                       
                       {/* Actions */}
-                      <div className="p-4 bg-zinc-50 border-t border-zinc-200 flex items-center justify-between">
+                      <div className="p-4 bg-gradient-to-r from-slate-50 to-teal-50/30 border-t border-slate-200/50 flex items-center justify-between">
                         <div className="flex items-center gap-2">
-                          <span className="text-sm text-zinc-500">Изменить статус:</span>
+                          <span className="text-sm text-slate-500">Статус:</span>
                           <select
                             value={order.status}
                             onChange={(e) => handleStatusChange(order.id, e.target.value)}
-                            className="text-sm border border-zinc-200 rounded px-2 py-1 bg-white"
+                            className="text-sm border border-slate-200 rounded-lg px-3 py-1.5 bg-white focus:border-teal-400 focus:ring-1 focus:ring-teal-200 outline-none"
                           >
                             {ORDER_STATUSES.map(status => (
                               <option key={status.value} value={status.value}>{status.label}</option>
@@ -448,6 +466,7 @@ export default function AdminOrdersPage() {
                             variant="outline" 
                             size="sm"
                             onClick={() => setViewingOrder(order)}
+                            className="rounded-xl border-slate-200 hover:border-teal-300 hover:bg-teal-50"
                           >
                             <Eye className="w-4 h-4 mr-1" />
                             Подробнее
@@ -456,6 +475,7 @@ export default function AdminOrdersPage() {
                             variant="outline" 
                             size="sm"
                             onClick={() => setEditingOrder({...order})}
+                            className="rounded-xl border-teal-200 text-teal-600 hover:bg-teal-50"
                           >
                             <Pencil className="w-4 h-4 mr-1" />
                             Редактировать
@@ -463,19 +483,21 @@ export default function AdminOrdersPage() {
                           <Button 
                             variant="outline" 
                             size="sm"
-                            className="text-red-500 hover:text-red-600 hover:bg-red-50"
+                            className="rounded-xl text-rose-500 border-rose-200 hover:text-rose-600 hover:bg-rose-50"
                             onClick={() => handleDeleteOrder(order.id)}
                           >
                             <Trash2 className="w-4 h-4" />
                           </Button>
                         </div>
                       </div>
-                    </div>
+                    </motion.div>
                   )}
-                </div>
+                  </AnimatePresence>
+                </motion.div>
               );
             })
           )}
+          </AnimatePresence>
         </div>
       </div>
 
