@@ -45,25 +45,23 @@ export const Header = () => {
     <header className={`sticky top-0 z-50 backdrop-blur-xl border-b ${isDark ? 'bg-zinc-950/80 border-white/10' : 'bg-white/70 border-cyan-200/50'}`} data-testid="header">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex items-center justify-between h-16 gap-4">
-          {/* Logo */}
-          <Link to={isAdmin ? "/admin" : "/"} className="flex-shrink-0 group" data-testid="logo-link">
-            <motion.h1 
-              className={`text-xl font-bold uppercase tracking-tight bg-gradient-to-r ${isDark ? 'from-orange-400 to-orange-600' : 'from-green-500 to-emerald-600'} bg-clip-text text-transparent`}
-              whileHover={{ scale: 1.02 }}
-              transition={{ duration: 0.2 }}
-            >
-              avopt.store
-            </motion.h1>
-          </Link>
-
-          {/* Center - Promo Banner (only for non-admin) */}
-          {!isAdmin && (
-            <div className="hidden md:flex flex-1 justify-center px-4">
-              <HeaderPromoBanner />
-            </div>
-          )}
+          {/* Logo + Promo Banner on left */}
+          <div className="flex items-center">
+            <Link to={isAdmin ? "/admin" : "/"} className="flex-shrink-0 group" data-testid="logo-link">
+              <motion.h1 
+                className={`text-xl font-bold uppercase tracking-tight bg-gradient-to-r ${isDark ? 'from-orange-400 to-orange-600' : 'from-emerald-500 to-teal-600'} bg-clip-text text-transparent`}
+                whileHover={{ scale: 1.02 }}
+                transition={{ duration: 0.2 }}
+              >
+                avopt.store
+              </motion.h1>
+            </Link>
+            
+            {/* Promo Banner - Left side, only for non-admin */}
+            {!isAdmin && <HeaderPromoBanner />}
+          </div>
           
-          {/* Admin indicator (only for admin) */}
+          {/* Admin indicator (only for admin) - center */}
           {isAdmin && (
             <div className="hidden md:block flex-1 text-center">
               <span className="text-sm tracking-wide text-purple-400 font-medium">
