@@ -1828,7 +1828,7 @@ export default function AdminPage() {
                                 toast.error('Ошибка');
                               }
                             }}
-                            className={`p-1 rounded hover:bg-zinc-100 ${chat.pinned ? 'text-orange-500' : 'text-zinc-400'}`}
+                            className={`p-1 rounded hover:bg-zinc-100 ${chat.pinned ? 'text-teal-500' : 'text-zinc-400'}`}
                             title="Закрепить"
                           >
                             <Pin className="w-3 h-3" />
