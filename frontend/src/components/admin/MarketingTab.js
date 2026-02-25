@@ -1,9 +1,10 @@
 import { useState } from 'react';
-import { Megaphone, FileText, Mail, Tag, Percent, Bell } from 'lucide-react';
+import { Megaphone, FileText, Mail } from 'lucide-react';
 import { motion } from 'framer-motion';
 
 // Import existing components
 import { PromoTab, NotificationsTab } from './index';
+import NewsTab from './NewsTab';
 
 // Sub-tab component for Marketing section (Promo + News + Newsletters)
 export const MarketingTab = ({
