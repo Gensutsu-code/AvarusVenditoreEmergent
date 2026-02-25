@@ -2159,8 +2159,8 @@ export default function AdminPage() {
                           {program.image_url ? (
                             <img src={program.image_url} alt="" className="w-14 h-14 rounded-xl object-cover shadow-sm" />
                           ) : (
-                            <div className="w-14 h-14 bg-gradient-to-br from-purple-100 to-violet-100 rounded-xl flex items-center justify-center">
-                              <Gift className="w-7 h-7 text-purple-500" />
+                            <div className="w-14 h-14 bg-gradient-to-br from-teal-100 to-emerald-100 rounded-xl flex items-center justify-center">
+                              <Gift className="w-7 h-7 text-teal-500" />
                             </div>
                           )}
                           <div>
