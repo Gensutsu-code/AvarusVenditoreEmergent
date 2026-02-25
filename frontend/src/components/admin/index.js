@@ -6,7 +6,6 @@ export { default as UsersTab } from './UsersTab';
 export { default as NewsTab } from './NewsTab';
 export { default as PromoTab } from './PromoTab';
 export { default as TelegramTab } from './TelegramTab';
-export { default as ImportTab } from './ImportTab';
 export { default as StatsTab } from './StatsTab';
 export { default as DiscountsTab } from './DiscountsTab';
 export { default as TermsTab } from './TermsTab';
