@@ -1382,7 +1382,7 @@ export default function AdminPage() {
                               product.stock > 10 
                                 ? 'bg-emerald-100 text-emerald-700' 
                                 : product.stock > 0 
-                                  ? 'bg-amber-100 text-amber-700'
+                                  ? 'bg-teal-100 text-teal-700'
                                   : 'bg-red-100 text-red-700'
                             }`}>
                               {product.stock > 0 ? `${product.stock} шт.` : 'Нет'}
