@@ -3223,6 +3223,7 @@ export default function AdminPage() {
               setIsNewPartner={setIsNewPartner}
               handleAddDefaultPartners={handleAddDefaultPartners}
               handleDeletePartner={handleDeletePartner}
+              handleSavePartner={handleSavePartner}
               handlePartnerImageUpload={handlePartnerImageUpload}
               partnerImageUploading={partnerImageUploading}
               partnerImageRef={partnerImageRef}
