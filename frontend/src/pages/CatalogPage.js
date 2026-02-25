@@ -592,14 +592,14 @@ export default function CatalogPage() {
               <div>
                 {alternatives.length > 0 && (
                   <div className="flex items-center gap-3 mb-4">
-                    <div className="w-1 h-6 bg-green-500 rounded-full"></div>
-                    <h2 className="text-lg font-bold text-zinc-100">
+                    <div className="w-1 h-6 bg-emerald-500 rounded-full"></div>
+                    <h2 className="text-lg font-bold text-slate-800">
                       Точное совпадение ({products.length})
                     </h2>
                   </div>
                 )}
                 {!alternatives.length && (
-                  <p className="text-sm text-zinc-400 mb-4">
+                  <p className="text-sm text-slate-500 mb-4">
                     Найдено: {products.length} {products.length === 1 ? 'товар' : products.length < 5 ? 'товара' : 'товаров'}
                   </p>
                 )}
