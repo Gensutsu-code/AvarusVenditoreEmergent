@@ -224,9 +224,6 @@ export const Header = () => {
             </div>
           )}
           
-          {/* Spacer to push navigation to right */}
-          <div className="flex-1"></div>
-          
           {/* Admin indicator (only for admin) - center */}
           {isAdmin && (
             <div className="hidden md:block flex-1 text-center">
