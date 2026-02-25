@@ -50,6 +50,7 @@ function AppContent() {
           <Route path="/orders" element={<OrdersPage />} />
           <Route path="/bonus" element={<BonusPage />} />
           <Route path="/news" element={<NewsPage />} />
+          <Route path="/product/:id" element={<ProductPage />} />
         </Routes>
       </main>
       {/* Hide chat widget for admin */}
