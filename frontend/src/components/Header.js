@@ -120,7 +120,7 @@ export const Header = () => {
                       </span>
                     </NavLink>
                     <NavLink to="/bonus" data-testid="bonus-link">
-                      <span className="flex items-center gap-2 text-orange-500">
+                      <span className="flex items-center gap-2 text-teal-500">
                         <Gift className="w-4 h-4" />
                         <span className="hidden lg:inline">Бонусы</span>
                       </span>
@@ -235,7 +235,7 @@ export const Header = () => {
                         <Package className="w-5 h-5" />
                         Мои заказы
                       </Link>
-                      <Link to="/bonus" onClick={() => setMobileMenuOpen(false)} className="flex items-center gap-3 p-3 rounded-xl text-orange-500 hover:bg-orange-50">
+                      <Link to="/bonus" onClick={() => setMobileMenuOpen(false)} className="flex items-center gap-3 p-3 rounded-xl text-teal-500 hover:bg-teal-50">
                         <Gift className="w-5 h-5" />
                         Бонусы
                       </Link>
