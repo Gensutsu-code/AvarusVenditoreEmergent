@@ -11,6 +11,7 @@ import { toast } from 'sonner';
 import { useNavigate } from 'react-router-dom';
 import { FavoritesButton } from '../components/FavoritesButton';
 import { RelatedProducts } from '../components/RelatedProducts';
+import { PopularProducts } from '../components/PopularProducts';
 import { motion } from 'framer-motion';
 
 const API = `${process.env.REACT_APP_BACKEND_URL}/api`;
