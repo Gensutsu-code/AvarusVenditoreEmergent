@@ -271,21 +271,21 @@ export default function AccountPage() {
               transition={{ duration: 0.5, delay: 0.1 }}
             >
               {/* Animated gradient background */}
-              <div className="absolute inset-0 bg-gradient-to-br from-purple-600/20 via-purple-500/10 to-transparent" />
+              <div className="absolute inset-0 bg-gradient-to-br from-teal-500/20 via-emerald-500/10 to-transparent" />
               <motion.div 
-                className="absolute -top-20 -right-20 w-40 h-40 bg-purple-500/20 rounded-full blur-3xl"
+                className="absolute -top-20 -right-20 w-40 h-40 bg-teal-500/20 rounded-full blur-3xl"
                 animate={{ scale: [1, 1.3, 1] }}
                 transition={{ duration: 4, repeat: Infinity }}
               />
               
               <div className="relative flex items-center justify-between">
                 <div>
-                  <p className="text-purple-300/80 text-xs font-medium uppercase tracking-wider flex items-center gap-2">
+                  <p className="text-teal-600 text-xs font-medium uppercase tracking-wider flex items-center gap-2">
                     <Sparkles className="w-4 h-4" />
                     Баланс
                   </p>
                   <motion.p 
-                    className="text-4xl font-bold mt-2 bg-gradient-to-r from-white to-purple-200 bg-clip-text text-transparent"
+                    className="text-4xl font-bold mt-2 bg-gradient-to-r from-slate-800 to-teal-600 bg-clip-text text-transparent"
                     data-testid="balance-amount"
                     key={balance}
                     initial={{ scale: 1.1 }}
@@ -298,7 +298,7 @@ export default function AccountPage() {
                 <div className="flex gap-2">
                   <motion.button
                     onClick={() => { fetchBalanceHistory(); setShowHistoryModal(true); }}
-                    className="p-3 rounded-xl bg-white/5 hover:bg-white/10 border border-white/10 text-purple-300 transition-all duration-300"
+                    className="p-3 rounded-xl bg-teal-500/10 hover:bg-teal-500/20 border border-teal-500/20 text-teal-600 transition-all duration-300"
                     whileHover={{ scale: 1.05 }}
                     whileTap={{ scale: 0.95 }}
                     data-testid="balance-history-btn"
@@ -307,8 +307,8 @@ export default function AccountPage() {
                   </motion.button>
                   <motion.button
                     onClick={() => setShowTopupModal(true)}
-                    className="px-4 py-3 rounded-xl bg-gradient-to-r from-purple-500 to-purple-600 hover:from-purple-600 hover:to-purple-700 text-white font-medium flex items-center gap-2 shadow-lg shadow-purple-500/20 transition-all duration-300"
-                    whileHover={{ scale: 1.02, boxShadow: '0 0 30px rgba(168, 85, 247, 0.4)' }}
+                    className="px-4 py-3 rounded-xl bg-gradient-to-r from-teal-500 to-emerald-500 hover:from-teal-600 hover:to-emerald-600 text-white font-medium flex items-center gap-2 shadow-lg shadow-teal-500/20 transition-all duration-300"
+                    whileHover={{ scale: 1.02, boxShadow: '0 0 30px rgba(20, 184, 166, 0.4)' }}
                     whileTap={{ scale: 0.98 }}
                     data-testid="topup-btn"
                   >
@@ -317,7 +317,7 @@ export default function AccountPage() {
                   </motion.button>
                 </div>
               </div>
-              <p className="relative text-purple-300/60 text-xs mt-4">
+              <p className="relative text-teal-600/60 text-xs mt-4">
                 Оплачивайте заказы с баланса без комиссии
               </p>
             </motion.div>
