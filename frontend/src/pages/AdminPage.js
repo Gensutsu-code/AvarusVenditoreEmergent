@@ -1357,7 +1357,7 @@ export default function AdminPage() {
                             <p className="font-semibold text-slate-800">{product.name}</p>
                           </td>
                           <td className="py-3 px-4">
-                            <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold bg-gradient-to-r from-orange-100 to-amber-100 text-orange-700">
+                            <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold bg-gradient-to-r from-teal-100 to-emerald-100 text-teal-700">
                               {product.manufacturer || '—'}
                             </span>
                           </td>
