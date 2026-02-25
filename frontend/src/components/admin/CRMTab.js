@@ -24,28 +24,16 @@ export const CRMTab = ({
     { id: 'analytics', label: 'Аналитика', icon: BarChart3 },
   ];
 
-  // Customer status colors
-  const getStatusColor = (status) => {
+  // Customer role colors
+  const getStatusColor = (role) => {
     if (isDark) {
-      switch (status) {
-        case 'vip': return 'bg-purple-500/20 text-purple-400';
-        case 'wholesale': return 'bg-blue-500/20 text-blue-400';
-        default: return 'bg-zinc-700/50 text-zinc-400';
-      }
+      return role === 'admin' ? 'bg-orange-500/20 text-orange-400' : 'bg-teal-500/20 text-teal-400';
     }
-    switch (status) {
-      case 'vip': return 'bg-purple-100 text-purple-700';
-      case 'wholesale': return 'bg-blue-100 text-blue-700';
-      default: return 'bg-zinc-100 text-zinc-700';
-    }
+    return role === 'admin' ? 'bg-orange-100 text-orange-700' : 'bg-teal-100 text-teal-700';
   };
 
-  const getStatusLabel = (status) => {
-    switch (status) {
-      case 'vip': return 'VIP';
-      case 'wholesale': return 'Оптовик';
-      default: return 'Пользователь';
-    }
+  const getStatusLabel = (role) => {
+    return role === 'admin' ? 'Администратор' : 'Клиент';
   };
 
   const toggleUserExpand = (userId) => {
