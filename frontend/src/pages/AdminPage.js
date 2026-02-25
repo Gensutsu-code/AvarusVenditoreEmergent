@@ -142,7 +142,7 @@ export default function AdminPage() {
   const { isDark } = useTheme();
   
   // Tab order state - New restructured order
-  const defaultTabOrder = ['products', 'bonus', 'payments', 'crypto', 'crm', 'marketing', 'settings'];
+  const defaultTabOrder = ['products', 'bonus', 'payments', 'crm', 'marketing', 'settings'];
   const [tabOrder, setTabOrder] = useState(() => {
     const saved = localStorage.getItem('adminTabOrder');
     if (saved) {
@@ -151,16 +151,9 @@ export default function AdminPage() {
       if (order.includes('orders') || order.includes('users')) {
         return defaultTabOrder;
       }
-      // Add crypto tab if missing
-      if (!order.includes('crypto')) {
-        const paymentsIndex = order.indexOf('payments');
-        if (paymentsIndex !== -1) {
-          order.splice(paymentsIndex + 1, 0, 'crypto');
-        } else {
-          order.push('crypto');
-        }
-      }
-      return order;
+      // Remove crypto from main tabs (moved to payments)
+      const filtered = order.filter(tab => tab !== 'crypto');
+      return filtered;
     }
     return defaultTabOrder;
   });
