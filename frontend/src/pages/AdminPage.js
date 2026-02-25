@@ -1308,13 +1308,13 @@ export default function AdminPage() {
 
               {/* Products Section */}
               <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
-                <div className="flex justify-between items-center p-6 border-b border-slate-100 bg-gradient-to-r from-slate-50 to-white">
+                <div className="bg-gradient-to-r from-slate-50 to-white px-6 py-4 border-b border-slate-100 flex items-center justify-between">
                   <div className="flex items-center gap-3">
                     <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-orange-500 to-amber-500 flex items-center justify-center shadow-lg shadow-orange-500/20">
                       <Package className="w-5 h-5 text-white" />
                     </div>
                     <div>
-                      <h2 className="text-lg font-bold text-slate-800">Товары</h2>
+                      <h3 className="font-semibold text-slate-800">Товары</h3>
                       <p className="text-sm text-slate-500">{products.length} позиций</p>
                     </div>
                   </div>
