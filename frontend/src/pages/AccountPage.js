@@ -223,9 +223,9 @@ export default function AccountPage() {
 
   if (authLoading) {
     return (
-      <div className="min-h-screen bg-zinc-950 flex items-center justify-center">
+      <div className={`min-h-screen flex items-center justify-center ${isDark ? 'bg-zinc-950' : ''}`}>
         <motion.div 
-          className="w-8 h-8 border-2 border-orange-500 border-t-transparent rounded-full"
+          className={`w-8 h-8 border-2 ${isDark ? 'border-orange-500' : 'border-green-500'} border-t-transparent rounded-full`}
           animate={{ rotate: 360 }}
           transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
         />
@@ -234,16 +234,16 @@ export default function AccountPage() {
   }
 
   return (
-    <div className="min-h-screen bg-zinc-950" data-testid="account-page">
+    <div className={`min-h-screen ${isDark ? 'bg-zinc-950' : ''}`} data-testid="account-page">
       {/* Background effects */}
       <div className="fixed inset-0 overflow-hidden pointer-events-none">
         <motion.div 
-          className="absolute top-20 right-20 w-96 h-96 rounded-full bg-orange-500/5 blur-3xl"
+          className={`absolute top-20 right-20 w-96 h-96 rounded-full ${isDark ? 'bg-orange-500/5' : 'bg-green-400/20'} blur-3xl`}
           animate={{ scale: [1, 1.2, 1], opacity: [0.3, 0.5, 0.3] }}
           transition={{ duration: 8, repeat: Infinity }}
         />
         <motion.div 
-          className="absolute bottom-20 left-20 w-80 h-80 rounded-full bg-purple-500/5 blur-3xl"
+          className={`absolute bottom-20 left-20 w-80 h-80 rounded-full ${isDark ? 'bg-purple-500/5' : 'bg-pink-400/20'} blur-3xl`}
           animate={{ scale: [1.2, 1, 1.2], opacity: [0.3, 0.5, 0.3] }}
           transition={{ duration: 10, repeat: Infinity }}
         />
@@ -251,12 +251,12 @@ export default function AccountPage() {
 
       <div className="relative max-w-2xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <motion.h1 
-          className="text-2xl md:text-3xl font-bold tracking-tight uppercase text-white mb-8"
+          className={`text-2xl md:text-3xl font-bold tracking-tight uppercase mb-8 ${isDark ? 'text-white' : 'text-slate-800'}`}
           initial={{ opacity: 0, y: -20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.5 }}
         >
-          <span className="bg-gradient-to-r from-orange-400 to-orange-600 bg-clip-text text-transparent">
+          <span className={`bg-gradient-to-r ${isDark ? 'from-orange-400 to-orange-600' : 'from-green-500 to-emerald-600'} bg-clip-text text-transparent`}>
             Мой профиль
           </span>
         </motion.h1>
