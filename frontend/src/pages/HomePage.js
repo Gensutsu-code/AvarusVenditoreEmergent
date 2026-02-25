@@ -187,8 +187,8 @@ export default function HomePage() {
                         />
                       </div>
                     )}
-                    <div className={`text-xs font-medium truncate ${isDark ? 'text-zinc-200' : 'text-slate-700'}`}>{partner.name}</div>
-                    <div className={`text-[10px] truncate ${isDark ? 'text-zinc-500' : 'text-slate-500'}`}>{partner.description}</div>
+                    <div className="text-xs font-medium truncate text-slate-700">{partner.name}</div>
+                    <div className="text-[10px] truncate text-slate-500">{partner.description}</div>
                   </motion.a>
                 ))}
               </div>
@@ -203,18 +203,18 @@ export default function HomePage() {
           {FEATURES.map((feature, index) => (
             <motion.div
               key={feature.title}
-              className={`glass-card p-6 text-center group transition-all duration-300 ${isDark ? 'hover:border-orange-500/30' : 'hover:border-green-400/50'}`}
+              className="glass-card p-6 text-center group transition-all duration-300 hover:border-teal-400/50"
               initial={{ opacity: 0, y: 30 }}
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true }}
               transition={{ duration: 0.5, delay: index * 0.1 }}
               whileHover={{ y: -5 }}
             >
-              <div className={`w-12 h-12 mx-auto mb-4 rounded-xl flex items-center justify-center transition-colors ${isDark ? 'bg-orange-500/10 group-hover:bg-orange-500/20' : 'bg-teal-500/10 group-hover:bg-teal-500/20'}`}>
-                <feature.icon className={`w-6 h-6 ${isDark ? 'text-orange-400' : 'text-teal-600'}`} />
+              <div className="w-12 h-12 mx-auto mb-4 rounded-xl flex items-center justify-center transition-colors bg-teal-500/10 group-hover:bg-teal-500/20">
+                <feature.icon className="w-6 h-6 text-teal-600" />
               </div>
-              <h3 className={`font-semibold mb-1 ${isDark ? 'text-zinc-100' : 'text-slate-800'}`}>{feature.title}</h3>
-              <p className={`text-xs ${isDark ? 'text-zinc-500' : 'text-slate-500'}`}>{feature.desc}</p>
+              <h3 className="font-semibold mb-1 text-slate-800">{feature.title}</h3>
+              <p className="text-xs text-slate-500">{feature.desc}</p>
             </motion.div>
           ))}
         </div>
@@ -231,32 +231,32 @@ export default function HomePage() {
           viewport={{ once: true }}
           transition={{ duration: 0.6 }}
         >
-          <h2 className={`text-2xl md:text-3xl font-bold tracking-tight uppercase mb-8 ${isDark ? 'text-zinc-100' : 'text-slate-800'}`}>
+          <h2 className="text-2xl md:text-3xl font-bold tracking-tight uppercase mb-8 text-slate-800">
             О компании
           </h2>
           
           <div className="glass-card p-8">
             <div className="max-w-none">
-              <p className={`text-lg mb-6 ${isDark ? 'text-zinc-300' : 'text-slate-700'}`}>
-                <span className={`font-semibold ${isDark ? 'text-orange-400' : 'text-teal-600'}`}>avarus-Venditore</span> — поставщик запчастей для грузовых автомобилей по всей России. 
+              <p className="text-lg mb-6 text-slate-700">
+                <span className="font-semibold text-teal-600">avarus-Venditore</span> — поставщик запчастей для грузовых автомобилей по всей России. 
                 Мы специализируемся на комплектующих для коммерческого транспорта и предлагаем решения, 
                 которые выдерживают реальные нагрузки и большие пробеги.
               </p>
               
-              <p className={`mb-6 ${isDark ? 'text-zinc-400' : 'text-slate-600'}`}>
+              <p className="mb-6 text-slate-600">
                 В ассортименте — проверенные детали от надёжных производителей. Каждая позиция проходит 
                 контроль качества, чтобы техника работала стабильно и без простоев. Мы не продаём 
                 сомнительные аналоги и точно знаем, что поставляем.
               </p>
               
-              <p className={`mb-6 ${isDark ? 'text-zinc-400' : 'text-slate-600'}`}>
+              <p className="mb-6 text-slate-600">
                 За счёт прямых поставок и оптимальной логистики мы удерживаем низкие и честные цены 
                 без потери качества. Отгрузка осуществляется быстро, доставка работает по всем регионам 
                 России — от крупных городов до удалённых направлений.
               </p>
               
-              <p className={`font-medium ${isDark ? 'text-zinc-300' : 'text-slate-700'}`}>
-                <span className={`font-semibold ${isDark ? 'text-orange-400' : 'text-teal-600'}`}>avarus-Venditore</span> — это запчасти, на которые можно положиться, сроки, 
+              <p className="font-medium text-slate-700">
+                <span className="font-semibold text-teal-600">avarus-Venditore</span> — это запчасти, на которые можно положиться, сроки, 
                 которые соблюдаются, и сервис, ориентированный на результат.
               </p>
             </div>
