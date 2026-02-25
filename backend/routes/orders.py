@@ -474,3 +474,52 @@ async def cancel_order(order_id: str, user=Depends(get_current_user)):
     )
     
     return {"success": True, "message": "Order cancelled and items returned to cart"}
+
+
+@router.post("/orders/{order_id}/return-to-cart")
+async def return_order_to_cart(order_id: str, user=Depends(get_current_user)):
+    """Return order items to cart WITHOUT cancelling the order (for payment modal close)"""
+    order = await db.orders.find_one({"id": order_id, "user_id": user["id"]}, {"_id": 0})
+    if not order:
+        raise HTTPException(status_code=404, detail="Order not found")
+    
+    # Only allow for unpaid orders in pending status
+    if order.get("payment_status") == "paid":
+        raise HTTPException(status_code=400, detail="Cannot return paid order items")
+    
+    # Return items to cart
+    cart = await db.carts.find_one({"user_id": user["id"]})
+    if not cart:
+        cart = {"user_id": user["id"], "items": []}
+    
+    existing_items = {item["product_id"]: item for item in cart.get("items", [])}
+    
+    for order_item in order.get("items", []):
+        product_id = order_item.get("product_id")
+        quantity = order_item.get("quantity", 1)
+        
+        if product_id in existing_items:
+            existing_items[product_id]["quantity"] += quantity
+        else:
+            existing_items[product_id] = {"product_id": product_id, "quantity": quantity}
+        
+        # Restore stock
+        await db.products.update_one(
+            {"id": product_id},
+            {"$inc": {"stock": quantity}}
+        )
+    
+    # Update cart
+    await db.carts.update_one(
+        {"user_id": user["id"]},
+        {"$set": {"items": list(existing_items.values())}},
+        upsert=True
+    )
+    
+    # Mark order as payment_pending but keep it active (not cancelled)
+    await db.orders.update_one(
+        {"id": order_id},
+        {"$set": {"payment_status": "pending", "items_returned_to_cart": True}}
+    )
+    
+    return {"success": True, "message": "Items returned to cart. Order is still active."}
