@@ -23,6 +23,7 @@ import FavoritesPage from "./pages/FavoritesPage";
 import OrdersPage from "./pages/OrdersPage";
 import BonusPage from "./pages/BonusPage";
 import NewsPage from "./pages/NewsPage";
+import ProductPage from "./pages/ProductPage";
 
 function AppContent() {
   const { user } = useAuth();
