@@ -214,9 +214,13 @@ export default function FavoritesPage() {
                         >
                           <Minus className="w-4 h-4" />
                         </motion.button>
-                        <span className="px-3 min-w-[40px] text-center text-sm font-bold text-slate-800">
-                          {quantities[product.id] || 1}
-                        </span>
+                        <input
+                          type="number"
+                          min="1"
+                          value={quantities[product.id] || 1}
+                          onChange={(e) => setQuantityDirect(product.id, e.target.value)}
+                          className="w-12 text-center text-sm font-bold text-slate-800 bg-transparent border-0 focus:outline-none focus:ring-0 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                        />
                         <motion.button
                           onClick={() => updateQuantity(product.id, 1)}
                           className="p-2.5 hover:bg-slate-100 text-slate-500 transition-colors"
