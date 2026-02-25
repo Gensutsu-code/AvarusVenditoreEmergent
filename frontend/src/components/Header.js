@@ -4,8 +4,8 @@ import { useAuth } from '../context/AuthContext';
 import { useCart } from '../context/CartContext';
 import { Button } from './ui/button';
 import { AdminNotifications } from './AdminNotifications';
-import { ClientNotifications } from './ClientNotifications';
 import { HeaderPromoBanner } from './HeaderPromoBanner';
+import { SearchDropdown } from './SearchDropdown';
 import { useState, useRef, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 
