@@ -26,10 +26,11 @@ import NewsPage from "./pages/NewsPage";
 
 function AppContent() {
   const { user } = useAuth();
+  const { isDark } = useTheme();
   const isAdmin = user?.role === 'admin';
 
   return (
-    <div className="min-h-screen bg-white">
+    <div className={`min-h-screen ${isDark ? 'bg-zinc-950' : 'bg-gradient-to-br from-cyan-50 via-pink-50 to-cyan-50'}`}>
       <Header />
       {/* Hide promo banner for admin */}
       {!isAdmin && <PromoBanner />}
