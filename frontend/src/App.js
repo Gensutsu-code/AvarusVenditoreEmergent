@@ -24,6 +24,7 @@ import OrdersPage from "./pages/OrdersPage";
 import BonusPage from "./pages/BonusPage";
 import NewsPage from "./pages/NewsPage";
 import ProductPage from "./pages/ProductPage";
+import NotificationsPage from "./pages/NotificationsPage";
 
 function AppContent() {
   const { user } = useAuth();
