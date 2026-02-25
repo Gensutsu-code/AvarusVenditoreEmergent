@@ -6,6 +6,157 @@ import { useTheme } from '../context/ThemeContext';
 
 const API = `${process.env.REACT_APP_BACKEND_URL}/api`;
 
+// Floating version for below header
+export const FloatingPromoBanner = () => {
+  const [banner, setBanner] = useState(null);
+  const [isExpanded, setIsExpanded] = useState(true);
+  const { isDark } = useTheme();
+
+  useEffect(() => {
+    fetchBanner();
+    const collapsed = sessionStorage.getItem('promo_banner_collapsed');
+    if (collapsed === 'true') {
+      setIsExpanded(false);
+    }
+  }, []);
+
+  const fetchBanner = async () => {
+    try {
+      const res = await axios.get(`${API}/promo-banner`);
+      setBanner(res.data);
+    } catch (err) {
+      console.error('Failed to fetch promo banner', err);
+    }
+  };
+
+  const handleCollapse = (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsExpanded(false);
+    sessionStorage.setItem('promo_banner_collapsed', 'true');
+  };
+
+  const handleExpand = (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsExpanded(true);
+    sessionStorage.setItem('promo_banner_collapsed', 'false');
+  };
+
+  if (!banner || !banner.enabled) {
+    return null;
+  }
+
+  const bgColor = banner.bg_color || (isDark ? '#f97316' : '#10b981');
+
+  return (
+    <div className="fixed left-4 top-20 z-40">
+      <AnimatePresence mode="wait" initial={false}>
+        {isExpanded ? (
+          <motion.div
+            key="expanded"
+            initial={{ opacity: 0, x: -50, scale: 0.8 }}
+            animate={{ 
+              opacity: 1, 
+              x: 0,
+              scale: 1,
+              transition: {
+                duration: 0.4,
+                ease: [0.25, 0.46, 0.45, 0.94]
+              }
+            }}
+            exit={{ 
+              opacity: 0, 
+              x: -50,
+              scale: 0.8,
+              transition: { duration: 0.3 }
+            }}
+          >
+            <motion.div 
+              className="flex items-center gap-2 pl-3 pr-2 py-2 rounded-full text-white text-sm font-medium whitespace-nowrap shadow-xl"
+              style={{ 
+                backgroundColor: bgColor,
+                boxShadow: `0 8px 25px ${bgColor}50`
+              }}
+              data-testid="promo-banner"
+            >
+              {/* Sparkle icon */}
+              <motion.div
+                animate={{ rotate: [0, 15, -15, 0] }}
+                transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }}
+              >
+                <Sparkles className="w-4 h-4" />
+              </motion.div>
+              
+              {/* Banner text - clickable if link exists */}
+              {banner.link ? (
+                <a 
+                  href={banner.link}
+                  className="tracking-wide"
+                  onClick={(e) => e.stopPropagation()}
+                >
+                  {banner.text}
+                </a>
+              ) : (
+                <span className="tracking-wide">{banner.text}</span>
+              )}
+              
+              {/* Close button */}
+              <motion.button 
+                onClick={handleCollapse}
+                className="ml-1 p-1 hover:bg-white/20 rounded-full transition-colors"
+                whileHover={{ scale: 1.1, rotate: 90 }}
+                whileTap={{ scale: 0.9 }}
+                data-testid="promo-banner-close"
+              >
+                <X className="w-3.5 h-3.5" />
+              </motion.button>
+            </motion.div>
+          </motion.div>
+        ) : (
+          <motion.button
+            key="collapsed"
+            initial={{ scale: 0, opacity: 0, rotate: -180 }}
+            animate={{ 
+              scale: 1, 
+              opacity: 1, 
+              rotate: 0,
+              transition: {
+                type: "spring",
+                stiffness: 200,
+                damping: 15
+              }
+            }}
+            exit={{ 
+              scale: 0, 
+              opacity: 0,
+              rotate: 180,
+              transition: { duration: 0.2 }
+            }}
+            onClick={handleExpand}
+            className="flex items-center justify-center w-10 h-10 rounded-full text-white shadow-xl hover:shadow-2xl transition-shadow"
+            style={{ 
+              backgroundColor: bgColor,
+              boxShadow: `0 8px 25px ${bgColor}50`
+            }}
+            whileHover={{ scale: 1.15 }}
+            whileTap={{ scale: 0.95 }}
+            data-testid="promo-banner-collapsed"
+          >
+            <motion.div
+              animate={{ rotate: [0, 360] }}
+              transition={{ duration: 3, repeat: Infinity, ease: "linear" }}
+            >
+              <Sparkles className="w-4 h-4" />
+            </motion.div>
+          </motion.button>
+        )}
+      </AnimatePresence>
+    </div>
+  );
+};
+
+// Original inline version (kept for backward compatibility)
 export const HeaderPromoBanner = () => {
   const [banner, setBanner] = useState(null);
   const [isExpanded, setIsExpanded] = useState(true);
