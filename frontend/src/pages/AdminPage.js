@@ -2087,46 +2087,57 @@ export default function AdminPage() {
           <TabsContent value="bonus" className="p-6">
             <div className="space-y-6">
               {/* Header with Add Button */}
-              <div className="flex justify-between items-center">
-                <h2 className="text-lg font-semibold flex items-center gap-2">
-                  <Gift className="w-5 h-5 text-orange-500" />
-                  Бонусные программы ({bonusPrograms.length})
-                </h2>
-                <Button
-                  onClick={() => {
-                    setEditingProgram({
-                      title: 'Новая бонусная программа',
-                      description: '',
-                      image_url: '',
-                      levels: [],
-                      prizes: [],
-                      enabled: true
-                    });
-                    setIsNewProgram(true);
-                  }}
-                  className="bg-orange-500 hover:bg-orange-600"
-                  data-testid="add-bonus-program-btn"
-                >
-                  <Plus className="w-4 h-4 mr-2" />
-                  Добавить программу
-                </Button>
+              <div className="bg-gradient-to-br from-purple-50/50 to-violet-50/30 rounded-2xl p-6 border border-purple-100/50">
+                <div className="flex justify-between items-center">
+                  <div className="flex items-center gap-3">
+                    <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-purple-500 to-violet-500 flex items-center justify-center shadow-lg shadow-purple-500/20">
+                      <Gift className="w-6 h-6 text-white" />
+                    </div>
+                    <div>
+                      <h2 className="text-xl font-bold text-slate-800">Бонусные программы</h2>
+                      <p className="text-sm text-slate-500">{bonusPrograms.length} программ</p>
+                    </div>
+                  </div>
+                  <Button
+                    onClick={() => {
+                      setEditingProgram({
+                        title: 'Новая бонусная программа',
+                        description: '',
+                        image_url: '',
+                        levels: [],
+                        prizes: [],
+                        enabled: true
+                      });
+                      setIsNewProgram(true);
+                    }}
+                    className="bg-gradient-to-r from-purple-500 to-violet-500 hover:from-purple-600 hover:to-violet-600 text-white shadow-lg shadow-purple-500/20"
+                    data-testid="add-bonus-program-btn"
+                  >
+                    <Plus className="w-4 h-4 mr-2" />
+                    Добавить программу
+                  </Button>
+                </div>
               </div>
 
               {/* Programs List */}
               {bonusPrograms.length === 0 ? (
-                <div className="border border-dashed border-zinc-300 rounded-lg p-8 text-center">
-                  <Gift className="w-12 h-12 mx-auto text-zinc-300 mb-3" />
-                  <p className="text-zinc-500">Нет бонусных программ</p>
-                  <p className="text-sm text-zinc-400 mt-1">Создайте первую программу для начала работы</p>
+                <div className="bg-white/80 backdrop-blur-sm border border-dashed border-purple-200 rounded-2xl p-12 text-center">
+                  <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-purple-100 to-violet-100 flex items-center justify-center mx-auto mb-4">
+                    <Gift className="w-8 h-8 text-purple-400" />
+                  </div>
+                  <p className="text-slate-600 font-medium">Нет бонусных программ</p>
+                  <p className="text-sm text-slate-400 mt-1">Создайте первую программу для начала работы</p>
                 </div>
               ) : (
                 <div className="space-y-4">
                   {bonusPrograms.map((program) => (
-                    <div key={program.id} className="border border-zinc-200 bg-white rounded-lg overflow-hidden">
+                    <div key={program.id} className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden hover:shadow-lg transition-shadow duration-300">
                       {/* Program Header */}
                       <div 
-                        className={`px-4 py-3 flex items-center justify-between cursor-pointer hover:bg-zinc-50 ${
-                          selectedProgramId === program.id ? 'bg-orange-50 border-b border-orange-200' : ''
+                        className={`px-6 py-4 flex items-center justify-between cursor-pointer transition-colors ${
+                          selectedProgramId === program.id 
+                            ? 'bg-gradient-to-r from-purple-50 to-violet-50 border-b border-purple-200' 
+                            : 'hover:bg-slate-50'
                         }`}
                         onClick={async () => {
                           if (selectedProgramId === program.id) {
@@ -2143,37 +2154,36 @@ export default function AdminPage() {
                           }
                         }}
                       >
-                        <div className="flex items-center gap-3">
+                        <div className="flex items-center gap-4">
                           {program.image_url ? (
-                            <img src={program.image_url} alt="" className="w-10 h-10 rounded object-cover" />
+                            <img src={program.image_url} alt="" className="w-14 h-14 rounded-xl object-cover shadow-sm" />
                           ) : (
-                            <div className="w-10 h-10 bg-orange-100 rounded flex items-center justify-center">
-                              <Gift className="w-5 h-5 text-orange-500" />
+                            <div className="w-14 h-14 bg-gradient-to-br from-purple-100 to-violet-100 rounded-xl flex items-center justify-center">
+                              <Gift className="w-7 h-7 text-purple-500" />
                             </div>
                           )}
                           <div>
-                            <h3 className="font-medium flex items-center gap-2">
+                            <h3 className="font-semibold text-slate-800 flex items-center gap-2">
                               {program.title}
                               {!program.enabled && (
-                                <span className="text-xs bg-zinc-200 text-zinc-500 px-2 py-0.5 rounded">Отключена</span>
+                                <span className="text-xs bg-slate-200 text-slate-500 px-2 py-0.5 rounded-full">Отключена</span>
                               )}
                               {program.pending_requests > 0 && (
-                                <span className="text-xs bg-red-500 text-white px-2 py-0.5 rounded-full">
+                                <span className="text-xs bg-gradient-to-r from-red-500 to-rose-500 text-white px-2.5 py-0.5 rounded-full animate-pulse shadow-sm">
                                   {program.pending_requests} запросов
                                 </span>
                               )}
                             </h3>
-                            <p className="text-sm text-zinc-500">
+                            <p className="text-sm text-slate-500 mt-0.5">
                               {program.levels?.length > 0 
-                                ? `${program.levels.length} уровней | Баллы начисляются по % от уровня`
+                                ? `${program.levels.length} уровней • Баллы по % от уровня`
                                 : 'Уровни не настроены'}
                             </p>
                           </div>
                         </div>
                         <div className="flex items-center gap-2">
-                          <Button
-                            variant="ghost"
-                            size="sm"
+                          <button
+                            className="p-2 rounded-lg bg-slate-100 hover:bg-purple-100 text-slate-500 hover:text-purple-600 transition-colors"
                             onClick={(e) => {
                               e.stopPropagation();
                               setEditingProgram({...program});
@@ -2181,18 +2191,15 @@ export default function AdminPage() {
                             }}
                           >
                             <Pencil className="w-4 h-4" />
-                          </Button>
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            className="text-red-500 hover:text-red-600"
+                          </button>
+                          <button
+                            className="p-2 rounded-lg bg-slate-100 hover:bg-red-100 text-slate-500 hover:text-red-500 transition-colors"
                             onClick={async (e) => {
                               e.stopPropagation();
                               if (window.confirm(`Удалить программу "${program.title}"?`)) {
                                 try {
                                   await axios.delete(`${API}/admin/bonus/programs/${program.id}`);
                                   toast.success('Программа удалена');
-                                  // Real-time update: remove from local state
                                   setBonusPrograms(prev => prev.filter(p => p.id !== program.id));
                                   if (selectedProgramId === program.id) {
                                     setSelectedProgramId(null);
@@ -2204,8 +2211,8 @@ export default function AdminPage() {
                             }}
                           >
                             <Trash2 className="w-4 h-4" />
-                          </Button>
-                          <ChevronDown className={`w-5 h-5 text-zinc-400 transition-transform ${
+                          </button>
+                          <ChevronDown className={`w-5 h-5 text-slate-400 transition-transform duration-300 ${
                             selectedProgramId === program.id ? 'rotate-180' : ''
                           }`} />
                         </div>
@@ -2213,59 +2220,63 @@ export default function AdminPage() {
 
                       {/* Program Users (Expandable) */}
                       {selectedProgramId === program.id && (
-                        <div className="border-t border-zinc-200">
-                          <div className="bg-zinc-50 px-4 py-2 text-sm font-medium text-zinc-600">
-                            Пользователи программы ({programUsers.length})
+                        <div className="border-t border-slate-100">
+                          <div className="bg-gradient-to-r from-slate-50 to-white px-6 py-3 flex items-center gap-2">
+                            <Users className="w-4 h-4 text-purple-500" />
+                            <span className="text-sm font-medium text-slate-600">Пользователи программы</span>
+                            <span className="text-xs bg-purple-100 text-purple-600 px-2 py-0.5 rounded-full">{programUsers.length}</span>
                           </div>
                           <div className="overflow-x-auto max-h-[400px] overflow-y-auto">
-                            <table className="w-full text-sm">
-                              <thead className="sticky top-0 bg-white">
-                                <tr className="border-b border-zinc-200">
-                                  <th className="text-left py-2 px-4">Пользователь</th>
-                                  <th className="text-right py-2 px-4">Баллы</th>
-                                  <th className="text-center py-2 px-4">Уровень</th>
-                                  <th className="text-center py-2 px-4">Статус</th>
-                                  <th className="text-right py-2 px-4">Действия</th>
+                            <table className="w-full">
+                              <thead className="sticky top-0 bg-white shadow-sm">
+                                <tr className="bg-slate-50/80">
+                                  <th className="text-left py-3 px-6 text-xs font-semibold text-slate-500 uppercase tracking-wider">Пользователь</th>
+                                  <th className="text-right py-3 px-6 text-xs font-semibold text-slate-500 uppercase tracking-wider">Баллы</th>
+                                  <th className="text-center py-3 px-6 text-xs font-semibold text-slate-500 uppercase tracking-wider">Уровень</th>
+                                  <th className="text-center py-3 px-6 text-xs font-semibold text-slate-500 uppercase tracking-wider">Статус</th>
+                                  <th className="text-right py-3 px-6 text-xs font-semibold text-slate-500 uppercase tracking-wider">Действия</th>
                                 </tr>
                               </thead>
-                              <tbody>
+                              <tbody className="divide-y divide-slate-100">
                                 {programUsers.map((pu) => (
                                   <tr 
                                     key={pu.id} 
-                                    className={`border-b border-zinc-100 hover:bg-zinc-50 ${pu.bonus_requested ? 'bg-orange-50' : ''}`}
+                                    className={`transition-colors ${pu.bonus_requested ? 'bg-gradient-to-r from-amber-50 to-transparent' : 'hover:bg-slate-50'}`}
                                   >
-                                    <td className="py-2 px-4 font-medium">
-                                      {pu.name}
-                                      {pu.bonus_requested && (
-                                        <Gift className="w-4 h-4 text-orange-500 inline ml-2 animate-pulse" />
-                                      )}
+                                    <td className="py-3 px-6">
+                                      <div className="flex items-center gap-2">
+                                        <span className="font-medium text-slate-800">{pu.name}</span>
+                                        {pu.bonus_requested && (
+                                          <Gift className="w-4 h-4 text-amber-500 animate-pulse" />
+                                        )}
+                                      </div>
                                     </td>
-                                    <td className="py-2 px-4 text-right font-mono">
-                                      <span className={pu.bonus_requested ? 'text-green-600 font-bold' : ''}>
+                                    <td className="py-3 px-6 text-right">
+                                      <span className={`font-mono font-semibold ${pu.bonus_requested ? 'text-emerald-600' : 'text-slate-700'}`}>
                                         {pu.current_amount?.toFixed(0) || 0}
                                       </span>
                                     </td>
-                                    <td className="py-2 px-4 text-center">
-                                      <span className="bg-orange-100 text-orange-600 px-2 py-1 rounded text-xs font-medium">
+                                    <td className="py-3 px-6 text-center">
+                                      <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold bg-gradient-to-r from-purple-100 to-violet-100 text-purple-700">
                                         {pu.current_level?.name || 'Бронза'}
                                       </span>
                                     </td>
-                                    <td className="py-2 px-4 text-center">
+                                    <td className="py-3 px-6 text-center">
                                       {pu.bonus_requested ? (
-                                        <span className="bg-orange-100 text-orange-600 px-2 py-1 rounded text-xs font-bold">
+                                        <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold bg-amber-100 text-amber-700 animate-pulse">
                                           Ожидает
                                         </span>
                                       ) : pu.current_amount >= (program.min_threshold || 0) ? (
-                                        <span className="bg-green-100 text-green-600 px-2 py-1 rounded text-xs">
+                                        <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold bg-emerald-100 text-emerald-700">
                                           Готов
                                         </span>
                                       ) : (
-                                        <span className="bg-zinc-100 text-zinc-500 px-2 py-1 rounded text-xs">
+                                        <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold bg-slate-100 text-slate-500">
                                           Активен
                                         </span>
                                       )}
                                     </td>
-                                    <td className="py-2 px-4 text-right">
+                                    <td className="py-3 px-6 text-right">
                                       {pu.bonus_requested && (
                                         <Button
                                           size="sm"
@@ -2279,7 +2290,7 @@ export default function AdminPage() {
                                             });
                                             setBonusCodeInput('');
                                           }}
-                                          className="bg-green-500 hover:bg-green-600 text-white"
+                                          className="bg-gradient-to-r from-emerald-500 to-green-500 hover:from-emerald-600 hover:to-green-600 text-white shadow-sm"
                                         >
                                           <Gift className="w-3 h-3 mr-1" />
                                           Выдать
@@ -2290,7 +2301,8 @@ export default function AdminPage() {
                                 ))}
                                 {programUsers.length === 0 && (
                                   <tr>
-                                    <td colSpan="6" className="py-8 text-center text-zinc-400">
+                                    <td colSpan="5" className="py-8 text-center text-slate-400">
+                                      <Users className="w-8 h-8 mx-auto mb-2 opacity-50" />
                                       Нет пользователей
                                     </td>
                                   </tr>
@@ -2306,45 +2318,56 @@ export default function AdminPage() {
               )}
 
               {/* Bonus History Section */}
-              <div className="border border-zinc-200 bg-white">
-                <div className="bg-zinc-50 px-4 py-3 border-b border-zinc-200">
-                  <h3 className="font-semibold flex items-center gap-2">
-                    <Award className="w-5 h-5 text-zinc-500" />
-                    История выдачи бонусов ({bonusHistory.length})
-                  </h3>
+              <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
+                <div className="bg-gradient-to-r from-slate-50 to-white px-6 py-4 border-b border-slate-100 flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-amber-500 to-orange-500 flex items-center justify-center shadow-lg shadow-amber-500/20">
+                    <Award className="w-5 h-5 text-white" />
+                  </div>
+                  <div>
+                    <h3 className="font-semibold text-slate-800">История выдачи бонусов</h3>
+                    <p className="text-sm text-slate-500">{bonusHistory.length} записей</p>
+                  </div>
                 </div>
                 <div className="overflow-x-auto max-h-[300px] overflow-y-auto">
                   {bonusHistory.length === 0 ? (
-                    <p className="text-center text-zinc-400 py-8">История пуста</p>
+                    <div className="text-center py-12 text-slate-400">
+                      <Award className="w-12 h-12 mx-auto mb-2 opacity-50" />
+                      <p>История пуста</p>
+                    </div>
                   ) : (
-                    <table className="w-full text-sm">
-                      <thead className="sticky top-0 bg-white">
-                        <tr className="border-b border-zinc-200 bg-zinc-50">
-                          <th className="text-left py-3 px-4">Дата</th>
-                          <th className="text-left py-3 px-4">Программа</th>
-                          <th className="text-left py-3 px-4">Пользователь</th>
-                          <th className="text-left py-3 px-4">Промокод</th>
-                          <th className="text-right py-3 px-4">Сумма</th>
-                          <th className="text-left py-3 px-4">Выдал</th>
+                    <table className="w-full">
+                      <thead className="sticky top-0 bg-white shadow-sm">
+                        <tr className="bg-slate-50/80">
+                          <th className="text-left py-3 px-6 text-xs font-semibold text-slate-500 uppercase tracking-wider">Дата</th>
+                          <th className="text-left py-3 px-6 text-xs font-semibold text-slate-500 uppercase tracking-wider">Программа</th>
+                          <th className="text-left py-3 px-6 text-xs font-semibold text-slate-500 uppercase tracking-wider">Пользователь</th>
+                          <th className="text-left py-3 px-6 text-xs font-semibold text-slate-500 uppercase tracking-wider">Промокод</th>
+                          <th className="text-right py-3 px-6 text-xs font-semibold text-slate-500 uppercase tracking-wider">Сумма</th>
+                          <th className="text-left py-3 px-6 text-xs font-semibold text-slate-500 uppercase tracking-wider">Выдал</th>
                         </tr>
                       </thead>
-                      <tbody>
+                      <tbody className="divide-y divide-slate-100">
                         {bonusHistory.map((item) => (
-                          <tr key={item.id} className="border-b border-zinc-100 hover:bg-zinc-50">
-                            <td className="py-3 px-4 text-zinc-500 text-xs">
+                          <tr key={item.id} className="hover:bg-slate-50 transition-colors">
+                            <td className="py-3 px-6 text-slate-500 text-sm">
                               {formatDate(item.created_at)}
                             </td>
-                            <td className="py-3 px-4 text-sm">{item.program_title || 'Бонусная программа'}</td>
-                            <td className="py-3 px-4 font-medium">{item.user_name}</td>
-                            <td className="py-3 px-4">
-                              <span className="font-mono bg-zinc-100 px-2 py-1 rounded text-sm">
+                            <td className="py-3 px-6">
+                              <span className="text-sm text-slate-700">{item.program_title || 'Бонусная программа'}</span>
+                            </td>
+                            <td className="py-3 px-6">
+                              <span className="font-medium text-slate-800">{item.user_name}</span>
+                            </td>
+                            <td className="py-3 px-6">
+                              <code className="px-2 py-1 rounded bg-slate-100 text-sm font-mono text-slate-600">
                                 {item.bonus_code}
-                              </span>
+                              </code>
                             </td>
-                            <td className="py-3 px-4 text-right font-mono text-zinc-500">
-                              {(item.amount_at_issue || 0).toFixed(0)} ₽
+                            <td className="py-3 px-6 text-right">
+                              <span className="font-semibold text-slate-800">{(item.amount_at_issue || 0).toFixed(0)}</span>
+                              <span className="text-slate-400 ml-1">₽</span>
                             </td>
-                            <td className="py-3 px-4 text-zinc-500 text-sm">
+                            <td className="py-3 px-6 text-slate-500 text-sm">
                               {item.issued_by || 'Администратор'}
                             </td>
                           </tr>
