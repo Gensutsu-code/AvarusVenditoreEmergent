@@ -704,10 +704,10 @@ export default function AccountPage() {
 
       {/* History Modal */}
       <Dialog open={showHistoryModal} onOpenChange={setShowHistoryModal}>
-        <DialogContent className="max-w-lg max-h-[80vh] overflow-hidden flex flex-col bg-zinc-900/95 backdrop-blur-xl border border-white/10 rounded-2xl" data-testid="history-modal">
+        <DialogContent className="max-w-lg max-h-[80vh] overflow-hidden flex flex-col bg-white/95 backdrop-blur-xl border border-slate-200 rounded-2xl" data-testid="history-modal">
           <DialogHeader>
-            <DialogTitle className="flex items-center gap-3 text-white">
-              <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-purple-500 to-purple-600 flex items-center justify-center">
+            <DialogTitle className="flex items-center gap-3 text-slate-800">
+              <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-teal-500 to-emerald-500 flex items-center justify-center">
                 <History className="w-5 h-5 text-white" />
               </div>
               История баланса
@@ -717,17 +717,17 @@ export default function AccountPage() {
           <div className="flex-1 overflow-y-auto mt-4">
             {balanceHistory.length === 0 ? (
               <div className="text-center py-12">
-                <div className="w-16 h-16 mx-auto mb-4 rounded-2xl bg-zinc-800/50 flex items-center justify-center">
-                  <Wallet className="w-8 h-8 text-zinc-600" />
+                <div className="w-16 h-16 mx-auto mb-4 rounded-2xl bg-slate-100 flex items-center justify-center">
+                  <Wallet className="w-8 h-8 text-slate-400" />
                 </div>
-                <p className="text-zinc-500">История операций пуста</p>
+                <p className="text-slate-500">История операций пуста</p>
               </div>
             ) : (
               <div className="space-y-3">
                 {balanceHistory.map((tx, index) => (
                   <motion.div 
                     key={tx.id} 
-                    className="flex items-center justify-between p-4 bg-zinc-800/30 rounded-xl border border-zinc-700/30"
+                    className="flex items-center justify-between p-4 bg-slate-50 rounded-xl border border-slate-200"
                     initial={{ opacity: 0, x: -20 }}
                     animate={{ opacity: 1, x: 0 }}
                     transition={{ delay: index * 0.05 }}
@@ -737,19 +737,19 @@ export default function AccountPage() {
                         tx.type === 'topup' ? 'bg-teal-500/10' : 'bg-red-500/10'
                       }`}>
                         {tx.type === 'topup' ? (
-                          <Plus className="w-5 h-5 text-green-400" />
+                          <Plus className="w-5 h-5 text-green-500" />
                         ) : (
-                          <CreditCard className="w-5 h-5 text-red-400" />
+                          <CreditCard className="w-5 h-5 text-red-500" />
                         )}
                       </div>
                       <div>
-                        <p className="font-medium text-zinc-200">{tx.description || tx.type}</p>
-                        <p className="text-xs text-zinc-500">
+                        <p className="font-medium text-slate-700">{tx.description || tx.type}</p>
+                        <p className="text-xs text-slate-500">
                           {new Date(tx.created_at).toLocaleString('ru-RU')}
                         </p>
                       </div>
                     </div>
-                    <div className={`font-bold text-lg ${tx.amount > 0 ? 'text-green-400' : 'text-red-400'}`}>
+                    <div className={`font-bold text-lg ${tx.amount > 0 ? 'text-green-500' : 'text-red-500'}`}>
                       {tx.amount > 0 ? '+' : ''}{tx.amount.toLocaleString('ru-RU')}₽
                     </div>
                   </motion.div>
