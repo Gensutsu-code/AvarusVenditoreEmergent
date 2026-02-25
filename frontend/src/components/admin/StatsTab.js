@@ -257,7 +257,7 @@ export default function StatsTab({ statsPeriod, setStatsPeriod, extendedStats })
                         <span className={`w-7 h-7 flex items-center justify-center rounded-full text-xs font-bold ${
                           idx === 0 ? 'bg-yellow-100 text-yellow-700' :
                           idx === 1 ? 'bg-zinc-200 text-zinc-600' :
-                          idx === 2 ? 'bg-teal-100 text-orange-700' :
+                          idx === 2 ? 'bg-teal-100 text-teal-700' :
                           'bg-zinc-100 text-zinc-500'
                         }`}>
                           {idx + 1}
@@ -291,7 +291,7 @@ export default function StatsTab({ statsPeriod, setStatsPeriod, extendedStats })
                         <span className={`w-7 h-7 flex items-center justify-center rounded-full text-xs font-bold ${
                           idx === 0 ? 'bg-yellow-100 text-yellow-700' :
                           idx === 1 ? 'bg-zinc-200 text-zinc-600' :
-                          idx === 2 ? 'bg-teal-100 text-orange-700' :
+                          idx === 2 ? 'bg-teal-100 text-teal-700' :
                           'bg-zinc-100 text-zinc-500'
                         }`}>
                           {idx + 1}
@@ -323,7 +323,7 @@ export default function StatsTab({ statsPeriod, setStatsPeriod, extendedStats })
                         <span className={`w-7 h-7 flex items-center justify-center rounded-full text-xs font-bold ${
                           idx === 0 ? 'bg-yellow-100 text-yellow-700' :
                           idx === 1 ? 'bg-zinc-200 text-zinc-600' :
-                          idx === 2 ? 'bg-teal-100 text-orange-700' :
+                          idx === 2 ? 'bg-teal-100 text-teal-700' :
                           'bg-zinc-100 text-zinc-500'
                         }`}>
                           {idx + 1}
