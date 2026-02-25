@@ -1,13 +1,136 @@
-import { Link, useLocation } from 'react-router-dom';
-import { ShoppingCart, User, Search, LogOut, Settings, Heart, Package, ClipboardList, Gift, Newspaper, Menu, X, MessageCircle } from 'lucide-react';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
+import { ShoppingCart, User, Search, LogOut, Settings, Heart, Package, ClipboardList, Gift, Newspaper, Menu, X, MessageCircle, Bell } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { useCart } from '../context/CartContext';
 import { Button } from './ui/button';
 import { AdminNotifications } from './AdminNotifications';
 import { ClientNotifications } from './ClientNotifications';
 import { HeaderPromoBanner } from './HeaderPromoBanner';
-import { useState } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
+
+// Expandable Profile Menu Component
+const ExpandableProfileMenu = ({ onLogout }) => {
+  const [isExpanded, setIsExpanded] = useState(false);
+  const [clickCount, setClickCount] = useState(0);
+  const navigate = useNavigate();
+  const menuRef = useRef(null);
+  const timeoutRef = useRef(null);
+
+  // Close menu when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (menuRef.current && !menuRef.current.contains(event.target)) {
+        setIsExpanded(false);
+        setClickCount(0);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
+
+  const handleProfileClick = () => {
+    if (!isExpanded) {
+      // First click - expand
+      setIsExpanded(true);
+      setClickCount(1);
+      // Auto-close after 3 seconds of inactivity
+      if (timeoutRef.current) clearTimeout(timeoutRef.current);
+      timeoutRef.current = setTimeout(() => {
+        setIsExpanded(false);
+        setClickCount(0);
+      }, 3000);
+    } else {
+      // Second click - navigate to profile
+      setIsExpanded(false);
+      setClickCount(0);
+      navigate('/account');
+    }
+  };
+
+  const handleItemClick = (action) => {
+    setIsExpanded(false);
+    setClickCount(0);
+    if (timeoutRef.current) clearTimeout(timeoutRef.current);
+    if (typeof action === 'function') {
+      action();
+    }
+  };
+
+  return (
+    <div ref={menuRef} className="relative flex items-center">
+      {/* Left side - Logout (expands left) */}
+      <AnimatePresence>
+        {isExpanded && (
+          <motion.button
+            initial={{ opacity: 0, x: 20, scale: 0.8 }}
+            animate={{ opacity: 1, x: 0, scale: 1 }}
+            exit={{ opacity: 0, x: 20, scale: 0.8 }}
+            transition={{ duration: 0.2, ease: "easeOut" }}
+            onClick={() => handleItemClick(onLogout)}
+            className="p-2.5 rounded-xl text-slate-500 hover:text-red-500 hover:bg-red-50 transition-all mr-1"
+            data-testid="logout-button"
+          >
+            <LogOut className="w-4 h-4" />
+          </motion.button>
+        )}
+      </AnimatePresence>
+
+      {/* Center - Profile button */}
+      <motion.button
+        onClick={handleProfileClick}
+        className={`relative p-2.5 rounded-xl transition-all duration-300 ${
+          isExpanded 
+            ? 'bg-teal-500 text-white shadow-lg shadow-teal-500/30' 
+            : 'text-slate-500 hover:text-slate-800 hover:bg-white/50'
+        }`}
+        whileTap={{ scale: 0.95 }}
+        data-testid="profile-menu-trigger"
+      >
+        <User className="w-4 h-4" />
+        {isExpanded && (
+          <motion.div
+            className="absolute -bottom-1 left-1/2 -translate-x-1/2 w-1 h-1 rounded-full bg-white"
+            initial={{ scale: 0 }}
+            animate={{ scale: 1 }}
+          />
+        )}
+      </motion.button>
+
+      {/* Right side - Notifications & Favorites (expands right) */}
+      <AnimatePresence>
+        {isExpanded && (
+          <>
+            <motion.div
+              initial={{ opacity: 0, x: -20, scale: 0.8 }}
+              animate={{ opacity: 1, x: 0, scale: 1 }}
+              exit={{ opacity: 0, x: -20, scale: 0.8 }}
+              transition={{ duration: 0.2, ease: "easeOut", delay: 0.05 }}
+              className="ml-1"
+            >
+              <ClientNotifications onClose={() => handleItemClick(() => {})} />
+            </motion.div>
+            <motion.div
+              initial={{ opacity: 0, x: -20, scale: 0.8 }}
+              animate={{ opacity: 1, x: 0, scale: 1 }}
+              exit={{ opacity: 0, x: -20, scale: 0.8 }}
+              transition={{ duration: 0.2, ease: "easeOut", delay: 0.1 }}
+            >
+              <Link 
+                to="/favorites" 
+                onClick={() => handleItemClick(() => {})}
+                className="p-2.5 rounded-xl text-slate-500 hover:text-pink-500 hover:bg-pink-50 transition-all inline-flex"
+                data-testid="favorites-link"
+              >
+                <Heart className="w-4 h-4" />
+              </Link>
+            </motion.div>
+          </>
+        )}
+      </AnimatePresence>
+    </div>
+  );
+};
 
 export const Header = () => {
   const { user, logout } = useAuth();
