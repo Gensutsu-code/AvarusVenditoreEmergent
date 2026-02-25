@@ -94,7 +94,7 @@ export default function StatsTab({ statsPeriod, setStatsPeriod, extendedStats })
               </div>
 
               {/* Users Card */}
-              <div className="bg-gradient-to-br from-orange-500 to-orange-600 p-5 rounded-xl text-white shadow-lg">
+              <div className="bg-gradient-to-br from-cyan-500 to-teal-600 p-5 rounded-xl text-white shadow-lg">
                 <div className="flex items-center justify-between mb-3">
                   <div className="w-10 h-10 bg-white/20 rounded-lg flex items-center justify-center">
                     <Users className="w-5 h-5" />
@@ -105,9 +105,9 @@ export default function StatsTab({ statsPeriod, setStatsPeriod, extendedStats })
                     </span>
                   )}
                 </div>
-                <p className="text-orange-100 text-sm">Пользователей</p>
+                <p className="text-cyan-100 text-sm">Пользователей</p>
                 <p className="text-2xl font-bold">{extendedStats.total_users}</p>
-                <p className="text-xs text-orange-200 mt-1">
+                <p className="text-xs text-cyan-200 mt-1">
                   Конверсия: {extendedStats.conversion_rate}%
                 </p>
               </div>
