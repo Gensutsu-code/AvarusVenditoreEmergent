@@ -3,6 +3,7 @@ import { ShoppingCart, Package } from 'lucide-react';
 import { Button } from './ui/button';
 import { useCart } from '../context/CartContext';
 import { useAuth } from '../context/AuthContext';
+import { useTheme } from '../context/ThemeContext';
 import { toast } from 'sonner';
 import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
@@ -10,6 +11,7 @@ import { motion } from 'framer-motion';
 export const ProductCard = ({ product, index = 0 }) => {
   const { addToCart } = useCart();
   const { user } = useAuth();
+  const { isDark } = useTheme();
   const navigate = useNavigate();
 
   const handleAddToCart = async (e) => {
@@ -46,12 +48,12 @@ export const ProductCard = ({ product, index = 0 }) => {
         data-testid={`product-card-${product.id}`}
       >
         <motion.div 
-          className="glass-card overflow-hidden"
+          className={`glass-card overflow-hidden ${isDark ? 'hover:border-orange-500/30' : 'hover:border-teal-400/50'}`}
           whileHover={{ scale: 1.02, y: -4 }}
           transition={{ duration: 0.3 }}
         >
           {/* Image */}
-          <div className="aspect-square bg-zinc-800/50 overflow-hidden relative">
+          <div className={`aspect-square overflow-hidden relative ${isDark ? 'bg-zinc-800/50' : 'bg-slate-100'}`}>
             {product.image_url ? (
               <img 
                 src={product.image_url} 
@@ -59,12 +61,12 @@ export const ProductCard = ({ product, index = 0 }) => {
                 className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
               />
             ) : (
-              <div className="w-full h-full flex items-center justify-center text-zinc-600">
+              <div className={`w-full h-full flex items-center justify-center ${isDark ? 'text-zinc-600' : 'text-slate-400'}`}>
                 <Package className="w-12 h-12" />
               </div>
             )}
             {/* Overlay on hover */}
-            <div className="absolute inset-0 bg-gradient-to-t from-zinc-900/80 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+            <div className={`absolute inset-0 bg-gradient-to-t ${isDark ? 'from-zinc-900/80' : 'from-white/60'} via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300`} />
             
             {/* Quick add button */}
             <motion.div 
@@ -75,7 +77,7 @@ export const ProductCard = ({ product, index = 0 }) => {
               <Button 
                 size="sm"
                 onClick={handleAddToCart}
-                className="bg-orange-500 hover:bg-orange-600 text-white rounded-xl shadow-glow"
+                className={`rounded-xl shadow-lg ${isDark ? 'bg-orange-500 hover:bg-orange-600 shadow-orange-500/30' : 'bg-teal-500 hover:bg-teal-600 shadow-teal-500/30'} text-white`}
                 data-testid={`add-to-cart-${product.id}`}
               >
                 <ShoppingCart className="w-4 h-4" />
@@ -85,18 +87,18 @@ export const ProductCard = ({ product, index = 0 }) => {
           
           {/* Content */}
           <div className="p-4">
-            <p className="text-xs font-bold uppercase tracking-widest text-zinc-500 mb-1">
+            <p className={`text-xs font-bold uppercase tracking-widest mb-1 ${isDark ? 'text-zinc-500' : 'text-slate-500'}`}>
               {product.article}
             </p>
-            <h3 className="font-semibold text-zinc-100 mb-3 line-clamp-2 group-hover:text-orange-400 transition-colors duration-300">
+            <h3 className={`font-semibold mb-3 line-clamp-2 transition-colors duration-300 ${isDark ? 'text-zinc-100 group-hover:text-orange-400' : 'text-slate-800 group-hover:text-teal-600'}`}>
               {product.name}
             </h3>
             <div className="flex items-center justify-between gap-2">
-              <span className="text-xl font-bold text-orange-400">
-                {formatPrice(product.price)} <span className="text-sm text-zinc-500">₽</span>
+              <span className={`text-xl font-bold ${isDark ? 'text-orange-400' : 'text-teal-600'}`}>
+                {formatPrice(product.price)} <span className={`text-sm ${isDark ? 'text-zinc-500' : 'text-slate-400'}`}>₽</span>
               </span>
               {product.stock !== undefined && product.stock <= 5 && product.stock > 0 && (
-                <span className="text-xs text-amber-400 bg-amber-500/10 px-2 py-1 rounded-lg">
+                <span className={`text-xs px-2 py-1 rounded-lg ${isDark ? 'text-amber-400 bg-amber-500/10' : 'text-amber-600 bg-amber-100'}`}>
                   Осталось {product.stock}
                 </span>
               )}
