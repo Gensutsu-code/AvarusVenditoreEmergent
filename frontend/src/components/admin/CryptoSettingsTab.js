@@ -230,12 +230,12 @@ export default function CryptoSettingsTab() {
       </div>
 
       {/* Info Card */}
-      <div className="bg-blue-50 border border-blue-200 rounded-xl p-4">
-        <h3 className="font-semibold text-blue-800 mb-2 flex items-center gap-2">
+      <div className="bg-teal-50 border border-teal-200 rounded-xl p-4">
+        <h3 className="font-semibold text-teal-800 mb-2 flex items-center gap-2">
           <AlertCircle className="w-5 h-5" />
           Как это работает
         </h3>
-        <ul className="text-sm text-blue-700 space-y-1 list-disc list-inside">
+        <ul className="text-sm text-teal-700 space-y-1 list-disc list-inside">
           <li>Клиент выбирает криптоплатёж и подключает MetaMask</li>
           <li>Система автоматически конвертирует сумму в USDT/USDC по курсу CoinGecko</li>
           <li>После оплаты транзакция автоматически верифицируется в блокчейне</li>
