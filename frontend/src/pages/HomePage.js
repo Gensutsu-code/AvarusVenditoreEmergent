@@ -114,7 +114,7 @@ export default function HomePage() {
                 transition={{ duration: 0.6, delay: 0.3 }}
               >
                 <div className="glass-card p-6">
-                  <p className={`text-xs uppercase tracking-widest mb-4 text-center ${isDark ? 'text-zinc-500' : 'text-slate-500'}`}>
+                  <p className="text-xs uppercase tracking-widest mb-4 text-center text-slate-500">
                     Работаем с ведущими производителями
                   </p>
                   <div className="grid grid-cols-3 gap-3">
@@ -124,11 +124,11 @@ export default function HomePage() {
                         href={partner.link || '#'}
                         target={partner.link ? '_blank' : undefined}
                         rel={partner.link ? 'noopener noreferrer' : undefined}
-                        className="bg-zinc-800/50 border border-white/5 p-4 hover:border-orange-500/30 transition-all duration-300 rounded-xl overflow-hidden block group"
+                        className="bg-white/50 border border-slate-200 p-4 hover:border-teal-400/50 transition-all duration-300 rounded-xl overflow-hidden block group"
                         initial={{ opacity: 0, y: 20 }}
                         animate={{ opacity: 1, y: 0 }}
                         transition={{ duration: 0.4, delay: 0.4 + index * 0.1 }}
-                        whileHover={{ scale: 1.05, backgroundColor: 'rgba(249, 115, 22, 0.1)' }}
+                        whileHover={{ scale: 1.05, backgroundColor: 'rgba(20, 184, 166, 0.1)' }}
                       >
                         {partner.image_url && (
                           <div className="w-full h-12 mb-2 flex items-center justify-center">
@@ -140,17 +140,17 @@ export default function HomePage() {
                           </div>
                         )}
                         <div className="text-center">
-                          <div className={`text-xs font-medium truncate ${isDark ? 'text-zinc-200' : 'text-slate-700'}`}>
+                          <div className="text-xs font-medium truncate text-slate-700">
                             {partner.name}
                           </div>
-                          <div className={`text-[10px] truncate ${isDark ? 'text-zinc-500' : 'text-slate-500'}`}>
+                          <div className="text-[10px] truncate text-slate-500">
                             {partner.description}
                           </div>
                         </div>
                       </motion.a>
                     ))}
                   </div>
-                  <p className={`text-xs mt-4 text-center ${isDark ? 'text-zinc-600' : 'text-slate-400'}`}>
+                  <p className="text-xs mt-4 text-center text-slate-400">
                     Только проверенные поставщики
                   </p>
                 </div>
