@@ -96,8 +96,20 @@ export const HeaderPromoBanner = () => {
                 <Sparkles className="w-4 h-4" />
               </motion.div>
               
-              {/* Banner text */}
-              <span className="tracking-wide">{banner.text}</span>
+              {/* Banner text - clickable if link exists */}
+              {banner.link ? (
+                <a 
+                  href={banner.link}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="tracking-wide hover:underline"
+                  onClick={(e) => e.stopPropagation()}
+                >
+                  {banner.text}
+                </a>
+              ) : (
+                <span className="tracking-wide">{banner.text}</span>
+              )}
               
               {/* Close button */}
               <motion.button 
