@@ -135,7 +135,7 @@ export const SearchDropdown = ({
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: -10, scale: 0.98 }}
             transition={{ duration: 0.2 }}
-            className={`absolute left-0 right-0 top-full mt-2 bg-white/95 backdrop-blur-xl border border-slate-200 rounded-2xl shadow-xl z-50 overflow-hidden ${compact ? 'max-h-80' : 'max-h-96'}`}
+            className={`absolute left-0 top-full mt-2 bg-white/95 backdrop-blur-xl border border-slate-200 rounded-2xl shadow-xl z-50 overflow-hidden ${compact ? 'w-80 max-h-80' : 'w-[450px] max-h-96'}`}
             data-testid="search-dropdown"
           >
             <div className="p-2 border-b border-slate-100">
@@ -151,11 +151,11 @@ export const SearchDropdown = ({
                   animate={{ opacity: 1, x: 0 }}
                   transition={{ delay: index * 0.03 }}
                   onClick={() => handleSelectProduct(product)}
-                  className="w-full flex items-center gap-3 p-3 hover:bg-teal-50 transition-colors text-left border-b border-slate-100 last:border-0"
+                  className="w-full flex items-center gap-3 p-2.5 hover:bg-teal-50 transition-colors text-left border-b border-slate-100 last:border-0"
                   data-testid={`search-result-${product.id}`}
                 >
                   {/* Product Image */}
-                  <div className="w-12 h-12 rounded-lg bg-slate-100 overflow-hidden flex-shrink-0">
+                  <div className="w-10 h-10 rounded-lg bg-slate-100 overflow-hidden flex-shrink-0">
                     {product.image_url ? (
                       <img 
                         src={product.image_url} 
@@ -164,27 +164,27 @@ export const SearchDropdown = ({
                       />
                     ) : (
                       <div className="w-full h-full flex items-center justify-center text-slate-300">
-                        <Package className="w-5 h-5" />
+                        <Package className="w-4 h-4" />
                       </div>
                     )}
                   </div>
                   
                   {/* Product Info */}
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-2">
+                  <div className="flex-1 min-w-0 overflow-hidden">
+                    <p className="text-sm font-medium text-slate-800 truncate leading-tight">{product.name}</p>
+                    <div className="flex items-center gap-2 mt-0.5">
                       {product.manufacturer && (
-                        <span className="text-xs font-bold text-teal-600">{product.manufacturer}</span>
+                        <span className="text-[11px] font-semibold text-teal-600">{product.manufacturer}</span>
                       )}
-                      <span className="text-xs text-slate-400 font-mono">Арт: {product.article}</span>
+                      <span className="text-[11px] text-slate-400 font-mono truncate">#{product.article}</span>
                     </div>
-                    <p className="text-sm font-medium text-slate-800 truncate">{product.name}</p>
                   </div>
 
                   {/* Price & Stock */}
-                  <div className="text-right flex-shrink-0">
-                    <p className="font-bold text-teal-600">{formatPrice(product.price)} ₽</p>
-                    <p className={`text-xs ${product.stock > 0 ? 'text-emerald-500' : 'text-red-500'}`}>
-                      {product.stock > 0 ? `${product.stock} шт.` : 'Нет в наличии'}
+                  <div className="text-right flex-shrink-0 pl-2">
+                    <p className="font-bold text-teal-600 text-sm whitespace-nowrap">{formatPrice(product.price)} ₽</p>
+                    <p className={`text-[11px] whitespace-nowrap ${product.stock > 0 ? 'text-emerald-500' : 'text-red-500'}`}>
+                      {product.stock > 0 ? `${product.stock} шт.` : 'Нет'}
                     </p>
                   </div>
                 </motion.button>
