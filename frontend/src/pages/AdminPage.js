@@ -3285,10 +3285,15 @@ export default function AdminPage() {
                   </div>
                 ))}
               </div>
-            </div>
+            </motion.div>
           </TabsContent>
 
           <TabsContent value="partners">
+            <motion.div 
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.3, ease: "easeOut" }}
+            >
             <PartnersTab
               partners={partners}
               setPartners={setPartners}
@@ -3297,10 +3302,16 @@ export default function AdminPage() {
               handleAddDefaultPartners={handleAddDefaultPartners}
               handleDeletePartner={handleDeletePartner}
             />
+            </motion.div>
           </TabsContent>
 
           {/* Terms of Service Tab */}
           <TabsContent value="terms">
+            <motion.div 
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.3, ease: "easeOut" }}
+            >
             <TermsTab
               termsSections={termsSections}
               setTermsSections={setTermsSections}
@@ -3308,6 +3319,7 @@ export default function AdminPage() {
               handleSaveTerms={handleSaveTerms}
               handleResetTerms={handleResetTerms}
             />
+            </motion.div>
           </TabsContent>
 
           {/* Email Notifications Tab */}
