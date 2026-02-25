@@ -260,16 +260,16 @@ export default function CheckoutPage() {
 
   return (
     <>
-    <div className="min-h-screen bg-zinc-950" data-testid="checkout-page">
+    <div className={`min-h-screen ${isDark ? 'bg-zinc-950' : ''}`} data-testid="checkout-page">
       {/* Background effects */}
       <div className="fixed inset-0 overflow-hidden pointer-events-none">
         <motion.div 
-          className="absolute top-20 right-20 w-96 h-96 rounded-full bg-orange-500/5 blur-3xl"
+          className={`absolute top-20 right-20 w-96 h-96 rounded-full ${isDark ? 'bg-orange-500/5' : 'bg-green-400/20'} blur-3xl`}
           animate={{ scale: [1, 1.2, 1], opacity: [0.3, 0.5, 0.3] }}
           transition={{ duration: 8, repeat: Infinity }}
         />
         <motion.div 
-          className="absolute bottom-20 left-20 w-80 h-80 rounded-full bg-purple-500/5 blur-3xl"
+          className={`absolute bottom-20 left-20 w-80 h-80 rounded-full ${isDark ? 'bg-purple-500/5' : 'bg-pink-400/20'} blur-3xl`}
           animate={{ scale: [1.2, 1, 1.2], opacity: [0.3, 0.5, 0.3] }}
           transition={{ duration: 10, repeat: Infinity }}
         />
@@ -282,12 +282,12 @@ export default function CheckoutPage() {
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.5 }}
         >
-          <Link to="/cart" className="inline-flex items-center gap-2 text-zinc-500 hover:text-orange-400 transition-colors mb-4 group">
+          <Link to="/cart" className={`inline-flex items-center gap-2 transition-colors mb-4 group ${isDark ? 'text-zinc-500 hover:text-orange-400' : 'text-slate-500 hover:text-green-600'}`}>
             <ArrowLeft className="w-4 h-4 group-hover:-translate-x-1 transition-transform" /> 
             Назад в корзину
           </Link>
           <h1 className="text-2xl md:text-3xl font-bold tracking-tight uppercase">
-            <span className="bg-gradient-to-r from-orange-400 to-orange-600 bg-clip-text text-transparent">
+            <span className={`bg-gradient-to-r ${isDark ? 'from-orange-400 to-orange-600' : 'from-green-500 to-emerald-600'} bg-clip-text text-transparent`}>
               Оформление заказа
             </span>
           </h1>
