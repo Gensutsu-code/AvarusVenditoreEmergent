@@ -279,45 +279,113 @@ export const Header = () => {
                     </Button>
                   </div>
                 ) : (
-                  /* User Navigation - 4 icons evenly distributed */
+                  /* User Navigation - 4 icons evenly distributed with animations */
                   <>
                     <div className="flex items-center justify-evenly flex-1">
                       <NavLink to="/catalog" data-testid="search-link" className="md:hidden">
                         <Search className="w-4 h-4" />
                       </NavLink>
-                      <NavLink to="/orders" data-testid="orders-link">
-                        <span className="flex items-center gap-2">
-                          <Package className="w-4 h-4" />
-                          <span className="hidden lg:inline">Заказы</span>
-                        </span>
-                      </NavLink>
-                      <NavLink to="/bonus" data-testid="bonus-link">
-                        <span className="flex items-center gap-2 text-teal-500">
-                          <Gift className="w-4 h-4" />
-                          <span className="hidden lg:inline">Бонусы</span>
-                        </span>
-                      </NavLink>
-                      <NavLink to="/news" data-testid="news-link">
-                        <span className="flex items-center gap-2">
-                          <Newspaper className="w-4 h-4" />
-                          <span className="hidden lg:inline">Новости</span>
-                        </span>
-                      </NavLink>
-                      <NavLink to="/cart" data-testid="cart-link">
-                        <span className="flex items-center gap-2 relative">
-                          <ShoppingCart className="w-4 h-4" />
-                          <span className="hidden lg:inline">Корзина</span>
+                      
+                      {/* Заказы */}
+                      <Link to="/orders" data-testid="orders-link">
+                        <motion.div 
+                          className="flex items-center gap-2 px-3 py-2 rounded-xl cursor-pointer group"
+                          whileHover={{ 
+                            scale: 1.08,
+                            backgroundColor: "rgba(20, 184, 166, 0.1)",
+                          }}
+                          whileTap={{ scale: 0.95 }}
+                          transition={{ type: "spring", stiffness: 400, damping: 17 }}
+                        >
+                          <motion.div
+                            whileHover={{ rotate: [0, -10, 10, -10, 0] }}
+                            transition={{ duration: 0.5 }}
+                          >
+                            <Package className="w-5 h-5 text-slate-600 group-hover:text-teal-600 transition-colors" />
+                          </motion.div>
+                          <span className="hidden lg:inline text-sm font-medium text-slate-600 group-hover:text-teal-600 transition-colors">Заказы</span>
+                        </motion.div>
+                      </Link>
+                      
+                      {/* Бонусы */}
+                      <Link to="/bonus" data-testid="bonus-link">
+                        <motion.div 
+                          className="flex items-center gap-2 px-3 py-2 rounded-xl cursor-pointer group"
+                          whileHover={{ 
+                            scale: 1.08,
+                            backgroundColor: "rgba(16, 185, 129, 0.15)",
+                          }}
+                          whileTap={{ scale: 0.95 }}
+                          transition={{ type: "spring", stiffness: 400, damping: 17 }}
+                        >
+                          <motion.div
+                            whileHover={{ 
+                              rotate: 360,
+                              scale: 1.2
+                            }}
+                            transition={{ duration: 0.6, ease: "easeOut" }}
+                          >
+                            <Gift className="w-5 h-5 text-emerald-500 group-hover:text-emerald-600 transition-colors" />
+                          </motion.div>
+                          <span className="hidden lg:inline text-sm font-bold text-emerald-500 group-hover:text-emerald-600 transition-colors">Бонусы</span>
+                        </motion.div>
+                      </Link>
+                      
+                      {/* Новости */}
+                      <Link to="/news" data-testid="news-link">
+                        <motion.div 
+                          className="flex items-center gap-2 px-3 py-2 rounded-xl cursor-pointer group"
+                          whileHover={{ 
+                            scale: 1.08,
+                            backgroundColor: "rgba(59, 130, 246, 0.1)",
+                          }}
+                          whileTap={{ scale: 0.95 }}
+                          transition={{ type: "spring", stiffness: 400, damping: 17 }}
+                        >
+                          <motion.div
+                            whileHover={{ 
+                              y: [0, -3, 0],
+                              transition: { repeat: 2, duration: 0.3 }
+                            }}
+                          >
+                            <Newspaper className="w-5 h-5 text-slate-600 group-hover:text-blue-500 transition-colors" />
+                          </motion.div>
+                          <span className="hidden lg:inline text-sm font-medium text-slate-600 group-hover:text-blue-500 transition-colors">Новости</span>
+                        </motion.div>
+                      </Link>
+                      
+                      {/* Корзина */}
+                      <Link to="/cart" data-testid="cart-link">
+                        <motion.div 
+                          className="flex items-center gap-2 px-3 py-2 rounded-xl cursor-pointer group relative"
+                          whileHover={{ 
+                            scale: 1.08,
+                            backgroundColor: "rgba(249, 115, 22, 0.1)",
+                          }}
+                          whileTap={{ scale: 0.95 }}
+                          transition={{ type: "spring", stiffness: 400, damping: 17 }}
+                        >
+                          <motion.div
+                            whileHover={{ 
+                              x: [0, -2, 2, -2, 0],
+                              transition: { duration: 0.4 }
+                            }}
+                          >
+                            <ShoppingCart className="w-5 h-5 text-slate-600 group-hover:text-orange-500 transition-colors" />
+                          </motion.div>
+                          <span className="hidden lg:inline text-sm font-medium text-slate-600 group-hover:text-orange-500 transition-colors">Корзина</span>
                           {cartCount > 0 && (
                             <motion.span 
                               initial={{ scale: 0 }}
                               animate={{ scale: 1 }}
-                              className="absolute -top-2 -right-2 lg:relative lg:top-0 lg:right-0 lg:ml-1 bg-teal-500 text-white text-xs w-4 h-4 flex items-center justify-center font-bold rounded-full"
+                              whileHover={{ scale: 1.2 }}
+                              className="absolute -top-1 -right-1 lg:relative lg:top-0 lg:right-0 lg:ml-1 bg-gradient-to-r from-orange-500 to-red-500 text-white text-xs w-5 h-5 flex items-center justify-center font-bold rounded-full shadow-lg"
                             >
                               {cartCount}
                             </motion.span>
                           )}
-                        </span>
-                      </NavLink>
+                        </motion.div>
+                      </Link>
                     </div>
                     {/* Expandable Profile Menu */}
                     <ExpandableProfileMenu onLogout={logout} unreadCount={notificationCount} />
