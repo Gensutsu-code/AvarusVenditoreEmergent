@@ -278,18 +278,18 @@ export default function AdminProfilePage() {
                   value={formData.new_password}
                   onChange={(e) => setFormData({ ...formData, new_password: e.target.value })}
                   placeholder="Минимум 6 символов"
-                  className="mt-1"
+                  className="mt-1 border-slate-200"
                 />
               </div>
               
               <div>
-                <Label className="text-xs font-bold uppercase text-zinc-500">Подтвердите новый пароль</Label>
+                <Label className="text-xs font-bold uppercase text-slate-500">Подтвердите новый пароль</Label>
                 <Input
                   type={showPasswords ? 'text' : 'password'}
                   value={formData.confirm_password}
                   onChange={(e) => setFormData({ ...formData, confirm_password: e.target.value })}
                   placeholder="Повторите пароль"
-                  className="mt-1"
+                  className="mt-1 border-slate-200"
                 />
               </div>
               
@@ -297,7 +297,7 @@ export default function AdminProfilePage() {
                 onClick={handleChangePassword}
                 disabled={saving || !formData.current_password || !formData.new_password}
                 variant="outline"
-                className="w-full"
+                className="w-full border-slate-300 hover:bg-slate-100"
               >
                 <Lock className="w-4 h-4 mr-2" />
                 {saving ? 'Изменение...' : 'Изменить пароль'}
