@@ -180,7 +180,7 @@ export default function CheckoutPage() {
 
   if (success) {
     return (
-      <div className="min-h-screen bg-zinc-950 flex items-center justify-center px-4" data-testid="checkout-success">
+      <div className={`min-h-screen flex items-center justify-center px-4 ${isDark ? 'bg-zinc-950' : ''}`} data-testid="checkout-success">
         {/* Background effects */}
         <div className="fixed inset-0 overflow-hidden pointer-events-none">
           <motion.div 
@@ -205,7 +205,7 @@ export default function CheckoutPage() {
             <CheckCircle className="w-12 h-12 text-green-400" />
           </motion.div>
           <motion.h1 
-            className="text-3xl font-bold text-white mb-3"
+            className={`text-3xl font-bold mb-3 ${isDark ? 'text-white' : 'text-slate-800'}`}
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.3 }}
@@ -213,15 +213,15 @@ export default function CheckoutPage() {
             Заказ оформлен!
           </motion.h1>
           <motion.p 
-            className="text-zinc-400 mb-2"
+            className={`mb-2 ${isDark ? 'text-zinc-400' : 'text-slate-600'}`}
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             transition={{ delay: 0.4 }}
           >
-            Номер заказа: <span className="font-mono font-semibold text-orange-400">{orderId?.slice(0, 8)}</span>
+            Номер заказа: <span className={`font-mono font-semibold ${isDark ? 'text-orange-400' : 'text-green-600'}`}>{orderId?.slice(0, 8)}</span>
           </motion.p>
           <motion.p 
-            className="text-zinc-500 mb-8"
+            className={`mb-8 ${isDark ? 'text-zinc-500' : 'text-slate-500'}`}
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             transition={{ delay: 0.5 }}
@@ -236,7 +236,7 @@ export default function CheckoutPage() {
           >
             <Link to="/account">
               <motion.button 
-                className="px-6 py-3 rounded-xl border border-zinc-700 text-zinc-300 hover:bg-zinc-800/50 font-medium transition-all duration-300"
+                className={`px-6 py-3 rounded-xl border font-medium transition-all duration-300 ${isDark ? 'border-zinc-700 text-zinc-300 hover:bg-zinc-800/50' : 'border-slate-300 text-slate-700 hover:bg-white/50'}`}
                 whileHover={{ scale: 1.02 }}
                 whileTap={{ scale: 0.98 }}
               >
