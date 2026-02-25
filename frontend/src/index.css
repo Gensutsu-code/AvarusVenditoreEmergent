@@ -255,12 +255,25 @@ code {
   @apply bg-zinc-900;
 }
 
+.light-theme ::-webkit-scrollbar-track {
+  background: rgb(224, 255, 255);
+}
+
 ::-webkit-scrollbar-thumb {
   @apply bg-zinc-700 rounded-full;
 }
 
+.light-theme ::-webkit-scrollbar-thumb {
+  background: rgb(255, 192, 203);
+  border-radius: 9999px;
+}
+
 ::-webkit-scrollbar-thumb:hover {
   @apply bg-zinc-600;
+}
+
+.light-theme ::-webkit-scrollbar-thumb:hover {
+  background: rgb(255, 150, 170);
 }
 
 /* Selection */
@@ -268,9 +281,19 @@ code {
   @apply bg-orange-500/30 text-white;
 }
 
+.light-theme ::selection {
+  background: rgba(0, 255, 0, 0.3);
+  color: inherit;
+}
+
 /* Focus visible */
 :focus-visible {
   @apply outline-none ring-2 ring-orange-500/50 ring-offset-2 ring-offset-zinc-950;
+}
+
+.light-theme :focus-visible {
+  @apply outline-none ring-2 ring-green-400/50 ring-offset-2;
+  --tw-ring-offset-color: rgb(240, 255, 255);
 }
 
 /* Smooth transitions for all interactive elements */
