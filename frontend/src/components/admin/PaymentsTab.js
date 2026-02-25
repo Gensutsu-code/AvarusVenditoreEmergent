@@ -15,6 +15,9 @@ export const PaymentsTab = ({
   prepaymentSettings,
   setPrepaymentSettings,
   handleSavePrepaymentSettings,
+  cryptoWallets,
+  setCryptoWallets,
+  handleSaveCryptoWallets,
   isDark = false
 }) => {
   const [activeSubTab, setActiveSubTab] = useState('methods');
@@ -22,6 +25,7 @@ export const PaymentsTab = ({
   const subTabs = [
     { id: 'methods', label: 'Способы оплаты', icon: CreditCard },
     { id: 'prepayment', label: 'Предоплата', icon: DollarSign },
+    { id: 'crypto', label: 'Криптовалюта', icon: Wallet },
   ];
 
   return (
