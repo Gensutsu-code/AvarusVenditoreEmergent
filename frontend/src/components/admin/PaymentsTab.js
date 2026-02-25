@@ -241,7 +241,7 @@ export const PaymentsTab = ({
             </div>
           </div>
 
-          <Button onClick={handleSavePrepaymentSettings} className={`${isDark ? 'bg-orange-500/90 hover:bg-orange-500' : 'bg-orange-500 hover:bg-orange-600'} text-white`}>
+          <Button onClick={handleSavePrepaymentSettings} className={`${isDark ? 'bg-teal-500/90 hover:bg-teal-500' : 'bg-teal-500 hover:bg-teal-600'} text-white`}>
             Сохранить настройки предоплаты
           </Button>
         </motion.div>
