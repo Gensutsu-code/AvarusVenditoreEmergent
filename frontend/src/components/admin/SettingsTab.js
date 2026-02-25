@@ -11,6 +11,7 @@ export const SettingsTab = ({
   telegramConfig,
   setTelegramConfig,
   handleSaveTelegramConfig,
+  handleTestTelegram,
   
   // Import props
   uploading,
@@ -25,8 +26,11 @@ export const SettingsTab = ({
   setPartners,
   editingPartner,
   setEditingPartner,
+  isNewPartner,
+  setIsNewPartner,
   handleAddDefaultPartners,
   handleDeletePartner,
+  handleSavePartner,
   handlePartnerImageUpload,
   partnerImageUploading,
   partnerImageRef,
