@@ -345,11 +345,11 @@ export default function AccountPage() {
                   whileHover={{ scale: 1.05 }}
                   transition={{ duration: 0.2 }}
                 >
-                  <div className="w-24 h-24 rounded-2xl bg-zinc-800/80 backdrop-blur-sm flex items-center justify-center overflow-hidden border-2 border-orange-500/30 shadow-lg shadow-orange-500/10">
+                  <div className="w-24 h-24 rounded-2xl bg-slate-100 backdrop-blur-sm flex items-center justify-center overflow-hidden border-2 border-teal-500/30 shadow-lg shadow-teal-500/10">
                     {user?.avatar_url ? (
                       <img src={user.avatar_url} alt="Avatar" className="w-full h-full object-cover" />
                     ) : (
-                      <User className="w-12 h-12 text-orange-400/60" />
+                      <User className="w-12 h-12 text-teal-500/60" />
                     )}
                   </div>
                   <input
@@ -369,7 +369,7 @@ export default function AccountPage() {
                         <motion.button
                           onClick={() => avatarInputRef.current?.click()}
                           disabled={uploadingAvatar}
-                          className="p-2 bg-orange-500/80 rounded-xl text-white hover:bg-orange-500"
+                          className="p-2 bg-teal-500/80 rounded-xl text-white hover:bg-teal-500"
                           whileHover={{ scale: 1.1 }}
                           whileTap={{ scale: 0.9 }}
                         >
@@ -391,8 +391,8 @@ export default function AccountPage() {
                 </motion.div>
                 
                 <div>
-                  <h2 className="text-2xl font-bold text-white">{user?.name || 'Пользователь'}</h2>
-                  <p className="text-orange-300/70 text-sm mt-1">{user?.email}</p>
+                  <h2 className="text-2xl font-bold text-slate-800">{user?.name || 'Пользователь'}</h2>
+                  <p className="text-teal-600/70 text-sm mt-1">{user?.email}</p>
                 </div>
               </div>
             </div>
