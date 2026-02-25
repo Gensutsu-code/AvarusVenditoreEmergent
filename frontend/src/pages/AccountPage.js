@@ -598,8 +598,8 @@ export default function AccountPage() {
                   onClick={() => setTopupAmount(amount.toString())}
                   className={`px-4 py-2.5 rounded-xl text-sm font-medium transition-all duration-300 ${
                     topupAmount === amount.toString() 
-                      ? 'bg-purple-500/20 border-purple-500/50 text-purple-300' 
-                      : 'bg-white/5 border-white/10 text-zinc-400 hover:bg-white/10'
+                      ? 'bg-teal-500/20 border-teal-500/50 text-teal-600' 
+                      : 'bg-slate-50 border-slate-200 text-slate-500 hover:bg-slate-100'
                   } border`}
                   whileHover={{ scale: 1.02 }}
                   whileTap={{ scale: 0.98 }}
@@ -610,37 +610,37 @@ export default function AccountPage() {
             </div>
 
             <div>
-              <Label className="text-xs font-bold uppercase text-zinc-500 mb-3 block">Способ оплаты</Label>
+              <Label className="text-xs font-bold uppercase text-slate-500 mb-3 block">Способ оплаты</Label>
               <div className="grid grid-cols-2 gap-3">
                 <motion.button
                   onClick={() => setTopupMethod('card')}
                   className={`p-4 rounded-xl border flex flex-col items-center gap-2 transition-all duration-300 ${
                     topupMethod === 'card' 
-                      ? 'bg-purple-500/10 border-purple-500/50' 
-                      : 'bg-white/5 border-white/10 hover:bg-white/10'
+                      ? 'bg-teal-500/10 border-teal-500/50' 
+                      : 'bg-slate-50 border-slate-200 hover:bg-slate-100'
                   }`}
                   whileHover={{ scale: 1.02 }}
                   whileTap={{ scale: 0.98 }}
                   data-testid="topup-card-method"
                 >
-                  <CreditCard className={`w-6 h-6 ${topupMethod === 'card' ? 'text-purple-400' : 'text-zinc-500'}`} />
-                  <span className={`text-sm font-medium ${topupMethod === 'card' ? 'text-purple-300' : 'text-zinc-400'}`}>Карта</span>
-                  <span className="text-xs text-zinc-600">Моментально</span>
+                  <CreditCard className={`w-6 h-6 ${topupMethod === 'card' ? 'text-teal-500' : 'text-slate-400'}`} />
+                  <span className={`text-sm font-medium ${topupMethod === 'card' ? 'text-teal-600' : 'text-slate-500'}`}>Карта</span>
+                  <span className="text-xs text-slate-400">Моментально</span>
                 </motion.button>
                 <motion.button
                   onClick={() => setTopupMethod('crypto')}
                   className={`p-4 rounded-xl border flex flex-col items-center gap-2 transition-all duration-300 ${
                     topupMethod === 'crypto' 
-                      ? 'bg-purple-500/10 border-purple-500/50' 
-                      : 'bg-white/5 border-white/10 hover:bg-white/10'
+                      ? 'bg-teal-500/10 border-teal-500/50' 
+                      : 'bg-slate-50 border-slate-200 hover:bg-slate-100'
                   }`}
                   whileHover={{ scale: 1.02 }}
                   whileTap={{ scale: 0.98 }}
                   data-testid="topup-crypto-method"
                 >
-                  <Wallet className={`w-6 h-6 ${topupMethod === 'crypto' ? 'text-purple-400' : 'text-zinc-500'}`} />
-                  <span className={`text-sm font-medium ${topupMethod === 'crypto' ? 'text-purple-300' : 'text-zinc-400'}`}>Криптовалюта</span>
-                  <span className="text-xs text-zinc-600">USDT, ETH</span>
+                  <Wallet className={`w-6 h-6 ${topupMethod === 'crypto' ? 'text-teal-500' : 'text-slate-400'}`} />
+                  <span className={`text-sm font-medium ${topupMethod === 'crypto' ? 'text-teal-600' : 'text-slate-500'}`}>Криптовалюта</span>
+                  <span className="text-xs text-slate-400">USDT, ETH</span>
                 </motion.button>
               </div>
             </div>
@@ -651,7 +651,7 @@ export default function AccountPage() {
                 animate={{ opacity: 1, height: 'auto' }}
                 exit={{ opacity: 0, height: 0 }}
               >
-                <Label className="text-xs font-bold uppercase text-zinc-500 mb-2 block">Сеть</Label>
+                <Label className="text-xs font-bold uppercase text-slate-500 mb-2 block">Сеть</Label>
                 <div className="flex gap-2 flex-wrap">
                   {[
                     { id: 'eth', name: 'ETH', address: cryptoWallets.eth_address },
@@ -664,8 +664,8 @@ export default function AccountPage() {
                       onClick={() => setCryptoChain(chain.id)}
                       className={`px-4 py-2 rounded-xl text-sm font-medium transition-all duration-300 ${
                         cryptoChain === chain.id 
-                          ? 'bg-purple-500/20 border-purple-500/50 text-purple-300' 
-                          : 'bg-white/5 border-white/10 text-zinc-400 hover:bg-white/10'
+                          ? 'bg-teal-500/20 border-teal-500/50 text-teal-600' 
+                          : 'bg-slate-50 border-slate-200 text-slate-500 hover:bg-slate-100'
                       } border`}
                       whileHover={{ scale: 1.02 }}
                       whileTap={{ scale: 0.98 }}
@@ -675,9 +675,9 @@ export default function AccountPage() {
                   ))}
                 </div>
                 {cryptoWallets[`${cryptoChain}_address`] && (
-                  <div className="mt-3 p-4 bg-zinc-800/50 rounded-xl border border-zinc-700/50">
-                    <p className="text-xs text-zinc-500 mb-1">Адрес для перевода:</p>
-                    <p className="font-mono text-xs break-all text-zinc-300 select-all">
+                  <div className="mt-3 p-4 bg-slate-100 rounded-xl border border-slate-200">
+                    <p className="text-xs text-slate-500 mb-1">Адрес для перевода:</p>
+                    <p className="font-mono text-xs break-all text-slate-700 select-all">
                       {cryptoWallets[`${cryptoChain}_address`]}
                     </p>
                   </div>
@@ -692,7 +692,7 @@ export default function AccountPage() {
               <Button
                 onClick={handleTopup}
                 disabled={topupLoading || !topupAmount}
-                className="w-full h-12 bg-gradient-to-r from-purple-500 to-purple-600 hover:from-purple-600 hover:to-purple-700 text-white font-bold rounded-xl shadow-lg shadow-purple-500/20 transition-all duration-300"
+                className="w-full h-12 bg-gradient-to-r from-teal-500 to-emerald-500 hover:from-teal-600 hover:to-emerald-600 text-white font-bold rounded-xl shadow-lg shadow-teal-500/20 transition-all duration-300"
                 data-testid="confirm-topup-btn"
               >
                 {topupLoading ? 'Обработка...' : `Пополнить на ${topupAmount ? parseFloat(topupAmount).toLocaleString('ru-RU') : 0}₽`}
