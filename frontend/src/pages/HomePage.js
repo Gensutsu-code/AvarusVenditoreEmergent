@@ -122,11 +122,10 @@ export default function HomePage() {
                         href={partner.link || '#'}
                         target={partner.link ? '_blank' : undefined}
                         rel={partner.link ? 'noopener noreferrer' : undefined}
-                        className="bg-white/50 border border-slate-200 p-4 hover:border-teal-400/50 transition-all duration-300 rounded-xl overflow-hidden block group"
+                        className="bg-white/50 border border-slate-200 p-4 hover:border-teal-400/50 hover:bg-teal-500/5 transition-all duration-300 rounded-xl overflow-hidden block group"
                         initial={{ opacity: 0, y: 20 }}
                         animate={{ opacity: 1, y: 0 }}
                         transition={{ duration: 0.4, delay: 0.4 + index * 0.1 }}
-                        whileHover={{ scale: 1.05, backgroundColor: 'rgba(20, 184, 166, 0.1)' }}
                       >
                         {partner.image_url && (
                           <div className="w-full h-12 mb-2 flex items-center justify-center">
