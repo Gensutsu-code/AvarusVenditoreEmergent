@@ -289,96 +289,144 @@ export const Header = () => {
                       {/* Заказы */}
                       <Link to="/orders" data-testid="orders-link">
                         <motion.div 
-                          className="flex items-center gap-2 px-3 py-2 rounded-xl cursor-pointer group"
-                          whileHover={{ 
-                            scale: 1.08,
-                            backgroundColor: "rgba(20, 184, 166, 0.1)",
-                          }}
+                          className="flex items-center gap-2 px-3 py-2 rounded-xl cursor-pointer"
+                          initial="rest"
+                          whileHover="hover"
                           whileTap={{ scale: 0.95 }}
+                          variants={{
+                            rest: { scale: 1, backgroundColor: "rgba(20, 184, 166, 0)" },
+                            hover: { scale: 1.08, backgroundColor: "rgba(20, 184, 166, 0.1)" }
+                          }}
                           transition={{ type: "spring", stiffness: 400, damping: 17 }}
                         >
                           <motion.div
-                            whileHover={{ rotate: [0, -10, 10, -10, 0] }}
+                            variants={{
+                              rest: { rotate: 0, color: "#475569" },
+                              hover: { rotate: [0, -10, 10, -10, 0], color: "#0d9488" }
+                            }}
                             transition={{ duration: 0.5 }}
                           >
-                            <Package className="w-5 h-5 text-slate-600 group-hover:text-teal-600 transition-colors" />
+                            <Package className="w-5 h-5" />
                           </motion.div>
-                          <span className="hidden lg:inline text-sm font-medium text-slate-600 group-hover:text-teal-600 transition-colors">Заказы</span>
+                          <motion.span 
+                            className="hidden lg:inline text-sm font-medium"
+                            variants={{
+                              rest: { color: "#475569" },
+                              hover: { color: "#0d9488" }
+                            }}
+                          >
+                            Заказы
+                          </motion.span>
                         </motion.div>
                       </Link>
                       
                       {/* Бонусы */}
                       <Link to="/bonus" data-testid="bonus-link">
                         <motion.div 
-                          className="flex items-center gap-2 px-3 py-2 rounded-xl cursor-pointer group"
-                          whileHover={{ 
-                            scale: 1.08,
-                            backgroundColor: "rgba(16, 185, 129, 0.15)",
-                          }}
+                          className="flex items-center gap-2 px-3 py-2 rounded-xl cursor-pointer"
+                          initial="rest"
+                          whileHover="hover"
                           whileTap={{ scale: 0.95 }}
+                          variants={{
+                            rest: { scale: 1, backgroundColor: "rgba(16, 185, 129, 0)" },
+                            hover: { scale: 1.08, backgroundColor: "rgba(16, 185, 129, 0.15)" }
+                          }}
                           transition={{ type: "spring", stiffness: 400, damping: 17 }}
                         >
                           <motion.div
-                            whileHover={{ 
-                              rotate: 360,
-                              scale: 1.2
+                            variants={{
+                              rest: { rotate: 0, scale: 1 },
+                              hover: { rotate: 360, scale: 1.2 }
                             }}
                             transition={{ duration: 0.6, ease: "easeOut" }}
                           >
-                            <Gift className="w-5 h-5 text-emerald-500 group-hover:text-emerald-600 transition-colors" />
+                            <Gift className="w-5 h-5 text-emerald-500" />
                           </motion.div>
-                          <span className="hidden lg:inline text-sm font-bold text-emerald-500 group-hover:text-emerald-600 transition-colors">Бонусы</span>
+                          <motion.span 
+                            className="hidden lg:inline text-sm font-bold text-emerald-500"
+                            variants={{
+                              rest: { color: "#10b981" },
+                              hover: { color: "#059669" }
+                            }}
+                          >
+                            Бонусы
+                          </motion.span>
                         </motion.div>
                       </Link>
                       
                       {/* Новости */}
                       <Link to="/news" data-testid="news-link">
                         <motion.div 
-                          className="flex items-center gap-2 px-3 py-2 rounded-xl cursor-pointer group"
-                          whileHover={{ 
-                            scale: 1.08,
-                            backgroundColor: "rgba(59, 130, 246, 0.1)",
-                          }}
+                          className="flex items-center gap-2 px-3 py-2 rounded-xl cursor-pointer"
+                          initial="rest"
+                          whileHover="hover"
                           whileTap={{ scale: 0.95 }}
+                          variants={{
+                            rest: { scale: 1, backgroundColor: "rgba(59, 130, 246, 0)" },
+                            hover: { scale: 1.08, backgroundColor: "rgba(59, 130, 246, 0.1)" }
+                          }}
                           transition={{ type: "spring", stiffness: 400, damping: 17 }}
                         >
                           <motion.div
-                            whileHover={{ 
-                              y: [0, -3, 0],
-                              transition: { repeat: 2, duration: 0.3 }
+                            variants={{
+                              rest: { y: 0, color: "#475569" },
+                              hover: { y: [0, -4, 0, -4, 0], color: "#3b82f6" }
+                            }}
+                            transition={{ duration: 0.5 }}
+                          >
+                            <Newspaper className="w-5 h-5" />
+                          </motion.div>
+                          <motion.span 
+                            className="hidden lg:inline text-sm font-medium"
+                            variants={{
+                              rest: { color: "#475569" },
+                              hover: { color: "#3b82f6" }
                             }}
                           >
-                            <Newspaper className="w-5 h-5 text-slate-600 group-hover:text-blue-500 transition-colors" />
-                          </motion.div>
-                          <span className="hidden lg:inline text-sm font-medium text-slate-600 group-hover:text-blue-500 transition-colors">Новости</span>
+                            Новости
+                          </motion.span>
                         </motion.div>
                       </Link>
                       
                       {/* Корзина */}
                       <Link to="/cart" data-testid="cart-link">
                         <motion.div 
-                          className="flex items-center gap-2 px-3 py-2 rounded-xl cursor-pointer group relative"
-                          whileHover={{ 
-                            scale: 1.08,
-                            backgroundColor: "rgba(249, 115, 22, 0.1)",
-                          }}
+                          className="flex items-center gap-2 px-3 py-2 rounded-xl cursor-pointer relative"
+                          initial="rest"
+                          whileHover="hover"
                           whileTap={{ scale: 0.95 }}
+                          variants={{
+                            rest: { scale: 1, backgroundColor: "rgba(249, 115, 22, 0)" },
+                            hover: { scale: 1.08, backgroundColor: "rgba(249, 115, 22, 0.1)" }
+                          }}
                           transition={{ type: "spring", stiffness: 400, damping: 17 }}
                         >
                           <motion.div
-                            whileHover={{ 
-                              x: [0, -2, 2, -2, 0],
-                              transition: { duration: 0.4 }
+                            variants={{
+                              rest: { x: 0, color: "#475569" },
+                              hover: { x: [0, -3, 3, -3, 0], color: "#f97316" }
+                            }}
+                            transition={{ duration: 0.4 }}
+                          >
+                            <ShoppingCart className="w-5 h-5" />
+                          </motion.div>
+                          <motion.span 
+                            className="hidden lg:inline text-sm font-medium"
+                            variants={{
+                              rest: { color: "#475569" },
+                              hover: { color: "#f97316" }
                             }}
                           >
-                            <ShoppingCart className="w-5 h-5 text-slate-600 group-hover:text-orange-500 transition-colors" />
-                          </motion.div>
-                          <span className="hidden lg:inline text-sm font-medium text-slate-600 group-hover:text-orange-500 transition-colors">Корзина</span>
+                            Корзина
+                          </motion.span>
                           {cartCount > 0 && (
                             <motion.span 
                               initial={{ scale: 0 }}
                               animate={{ scale: 1 }}
-                              whileHover={{ scale: 1.2 }}
+                              variants={{
+                                rest: { scale: 1 },
+                                hover: { scale: 1.2 }
+                              }}
                               className="absolute -top-1 -right-1 lg:relative lg:top-0 lg:right-0 lg:ml-1 bg-gradient-to-r from-orange-500 to-red-500 text-white text-xs w-5 h-5 flex items-center justify-center font-bold rounded-full shadow-lg"
                             >
                               {cartCount}
