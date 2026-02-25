@@ -431,7 +431,7 @@ export const CRMTab = ({
                   <p className={`text-2xl font-bold ${isDark ? 'text-zinc-100' : 'text-slate-800'}`}>{formatPrice(analyticsData.summary?.avg_order_value || 0)} ₽</p>
                 </motion.div>
                 <motion.div 
-                  className={`p-5 rounded-xl ${isDark ? 'bg-orange-500/10 border border-orange-500/20' : 'bg-gradient-to-br from-orange-500/10 to-orange-500/5 border border-orange-100'}`}
+                  className={`p-5 rounded-xl ${isDark ? 'bg-cyan-500/10 border border-cyan-500/20' : 'bg-gradient-to-br from-cyan-500/10 to-cyan-500/5 border border-cyan-100'}`}
                   whileHover={{ scale: 1.02 }}
                   transition={{ duration: 0.2 }}
                 >
