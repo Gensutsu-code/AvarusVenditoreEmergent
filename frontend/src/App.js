@@ -18,6 +18,7 @@ import AccountPage from "./pages/AccountPage";
 import AdminPage from "./pages/AdminPage";
 import AdminProfilePage from "./pages/AdminProfilePage";
 import AdminOrdersPage from "./pages/AdminOrdersPage";
+import AdminChatsPage from "./pages/AdminChatsPage";
 import FavoritesPage from "./pages/FavoritesPage";
 import OrdersPage from "./pages/OrdersPage";
 import BonusPage from "./pages/BonusPage";
