@@ -3449,6 +3449,7 @@ export default function AdminPage() {
               termsSaving={termsSaving}
               isDark={isDark}
             />
+            </motion.div>
           </TabsContent>
         </Tabs>
       </div>
