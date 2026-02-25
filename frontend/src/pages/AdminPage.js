@@ -1246,120 +1246,169 @@ export default function AdminPage() {
             </TabsList>
           </div>
 
-          {/* Products & Categories Tab (Каталог) */}
+          {/* Products & Categories Tab (Каталог) - Modern Design */}
           <TabsContent value="products" className="p-6">
             <div className="space-y-8">
               {/* Categories Section */}
-              <div>
-                <div className="flex justify-between items-center mb-4">
-                  <h2 className="text-lg font-semibold flex items-center gap-2">
-                    <FolderOpen className="w-5 h-5 text-orange-500" />
-                    Категории ({categories.length})
-                  </h2>
-                  <Button onClick={openNewCategory} variant="outline" size="sm" data-testid="add-category-btn">
+              <div className="bg-gradient-to-br from-teal-50/50 to-emerald-50/30 rounded-2xl p-6 border border-teal-100/50">
+                <div className="flex justify-between items-center mb-6">
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-teal-500 to-emerald-500 flex items-center justify-center shadow-lg shadow-teal-500/20">
+                      <FolderOpen className="w-5 h-5 text-white" />
+                    </div>
+                    <div>
+                      <h2 className="text-lg font-bold text-slate-800">Категории</h2>
+                      <p className="text-sm text-slate-500">{categories.length} категорий</p>
+                    </div>
+                  </div>
+                  <Button onClick={openNewCategory} className="bg-gradient-to-r from-teal-500 to-emerald-500 hover:from-teal-600 hover:to-emerald-600 text-white shadow-lg shadow-teal-500/20" data-testid="add-category-btn">
                     <Plus className="w-4 h-4 mr-2" />
-                    Добавить категорию
+                    Добавить
                   </Button>
                 </div>
 
-                <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6 gap-3">
+                <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6 gap-4">
                   {categories.map((category) => (
-                    <div key={category.id} className="border border-zinc-200 bg-white p-3 group relative hover:shadow-md transition-shadow">
-                      {category.image_url && (
-                        <div className="aspect-square bg-zinc-100 mb-2 overflow-hidden rounded">
-                          <img src={category.image_url} alt={category.name} className="w-full h-full object-cover" />
-                        </div>
-                      )}
-                      {!category.image_url && (
-                        <div className="aspect-square bg-zinc-100 mb-2 flex items-center justify-center rounded">
-                          <FolderOpen className="w-8 h-8 text-zinc-300" />
-                        </div>
-                      )}
-                      <div className="flex items-center justify-between">
+                    <div key={category.id} className="group relative bg-white/80 backdrop-blur-sm rounded-xl p-4 border border-white/50 shadow-sm hover:shadow-xl hover:shadow-teal-500/10 hover:-translate-y-1 transition-all duration-300">
+                      <div className="aspect-square bg-gradient-to-br from-slate-100 to-slate-50 mb-3 overflow-hidden rounded-lg">
+                        {category.image_url ? (
+                          <img src={category.image_url} alt={category.name} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" />
+                        ) : (
+                          <div className="w-full h-full flex items-center justify-center">
+                            <FolderOpen className="w-10 h-10 text-slate-300" />
+                          </div>
+                        )}
+                      </div>
+                      <div className="flex items-start justify-between gap-2">
                         <div className="min-w-0 flex-1">
-                          <h3 className="font-medium text-sm truncate">{category.name}</h3>
-                          <p className="text-xs text-zinc-400">
+                          <h3 className="font-semibold text-sm text-slate-800 truncate">{category.name}</h3>
+                          <p className="text-xs text-teal-600 font-medium mt-0.5">
                             {products.filter(p => p.category_id === category.id).length} товаров
                           </p>
                         </div>
-                        <div className="flex gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity">
-                          <Button variant="ghost" size="sm" className="h-7 w-7 p-0" onClick={() => openEditCategory(category)}>
-                            <Pencil className="w-3 h-3" />
-                          </Button>
-                          <Button variant="ghost" size="sm" className="h-7 w-7 p-0 text-red-500" onClick={() => handleDeleteCategory(category.id)}>
-                            <Trash2 className="w-3 h-3" />
-                          </Button>
+                        <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                          <button className="p-1.5 rounded-lg bg-slate-100 hover:bg-teal-100 text-slate-500 hover:text-teal-600 transition-colors" onClick={() => openEditCategory(category)}>
+                            <Pencil className="w-3.5 h-3.5" />
+                          </button>
+                          <button className="p-1.5 rounded-lg bg-slate-100 hover:bg-red-100 text-slate-500 hover:text-red-500 transition-colors" onClick={() => handleDeleteCategory(category.id)}>
+                            <Trash2 className="w-3.5 h-3.5" />
+                          </button>
                         </div>
                       </div>
                     </div>
                   ))}
+                  {categories.length === 0 && (
+                    <div className="col-span-full text-center py-8 text-slate-400">
+                      <FolderOpen className="w-12 h-12 mx-auto mb-2 opacity-50" />
+                      <p>Категорий пока нет</p>
+                    </div>
+                  )}
                 </div>
               </div>
 
-              {/* Divider */}
-              <div className="border-t border-zinc-200"></div>
-
               {/* Products Section */}
-              <div>
-                <div className="flex justify-between items-center mb-4">
-                  <h2 className="text-lg font-semibold flex items-center gap-2">
-                    <Package className="w-5 h-5 text-orange-500" />
-                    Товары ({products.length})
-                  </h2>
-                  <Button onClick={openNewProduct} className="bg-orange-500 hover:bg-orange-600" data-testid="add-product-btn">
+              <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
+                <div className="flex justify-between items-center p-6 border-b border-slate-100 bg-gradient-to-r from-slate-50 to-white">
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-orange-500 to-amber-500 flex items-center justify-center shadow-lg shadow-orange-500/20">
+                      <Package className="w-5 h-5 text-white" />
+                    </div>
+                    <div>
+                      <h2 className="text-lg font-bold text-slate-800">Товары</h2>
+                      <p className="text-sm text-slate-500">{products.length} позиций</p>
+                    </div>
+                  </div>
+                  <Button onClick={openNewProduct} className="bg-gradient-to-r from-orange-500 to-amber-500 hover:from-orange-600 hover:to-amber-600 text-white shadow-lg shadow-orange-500/20" data-testid="add-product-btn">
                     <Plus className="w-4 h-4 mr-2" />
                     Добавить товар
                   </Button>
                 </div>
 
                 <div className="overflow-x-auto">
-                  <table className="w-full text-sm">
+                  <table className="w-full">
                     <thead>
-                      <tr className="border-b border-zinc-200">
-                        <th className="text-left py-3 px-2">Фото</th>
-                        <th className="text-left py-3 px-2">Название</th>
-                        <th className="text-left py-3 px-2">Производитель</th>
-                        <th className="text-left py-3 px-2">Артикул</th>
-                        <th className="text-left py-3 px-2">Категория</th>
-                        <th className="text-right py-3 px-2">Цена</th>
-                        <th className="text-right py-3 px-2">Наличие</th>
-                        <th className="text-right py-3 px-2">Действия</th>
+                      <tr className="bg-slate-50/80">
+                        <th className="text-left py-4 px-4 text-xs font-semibold text-slate-500 uppercase tracking-wider">Фото</th>
+                        <th className="text-left py-4 px-4 text-xs font-semibold text-slate-500 uppercase tracking-wider">Название</th>
+                        <th className="text-left py-4 px-4 text-xs font-semibold text-slate-500 uppercase tracking-wider">Производитель</th>
+                        <th className="text-left py-4 px-4 text-xs font-semibold text-slate-500 uppercase tracking-wider">Артикул</th>
+                        <th className="text-left py-4 px-4 text-xs font-semibold text-slate-500 uppercase tracking-wider">Категория</th>
+                        <th className="text-right py-4 px-4 text-xs font-semibold text-slate-500 uppercase tracking-wider">Цена</th>
+                        <th className="text-center py-4 px-4 text-xs font-semibold text-slate-500 uppercase tracking-wider">Наличие</th>
+                        <th className="text-right py-4 px-4 text-xs font-semibold text-slate-500 uppercase tracking-wider">Действия</th>
                       </tr>
                     </thead>
-                    <tbody>
-                      {products.map((product) => (
-                        <tr key={product.id} className="border-b border-zinc-100 hover:bg-zinc-50">
-                          <td className="py-2 px-2">
-                            <div className="w-12 h-12 bg-zinc-100 overflow-hidden">
+                    <tbody className="divide-y divide-slate-100">
+                      {products.map((product, index) => (
+                        <tr key={product.id} className="group hover:bg-gradient-to-r hover:from-teal-50/30 hover:to-transparent transition-colors">
+                          <td className="py-3 px-4">
+                            <div className="w-14 h-14 rounded-lg bg-gradient-to-br from-slate-100 to-slate-50 overflow-hidden border border-slate-200/50 shadow-sm">
                               {product.image_url ? (
                                 <img src={product.image_url} alt="" className="w-full h-full object-cover" />
                               ) : (
-                                <div className="w-full h-full flex items-center justify-center text-zinc-300">
-                                  <Package className="w-6 h-6" />
+                                <div className="w-full h-full flex items-center justify-center">
+                                  <Package className="w-6 h-6 text-slate-300" />
                                 </div>
                               )}
                             </div>
                           </td>
-                          <td className="py-2 px-2 font-medium">{product.name}</td>
-                          <td className="py-2 px-2 font-semibold text-orange-600">{product.manufacturer || '—'}</td>
-                          <td className="py-2 px-2 font-mono font-semibold text-zinc-600">{product.article}</td>
-                          <td className="py-2 px-2 text-zinc-500">{getCategoryName(product.category_id)}</td>
-                          <td className="py-2 px-2 text-right font-mono">{formatPrice(product.price)} ₽</td>
-                          <td className="py-2 px-2 text-right">{product.stock} шт.</td>
-                          <td className="py-2 px-2 text-right">
-                            <div className="flex justify-end gap-1">
-                              <Button variant="ghost" size="sm" onClick={() => openEditProduct(product)} data-testid={`edit-${product.id}`}>
+                          <td className="py-3 px-4">
+                            <p className="font-semibold text-slate-800">{product.name}</p>
+                          </td>
+                          <td className="py-3 px-4">
+                            <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold bg-gradient-to-r from-orange-100 to-amber-100 text-orange-700">
+                              {product.manufacturer || '—'}
+                            </span>
+                          </td>
+                          <td className="py-3 px-4">
+                            <code className="px-2 py-1 rounded bg-slate-100 text-sm font-mono text-slate-600">{product.article}</code>
+                          </td>
+                          <td className="py-3 px-4">
+                            <span className="text-sm text-slate-500">{getCategoryName(product.category_id)}</span>
+                          </td>
+                          <td className="py-3 px-4 text-right">
+                            <span className="font-bold text-slate-800">{formatPrice(product.price)}</span>
+                            <span className="text-slate-400 ml-1">₽</span>
+                          </td>
+                          <td className="py-3 px-4 text-center">
+                            <span className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold ${
+                              product.stock > 10 
+                                ? 'bg-emerald-100 text-emerald-700' 
+                                : product.stock > 0 
+                                  ? 'bg-amber-100 text-amber-700'
+                                  : 'bg-red-100 text-red-700'
+                            }`}>
+                              {product.stock > 0 ? `${product.stock} шт.` : 'Нет'}
+                            </span>
+                          </td>
+                          <td className="py-3 px-4 text-right">
+                            <div className="flex justify-end gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                              <button 
+                                className="p-2 rounded-lg bg-slate-100 hover:bg-teal-100 text-slate-500 hover:text-teal-600 transition-colors" 
+                                onClick={() => openEditProduct(product)} 
+                                data-testid={`edit-${product.id}`}
+                              >
                                 <Pencil className="w-4 h-4" />
-                              </Button>
-                              <Button variant="ghost" size="sm" onClick={() => handleDeleteProduct(product.id)} className="text-red-500 hover:text-red-600" data-testid={`delete-${product.id}`}>
+                              </button>
+                              <button 
+                                className="p-2 rounded-lg bg-slate-100 hover:bg-red-100 text-slate-500 hover:text-red-500 transition-colors" 
+                                onClick={() => handleDeleteProduct(product.id)} 
+                                data-testid={`delete-${product.id}`}
+                              >
                                 <Trash2 className="w-4 h-4" />
-                              </Button>
+                              </button>
                             </div>
                           </td>
                         </tr>
                       ))}
                     </tbody>
                   </table>
+                  {products.length === 0 && (
+                    <div className="text-center py-12 text-slate-400">
+                      <Package className="w-12 h-12 mx-auto mb-2 opacity-50" />
+                      <p>Товаров пока нет</p>
+                    </div>
+                  )}
                 </div>
               </div>
             </div>
