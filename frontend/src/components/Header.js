@@ -6,6 +6,7 @@ import { useTheme } from '../context/ThemeContext';
 import { Button } from './ui/button';
 import { AdminNotifications } from './AdminNotifications';
 import { ClientNotifications } from './ClientNotifications';
+import { HeaderPromoBanner } from './HeaderPromoBanner';
 import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 
