@@ -495,36 +495,13 @@ export default function CatalogPage() {
             {currentCategory ? currentCategory.name : 'Поиск запчастей'}
           </h1>
           
-          {/* Search form */}
-          <form onSubmit={handleSearch} className="flex gap-3 max-w-2xl">
-            <div className="relative flex-1">
-              <Input
-                type="text"
-                placeholder="Введите название или артикул..."
-                value={searchInput}
-                onChange={(e) => setSearchInput(e.target.value)}
-                className="pr-10 h-12 rounded-xl bg-white/70 border-cyan-200/50 text-slate-800 placeholder:text-slate-400 focus:border-teal-400"
-                data-testid="catalog-search-input"
-              />
-              {searchInput && (
-                <button 
-                  type="button"
-                  onClick={() => setSearchInput('')}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600"
-                >
-                  <X className="w-5 h-5" />
-                </button>
-              )}
-            </div>
-            <Button 
-              type="submit"
-              className="font-bold uppercase h-12 px-6 rounded-xl shadow-lg transition-all duration-300 bg-gradient-to-r from-teal-500 to-emerald-500 hover:from-teal-600 hover:to-emerald-600 shadow-teal-500/30 text-white"
-              data-testid="catalog-search-btn"
-            >
-              <Search className="w-5 h-5 mr-2" />
-              Найти
-            </Button>
-          </form>
+          {/* Search form with autocomplete */}
+          <div className="max-w-2xl">
+            <SearchDropdown 
+              placeholder="Введите название или артикул..."
+              onSelect={(product) => navigate(`/product/${product.id}`)}
+            />
+          </div>
 
           {/* Active filters */}
           {(searchQuery || categoryId) && (
