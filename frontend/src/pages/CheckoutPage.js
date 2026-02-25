@@ -184,7 +184,7 @@ export default function CheckoutPage() {
         {/* Background effects */}
         <div className="fixed inset-0 overflow-hidden pointer-events-none">
           <motion.div 
-            className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] rounded-full bg-green-500/10 blur-3xl"
+            className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] rounded-full bg-teal-500/10 blur-3xl"
             animate={{ scale: [1, 1.2, 1], opacity: [0.3, 0.5, 0.3] }}
             transition={{ duration: 4, repeat: Infinity }}
           />
@@ -197,7 +197,7 @@ export default function CheckoutPage() {
           transition={{ duration: 0.5 }}
         >
           <motion.div 
-            className="w-24 h-24 mx-auto bg-gradient-to-br from-green-500/20 to-green-600/20 rounded-3xl flex items-center justify-center mb-6 border border-green-500/30"
+            className="w-24 h-24 mx-auto bg-gradient-to-br from-green-500/20 to-green-600/20 rounded-3xl flex items-center justify-center mb-6 border border-teal-500/30"
             initial={{ scale: 0 }}
             animate={{ scale: 1, rotate: [0, 10, 0] }}
             transition={{ duration: 0.5, delay: 0.2 }}
@@ -218,7 +218,7 @@ export default function CheckoutPage() {
             animate={{ opacity: 1 }}
             transition={{ delay: 0.4 }}
           >
-            Номер заказа: <span className={`font-mono font-semibold ${isDark ? 'text-orange-400' : 'text-green-600'}`}>{orderId?.slice(0, 8)}</span>
+            Номер заказа: <span className={`font-mono font-semibold ${isDark ? 'text-orange-400' : 'text-teal-600'}`}>{orderId?.slice(0, 8)}</span>
           </motion.p>
           <motion.p 
             className={`mb-8 ${isDark ? 'text-zinc-500' : 'text-slate-500'}`}
@@ -264,7 +264,7 @@ export default function CheckoutPage() {
       {/* Background effects */}
       <div className="fixed inset-0 overflow-hidden pointer-events-none">
         <motion.div 
-          className={`absolute top-20 right-20 w-96 h-96 rounded-full ${isDark ? 'bg-orange-500/5' : 'bg-green-400/20'} blur-3xl`}
+          className={`absolute top-20 right-20 w-96 h-96 rounded-full ${isDark ? 'bg-orange-500/5' : 'bg-teal-400/20'} blur-3xl`}
           animate={{ scale: [1, 1.2, 1], opacity: [0.3, 0.5, 0.3] }}
           transition={{ duration: 8, repeat: Infinity }}
         />
@@ -282,12 +282,12 @@ export default function CheckoutPage() {
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.5 }}
         >
-          <Link to="/cart" className={`inline-flex items-center gap-2 transition-colors mb-4 group ${isDark ? 'text-zinc-500 hover:text-orange-400' : 'text-slate-500 hover:text-green-600'}`}>
+          <Link to="/cart" className={`inline-flex items-center gap-2 transition-colors mb-4 group ${isDark ? 'text-zinc-500 hover:text-orange-400' : 'text-slate-500 hover:text-teal-600'}`}>
             <ArrowLeft className="w-4 h-4 group-hover:-translate-x-1 transition-transform" /> 
             Назад в корзину
           </Link>
           <h1 className="text-2xl md:text-3xl font-bold tracking-tight uppercase">
-            <span className={`bg-gradient-to-r ${isDark ? 'from-orange-400 to-orange-600' : 'from-green-500 to-emerald-600'} bg-clip-text text-transparent`}>
+            <span className={`bg-gradient-to-r ${isDark ? 'from-orange-400 to-orange-600' : 'from-teal-500 to-emerald-500'} bg-clip-text text-transparent`}>
               Оформление заказа
             </span>
           </h1>
@@ -448,7 +448,7 @@ export default function CheckoutPage() {
                       </div>
                       {isEnabled && adjustment !== 0 && (
                         <span className={`text-xs font-bold px-3 py-1.5 rounded-full ${
-                          adjustment < 0 ? 'bg-green-500/20 text-green-400' : 'bg-red-500/20 text-red-400'
+                          adjustment < 0 ? 'bg-teal-500/20 text-green-400' : 'bg-red-500/20 text-red-400'
                         }`}>
                           {adjustment < 0 ? `-${Math.abs(adjustment)}%` : `+${adjustment}%`}
                         </span>

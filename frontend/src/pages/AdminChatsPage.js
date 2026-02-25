@@ -192,7 +192,7 @@ export default function AdminChatsPage() {
     return (
       <div className={`min-h-screen flex items-center justify-center ${isDark ? 'bg-zinc-950' : ''}`}>
         <motion.div 
-          className={`w-8 h-8 border-2 ${isDark ? 'border-orange-500' : 'border-green-500'} border-t-transparent rounded-full`}
+          className={`w-8 h-8 border-2 ${isDark ? 'border-orange-500' : 'border-teal-500'} border-t-transparent rounded-full`}
           animate={{ rotate: 360 }}
           transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
         />
@@ -206,7 +206,7 @@ export default function AdminChatsPage() {
         {/* Header */}
         <div className="mb-6">
           <h1 className={`text-2xl md:text-3xl font-bold tracking-tight uppercase ${isDark ? 'text-white' : 'text-slate-800'}`}>
-            <span className={`bg-gradient-to-r ${isDark ? 'from-orange-400 to-orange-600' : 'from-green-500 to-emerald-600'} bg-clip-text text-transparent`}>
+            <span className={`bg-gradient-to-r ${isDark ? 'from-orange-400 to-orange-600' : 'from-teal-500 to-emerald-500'} bg-clip-text text-transparent`}>
               Чаты с клиентами
             </span>
             {totalUnread > 0 && (
@@ -247,7 +247,7 @@ export default function AdminChatsPage() {
                     onClick={() => selectChat(chat)}
                     className={`w-full p-4 flex items-center gap-3 transition-colors text-left ${
                       selectedChat?.id === chat.id 
-                        ? isDark ? 'bg-orange-500/10 border-l-2 border-orange-500' : 'bg-green-500/10 border-l-2 border-green-500'
+                        ? isDark ? 'bg-orange-500/10 border-l-2 border-orange-500' : 'bg-teal-500/10 border-l-2 border-teal-500'
                         : isDark ? 'hover:bg-zinc-800/50' : 'hover:bg-white/50'
                     }`}
                     whileHover={{ x: 2 }}
@@ -283,7 +283,7 @@ export default function AdminChatsPage() {
                 {/* Chat Header */}
                 <div className={`p-4 border-b ${isDark ? 'border-zinc-800' : 'border-zinc-200'} flex items-center gap-3`}>
                   <div className={`w-10 h-10 rounded-full flex items-center justify-center ${isDark ? 'bg-zinc-800' : 'bg-slate-100'}`}>
-                    <User className={`w-5 h-5 ${isDark ? 'text-orange-400' : 'text-green-600'}`} />
+                    <User className={`w-5 h-5 ${isDark ? 'text-orange-400' : 'text-teal-600'}`} />
                   </div>
                   <div>
                     <h3 className={`font-medium ${isDark ? 'text-zinc-200' : 'text-slate-700'}`}>
@@ -318,7 +318,7 @@ export default function AdminChatsPage() {
                         >
                           <div className={`max-w-[70%] ${
                             isAdmin 
-                              ? isDark ? 'bg-orange-500/20 text-orange-100' : 'bg-green-500/20 text-green-900'
+                              ? isDark ? 'bg-orange-500/20 text-orange-100' : 'bg-teal-500/20 text-green-900'
                               : isDark ? 'bg-zinc-800 text-zinc-200' : 'bg-white text-slate-700'
                           } rounded-2xl px-4 py-2 shadow-sm`}>
                             {msg.type === 'image' ? (
@@ -343,7 +343,7 @@ export default function AdminChatsPage() {
                             )}
                             <div className={`flex items-center gap-1 justify-end mt-1 ${
                               isAdmin 
-                                ? isDark ? 'text-orange-300/60' : 'text-green-600/60'
+                                ? isDark ? 'text-orange-300/60' : 'text-teal-600/60'
                                 : isDark ? 'text-zinc-500' : 'text-slate-400'
                             }`}>
                               <span className="text-xs">{formatTime(msg.created_at)}</span>

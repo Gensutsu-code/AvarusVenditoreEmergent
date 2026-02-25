@@ -108,7 +108,7 @@ export default function BonusPage() {
     return (
       <div className={`min-h-screen flex items-center justify-center ${isDark ? 'bg-zinc-950' : ''}`}>
         <motion.div 
-          className={`w-8 h-8 border-2 ${isDark ? 'border-orange-500' : 'border-green-500'} border-t-transparent rounded-full`}
+          className={`w-8 h-8 border-2 ${isDark ? 'border-orange-500' : 'border-teal-500'} border-t-transparent rounded-full`}
           animate={{ rotate: 360 }}
           transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
         />
@@ -121,7 +121,7 @@ export default function BonusPage() {
       {/* Background effects */}
       <div className="fixed inset-0 overflow-hidden pointer-events-none">
         <motion.div 
-          className={`absolute top-20 right-20 w-96 h-96 rounded-full ${isDark ? 'bg-orange-500/5' : 'bg-green-400/20'} blur-3xl`}
+          className={`absolute top-20 right-20 w-96 h-96 rounded-full ${isDark ? 'bg-orange-500/5' : 'bg-teal-400/20'} blur-3xl`}
           animate={{ scale: [1, 1.2, 1], opacity: [0.3, 0.5, 0.3] }}
           transition={{ duration: 8, repeat: Infinity }}
         />
@@ -142,7 +142,7 @@ export default function BonusPage() {
         >
           <div 
             className={`inline-flex items-center gap-2 px-4 py-2 rounded-full font-medium ${
-              isDark ? 'bg-orange-500/20 text-orange-400' : 'bg-green-100 text-green-600'
+              isDark ? 'bg-orange-500/20 text-orange-400' : 'bg-teal-100 text-teal-600'
             }`}
             style={{ fontSize: bonusPrograms[0]?.header_font_size || 14 }}
           >
@@ -279,9 +279,9 @@ export default function BonusPage() {
                       {/* Progress Info */}
                       <div className="flex items-center justify-between text-sm">
                         <div className="flex items-center gap-2">
-                          <TrendingUp className="w-4 h-4 text-green-500" />
+                          <TrendingUp className="w-4 h-4 text-teal-500" />
                           <span className="text-zinc-600">Покупки за {currentYear}:</span>
-                          <span className="font-bold text-green-600">{formatPrice(yearlyTotal)} ₽</span>
+                          <span className="font-bold text-teal-600">{formatPrice(yearlyTotal)} ₽</span>
                         </div>
                         {nextLevel && (
                           <span className="text-zinc-500">
@@ -459,7 +459,7 @@ export default function BonusPage() {
                       onClick={() => copyPromoCode(item.bonus_code)}
                       className={`flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-mono transition-colors ${
                         copiedCode === item.bonus_code 
-                          ? 'bg-green-100 text-green-600' 
+                          ? 'bg-teal-100 text-teal-600' 
                           : 'bg-zinc-100 text-zinc-600 hover:bg-zinc-200'
                       }`}
                     >
@@ -492,7 +492,7 @@ export default function BonusPage() {
                   <span className={`text-xs font-bold px-2.5 py-1 rounded-full ${
                     r.status === 'pending' ? 'bg-yellow-100 text-yellow-700' :
                     r.status === 'approved' ? 'bg-blue-100 text-blue-700' :
-                    (r.status === 'issued' || r.status === 'delivered') ? 'bg-green-100 text-green-700' :
+                    (r.status === 'issued' || r.status === 'delivered') ? 'bg-teal-100 text-green-700' :
                     r.status === 'cancelled' ? 'bg-red-100 text-red-700' :
                     'bg-zinc-100 text-zinc-600'
                   }`}>

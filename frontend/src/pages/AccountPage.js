@@ -225,7 +225,7 @@ export default function AccountPage() {
     return (
       <div className={`min-h-screen flex items-center justify-center ${isDark ? 'bg-zinc-950' : ''}`}>
         <motion.div 
-          className={`w-8 h-8 border-2 ${isDark ? 'border-orange-500' : 'border-green-500'} border-t-transparent rounded-full`}
+          className={`w-8 h-8 border-2 ${isDark ? 'border-orange-500' : 'border-teal-500'} border-t-transparent rounded-full`}
           animate={{ rotate: 360 }}
           transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
         />
@@ -238,7 +238,7 @@ export default function AccountPage() {
       {/* Background effects */}
       <div className="fixed inset-0 overflow-hidden pointer-events-none">
         <motion.div 
-          className={`absolute top-20 right-20 w-96 h-96 rounded-full ${isDark ? 'bg-orange-500/5' : 'bg-green-400/20'} blur-3xl`}
+          className={`absolute top-20 right-20 w-96 h-96 rounded-full ${isDark ? 'bg-orange-500/5' : 'bg-teal-400/20'} blur-3xl`}
           animate={{ scale: [1, 1.2, 1], opacity: [0.3, 0.5, 0.3] }}
           transition={{ duration: 8, repeat: Infinity }}
         />
@@ -256,7 +256,7 @@ export default function AccountPage() {
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.5 }}
         >
-          <span className={`bg-gradient-to-r ${isDark ? 'from-orange-400 to-orange-600' : 'from-green-500 to-emerald-600'} bg-clip-text text-transparent`}>
+          <span className={`bg-gradient-to-r ${isDark ? 'from-orange-400 to-orange-600' : 'from-teal-500 to-emerald-500'} bg-clip-text text-transparent`}>
             Мой профиль
           </span>
         </motion.h1>
@@ -734,7 +734,7 @@ export default function AccountPage() {
                   >
                     <div className="flex items-center gap-3">
                       <div className={`w-12 h-12 rounded-xl flex items-center justify-center ${
-                        tx.type === 'topup' ? 'bg-green-500/10' : 'bg-red-500/10'
+                        tx.type === 'topup' ? 'bg-teal-500/10' : 'bg-red-500/10'
                       }`}>
                         {tx.type === 'topup' ? (
                           <Plus className="w-5 h-5 text-green-400" />
