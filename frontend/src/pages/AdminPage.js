@@ -1163,9 +1163,9 @@ export default function AdminPage() {
 
         {/* Tab Order Editor */}
         {editingTabOrder && (
-          <div className="mb-4 p-4 bg-orange-50 border border-orange-200 rounded-xl">
+          <div className="mb-4 p-4 bg-teal-50 border border-teal-200 rounded-xl">
             <div className="flex items-center justify-between mb-3">
-              <p className="text-sm font-medium text-orange-800">
+              <p className="text-sm font-medium text-teal-800">
                 Перетащите вкладки для изменения порядка или используйте стрелки
               </p>
               <Button variant="outline" size="sm" onClick={resetTabOrder}>
