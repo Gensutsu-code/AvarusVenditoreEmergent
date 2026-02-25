@@ -157,6 +157,7 @@ export const Header = () => {
   const { cartCount } = useCart();
   const location = useLocation();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [profileExpanded, setProfileExpanded] = useState(false);
   
   const isAdmin = user?.role === 'admin';
 
