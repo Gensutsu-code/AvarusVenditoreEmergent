@@ -1250,7 +1250,12 @@ export default function AdminPage() {
 
           {/* Products & Categories Tab (Каталог) - Modern Design */}
           <TabsContent value="products" className="p-6">
-            <div className="space-y-8">
+            <motion.div 
+              className="space-y-8"
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.3, ease: "easeOut" }}
+            >
               {/* Categories Section */}
               <div className="bg-gradient-to-br from-teal-50/50 to-emerald-50/30 rounded-2xl p-6 border border-teal-100/50">
                 <div className="flex justify-between items-center mb-6">
