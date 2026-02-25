@@ -2,9 +2,7 @@ import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import axios from 'axios';
 import { Search, ArrowRight, Truck, Shield, Clock, Package } from 'lucide-react';
-import { PopularProducts } from '../components/PopularProducts';
 import { motion } from 'framer-motion';
-import { useTheme } from '../context/ThemeContext';
 
 const API = `${process.env.REACT_APP_BACKEND_URL}/api`;
 
