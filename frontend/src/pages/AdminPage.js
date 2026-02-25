@@ -1186,7 +1186,7 @@ export default function AdminPage() {
                       <ChevronLeft className="w-4 h-4" />
                     </button>
                     <div className="flex items-center gap-1.5 px-2">
-                      <IconComponent className="w-3.5 h-3.5 text-orange-600" />
+                      <IconComponent className="w-3.5 h-3.5 text-teal-600" />
                       <span className="text-xs font-medium">{config.label}</span>
                     </div>
                     <button 
