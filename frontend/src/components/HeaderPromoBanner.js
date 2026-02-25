@@ -50,7 +50,7 @@ export const FloatingPromoBanner = () => {
   const bgColor = banner.bg_color || (isDark ? '#f97316' : '#10b981');
 
   return (
-    <div className="fixed left-4 top-20 z-40">
+    <div className="fixed left-4 top-4 z-40">
       <AnimatePresence mode="wait" initial={false}>
         {isExpanded ? (
           <motion.div
