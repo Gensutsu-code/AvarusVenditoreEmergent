@@ -138,6 +138,9 @@ export default function AdminPage() {
   const [isNewCategory, setIsNewCategory] = useState(false);
   const [viewingOrder, setViewingOrder] = useState(null);
   
+  // Theme
+  const { isDark } = useTheme();
+  
   // Tab order state - New restructured order
   const defaultTabOrder = ['products', 'bonus', 'payments', 'crm', 'marketing', 'settings'];
   const [tabOrder, setTabOrder] = useState(() => {
