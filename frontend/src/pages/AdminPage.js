@@ -2294,7 +2294,7 @@ export default function AdminPage() {
                                       <div className="flex items-center gap-2">
                                         <span className="font-medium text-slate-800">{pu.name}</span>
                                         {pu.bonus_requested && (
-                                          <Gift className="w-4 h-4 text-amber-500 animate-pulse" />
+                                          <Gift className="w-4 h-4 text-teal-500 animate-pulse" />
                                         )}
                                       </div>
                                     </td>
