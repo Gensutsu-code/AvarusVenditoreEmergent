@@ -18,7 +18,7 @@ const API = `${process.env.REACT_APP_BACKEND_URL}/api`;
 
 // Simple price display component
 const PriceDisplay = ({ price, formatPrice }) => {
-  return <span className="text-xl font-bold text-orange-400">{formatPrice(price)} ₽</span>;
+  return <span className="text-xl font-bold text-teal-600">{formatPrice(price)} ₽</span>;
 };
 
 // ProductCard component for reuse
@@ -33,14 +33,14 @@ const ProductCard = ({
   isAlternative = false
 }) => (
   <div 
-    className={`glass-card rounded-2xl overflow-hidden transition-all duration-300 hover:scale-[1.01] hover:border-orange-500/30 ${isAlternative ? 'border-orange-500/20' : ''}`}
+    className={`glass-card rounded-2xl overflow-hidden transition-all duration-300 hover:scale-[1.01] hover:border-teal-500/30 ${isAlternative ? 'border-teal-500/20' : ''}`}
     data-testid={`product-card-${product.id}`}
   >
     <div className="flex items-center gap-4 p-4">
       {/* Image - clickable */}
-      <button
-        onClick={() => setSelectedProduct(product)}
-        className="w-24 h-24 flex-shrink-0 bg-zinc-800/50 rounded-xl overflow-hidden hover:opacity-80 transition-opacity"
+      <Link
+        to={`/product/${product.id}`}
+        className="w-24 h-24 flex-shrink-0 bg-slate-100 rounded-xl overflow-hidden hover:opacity-80 transition-opacity"
         data-testid={`product-image-${product.id}`}
       >
         {product.image_url ? (
@@ -50,41 +50,41 @@ const ProductCard = ({
             className="w-full h-full object-cover"
           />
         ) : (
-          <div className="w-full h-full flex items-center justify-center text-zinc-300">
+          <div className="w-full h-full flex items-center justify-center text-slate-300">
             <Package className="w-8 h-8" />
           </div>
         )}
-      </button>
+      </Link>
 
       {/* Info - clickable */}
-      <button
-        onClick={() => setSelectedProduct(product)}
+      <Link
+        to={`/product/${product.id}`}
         className="flex-1 text-left min-w-0"
       >
         {product.manufacturer && (
-          <p className="text-sm font-bold text-orange-400 mb-0.5">{product.manufacturer}</p>
+          <p className="text-sm font-bold text-teal-600 mb-0.5">{product.manufacturer}</p>
         )}
-        <p className="text-sm font-mono font-semibold text-zinc-500 mb-1">Арт: {product.article}</p>
-        <h3 className="font-semibold text-zinc-100 hover:text-orange-400 transition-colors line-clamp-1">
+        <p className="text-sm font-mono font-semibold text-slate-500 mb-1">Арт: {product.article}</p>
+        <h3 className="font-semibold text-slate-800 hover:text-teal-600 transition-colors line-clamp-1">
           {product.name}
         </h3>
         {isAlternative && product.cross_articles && (
-          <p className="text-xs text-zinc-500 mt-1 line-clamp-1">
+          <p className="text-xs text-slate-500 mt-1 line-clamp-1">
             Кросс: {product.cross_articles}
           </p>
         )}
-      </button>
+      </Link>
 
       {/* Stock */}
       <div className="hidden sm:block text-center min-w-[80px]">
-        <p className={`text-sm font-semibold ${product.stock > 0 ? 'text-green-400' : 'text-red-400'}`}>
+        <p className={`text-sm font-semibold ${product.stock > 0 ? 'text-emerald-600' : 'text-red-500'}`}>
           {product.stock > 0 ? `${product.stock} шт.` : 'Нет'}
         </p>
-        <p className="text-xs text-zinc-400">в наличии</p>
+        <p className="text-xs text-slate-400">в наличии</p>
       </div>
 
       {/* Delivery */}
-      <div className="hidden md:flex items-center gap-2 text-zinc-500 min-w-[100px]">
+      <div className="hidden md:flex items-center gap-2 text-slate-500 min-w-[100px]">
         <Truck className="w-4 h-4" />
         <span className="text-sm">{getDeliveryText(product.delivery_days || 3)}</span>
       </div>
