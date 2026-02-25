@@ -7,12 +7,15 @@ import {
 } from 'lucide-react';
 import { Button } from '../components/ui/button';
 import { useAuth } from '../context/AuthContext';
+import { useTheme } from '../context/ThemeContext';
 import { toast } from 'sonner';
+import { motion, AnimatePresence } from 'framer-motion';
 
 const API = `${process.env.REACT_APP_BACKEND_URL}/api`;
 
 export default function BonusPage() {
   const { user, loading: authLoading } = useAuth();
+  const { isDark } = useTheme();
   const navigate = useNavigate();
   const [bonusPrograms, setBonusPrograms] = useState([]);
   const [bonusHistory, setBonusHistory] = useState([]);
