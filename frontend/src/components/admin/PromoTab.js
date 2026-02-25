@@ -10,9 +10,12 @@ export default function PromoTab({
   setPromoBanner,
   uploading,
   handlePromoImageUpload,
-  handleSavePromoBanner
+  handleSavePromoBanner,
+  promoFileRef,
+  isDark = false
 }) {
-  const promoFileRef = useRef(null);
+  const localFileRef = useRef(null);
+  const fileRef = promoFileRef || localFileRef;
 
   return (
     <div className="p-6">
