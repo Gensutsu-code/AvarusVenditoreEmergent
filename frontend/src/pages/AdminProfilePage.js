@@ -236,8 +236,8 @@ export default function AdminProfilePage() {
           </div>
 
           {/* Password Change Card */}
-          <div className="bg-white rounded-xl border border-zinc-200 shadow-sm overflow-hidden">
-            <div className="bg-gradient-to-r from-zinc-700 to-zinc-800 px-6 py-4">
+          <div className="glass-card overflow-hidden">
+            <div className="bg-gradient-to-r from-slate-600 to-slate-700 px-6 py-4">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-3">
                   <div className="w-12 h-12 bg-white/20 rounded-full flex items-center justify-center">
@@ -245,7 +245,7 @@ export default function AdminProfilePage() {
                   </div>
                   <div>
                     <h2 className="text-lg font-bold text-white">Безопасность</h2>
-                    <p className="text-zinc-300 text-sm">Смена пароля</p>
+                    <p className="text-slate-200 text-sm">Смена пароля</p>
                   </div>
                 </div>
                 <Button
@@ -261,18 +261,18 @@ export default function AdminProfilePage() {
             
             <div className="p-6 space-y-4">
               <div>
-                <Label className="text-xs font-bold uppercase text-zinc-500">Текущий пароль</Label>
+                <Label className="text-xs font-bold uppercase text-slate-500">Текущий пароль</Label>
                 <Input
                   type={showPasswords ? 'text' : 'password'}
                   value={formData.current_password}
                   onChange={(e) => setFormData({ ...formData, current_password: e.target.value })}
                   placeholder="••••••••"
-                  className="mt-1"
+                  className="mt-1 border-slate-200"
                 />
               </div>
               
               <div>
-                <Label className="text-xs font-bold uppercase text-zinc-500">Новый пароль</Label>
+                <Label className="text-xs font-bold uppercase text-slate-500">Новый пароль</Label>
                 <Input
                   type={showPasswords ? 'text' : 'password'}
                   value={formData.new_password}
