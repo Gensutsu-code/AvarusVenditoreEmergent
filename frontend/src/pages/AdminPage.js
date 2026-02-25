@@ -2111,7 +2111,7 @@ export default function AdminPage() {
                       });
                       setIsNewProgram(true);
                     }}
-                    className="bg-gradient-to-r from-teal-500 to-emerald-500 hover:from-purple-600 hover:to-violet-600 text-white shadow-lg shadow-teal-500/20"
+                    className="bg-gradient-to-r from-teal-500 to-emerald-500 hover:from-teal-600 hover:to-emerald-600 text-white shadow-lg shadow-teal-500/20"
                     data-testid="add-bonus-program-btn"
                   >
                     <Plus className="w-4 h-4 mr-2" />
