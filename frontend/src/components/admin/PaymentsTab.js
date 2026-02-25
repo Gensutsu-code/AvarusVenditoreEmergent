@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { CreditCard, Wallet, Percent, DollarSign } from 'lucide-react';
+import { CreditCard, Percent, DollarSign } from 'lucide-react';
 import { Button } from '../../components/ui/button';
 import { Input } from '../../components/ui/input';
 import { Label } from '../../components/ui/label';
@@ -15,9 +15,6 @@ export const PaymentsTab = ({
   prepaymentSettings,
   setPrepaymentSettings,
   handleSavePrepaymentSettings,
-  cryptoWallets,
-  setCryptoWallets,
-  handleSaveCryptoWallets,
   isDark = false
 }) => {
   const [activeSubTab, setActiveSubTab] = useState('methods');
