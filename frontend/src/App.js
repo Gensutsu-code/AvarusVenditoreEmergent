@@ -56,8 +56,6 @@ function AppContent() {
           <Route path="/product/:id" element={<ProductPage />} />
         </Routes>
       </main>
-      {/* Floating promo banner - below header, left side */}
-      {!isAdmin && <FloatingPromoBanner />}
       {/* Hide chat widget for admin */}
       {!isAdmin && <ChatWidget />}
       <Toaster position="top-center" />
