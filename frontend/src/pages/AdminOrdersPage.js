@@ -503,59 +503,64 @@ export default function AdminOrdersPage() {
 
       {/* View Order Dialog */}
       <Dialog open={!!viewingOrder} onOpenChange={() => setViewingOrder(null)}>
-        <DialogContent className="max-w-2xl">
+        <DialogContent className="max-w-2xl bg-white/95 backdrop-blur-sm border-slate-200/50 rounded-2xl">
           <DialogHeader>
-            <DialogTitle>Заказ #{viewingOrder?.id?.slice(0, 8)}</DialogTitle>
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-teal-500 to-emerald-500 flex items-center justify-center">
+                <Eye className="w-5 h-5 text-white" />
+              </div>
+              <DialogTitle className="text-xl font-bold text-slate-800">Заказ #{viewingOrder?.id?.slice(0, 8)}</DialogTitle>
+            </div>
           </DialogHeader>
           {viewingOrder && (
             <div className="space-y-4">
               <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <p className="text-xs font-bold uppercase text-zinc-500">Клиент</p>
-                  <p className="font-medium">{viewingOrder.full_name}</p>
+                <div className="bg-slate-50 rounded-xl p-3">
+                  <p className="text-xs font-bold uppercase text-teal-600 mb-1">Клиент</p>
+                  <p className="font-medium text-slate-800">{viewingOrder.full_name}</p>
                 </div>
-                <div>
-                  <p className="text-xs font-bold uppercase text-zinc-500">Телефон</p>
-                  <p className="font-medium">{viewingOrder.phone}</p>
+                <div className="bg-slate-50 rounded-xl p-3">
+                  <p className="text-xs font-bold uppercase text-teal-600 mb-1">Телефон</p>
+                  <p className="font-medium text-slate-800">{viewingOrder.phone}</p>
                 </div>
-                <div className="col-span-2">
-                  <p className="text-xs font-bold uppercase text-zinc-500">Адрес</p>
-                  <p className="font-medium">{viewingOrder.address}</p>
+                <div className="col-span-2 bg-slate-50 rounded-xl p-3">
+                  <p className="text-xs font-bold uppercase text-teal-600 mb-1">Адрес</p>
+                  <p className="font-medium text-slate-800">{viewingOrder.address}</p>
                 </div>
                 {viewingOrder.comment && (
-                  <div className="col-span-2">
-                    <p className="text-xs font-bold uppercase text-zinc-500">Комментарий</p>
-                    <p className="font-medium text-zinc-600">{viewingOrder.comment}</p>
+                  <div className="col-span-2 bg-amber-50 rounded-xl p-3 border border-amber-200">
+                    <p className="text-xs font-bold uppercase text-amber-600 mb-1">Комментарий</p>
+                    <p className="font-medium text-amber-800">{viewingOrder.comment}</p>
                   </div>
                 )}
               </div>
               
               <div>
-                <p className="text-xs font-bold uppercase text-zinc-500 mb-2">Товары</p>
-                <div className="border border-zinc-200 rounded-lg overflow-hidden">
+                <p className="text-xs font-bold uppercase text-teal-600 mb-3">Товары</p>
+                <div className="border border-slate-200 rounded-xl overflow-hidden">
                   <table className="w-full text-sm">
-                    <thead className="bg-zinc-50">
+                    <thead className="bg-gradient-to-r from-slate-50 to-teal-50/30">
                       <tr>
-                        <th className="text-left py-2 px-3">Товар</th>
-                        <th className="text-right py-2 px-3">Цена</th>
-                        <th className="text-right py-2 px-3">Кол-во</th>
-                        <th className="text-right py-2 px-3">Сумма</th>
+                        <th className="text-left py-3 px-4 text-slate-600 font-medium">Товар</th>
+                        <th className="text-right py-3 px-4 text-slate-600 font-medium">Цена</th>
+                        <th className="text-right py-3 px-4 text-slate-600 font-medium">Кол-во</th>
+                        <th className="text-right py-3 px-4 text-slate-600 font-medium">Сумма</th>
                       </tr>
                     </thead>
                     <tbody>
                       {viewingOrder.items?.map((item, idx) => (
-                        <tr key={idx} className="border-t border-zinc-100">
-                          <td className="py-2 px-3">{item.name}</td>
-                          <td className="py-2 px-3 text-right">{formatPrice(item.price)} ₽</td>
-                          <td className="py-2 px-3 text-right">{item.quantity}</td>
-                          <td className="py-2 px-3 text-right font-medium">{formatPrice(item.price * item.quantity)} ₽</td>
+                        <tr key={idx} className="border-t border-slate-100">
+                          <td className="py-3 px-4 text-slate-800">{item.name}</td>
+                          <td className="py-3 px-4 text-right text-slate-600">{formatPrice(item.price)} ₽</td>
+                          <td className="py-3 px-4 text-right text-slate-600">{item.quantity}</td>
+                          <td className="py-3 px-4 text-right font-medium text-slate-800">{formatPrice(item.price * item.quantity)} ₽</td>
                         </tr>
                       ))}
                     </tbody>
-                    <tfoot className="bg-zinc-50 font-bold">
+                    <tfoot className="bg-gradient-to-r from-teal-50 to-emerald-50">
                       <tr>
-                        <td colSpan="3" className="py-2 px-3 text-right">Итого:</td>
-                        <td className="py-2 px-3 text-right">{formatPrice(viewingOrder.total)} ₽</td>
+                        <td colSpan="3" className="py-3 px-4 text-right font-bold text-teal-700">Итого:</td>
+                        <td className="py-3 px-4 text-right font-bold text-lg text-teal-700">{formatPrice(viewingOrder.total)} ₽</td>
                       </tr>
                     </tfoot>
                   </table>
