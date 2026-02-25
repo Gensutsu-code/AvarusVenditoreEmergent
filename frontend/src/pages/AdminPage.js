@@ -1972,7 +1972,7 @@ export default function AdminPage() {
                             )}
                             
                             <p className="whitespace-pre-wrap">{msg.text}</p>
-                            <div className={`flex items-center gap-1 text-[10px] mt-1 ${msg.sender_type === 'admin' ? 'text-orange-200' : 'text-zinc-400'}`}>
+                            <div className={`flex items-center gap-1 text-[10px] mt-1 ${msg.sender_type === 'admin' ? 'text-teal-200' : 'text-zinc-400'}`}>
                               {new Date(msg.created_at).toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' })}
                               {msg.edited && <span>(ред.)</span>}
                             </div>
