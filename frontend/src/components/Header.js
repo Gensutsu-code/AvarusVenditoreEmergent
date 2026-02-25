@@ -197,24 +197,22 @@ export const Header = () => {
   return (
     <header className="sticky top-0 z-50 backdrop-blur-xl border-b bg-white/70 border-cyan-200/50" data-testid="header">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex items-center justify-between h-16 gap-4">
-          {/* Left: Logo + Search aligned with content */}
-          <div className="flex items-center gap-6">
-            <Link to={isAdmin ? "/admin" : "/"} className="flex-shrink-0 group" data-testid="logo-link">
-              <motion.h1 
-                className="text-xl font-bold uppercase tracking-tight bg-gradient-to-r from-emerald-500 to-teal-600 bg-clip-text text-transparent"
-                whileHover={{ scale: 1.02 }}
-                transition={{ duration: 0.2 }}
-              >
-                avopt.store
-              </motion.h1>
-            </Link>
-          </div>
+        <div className="flex items-center h-16 gap-6">
+          {/* Logo */}
+          <Link to={isAdmin ? "/admin" : "/"} className="flex-shrink-0 group" data-testid="logo-link">
+            <motion.h1 
+              className="text-xl font-bold uppercase tracking-tight bg-gradient-to-r from-emerald-500 to-teal-600 bg-clip-text text-transparent"
+              whileHover={{ scale: 1.02 }}
+              transition={{ duration: 0.2 }}
+            >
+              avopt.store
+            </motion.h1>
+          </Link>
           
-          {/* Center: Search Field - aligned with content below */}
+          {/* Search Field - aligned with content left edge */}
           {user && !isAdmin && (
-            <div className="hidden md:flex items-center gap-2 flex-1 max-w-md">
-              <div className="flex-1">
+            <div className="hidden md:flex items-center gap-2">
+              <div className="w-64">
                 <SearchDropdown 
                   placeholder="Поиск..." 
                   compact={true}
@@ -225,6 +223,9 @@ export const Header = () => {
               </NavLink>
             </div>
           )}
+          
+          {/* Spacer to push navigation to right */}
+          <div className="flex-1"></div>
           
           {/* Admin indicator (only for admin) - center */}
           {isAdmin && (
