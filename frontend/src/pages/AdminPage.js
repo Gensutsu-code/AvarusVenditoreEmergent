@@ -2106,22 +2106,33 @@ export default function AdminPage() {
                   </div>
                 )}
               </div>
-            </div>
+            </motion.div>
           </TabsContent>
 
           {/* Telegram Tab */}
           <TabsContent value="telegram">
+            <motion.div 
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.3, ease: "easeOut" }}
+            >
             <TelegramTab
               telegramSettings={telegramSettings}
               setTelegramSettings={setTelegramSettings}
               handleSaveTelegram={handleSaveTelegram}
               handleTestTelegram={handleTestTelegram}
             />
+            </motion.div>
           </TabsContent>
 
           {/* Bonus Program Tab - Multiple Programs */}
           <TabsContent value="bonus" className="p-6">
-            <div className="space-y-6">
+            <motion.div 
+              className="space-y-6"
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.3, ease: "easeOut" }}
+            >
               {/* Header with Add Button */}
               <div className="bg-gradient-to-br from-teal-50/50 to-emerald-50/30 rounded-2xl p-6 border border-teal-100/50">
                 <div className="flex justify-between items-center">
