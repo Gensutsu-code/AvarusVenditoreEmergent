@@ -105,6 +105,24 @@ async def get_products(search: Optional[str] = None, category_id: Optional[str] 
     return products
 
 
+@router.get("/products/search")
+async def search_products_autocomplete(q: str, limit: int = 8):
+    """Quick search for autocomplete dropdown - searches by name and article"""
+    if not q or len(q) < 2:
+        return {"products": []}
+    
+    query = {
+        "$or": [
+            {"name": {"$regex": q, "$options": "i"}},
+            {"article": {"$regex": q, "$options": "i"}},
+            {"cross_articles": {"$regex": q, "$options": "i"}}
+        ]
+    }
+    
+    products = await db.products.find(query, {"_id": 0}).limit(min(limit, 20)).to_list(20)
+    return {"products": products}
+
+
 @router.get("/products/search-with-alternatives")
 async def search_products_with_alternatives(search: str, limit: int = 50):
     """Search products with exact matches first, then alternatives from cross_articles"""
