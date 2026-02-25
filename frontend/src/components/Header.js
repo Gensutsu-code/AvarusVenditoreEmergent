@@ -10,7 +10,7 @@ import { useState, useRef, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 
 // Expandable Profile Menu Component
-const ExpandableProfileMenu = ({ onLogout }) => {
+const ExpandableProfileMenu = ({ onLogout, onExpandChange }) => {
   const [isExpanded, setIsExpanded] = useState(false);
   const navigate = useNavigate();
   const menuRef = useRef(null);
@@ -21,30 +21,35 @@ const ExpandableProfileMenu = ({ onLogout }) => {
     const handleClickOutside = (event) => {
       if (menuRef.current && !menuRef.current.contains(event.target)) {
         setIsExpanded(false);
+        onExpandChange?.(false);
       }
     };
     document.addEventListener('mousedown', handleClickOutside);
     return () => document.removeEventListener('mousedown', handleClickOutside);
-  }, []);
+  }, [onExpandChange]);
 
   const handleProfileClick = () => {
     if (!isExpanded) {
       // First click - expand
       setIsExpanded(true);
+      onExpandChange?.(true);
       // Auto-close after 4 seconds of inactivity
       if (timeoutRef.current) clearTimeout(timeoutRef.current);
       timeoutRef.current = setTimeout(() => {
         setIsExpanded(false);
+        onExpandChange?.(false);
       }, 4000);
     } else {
       // Second click - navigate to profile
       setIsExpanded(false);
+      onExpandChange?.(false);
       navigate('/account');
     }
   };
 
   const handleItemClick = (action) => {
     setIsExpanded(false);
+    onExpandChange?.(false);
     if (timeoutRef.current) clearTimeout(timeoutRef.current);
     if (typeof action === 'function') {
       action();
@@ -74,7 +79,39 @@ const ExpandableProfileMenu = ({ onLogout }) => {
   };
 
   return (
-    <div ref={menuRef} className="relative">
+    <div ref={menuRef} className="relative flex items-center">
+      {/* Left side - Favorites & Notifications */}
+      <AnimatePresence>
+        {isExpanded && (
+          <motion.div
+            className="flex items-center gap-1 mr-2"
+            initial="hidden"
+            animate="visible"
+            exit="exit"
+          >
+            <motion.div
+              custom={1}
+              variants={iconVariants}
+            >
+              <Link 
+                to="/favorites" 
+                onClick={() => handleItemClick(() => {})}
+                className="p-2.5 rounded-xl bg-white/90 backdrop-blur-sm border border-slate-200 text-slate-500 hover:text-pink-500 hover:bg-pink-50 hover:border-pink-200 transition-all duration-200 inline-flex shadow-sm hover:shadow-md hover:scale-110"
+                data-testid="favorites-link"
+              >
+                <Heart className="w-4 h-4" />
+              </Link>
+            </motion.div>
+            <motion.div
+              custom={0}
+              variants={iconVariants}
+            >
+              <ClientNotifications onClose={() => handleItemClick(() => {})} />
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
       {/* Center - Profile button */}
       <motion.button
         onClick={handleProfileClick}
@@ -90,56 +127,25 @@ const ExpandableProfileMenu = ({ onLogout }) => {
         <User className="w-4 h-4" />
       </motion.button>
 
-      {/* Expanded icons - absolutely positioned */}
+      {/* Right side - Logout */}
       <AnimatePresence>
         {isExpanded && (
-          <>
-            {/* Left side - Favorites & Notifications */}
-            <motion.div
-              className="absolute right-full top-1/2 -translate-y-1/2 mr-2 flex items-center gap-1"
-              initial="hidden"
-              animate="visible"
-              exit="exit"
+          <motion.div
+            className="ml-2"
+            initial="hidden"
+            animate="visible"
+            exit="exit"
+          >
+            <motion.button
+              custom={0}
+              variants={iconVariants}
+              onClick={() => handleItemClick(onLogout)}
+              className="p-2.5 rounded-xl bg-white/90 backdrop-blur-sm border border-slate-200 text-slate-500 hover:text-red-500 hover:bg-red-50 hover:border-red-200 transition-all duration-200 shadow-sm hover:shadow-md hover:scale-110"
+              data-testid="logout-button"
             >
-              <motion.div
-                custom={1}
-                variants={iconVariants}
-              >
-                <Link 
-                  to="/favorites" 
-                  onClick={() => handleItemClick(() => {})}
-                  className="p-2.5 rounded-xl bg-white/90 backdrop-blur-sm border border-slate-200 text-slate-500 hover:text-pink-500 hover:bg-pink-50 hover:border-pink-200 transition-all duration-200 inline-flex shadow-sm hover:shadow-md hover:scale-110"
-                  data-testid="favorites-link"
-                >
-                  <Heart className="w-4 h-4" />
-                </Link>
-              </motion.div>
-              <motion.div
-                custom={0}
-                variants={iconVariants}
-              >
-                <ClientNotifications onClose={() => handleItemClick(() => {})} />
-              </motion.div>
-            </motion.div>
-
-            {/* Right side - Logout */}
-            <motion.div
-              className="absolute left-full top-1/2 -translate-y-1/2 ml-2"
-              initial="hidden"
-              animate="visible"
-              exit="exit"
-            >
-              <motion.button
-                custom={0}
-                variants={iconVariants}
-                onClick={() => handleItemClick(onLogout)}
-                className="p-2.5 rounded-xl bg-white/90 backdrop-blur-sm border border-slate-200 text-slate-500 hover:text-red-500 hover:bg-red-50 hover:border-red-200 transition-all duration-200 shadow-sm hover:shadow-md hover:scale-110"
-                data-testid="logout-button"
-              >
-                <LogOut className="w-4 h-4" />
-              </motion.button>
-            </motion.div>
-          </>
+              <LogOut className="w-4 h-4" />
+            </motion.button>
+          </motion.div>
         )}
       </AnimatePresence>
     </div>
