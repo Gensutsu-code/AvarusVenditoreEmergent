@@ -91,7 +91,7 @@ export default function PartnersTab({
                 <div className="absolute top-2 right-2 flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
                   <button
                     onClick={() => {
-                      setIsNewPartner(false);
+                      setIsNew(false);
                       setEditingPartner && setEditingPartner({ ...partner });
                     }}
                     className={`p-1.5 rounded ${isDark ? 'bg-zinc-700 hover:bg-zinc-600' : 'bg-white border border-zinc-200 hover:bg-zinc-100'}`}
@@ -114,7 +114,7 @@ export default function PartnersTab({
         <Dialog open={!!editingPartner} onOpenChange={() => setEditingPartner && setEditingPartner(null)}>
           <DialogContent className={isDark ? 'bg-zinc-900 border-zinc-700' : ''}>
             <DialogHeader>
-              <DialogTitle className={isDark ? 'text-zinc-100' : ''}>{isNewPartner ? 'Добавить партнёра' : 'Редактировать партнёра'}</DialogTitle>
+              <DialogTitle className={isDark ? 'text-zinc-100' : ''}>{isNew ? 'Добавить партнёра' : 'Редактировать партнёра'}</DialogTitle>
             </DialogHeader>
             
             {editingPartner && (
