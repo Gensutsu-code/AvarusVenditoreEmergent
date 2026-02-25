@@ -104,9 +104,16 @@ const ExpandableProfileMenu = ({ onLogout, unreadCount = 0 }) => {
             animate="visible"
             exit="exit"
           >
-            {/* 1. Notifications */}
+            {/* 1. Notifications - Link to page */}
             <motion.div custom={0} variants={iconVariants}>
-              <ClientNotifications onClose={() => handleItemClick(() => {})} />
+              <Link 
+                to="/notifications" 
+                onClick={() => handleItemClick(() => {})}
+                className="relative w-10 h-10 rounded-xl bg-white/95 backdrop-blur-sm border border-slate-200 text-slate-500 hover:text-amber-500 hover:bg-amber-50 hover:border-amber-200 transition-all duration-200 shadow-lg hover:shadow-xl hover:scale-105 flex items-center justify-center"
+                data-testid="notifications-link"
+              >
+                <Bell className="w-5 h-5" />
+              </Link>
             </motion.div>
 
             {/* 2. Favorites */}
