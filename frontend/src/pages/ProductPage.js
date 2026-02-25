@@ -418,9 +418,17 @@ export default function ProductPage() {
                   >
                     <Minus className="w-5 h-5" />
                   </motion.button>
-                  <span className="px-6 min-w-[60px] text-center font-bold text-lg text-slate-800" data-testid="qty-value">
-                    {quantity}
-                  </span>
+                  <input
+                    type="number"
+                    min="1"
+                    value={quantity}
+                    onChange={(e) => {
+                      const val = parseInt(e.target.value) || 1;
+                      setQuantity(Math.max(1, val));
+                    }}
+                    className="w-16 text-center font-bold text-lg text-slate-800 bg-transparent border-0 focus:outline-none focus:ring-0 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                    data-testid="qty-value"
+                  />
                   <motion.button 
                     onClick={() => setQuantity(prev => prev + 1)}
                     className="p-4 transition-colors hover:bg-slate-100 text-slate-600"
