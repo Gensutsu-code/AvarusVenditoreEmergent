@@ -277,18 +277,6 @@ export const Header = () => {
                 ) : (
                   /* User Navigation */
                   <>
-                    {/* Mini Search Field with Search Icon */}
-                    <div className="hidden md:flex items-center gap-2">
-                      <div className="w-48">
-                        <SearchDropdown 
-                          placeholder="Поиск..." 
-                          compact={true}
-                        />
-                      </div>
-                      <NavLink to="/catalog" data-testid="search-page-link" className="p-2 rounded-lg hover:bg-teal-50 transition-colors">
-                        <Search className="w-5 h-5 text-teal-600" />
-                      </NavLink>
-                    </div>
                     <NavLink to="/catalog" data-testid="search-link" className="md:hidden">
                       <Search className="w-4 h-4" />
                     </NavLink>
