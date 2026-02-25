@@ -3018,11 +3018,6 @@ export default function AdminPage() {
             />
           </TabsContent>
 
-          {/* Crypto Settings Tab */}
-          <TabsContent value="crypto" className="p-6">
-            <CryptoSettingsTab />
-          </TabsContent>
-
           {/* Partners Tab */}
 
           {/* News Tab */}
