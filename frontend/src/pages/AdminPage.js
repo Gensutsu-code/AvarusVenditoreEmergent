@@ -3148,9 +3148,6 @@ export default function AdminPage() {
               prepaymentSettings={prepaymentSettings}
               setPrepaymentSettings={setPrepaymentSettings}
               handleSavePrepaymentSettings={handleSavePrepaymentSettings}
-              cryptoWallets={cryptoWallets}
-              setCryptoWallets={setCryptoWallets}
-              handleSaveCryptoWallets={handleSaveCryptoWallets}
               isDark={isDark}
             />
           </TabsContent>
