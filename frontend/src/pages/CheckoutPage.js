@@ -219,7 +219,7 @@ export default function CheckoutPage() {
             animate={{ opacity: 1 }}
             transition={{ delay: 0.4 }}
           >
-            Номер заказа: <span className={`font-mono font-semibold ${isDark ? 'text-orange-400' : 'text-teal-600'}`}>{orderId?.slice(0, 8)}</span>
+            Номер заказа: <span className={`font-mono font-semibold ${isDark ? 'text-teal-400' : 'text-teal-600'}`}>{orderId?.slice(0, 8)}</span>
           </motion.p>
           <motion.p 
             className={`mb-8 ${isDark ? 'text-zinc-500' : 'text-slate-500'}`}
@@ -246,8 +246,8 @@ export default function CheckoutPage() {
             </Link>
             <Link to="/catalog">
               <motion.button 
-                className="px-6 py-3 rounded-xl bg-gradient-to-r from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700 text-white font-bold transition-all duration-300 shadow-lg shadow-orange-500/20"
-                whileHover={{ scale: 1.02, boxShadow: '0 0 30px rgba(249, 115, 22, 0.4)' }}
+                className="px-6 py-3 rounded-xl bg-gradient-to-r from-teal-500 to-emerald-500 hover:from-teal-600 hover:to-emerald-600 text-white font-bold transition-all duration-300 shadow-lg shadow-teal-500/20"
+                whileHover={{ scale: 1.02, boxShadow: '0 0 30px rgba(20, 184, 166, 0.4)' }}
                 whileTap={{ scale: 0.98 }}
               >
                 Продолжить покупки
@@ -283,7 +283,7 @@ export default function CheckoutPage() {
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.5 }}
         >
-          <Link to="/cart" className={`inline-flex items-center gap-2 transition-colors mb-4 group ${isDark ? 'text-zinc-500 hover:text-orange-400' : 'text-slate-500 hover:text-teal-600'}`}>
+          <Link to="/cart" className={`inline-flex items-center gap-2 transition-colors mb-4 group ${isDark ? 'text-zinc-500 hover:text-teal-400' : 'text-slate-500 hover:text-teal-600'}`}>
             <ArrowLeft className="w-4 h-4 group-hover:-translate-x-1 transition-transform" /> 
             Назад в корзину
           </Link>
@@ -421,7 +421,7 @@ export default function CheckoutPage() {
                         !isEnabled 
                           ? 'bg-zinc-800/30 border-zinc-700/30 opacity-50 cursor-not-allowed' 
                           : isSelected 
-                            ? 'bg-orange-500/10 border-orange-500/50' 
+                            ? 'bg-teal-500/10 border-teal-500/50' 
                             : 'bg-white/5 border-white/10 hover:bg-white/10'
                       }`}
                       whileHover={isEnabled ? { scale: 1.01 } : {}}
@@ -432,15 +432,15 @@ export default function CheckoutPage() {
                         !isEnabled 
                           ? 'bg-zinc-700/50'
                           : isSelected 
-                            ? 'bg-orange-500/20' 
+                            ? 'bg-teal-500/20' 
                             : 'bg-zinc-700/50'
                       }`}>
                         <Icon className={`w-6 h-6 ${
-                          !isEnabled ? 'text-zinc-600' : isSelected ? 'text-orange-400' : 'text-zinc-500'
+                          !isEnabled ? 'text-zinc-600' : isSelected ? 'text-teal-400' : 'text-zinc-500'
                         }`} />
                       </div>
                       <div className="flex-1">
-                        <p className={`font-semibold ${!isEnabled ? 'text-zinc-600' : isSelected ? 'text-orange-300' : 'text-zinc-300'}`}>
+                        <p className={`font-semibold ${!isEnabled ? 'text-zinc-600' : isSelected ? 'text-teal-300' : 'text-zinc-300'}`}>
                           {method.label}
                         </p>
                         <p className={`text-xs ${!isEnabled ? 'text-red-400/70 font-medium' : 'text-zinc-500'}`}>
@@ -455,10 +455,10 @@ export default function CheckoutPage() {
                         </span>
                       )}
                       <div className={`w-6 h-6 rounded-full border-2 flex items-center justify-center ${
-                        !isEnabled ? 'border-zinc-700' : isSelected ? 'border-orange-500' : 'border-zinc-600'
+                        !isEnabled ? 'border-zinc-700' : isSelected ? 'border-teal-500' : 'border-zinc-600'
                       }`}>
                         {isSelected && isEnabled && <motion.div 
-                          className="w-3 h-3 rounded-full bg-orange-500"
+                          className="w-3 h-3 rounded-full bg-teal-500"
                           initial={{ scale: 0 }}
                           animate={{ scale: 1 }}
                           transition={{ duration: 0.2 }}
