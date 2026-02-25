@@ -100,9 +100,7 @@ export const HeaderPromoBanner = () => {
               {banner.link ? (
                 <a 
                   href={banner.link}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="tracking-wide hover:underline"
+                  className="tracking-wide"
                   onClick={(e) => e.stopPropagation()}
                 >
                   {banner.text}
