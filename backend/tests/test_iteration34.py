@@ -28,7 +28,7 @@ def admin_token(api_session):
         "password": "admin"
     })
     assert response.status_code == 200, f"Admin login failed: {response.text}"
-    return response.json().get("access_token")
+    return response.json().get("token")
 
 @pytest.fixture(scope="module")
 def admin_session(api_session, admin_token):
