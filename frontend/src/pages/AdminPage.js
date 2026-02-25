@@ -1064,17 +1064,19 @@ export default function AdminPage() {
         />
       )}
       
-    <div className="min-h-screen bg-zinc-50" data-testid="admin-page">
+    <div className={`min-h-screen ${isDark ? 'bg-zinc-950' : 'bg-zinc-50'}`} data-testid="admin-page">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <div className="flex items-center justify-between mb-6">
-          <h1 className="text-2xl md:text-3xl font-bold tracking-tight uppercase text-zinc-900">
-            Панель администратора
+          <h1 className={`text-2xl md:text-3xl font-bold tracking-tight uppercase ${isDark ? 'text-white' : 'text-zinc-900'}`}>
+            <span className={`bg-gradient-to-r ${isDark ? 'from-orange-400 to-orange-600' : 'from-teal-500 to-emerald-500'} bg-clip-text text-transparent`}>
+              Панель администратора
+            </span>
           </h1>
           <Button
             variant="outline"
             size="sm"
             onClick={() => setEditingTabOrder(!editingTabOrder)}
-            className={editingTabOrder ? 'bg-orange-100 border-orange-500' : ''}
+            className={`${editingTabOrder ? 'bg-orange-100 border-orange-500' : ''} ${isDark ? 'border-zinc-700 text-zinc-300 hover:bg-zinc-800' : ''}`}
           >
             <Settings className="w-4 h-4 mr-1" />
             {editingTabOrder ? 'Готово' : 'Настроить вкладки'}
