@@ -539,7 +539,7 @@ export default function AccountPage() {
                   value={formData.confirm_password}
                   onChange={(e) => setFormData({ ...formData, confirm_password: e.target.value })}
                   placeholder="Повторите пароль"
-                  className="glass-input h-12 text-white placeholder:text-zinc-600"
+                  className="h-12 border-slate-200"
                 />
               </div>
               
@@ -551,7 +551,7 @@ export default function AccountPage() {
                   onClick={handleChangePassword}
                   disabled={saving || !formData.current_password || !formData.new_password}
                   variant="outline"
-                  className="w-full h-12 border-zinc-700 text-zinc-300 hover:bg-zinc-800/50 rounded-xl font-medium transition-all duration-300"
+                  className="w-full h-12 border-slate-300 text-slate-600 hover:bg-slate-100 rounded-xl font-medium transition-all duration-300"
                 >
                   <Lock className="w-4 h-4 mr-2" />
                   {saving ? 'Изменение...' : 'Изменить пароль'}
@@ -564,10 +564,10 @@ export default function AccountPage() {
 
       {/* Topup Modal */}
       <Dialog open={showTopupModal} onOpenChange={setShowTopupModal}>
-        <DialogContent className="max-w-md bg-zinc-900/95 backdrop-blur-xl border border-white/10 rounded-2xl" data-testid="topup-modal">
+        <DialogContent className="max-w-md bg-white/95 backdrop-blur-xl border border-slate-200 rounded-2xl" data-testid="topup-modal">
           <DialogHeader>
-            <DialogTitle className="flex items-center gap-3 text-white">
-              <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-purple-500 to-purple-600 flex items-center justify-center">
+            <DialogTitle className="flex items-center gap-3 text-slate-800">
+              <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-teal-500 to-emerald-500 flex items-center justify-center">
                 <Wallet className="w-5 h-5 text-white" />
               </div>
               Пополнение баланса
@@ -576,16 +576,16 @@ export default function AccountPage() {
           
           <div className="space-y-5 mt-4">
             <div>
-              <Label className="text-xs font-bold uppercase text-zinc-500 mb-2 block">Сумма пополнения (₽)</Label>
+              <Label className="text-xs font-bold uppercase text-slate-500 mb-2 block">Сумма пополнения (₽)</Label>
               <Input
                 type="number"
                 value={topupAmount}
                 onChange={(e) => setTopupAmount(e.target.value)}
                 placeholder={`Мин. ${prepaymentSettings.min_topup_amount || 500}₽`}
-                className="glass-input h-14 text-xl text-white placeholder:text-zinc-600"
+                className="h-14 text-xl border-slate-200"
                 data-testid="topup-amount-input"
               />
-              <p className="text-xs text-zinc-500 mt-2">
+              <p className="text-xs text-slate-500 mt-2">
                 Мин: {prepaymentSettings.min_topup_amount || 500}₽ / Макс: {(prepaymentSettings.max_topup_amount || 100000).toLocaleString('ru-RU')}₽
               </p>
             </div>
