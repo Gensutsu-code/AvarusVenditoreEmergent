@@ -1573,7 +1573,7 @@ export default function AdminPage() {
                     <div className="border-t border-zinc-200 bg-zinc-50">
                       {loadingUserDetails ? (
                         <div className="p-6 text-center text-zinc-500">
-                          <div className="w-6 h-6 border-2 border-orange-500 border-t-transparent rounded-full animate-spin mx-auto mb-2"></div>
+                          <div className="w-6 h-6 border-2 border-teal-500 border-t-transparent rounded-full animate-spin mx-auto mb-2"></div>
                           Загрузка...
                         </div>
                       ) : userDetails ? (
