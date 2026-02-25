@@ -237,12 +237,12 @@ export const Header = () => {
           )}
 
           {/* Desktop Navigation */}
-          <div className="hidden md:flex items-center gap-1">
+          <div className="hidden md:flex items-center gap-1 flex-1">
             {user ? (
               <>
                 {isAdmin ? (
                   /* Admin Navigation */
-                  <>
+                  <div className="flex items-center gap-1 ml-auto">
                     <NavLink to="/admin" data-testid="admin-link">
                       <span className="flex items-center gap-2 text-purple-500">
                         <Settings className="w-4 h-4" />
