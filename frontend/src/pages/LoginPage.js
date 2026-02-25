@@ -39,7 +39,7 @@ export default function LoginPage() {
       {/* Background effects */}
       <div className={`absolute inset-0 ${isDark ? 'bg-gradient-to-br from-orange-600/10 via-zinc-950 to-zinc-950' : 'bg-gradient-to-br from-green-200/30 via-transparent to-pink-200/30'}`} />
       <motion.div 
-        className={`absolute top-1/4 left-1/4 w-96 h-96 rounded-full ${isDark ? 'bg-orange-500/5' : 'bg-green-400/20'} blur-3xl`}
+        className={`absolute top-1/4 left-1/4 w-96 h-96 rounded-full ${isDark ? 'bg-orange-500/5' : 'bg-teal-400/20'} blur-3xl`}
         animate={{ scale: [1, 1.2, 1], opacity: [0.3, 0.5, 0.3] }}
         transition={{ duration: 8, repeat: Infinity }}
       />
@@ -63,7 +63,7 @@ export default function LoginPage() {
         >
           <Link to="/" className="inline-block">
             <motion.h1 
-              className={`text-2xl font-bold uppercase tracking-tight bg-gradient-to-r ${isDark ? 'from-orange-400 to-orange-600' : 'from-green-500 to-emerald-600'} bg-clip-text text-transparent`}
+              className={`text-2xl font-bold uppercase tracking-tight bg-gradient-to-r ${isDark ? 'from-orange-400 to-orange-600' : 'from-teal-500 to-emerald-500'} bg-clip-text text-transparent`}
               whileHover={{ scale: 1.02 }}
             >
               avopt.store
@@ -79,8 +79,8 @@ export default function LoginPage() {
           transition={{ duration: 0.6, delay: 0.2 }}
         >
           <div className="flex items-center gap-3 mb-6">
-            <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${isDark ? 'bg-orange-500/10' : 'bg-green-500/10'}`}>
-              <LogIn className={`w-5 h-5 ${isDark ? 'text-orange-400' : 'text-green-600'}`} />
+            <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${isDark ? 'bg-orange-500/10' : 'bg-teal-500/10'}`}>
+              <LogIn className={`w-5 h-5 ${isDark ? 'text-orange-400' : 'text-teal-600'}`} />
             </div>
             <h2 className={`text-xl font-bold ${isDark ? 'text-zinc-100' : 'text-slate-800'}`}>Вход в аккаунт</h2>
           </div>
@@ -122,7 +122,7 @@ export default function LoginPage() {
               <Button 
                 type="submit"
                 disabled={loading}
-                className={`w-full ${isDark ? 'bg-gradient-to-r from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700 shadow-glow' : 'bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 shadow-lg shadow-green-500/20'} text-white font-bold uppercase tracking-wide h-12 rounded-xl transition-all duration-300`}
+                className={`w-full ${isDark ? 'bg-gradient-to-r from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700 shadow-glow' : 'bg-gradient-to-r from-teal-500 to-emerald-500 hover:from-green-600 hover:to-emerald-700 shadow-lg shadow-teal-500/20'} text-white font-bold uppercase tracking-wide h-12 rounded-xl transition-all duration-300`}
                 data-testid="login-submit"
               >
                 {loading ? (
@@ -149,7 +149,7 @@ export default function LoginPage() {
           transition={{ duration: 0.6, delay: 0.4 }}
         >
           Нет аккаунта?{' '}
-          <Link to="/register" className={`font-semibold transition-colors ${isDark ? 'text-orange-400 hover:text-orange-300' : 'text-green-600 hover:text-green-500'}`}>
+          <Link to="/register" className={`font-semibold transition-colors ${isDark ? 'text-orange-400 hover:text-orange-300' : 'text-teal-600 hover:text-teal-500'}`}>
             Регистрация
           </Link>
         </motion.p>
