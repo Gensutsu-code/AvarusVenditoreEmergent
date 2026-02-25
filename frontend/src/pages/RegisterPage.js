@@ -56,19 +56,17 @@ export default function RegisterPage() {
     }
   };
 
-  const inputClass = "mt-2 h-12 bg-zinc-800/50 border-zinc-700/50 text-zinc-100 placeholder:text-zinc-500 rounded-xl focus:border-orange-500/50 focus:ring-orange-500/20";
-
   return (
-    <div className="min-h-screen flex items-center justify-center px-4 py-8 bg-zinc-950 relative overflow-hidden" data-testid="register-page">
-      {/* Background effects */}
-      <div className="absolute inset-0 bg-gradient-to-br from-orange-600/10 via-zinc-950 to-zinc-950" />
+    <div className="min-h-screen flex items-center justify-center px-4 py-8 relative overflow-hidden" data-testid="register-page">
+      {/* Background effects - Light theme */}
+      <div className="absolute inset-0 bg-gradient-to-br from-green-200/30 via-transparent to-pink-200/30" />
       <motion.div 
-        className="absolute top-1/4 right-1/4 w-96 h-96 rounded-full bg-orange-500/5 blur-3xl"
+        className="absolute top-1/4 right-1/4 w-96 h-96 rounded-full bg-teal-400/20 blur-3xl"
         animate={{ scale: [1, 1.2, 1], opacity: [0.3, 0.5, 0.3] }}
         transition={{ duration: 8, repeat: Infinity }}
       />
       <motion.div 
-        className="absolute bottom-1/4 left-1/4 w-96 h-96 rounded-full bg-purple-500/5 blur-3xl"
+        className="absolute bottom-1/4 left-1/4 w-96 h-96 rounded-full bg-pink-400/20 blur-3xl"
         animate={{ scale: [1.2, 1, 1.2], opacity: [0.3, 0.5, 0.3] }}
         transition={{ duration: 8, repeat: Infinity, delay: 2 }}
       />
@@ -87,13 +85,13 @@ export default function RegisterPage() {
         >
           <Link to="/" className="inline-block">
             <motion.h1 
-              className="text-2xl font-bold uppercase tracking-tight bg-gradient-to-r from-orange-400 to-orange-600 bg-clip-text text-transparent"
+              className="text-2xl font-bold uppercase tracking-tight bg-gradient-to-r from-teal-500 to-emerald-500 bg-clip-text text-transparent"
               whileHover={{ scale: 1.02 }}
             >
               avopt.store
             </motion.h1>
           </Link>
-          <p className="text-sm text-zinc-500 mt-1">Avarus-Venditore</p>
+          <p className="text-sm text-slate-400 mt-1">Avarus-Venditore</p>
         </motion.div>
 
         <motion.div 
@@ -103,15 +101,15 @@ export default function RegisterPage() {
           transition={{ duration: 0.6, delay: 0.2 }}
         >
           <div className="flex items-center gap-3 mb-6">
-            <div className="w-10 h-10 rounded-xl bg-orange-500/10 flex items-center justify-center">
-              <UserPlus className="w-5 h-5 text-orange-400" />
+            <div className="w-10 h-10 rounded-xl bg-teal-500/10 flex items-center justify-center">
+              <UserPlus className="w-5 h-5 text-teal-600" />
             </div>
-            <h2 className="text-xl font-bold text-zinc-100">Регистрация</h2>
+            <h2 className="text-xl font-bold text-slate-800">Регистрация</h2>
           </div>
 
           <form onSubmit={handleSubmit} className="space-y-4">
             <div>
-              <Label htmlFor="name" className="text-xs font-bold uppercase tracking-widest text-zinc-500 flex items-center gap-2">
+              <Label htmlFor="name" className="text-xs font-bold uppercase tracking-widest text-slate-500 flex items-center gap-2">
                 <User className="w-3 h-3" /> Имя *
               </Label>
               <Input
@@ -119,14 +117,14 @@ export default function RegisterPage() {
                 value={form.name}
                 onChange={(e) => setForm({ ...form, name: e.target.value })}
                 placeholder="Ваше имя"
-                className={inputClass}
+                className="glass-input mt-2 h-12"
                 required
                 data-testid="register-name"
               />
             </div>
 
             <div>
-              <Label htmlFor="email" className="text-xs font-bold uppercase tracking-widest text-zinc-500 flex items-center gap-2">
+              <Label htmlFor="email" className="text-xs font-bold uppercase tracking-widest text-slate-500 flex items-center gap-2">
                 <Mail className="w-3 h-3" /> Email *
               </Label>
               <Input
@@ -135,14 +133,14 @@ export default function RegisterPage() {
                 value={form.email}
                 onChange={(e) => setForm({ ...form, email: e.target.value })}
                 placeholder="example@mail.ru"
-                className={inputClass}
+                className="glass-input mt-2 h-12"
                 required
                 data-testid="register-email"
               />
             </div>
 
             <div>
-              <Label htmlFor="phone" className="text-xs font-bold uppercase tracking-widest text-zinc-500 flex items-center gap-2">
+              <Label htmlFor="phone" className="text-xs font-bold uppercase tracking-widest text-slate-500 flex items-center gap-2">
                 <Phone className="w-3 h-3" /> Телефон
               </Label>
               <Input
@@ -151,13 +149,13 @@ export default function RegisterPage() {
                 value={form.phone}
                 onChange={(e) => setForm({ ...form, phone: e.target.value })}
                 placeholder="+7 (___) ___-__-__"
-                className={inputClass}
+                className="glass-input mt-2 h-12"
                 data-testid="register-phone"
               />
             </div>
 
             <div>
-              <Label htmlFor="address" className="text-xs font-bold uppercase tracking-widest text-zinc-500 flex items-center gap-2">
+              <Label htmlFor="address" className="text-xs font-bold uppercase tracking-widest text-slate-500 flex items-center gap-2">
                 <MapPin className="w-3 h-3" /> Адрес доставки
               </Label>
               <Input
@@ -165,13 +163,13 @@ export default function RegisterPage() {
                 value={form.address}
                 onChange={(e) => setForm({ ...form, address: e.target.value })}
                 placeholder="Город, улица, дом, квартира"
-                className={inputClass}
+                className="glass-input mt-2 h-12"
                 data-testid="register-address"
               />
             </div>
 
             <div>
-              <Label htmlFor="address_comment" className="text-xs font-bold uppercase tracking-widest text-zinc-500 flex items-center gap-2">
+              <Label htmlFor="address_comment" className="text-xs font-bold uppercase tracking-widest text-slate-500 flex items-center gap-2">
                 <MessageSquare className="w-3 h-3" /> Комментарий к адресу
               </Label>
               <Textarea
@@ -179,14 +177,14 @@ export default function RegisterPage() {
                 value={form.address_comment}
                 onChange={(e) => setForm({ ...form, address_comment: e.target.value })}
                 placeholder="Код домофона, этаж, ориентиры..."
-                className="mt-2 bg-zinc-800/50 border-zinc-700/50 text-zinc-100 placeholder:text-zinc-500 rounded-xl focus:border-orange-500/50 min-h-[80px]"
+                className="glass-input mt-2 min-h-[80px]"
                 data-testid="register-address-comment"
               />
             </div>
 
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <Label htmlFor="password" className="text-xs font-bold uppercase tracking-widest text-zinc-500 flex items-center gap-2">
+                <Label htmlFor="password" className="text-xs font-bold uppercase tracking-widest text-slate-500 flex items-center gap-2">
                   <Lock className="w-3 h-3" /> Пароль *
                 </Label>
                 <Input
@@ -195,14 +193,14 @@ export default function RegisterPage() {
                   value={form.password}
                   onChange={(e) => setForm({ ...form, password: e.target.value })}
                   placeholder="Мин. 6 символов"
-                  className={inputClass}
+                  className="glass-input mt-2 h-12"
                   required
                   data-testid="register-password"
                 />
               </div>
 
               <div>
-                <Label htmlFor="confirmPassword" className="text-xs font-bold uppercase tracking-widest text-zinc-500 flex items-center gap-2">
+                <Label htmlFor="confirmPassword" className="text-xs font-bold uppercase tracking-widest text-slate-500 flex items-center gap-2">
                   <Lock className="w-3 h-3" /> Повтор *
                 </Label>
                 <Input
@@ -211,7 +209,7 @@ export default function RegisterPage() {
                   value={form.confirmPassword}
                   onChange={(e) => setForm({ ...form, confirmPassword: e.target.value })}
                   placeholder="Повторите"
-                  className={inputClass}
+                  className="glass-input mt-2 h-12"
                   required
                   data-testid="register-confirm-password"
                 />
@@ -222,7 +220,7 @@ export default function RegisterPage() {
               <Button 
                 type="submit"
                 disabled={loading}
-                className="w-full bg-gradient-to-r from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700 text-white font-bold uppercase tracking-wide h-12 rounded-xl shadow-glow transition-all duration-300"
+                className="w-full bg-gradient-to-r from-teal-500 to-emerald-500 hover:from-teal-600 hover:to-emerald-600 text-white font-bold uppercase tracking-wide h-12 rounded-xl shadow-lg shadow-teal-500/20 transition-all duration-300"
                 data-testid="register-submit"
               >
                 {loading ? (
@@ -243,13 +241,13 @@ export default function RegisterPage() {
         </motion.div>
 
         <motion.p 
-          className="text-center text-zinc-500 mt-6"
+          className="text-center text-slate-500 mt-6"
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           transition={{ duration: 0.6, delay: 0.4 }}
         >
           Уже есть аккаунт?{' '}
-          <Link to="/login" className="text-orange-400 hover:text-orange-300 font-semibold transition-colors">
+          <Link to="/login" className="text-teal-600 hover:text-teal-500 font-semibold transition-colors">
             Войти
           </Link>
         </motion.p>
