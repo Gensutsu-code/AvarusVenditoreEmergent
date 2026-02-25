@@ -79,6 +79,7 @@ code {
 
 /* Glassmorphism utility classes */
 @layer components {
+  /* Dark theme glass */
   .glass {
     @apply bg-white/5 backdrop-blur-xl border border-white/10 shadow-glass;
   }
@@ -93,6 +94,23 @@ code {
   
   .glass-input {
     @apply bg-zinc-800/50 backdrop-blur-sm border border-zinc-700/50 focus:border-orange-500/50 focus:ring-2 focus:ring-orange-500/20 transition-all duration-300 rounded-xl;
+  }
+  
+  /* Light theme glass */
+  .light-theme .glass {
+    @apply bg-white/70 backdrop-blur-xl border border-white/50 shadow-lg;
+  }
+  
+  .light-theme .glass-card {
+    @apply bg-white/60 backdrop-blur-xl border border-cyan-200/50 shadow-lg rounded-2xl;
+  }
+  
+  .light-theme .glass-button {
+    @apply bg-white/50 backdrop-blur-md border border-cyan-200/50 hover:bg-white/80 transition-all duration-300;
+  }
+  
+  .light-theme .glass-input {
+    @apply bg-white/70 backdrop-blur-sm border border-cyan-200/50 focus:border-green-400 focus:ring-2 focus:ring-green-400/30 transition-all duration-300 rounded-xl text-slate-800 placeholder:text-slate-400;
   }
   
   .gradient-border {
@@ -112,9 +130,19 @@ code {
     pointer-events: none;
   }
   
+  .light-theme .gradient-border::before {
+    background: linear-gradient(135deg, rgba(0, 255, 0, 0.5), rgba(255, 192, 203, 0.5));
+  }
+  
   .btn-primary {
     @apply bg-gradient-to-r from-orange-500 to-orange-600 text-white font-bold uppercase tracking-wide px-8 py-3 rounded-xl 
            hover:from-orange-600 hover:to-orange-700 hover:shadow-glow 
+           active:scale-[0.98] transition-all duration-300;
+  }
+  
+  .light-theme .btn-primary {
+    @apply bg-gradient-to-r from-green-400 to-emerald-500 text-white font-bold uppercase tracking-wide px-8 py-3 rounded-xl 
+           hover:from-green-500 hover:to-emerald-600 hover:shadow-lg 
            active:scale-[0.98] transition-all duration-300;
   }
   
@@ -124,10 +152,22 @@ code {
            active:scale-[0.98] transition-all duration-300;
   }
   
+  .light-theme .btn-secondary {
+    @apply bg-white/50 backdrop-blur-sm border border-pink-200/50 text-slate-700 font-medium px-6 py-3 rounded-xl
+           hover:bg-white/80 hover:border-pink-300/50
+           active:scale-[0.98] transition-all duration-300;
+  }
+  
   .input-field {
     @apply bg-zinc-800/50 backdrop-blur-sm border border-zinc-700/50 rounded-xl px-4 py-3
            focus:border-orange-500/50 focus:ring-2 focus:ring-orange-500/20 
            placeholder:text-zinc-500 transition-all duration-300;
+  }
+  
+  .light-theme .input-field {
+    @apply bg-white/70 backdrop-blur-sm border border-cyan-200/50 rounded-xl px-4 py-3
+           focus:border-green-400 focus:ring-2 focus:ring-green-400/30 
+           placeholder:text-slate-400 text-slate-800 transition-all duration-300;
   }
   
   .card-hover {
@@ -141,21 +181,41 @@ code {
     @apply text-orange-400;
   }
   
+  .light-theme .price-tag {
+    @apply text-green-600;
+  }
+  
   .category-card {
     @apply glass-card p-6 transition-all duration-300 hover:scale-[1.02] hover:border-orange-500/30 cursor-pointer;
+  }
+  
+  .light-theme .category-card {
+    @apply p-6 transition-all duration-300 hover:scale-[1.02] hover:border-green-400/50 cursor-pointer;
   }
   
   .product-card {
     @apply glass-card p-4 transition-all duration-300 hover:scale-[1.02] hover:border-orange-500/30;
   }
   
+  .light-theme .product-card {
+    @apply p-4 transition-all duration-300 hover:scale-[1.02] hover:border-green-400/50;
+  }
+  
   .nav-link {
     @apply relative text-zinc-400 hover:text-white transition-colors duration-300;
+  }
+  
+  .light-theme .nav-link {
+    @apply relative text-slate-500 hover:text-slate-800 transition-colors duration-300;
   }
   
   .nav-link::after {
     content: '';
     @apply absolute bottom-0 left-0 w-0 h-0.5 bg-orange-500 transition-all duration-300;
+  }
+  
+  .light-theme .nav-link::after {
+    @apply bg-green-500;
   }
   
   .nav-link:hover::after,
@@ -165,6 +225,10 @@ code {
   
   .nav-link.active {
     @apply text-white;
+  }
+  
+  .light-theme .nav-link.active {
+    @apply text-slate-800;
   }
 }
 
