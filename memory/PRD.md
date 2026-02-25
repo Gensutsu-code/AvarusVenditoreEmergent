@@ -105,8 +105,8 @@ Pages updated with new light design and animations:
 - [x] Move popular products from home to catalog
 - [x] Fix admin panel tab bugs
 
-### P1 (Medium Priority)
-- [ ] Quick View modal for products in catalog
+### P1 (Medium Priority) - DONE ✅
+- [x] Quick View modal for products in catalog
 
 ### P2 (Future)
 - [ ] Real payment integration (Stripe/YooKassa)
