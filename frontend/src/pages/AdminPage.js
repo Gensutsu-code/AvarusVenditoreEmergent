@@ -1057,7 +1057,6 @@ export default function AdminPage() {
     products: { icon: Package, label: 'Каталог', count: products.length },
     bonus: { icon: Gift, label: 'Бонусы', badge: bonusPrograms.reduce((sum, p) => sum + (p.pending_requests || 0), 0) },
     payments: { icon: CreditCard, label: 'Платежи' },
-    crypto: { icon: Wallet, label: 'Крипто' },
     crm: { icon: Users, label: 'CRM', count: users.length },
     marketing: { icon: Megaphone, label: 'Маркетинг' },
     settings: { icon: Settings, label: 'Настройки' }
