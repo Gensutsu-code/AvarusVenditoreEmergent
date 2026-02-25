@@ -3164,6 +3164,8 @@ export default function AdminPage() {
               statsPeriod={statsPeriod}
               setStatsPeriod={setStatsPeriod}
               formatPrice={formatPrice}
+              handleEditUser={handleEditUser}
+              handleDeleteUser={handleDeleteUser}
               isDark={isDark}
             />
           </TabsContent>
