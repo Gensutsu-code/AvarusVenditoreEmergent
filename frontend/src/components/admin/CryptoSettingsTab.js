@@ -247,7 +247,7 @@ export default function CryptoSettingsTab() {
       <div className="bg-white rounded-xl border border-zinc-200 shadow-sm overflow-hidden">
         <div className="px-6 py-4 border-b border-zinc-200 flex items-center justify-between">
           <h3 className="font-semibold flex items-center gap-2">
-            <Wallet className="w-5 h-5 text-amber-500" />
+            <Wallet className="w-5 h-5 text-teal-500" />
             Последние криптоплатежи
           </h3>
           <Button variant="outline" size="sm" onClick={fetchPayments} disabled={loading}>
