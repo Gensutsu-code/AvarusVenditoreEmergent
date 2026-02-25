@@ -1266,7 +1266,7 @@ export default function AdminPage() {
                     </div>
                     <div>
                       <h2 className="text-lg font-bold text-slate-800">Категории</h2>
-                      <p className="text-sm text-slate-500">{categories.length} категорий</p>
+                      <p className="text-sm text-slate-500">{categories.length} категорий • Нажмите для фильтрации товаров</p>
                     </div>
                   </div>
                   <Button onClick={openNewCategory} className="bg-gradient-to-r from-teal-500 to-emerald-500 hover:from-teal-600 hover:to-emerald-600 text-white shadow-lg shadow-teal-500/20" data-testid="add-category-btn">
@@ -1276,29 +1276,77 @@ export default function AdminPage() {
                 </div>
 
                 <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6 gap-4">
+                  {/* "All" category option */}
+                  <div 
+                    onClick={() => setSelectedCategoryId(null)}
+                    className={`group relative cursor-pointer rounded-xl p-4 border transition-all duration-300 ${
+                      selectedCategoryId === null 
+                        ? 'bg-gradient-to-br from-teal-500 to-emerald-500 border-teal-500 shadow-xl shadow-teal-500/30 scale-105' 
+                        : 'bg-white/80 backdrop-blur-sm border-white/50 shadow-sm hover:shadow-xl hover:shadow-teal-500/10 hover:-translate-y-1'
+                    }`}
+                  >
+                    <div className={`aspect-square mb-3 overflow-hidden rounded-lg flex items-center justify-center ${
+                      selectedCategoryId === null ? 'bg-white/20' : 'bg-gradient-to-br from-slate-100 to-slate-50'
+                    }`}>
+                      <Package className={`w-10 h-10 ${selectedCategoryId === null ? 'text-white' : 'text-slate-300'}`} />
+                    </div>
+                    <div className="text-center">
+                      <h3 className={`font-semibold text-sm ${selectedCategoryId === null ? 'text-white' : 'text-slate-800'}`}>Все товары</h3>
+                      <p className={`text-xs font-medium mt-0.5 ${selectedCategoryId === null ? 'text-teal-100' : 'text-teal-600'}`}>
+                        {products.length} товаров
+                      </p>
+                    </div>
+                  </div>
+
                   {categories.map((category) => (
-                    <div key={category.id} className="group relative bg-white/80 backdrop-blur-sm rounded-xl p-4 border border-white/50 shadow-sm hover:shadow-xl hover:shadow-teal-500/10 hover:-translate-y-1 transition-all duration-300">
-                      <div className="aspect-square bg-gradient-to-br from-slate-100 to-slate-50 mb-3 overflow-hidden rounded-lg">
+                    <div 
+                      key={category.id} 
+                      onClick={() => setSelectedCategoryId(selectedCategoryId === category.id ? null : category.id)}
+                      className={`group relative cursor-pointer rounded-xl p-4 border transition-all duration-300 ${
+                        selectedCategoryId === category.id 
+                          ? 'bg-gradient-to-br from-teal-500 to-emerald-500 border-teal-500 shadow-xl shadow-teal-500/30 scale-105' 
+                          : 'bg-white/80 backdrop-blur-sm border-white/50 shadow-sm hover:shadow-xl hover:shadow-teal-500/10 hover:-translate-y-1'
+                      }`}
+                    >
+                      <div className={`aspect-square mb-3 overflow-hidden rounded-lg ${
+                        selectedCategoryId === category.id ? 'ring-2 ring-white/50' : ''
+                      }`}>
                         {category.image_url ? (
                           <img src={category.image_url} alt={category.name} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" />
                         ) : (
-                          <div className="w-full h-full flex items-center justify-center">
-                            <FolderOpen className="w-10 h-10 text-slate-300" />
+                          <div className={`w-full h-full flex items-center justify-center ${
+                            selectedCategoryId === category.id ? 'bg-white/20' : 'bg-gradient-to-br from-slate-100 to-slate-50'
+                          }`}>
+                            <FolderOpen className={`w-10 h-10 ${selectedCategoryId === category.id ? 'text-white' : 'text-slate-300'}`} />
                           </div>
                         )}
                       </div>
                       <div className="flex items-start justify-between gap-2">
                         <div className="min-w-0 flex-1">
-                          <h3 className="font-semibold text-sm text-slate-800 truncate">{category.name}</h3>
-                          <p className="text-xs text-teal-600 font-medium mt-0.5">
+                          <h3 className={`font-semibold text-sm truncate ${selectedCategoryId === category.id ? 'text-white' : 'text-slate-800'}`}>{category.name}</h3>
+                          <p className={`text-xs font-medium mt-0.5 ${selectedCategoryId === category.id ? 'text-teal-100' : 'text-teal-600'}`}>
                             {products.filter(p => p.category_id === category.id).length} товаров
                           </p>
                         </div>
-                        <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                          <button className="p-1.5 rounded-lg bg-slate-100 hover:bg-teal-100 text-slate-500 hover:text-teal-600 transition-colors" onClick={() => openEditCategory(category)}>
+                        <div className={`flex gap-1 transition-opacity ${selectedCategoryId === category.id ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'}`}>
+                          <button 
+                            className={`p-1.5 rounded-lg transition-colors ${
+                              selectedCategoryId === category.id 
+                                ? 'bg-white/20 hover:bg-white/30 text-white' 
+                                : 'bg-slate-100 hover:bg-teal-100 text-slate-500 hover:text-teal-600'
+                            }`} 
+                            onClick={(e) => { e.stopPropagation(); openEditCategory(category); }}
+                          >
                             <Pencil className="w-3.5 h-3.5" />
                           </button>
-                          <button className="p-1.5 rounded-lg bg-slate-100 hover:bg-red-100 text-slate-500 hover:text-red-500 transition-colors" onClick={() => handleDeleteCategory(category.id)}>
+                          <button 
+                            className={`p-1.5 rounded-lg transition-colors ${
+                              selectedCategoryId === category.id 
+                                ? 'bg-white/20 hover:bg-red-400/50 text-white' 
+                                : 'bg-slate-100 hover:bg-red-100 text-slate-500 hover:text-red-500'
+                            }`} 
+                            onClick={(e) => { e.stopPropagation(); handleDeleteCategory(category.id); }}
+                          >
                             <Trash2 className="w-3.5 h-3.5" />
                           </button>
                         </div>
@@ -1314,7 +1362,7 @@ export default function AdminPage() {
                 </div>
               </div>
 
-              {/* Products Section */}
+              {/* Products Section - Cards View */}
               <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
                 <div className="bg-gradient-to-r from-slate-50 to-white px-6 py-4 border-b border-slate-100 flex items-center justify-between">
                   <div className="flex items-center gap-3">
@@ -1322,99 +1370,139 @@ export default function AdminPage() {
                       <Package className="w-5 h-5 text-white" />
                     </div>
                     <div>
-                      <h3 className="font-semibold text-slate-800">Товары</h3>
-                      <p className="text-sm text-slate-500">{products.length} позиций</p>
+                      <h3 className="font-semibold text-slate-800">
+                        Товары
+                        {selectedCategoryId && (
+                          <span className="ml-2 text-teal-600">
+                            — {categories.find(c => c.id === selectedCategoryId)?.name}
+                          </span>
+                        )}
+                      </h3>
+                      <p className="text-sm text-slate-500">
+                        {selectedCategoryId 
+                          ? `${products.filter(p => p.category_id === selectedCategoryId).length} из ${products.length} товаров`
+                          : `${products.length} позиций`
+                        }
+                      </p>
                     </div>
                   </div>
-                  <Button onClick={openNewProduct} className="bg-gradient-to-r from-teal-500 to-emerald-500 hover:from-teal-600 hover:to-emerald-600 text-white shadow-lg shadow-teal-500/20" data-testid="add-product-btn">
-                    <Plus className="w-4 h-4 mr-2" />
-                    Добавить товар
-                  </Button>
+                  <div className="flex items-center gap-2">
+                    {selectedCategoryId && (
+                      <Button 
+                        variant="outline" 
+                        size="sm"
+                        onClick={() => setSelectedCategoryId(null)}
+                        className="text-slate-500"
+                      >
+                        <X className="w-4 h-4 mr-1" />
+                        Сбросить фильтр
+                      </Button>
+                    )}
+                    <Button onClick={openNewProduct} className="bg-gradient-to-r from-teal-500 to-emerald-500 hover:from-teal-600 hover:to-emerald-600 text-white shadow-lg shadow-teal-500/20" data-testid="add-product-btn">
+                      <Plus className="w-4 h-4 mr-2" />
+                      Добавить товар
+                    </Button>
+                  </div>
                 </div>
 
-                <div className="overflow-x-auto">
-                  <table className="w-full">
-                    <thead>
-                      <tr className="bg-slate-50/80">
-                        <th className="text-left py-4 px-4 text-xs font-semibold text-slate-500 uppercase tracking-wider">Фото</th>
-                        <th className="text-left py-4 px-4 text-xs font-semibold text-slate-500 uppercase tracking-wider">Название</th>
-                        <th className="text-left py-4 px-4 text-xs font-semibold text-slate-500 uppercase tracking-wider">Производитель</th>
-                        <th className="text-left py-4 px-4 text-xs font-semibold text-slate-500 uppercase tracking-wider">Артикул</th>
-                        <th className="text-left py-4 px-4 text-xs font-semibold text-slate-500 uppercase tracking-wider">Категория</th>
-                        <th className="text-right py-4 px-4 text-xs font-semibold text-slate-500 uppercase tracking-wider">Цена</th>
-                        <th className="text-center py-4 px-4 text-xs font-semibold text-slate-500 uppercase tracking-wider">Наличие</th>
-                        <th className="text-right py-4 px-4 text-xs font-semibold text-slate-500 uppercase tracking-wider">Действия</th>
-                      </tr>
-                    </thead>
-                    <tbody className="divide-y divide-slate-100">
-                      {products.map((product, index) => (
-                        <tr key={product.id} className="group hover:bg-gradient-to-r hover:from-teal-50/30 hover:to-transparent transition-colors">
-                          <td className="py-3 px-4">
-                            <div className="w-14 h-14 rounded-lg bg-gradient-to-br from-slate-100 to-slate-50 overflow-hidden border border-slate-200/50 shadow-sm">
-                              {product.image_url ? (
-                                <img src={product.image_url} alt="" className="w-full h-full object-cover" />
-                              ) : (
-                                <div className="w-full h-full flex items-center justify-center">
-                                  <Package className="w-6 h-6 text-slate-300" />
-                                </div>
-                              )}
-                            </div>
-                          </td>
-                          <td className="py-3 px-4">
-                            <p className="font-semibold text-slate-800">{product.name}</p>
-                          </td>
-                          <td className="py-3 px-4">
-                            <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold bg-gradient-to-r from-teal-100 to-emerald-100 text-teal-700">
-                              {product.manufacturer || '—'}
-                            </span>
-                          </td>
-                          <td className="py-3 px-4">
-                            <code className="px-2 py-1 rounded bg-slate-100 text-sm font-mono text-slate-600">{product.article}</code>
-                          </td>
-                          <td className="py-3 px-4">
-                            <span className="text-sm text-slate-500">{getCategoryName(product.category_id)}</span>
-                          </td>
-                          <td className="py-3 px-4 text-right">
-                            <span className="font-bold text-slate-800">{formatPrice(product.price)}</span>
-                            <span className="text-slate-400 ml-1">₽</span>
-                          </td>
-                          <td className="py-3 px-4 text-center">
-                            <span className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold ${
+                {/* Products Grid */}
+                <div className="p-6">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+                    {products
+                      .filter(p => selectedCategoryId ? p.category_id === selectedCategoryId : true)
+                      .map((product) => (
+                        <motion.div 
+                          key={product.id}
+                          layout
+                          initial={{ opacity: 0, scale: 0.9 }}
+                          animate={{ opacity: 1, scale: 1 }}
+                          exit={{ opacity: 0, scale: 0.9 }}
+                          className="group bg-white rounded-xl border border-slate-200 shadow-sm hover:shadow-xl hover:shadow-teal-500/10 hover:-translate-y-1 transition-all duration-300 overflow-hidden"
+                        >
+                          {/* Product Image */}
+                          <div className="aspect-square bg-gradient-to-br from-slate-100 to-slate-50 relative overflow-hidden">
+                            {product.image_url ? (
+                              <img src={product.image_url} alt={product.name} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" />
+                            ) : (
+                              <div className="w-full h-full flex items-center justify-center">
+                                <Package className="w-16 h-16 text-slate-200" />
+                              </div>
+                            )}
+                            {/* Stock Badge */}
+                            <div className={`absolute top-3 right-3 px-2.5 py-1 rounded-full text-xs font-semibold ${
                               product.stock > 10 
-                                ? 'bg-emerald-100 text-emerald-700' 
+                                ? 'bg-emerald-500 text-white' 
                                 : product.stock > 0 
-                                  ? 'bg-teal-100 text-teal-700'
-                                  : 'bg-red-100 text-red-700'
+                                  ? 'bg-yellow-500 text-white'
+                                  : 'bg-red-500 text-white'
                             }`}>
-                              {product.stock > 0 ? `${product.stock} шт.` : 'Нет'}
-                            </span>
-                          </td>
-                          <td className="py-3 px-4 text-right">
-                            <div className="flex justify-end gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                              {product.stock > 0 ? `${product.stock} шт.` : 'Нет в наличии'}
+                            </div>
+                            {/* Action buttons on hover */}
+                            <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2">
                               <button 
-                                className="p-2 rounded-lg bg-slate-100 hover:bg-teal-100 text-slate-500 hover:text-teal-600 transition-colors" 
-                                onClick={() => openEditProduct(product)} 
+                                className="p-3 rounded-full bg-white/90 hover:bg-white text-teal-600 transition-colors shadow-lg" 
+                                onClick={() => openEditProduct(product)}
                                 data-testid={`edit-${product.id}`}
                               >
-                                <Pencil className="w-4 h-4" />
+                                <Pencil className="w-5 h-5" />
                               </button>
                               <button 
-                                className="p-2 rounded-lg bg-slate-100 hover:bg-red-100 text-slate-500 hover:text-red-500 transition-colors" 
-                                onClick={() => handleDeleteProduct(product.id)} 
+                                className="p-3 rounded-full bg-white/90 hover:bg-white text-red-500 transition-colors shadow-lg" 
+                                onClick={() => handleDeleteProduct(product.id)}
                                 data-testid={`delete-${product.id}`}
                               >
-                                <Trash2 className="w-4 h-4" />
+                                <Trash2 className="w-5 h-5" />
                               </button>
                             </div>
-                          </td>
-                        </tr>
+                          </div>
+
+                          {/* Product Info */}
+                          <div className="p-4">
+                            {/* Category Badge */}
+                            <span 
+                              className="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-semibold bg-teal-100 text-teal-700 mb-2 cursor-pointer hover:bg-teal-200 transition-colors"
+                              onClick={() => setSelectedCategoryId(product.category_id)}
+                            >
+                              {getCategoryName(product.category_id)}
+                            </span>
+
+                            <h4 className="font-semibold text-slate-800 line-clamp-2 mb-1">{product.name}</h4>
+                            
+                            {/* Manufacturer & Article */}
+                            <div className="flex items-center gap-2 mb-3">
+                              {product.manufacturer && (
+                                <span className="text-xs font-medium text-slate-500">{product.manufacturer}</span>
+                              )}
+                              <code className="px-1.5 py-0.5 rounded bg-slate-100 text-[10px] font-mono text-slate-500">{product.article}</code>
+                            </div>
+
+                            {/* Price */}
+                            <div className="flex items-center justify-between">
+                              <div>
+                                <span className="text-xl font-bold text-slate-800">{formatPrice(product.price)}</span>
+                                <span className="text-slate-400 ml-1">₽</span>
+                              </div>
+                            </div>
+                          </div>
+                        </motion.div>
                       ))}
-                    </tbody>
-                  </table>
-                  {products.length === 0 && (
+                  </div>
+
+                  {products.filter(p => selectedCategoryId ? p.category_id === selectedCategoryId : true).length === 0 && (
                     <div className="text-center py-12 text-slate-400">
                       <Package className="w-12 h-12 mx-auto mb-2 opacity-50" />
-                      <p>Товаров пока нет</p>
+                      <p>{selectedCategoryId ? 'Нет товаров в этой категории' : 'Товаров пока нет'}</p>
+                      {selectedCategoryId && (
+                        <Button 
+                          variant="outline" 
+                          size="sm" 
+                          className="mt-3"
+                          onClick={() => setSelectedCategoryId(null)}
+                        >
+                          Показать все товары
+                        </Button>
+                      )}
                     </div>
                   )}
                 </div>
