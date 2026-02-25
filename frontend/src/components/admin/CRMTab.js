@@ -187,7 +187,7 @@ export const CRMTab = ({
                   </div>
                 </div>
                 
-                {/* Expanded details */}
+                {/* Expanded details - Full user card */}
                 <AnimatePresence>
                   {expandedUser === user.id && (
                     <motion.div
@@ -197,24 +197,147 @@ export const CRMTab = ({
                       transition={{ duration: 0.2 }}
                       className={`overflow-hidden ${isDark ? 'bg-zinc-800/30' : 'bg-zinc-50'}`}
                     >
-                      <div className="p-4 grid grid-cols-2 md:grid-cols-4 gap-4">
-                        <div>
-                          <p className={`text-xs font-medium ${isDark ? 'text-zinc-500' : 'text-zinc-500'}`}>Телефон</p>
-                          <p className={`font-medium ${isDark ? 'text-zinc-200' : ''}`}>{user.phone || '—'}</p>
+                      <div className="p-6 grid grid-cols-1 md:grid-cols-3 gap-6">
+                        {/* Column 1 - Personal Data */}
+                        <div className={`p-4 rounded-xl ${isDark ? 'bg-zinc-800/50' : 'bg-white'} border ${isDark ? 'border-zinc-700' : 'border-zinc-200'}`}>
+                          <h4 className={`text-sm font-bold uppercase mb-4 flex items-center gap-2 ${isDark ? 'text-zinc-400' : 'text-zinc-500'}`}>
+                            <User className="w-4 h-4" />
+                            Личные данные
+                          </h4>
+                          <div className="space-y-3">
+                            <div className="flex justify-between">
+                              <span className={`text-sm ${isDark ? 'text-zinc-500' : 'text-zinc-500'}`}>ФИО:</span>
+                              <span className={`text-sm font-medium text-right ${isDark ? 'text-zinc-200' : ''}`}>{user.name || '—'}</span>
+                            </div>
+                            <div className="flex justify-between">
+                              <span className={`text-sm ${isDark ? 'text-zinc-500' : 'text-zinc-500'}`}>Email:</span>
+                              <span className={`text-sm font-medium text-orange-500`}>{user.email}</span>
+                            </div>
+                            <div className="flex justify-between">
+                              <span className={`text-sm ${isDark ? 'text-zinc-500' : 'text-zinc-500'}`}>Пароль:</span>
+                              <span className={`text-sm font-medium ${isDark ? 'text-zinc-200' : ''}`}>••••••••</span>
+                            </div>
+                            <div className="flex justify-between">
+                              <span className={`text-sm ${isDark ? 'text-zinc-500' : 'text-zinc-500'}`}>Телефон:</span>
+                              <span className={`text-sm font-medium ${isDark ? 'text-zinc-200' : ''}`}>{user.phone || '—'}</span>
+                            </div>
+                            <div className="flex justify-between">
+                              <span className={`text-sm ${isDark ? 'text-zinc-500' : 'text-zinc-500'}`}>Адрес:</span>
+                              <span className={`text-sm font-medium text-right max-w-[150px] truncate ${isDark ? 'text-zinc-200' : ''}`}>{user.address || '—'}</span>
+                            </div>
+                            <div className="flex justify-between">
+                              <span className={`text-sm ${isDark ? 'text-zinc-500' : 'text-zinc-500'}`}>Роль:</span>
+                              <span className={`text-sm font-bold ${isDark ? 'text-zinc-200' : ''}`}>{getStatusLabel(user.customer_status)}</span>
+                            </div>
+                            <div className="flex justify-between">
+                              <span className={`text-sm ${isDark ? 'text-zinc-500' : 'text-zinc-500'}`}>Дата регистрации:</span>
+                              <span className={`text-sm font-medium ${isDark ? 'text-zinc-200' : ''}`}>
+                                {user.created_at ? new Date(user.created_at).toLocaleString('ru-RU', { day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' }) : '—'}
+                              </span>
+                            </div>
+                          </div>
                         </div>
-                        <div>
-                          <p className={`text-xs font-medium ${isDark ? 'text-zinc-500' : 'text-zinc-500'}`}>Баланс</p>
-                          <p className={`font-medium ${isDark ? 'text-zinc-200' : ''}`}>{formatPrice(user.balance || 0)} ₽</p>
+
+                        {/* Column 2 - Order Statistics */}
+                        <div className={`p-4 rounded-xl ${isDark ? 'bg-zinc-800/50' : 'bg-white'} border ${isDark ? 'border-zinc-700' : 'border-zinc-200'}`}>
+                          <h4 className={`text-sm font-bold uppercase mb-4 flex items-center gap-2 ${isDark ? 'text-zinc-400' : 'text-zinc-500'}`}>
+                            <ShoppingBag className="w-4 h-4" />
+                            Статистика заказов
+                          </h4>
+                          <div className="grid grid-cols-2 gap-3 mb-4">
+                            <div className={`p-3 rounded-lg text-center ${isDark ? 'bg-orange-500/10' : 'bg-orange-50'}`}>
+                              <p className="text-2xl font-bold text-orange-500">{user.orders_count || 0}</p>
+                              <p className={`text-xs ${isDark ? 'text-zinc-500' : 'text-zinc-500'}`}>Заказов</p>
+                            </div>
+                            <div className={`p-3 rounded-lg text-center ${isDark ? 'bg-green-500/10' : 'bg-green-50'}`}>
+                              <p className="text-xl font-bold text-green-500">{formatPrice(user.total_spent || 0)} ₽</p>
+                              <p className={`text-xs ${isDark ? 'text-zinc-500' : 'text-zinc-500'}`}>Потрачено</p>
+                            </div>
+                            <div className={`p-3 rounded-lg text-center ${isDark ? 'bg-blue-500/10' : 'bg-blue-50'}`}>
+                              <p className="text-xl font-bold text-blue-500">{formatPrice(user.orders_count > 0 ? Math.round((user.total_spent || 0) / user.orders_count) : 0)} ₽</p>
+                              <p className={`text-xs ${isDark ? 'text-zinc-500' : 'text-zinc-500'}`}>Средний чек</p>
+                            </div>
+                            <div className={`p-3 rounded-lg text-center ${isDark ? 'bg-purple-500/10' : 'bg-purple-50'}`}>
+                              <p className="text-2xl font-bold text-purple-500">{user.total_items || 0}</p>
+                              <p className={`text-xs ${isDark ? 'text-zinc-500' : 'text-zinc-500'}`}>Товаров</p>
+                            </div>
+                          </div>
+                          <div className="space-y-2 text-sm">
+                            <div className="flex justify-between">
+                              <span className={isDark ? 'text-zinc-500' : 'text-zinc-500'}>Баланс:</span>
+                              <span className={`font-medium ${isDark ? 'text-zinc-200' : ''}`}>{formatPrice(user.balance || 0)} ₽</span>
+                            </div>
+                            <div className="flex justify-between">
+                              <span className={isDark ? 'text-zinc-500' : 'text-zinc-500'}>Бонусы:</span>
+                              <span className={`font-medium ${isDark ? 'text-zinc-200' : ''}`}>{user.bonus_balance || 0}</span>
+                            </div>
+                            <div className="flex justify-between">
+                              <span className={isDark ? 'text-zinc-500' : 'text-zinc-500'}>Первый заказ:</span>
+                              <span className={`font-medium ${isDark ? 'text-zinc-200' : ''}`}>{user.first_order_date ? new Date(user.first_order_date).toLocaleString('ru-RU', { day: 'numeric', month: 'short', year: 'numeric' }) : '—'}</span>
+                            </div>
+                            <div className="flex justify-between">
+                              <span className={isDark ? 'text-zinc-500' : 'text-zinc-500'}>Последний заказ:</span>
+                              <span className={`font-medium ${isDark ? 'text-zinc-200' : ''}`}>{user.last_order_date ? new Date(user.last_order_date).toLocaleString('ru-RU', { day: 'numeric', month: 'short', year: 'numeric' }) : '—'}</span>
+                            </div>
+                          </div>
                         </div>
-                        <div>
-                          <p className={`text-xs font-medium ${isDark ? 'text-zinc-500' : 'text-zinc-500'}`}>Бонусы</p>
-                          <p className={`font-medium ${isDark ? 'text-zinc-200' : ''}`}>{user.bonus_balance || 0} бонусов</p>
-                        </div>
-                        <div>
-                          <p className={`text-xs font-medium ${isDark ? 'text-zinc-500' : 'text-zinc-500'}`}>Дата регистрации</p>
-                          <p className={`font-medium ${isDark ? 'text-zinc-200' : ''}`}>
-                            {user.created_at ? new Date(user.created_at).toLocaleDateString('ru-RU') : '—'}
-                          </p>
+
+                        {/* Column 3 - Popular Products & Recent Orders */}
+                        <div className="space-y-4">
+                          {/* Popular Products */}
+                          <div className={`p-4 rounded-xl ${isDark ? 'bg-zinc-800/50' : 'bg-white'} border ${isDark ? 'border-zinc-700' : 'border-zinc-200'}`}>
+                            <h4 className={`text-sm font-bold uppercase mb-3 flex items-center gap-2 ${isDark ? 'text-zinc-400' : 'text-zinc-500'}`}>
+                              <Package className="w-4 h-4" />
+                              Популярные товары
+                            </h4>
+                            {user.popular_products && user.popular_products.length > 0 ? (
+                              <div className="space-y-2">
+                                {user.popular_products.slice(0, 3).map((product, idx) => (
+                                  <div key={idx} className="flex justify-between items-center text-sm">
+                                    <div className="flex items-center gap-2 flex-1 min-w-0">
+                                      <span className="text-orange-500 font-mono text-xs">{product.sku || '—'}</span>
+                                      <span className={`truncate ${isDark ? 'text-zinc-300' : ''}`}>{product.name}</span>
+                                    </div>
+                                    <span className={`ml-2 ${isDark ? 'text-zinc-500' : 'text-zinc-500'}`}>{product.quantity} шт.</span>
+                                  </div>
+                                ))}
+                              </div>
+                            ) : (
+                              <p className={`text-sm ${isDark ? 'text-zinc-600' : 'text-zinc-400'}`}>Нет данных</p>
+                            )}
+                          </div>
+
+                          {/* Recent Orders */}
+                          <div className={`p-4 rounded-xl ${isDark ? 'bg-zinc-800/50' : 'bg-white'} border ${isDark ? 'border-zinc-700' : 'border-zinc-200'}`}>
+                            <h4 className={`text-sm font-bold uppercase mb-3 flex items-center gap-2 ${isDark ? 'text-zinc-400' : 'text-zinc-500'}`}>
+                              <Clock className="w-4 h-4" />
+                              Последние заказы
+                            </h4>
+                            {user.recent_orders && user.recent_orders.length > 0 ? (
+                              <div className="space-y-2">
+                                {user.recent_orders.slice(0, 3).map((order, idx) => (
+                                  <div key={idx} className="flex justify-between items-center text-sm">
+                                    <div className="flex items-center gap-2">
+                                      <span className={`font-mono ${isDark ? 'text-zinc-400' : 'text-zinc-500'}`}>#{order.id?.slice(-8) || '—'}</span>
+                                      <span className={`text-xs px-2 py-0.5 rounded ${
+                                        order.status === 'completed' ? 'bg-green-100 text-green-700' :
+                                        order.status === 'cancelled' ? 'bg-red-100 text-red-700' :
+                                        order.status === 'processing' ? 'bg-blue-100 text-blue-700' :
+                                        'bg-yellow-100 text-yellow-700'
+                                      }`}>
+                                        {order.status === 'completed' ? 'выполнен' :
+                                         order.status === 'cancelled' ? 'отменён' :
+                                         order.status === 'processing' ? 'в работе' : 'ожидает'}
+                                      </span>
+                                    </div>
+                                    <span className={isDark ? 'text-zinc-300' : ''}>{formatPrice(order.total || 0)} ₽</span>
+                                  </div>
+                                ))}
+                              </div>
+                            ) : (
+                              <p className={`text-sm ${isDark ? 'text-zinc-600' : 'text-zinc-400'}`}>Нет заказов</p>
+                            )}
+                          </div>
                         </div>
                       </div>
                     </motion.div>
