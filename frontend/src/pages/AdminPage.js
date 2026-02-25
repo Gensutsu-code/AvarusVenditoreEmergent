@@ -1684,7 +1684,7 @@ export default function AdminPage() {
                                   {userDetails.statistics.favorite_products.slice(0, 3).map((p, idx) => (
                                     <div key={idx} className="flex justify-between items-center text-sm bg-zinc-50 p-2 rounded">
                                       <div>
-                                        <span className="font-mono text-xs text-orange-600 mr-1">{p.article}</span>
+                                        <span className="font-mono text-xs text-teal-600 mr-1">{p.article}</span>
                                         <span className="text-zinc-700 truncate">{p.name?.substring(0, 20)}</span>
                                       </div>
                                       <span className="font-bold">{p.count} шт.</span>
