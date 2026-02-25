@@ -583,6 +583,10 @@ export default function AdminPage() {
     }
   };
 
+  const handleEditUser = (user) => {
+    setEditingUser({ ...user });
+  };
+
   // Order management handlers
   const openEditOrder = (order) => {
     setEditingOrder({ ...order });
