@@ -13,7 +13,7 @@ const TYPE_CONFIG = {
   prize_response: { icon: Gift, color: 'text-pink-600 bg-pink-50' },
 };
 
-export const ClientNotifications = () => {
+export const ClientNotifications = ({ onClose }) => {
   const [data, setData] = useState({ notifications: [], unread_count: 0 });
   const [open, setOpen] = useState(false);
   const ref = useRef(null);
