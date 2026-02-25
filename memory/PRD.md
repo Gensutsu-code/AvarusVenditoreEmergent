@@ -5,68 +5,77 @@ E-commerce platform for truck spare parts with full admin panel restructuring an
 
 ## What's Been Implemented
 
-### December 2025 - Current Session
+### December 2025 - Latest Session
+
+#### Dark Theme Removal (COMPLETED ✅)
+- Completely removed dark theme from the entire application
+- ThemeContext simplified to always return light theme
+- Header no longer has theme toggle button
+- All pages updated to use only light theme with teal/emerald color palette
+
+#### Popular Products Relocation (COMPLETED ✅)
+- Removed PopularProducts section from HomePage
+- Added PopularProducts to CatalogPage (displays when no search query)
+- Updated PopularProducts styling for light theme
 
 #### ProductPage Creation (COMPLETED ✅)
 - Created new `/product/:id` route with full product details
 - Glassmorphism design with glass-card styling
-- Full light/dark theme support
 - Features:
-  - Product image gallery with navigation arrows
-  - Product info: name, manufacturer, article, cross articles
-  - Price display with formatted numbers
-  - Stock status indicator
-  - Delivery days and warranty info
-  - Quantity selector (+/- buttons)
-  - Add to cart button with loading state
-  - Favorites button with text
-  - Share button (Web Share API + clipboard fallback)
-  - Back to catalog navigation
+  - Product image gallery with navigation
+  - Price display with stock status
+  - Quantity selector
+  - Add to cart button
+  - Favorites button
+  - Share button
   - Related products section
 
-#### Admin Panel Tabs Theming (COMPLETED ✅)
-- All admin tabs now support isDark prop
-- Updated PaymentsTab, CRMTab, MarketingTab, SettingsTab
-- Sub-tabs styled for both themes
-- Cards use glassmorphism (backdrop-blur, semi-transparent backgrounds)
-- Input fields, buttons, labels adapt to theme
-
-#### Previous Work (COMPLETED)
-- Admin Panel Restructuring - 4 merged tabs + 2 separate pages
-- Dark/Light Theme System - React Context + CSS variables
-- Promo Banner Redesign - moved to header, animated expand/collapse
-- Teal/emerald accent colors for light theme
+#### All Pages Light Theme Update (COMPLETED ✅)
+Pages updated with new light design and animations:
+- HomePage - hero section, features, about
+- CatalogPage - search, categories, product list, popular products
+- ProductPage - product details with glassmorphism
+- CartPage - glassmorphism cards, animations
+- CheckoutPage - form styling
+- OrdersPage - statistics, order list
+- FavoritesPage - product cards
+- NewsPage - article list and detail view
+- LoginPage / RegisterPage - glassmorphism forms
+- AccountPage - user profile
+- BonusPage - bonus programs
+- AdminPage - dashboard with colored stats cards
 
 ## Tech Stack
 - **Frontend**: React, TailwindCSS, Shadcn/UI, Framer Motion
 - **Backend**: FastAPI, Python
 - **Database**: MongoDB
 
-## Key Files
-- `/app/frontend/src/pages/ProductPage.js` - NEW product detail page
-- `/app/frontend/src/pages/AdminPage.js` - Restructured admin
-- `/app/frontend/src/pages/AdminChatsPage.js` - Chats page
-- `/app/frontend/src/components/ProductCard.js` - Links to ProductPage
-- `/app/frontend/src/components/FavoritesButton.js` - Updated with showText prop
-- `/app/frontend/src/components/admin/PaymentsTab.js` - Themed payments
-- `/app/frontend/src/components/admin/CRMTab.js` - Themed CRM
-- `/app/frontend/src/components/admin/MarketingTab.js` - Themed marketing
-- `/app/frontend/src/components/admin/SettingsTab.js` - Themed settings
-- `/app/frontend/src/components/admin/NotificationsTab.js` - Themed notifications
-- `/app/frontend/src/context/ThemeContext.js` - Theme provider
+## Key Files Updated
+- `/app/frontend/src/context/ThemeContext.js` - Simplified (light only)
+- `/app/frontend/src/components/Header.js` - No theme toggle
+- `/app/frontend/src/components/PopularProducts.js` - Light theme styling
+- `/app/frontend/src/pages/CatalogPage.js` - Added PopularProducts
+- `/app/frontend/src/pages/HomePage.js` - Removed PopularProducts
+- All page files updated for light theme
+
+## Color Palette (Light Theme)
+- **Primary**: teal-500, emerald-500 (buttons, accents)
+- **Text**: slate-800 (headings), slate-600 (body), slate-400 (muted)
+- **Background**: gradient cyan/pink, white/70 glassmorphism
+- **Success**: emerald-500
+- **Warning**: amber-500
+- **Error**: red-500
 
 ## Prioritized Backlog
 
 ### P0 (High Priority) - DONE ✅
-- [x] Admin panel restructuring ✅
-- [x] Admin dark theme support ✅
-- [x] ProductPage creation with glassmorphism ✅
-- [x] Apply glassmorphism to admin tab contents ✅
+- [x] Remove dark theme
+- [x] Update all pages to light theme
+- [x] Move popular products from home to catalog
 
-### P1 (Medium Priority)  
-- [ ] Admin mobile responsiveness improvements
-- [ ] Cart page redesign
-- [ ] Checkout page polish
+### P1 (Medium Priority)
+- [ ] Quick View modal for products
+- [ ] Admin panel internal components styling polish
 
 ### P2 (Future)
 - [ ] Real payment integration (Stripe/YooKassa)
@@ -79,21 +88,17 @@ E-commerce platform for truck spare parts with full admin panel restructuring an
 
 ## Routes
 - `/` - Homepage
-- `/catalog` - Product catalog
-- `/product/:id` - NEW Product detail page
+- `/catalog` - Product catalog with popular products
+- `/product/:id` - Product detail page
 - `/cart` - Shopping cart
 - `/checkout` - Checkout
 - `/account` - User account
-- `/admin` - Admin panel (restructured tabs)
-- `/admin/orders` - Orders management (separate page)
-- `/admin/chats` - Chat with customers (separate page)
-
-## Theme System
-- **Dark Theme**: zinc-950 background, orange-500 accents, orange gradients
-- **Light Theme**: cyan/pink gradient background, teal/emerald accents
-- Stored in localStorage, persists across sessions
-- Glass-card CSS class provides glassmorphism styling
+- `/orders` - User orders
+- `/favorites` - User favorites
+- `/news` - News
+- `/bonus` - Bonus programs
+- `/admin` - Admin panel
 
 ## Test Reports
-- `/app/test_reports/iteration_30.json` - ProductPage backend/frontend tests
-- `/app/test_reports/iteration_31.json` - Admin tabs theme tests
+- `/app/test_reports/iteration_30.json` - ProductPage tests
+- `/app/test_reports/iteration_31.json` - Light theme tests
