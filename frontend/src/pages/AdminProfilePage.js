@@ -142,16 +142,16 @@ export default function AdminProfilePage() {
   }
 
   return (
-    <div className="min-h-screen bg-zinc-50" data-testid="admin-profile-page">
+    <div className="min-h-screen bg-gradient-to-br from-cyan-50 via-white to-pink-50" data-testid="admin-profile-page">
       <div className="max-w-2xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <h1 className="text-2xl md:text-3xl font-bold tracking-tight uppercase text-zinc-900 mb-6">
+        <h1 className="text-2xl md:text-3xl font-bold tracking-tight uppercase text-slate-800 mb-6">
           Профиль администратора
         </h1>
 
         <div className="space-y-6">
           {/* Profile Info Card */}
-          <div className="bg-white rounded-xl border border-zinc-200 shadow-sm overflow-hidden">
-            <div className="bg-gradient-to-r from-purple-500 to-purple-600 px-6 py-6">
+          <div className="glass-card overflow-hidden">
+            <div className="bg-gradient-to-r from-teal-500 to-emerald-500 px-6 py-6">
               <div className="flex items-center gap-4">
                 {/* Avatar */}
                 <div className="relative group">
