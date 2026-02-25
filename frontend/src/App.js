@@ -5,7 +5,6 @@ import { AuthProvider, useAuth } from "./context/AuthContext";
 import { CartProvider } from "./context/CartContext";
 import { ThemeProvider, useTheme } from "./context/ThemeContext";
 import { Header } from "./components/Header";
-import { PromoBanner } from "./components/PromoBanner";
 import { ChatWidget } from "./components/ChatWidget";
 
 // Pages
@@ -32,8 +31,6 @@ function AppContent() {
   return (
     <div className={`min-h-screen ${isDark ? 'bg-zinc-950' : 'bg-gradient-to-br from-cyan-50 via-pink-50 to-cyan-50'}`}>
       <Header />
-      {/* Hide promo banner for admin */}
-      {!isAdmin && <PromoBanner />}
       <main>
         <Routes>
           <Route path="/" element={<HomePage />} />
