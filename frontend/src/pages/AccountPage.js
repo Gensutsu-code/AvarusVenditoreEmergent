@@ -487,20 +487,20 @@ export default function AccountPage() {
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.5, delay: 0.3 }}
           >
-            <div className="relative bg-gradient-to-r from-zinc-800/50 to-transparent px-6 py-6">
+            <div className="relative bg-gradient-to-r from-slate-100 to-transparent px-6 py-6">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-4">
-                  <div className="w-14 h-14 rounded-xl bg-zinc-700/50 flex items-center justify-center border border-zinc-600/30">
-                    <Shield className="w-7 h-7 text-zinc-300" />
+                  <div className="w-14 h-14 rounded-xl bg-slate-200/50 flex items-center justify-center border border-slate-300/30">
+                    <Shield className="w-7 h-7 text-slate-600" />
                   </div>
                   <div>
-                    <h2 className="text-lg font-bold text-white">Безопасность</h2>
-                    <p className="text-zinc-500 text-sm">Смена пароля</p>
+                    <h2 className="text-lg font-bold text-slate-800">Безопасность</h2>
+                    <p className="text-slate-500 text-sm">Смена пароля</p>
                   </div>
                 </div>
                 <motion.button
                   onClick={() => setShowPasswords(!showPasswords)}
-                  className="p-3 rounded-xl bg-white/5 hover:bg-white/10 border border-white/10 text-zinc-400 transition-all duration-300"
+                  className="p-3 rounded-xl bg-slate-100 hover:bg-slate-200 border border-slate-200 text-slate-500 transition-all duration-300"
                   whileHover={{ scale: 1.05 }}
                   whileTap={{ scale: 0.95 }}
                 >
@@ -511,29 +511,29 @@ export default function AccountPage() {
             
             <div className="p-6 space-y-5">
               <div>
-                <Label className="text-xs font-bold uppercase text-zinc-500 mb-2 block">Текущий пароль</Label>
+                <Label className="text-xs font-bold uppercase text-slate-500 mb-2 block">Текущий пароль</Label>
                 <Input
                   type={showPasswords ? 'text' : 'password'}
                   value={formData.current_password}
                   onChange={(e) => setFormData({ ...formData, current_password: e.target.value })}
                   placeholder="••••••••"
-                  className="glass-input h-12 text-white placeholder:text-zinc-600"
+                  className="h-12 border-slate-200"
                 />
               </div>
               
               <div>
-                <Label className="text-xs font-bold uppercase text-zinc-500 mb-2 block">Новый пароль</Label>
+                <Label className="text-xs font-bold uppercase text-slate-500 mb-2 block">Новый пароль</Label>
                 <Input
                   type={showPasswords ? 'text' : 'password'}
                   value={formData.new_password}
                   onChange={(e) => setFormData({ ...formData, new_password: e.target.value })}
                   placeholder="Минимум 6 символов"
-                  className="glass-input h-12 text-white placeholder:text-zinc-600"
+                  className="h-12 border-slate-200"
                 />
               </div>
               
               <div>
-                <Label className="text-xs font-bold uppercase text-zinc-500 mb-2 block">Подтвердите новый пароль</Label>
+                <Label className="text-xs font-bold uppercase text-slate-500 mb-2 block">Подтвердите новый пароль</Label>
                 <Input
                   type={showPasswords ? 'text' : 'password'}
                   value={formData.confirm_password}
