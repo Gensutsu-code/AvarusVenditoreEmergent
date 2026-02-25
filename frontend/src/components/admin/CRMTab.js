@@ -1,16 +1,16 @@
-import { useState } from 'react';
-import { Users, BarChart3, TrendingUp, Calendar, UserCheck, Pencil, Trash2, ChevronDown, User, ShoppingBag, Package, Clock } from 'lucide-react';
+import { useState, useEffect } from 'react';
+import { Users, BarChart3, TrendingUp, Calendar, UserCheck, Pencil, Trash2, ChevronDown, User, ShoppingBag, Package, Clock, DollarSign, Target, RefreshCw } from 'lucide-react';
 import { Button } from '../../components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../../components/ui/select';
 import { motion, AnimatePresence } from 'framer-motion';
+import axios from 'axios';
+
+const API = `${process.env.REACT_APP_BACKEND_URL}/api`;
 
 // Sub-tab component for CRM section (Analytics + Clients)
 export const CRMTab = ({
   users,
   stats,
-  extendedStats,
-  statsPeriod,
-  setStatsPeriod,
   formatPrice,
   handleEditUser,
   handleDeleteUser,
@@ -18,6 +18,28 @@ export const CRMTab = ({
 }) => {
   const [activeSubTab, setActiveSubTab] = useState('clients');
   const [expandedUser, setExpandedUser] = useState(null);
+  const [statsPeriod, setStatsPeriod] = useState('month');
+  const [analyticsData, setAnalyticsData] = useState(null);
+  const [loadingAnalytics, setLoadingAnalytics] = useState(false);
+
+  // Fetch analytics data
+  useEffect(() => {
+    if (activeSubTab === 'analytics') {
+      fetchAnalytics();
+    }
+  }, [activeSubTab, statsPeriod]);
+
+  const fetchAnalytics = async () => {
+    setLoadingAnalytics(true);
+    try {
+      const res = await axios.get(`${API}/admin/analytics/detailed?period=${statsPeriod}`);
+      setAnalyticsData(res.data);
+    } catch (err) {
+      console.error('Failed to fetch analytics', err);
+    } finally {
+      setLoadingAnalytics(false);
+    }
+  };
 
   const subTabs = [
     { id: 'clients', label: 'Клиенты', icon: Users },
