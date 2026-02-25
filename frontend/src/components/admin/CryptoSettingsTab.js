@@ -216,7 +216,7 @@ export default function CryptoSettingsTab() {
           <Button
             onClick={handleSave}
             disabled={saving}
-            className="w-full bg-amber-500 hover:bg-amber-600"
+            className="w-full bg-teal-500 hover:bg-teal-600"
             data-testid="save-crypto-settings-btn"
           >
             {saving ? (
