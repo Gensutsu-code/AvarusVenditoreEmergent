@@ -3186,6 +3186,7 @@ export default function AdminPage() {
               telegramConfig={telegramSettings}
               setTelegramConfig={setTelegramSettings}
               handleSaveTelegramConfig={handleSaveTelegram}
+              handleTestTelegram={handleTestTelegram}
               uploading={uploading}
               importResult={importResult}
               setImportResult={setImportResult}
@@ -3196,6 +3197,8 @@ export default function AdminPage() {
               setPartners={setPartners}
               editingPartner={editingPartner}
               setEditingPartner={setEditingPartner}
+              isNewPartner={isNewPartner}
+              setIsNewPartner={setIsNewPartner}
               handleAddDefaultPartners={handleAddDefaultPartners}
               handleDeletePartner={handleDeletePartner}
               handlePartnerImageUpload={handlePartnerImageUpload}
