@@ -2184,7 +2184,7 @@ export default function AdminPage() {
                         </div>
                         <div className="flex items-center gap-2">
                           <button
-                            className="p-2 rounded-lg bg-slate-100 hover:bg-purple-100 text-slate-500 hover:text-purple-600 transition-colors"
+                            className="p-2 rounded-lg bg-slate-100 hover:bg-teal-100 text-slate-500 hover:text-teal-600 transition-colors"
                             onClick={(e) => {
                               e.stopPropagation();
                               setEditingProgram({...program});
