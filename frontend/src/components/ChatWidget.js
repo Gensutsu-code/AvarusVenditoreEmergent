@@ -319,12 +319,12 @@ export const ChatWidget = () => {
       {/* Chat button */}
       <button
         onClick={() => setIsOpen(true)}
-        className="fixed bottom-6 left-6 bg-gradient-to-r from-teal-500 to-emerald-500 hover:from-teal-600 hover:to-emerald-600 text-white p-5 rounded-full shadow-lg z-40 transition-all hover:scale-105 hover:shadow-xl shadow-teal-500/30"
+        className="fixed bottom-6 left-6 bg-gradient-to-r from-teal-500 to-emerald-500 hover:from-teal-600 hover:to-emerald-600 text-white p-4 rounded-2xl shadow-lg z-40 transition-all hover:scale-105 hover:shadow-xl shadow-teal-500/30"
         data-testid="chat-widget-button"
       >
-        <MessageCircle className="w-7 h-7" />
+        <MessageCircle className="w-6 h-6" />
         {unreadCount > 0 && (
-          <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs w-6 h-6 flex items-center justify-center rounded-full font-bold animate-pulse">
+          <span className="absolute -top-1 -right-1 bg-rose-500 text-white text-xs w-5 h-5 flex items-center justify-center rounded-full font-bold animate-pulse">
             {unreadCount}
           </span>
         )}
@@ -463,7 +463,7 @@ export const ChatWidget = () => {
                         
                         {/* Time and edited badge */}
                         <div className={`flex items-center gap-1 text-[10px] mt-1 ${
-                          msg.sender_type === 'user' ? 'text-orange-200' : 'text-zinc-400'
+                          msg.sender_type === 'user' ? 'text-teal-100' : 'text-slate-400'
                         }`}>
                           {formatTime(msg.created_at)}
                           {msg.edited && <span>(ред.)</span>}
@@ -509,7 +509,7 @@ export const ChatWidget = () => {
                 type="button"
                 onClick={() => fileInputRef.current?.click()}
                 disabled={uploading}
-                className="p-2 hover:bg-zinc-100 rounded-full text-zinc-500 hover:text-orange-500 transition-colors"
+                className="p-2 hover:bg-teal-50 rounded-full text-slate-400 hover:text-teal-500 transition-colors"
                 title="Прикрепить файл"
               >
                 <Paperclip className="w-5 h-5" />
@@ -520,7 +520,7 @@ export const ChatWidget = () => {
                 type="button"
                 onClick={() => setShowEmoji(!showEmoji)}
                 className={`p-2 rounded-full transition-colors ${
-                  showEmoji ? 'bg-orange-100 text-orange-500' : 'hover:bg-zinc-100 text-zinc-500 hover:text-orange-500'
+                  showEmoji ? 'bg-teal-100 text-teal-500' : 'hover:bg-teal-50 text-slate-400 hover:text-teal-500'
                 }`}
                 title="Эмодзи"
               >
@@ -531,7 +531,7 @@ export const ChatWidget = () => {
                 value={newMessage}
                 onChange={(e) => setNewMessage(e.target.value)}
                 placeholder="Введите сообщение..."
-                className="flex-1 border-zinc-200 focus:border-orange-300 focus:ring-orange-200"
+                className="flex-1 border-slate-200 focus:border-teal-400 focus:ring-teal-200"
                 disabled={loading || uploading}
                 data-testid="chat-input"
               />
@@ -539,7 +539,7 @@ export const ChatWidget = () => {
               <Button
                 type="submit"
                 disabled={loading || uploading || !newMessage.trim()}
-                className="bg-gradient-to-r from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700 rounded-full p-2 h-auto"
+                className="bg-gradient-to-r from-teal-500 to-emerald-500 hover:from-teal-600 hover:to-emerald-600 rounded-xl p-2 h-auto shadow-sm"
                 data-testid="chat-send-btn"
               >
                 <Send className="w-5 h-5" />
