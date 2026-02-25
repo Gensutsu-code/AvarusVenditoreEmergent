@@ -3152,8 +3152,8 @@ export default function AdminPage() {
               handleSavePromoBanner={handleSavePromoBanner}
               bonusPrograms={bonusPrograms}
               setBonusPrograms={setBonusPrograms}
-              news={news}
-              setNews={setNews}
+              news={newsList}
+              setNews={setNewsList}
               notificationSettings={notificationSettings}
               setNotificationSettings={setNotificationSettings}
               handleSaveNotificationSettings={handleSaveNotificationSettings}
