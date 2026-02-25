@@ -149,26 +149,11 @@ export const Header = () => {
                       <User className="w-4 h-4" />
                     </NavLink>
                     <ClientNotifications />
-                            <Sun className="w-4 h-4" />
-                          </motion.div>
-                        ) : (
-                          <motion.div
-                            key="moon"
-                            initial={{ rotate: 90, opacity: 0 }}
-                            animate={{ rotate: 0, opacity: 1 }}
-                            exit={{ rotate: -90, opacity: 0 }}
-                            transition={{ duration: 0.2 }}
-                          >
-                            <Moon className="w-4 h-4" />
-                          </motion.div>
-                        )}
-                      </AnimatePresence>
-                    </motion.button>
                     <Button 
                       variant="ghost" 
                       size="sm" 
                       onClick={logout}
-                      className={`rounded-xl transition-all duration-300 ${isDark ? 'text-zinc-400 hover:text-red-400 hover:bg-red-500/10' : 'text-slate-500 hover:text-red-500 hover:bg-red-100'}`}
+                      className="rounded-xl transition-all duration-300 text-slate-500 hover:text-red-500 hover:bg-red-100"
                       data-testid="logout-button"
                     >
                       <LogOut className="w-4 h-4" />
@@ -178,19 +163,9 @@ export const Header = () => {
               </>
             ) : (
               <div className="flex items-center gap-2">
-                {/* Theme Toggle for Guest */}
-                <motion.button
-                  onClick={toggleTheme}
-                  className={`p-2 rounded-xl transition-all duration-300 ${isDark ? 'text-zinc-400 hover:text-yellow-400 hover:bg-yellow-500/10' : 'text-slate-500 hover:text-slate-700 hover:bg-slate-200/50'}`}
-                  whileHover={{ scale: 1.05, rotate: 15 }}
-                  whileTap={{ scale: 0.95 }}
-                  data-testid="guest-theme-toggle"
-                >
-                  {isDark ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
-                </motion.button>
                 <Link to="/login" data-testid="login-link">
                   <motion.div whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}>
-                    <Button className={`font-bold uppercase tracking-wide rounded-xl shadow-glow transition-all duration-300 ${isDark ? 'bg-gradient-to-r from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700 text-white' : 'bg-gradient-to-r from-teal-500 to-emerald-500 hover:from-green-600 hover:to-emerald-700 text-white'}`}>
+                    <Button className="font-bold uppercase tracking-wide rounded-xl shadow-lg shadow-teal-500/30 transition-all duration-300 bg-gradient-to-r from-teal-500 to-emerald-500 hover:from-teal-600 hover:to-emerald-600 text-white">
                       Войти
                     </Button>
                   </motion.div>
@@ -203,9 +178,9 @@ export const Header = () => {
           <div className="md:hidden flex items-center gap-2">
             {user && (
               <Link to="/cart" className="relative p-2">
-                <ShoppingCart className="w-5 h-5 text-zinc-400" />
+                <ShoppingCart className="w-5 h-5 text-slate-500" />
                 {cartCount > 0 && (
-                  <span className="absolute -top-1 -right-1 bg-orange-500 text-white text-xs w-4 h-4 flex items-center justify-center font-bold rounded-full">
+                  <span className="absolute -top-1 -right-1 bg-teal-500 text-white text-xs w-4 h-4 flex items-center justify-center font-bold rounded-full">
                     {cartCount}
                   </span>
                 )}
@@ -215,7 +190,7 @@ export const Header = () => {
               variant="ghost" 
               size="sm"
               onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-              className="text-zinc-400 hover:text-white"
+              className="text-slate-500 hover:text-slate-800"
             >
               {mobileMenuOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
             </Button>
@@ -230,49 +205,61 @@ export const Header = () => {
             initial={{ opacity: 0, height: 0 }}
             animate={{ opacity: 1, height: 'auto' }}
             exit={{ opacity: 0, height: 0 }}
-            className="md:hidden bg-zinc-900/95 backdrop-blur-xl border-t border-white/10"
+            className="md:hidden border-t border-cyan-200/50 bg-white/90 backdrop-blur-xl"
           >
-            <div className="px-4 py-4 space-y-2">
+            <div className="p-4 space-y-2">
               {user ? (
                 <>
                   {isAdmin ? (
                     <>
-                      <Link to="/admin" className="flex items-center gap-3 px-4 py-3 text-purple-400 hover:bg-white/5 rounded-xl transition-all" onClick={() => setMobileMenuOpen(false)}>
-                        <Settings className="w-5 h-5" /> Панель управления
+                      <Link to="/admin" onClick={() => setMobileMenuOpen(false)} className="flex items-center gap-3 p-3 rounded-xl text-purple-500 hover:bg-purple-50">
+                        <Settings className="w-5 h-5" />
+                        Панель управления
                       </Link>
-                      <Link to="/admin/orders" className="flex items-center gap-3 px-4 py-3 text-zinc-300 hover:bg-white/5 rounded-xl transition-all" onClick={() => setMobileMenuOpen(false)}>
-                        <ClipboardList className="w-5 h-5" /> Заказы
+                      <Link to="/admin/orders" onClick={() => setMobileMenuOpen(false)} className="flex items-center gap-3 p-3 rounded-xl text-slate-600 hover:bg-slate-50">
+                        <ClipboardList className="w-5 h-5" />
+                        Заказы
+                      </Link>
+                      <Link to="/admin/chats" onClick={() => setMobileMenuOpen(false)} className="flex items-center gap-3 p-3 rounded-xl text-slate-600 hover:bg-slate-50">
+                        <MessageCircle className="w-5 h-5" />
+                        Чаты
                       </Link>
                     </>
                   ) : (
                     <>
-                      <Link to="/catalog" className="flex items-center gap-3 px-4 py-3 text-zinc-300 hover:bg-white/5 rounded-xl transition-all" onClick={() => setMobileMenuOpen(false)}>
-                        <Search className="w-5 h-5" /> Каталог
+                      <Link to="/catalog" onClick={() => setMobileMenuOpen(false)} className="flex items-center gap-3 p-3 rounded-xl text-slate-600 hover:bg-slate-50">
+                        <Search className="w-5 h-5" />
+                        Каталог
                       </Link>
-                      <Link to="/orders" className="flex items-center gap-3 px-4 py-3 text-zinc-300 hover:bg-white/5 rounded-xl transition-all" onClick={() => setMobileMenuOpen(false)}>
-                        <Package className="w-5 h-5" /> Мои заказы
+                      <Link to="/orders" onClick={() => setMobileMenuOpen(false)} className="flex items-center gap-3 p-3 rounded-xl text-slate-600 hover:bg-slate-50">
+                        <Package className="w-5 h-5" />
+                        Мои заказы
                       </Link>
-                      <Link to="/bonus" className="flex items-center gap-3 px-4 py-3 text-orange-400 hover:bg-white/5 rounded-xl transition-all" onClick={() => setMobileMenuOpen(false)}>
-                        <Gift className="w-5 h-5" /> Бонусы
+                      <Link to="/bonus" onClick={() => setMobileMenuOpen(false)} className="flex items-center gap-3 p-3 rounded-xl text-orange-500 hover:bg-orange-50">
+                        <Gift className="w-5 h-5" />
+                        Бонусы
                       </Link>
-                      <Link to="/favorites" className="flex items-center gap-3 px-4 py-3 text-zinc-300 hover:bg-white/5 rounded-xl transition-all" onClick={() => setMobileMenuOpen(false)}>
-                        <Heart className="w-5 h-5" /> Избранное
+                      <Link to="/favorites" onClick={() => setMobileMenuOpen(false)} className="flex items-center gap-3 p-3 rounded-xl text-slate-600 hover:bg-slate-50">
+                        <Heart className="w-5 h-5" />
+                        Избранное
                       </Link>
-                      <Link to="/account" className="flex items-center gap-3 px-4 py-3 text-zinc-300 hover:bg-white/5 rounded-xl transition-all" onClick={() => setMobileMenuOpen(false)}>
-                        <User className="w-5 h-5" /> Профиль
+                      <Link to="/account" onClick={() => setMobileMenuOpen(false)} className="flex items-center gap-3 p-3 rounded-xl text-slate-600 hover:bg-slate-50">
+                        <User className="w-5 h-5" />
+                        Профиль
                       </Link>
                     </>
                   )}
                   <button 
                     onClick={() => { logout(); setMobileMenuOpen(false); }}
-                    className="flex items-center gap-3 px-4 py-3 text-red-400 hover:bg-red-500/10 rounded-xl transition-all w-full"
+                    className="flex items-center gap-3 p-3 rounded-xl text-red-500 hover:bg-red-50 w-full"
                   >
-                    <LogOut className="w-5 h-5" /> Выйти
+                    <LogOut className="w-5 h-5" />
+                    Выйти
                   </button>
                 </>
               ) : (
-                <Link to="/login" className="block" onClick={() => setMobileMenuOpen(false)}>
-                  <Button className="w-full bg-gradient-to-r from-orange-500 to-orange-600 text-white font-bold uppercase tracking-wide rounded-xl">
+                <Link to="/login" onClick={() => setMobileMenuOpen(false)}>
+                  <Button className="w-full font-bold uppercase bg-gradient-to-r from-teal-500 to-emerald-500 text-white rounded-xl">
                     Войти
                   </Button>
                 </Link>
