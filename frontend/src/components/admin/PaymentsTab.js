@@ -25,7 +25,6 @@ export const PaymentsTab = ({
   const subTabs = [
     { id: 'methods', label: 'Способы оплаты', icon: CreditCard },
     { id: 'prepayment', label: 'Предоплата', icon: DollarSign },
-    { id: 'crypto', label: 'Криптовалюта', icon: Wallet },
   ];
 
   return (
