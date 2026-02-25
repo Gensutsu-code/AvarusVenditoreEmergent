@@ -81,8 +81,9 @@ export const MarketingTab = ({
             promoBanner={promoBanner}
             setPromoBanner={setPromoBanner}
             handleSavePromoBanner={handleSavePromoBanner}
-            bonusPrograms={bonusPrograms}
-            setBonusPrograms={setBonusPrograms}
+            uploading={uploading}
+            handlePromoImageUpload={handlePromoImageUpload}
+            promoFileRef={promoFileRef}
             isDark={isDark}
           />
         </motion.div>
