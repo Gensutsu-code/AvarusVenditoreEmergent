@@ -461,6 +461,14 @@ export default function CatalogPage() {
     }));
   };
 
+  const setQuantityDirect = (productId, value) => {
+    const val = parseInt(value) || 1;
+    setQuantities(prev => ({
+      ...prev,
+      [productId]: Math.max(1, val)
+    }));
+  };
+
   const formatPrice = (price) => {
     return new Intl.NumberFormat('ru-RU').format(price);
   };
