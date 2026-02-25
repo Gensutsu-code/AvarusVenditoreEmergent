@@ -161,11 +161,12 @@ export default function CheckoutPage() {
   const handleCryptoClose = async () => {
     if (orderId) {
       try {
-        await axios.post(`${API}/orders/${orderId}/cancel`);
+        // Return items to cart without cancelling the order
+        await axios.post(`${API}/orders/${orderId}/return-to-cart`);
         await fetchCart();
-        toast.info('Заказ отменён. Товары возвращены в корзину.');
+        toast.info('Товары возвращены в корзину. Заказ сохранён.');
       } catch (err) {
-        console.error('Failed to cancel order:', err);
+        console.error('Failed to return items to cart:', err);
       }
     }
     setShowCryptoModal(false);
