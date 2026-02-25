@@ -2404,7 +2404,7 @@ export default function AdminPage() {
                       onClick={() => setBonusSubTab && setBonusSubTab('prizes')}
                       className={`flex-1 px-6 py-3 text-sm font-medium transition-colors flex items-center justify-center gap-2 ${
                         bonusSubTab === 'prizes'
-                          ? 'text-rose-600 border-b-2 border-rose-500 bg-rose-50/50'
+                          ? 'text-emerald-600 border-b-2 border-emerald-500 bg-emerald-50/50'
                           : 'text-slate-500 hover:text-slate-700 hover:bg-slate-50'
                       }`}
                     >
