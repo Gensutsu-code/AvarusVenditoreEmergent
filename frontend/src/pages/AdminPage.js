@@ -1629,8 +1629,8 @@ export default function AdminPage() {
                               <ShoppingBag className="w-4 h-4" /> Статистика заказов
                             </h4>
                             <div className="grid grid-cols-2 gap-3 mb-4">
-                              <div className="bg-orange-50 p-3 rounded text-center">
-                                <p className="text-2xl font-bold text-orange-600">{userDetails.statistics.total_orders}</p>
+                              <div className="bg-teal-50 p-3 rounded text-center">
+                                <p className="text-2xl font-bold text-teal-600">{userDetails.statistics.total_orders}</p>
                                 <p className="text-xs text-zinc-500">Заказов</p>
                               </div>
                               <div className="bg-green-50 p-3 rounded text-center">
