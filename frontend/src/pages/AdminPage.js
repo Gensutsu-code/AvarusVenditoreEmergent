@@ -1479,7 +1479,7 @@ export default function AdminPage() {
           <TabsContent value="users" className="p-6">
             <div className="flex justify-between items-center mb-4">
               <h2 className="text-lg font-semibold">Управление пользователями ({users.length})</h2>
-              <Button onClick={openNewUser} className="bg-orange-500 hover:bg-orange-600" data-testid="add-user-btn">
+              <Button onClick={openNewUser} className="bg-teal-500 hover:bg-teal-600" data-testid="add-user-btn">
                 <Plus className="w-4 h-4 mr-2" />
                 Добавить пользователя
               </Button>
@@ -2052,7 +2052,7 @@ export default function AdminPage() {
                           onKeyPress={(e) => e.key === 'Enter' && handleSendAdminMessage()}
                           className="flex-1"
                         />
-                        <Button onClick={handleSendAdminMessage} className="bg-orange-500 hover:bg-orange-600">
+                        <Button onClick={handleSendAdminMessage} className="bg-teal-500 hover:bg-teal-600">
                           <Send className="w-4 h-4" />
                         </Button>
                       </div>
@@ -3046,7 +3046,7 @@ export default function AdminPage() {
                           toast.error(err.response?.data?.detail || 'Ошибка сохранения');
                         }
                       }}
-                      className="bg-orange-500 hover:bg-orange-600"
+                      className="bg-teal-500 hover:bg-teal-600"
                     >
                       <Save className="w-4 h-4 mr-2" />
                       {isNewProgram ? 'Создать' : 'Сохранить'}
@@ -3158,7 +3158,7 @@ export default function AdminPage() {
             <div className="space-y-6">
               <div className="flex items-center justify-between">
                 <h2 className="text-lg font-semibold">Управление новостями</h2>
-                <Button onClick={() => { setEditingNews(null); setNewsForm({ title: '', content: '', image_url: '' }); document.getElementById('news-form')?.scrollIntoView(); }} className="bg-orange-500 hover:bg-orange-600" data-testid="add-news-btn">
+                <Button onClick={() => { setEditingNews(null); setNewsForm({ title: '', content: '', image_url: '' }); document.getElementById('news-form')?.scrollIntoView(); }} className="bg-teal-500 hover:bg-teal-600" data-testid="add-news-btn">
                   <Plus className="w-4 h-4 mr-2" /> Добавить новость
                 </Button>
               </div>
@@ -3196,7 +3196,7 @@ export default function AdminPage() {
                     setNewsForm({ title: '', content: '', image_url: '' });
                     setEditingNews(null);
                   } catch (err) { toast.error('Ошибка сохранения'); }
-                }} className="bg-orange-500 hover:bg-orange-600" data-testid="save-news-btn">
+                }} className="bg-teal-500 hover:bg-teal-600" data-testid="save-news-btn">
                   <Save className="w-4 h-4 mr-2" /> {editingNews ? 'Обновить' : 'Опубликовать'}
                 </Button>
               </div>
@@ -3569,7 +3569,7 @@ export default function AdminPage() {
                 <Button variant="outline" onClick={() => setEditingProduct(null)}>
                   Отмена
                 </Button>
-                <Button onClick={handleSaveProduct} className="bg-orange-500 hover:bg-orange-600" data-testid="save-product-btn">
+                <Button onClick={handleSaveProduct} className="bg-teal-500 hover:bg-teal-600" data-testid="save-product-btn">
                   <Save className="w-4 h-4 mr-2" />
                   Сохранить
                 </Button>
@@ -3637,7 +3637,7 @@ export default function AdminPage() {
                 <Button variant="outline" onClick={() => setEditingCategory(null)}>
                   Отмена
                 </Button>
-                <Button onClick={handleSaveCategory} className="bg-orange-500 hover:bg-orange-600" data-testid="save-category-btn">
+                <Button onClick={handleSaveCategory} className="bg-teal-500 hover:bg-teal-600" data-testid="save-category-btn">
                   <Save className="w-4 h-4 mr-2" />
                   Сохранить
                 </Button>
@@ -3930,7 +3930,7 @@ export default function AdminPage() {
                 </Button>
                 <Button 
                   onClick={handleSaveUser} 
-                  className="bg-orange-500 hover:bg-orange-600" 
+                  className="bg-teal-500 hover:bg-teal-600" 
                   data-testid="save-user-btn"
                   disabled={!editingUser.name || !editingUser.email || (isNewUser && !editingUser.password)}
                 >
@@ -4081,7 +4081,7 @@ export default function AdminPage() {
                 </Button>
                 <Button 
                   onClick={handleSaveOrder} 
-                  className="bg-orange-500 hover:bg-orange-600" 
+                  className="bg-teal-500 hover:bg-teal-600" 
                   data-testid="save-order-btn"
                 >
                   <Save className="w-4 h-4 mr-2" />
@@ -4220,7 +4220,7 @@ export default function AdminPage() {
                       toast.error('Ошибка сохранения');
                     }
                   }}
-                  className="bg-orange-500 hover:bg-orange-600"
+                  className="bg-teal-500 hover:bg-teal-600"
                   disabled={!editingPartner.name}
                 >
                   <Save className="w-4 h-4 mr-2" />
