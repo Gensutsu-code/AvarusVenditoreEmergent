@@ -1491,7 +1491,7 @@ export default function AdminPage() {
                   {/* User Row - Clickable Header */}
                   <div 
                     className={`flex items-center justify-between p-4 cursor-pointer hover:bg-zinc-50 transition-colors ${
-                      expandedUserId === u.id ? 'bg-orange-50 border-b border-orange-200' : ''
+                      expandedUserId === u.id ? 'bg-teal-50 border-b border-teal-200' : ''
                     }`}
                     onClick={async () => {
                       if (expandedUserId === u.id) {
