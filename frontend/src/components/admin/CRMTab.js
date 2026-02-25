@@ -1,8 +1,8 @@
 import { useState } from 'react';
-import { Users, BarChart3, TrendingUp, Calendar, UserCheck, UserX } from 'lucide-react';
+import { Users, BarChart3, TrendingUp, Calendar, UserCheck, Pencil, Trash2, ChevronDown } from 'lucide-react';
 import { Button } from '../../components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../../components/ui/select';
-import { motion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 
 // Sub-tab component for CRM section (Analytics + Clients)
 export const CRMTab = ({
@@ -12,9 +12,12 @@ export const CRMTab = ({
   statsPeriod,
   setStatsPeriod,
   formatPrice,
+  handleEditUser,
+  handleDeleteUser,
   isDark = false
 }) => {
   const [activeSubTab, setActiveSubTab] = useState('clients');
+  const [expandedUser, setExpandedUser] = useState(null);
 
   const subTabs = [
     { id: 'clients', label: 'Клиенты', icon: Users },
