@@ -82,25 +82,11 @@ export const CRMTab = ({
           {/* Summary cards */}
           <div className="grid grid-cols-3 gap-4 mb-6">
             <div className={`p-4 rounded-xl ${isDark ? 'bg-green-500/10 border border-green-500/20' : 'bg-green-50 border border-green-100'}`}>
-              <div className={`flex items-center gap-2 mb-1 ${isDark ? 'text-green-400' : 'text-green-600'}`}>
+              <div className={`flex items-center gap-2 mb-1 ${isDark ? 'text-teal-400' : 'text-teal-600'}`}>
                 <UserCheck className="w-4 h-4" />
-                <span className="text-xs font-medium">Активные</span>
+                <span className="text-xs font-medium">Всего клиентов</span>
               </div>
-              <p className={`text-2xl font-bold ${isDark ? 'text-green-400' : 'text-green-700'}`}>{users.filter(u => u.role !== 'admin').length}</p>
-            </div>
-            <div className={`p-4 rounded-xl ${isDark ? 'bg-purple-500/10 border border-purple-500/20' : 'bg-purple-50 border border-purple-100'}`}>
-              <div className={`flex items-center gap-2 mb-1 ${isDark ? 'text-purple-400' : 'text-purple-600'}`}>
-                <TrendingUp className="w-4 h-4" />
-                <span className="text-xs font-medium">VIP</span>
-              </div>
-              <p className={`text-2xl font-bold ${isDark ? 'text-purple-400' : 'text-purple-700'}`}>{users.filter(u => u.customer_status === 'vip').length}</p>
-            </div>
-            <div className={`p-4 rounded-xl ${isDark ? 'bg-blue-500/10 border border-blue-500/20' : 'bg-blue-50 border border-blue-100'}`}>
-              <div className={`flex items-center gap-2 mb-1 ${isDark ? 'text-blue-400' : 'text-blue-600'}`}>
-                <Users className="w-4 h-4" />
-                <span className="text-xs font-medium">Оптовики</span>
-              </div>
-              <p className={`text-2xl font-bold ${isDark ? 'text-blue-400' : 'text-blue-700'}`}>{users.filter(u => u.customer_status === 'wholesale').length}</p>
+              <p className={`text-2xl font-bold ${isDark ? 'text-teal-400' : 'text-teal-700'}`}>{users.filter(u => u.role !== 'admin').length}</p>
             </div>
           </div>
 
@@ -113,7 +99,7 @@ export const CRMTab = ({
                   onClick={() => toggleUserExpand(user.id)}
                   className={`flex items-center justify-between p-4 cursor-pointer transition-colors ${
                     expandedUser === user.id 
-                      ? isDark ? 'bg-orange-500/10 border-b border-orange-500/20' : 'bg-orange-50 border-b border-orange-200'
+                      ? isDark ? 'bg-teal-500/10 border-b border-teal-500/20' : 'bg-teal-50 border-b border-teal-200'
                       : isDark ? 'hover:bg-zinc-700/30 border-b border-zinc-700' : 'hover:bg-zinc-50 border-b border-zinc-100'
                   }`}
                 >
