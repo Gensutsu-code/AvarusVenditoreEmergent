@@ -3795,8 +3795,8 @@ export default function AdminPage() {
 
               {/* Crypto payment confirmation */}
               {viewingOrder.payment_status === 'crypto_pending' && viewingOrder.crypto_tx_hash && (
-                <div className="bg-amber-50 border border-amber-200 rounded-lg p-4">
-                  <p className="font-semibold text-amber-800 mb-2">Крипто-платёж ожидает подтверждения</p>
+                <div className="bg-teal-50 border border-teal-200 rounded-lg p-4">
+                  <p className="font-semibold text-teal-800 mb-2">Крипто-платёж ожидает подтверждения</p>
                   <p className="text-sm text-zinc-600">Сеть: <span className="font-mono font-bold">{viewingOrder.crypto_chain?.toUpperCase()}</span></p>
                   <p className="text-sm text-zinc-600 break-all">TX: <span className="font-mono">{viewingOrder.crypto_tx_hash}</span></p>
                   <Button size="sm" className="bg-green-500 hover:bg-green-600 text-white mt-3" onClick={async () => {
