@@ -189,8 +189,8 @@ export default function HomePage() {
                         />
                       </div>
                     )}
-                    <div className="text-xs font-medium text-zinc-200 truncate">{partner.name}</div>
-                    <div className="text-[10px] text-zinc-500 truncate">{partner.description}</div>
+                    <div className={`text-xs font-medium truncate ${isDark ? 'text-zinc-200' : 'text-slate-700'}`}>{partner.name}</div>
+                    <div className={`text-[10px] truncate ${isDark ? 'text-zinc-500' : 'text-slate-500'}`}>{partner.description}</div>
                   </motion.a>
                 ))}
               </div>
