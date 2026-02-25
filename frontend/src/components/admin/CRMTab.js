@@ -118,8 +118,8 @@ export const CRMTab = ({
                         <span className={`font-medium ${isDark ? 'text-zinc-100' : ''}`}>
                           {user.name || 'Без имени'}
                         </span>
-                        <span className={`text-xs font-bold px-2 py-0.5 rounded ${getStatusColor(user.customer_status)}`}>
-                          {getStatusLabel(user.customer_status)}
+                        <span className={`text-xs font-bold px-2 py-0.5 rounded ${getStatusColor(user.role)}`}>
+                          {getStatusLabel(user.role)}
                         </span>
                       </div>
                       <p className={`text-sm ${isDark ? 'text-zinc-500' : 'text-zinc-500'}`}>
