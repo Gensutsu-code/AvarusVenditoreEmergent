@@ -291,7 +291,7 @@ export const CRMTab = ({
                                 {user.popular_products.slice(0, 3).map((product, idx) => (
                                   <div key={idx} className="flex justify-between items-center text-sm">
                                     <div className="flex items-center gap-2 flex-1 min-w-0">
-                                      <span className="text-orange-500 font-mono text-xs">{product.sku || '—'}</span>
+                                      <span className="text-teal-500 font-mono text-xs">{product.sku || '—'}</span>
                                       <span className={`truncate ${isDark ? 'text-zinc-300' : ''}`}>{product.name}</span>
                                     </div>
                                     <span className={`ml-2 ${isDark ? 'text-zinc-500' : 'text-zinc-500'}`}>{product.quantity} шт.</span>
