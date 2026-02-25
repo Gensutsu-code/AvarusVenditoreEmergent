@@ -142,17 +142,17 @@ export default function HomePage() {
                           </div>
                         )}
                         <div className="text-center">
-                          <div className="text-xs font-medium text-zinc-200 truncate">
+                          <div className={`text-xs font-medium truncate ${isDark ? 'text-zinc-200' : 'text-slate-700'}`}>
                             {partner.name}
                           </div>
-                          <div className="text-[10px] text-zinc-500 truncate">
+                          <div className={`text-[10px] truncate ${isDark ? 'text-zinc-500' : 'text-slate-500'}`}>
                             {partner.description}
                           </div>
                         </div>
                       </motion.a>
                     ))}
                   </div>
-                  <p className="text-xs text-zinc-600 mt-4 text-center">
+                  <p className={`text-xs mt-4 text-center ${isDark ? 'text-zinc-600' : 'text-slate-400'}`}>
                     Только проверенные поставщики
                   </p>
                 </div>
