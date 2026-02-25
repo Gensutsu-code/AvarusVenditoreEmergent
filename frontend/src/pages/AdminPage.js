@@ -1176,9 +1176,9 @@ export default function AdminPage() {
         )}
 
         {/* Tabs - Dynamic Order */}
-        <Tabs value={activeTab} onValueChange={setActiveTab} className="bg-white rounded-xl border border-zinc-200 shadow-sm overflow-hidden">
+        <Tabs value={activeTab} onValueChange={setActiveTab} className={`rounded-xl border shadow-sm overflow-hidden ${isDark ? 'bg-zinc-900/60 border-zinc-800 backdrop-blur-xl' : 'bg-white border-zinc-200'}`}>
           <div className="overflow-x-auto">
-            <TabsList className="w-max min-w-full justify-start border-b border-zinc-200 rounded-none bg-zinc-50 p-0 h-auto">
+            <TabsList className={`w-max min-w-full justify-start border-b rounded-none p-0 h-auto ${isDark ? 'border-zinc-800 bg-zinc-900/50' : 'border-zinc-200 bg-zinc-50'}`}>
               {tabOrder.map((tabId) => {
                 const config = tabConfig[tabId];
                 const IconComponent = config.icon;
@@ -1186,12 +1186,12 @@ export default function AdminPage() {
                   <TabsTrigger 
                     key={tabId}
                     value={tabId} 
-                    className="rounded-none border-b-2 border-transparent data-[state=active]:bg-white data-[state=active]:border-orange-500 px-3 py-2.5 text-xs font-medium whitespace-nowrap"
+                    className={`rounded-none border-b-2 border-transparent px-3 py-2.5 text-xs font-medium whitespace-nowrap ${isDark ? 'data-[state=active]:bg-zinc-800 data-[state=active]:border-orange-500 text-zinc-400 data-[state=active]:text-white' : 'data-[state=active]:bg-white data-[state=active]:border-orange-500'}`}
                   >
                     <IconComponent className="w-3.5 h-3.5 mr-1.5" />
                     {config.label}
                     {config.count !== undefined && (
-                      <span className="ml-1 text-[10px] bg-zinc-200 data-[state=active]:bg-orange-100 px-1.5 py-0.5 rounded-full">
+                      <span className={`ml-1 text-[10px] px-1.5 py-0.5 rounded-full ${isDark ? 'bg-zinc-700 data-[state=active]:bg-orange-500/20' : 'bg-zinc-200 data-[state=active]:bg-orange-100'}`}>
                         {config.count}
                       </span>
                     )}
