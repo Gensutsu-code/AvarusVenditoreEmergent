@@ -66,6 +66,14 @@ export default function FavoritesPage() {
     }));
   };
 
+  const setQuantityDirect = (productId, value) => {
+    const val = parseInt(value) || 1;
+    setQuantities(prev => ({
+      ...prev,
+      [productId]: Math.max(1, val)
+    }));
+  };
+
   const formatPrice = (price) => new Intl.NumberFormat('ru-RU').format(Math.round(price));
 
   if (!user) return null;
