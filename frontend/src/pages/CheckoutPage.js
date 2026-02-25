@@ -483,7 +483,7 @@ export default function CheckoutPage() {
                   onClick={() => setAgreedToTerms(!agreedToTerms)}
                   className={`w-6 h-6 rounded-lg border-2 flex items-center justify-center flex-shrink-0 mt-0.5 transition-all duration-300 ${
                     agreedToTerms 
-                      ? 'bg-orange-500 border-orange-500' 
+                      ? 'bg-teal-500 border-teal-500' 
                       : 'border-zinc-600 hover:border-zinc-500'
                   }`}
                   whileTap={{ scale: 0.9 }}
@@ -510,7 +510,7 @@ export default function CheckoutPage() {
                   <button 
                     type="button"
                     onClick={(e) => { e.stopPropagation(); setShowTermsModal(true); }}
-                    className="text-orange-400 hover:text-orange-300 underline font-medium transition-colors"
+                    className="text-teal-400 hover:text-teal-300 underline font-medium transition-colors"
                     data-testid="terms-link"
                   >
                     правилами предоставления услуг
@@ -529,7 +529,7 @@ export default function CheckoutPage() {
               <Button type="submit" disabled={loading || !agreedToTerms}
                 className={`w-full font-bold uppercase tracking-wide h-14 rounded-xl text-lg transition-all duration-300 ${
                   agreedToTerms 
-                    ? 'bg-gradient-to-r from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700 text-white shadow-lg shadow-orange-500/20' 
+                    ? 'bg-gradient-to-r from-teal-500 to-emerald-500 hover:from-teal-600 hover:to-emerald-600 text-white shadow-lg shadow-teal-500/20' 
                     : 'bg-zinc-800 text-zinc-500 cursor-not-allowed'
                 }`} data-testid="place-order-btn">
                 {loading ? <Loader2 className="w-5 h-5 animate-spin mr-2" /> : null}
@@ -593,7 +593,7 @@ export default function CheckoutPage() {
               <div className="flex justify-between items-center pt-2">
                 <span className="font-bold text-zinc-300">Итого:</span>
                 <motion.span 
-                  className="text-2xl font-bold bg-gradient-to-r from-orange-400 to-orange-500 bg-clip-text text-transparent"
+                  className="text-2xl font-bold bg-gradient-to-r from-teal-400 to-emerald-400 bg-clip-text text-transparent"
                   data-testid="checkout-total"
                   key={finalTotal}
                   initial={{ scale: 1.1 }}
@@ -613,8 +613,8 @@ export default function CheckoutPage() {
         <DialogContent className="max-w-2xl max-h-[80vh] overflow-hidden flex flex-col bg-zinc-900/95 backdrop-blur-xl border border-white/10 rounded-2xl" data-testid="terms-modal">
           <div className="flex items-center justify-between pb-4 border-b border-zinc-700/50">
             <div className="flex items-center gap-3">
-              <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-orange-500/20 to-orange-600/20 flex items-center justify-center border border-orange-500/30">
-                <FileText className="w-6 h-6 text-orange-400" />
+              <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-teal-500/20 to-emerald-500/20 flex items-center justify-center border border-teal-500/30">
+                <FileText className="w-6 h-6 text-teal-400" />
               </div>
               <div>
                 <DialogTitle className="text-xl font-bold text-white">Правила предоставления услуг</DialogTitle>
@@ -647,7 +647,7 @@ export default function CheckoutPage() {
                 setAgreedToTerms(true);
                 setShowTermsModal(false);
               }}
-              className="flex-1 h-12 bg-gradient-to-r from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700 text-white font-bold rounded-xl transition-all duration-300"
+              className="flex-1 h-12 bg-gradient-to-r from-teal-500 to-emerald-500 hover:from-teal-600 hover:to-emerald-600 text-white font-bold rounded-xl transition-all duration-300"
               whileHover={{ scale: 1.01 }}
               whileTap={{ scale: 0.99 }}
               data-testid="accept-terms-btn"
