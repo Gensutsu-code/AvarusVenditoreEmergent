@@ -560,7 +560,7 @@ export default function CatalogPage() {
                       <img 
                         src={category.image_url} 
                         alt={category.name}
-                        className="w-full h-full object-cover grayscale group-hover:grayscale-0 transition-all"
+                        className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
                       />
                     </div>
                   )}
