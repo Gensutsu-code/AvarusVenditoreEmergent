@@ -210,6 +210,9 @@ class OrderResponse(BaseModel):
     changes_expire_at: Optional[str] = None
     processing_started_at: Optional[str] = None
     delivery_fee: Optional[float] = None
+    # Previous data for comparison
+    previous_items: Optional[List[dict]] = None
+    previous_total: Optional[float] = None
 
 # ==================== FAVORITES ====================
 
