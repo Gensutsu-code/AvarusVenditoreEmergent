@@ -4,6 +4,7 @@ from pydantic import BaseModel
 from typing import Optional
 from datetime import datetime, timezone
 import uuid
+import time
 import aiohttp
 import asyncio
 from web3 import Web3
@@ -11,6 +12,9 @@ from web3 import Web3
 from database import db, get_current_user
 
 router = APIRouter(tags=["crypto_payments"])
+
+# Rate cache: {key: (value, timestamp)}
+_rate_cache = {}
 
 # ERC20 Token Addresses for each network
 TOKENS = {
