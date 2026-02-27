@@ -102,7 +102,17 @@ async def get_product_filters():
 
 
 @router.get("/products", response_model=List[ProductResponse])
-async def get_products(search: Optional[str] = None, category_id: Optional[str] = None, limit: int = 100, skip: int = 0):
+async def get_products(
+    search: Optional[str] = None,
+    category_id: Optional[str] = None,
+    manufacturer: Optional[str] = None,
+    warehouse: Optional[str] = None,
+    in_stock: Optional[bool] = None,
+    price_min: Optional[float] = None,
+    price_max: Optional[float] = None,
+    limit: int = 100,
+    skip: int = 0
+):
     query = {}
     if search:
         query["$or"] = [
@@ -112,6 +122,19 @@ async def get_products(search: Optional[str] = None, category_id: Optional[str] 
         ]
     if category_id:
         query["category_id"] = category_id
+    if manufacturer:
+        query["manufacturer"] = manufacturer
+    if warehouse:
+        query["warehouse"] = warehouse
+    if in_stock:
+        query["stock"] = {"$gt": 0}
+    if price_min is not None or price_max is not None:
+        price_q = {}
+        if price_min is not None:
+            price_q["$gte"] = price_min
+        if price_max is not None:
+            price_q["$lte"] = price_max
+        query["price"] = price_q
     
     products = await db.products.find(query, {"_id": 0}).skip(skip).limit(min(limit, 100)).to_list(100)
     return products
