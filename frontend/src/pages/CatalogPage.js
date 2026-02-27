@@ -34,126 +34,99 @@ const ProductCard = ({
   isAlternative = false
 }) => (
   <div 
-    className={`glass-card rounded-2xl overflow-hidden transition-all duration-300 hover:scale-[1.01] hover:border-teal-500/30 ${isAlternative ? 'border-teal-500/20' : ''}`}
+    className={`bg-white rounded-2xl border overflow-hidden transition-all duration-300 hover:shadow-lg hover:border-teal-300/60 ${isAlternative ? 'border-teal-200/50 bg-teal-50/20' : 'border-slate-200/80'}`}
     data-testid={`product-card-${product.id}`}
   >
-    <div className="flex items-center gap-4 p-4">
-      {/* Image - clickable */}
-      <div className="relative group">
+    <div className="flex items-stretch">
+      {/* Image */}
+      <div className="relative group flex-shrink-0">
         <Link
           to={`/product/${product.id}`}
-          className="w-24 h-24 flex-shrink-0 bg-slate-100 rounded-xl overflow-hidden block"
+          className="w-[100px] h-full min-h-[110px] bg-slate-50 block overflow-hidden"
           data-testid={`product-image-${product.id}`}
         >
           {product.image_url ? (
-            <img 
-              src={product.image_url} 
-              alt={product.name}
-              className="w-full h-full object-cover"
-            />
+            <img src={product.image_url} alt={product.name} className="w-full h-full object-cover" />
           ) : (
             <div className="w-full h-full flex items-center justify-center text-slate-300">
               <Package className="w-8 h-8" />
             </div>
           )}
         </Link>
-        {/* Quick View button */}
         <button
           onClick={() => setSelectedProduct(product)}
-          className="absolute inset-0 flex items-center justify-center bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity rounded-xl"
+          className="absolute inset-0 flex items-center justify-center bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity"
           data-testid={`quick-view-${product.id}`}
         >
-          <Eye className="w-6 h-6 text-white" />
+          <Eye className="w-5 h-5 text-white" />
         </button>
       </div>
 
-      {/* Info - clickable */}
-      <Link
-        to={`/product/${product.id}`}
-        className="flex-1 text-left min-w-0"
-      >
-        {product.manufacturer && (
-          <p className="text-xs font-bold text-teal-600 mb-0.5">{product.manufacturer}</p>
-        )}
-        <h3 className="font-semibold text-sm text-slate-800 hover:text-teal-600 transition-colors line-clamp-2">
-          {product.name}
-        </h3>
-        <p className="text-xs font-mono text-slate-400">Арт: {product.article}</p>
-        {isAlternative && product.cross_articles && (
-          <p className="text-xs text-slate-500 mt-0.5 line-clamp-1">
-            Кросс: {product.cross_articles}
-          </p>
-        )}
-      </Link>
-
-      {/* Stock + Warehouse + Delivery — compact column */}
-      <div className="hidden sm:flex flex-col items-end gap-0.5 min-w-[80px] text-xs">
-        <span className={`font-semibold ${product.stock > 0 ? 'text-emerald-600' : 'text-red-500'}`}>
-          {product.stock > 0 ? `${product.stock} шт.` : 'Нет'}
-        </span>
-        {product.warehouse && (
-          <span className="text-blue-600 font-medium">{product.warehouse}</span>
-        )}
-        <span className="text-slate-400 flex items-center gap-1">
-          <Truck className="w-3 h-3" />{getDeliveryText(product.delivery_days || 3)}
-        </span>
-      </div>
-
-      {/* Price */}
-      <div className="text-right min-w-[120px]">
-        <PriceDisplay 
-          price={product.price} 
-          formatPrice={formatPrice} 
-        />
-      </div>
-
-      {/* Quantity + Cart */}
-      <div className="flex items-center gap-2">
-        <FavoritesButton productId={product.id} size="sm" />
-        
-        <div className="flex items-center border border-slate-200 rounded-xl bg-white/50">
-          <button 
-            onClick={() => updateQuantity(product.id, -1)}
-            className="p-2 hover:bg-slate-100 rounded-l-xl transition-colors"
-            data-testid={`qty-minus-${product.id}`}
-          >
-            <Minus className="w-4 h-4 text-slate-600" />
-          </button>
-          <span className="px-3 min-w-[40px] text-center text-sm font-semibold text-slate-800">
-            {quantities[product.id] || 1}
-          </span>
-          <button 
-            onClick={() => updateQuantity(product.id, 1)}
-            className="p-2 hover:bg-slate-100 rounded-r-xl transition-colors"
-            data-testid={`qty-plus-${product.id}`}
-          >
-            <Plus className="w-4 h-4 text-slate-600" />
-          </button>
+      {/* Content */}
+      <div className="flex-1 min-w-0 p-3 flex flex-col justify-between">
+        {/* Top row: name + price */}
+        <div className="flex items-start justify-between gap-3">
+          <Link to={`/product/${product.id}`} className="flex-1 min-w-0">
+            <div className="flex items-center gap-2 mb-0.5">
+              {product.manufacturer && (
+                <span className="text-[11px] font-bold text-teal-600 bg-teal-50 px-1.5 py-0.5 rounded">{product.manufacturer}</span>
+              )}
+              <span className="text-[11px] font-mono text-slate-400">{product.article}</span>
+            </div>
+            <h3 className="font-semibold text-[13px] leading-tight text-slate-800 hover:text-teal-600 transition-colors">
+              {product.name}
+            </h3>
+            {isAlternative && product.cross_articles && (
+              <p className="text-[11px] text-slate-400 mt-0.5 line-clamp-1">Кросс: {product.cross_articles}</p>
+            )}
+          </Link>
+          <div className="flex-shrink-0 text-right">
+            <p className="text-lg font-bold text-teal-600">{formatPrice(product.price)} <span className="text-sm">&#8381;</span></p>
+          </div>
         </div>
 
-        <Button
-          onClick={() => handleAddToCart(product)}
-          disabled={product.stock === 0}
-          className="bg-gradient-to-r from-teal-500 to-emerald-500 hover:from-teal-600 hover:to-emerald-600 text-white rounded-xl shadow-lg shadow-teal-500/30"
-          data-testid={`add-to-cart-${product.id}`}
-        >
-          <ShoppingCart className="w-5 h-5" />
-        </Button>
-      </div>
-    </div>
+        {/* Bottom row: badges + actions */}
+        <div className="flex items-center justify-between mt-2 gap-2">
+          {/* Badges */}
+          <div className="flex items-center gap-1.5 flex-wrap">
+            <span className={`inline-flex items-center text-[11px] font-semibold px-2 py-0.5 rounded-full ${
+              product.stock > 0 ? 'bg-emerald-50 text-emerald-700' : 'bg-red-50 text-red-600'
+            }`}>
+              {product.stock > 0 ? `${product.stock} шт.` : 'Нет'}
+            </span>
+            {product.warehouse && (
+              <span className="inline-flex items-center text-[11px] font-semibold px-2 py-0.5 rounded-full bg-blue-50 text-blue-600">
+                <MapPin className="w-3 h-3 mr-0.5" />{product.warehouse}
+              </span>
+            )}
+            <span className="inline-flex items-center text-[11px] text-slate-500 px-2 py-0.5 rounded-full bg-slate-50">
+              <Truck className="w-3 h-3 mr-0.5" />{getDeliveryText(product.delivery_days || 3)}
+            </span>
+          </div>
 
-    {/* Mobile info */}
-    <div className="sm:hidden flex items-center justify-between px-4 pb-4 text-sm">
-      <span className={product.stock > 0 ? 'text-emerald-600' : 'text-red-500'}>
-        {product.stock > 0 ? `В наличии: ${product.stock} шт.` : 'Нет в наличии'}
-      </span>
-      {product.warehouse && (
-        <span className="text-blue-600 font-semibold">{product.warehouse}</span>
-      )}
-      <span className="text-slate-500 flex items-center gap-1">
-        <Truck className="w-4 h-4" />
-        {getDeliveryText(product.delivery_days || 3)}
-      </span>
+          {/* Actions */}
+          <div className="flex items-center gap-1.5 flex-shrink-0">
+            <FavoritesButton productId={product.id} size="sm" />
+            <div className="flex items-center border border-slate-200 rounded-lg bg-white">
+              <button onClick={() => updateQuantity(product.id, -1)} className="p-1.5 hover:bg-slate-50 rounded-l-lg" data-testid={`qty-minus-${product.id}`}>
+                <Minus className="w-3.5 h-3.5 text-slate-500" />
+              </button>
+              <span className="px-2 min-w-[28px] text-center text-xs font-bold text-slate-700">{quantities[product.id] || 1}</span>
+              <button onClick={() => updateQuantity(product.id, 1)} className="p-1.5 hover:bg-slate-50 rounded-r-lg" data-testid={`qty-plus-${product.id}`}>
+                <Plus className="w-3.5 h-3.5 text-slate-500" />
+              </button>
+            </div>
+            <Button
+              onClick={() => handleAddToCart(product)}
+              disabled={product.stock === 0}
+              className="h-8 px-3 bg-gradient-to-r from-teal-500 to-emerald-500 hover:from-teal-600 hover:to-emerald-600 text-white rounded-lg shadow-md shadow-teal-500/20 text-xs"
+              data-testid={`add-to-cart-${product.id}`}
+            >
+              <ShoppingCart className="w-3.5 h-3.5" />
+            </Button>
+          </div>
+        </div>
+      </div>
     </div>
   </div>
 );
