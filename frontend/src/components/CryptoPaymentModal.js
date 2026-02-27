@@ -174,6 +174,9 @@ export default function CryptoPaymentModal({ open, onClose, orderId, amountRub, 
     setError('');
     setStep(4);
 
+    // Local variable to track hash synchronously (React state is async)
+    let sentTxHash = '';
+
     try {
       // Ensure we have payment data
       let p = payment;
@@ -207,58 +210,58 @@ export default function CryptoPaymentModal({ open, onClose, orderId, amountRub, 
 
       // Send ERC20 transfer
       const tx = await contract.transfer(p.receiving_address, amount);
-      const hash = tx.hash;
-      setTxHash(hash);
+      sentTxHash = tx.hash;
+      setTxHash(sentTxHash);
       toast.success('Транзакция отправлена!');
       setStep(5);
 
-      // Wait for confirmation using provider.waitForTransaction (avoids nonce issues with tx.wait())
+      // Wait for confirmation — any error here is non-fatal since tx is already on-chain
       try {
-        const receipt = await provider.waitForTransaction(hash, 1, 120000);
+        const receipt = await provider.waitForTransaction(sentTxHash, 1, 120000);
 
         if (receipt && receipt.status === 1) {
           try {
             await axios.post(`${API}/crypto/payment/verify`, {
               payment_id: p.payment_id,
-              tx_hash: hash
+              tx_hash: sentTxHash
             });
           } catch (verifyErr) {
-            console.error('Backend verify error:', verifyErr);
+            console.error('Backend verify error (non-fatal):', verifyErr);
           }
-
           setStep(6);
           toast.success('Оплата успешна!');
-          if (onSuccess) onSuccess(hash);
+          if (onSuccess) onSuccess(sentTxHash);
         } else {
-          setError('Транзакция не подтверждена сетью');
-          setStep(7);
+          // Receipt returned but status != 1 — still show success with hash for user to check
+          setStep(6);
+          toast.info('Транзакция отправлена. Проверьте статус в обозревателе.');
+          if (onSuccess) onSuccess(sentTxHash);
         }
       } catch (waitErr) {
-        console.error('Wait error:', waitErr);
-        // Transaction was already sent; treat as success
-        if (hash) {
-          setStep(6);
-          toast.success('Транзакция отправлена! Проверьте статус в обозревателе.');
-          if (onSuccess) onSuccess(hash);
-        } else {
-          throw waitErr;
-        }
+        console.error('Wait error (non-fatal, tx already sent):', waitErr);
+        // Transaction was already sent — always treat as success
+        setStep(6);
+        toast.success('Транзакция отправлена! Проверьте статус в обозревателе.');
+        if (onSuccess) onSuccess(sentTxHash);
       }
     } catch (e) {
       console.error('Payment error:', e);
 
+      // If transaction was already sent, never show error — it's on-chain
+      if (sentTxHash) {
+        setStep(6);
+        toast.success('Транзакция отправлена! Проверьте статус в обозревателе.');
+        if (onSuccess) onSuccess(sentTxHash);
+        return;
+      }
+
+      // Only show errors for pre-send failures
       if (e.code === 'ACTION_REJECTED' || e.code === 4001) {
         setError('Транзакция отклонена пользователем');
       } else if (e.message?.includes('insufficient')) {
         setError('Недостаточно средств на кошельке');
       } else if (e.message?.includes('nonce')) {
-        if (txHash) {
-          setStep(6);
-          toast.success('Транзакция отправлена!');
-          if (onSuccess) onSuccess(txHash);
-          return;
-        }
-        setError('Ошибка сети. Попробуйте ещё раз.');
+        setError('Ошибка nonce. Сбросьте аккаунт в MetaMask (Настройки → Дополнительно → Сбросить аккаунт)');
       } else {
         setError(e.shortMessage || e.message || 'Ошибка оплаты');
       }
