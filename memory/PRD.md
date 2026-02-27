@@ -13,6 +13,12 @@ E-commerce platform for truck spare parts with full admin panel, crypto payments
 
 ## What's Been Implemented
 
+## February 2026 - Balance in Header (COMPLETED)
+- Added user balance display in the header (desktop + mobile)
+- Fetched from `/api/user/balance`, refreshed every 15s alongside notifications
+- Clickable → navigates to account page
+- Files: `/app/frontend/src/components/Header.js`
+
 ### February 2026 - Order Change Payment Logic (COMPLETED)
 - **Surcharge/Refund System**: When admin edits a paid order, the system calculates the price difference:
   - **Cash orders**: Just accept changes, no financial action
