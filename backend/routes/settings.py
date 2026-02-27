@@ -93,6 +93,52 @@ async def update_payment_settings(data: dict, user=Depends(get_current_user)):
     return {"success": True}
 
 
+
+# ==================== DELIVERY SETTINGS ====================
+
+DELIVERY_DEFAULTS = {
+    "min_free_delivery": 5000,
+    "delivery_price": 500,
+    "delivery_enabled": True
+}
+
+@router.get("/delivery-settings")
+async def get_delivery_settings():
+    """Get delivery settings (public)"""
+    settings = await db.settings.find_one({"key": "delivery_settings"})
+    if settings:
+        return {**DELIVERY_DEFAULTS, **settings.get("value", {})}
+    return DELIVERY_DEFAULTS
+
+
+@router.get("/admin/delivery-settings")
+async def get_admin_delivery_settings(user=Depends(get_current_user)):
+    if user.get("role") != "admin":
+        raise HTTPException(status_code=403, detail="Admin access required")
+    settings = await db.settings.find_one({"key": "delivery_settings"})
+    if settings:
+        return {**DELIVERY_DEFAULTS, **settings.get("value", {})}
+    return DELIVERY_DEFAULTS
+
+
+@router.put("/admin/delivery-settings")
+async def update_delivery_settings(data: dict, user=Depends(get_current_user)):
+    if user.get("role") != "admin":
+        raise HTTPException(status_code=403, detail="Admin access required")
+    settings_data = {
+        "min_free_delivery": data.get("min_free_delivery", 5000),
+        "delivery_price": data.get("delivery_price", 500),
+        "delivery_enabled": data.get("delivery_enabled", True)
+    }
+    await db.settings.update_one(
+        {"key": "delivery_settings"},
+        {"$set": {"value": settings_data}},
+        upsert=True
+    )
+    return {"success": True}
+
+
+
 # ==================== CRYPTO WALLETS ====================
 
 @router.get("/crypto-wallets")
