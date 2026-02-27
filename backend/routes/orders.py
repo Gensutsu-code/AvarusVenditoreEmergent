@@ -587,7 +587,7 @@ async def pay_additional_amount(order_id: str, payment_data: dict, user=Depends(
 
 @router.post("/orders/{order_id}/cancel")
 async def cancel_order_by_customer(order_id: str, user=Depends(get_current_user)):
-    """Customer cancels order within 24 hours of processing"""
+    """Customer cancels order - allowed when awaiting confirmation or within 24h of processing"""
     order = await db.orders.find_one({"id": order_id, "user_id": user["id"]}, {"_id": 0})
     if not order:
         raise HTTPException(status_code=404, detail="Order not found")
@@ -596,8 +596,11 @@ async def cancel_order_by_customer(order_id: str, user=Depends(get_current_user)
     if order.get("status") in ["shipped", "delivered", "cancelled"]:
         raise HTTPException(status_code=400, detail="Заказ нельзя отменить")
     
-    # Check 24 hour window for processing orders
-    if order.get("status") == "processing":
+    # Always allow cancellation when awaiting confirmation (admin made changes)
+    is_awaiting = order.get("awaiting_confirmation", False)
+    
+    # Check 24 hour window for processing orders (skip if awaiting confirmation)
+    if order.get("status") == "processing" and not is_awaiting:
         processing_started = order.get("processing_started_at")
         if processing_started:
             started = datetime.fromisoformat(processing_started.replace('Z', '+00:00'))
