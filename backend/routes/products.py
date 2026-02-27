@@ -89,6 +89,18 @@ async def get_popular_products(limit: int = 6):
     return products
 
 
+
+@router.get("/products/filters")
+async def get_product_filters():
+    """Get unique manufacturers and warehouses for filter dropdowns"""
+    manufacturers = await db.products.distinct("manufacturer")
+    warehouses = await db.products.distinct("warehouse")
+    manufacturers = sorted([m for m in manufacturers if m])
+    warehouses = sorted([w for w in warehouses if w])
+    return {"manufacturers": manufacturers, "warehouses": warehouses}
+
+
+
 @router.get("/products", response_model=List[ProductResponse])
 async def get_products(search: Optional[str] = None, category_id: Optional[str] = None, limit: int = 100, skip: int = 0):
     query = {}
