@@ -460,6 +460,7 @@ export default function AdminPage() {
       price: 0,
       stock: 0,
       delivery_days: 3,
+      warehouse: '',
       description: '',
       image_url: '',
       images: [],
