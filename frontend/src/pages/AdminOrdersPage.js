@@ -375,7 +375,10 @@ export default function AdminOrdersPage() {
 
                           {/* Items */}
                           <div className="p-4">
-                            <p className="text-xs font-bold uppercase text-teal-600 mb-3">Товары</p>
+                            <div className="flex items-center justify-between mb-3">
+                              <p className="text-xs font-bold uppercase text-teal-600">Товары</p>
+                              <p className="text-xs text-slate-400">Цены на момент оформления заказа</p>
+                            </div>
                             <div className="space-y-2">
                               {currentItems?.map((item, idx) => (
                                 <div key={idx} className={`flex items-center justify-between py-3 border-b border-slate-100 last:border-0 ${isEditing ? 'bg-slate-50 rounded-lg px-3 -mx-3' : ''}`}>
