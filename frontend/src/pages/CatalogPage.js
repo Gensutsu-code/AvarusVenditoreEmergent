@@ -94,8 +94,8 @@ const ProductCard = ({
         </div>
 
         {/* Right: price + actions — centered vertically */}
-        <div className="flex-shrink-0 flex items-center gap-3">
-          <p className="text-xl font-bold text-teal-600 whitespace-nowrap">{formatPrice(product.price)} <span className="text-sm">&#8381;</span></p>
+        <div className="flex-shrink-0 flex items-center gap-2">
+          <p className="text-sm font-bold text-white bg-gradient-to-r from-rose-500 to-pink-500 px-2.5 py-1 rounded-lg whitespace-nowrap shadow-sm">{formatPrice(product.price)} ₽</p>
           <FavoritesButton productId={product.id} size="sm" />
           <div className="flex items-center border border-slate-200 rounded-lg bg-white">
             <button onClick={() => updateQuantity(product.id, -1)} className="p-1.5 hover:bg-slate-50 rounded-l-lg" data-testid={`qty-minus-${product.id}`}>
