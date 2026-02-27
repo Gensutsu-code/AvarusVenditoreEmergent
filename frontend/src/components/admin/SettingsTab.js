@@ -180,6 +180,16 @@ export const SettingsTab = ({
         </motion.div>
       )}
 
+      {/* Delivery Settings */}
+      {activeSubTab === 'delivery' && (
+        <motion.div
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+        >
+          <DeliveryTab isDark={isDark} />
+        </motion.div>
+      )}
+
       {/* Partners */}
       {activeSubTab === 'partners' && (
         <motion.div
