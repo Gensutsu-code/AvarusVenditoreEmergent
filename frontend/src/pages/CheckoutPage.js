@@ -50,6 +50,7 @@ export default function CheckoutPage() {
   const [userBalance, setUserBalance] = useState(0);
   const [payWithBalance, setPayWithBalance] = useState(false);
   const [prepaymentSettings, setPrepaymentSettings] = useState({ prepayment_enabled: true });
+  const [deliverySettings, setDeliverySettings] = useState({ min_free_delivery: 5000, delivery_price: 500, delivery_enabled: true });
 
   const isPaymentMethodEnabled = (method) => paymentSettings[`${method}_enabled`] !== false;
 
