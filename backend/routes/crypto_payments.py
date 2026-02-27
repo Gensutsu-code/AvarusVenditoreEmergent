@@ -317,6 +317,37 @@ async def get_gas_estimate(chain: str):
         }
 
 
+@router.get("/crypto/payment-info")
+async def get_payment_info(chain: str, token: str, amount_rub: float):
+    """Get payment info (address, token, amount) without creating an order"""
+    if chain not in TOKENS:
+        raise HTTPException(status_code=400, detail=f"Unsupported chain: {chain}")
+    if token not in ["usdt", "usdc"]:
+        raise HTTPException(status_code=400, detail=f"Unsupported token: {token}")
+    
+    settings = await get_crypto_settings()
+    if not settings.get("crypto_enabled", True):
+        raise HTTPException(status_code=400, detail="Crypto payments disabled")
+    
+    receiving_address = settings.get("receiving_address", "")
+    if not receiving_address:
+        raise HTTPException(status_code=400, detail="Crypto payment address not configured")
+    
+    price_data = await get_crypto_price(amount_rub)
+    decimals = 6 if token == "usdc" else 18 if chain == "bsc" else 6
+    
+    return {
+        "receiving_address": receiving_address,
+        "token_address": TOKENS[chain][token],
+        "chain": chain,
+        "token": token,
+        "decimals": decimals,
+        "amount_rub": amount_rub,
+        "amount_usd": price_data["amount_usd"],
+        "token_amount": price_data["token_amount"]
+    }
+
+
 @router.post("/crypto/payment/create")
 async def create_crypto_payment(data: CryptoPaymentRequest, user=Depends(get_current_user)):
     """Create a new crypto payment request"""
