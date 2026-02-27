@@ -1,9 +1,101 @@
-import { useState } from 'react';
-import { Send, Image, FileText } from 'lucide-react';
+import { useState, useEffect } from 'react';
+import { Send, Image, FileText, Truck } from 'lucide-react';
 import { motion } from 'framer-motion';
+import axios from 'axios';
+import { toast } from 'sonner';
+import { Input } from '../ui/input';
+import { Label } from '../ui/label';
+import { Button } from '../ui/button';
 
 // Import existing components
 import { TelegramTab, PartnersTab, TermsTab } from './index';
+
+const API = `${process.env.REACT_APP_BACKEND_URL}/api`;
+
+// Delivery Settings sub-tab
+const DeliveryTab = ({ isDark }) => {
+  const [settings, setSettings] = useState({ min_free_delivery: 5000, delivery_price: 500, delivery_enabled: true });
+  const [saving, setSaving] = useState(false);
+
+  useEffect(() => {
+    axios.get(`${API}/admin/delivery-settings`, {
+      headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
+    }).then(r => setSettings(r.data)).catch(() => {});
+  }, []);
+
+  const save = async () => {
+    setSaving(true);
+    try {
+      await axios.put(`${API}/admin/delivery-settings`, settings, {
+        headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
+      });
+      toast.success('Настройки доставки сохранены');
+    } catch { toast.error('Ошибка сохранения'); }
+    finally { setSaving(false); }
+  };
+
+  return (
+    <div className="space-y-6">
+      <div className={`p-6 rounded-xl border ${isDark ? 'bg-zinc-800/50 border-zinc-700' : 'bg-white border-slate-200'}`}>
+        <h3 className={`text-lg font-bold mb-5 ${isDark ? 'text-white' : 'text-slate-800'}`}>Настройки доставки</h3>
+        
+        <div className="space-y-5">
+          <div className="flex items-center gap-3">
+            <input
+              type="checkbox"
+              checked={settings.delivery_enabled}
+              onChange={e => setSettings({ ...settings, delivery_enabled: e.target.checked })}
+              className="w-4 h-4 rounded border-slate-300 text-teal-500 focus:ring-teal-500"
+              data-testid="delivery-enabled-toggle"
+            />
+            <Label className={isDark ? 'text-zinc-300' : 'text-slate-700'}>Платная доставка включена</Label>
+          </div>
+
+          <div>
+            <Label className={`text-xs font-semibold uppercase ${isDark ? 'text-teal-400' : 'text-teal-600'}`}>
+              Минимальная сумма для бесплатной доставки (₽)
+            </Label>
+            <Input
+              type="number"
+              value={settings.min_free_delivery}
+              onChange={e => setSettings({ ...settings, min_free_delivery: Number(e.target.value) })}
+              className={`mt-1.5 ${isDark ? 'bg-zinc-700 border-zinc-600 text-white' : 'border-slate-200'}`}
+              data-testid="min-free-delivery-input"
+            />
+            <p className={`text-xs mt-1 ${isDark ? 'text-zinc-500' : 'text-slate-400'}`}>
+              Заказы на эту сумму и выше — бесплатная доставка
+            </p>
+          </div>
+
+          <div>
+            <Label className={`text-xs font-semibold uppercase ${isDark ? 'text-teal-400' : 'text-teal-600'}`}>
+              Стоимость доставки (₽)
+            </Label>
+            <Input
+              type="number"
+              value={settings.delivery_price}
+              onChange={e => setSettings({ ...settings, delivery_price: Number(e.target.value) })}
+              className={`mt-1.5 ${isDark ? 'bg-zinc-700 border-zinc-600 text-white' : 'border-slate-200'}`}
+              data-testid="delivery-price-input"
+            />
+            <p className={`text-xs mt-1 ${isDark ? 'text-zinc-500' : 'text-slate-400'}`}>
+              Применяется если сумма заказа ниже минимальной
+            </p>
+          </div>
+        </div>
+
+        <Button
+          onClick={save}
+          disabled={saving}
+          className="mt-6 bg-gradient-to-r from-teal-500 to-emerald-500 hover:from-teal-600 hover:to-emerald-600 text-white rounded-xl"
+          data-testid="save-delivery-settings-btn"
+        >
+          {saving ? 'Сохранение...' : 'Сохранить'}
+        </Button>
+      </div>
+    </div>
+  );
+};
 
 // Sub-tab component for Settings section (TG + Partners + Rules)
 export const SettingsTab = ({
