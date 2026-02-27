@@ -160,24 +160,27 @@ export default function CheckoutPage() {
   const handleCryptoSuccess = async (txHash) => {
     setTxHash(txHash);
     setShowCryptoModal(false);
-    await fetchCart();
-    setSuccess(true);
-    toast.success('Заказ оплачен криптовалютой!');
+    
+    try {
+      // Create order AFTER successful crypto payment
+      const res = await axios.post(`${API}/orders`, { 
+        ...form, 
+        payment_method: 'crypto',
+        crypto_tx_hash: txHash
+      });
+      setOrderId(res.data.id);
+      await fetchCart();
+      setSuccess(true);
+      toast.success('Заказ оплачен криптовалютой!');
+    } catch (err) {
+      toast.error(err.response?.data?.detail || 'Оплата прошла, но ошибка создания заказа. Свяжитесь с поддержкой.');
+      setSuccess(true); // Still show success since payment went through
+    }
   };
 
-  const handleCryptoClose = async () => {
-    if (orderId) {
-      try {
-        // Return items to cart without cancelling the order
-        await axios.post(`${API}/orders/${orderId}/return-to-cart`);
-        await fetchCart();
-        toast.info('Товары возвращены в корзину. Заказ сохранён.');
-      } catch (err) {
-        console.error('Failed to return items to cart:', err);
-      }
-    }
+  const handleCryptoClose = () => {
+    // No order was created, just close the modal
     setShowCryptoModal(false);
-    setOrderId(null);
   };
 
   const copyToClipboard = (text) => { navigator.clipboard.writeText(text); toast.success('Скопировано!'); };
