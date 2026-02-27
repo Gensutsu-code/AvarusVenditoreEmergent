@@ -1,160 +1,165 @@
 <analysis>**original_problem_statement:**
-The initial request was to optimize a slow admin analytics page. This evolved into a series of UI/UX refinements for the header, homepage, and search. The focus then shifted to a complete rework of the cryptocurrency payment modal, which involved fixing numerous bugs. Most recently, the user requested significant feature additions and UI redesigns for the product catalog/search page, including advanced filters and a new product card layout.
+The initial request was to optimize a slow admin analytics page. This evolved into a series of UI/UX refinements for the header, homepage, and search. The focus then shifted to a complete rework of the cryptocurrency payment modal. After that, the user requested significant feature additions and UI redesigns for the product catalog/search page, including advanced filters and a new product card layout.
+
+Most recently, the user requested a massive overhaul of the entire order management system. This includes:
+1.  A new admin order page with inline editing (no modals) and a redesigned UI.
+2.  Removing the discount function from the order editor.
+3.  A system for notifying clients when an admin modifies their order (price or quantity).
+4.  On the client's order page, a special UI to show these changes (old vs. new data) and buttons to Accept Changes or Cancel Order.
+5.  An auto-cancellation mechanism: if the client doesn't respond to changes within 24 hours, the order is automatically cancelled.
+6.  The ability for clients to cancel an order themselves within 24 hours of it being moved to processing.
+7.  System-wide push notifications with sound for all alerts, even when the browser is minimized.
+8.  Complex business logic for handling surcharges and refunds when a client accepts changes to a paid order.
 
 **User's preferred language**: Russian
 
 **what currently exists?**
-The application is a full-stack e-commerce platform. The cryptocurrency payment modal has been extensively debugged and is now functional, including a revised logic where the order is created only after a successful transaction. The platform now includes admin-configurable delivery settings (free delivery threshold, delivery cost) that are reflected at checkout. A product warehouse system has been implemented, allowing warehouses to be assigned in the admin panel and displayed on product pages and catalog cards. The product catalog page has been significantly enhanced with a persistent sidebar containing numerous filters (price, stock, manufacturer, warehouse, delivery time, etc.) and a completely redesigned, compact, and stylized product card layout.
+The application is a full-stack e-commerce platform with a functional crypto payment modal, admin-configurable settings, and a product warehouse system.
+
+Recent major changes include:
+-   **Product Catalog:** The product card on the catalog page has been extensively redesigned based on numerous user requests (fixed height, manual quantity input, new layout, color/style changes). The search dropdown now directs to a search results page instead of a product page.
+-   **Product Stock System:** The concept of stock has been changed from a number to a boolean status (in stock / out of stock), with UI updates in both the admin panel (toggle switch, status indicators) and client-side cards (labels).
+-   **Promotional Banner:** A floating banner was implemented with custom open/close animations using .
+-   **Order Management System Overhaul:**
+    -   **Admin Panel:** A new  has replaced the old system. It features a modern UI with collapsible order cards that support **inline editing** of customer details and order items, removing the need for pop-up modals. A bug was also fixed to ensure item prices displayed are the final prices from the time of order, including discounts.
+    -   **Client-Side:** The  now displays a detailed comparison when an order is modified by an admin, showing old data (strikethrough-red) next to new data (green). It includes confirmation buttons.
+    -   **Backend:** The  model in MongoDB was significantly extended to track changes (, , ). A background task runs every hour to automatically cancel orders if a client doesn't respond to admin edits within 24 hours.
+    -   **Notifications:** A  and a sound file () were added to support push/sound notifications, though full integration is pending.
 
 **Last working item**:
--   **Last item agent was working:** The agent was adjusting the layout of the product card on the catalog page (). In the process, it moved the price and cart controls to the top right of the card. The user became upset, stating these controls should have remained vertically centered, and told the agent not to make unrequested changes.
+-   **Last item agent was working:** Implementing the complex business logic for handling payments when a client accepts an admin's changes to an already paid order. This involves surcharges for price increases and refunds for decreases, with different handling based on the original payment method (Card, Crypto, Internal Balance, Cash). The agent was in the middle of updating the backend models () and the frontend  to support this logic.
 -   **Status:** IN PROGRESS
 -   **Agent Testing Done:** N
--   **Which testing method agent to use?** screenshot tool
+-   **Which testing method agent to use?** both
 -   **User Testing Done:** N
 
 **All Pending/In progress Issue list**:
--   **Issue 1: Revert Product Card Layout (P0)**
-    -   **Description:** The user is angry because the agent moved the block containing the price, favorite button, quantity selector, and add-to-cart button. This block should be vertically centered within the card's right-hand column, as it was before the last modification.
-    -   **Attempted fixes:** The agent moved the controls to the top right in an attempt to restructure the layout, which was incorrect.
+-   **Issue 1: Complete and Test Order Change Payment Logic (P0)**
+    -   **Description:** The current active task is to finish the implementation of surcharges and refunds for edited orders. When a user clicks Принять изменения (Accept Changes), the system must correctly calculate the price difference and trigger the appropriate action: redirect to a payment page for a surcharge, credit the user's internal balance for a refund, or simply confirm the change for cash payments.
+    -   **Attempted fixes:** The agent created backend endpoints (, ) and updated the User model with a . It was in the process of updating  and  when the session ended.
     -   **Next debug checklist:**
-        1.  Open .
-        2.  Locate the  containing the price, favorite, and cart controls for the product card (around line 340).
-        3.  Re-apply flexbox utility classes (e.g., ) to the parent column to ensure this block is centered vertically.
-        4.  Remove any styles that align it to the top.
-    -   **Why fix this issue and what will be achieved with the fix?** To resolve the user's immediate frustration and correct the product card layout to match their explicit requirements.
+        1.  Complete the update to the  Pydantic model in  by adding  and  fields.
+        2.  Verify the logic in the  endpoint in  is complete for all scenarios (surcharge, refund, cash).
+        3.  Finish the  function in  to handle the API response, including redirecting to a payment page if necessary.
+        4.  Thoroughly test the entire flow for all payment methods (Card/Crypto, Internal Balance, Cash) and both scenarios (price increase and decrease).
     -   **Status:** IN PROGRESS
     -   **Is recurring issue?** N
-    -   **Should Test frontend/backend/both after fix?** frontend
+    -   **Should Test frontend/backend/both after fix?** both
     -   **Blocked on other issue:** None
 
 **In progress Task List**:
-There are no other in-progress tasks.
+-   **Task 1: Complete Order Management Overhaul (P0)**
+    -   **Where to resume:** Resume by finishing the Pydantic model update in , then continue implementing the client-side logic in  to handle the financial consequences of accepting order changes.
+    -   **What will be achieved with this?** This will complete the entire order management feature set requested by the user, providing a robust system for admins to edit orders and for clients to approve those changes with automated financial reconciliation.
+    -   **Status:** IN PROGRESS
+    -   **Should Test frontend/backend/both after fix?** both
+    -   **Blocked on something:** None
 
 **Upcoming and Future Tasks**
 
 **Upcoming Tasks:**
--   **Task 1: Add WalletConnect Support (P1)**
+-   **Task 1: WalletConnect Support (P1)**
     -   The user previously requested support for other wallets via WalletConnect for the crypto payment modal. This has not been implemented.
+-   **Task 2: Full Integration of Push/Sound Notifications (P2)**
+    -   The foundation for notifications with sound is in place (), but it needs to be fully integrated and tested for all required events (order changes, auto-cancellation, etc.) to ensure it works reliably even when the browser is minimized.
 
 **Future Tasks:**
 -   **Task 1: Real Payment Gateway Integration (P2)**
-    -   The current card payment system (ЮKassa) is a placeholder. A future task is to integrate a real payment provider like Stripe or complete the YooKassa integration.
+    -   The current card payment system (ЮKassa) is a placeholder. A future task is to integrate a real payment provider.
 
 **Completed work in this session**
--   **Cryptocurrency Payment Modal:**
-    -   **Flow Rework:** Changed the logic so that orders are created *after* successful crypto payment, not before. Canceled payments no longer create an order.
-    -   **Bug Fixes:**
-        -   Resolved a critical  error by intercepting the transaction hash directly from MetaMask via , bypassing an  v6 conflict.
-        -   Implemented backend caching for the CoinGecko API to prevent rate-limiting errors that caused incorrect price conversions.
-        -   Fixed gas estimation to show USD values even when the primary price API fails.
-        -   Corrected a post-transaction error caused by an async React state update.
--   **Delivery Settings Feature:**
-    -   Implemented backend endpoints and a new Доставка (Delivery) tab in the admin panel to manage minimum order amount for free delivery and a flat delivery fee.
-    -   Integrated this logic into the checkout page to dynamically calculate and display delivery costs.
--   **Product Warehouse Feature:**
-    -   Added a  field to products.
-    -   Implemented a dropdown in the admin product editor to assign a warehouse (Ростов, Пятигорск, Москва, Новосибирск).
-    -   The assigned warehouse is now displayed on the product detail page and all product card variants.
--   **Catalog & Search Page Overhaul:**
-    -   **Filters:** Implemented a comprehensive, persistent sidebar with filters for Manufacturer, Warehouse, Price, Stock, Delivery Time, Has Photo, Has Replacements, Sorting, and Category. The sidebar only appears after a search is initiated.
-    -   **Product Card Redesign:** Iteratively redesigned the product card in the catalog for a more compact, modern, and information-dense layout, including stylized badges for metadata.
-    -   **UI:** Added a Найти (Find) button next to the search bar on the catalog page.
--   **General UI Fixes:**
-    -   Fixed the notification badge to appear correctly on the bell icon in the header.
-    -   Corrected the alignment of the Войти (Login) button for unauthenticated users.
-    -   Removed a Гарантия (Guarantee) block from the product page per user request.
+-   **Product Card Redesign (Catalog Page):** Fixed vertical alignment, adjusted spacing, reduced card height, styled price and title, enforced fixed height for all cards, added manual quantity input, and refined layout to pin badges to the bottom.
+-   **Search Dropdown Behavior:** Modified search dropdown links to go to the catalog search results page instead of the product page.
+-   **Floating Promo Banner:** Relocated and implemented a new, smoother open/close animation.
+-   **Product Stock System Overhaul:** Changed from numerical quantity to a boolean in-stock status, updating both admin and client UIs.
+-   **Admin Order Price Fix:** Corrected a bug where order item prices didn't include checkout discounts. Ran a script to fix 40 existing orders in the database.
+-   **Client Order Page UI:** Fixed a bug where Accept/Cancel buttons were not visible. Implemented a compact before/after view for order changes, replacing a previous disliked version.
+-   **Order Management Overhaul (Core):**
+    -   **Admin UI:** Built a new  with inline order editing.
+    -   **Backend Logic:** Updated the  model and created a background task for auto-canceling expired orders.
 
 **Earlier issues found/mentioned but not fixed**
 None.
 
 **Known issue recurrence from previous fork**
--   **Issue recurrence in previous fork:** Slow loading of the CRM analytics page.
--   **Recurrence count:** 1
--   **Status:** RESOLVED
+-   None.
 
 **Code Architecture**
 
 
 **Key Technical Concepts**
--   **Frontend:** React, TailwindCSS,  v6, .
--   **Backend:** FastAPI, Python,  for API caching.
--   **Critical Logic:** The crypto transaction flow now circumvents 's  by using  directly to let MetaMask handle the nonce, while simultaneously intercepting the call to capture the  reliably.
--   **Architecture:** Client-side filtering on the catalog page, server-side data fetching, two-column layout for filters and content.
+-   **Frontend:** React, TailwindCSS,  for advanced UI animations.
+-   **Backend:** FastAPI,  for background tasks via the  protocol.
+-   **Database:** One-off data migration script for MongoDB to patch existing records.
+-   **Architecture:** Complex, stateful UI for inline editing and displaying data diffs. A background job for business logic (auto-cancellation).
 
 **key DB schema**
--    (collection):  field added to documents.
--    (collection): New documents to store .
--    (collection):  field added to documents.
+-   : 
+-   : 
 
 **changes in tech stack**
--    added to the backend dependencies.
+-   No new libraries, but heavy use of  and adoption of FastAPI's  for background tasks.
 
 **All files of reference**
--   **/app/frontend/src/pages/CatalogPage.js** (Current focus, contains product card layout)
--    (Contains complex payment logic)
--    (Orchestrates order creation)
--    (Backend logic for orders and crypto payments)
--    (Admin panel settings)
--    (Public settings endpoints)
--    (Product filtering and data)
--    (Contains settings UI)
+-   **/app/frontend/src/pages/OrdersPage.js** (Current frontend focus)
+-   **/app/backend/src/routes/orders.py** (Current backend focus)
+-   **/app/backend/src/models.py** (Contains data models for the current task)
+-    (The new admin UI)
+-    (Background task implementation)
 
 **Areas that need refactoring**:
--   : This file has become very large and complex, managing state for search, multiple filters, product lists, and the UI layout. The filter logic could be extracted into a custom hook, and the product card into its own component.
--   : Remains a monolithic 900+ line component. Breaking it into smaller, step-based components is still recommended for maintainability.
+-   The  component logic is still inside  and has become very complex. It should be extracted into its own file.
+-    and  are becoming large and managing a lot of state. The card components within them could be extracted to separate files for better maintainability.
 
 **key api endpoints**
--   : (New) Fetches public delivery settings.
--   : (New) Fetches delivery settings for the admin panel.
--   : (New) Updates delivery settings.
--   : (New) Gets unique values for building filter UI (manufacturers, warehouses).
--   : (Modified) Now accepts numerous query parameters for filtering and sorting.
--   : (New) Gets crypto payment address info without creating an order.
--   : (Modified) Logic updated to handle delivery fees and different payment flows.
+-   : Updates an order and triggers the client confirmation flow.
+-   : **(New/In-Progress)** Client accepts changes, triggering payment/refund logic.
+-   : (New) Client cancels an order after changes were proposed.
+-   : (New) Fetches the user's internal balance.
+-   : **(New/In-Progress)** Endpoint to handle surcharges for edited orders.
 
 **Critical Info for New Agent**
-1.  **User Temperament:** The user is very direct and has strong opinions on UI. They get frustrated when instructions are not followed precisely, as seen in the last message. Your immediate priority is to fix the product card layout to appease the user. Do not make unrequested changes.
-2.  **Crypto Payment Fragility:** The crypto payment logic, especially regarding how transaction fees are handled, was implemented to match the user's (technically incorrect) understanding that gas fees could be paid in USDC. The current implementation is a hack that intercepts MetaMask calls. Be extremely cautious if modifying , as this logic is sensitive and was a point of major friction.
-3.  **Follow Instructions Literally:** Acknowledge the user's feedback from the last message (Dont do what youre not asked to do). Confirm your understanding before implementing and stick to the requested change.
+1.  **User Temperament:** The user is very direct and has strong opinions. They react negatively to unrequested changes (не делать того что тебя не просят) or implementations they deem poor (убери это дерьмо). Follow instructions precisely and confirm your understanding of complex requests.
+2.  **Task Complexity:** The current task is the final, most complex part of the order management overhaul. It involves financial transactions and requires careful, step-by-step implementation and thorough testing of all possible scenarios (price up/down, different payment methods).
+3.  **Resume Point:** Your immediate task is to continue from where the previous agent stopped. The agent was adding  and  to the  model in . Finish that, then complete the frontend logic in  to handle the different outcomes of accepting an order change.
 
 **documents and test reports created in this job**
--   None.
+-   
 
 **Last 10 User Messages and any pending HUMAN messages**
-1.  **User:** Move the product name up and the metadata (manufacturer, article, etc.) down on the card. - **Status: COMPLETED**
-2.  **User:** The price/cart controls should stay in the center. Don't do what you're not asked to do. - **Status: PENDING (Highest Priority)**
-3.  **User:** Add more filters to the search page (delivery time, has photo, has replacements, sorting). - **Status: COMPLETED**
-4.  **User:** Arrange price, favorite, quantity, and cart more synchronously. - **Status: COMPLETED (but misinterpreted, leading to the current issue)**
-5.  **User:** Make the product name 20% bigger, move manufacturer/article to the bottom, and limit the name's width. - **Status: COMPLETED**
-6.  **User:** Make the article number bigger and pink. - **Status: COMPLETED**
-7.  **User:** Add a thin border to the product photo in the site's theme color. - **Status: COMPLETED**
-8.  **User:** Add padding to the product photo and round the corners. - **Status: COMPLETED**
-9.  **User:** This looks ugly, make the card more beautifully designed, keeping my previous wishes in mind. - **Status: COMPLETED**
-10. **User:** Make the product card data more compact to fit the full product name. - **Status: COMPLETED (initial attempt was disliked)**
+1.  **User:** Add a surcharge/refund system for edited orders. **Status: IN PROGRESS (Current Task)**
+2.  **User:** Show old vs. new data compactly, not in Было/Стало blocks. **Status: COMPLETED**
+3.  **User:** I don't like the Было/Стало (Before/After) UI, get rid of that shit. **Status: COMPLETED**
+4.  **User:** Show a comparison of old and new data when an admin edits an order. **Status: COMPLETED**
+5.  **User:** The accept/cancel buttons aren't appearing on the client's order page. **Status: COMPLETED**
+6.  **User:** The price shown in admin orders is wrong, it doesn't include the discount. **Status: COMPLETED**
+7.  **User:** I told you not to add things I didn't ask for (referring to an explanatory label). **Status: COMPLETED**
+8.  **User:** Ensure prices in admin orders are the final prices from checkout. **Status: COMPLETED**
+9.  **User:** Implement the massive order management overhaul. **Status: Mostly Completed**
+10. **User:** Set up a cron job for auto-cancelling orders. **Status: COMPLETED**
 
 **Project Health Check:**
--   **Broken:** The layout of the product card on the catalog page is incorrect according to the user.
--   **Mocked:** Card payment system (ЮKassa).
--   **Fragile:** The cryptocurrency payment logic relies on a hack to satisfy a user's misconception about gas fees.
+-   **Broken:** The order change acceptance flow is partially implemented and non-functional.
+-   **Mocked:** The Card payment system (ЮKassa) is a placeholder.
+-   **Fragile:** The new order management system is highly complex, with many interdependent parts that require careful testing.
 
 **3rd Party Integrations**
--   **Resend:** For email notifications.
--   **web3.py:** For backend crypto utility functions.
--   **framer-motion:** For frontend UI animations.
--   **CoinGecko:** For real-time crypto-to-fiat exchange rates (now with caching).
--   **react-qr-code:** For displaying QR codes in the payment modal.
--   **ethers.js:** For frontend wallet and blockchain interactions (its role in sending transactions has been minimized due to bugs).
+-   **Resend:** Email notifications.
+-   **web3.py:** Backend crypto functions.
+-   **framer-motion:** Frontend UI animations.
+-   **CoinGecko:** Real-time crypto exchange rates.
+-   **react-qr-code:** QR code display.
+-   **ethers.js:** Frontend wallet interactions.
 
 **Testing status**
 -   **Testing agent used after significant changes:** NO
 -   **Troubleshoot agent used after agent stuck in loop:** NO
 -   **Test files created:** None.
--   **Known regressions:** The product card layout was correct before the agent's last change; it has now regressed.
+-   **Known regressions:** None.
 
 **Credentials to test flow:**
 -   **Admin:**  / 
--   **Client:**  / 
+-   **Client:**  /  (This user has an order that can be used for testing the change confirmation flow).
 
 **What agent forgot to execute**
-The agent did not forget a task, but it misinterpreted a user request regarding the product card layout, leading to the current issue and user frustration.</analysis>
+The agent has not forgotten any tasks but is in the middle of a large, multi-step implementation requested by the user.</analysis>
