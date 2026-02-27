@@ -556,12 +556,12 @@ export default function CatalogPage() {
     <div className="min-h-screen" data-testid="catalog-page">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Header */}
-        <div className="mb-8">
+        <div className="mb-6">
           <h1 className="text-2xl md:text-3xl font-bold tracking-tight uppercase mb-6 text-slate-800">
             {currentCategory ? currentCategory.name : 'Поиск запчастей'}
           </h1>
           
-          {/* Search form with autocomplete */}
+          {/* Search form */}
           <div className="max-w-2xl">
             <SearchDropdown 
               placeholder="Введите название или артикул..."
@@ -570,130 +570,7 @@ export default function CatalogPage() {
             />
           </div>
 
-          {/* Filters toggle */}
-          <button
-            onClick={() => setShowFilters(!showFilters)}
-            className={`mt-4 inline-flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium transition-all ${
-              showFilters || hasActiveFilters
-                ? 'bg-teal-50 text-teal-700 border border-teal-200'
-                : 'bg-white/60 text-slate-600 border border-slate-200 hover:border-teal-200 hover:bg-teal-50'
-            }`}
-            data-testid="filters-toggle-btn"
-          >
-            <Filter className="w-4 h-4" />
-            Фильтры
-            {hasActiveFilters && (
-              <span className="bg-teal-500 text-white text-[10px] px-1.5 py-0.5 rounded-full font-bold">
-                {[filters.manufacturer, filters.warehouse, filters.inStock, filters.priceMin, filters.priceMax].filter(Boolean).length}
-              </span>
-            )}
-          </button>
-
-          {/* Filters panel */}
-          {showFilters && (
-            <motion.div
-              initial={{ opacity: 0, height: 0 }}
-              animate={{ opacity: 1, height: 'auto' }}
-              exit={{ opacity: 0, height: 0 }}
-              className="mt-3 bg-white/80 backdrop-blur-sm border border-slate-200 rounded-2xl p-5 space-y-4"
-              data-testid="filters-panel"
-            >
-              <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
-                {/* Manufacturer */}
-                <div>
-                  <label className="text-xs font-semibold uppercase text-slate-500 mb-1.5 block">Производитель</label>
-                  <select
-                    value={filters.manufacturer}
-                    onChange={e => setFilters({ ...filters, manufacturer: e.target.value })}
-                    className="w-full h-10 rounded-xl border border-slate-200 bg-white px-3 text-sm focus:border-teal-400 focus:ring-teal-200 focus:outline-none"
-                    data-testid="filter-manufacturer"
-                  >
-                    <option value="">Все</option>
-                    {filterOptions.manufacturers.map(m => (
-                      <option key={m} value={m}>{m}</option>
-                    ))}
-                  </select>
-                </div>
-
-                {/* Warehouse */}
-                <div>
-                  <label className="text-xs font-semibold uppercase text-slate-500 mb-1.5 block">Склад</label>
-                  <select
-                    value={filters.warehouse}
-                    onChange={e => setFilters({ ...filters, warehouse: e.target.value })}
-                    className="w-full h-10 rounded-xl border border-slate-200 bg-white px-3 text-sm focus:border-teal-400 focus:ring-teal-200 focus:outline-none"
-                    data-testid="filter-warehouse"
-                  >
-                    <option value="">Все</option>
-                    {filterOptions.warehouses.map(w => (
-                      <option key={w} value={w}>{w}</option>
-                    ))}
-                  </select>
-                </div>
-
-                {/* Price Min */}
-                <div>
-                  <label className="text-xs font-semibold uppercase text-slate-500 mb-1.5 block">Цена от</label>
-                  <Input
-                    type="number"
-                    value={filters.priceMin}
-                    onChange={e => setFilters({ ...filters, priceMin: e.target.value })}
-                    placeholder="0"
-                    className="h-10 rounded-xl border-slate-200 focus:border-teal-400"
-                    data-testid="filter-price-min"
-                  />
-                </div>
-
-                {/* Price Max */}
-                <div>
-                  <label className="text-xs font-semibold uppercase text-slate-500 mb-1.5 block">Цена до</label>
-                  <Input
-                    type="number"
-                    value={filters.priceMax}
-                    onChange={e => setFilters({ ...filters, priceMax: e.target.value })}
-                    placeholder="999999"
-                    className="h-10 rounded-xl border-slate-200 focus:border-teal-400"
-                    data-testid="filter-price-max"
-                  />
-                </div>
-
-                {/* In stock */}
-                <div className="flex items-end">
-                  <label className="flex items-center gap-2 h-10 cursor-pointer" data-testid="filter-in-stock">
-                    <input
-                      type="checkbox"
-                      checked={filters.inStock}
-                      onChange={e => setFilters({ ...filters, inStock: e.target.checked })}
-                      className="w-4 h-4 rounded border-slate-300 text-teal-500 focus:ring-teal-400"
-                    />
-                    <span className="text-sm text-slate-700 font-medium">В наличии</span>
-                  </label>
-                </div>
-              </div>
-
-              {/* Filter actions */}
-              <div className="flex items-center gap-3 pt-2 border-t border-slate-100">
-                <Button
-                  onClick={applyFilters}
-                  className="bg-gradient-to-r from-teal-500 to-emerald-500 hover:from-teal-600 hover:to-emerald-600 text-white rounded-xl h-9 px-5 text-sm"
-                  data-testid="apply-filters-btn"
-                >
-                  Применить
-                </Button>
-                {hasActiveFilters && (
-                  <button
-                    onClick={() => { resetFilters(); setTimeout(fetchProducts, 50); }}
-                    className="text-sm text-slate-500 hover:text-red-500 transition-colors"
-                    data-testid="reset-filters-btn"
-                  >
-                    Сбросить фильтры
-                  </button>
-                )}
-              </div>
-            </motion.div>
-          )}
-
-          {/* Active filters */}
+          {/* Active filters tags */}
           {(searchQuery || categoryId) && (
             <div className="flex items-center gap-2 mt-4">
               {searchQuery && (
@@ -721,134 +598,293 @@ export default function CatalogPage() {
           )}
         </div>
 
-        {/* Categories - show when no search/category selected */}
-        {!searchQuery && !categoryId && categories.length > 0 && (
-          <div className="mb-8">
-            <h2 className="text-lg font-semibold mb-4 text-slate-800">Категории</h2>
-            <div className="grid grid-cols-3 sm:grid-cols-4 lg:grid-cols-6 gap-3">
-              {categories.map((category) => (
-                <motion.button
-                  key={category.id}
-                  onClick={() => selectCategory(category.id)}
-                  className="group glass-card transition-all duration-300 p-3 text-left hover:border-teal-400/50"
-                  data-testid={`category-${category.id}`}
-                  whileHover={{ scale: 1.02 }}
-                  whileTap={{ scale: 0.98 }}
-                >
-                  {category.image_url && (
-                    <div className="aspect-square mb-2 overflow-hidden rounded-lg bg-slate-100">
-                      <img 
-                        src={category.image_url} 
-                        alt={category.name}
-                        className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
-                      />
-                    </div>
-                  )}
-                  <h3 className="font-medium text-sm transition-colors flex items-center justify-between text-slate-800 group-hover:text-teal-600">
-                    {category.name}
-                    <ArrowRight className="w-3 h-3 opacity-0 group-hover:opacity-100 transition-opacity" />
-                  </h3>
-                </motion.button>
-              ))}
-            </div>
-          </div>
-        )}
+        {/* Two-column layout: Sidebar + Content */}
+        <div className="flex gap-6">
+          {/* Left sidebar — Filters */}
+          <aside className="hidden md:block w-64 flex-shrink-0" data-testid="filters-sidebar">
+            <div className="bg-white/80 backdrop-blur-sm border border-slate-200 rounded-2xl p-5 space-y-5 sticky top-24">
+              <div className="flex items-center justify-between">
+                <h3 className="font-bold text-slate-800 flex items-center gap-2">
+                  <Filter className="w-4 h-4 text-teal-500" /> Фильтры
+                </h3>
+                {hasActiveFilters && (
+                  <button
+                    onClick={() => { resetFilters(); setTimeout(fetchProducts, 50); }}
+                    className="text-xs text-slate-400 hover:text-red-500 transition-colors"
+                    data-testid="reset-filters-btn"
+                  >
+                    Сбросить
+                  </button>
+                )}
+              </div>
 
-        {/* Content */}
-        {!searchQuery && !categoryId ? (
-          <div data-testid="search-prompt">
-            <div className="text-center py-8 mb-8">
-              <Search className="w-16 h-16 mx-auto mb-4 text-slate-300" />
-              <p className="text-slate-500">
-                Введите название или артикул, либо выберите категорию
-              </p>
-            </div>
-            
-            {/* Popular Products */}
-            <PopularProducts />
-          </div>
-        ) : loading ? (
-          <div className="text-center py-12 text-slate-500" data-testid="loading">
-            <div className="w-8 h-8 border-2 rounded-full animate-spin mx-auto mb-4 border-teal-500/30 border-t-teal-500"></div>
-            Загрузка...
-          </div>
-        ) : products.length === 0 && alternatives.length === 0 ? (
-          <div className="text-center py-12" data-testid="no-products">
-            <p className="mb-4 text-slate-500">Товары не найдены</p>
-            <Button onClick={clearFilters} variant="outline" className="rounded-xl border-slate-300 text-slate-600 hover:bg-slate-100">
-              Сбросить фильтры
-            </Button>
-          </div>
-        ) : (
-          <div className="space-y-8">
-            {/* Exact matches section */}
-            {products.length > 0 && (
+              {/* Manufacturer */}
               <div>
-                {alternatives.length > 0 && (
-                  <div className="flex items-center gap-3 mb-4">
-                    <div className="w-1 h-6 bg-emerald-500 rounded-full"></div>
-                    <h2 className="text-lg font-bold text-slate-800">
-                      Точное совпадение ({products.length})
-                    </h2>
+                <label className="text-xs font-semibold uppercase text-slate-500 mb-1.5 block">Производитель</label>
+                <select
+                  value={filters.manufacturer}
+                  onChange={e => setFilters({ ...filters, manufacturer: e.target.value })}
+                  className="w-full h-9 rounded-lg border border-slate-200 bg-white px-2.5 text-sm focus:border-teal-400 focus:ring-teal-200 focus:outline-none"
+                  data-testid="filter-manufacturer"
+                >
+                  <option value="">Все</option>
+                  {filterOptions.manufacturers.map(m => (
+                    <option key={m} value={m}>{m}</option>
+                  ))}
+                </select>
+              </div>
+
+              {/* Warehouse */}
+              <div>
+                <label className="text-xs font-semibold uppercase text-slate-500 mb-1.5 block">Склад</label>
+                <select
+                  value={filters.warehouse}
+                  onChange={e => setFilters({ ...filters, warehouse: e.target.value })}
+                  className="w-full h-9 rounded-lg border border-slate-200 bg-white px-2.5 text-sm focus:border-teal-400 focus:ring-teal-200 focus:outline-none"
+                  data-testid="filter-warehouse"
+                >
+                  <option value="">Все</option>
+                  {filterOptions.warehouses.map(w => (
+                    <option key={w} value={w}>{w}</option>
+                  ))}
+                </select>
+              </div>
+
+              {/* Price range */}
+              <div>
+                <label className="text-xs font-semibold uppercase text-slate-500 mb-1.5 block">Цена, &#8381;</label>
+                <div className="flex gap-2">
+                  <Input
+                    type="number"
+                    value={filters.priceMin}
+                    onChange={e => setFilters({ ...filters, priceMin: e.target.value })}
+                    placeholder="от"
+                    className="h-9 rounded-lg border-slate-200 focus:border-teal-400 text-sm"
+                    data-testid="filter-price-min"
+                  />
+                  <Input
+                    type="number"
+                    value={filters.priceMax}
+                    onChange={e => setFilters({ ...filters, priceMax: e.target.value })}
+                    placeholder="до"
+                    className="h-9 rounded-lg border-slate-200 focus:border-teal-400 text-sm"
+                    data-testid="filter-price-max"
+                  />
+                </div>
+              </div>
+
+              {/* In stock */}
+              <label className="flex items-center gap-2.5 cursor-pointer" data-testid="filter-in-stock">
+                <input
+                  type="checkbox"
+                  checked={filters.inStock}
+                  onChange={e => setFilters({ ...filters, inStock: e.target.checked })}
+                  className="w-4 h-4 rounded border-slate-300 text-teal-500 focus:ring-teal-400"
+                />
+                <span className="text-sm text-slate-700 font-medium">Только в наличии</span>
+              </label>
+
+              {/* Category filter */}
+              {categories.length > 0 && (
+                <div>
+                  <label className="text-xs font-semibold uppercase text-slate-500 mb-1.5 block">Категория</label>
+                  <div className="space-y-1 max-h-40 overflow-y-auto">
+                    {categories.map(cat => (
+                      <button
+                        key={cat.id}
+                        onClick={() => selectCategory(cat.id)}
+                        className={`w-full text-left text-sm px-2.5 py-1.5 rounded-lg transition-colors ${
+                          categoryId === cat.id
+                            ? 'bg-teal-50 text-teal-700 font-semibold'
+                            : 'text-slate-600 hover:bg-slate-50'
+                        }`}
+                      >
+                        {cat.name}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Apply button */}
+              <Button
+                onClick={applyFilters}
+                className="w-full bg-gradient-to-r from-teal-500 to-emerald-500 hover:from-teal-600 hover:to-emerald-600 text-white rounded-xl h-10 text-sm font-semibold shadow-lg shadow-teal-500/20"
+                data-testid="apply-filters-btn"
+              >
+                Применить
+              </Button>
+            </div>
+          </aside>
+
+          {/* Mobile filters toggle */}
+          <div className="md:hidden mb-4 w-full">
+            <button
+              onClick={() => setShowFilters(!showFilters)}
+              className={`inline-flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium transition-all ${
+                showFilters || hasActiveFilters
+                  ? 'bg-teal-50 text-teal-700 border border-teal-200'
+                  : 'bg-white/60 text-slate-600 border border-slate-200'
+              }`}
+              data-testid="filters-toggle-btn"
+            >
+              <Filter className="w-4 h-4" /> Фильтры
+              {hasActiveFilters && (
+                <span className="bg-teal-500 text-white text-[10px] px-1.5 py-0.5 rounded-full font-bold">
+                  {[filters.manufacturer, filters.warehouse, filters.inStock, filters.priceMin, filters.priceMax].filter(Boolean).length}
+                </span>
+              )}
+            </button>
+            {showFilters && (
+              <div className="mt-3 bg-white/80 backdrop-blur-sm border border-slate-200 rounded-2xl p-4 space-y-4">
+                <div>
+                  <label className="text-xs font-semibold uppercase text-slate-500 mb-1 block">Производитель</label>
+                  <select value={filters.manufacturer} onChange={e => setFilters({...filters, manufacturer: e.target.value})} className="w-full h-9 rounded-lg border border-slate-200 bg-white px-2.5 text-sm" data-testid="filter-manufacturer-mobile"><option value="">Все</option>{filterOptions.manufacturers.map(m => <option key={m} value={m}>{m}</option>)}</select>
+                </div>
+                <div>
+                  <label className="text-xs font-semibold uppercase text-slate-500 mb-1 block">Склад</label>
+                  <select value={filters.warehouse} onChange={e => setFilters({...filters, warehouse: e.target.value})} className="w-full h-9 rounded-lg border border-slate-200 bg-white px-2.5 text-sm" data-testid="filter-warehouse-mobile"><option value="">Все</option>{filterOptions.warehouses.map(w => <option key={w} value={w}>{w}</option>)}</select>
+                </div>
+                <div className="flex gap-2">
+                  <Input type="number" value={filters.priceMin} onChange={e => setFilters({...filters, priceMin: e.target.value})} placeholder="Цена от" className="h-9 rounded-lg text-sm" />
+                  <Input type="number" value={filters.priceMax} onChange={e => setFilters({...filters, priceMax: e.target.value})} placeholder="Цена до" className="h-9 rounded-lg text-sm" />
+                </div>
+                <label className="flex items-center gap-2 cursor-pointer"><input type="checkbox" checked={filters.inStock} onChange={e => setFilters({...filters, inStock: e.target.checked})} className="w-4 h-4 rounded border-slate-300 text-teal-500" /><span className="text-sm text-slate-700">Только в наличии</span></label>
+                <Button onClick={applyFilters} className="w-full bg-teal-500 hover:bg-teal-600 text-white rounded-xl h-9 text-sm">Применить</Button>
+              </div>
+            )}
+          </div>
+
+          {/* Right content — Products */}
+          <div className="flex-1 min-w-0">
+            {/* Categories - show when no search/category selected */}
+            {!searchQuery && !categoryId && categories.length > 0 && (
+              <div className="mb-8">
+                <h2 className="text-lg font-semibold mb-4 text-slate-800">Категории</h2>
+                <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
+                  {categories.map((category) => (
+                    <motion.button
+                      key={category.id}
+                      onClick={() => selectCategory(category.id)}
+                      className="group glass-card transition-all duration-300 p-3 text-left hover:border-teal-400/50"
+                      data-testid={`category-${category.id}`}
+                      whileHover={{ scale: 1.02 }}
+                      whileTap={{ scale: 0.98 }}
+                    >
+                      {category.image_url && (
+                        <div className="aspect-square mb-2 overflow-hidden rounded-lg bg-slate-100">
+                          <img 
+                            src={category.image_url} 
+                            alt={category.name}
+                            className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                          />
+                        </div>
+                      )}
+                      <h3 className="font-medium text-sm transition-colors flex items-center justify-between text-slate-800 group-hover:text-teal-600">
+                        {category.name}
+                        <ArrowRight className="w-3 h-3 opacity-0 group-hover:opacity-100 transition-opacity" />
+                      </h3>
+                    </motion.button>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Content */}
+            {!searchQuery && !categoryId ? (
+              <div data-testid="search-prompt">
+                <div className="text-center py-8 mb-8">
+                  <Search className="w-16 h-16 mx-auto mb-4 text-slate-300" />
+                  <p className="text-slate-500">
+                    Введите название или артикул, либо выберите категорию
+                  </p>
+                </div>
+                
+                {/* Popular Products */}
+                <PopularProducts />
+              </div>
+            ) : loading ? (
+              <div className="text-center py-12 text-slate-500" data-testid="loading">
+                <div className="w-8 h-8 border-2 rounded-full animate-spin mx-auto mb-4 border-teal-500/30 border-t-teal-500"></div>
+                Загрузка...
+              </div>
+            ) : products.length === 0 && alternatives.length === 0 ? (
+              <div className="text-center py-12" data-testid="no-products">
+                <p className="mb-4 text-slate-500">Товары не найдены</p>
+                <Button onClick={clearFilters} variant="outline" className="rounded-xl border-slate-300 text-slate-600 hover:bg-slate-100">
+                  Сбросить фильтры
+                </Button>
+              </div>
+            ) : (
+              <div className="space-y-8">
+                {/* Exact matches */}
+                {products.length > 0 && (
+                  <div>
+                    {alternatives.length > 0 && (
+                      <div className="flex items-center gap-3 mb-4">
+                        <div className="w-1 h-6 bg-emerald-500 rounded-full"></div>
+                        <h2 className="text-lg font-bold text-slate-800">
+                          Точное совпадение ({products.length})
+                        </h2>
+                      </div>
+                    )}
+                    {!alternatives.length && (
+                      <p className="text-sm text-slate-500 mb-4">
+                        Найдено: {products.length} {products.length === 1 ? 'товар' : products.length < 5 ? 'товара' : 'товаров'}
+                      </p>
+                    )}
+                    
+                    <div className="space-y-3" data-testid="products-list">
+                      {products.map((product) => (
+                        <ProductCard 
+                          key={product.id} 
+                          product={product} 
+                          quantities={quantities}
+                          updateQuantity={updateQuantity}
+                          handleAddToCart={handleAddToCart}
+                          setSelectedProduct={setSelectedProduct}
+                          formatPrice={formatPrice}
+                          getDeliveryText={getDeliveryText}
+                        />
+                      ))}
+                    </div>
                   </div>
                 )}
-                {!alternatives.length && (
-                  <p className="text-sm text-slate-500 mb-4">
-                    Найдено: {products.length} {products.length === 1 ? 'товар' : products.length < 5 ? 'товара' : 'товаров'}
-                  </p>
-                )}
-                
-                {/* Products List */}
-                <div className="space-y-3" data-testid="products-list">
-                  {products.map((product) => (
-                    <ProductCard 
-                      key={product.id} 
-                      product={product} 
-                      quantities={quantities}
-                      updateQuantity={updateQuantity}
-                      handleAddToCart={handleAddToCart}
-                      setSelectedProduct={setSelectedProduct}
-                      formatPrice={formatPrice}
-                      getDeliveryText={getDeliveryText}
-                    />
-                  ))}
-                </div>
-              </div>
-            )}
 
-            {/* Alternatives section */}
-            {alternatives.length > 0 && (
-              <div>
-                <div className="flex items-center gap-3 mb-4">
-                  <div className="w-1 h-6 bg-teal-500"></div>
-                  <h2 className="text-lg font-bold text-slate-800">
-                    Возможные замены ({alternatives.length})
-                  </h2>
-                </div>
-                <p className="text-sm text-slate-500 mb-4">
-                  Товары, у которых артикул &quot;{searchQuery}&quot; указан в кросс-номерах
-                </p>
-                
-                {/* Alternatives List */}
-                <div className="space-y-3" data-testid="alternatives-list">
-                  {alternatives.map((product) => (
-                    <ProductCard 
-                      key={product.id} 
-                      product={product} 
-                      quantities={quantities}
-                      updateQuantity={updateQuantity}
-                      handleAddToCart={handleAddToCart}
-                      setSelectedProduct={setSelectedProduct}
-                      formatPrice={formatPrice}
-                      getDeliveryText={getDeliveryText}
-                      isAlternative={true}
-                    />
-                  ))}
-                </div>
+                {/* Alternatives */}
+                {alternatives.length > 0 && (
+                  <div>
+                    <div className="flex items-center gap-3 mb-4">
+                      <div className="w-1 h-6 bg-teal-500"></div>
+                      <h2 className="text-lg font-bold text-slate-800">
+                        Возможные замены ({alternatives.length})
+                      </h2>
+                    </div>
+                    <p className="text-sm text-slate-500 mb-4">
+                      Товары, у которых артикул &quot;{searchQuery}&quot; указан в кросс-номерах
+                    </p>
+                    
+                    <div className="space-y-3" data-testid="alternatives-list">
+                      {alternatives.map((product) => (
+                        <ProductCard 
+                          key={product.id} 
+                          product={product} 
+                          quantities={quantities}
+                          updateQuantity={updateQuantity}
+                          handleAddToCart={handleAddToCart}
+                          setSelectedProduct={setSelectedProduct}
+                          formatPrice={formatPrice}
+                          getDeliveryText={getDeliveryText}
+                          isAlternative={true}
+                        />
+                      ))}
+                    </div>
+                  </div>
+                )}
               </div>
             )}
           </div>
-        )}
+        </div>
       </div>
 
       {/* Product Modal */}
