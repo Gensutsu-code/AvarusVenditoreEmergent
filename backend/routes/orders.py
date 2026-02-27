@@ -382,7 +382,7 @@ async def get_order(order_id: str, user=Depends(get_current_user)):
 
 @router.post("/orders/{order_id}/accept-changes")
 async def accept_order_changes(order_id: str, user=Depends(get_current_user)):
-    """Customer accepts changes made by admin"""
+    """Customer accepts changes made by admin with payment handling"""
     order = await db.orders.find_one({"id": order_id, "user_id": user["id"]}, {"_id": 0})
     if not order:
         raise HTTPException(status_code=404, detail="Order not found")
@@ -390,19 +390,133 @@ async def accept_order_changes(order_id: str, user=Depends(get_current_user)):
     if not order.get("awaiting_confirmation"):
         raise HTTPException(status_code=400, detail="No pending changes")
     
-    await db.orders.update_one(
-        {"id": order_id},
-        {"$set": {
-            "awaiting_confirmation": False,
-            "has_changes": False,
-            "changes_accepted": True,
-            "changes_accepted_at": datetime.now(timezone.utc).isoformat()
-        }}
-    )
+    payment_method = order.get("payment_method", "cash")
+    current_total = order.get("total", 0)
+    previous_total = order.get("previous_total", current_total)
+    is_paid = order.get("paid", False)
+    
+    # Calculate difference
+    price_difference = current_total - previous_total
+    
+    response_data = {
+        "message": "Changes accepted",
+        "action": "none",
+        "amount": 0
+    }
+    
+    # If payment method is cash - just accept
+    if payment_method == "cash":
+        await db.orders.update_one(
+            {"id": order_id},
+            {"$set": {
+                "awaiting_confirmation": False,
+                "has_changes": False,
+                "changes_accepted": True,
+                "changes_accepted_at": datetime.now(timezone.utc).isoformat()
+            }}
+        )
+        await create_notification(user["id"], "order", "Изменения приняты", f"Вы приняли изменения в заказе #{order_id[:8]}", "/orders")
+        return response_data
+    
+    # For paid orders (crypto, card, balance)
+    if is_paid:
+        if price_difference > 0:
+            # Need additional payment
+            if payment_method == "balance":
+                # Check user balance
+                current_user = await db.users.find_one({"id": user["id"]}, {"_id": 0})
+                user_balance = current_user.get("balance", 0)
+                
+                if user_balance >= price_difference:
+                    # Deduct from balance
+                    await db.users.update_one(
+                        {"id": user["id"]},
+                        {"$inc": {"balance": -price_difference}}
+                    )
+                    await db.orders.update_one(
+                        {"id": order_id},
+                        {"$set": {
+                            "awaiting_confirmation": False,
+                            "has_changes": False,
+                            "changes_accepted": True,
+                            "changes_accepted_at": datetime.now(timezone.utc).isoformat(),
+                            "additional_payment": price_difference,
+                            "additional_payment_method": "balance"
+                        }}
+                    )
+                    await create_notification(user["id"], "order", "Изменения приняты", 
+                        f"С вашего баланса списано {price_difference:.2f} ₽ за доплату по заказу #{order_id[:8]}", "/orders")
+                    response_data["action"] = "balance_deducted"
+                    response_data["amount"] = price_difference
+                else:
+                    # Not enough balance - need to pay via other method
+                    response_data["action"] = "payment_required"
+                    response_data["amount"] = price_difference
+                    response_data["message"] = "Недостаточно средств на балансе"
+                    return response_data
+            else:
+                # Crypto or card - redirect to payment
+                # Mark order as awaiting additional payment
+                await db.orders.update_one(
+                    {"id": order_id},
+                    {"$set": {
+                        "awaiting_additional_payment": True,
+                        "additional_payment_amount": price_difference,
+                        "additional_payment_method": payment_method
+                    }}
+                )
+                response_data["action"] = "payment_required"
+                response_data["amount"] = price_difference
+                response_data["payment_method"] = payment_method
+                return response_data
+                
+        elif price_difference < 0:
+            # Overpayment - refund to balance
+            refund_amount = abs(price_difference)
+            await db.users.update_one(
+                {"id": user["id"]},
+                {"$inc": {"balance": refund_amount}}
+            )
+            await db.orders.update_one(
+                {"id": order_id},
+                {"$set": {
+                    "awaiting_confirmation": False,
+                    "has_changes": False,
+                    "changes_accepted": True,
+                    "changes_accepted_at": datetime.now(timezone.utc).isoformat(),
+                    "refund_amount": refund_amount,
+                    "refund_to_balance": True
+                }}
+            )
+            await create_notification(user["id"], "balance", "Возврат средств", 
+                f"На ваш баланс начислено {refund_amount:.2f} ₽ (переплата по заказу #{order_id[:8]})", "/orders")
+            response_data["action"] = "refund_to_balance"
+            response_data["amount"] = refund_amount
+        else:
+            # No price change
+            await db.orders.update_one(
+                {"id": order_id},
+                {"$set": {
+                    "awaiting_confirmation": False,
+                    "has_changes": False,
+                    "changes_accepted": True,
+                    "changes_accepted_at": datetime.now(timezone.utc).isoformat()
+                }}
+            )
+    else:
+        # Order not paid yet - just accept changes
+        await db.orders.update_one(
+            {"id": order_id},
+            {"$set": {
+                "awaiting_confirmation": False,
+                "has_changes": False,
+                "changes_accepted": True,
+                "changes_accepted_at": datetime.now(timezone.utc).isoformat()
+            }}
+        )
     
     await create_notification(user["id"], "order", "Изменения приняты", f"Вы приняли изменения в заказе #{order_id[:8]}", "/orders")
-    
-    return {"message": "Changes accepted"}
+    return response_data
 
 
 @router.post("/orders/{order_id}/cancel")
