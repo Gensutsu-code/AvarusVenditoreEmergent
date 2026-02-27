@@ -396,10 +396,17 @@ export default function CatalogPage() {
           if (filters.inStock && p.stock <= 0) return false;
           if (filters.priceMin && p.price < Number(filters.priceMin)) return false;
           if (filters.priceMax && p.price > Number(filters.priceMax)) return false;
+          if (filters.deliveryDays && (p.delivery_days || 3) > Number(filters.deliveryDays)) return false;
+          if (filters.hasPhoto && !p.image_url) return false;
+          if (filters.hasCross && !p.cross_articles) return false;
           return true;
         });
         exact = applyFilter(exact);
         alts = applyFilter(alts);
+
+        // Apply sorting
+        const sortFn = getSortFn(filters.sortBy);
+        if (sortFn) { exact.sort(sortFn); alts.sort(sortFn); }
         
         setProducts(exact);
         setAlternatives(alts);
