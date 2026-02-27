@@ -388,6 +388,7 @@ export default function CatalogPage() {
 
   useEffect(() => {
     fetchCategories();
+    fetchFilterOptions();
   }, []);
 
   useEffect(() => {
