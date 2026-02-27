@@ -550,6 +550,12 @@ export const Header = () => {
                         <User className="w-5 h-5" />
                         Профиль
                       </Link>
+                      {userBalance !== null && (
+                        <div className="flex items-center gap-3 p-3 rounded-xl bg-gradient-to-r from-teal-50 to-emerald-50 border border-teal-200/50" data-testid="mobile-balance">
+                          <Wallet className="w-5 h-5 text-teal-500" />
+                          <span className="text-sm font-bold text-teal-700">Баланс: {new Intl.NumberFormat('ru-RU').format(userBalance)} ₽</span>
+                        </div>
+                      )}
                     </>
                   )}
                   <button 
