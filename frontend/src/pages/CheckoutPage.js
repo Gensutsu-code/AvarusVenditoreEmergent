@@ -106,6 +106,15 @@ export default function CheckoutPage() {
     const orderAmount = finalTotal;
     
     try {
+      // For crypto: show payment modal FIRST, order will be created after successful payment
+      if (paymentMethod === 'crypto') {
+        setCryptoPaymentAmount(orderAmount);
+        setShowCryptoModal(true);
+        setLoading(false);
+        return;
+      }
+
+      // For other methods: create order immediately
       const res = await axios.post(`${API}/orders`, { 
         ...form, 
         payment_method: payWithBalance ? 'balance' : paymentMethod,
@@ -135,10 +144,8 @@ export default function CheckoutPage() {
           toast.error(err.response?.data?.detail || 'ЮKassa недоступна. Заказ создан, оплатите позже.');
         }
         setSuccess(true);
-      } else if (paymentMethod === 'crypto') {
-        setCryptoPaymentAmount(orderAmount);
-        setShowCryptoModal(true);
       } else {
+        // cash
         await fetchCart();
         setSuccess(true);
         toast.success('Заказ оформлен!');
