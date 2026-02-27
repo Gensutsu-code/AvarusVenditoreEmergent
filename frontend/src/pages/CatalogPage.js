@@ -760,12 +760,12 @@ export default function CatalogPage() {
               <Filter className="w-4 h-4" /> Фильтры
               {hasActiveFilters && (
                 <span className="bg-teal-500 text-white text-[10px] px-1.5 py-0.5 rounded-full font-bold">
-                  {[filters.manufacturer, filters.warehouse, filters.inStock, filters.priceMin, filters.priceMax].filter(Boolean).length}
+                  {[filters.manufacturer, filters.warehouse, filters.inStock, filters.priceMin, filters.priceMax, filters.deliveryDays, filters.hasPhoto, filters.hasCross, filters.sortBy].filter(Boolean).length}
                 </span>
               )}
             </button>
             {showFilters && (
-              <div className="mt-3 bg-white/80 backdrop-blur-sm border border-slate-200 rounded-2xl p-4 space-y-4">
+              <div className="mt-3 bg-white/80 backdrop-blur-sm border border-slate-200 rounded-2xl p-4 space-y-3">
                 <div>
                   <label className="text-xs font-semibold uppercase text-slate-500 mb-1 block">Производитель</label>
                   <select value={filters.manufacturer} onChange={e => setFilters({...filters, manufacturer: e.target.value})} className="w-full h-9 rounded-lg border border-slate-200 bg-white px-2.5 text-sm" data-testid="filter-manufacturer-mobile"><option value="">Все</option>{filterOptions.manufacturers.map(m => <option key={m} value={m}>{m}</option>)}</select>
@@ -778,6 +778,17 @@ export default function CatalogPage() {
                   <Input type="number" value={filters.priceMin} onChange={e => setFilters({...filters, priceMin: e.target.value})} placeholder="Цена от" className="h-9 rounded-lg text-sm" />
                   <Input type="number" value={filters.priceMax} onChange={e => setFilters({...filters, priceMax: e.target.value})} placeholder="Цена до" className="h-9 rounded-lg text-sm" />
                 </div>
+                <div>
+                  <label className="text-xs font-semibold uppercase text-slate-500 mb-1 block">Срок доставки</label>
+                  <select value={filters.deliveryDays} onChange={e => setFilters({...filters, deliveryDays: e.target.value})} className="w-full h-9 rounded-lg border border-slate-200 bg-white px-2.5 text-sm"><option value="">Любой</option><option value="1">До 1 дня</option><option value="3">До 3 дней</option><option value="7">До 7 дней</option><option value="14">До 14 дней</option></select>
+                </div>
+                <div>
+                  <label className="text-xs font-semibold uppercase text-slate-500 mb-1 block">Сортировка</label>
+                  <select value={filters.sortBy} onChange={e => setFilters({...filters, sortBy: e.target.value})} className="w-full h-9 rounded-lg border border-slate-200 bg-white px-2.5 text-sm"><option value="">По умолчанию</option><option value="price_asc">Цена ↑</option><option value="price_desc">Цена ↓</option><option value="name_asc">По названию</option><option value="stock_desc">По наличию</option></select>
+                </div>
+                <label className="flex items-center gap-2 cursor-pointer"><input type="checkbox" checked={filters.inStock} onChange={e => setFilters({...filters, inStock: e.target.checked})} className="w-4 h-4 rounded border-slate-300 text-teal-500" /><span className="text-sm text-slate-700">Только в наличии</span></label>
+                <label className="flex items-center gap-2 cursor-pointer"><input type="checkbox" checked={filters.hasPhoto} onChange={e => setFilters({...filters, hasPhoto: e.target.checked})} className="w-4 h-4 rounded border-slate-300 text-teal-500" /><span className="text-sm text-slate-700">С фото</span></label>
+                <label className="flex items-center gap-2 cursor-pointer"><input type="checkbox" checked={filters.hasCross} onChange={e => setFilters({...filters, hasCross: e.target.checked})} className="w-4 h-4 rounded border-slate-300 text-teal-500" /><span className="text-sm text-slate-700">Есть замены</span></label>
                 <label className="flex items-center gap-2 cursor-pointer"><input type="checkbox" checked={filters.inStock} onChange={e => setFilters({...filters, inStock: e.target.checked})} className="w-4 h-4 rounded border-slate-300 text-teal-500" /><span className="text-sm text-slate-700">Только в наличии</span></label>
                 <Button onClick={applyFilters} className="w-full bg-teal-500 hover:bg-teal-600 text-white rounded-xl h-9 text-sm">Применить</Button>
               </div>
