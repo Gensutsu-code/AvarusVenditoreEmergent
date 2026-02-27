@@ -602,9 +602,24 @@ export default function CheckoutPage() {
                   </div>
                   <div className={`flex justify-between text-sm font-medium ${currentPaymentAdjustment < 0 ? 'text-emerald-600' : 'text-rose-600'}`}>
                     <span>{currentPaymentAdjustment < 0 ? 'Скидка' : 'Наценка'} ({Math.abs(currentPaymentAdjustment)}%):</span>
-                    <span>{currentPaymentAdjustment < 0 ? '-' : '+'}{formatPrice(Math.abs(finalTotal - subtotal))} ₽</span>
+                    <span>{currentPaymentAdjustment < 0 ? '-' : '+'}{formatPrice(Math.abs(adjustedSubtotal - subtotal))} ₽</span>
                   </div>
                 </>
+              )}
+              {deliverySettings.delivery_enabled && (
+                <div className="flex justify-between text-sm" data-testid="delivery-fee-row">
+                  <span className="text-slate-600">Доставка:</span>
+                  {isFreeDelivery ? (
+                    <span className="text-emerald-600 font-medium">Бесплатно</span>
+                  ) : (
+                    <span className="text-slate-700 font-medium">{formatPrice(deliveryFee)} ₽</span>
+                  )}
+                </div>
+              )}
+              {!isFreeDelivery && deliverySettings.delivery_enabled && (
+                <p className="text-xs text-slate-400">
+                  Бесплатная доставка от {formatPrice(deliverySettings.min_free_delivery)} ₽
+                </p>
               )}
               <div className="flex justify-between items-center pt-2">
                 <span className="font-bold text-slate-700">Итого:</span>
