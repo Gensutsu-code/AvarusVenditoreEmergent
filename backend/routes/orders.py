@@ -163,6 +163,17 @@ async def create_order(data: OrderCreate, user=Depends(get_current_user)):
     if payment_adjustment != 0:
         total = subtotal * (1 + payment_adjustment / 100)
     
+    # Apply delivery fee
+    delivery_settings = await db.settings.find_one({"key": "delivery_settings"})
+    delivery_vals = delivery_settings.get("value", {}) if delivery_settings else {}
+    delivery_enabled = delivery_vals.get("delivery_enabled", True)
+    min_free = delivery_vals.get("min_free_delivery", 5000)
+    delivery_price = delivery_vals.get("delivery_price", 500)
+    delivery_fee = 0
+    if delivery_enabled and total < min_free:
+        delivery_fee = delivery_price
+        total += delivery_fee
+    
     total = round(total, 2)
     
     # Check if paying with balance
