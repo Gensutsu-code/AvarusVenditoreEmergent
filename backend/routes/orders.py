@@ -250,6 +250,51 @@ async def create_order(data: OrderCreate, user=Depends(get_current_user)):
     return order
 
 
+@router.get("/orders/check-expired")
+async def check_expired_orders():
+    """Check and cancel orders with expired confirmation time"""
+    now = datetime.now(timezone.utc).isoformat()
+    
+    # Find orders awaiting confirmation with expired time
+    expired_orders = await db.orders.find({
+        "awaiting_confirmation": True,
+        "changes_expire_at": {"$lt": now}
+    }, {"_id": 0}).to_list(100)
+    
+    cancelled_count = 0
+    for order in expired_orders:
+        # Restore stock
+        for item in order.get("items", []):
+            await db.products.update_one(
+                {"id": item.get("product_id")},
+                {"$inc": {"stock": item.get("quantity", 0)}}
+            )
+        
+        # Cancel order
+        await db.orders.update_one(
+            {"id": order["id"]},
+            {"$set": {
+                "status": "cancelled",
+                "cancelled_by": "system",
+                "cancelled_reason": "Изменения не подтверждены в течение 24 часов",
+                "cancelled_at": now
+            }}
+        )
+        
+        # Notify user
+        await create_notification(
+            order["user_id"], 
+            "order",
+            f"Заказ #{order['id'][:8]} отменён",
+            "Заказ отменён автоматически: изменения не были подтверждены в течение 24 часов",
+            "/orders"
+        )
+        
+        cancelled_count += 1
+    
+    return {"cancelled_count": cancelled_count}
+
+
 @router.get("/orders", response_model=List[OrderResponse])
 async def get_orders(user=Depends(get_current_user)):
     orders = await db.orders.find({"user_id": user["id"]}, {"_id": 0}).sort("created_at", -1).to_list(100)
