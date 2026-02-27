@@ -13,6 +13,49 @@ E-commerce platform for truck spare parts with full admin panel restructuring an
 - **Result**: Price, favorite button, quantity selector and add-to-cart button are now vertically centered in the card's right column
 - **Files**: `/app/frontend/src/pages/CatalogPage.js` (line 40)
 
+#### Admin Orders Page Overhaul (COMPLETED)
+- **Problem**: Separate modal windows for "View" and "Edit" order actions
+- **Solution**: Complete rewrite with inline editing in expandable order cards
+- **Features**:
+  - Expandable order cards with all details visible
+  - Inline editing of customer info (name, phone, address)
+  - Inline editing of item prices and quantities
+  - Auto-calculation of totals
+  - Status dropdown for quick status changes
+  - Removed discount functionality per user request
+  - Statistics dashboard (total orders, pending, processing, delivered, revenue)
+  - Filter buttons by status
+  - Search by order number, customer name, phone
+- **Files**: `/app/frontend/src/pages/AdminOrdersPage.js` (complete rewrite)
+
+#### Order Change Notifications System (COMPLETED)
+- **Backend Changes**:
+  - Track price/quantity changes when admin edits order
+  - Mark order as `awaiting_confirmation` with 24-hour expiry
+  - Store `change_types` array ("price", "quantity")
+  - Track `processing_started_at` for cancel window
+  - New endpoints: `POST /orders/{id}/accept-changes`, `POST /orders/{id}/cancel`
+  - Auto-cancel endpoint for expired confirmations: `GET /orders/check-expired`
+- **Frontend Changes (Customer Orders Page)**:
+  - Display change labels: "Изменилась цена товара", "Изменилось количество товара"
+  - "Требуется подтверждение" badge on orders with pending changes
+  - Action buttons: "Принять изменения", "Отменить заказ"
+  - Cancel button for processing orders within 24-hour window
+  - Time remaining display for cancel eligibility
+- **Files**: 
+  - `/app/backend/routes/admin.py` (order update with change tracking)
+  - `/app/backend/routes/orders.py` (accept/cancel endpoints)
+  - `/app/frontend/src/pages/OrdersPage.js` (change labels, action buttons)
+
+#### Sound & Push Notifications (COMPLETED)
+- **Utility module**: `/app/frontend/src/utils/notifications.js`
+- **Features**:
+  - `playNotificationSound()` - Web Audio API beep sound
+  - `requestNotificationPermission()` - Browser notification permission
+  - `showPushNotification()` - Browser push notifications
+  - `sendNotification()` - Combined sound + push when tab not focused
+- **Integration**: OrdersPage polls for changes and triggers notifications
+
 ### February 2026 - Session 5 (25 Feb 2026)
 
 #### CRM Analytics Performance Optimization (COMPLETED)
