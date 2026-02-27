@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { Wallet, Check, Loader2, AlertCircle, ArrowRight, Copy, ExternalLink, RefreshCw, QrCode, Fuel, ChevronLeft, Zap } from 'lucide-react';
 import { Button } from '../components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '../components/ui/dialog';
@@ -56,8 +56,16 @@ const WALLETS = [
   { id: 'coinbase', name: 'Coinbase Wallet', logo: 'https://www.coinbase.com/img/favicon/favicon-256.png' }
 ];
 
-// Step labels
-const STEP_LABELS = ['', 'Выбор сети', 'Подключение', 'Подтверждение', 'Отправка', 'Ожидание', 'Успех', 'Ошибка'];
+const STEP_LABELS = {
+  1: 'Выбор сети',
+  2: 'Подключение',
+  3: 'Подтверждение',
+  4: 'Отправка',
+  5: 'Ожидание',
+  6: 'Успех'
+};
+
+const TOTAL_STEPS = 6;
 
 export default function CryptoPaymentModal({ open, onClose, orderId, amountRub, onSuccess }) {
   const [step, setStep] = useState(1);
@@ -72,58 +80,54 @@ export default function CryptoPaymentModal({ open, onClose, orderId, amountRub, 
   const [txHash, setTxHash] = useState('');
   const [showQR, setShowQR] = useState(false);
 
-  useEffect(() => {
-    if (open && amountRub) {
-      fetchPrice();
-      checkWallet();
-      // Pre-create payment to have receiving address for QR
-      createPaymentIfNeeded();
-    }
-  }, [open, amountRub]);
-
-  useEffect(() => {
-    if (chain) fetchGas();
-  }, [chain]);
-
-  // Re-create payment when chain or token changes
-  useEffect(() => {
-    if (open && orderId) {
-      createPaymentIfNeeded();
-    }
-  }, [chain, token, orderId]);
-
-  const fetchPrice = async () => {
+  const fetchPrice = useCallback(async () => {
+    if (!amountRub) return;
     try {
       const r = await axios.get(`${API}/crypto/price?amount_rub=${amountRub}`);
       setPrice(r.data);
     } catch (e) { console.error('Price fetch error:', e); }
-  };
+  }, [amountRub]);
 
-  const fetchGas = async () => {
+  const fetchGas = useCallback(async () => {
     try {
       const r = await axios.get(`${API}/crypto/gas-estimate?chain=${chain}`);
       setGas(r.data);
     } catch (e) { console.error('Gas fetch error:', e); }
-  };
+  }, [chain]);
 
-  const createPaymentIfNeeded = async () => {
+  const createPayment = useCallback(async () => {
     if (!orderId) return;
     try {
       const r = await axios.post(`${API}/crypto/payment/create`, { order_id: orderId, chain, token });
       setPayment(r.data);
-    } catch (e) { 
+    } catch (e) {
       console.error('Create payment error:', e);
     }
-  };
+  }, [orderId, chain, token]);
 
-  const checkWallet = async () => {
-    if (window.ethereum) {
-      try {
-        const accs = await window.ethereum.request({ method: 'eth_accounts' });
-        if (accs.length) setWallet(accs[0]);
-      } catch (e) { console.error(e); }
+  useEffect(() => {
+    if (open && amountRub) {
+      fetchPrice();
+      if (window.ethereum) {
+        window.ethereum.request({ method: 'eth_accounts' })
+          .then(accs => { if (accs.length) setWallet(accs[0]); })
+          .catch(() => {});
+      }
     }
-  };
+  }, [open, amountRub, fetchPrice]);
+
+  useEffect(() => {
+    if (open) fetchGas();
+  }, [open, chain, fetchGas]);
+
+  useEffect(() => {
+    if (open && orderId) createPayment();
+  }, [open, orderId, chain, token, createPayment]);
+
+  // Refetch price when token changes
+  useEffect(() => {
+    if (open && amountRub) fetchPrice();
+  }, [token, open, amountRub, fetchPrice]);
 
   const connect = async () => {
     if (!window.ethereum) {
@@ -183,58 +187,56 @@ export default function CryptoPaymentModal({ open, onClose, orderId, amountRub, 
         throw new Error('Не удалось получить адрес для оплаты');
       }
 
-      if (!await switchNet()) { 
-        setStep(3); 
-        setLoading(false); 
-        return; 
+      if (!await switchNet()) {
+        setStep(3);
+        setLoading(false);
+        return;
       }
 
       const provider = new ethers.BrowserProvider(window.ethereum);
       const signer = await provider.getSigner();
       const contract = new ethers.Contract(p.token_address, ERC20_ABI, signer);
-      
+
       // Calculate amount with proper decimals
       const decimals = p.decimals || 6;
       const tokenAmount = p.token_amount || price?.token_amount || 0;
-      const amount = ethers.parseUnits(tokenAmount.toFixed(decimals), decimals);
+      const amountStr = tokenAmount.toFixed(decimals);
+      const amount = ethers.parseUnits(amountStr, decimals);
 
       toast.info('Подтвердите транзакцию в кошельке...');
-      
-      // Send transaction
+
+      // Send ERC20 transfer
       const tx = await contract.transfer(p.receiving_address, amount);
       const hash = tx.hash;
       setTxHash(hash);
       toast.success('Транзакция отправлена!');
       setStep(5);
 
-      // Wait for transaction using provider directly to avoid nonce issues
+      // Wait for confirmation using provider.waitForTransaction (avoids nonce issues with tx.wait())
       try {
-        const receipt = await provider.waitForTransaction(hash, 1, 120000); // 1 confirmation, 2 min timeout
-        
+        const receipt = await provider.waitForTransaction(hash, 1, 120000);
+
         if (receipt && receipt.status === 1) {
-          // Verify on backend
-          try { 
-            await axios.post(`${API}/crypto/payment/verify`, { 
-              payment_id: p.payment_id, 
-              tx_hash: hash 
-            }); 
+          try {
+            await axios.post(`${API}/crypto/payment/verify`, {
+              payment_id: p.payment_id,
+              tx_hash: hash
+            });
           } catch (verifyErr) {
             console.error('Backend verify error:', verifyErr);
           }
-          
+
           setStep(6);
           toast.success('Оплата успешна!');
           if (onSuccess) onSuccess(hash);
         } else {
-          setError('Транзакция не подтверждена');
+          setError('Транзакция не подтверждена сетью');
           setStep(7);
         }
       } catch (waitErr) {
         console.error('Wait error:', waitErr);
-        // Transaction was sent, but we couldn't wait for it
-        // Check if it's just a timeout or parsing issue
+        // Transaction was already sent; treat as success
         if (hash) {
-          // Assume success since tx was sent
           setStep(6);
           toast.success('Транзакция отправлена! Проверьте статус в обозревателе.');
           if (onSuccess) onSuccess(hash);
@@ -244,13 +246,12 @@ export default function CryptoPaymentModal({ open, onClose, orderId, amountRub, 
       }
     } catch (e) {
       console.error('Payment error:', e);
-      
+
       if (e.code === 'ACTION_REJECTED' || e.code === 4001) {
         setError('Транзакция отклонена пользователем');
       } else if (e.message?.includes('insufficient')) {
         setError('Недостаточно средств на кошельке');
       } else if (e.message?.includes('nonce')) {
-        // If we got a nonce error but tx was actually sent, treat as success
         if (txHash) {
           setStep(6);
           toast.success('Транзакция отправлена!');
@@ -282,10 +283,9 @@ export default function CryptoPaymentModal({ open, onClose, orderId, amountRub, 
 
   const ch = CHAINS[chain];
   const tk = TOKENS[token];
-
-  // Total steps is 7 (including error state), but we show max 6 for normal flow
-  const displayStep = step === 7 ? 'Ошибка' : STEP_LABELS[step];
-  const stepNumber = step <= 6 ? step : 6;
+  const isError = step === 7;
+  const displayStep = isError ? 'Ошибка' : STEP_LABELS[step];
+  const stepNum = Math.min(step, TOTAL_STEPS);
 
   return (
     <Dialog open={open} onOpenChange={close}>
@@ -300,37 +300,49 @@ export default function CryptoPaymentModal({ open, onClose, orderId, amountRub, 
               Оплата криптовалютой
             </DialogTitle>
             <DialogDescription className="text-teal-100 text-sm mt-1">
-              {step === 7 ? 'Произошла ошибка' : `Шаг ${stepNumber} из 6 — ${displayStep}`}
+              {isError ? 'Произошла ошибка' : `Шаг ${stepNum} из ${TOTAL_STEPS} — ${displayStep}`}
             </DialogDescription>
           </DialogHeader>
+
+          {/* Progress bar */}
+          {!isError && (
+            <div className="mt-3 flex gap-1.5">
+              {Array.from({ length: TOTAL_STEPS }, (_, i) => (
+                <div
+                  key={i}
+                  className={`h-1 flex-1 rounded-full transition-all duration-500 ${
+                    i < stepNum ? 'bg-white' : 'bg-white/25'
+                  }`}
+                />
+              ))}
+            </div>
+          )}
         </div>
 
         <div className="p-6 max-h-[65vh] overflow-y-auto">
           <AnimatePresence mode="wait">
-            {/* Step 1: Select */}
+            {/* Step 1: Select chain + token */}
             {step === 1 && (
               <motion.div key="s1" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -20 }} className="space-y-5">
-                {/* Price Card */}
                 {price && (
-                  <div className="bg-gradient-to-br from-teal-50 to-emerald-50 border border-teal-200 rounded-2xl p-5">
+                  <div className="bg-gradient-to-br from-teal-50 to-emerald-50 border border-teal-200 rounded-2xl p-5" data-testid="crypto-price-card">
                     <div className="flex justify-between items-start mb-2">
                       <span className="text-sm font-medium text-teal-700">Сумма к оплате</span>
                       <span className="text-xs text-teal-600 bg-teal-100 px-2 py-0.5 rounded-full flex items-center gap-1">
-                        <Zap className="w-3 h-3" /> CoinGecko
+                        <Zap className="w-3 h-3" /> {price.source}
                       </span>
                     </div>
-                    <div className="text-3xl font-bold text-teal-800">{fmt(amountRub)} ₽</div>
+                    <div className="text-3xl font-bold text-teal-800">{fmt(amountRub)} &#8381;</div>
                     <div className="flex justify-between items-center mt-2">
-                      <span className="text-lg font-semibold text-teal-700">≈ {price.token_amount?.toFixed(2)} {tk?.symbol}</span>
-                      <span className="text-xs text-teal-600">Курс: 1 USD ≈ {price.rate?.toFixed(2)} ₽</span>
+                      <span className="text-lg font-semibold text-teal-700">&asymp; {price.token_amount?.toFixed(2)} {tk?.symbol}</span>
+                      <span className="text-xs text-teal-600">1 USD &asymp; {price.rate?.toFixed(2)} &#8381;</span>
                     </div>
                     {price.markup_percent > 0 && (
-                      <p className="text-xs text-teal-500 mt-1">Включая комиссию {price.markup_percent}%</p>
+                      <p className="text-xs text-teal-500 mt-1">Комиссия {price.markup_percent}%</p>
                     )}
                   </div>
                 )}
 
-                {/* Chain */}
                 <div>
                   <label className="text-xs font-bold uppercase tracking-wider text-slate-500 mb-3 block">Выберите сеть</label>
                   <div className="grid grid-cols-3 gap-3">
@@ -341,15 +353,15 @@ export default function CryptoPaymentModal({ open, onClose, orderId, amountRub, 
                         whileTap={{ scale: 0.97 }}
                         onClick={() => setChain(id)}
                         className={`p-4 border-2 rounded-xl transition-all ${chain === id ? 'border-teal-400 bg-teal-50 shadow-md shadow-teal-200' : 'border-slate-200 hover:border-slate-300 bg-white'}`}
+                        data-testid={`chain-${id}`}
                       >
                         <img src={c.logo} alt={c.short} className="w-8 h-8 mx-auto mb-2" onError={(e) => e.target.style.display = 'none'} />
-                        <p className={`font-semibold text-sm ${chain === id ? 'text-teal-700' : 'text-slate-700'}`}>{c.short}</p>
+                        <p className={`font-semibold text-sm text-center ${chain === id ? 'text-teal-700' : 'text-slate-700'}`}>{c.short}</p>
                       </motion.button>
                     ))}
                   </div>
                 </div>
 
-                {/* Token */}
                 <div>
                   <label className="text-xs font-bold uppercase tracking-wider text-slate-500 mb-3 block">Выберите токен</label>
                   <div className="grid grid-cols-2 gap-3">
@@ -360,6 +372,7 @@ export default function CryptoPaymentModal({ open, onClose, orderId, amountRub, 
                         whileTap={{ scale: 0.97 }}
                         onClick={() => setToken(id)}
                         className={`p-4 border-2 rounded-xl flex items-center gap-3 transition-all ${token === id ? 'border-teal-400 bg-teal-50 shadow-md shadow-teal-200' : 'border-slate-200 hover:border-slate-300 bg-white'}`}
+                        data-testid={`token-${id}`}
                       >
                         <img src={t.logo} alt={t.symbol} className="w-8 h-8" onError={(e) => e.target.style.display = 'none'} />
                         <div className="text-left">
@@ -371,27 +384,30 @@ export default function CryptoPaymentModal({ open, onClose, orderId, amountRub, 
                   </div>
                 </div>
 
-                {/* Gas */}
                 {gas && (
-                  <div className="flex items-center justify-between bg-slate-50 border border-slate-200 rounded-xl p-4">
+                  <div className="flex items-center justify-between bg-slate-50 border border-slate-200 rounded-xl p-4" data-testid="gas-estimate">
                     <div className="flex items-center gap-2 text-slate-600">
                       <Fuel className="w-4 h-4" />
                       <span className="text-sm font-medium">Комиссия сети</span>
                     </div>
                     <span className="font-semibold text-slate-800">
                       ~{gas.gas_cost_native} {gas.native_symbol}
-                      <span className="text-slate-500 text-xs ml-1">(${gas.gas_cost_usd})</span>
+                      {gas.gas_cost_usd > 0 && <span className="text-slate-500 text-xs ml-1">(${gas.gas_cost_usd})</span>}
                     </span>
                   </div>
                 )}
 
-                <Button onClick={() => wallet ? setStep(3) : setStep(2)} className="w-full h-12 bg-gradient-to-r from-teal-500 to-emerald-500 hover:from-teal-600 hover:to-emerald-600 text-white rounded-xl font-semibold shadow-lg shadow-teal-500/30">
+                <Button
+                  onClick={() => wallet ? setStep(3) : setStep(2)}
+                  className="w-full h-12 bg-gradient-to-r from-teal-500 to-emerald-500 hover:from-teal-600 hover:to-emerald-600 text-white rounded-xl font-semibold shadow-lg shadow-teal-500/30"
+                  data-testid="crypto-continue-btn"
+                >
                   Продолжить <ArrowRight className="w-4 h-4 ml-2" />
                 </Button>
               </motion.div>
             )}
 
-            {/* Step 2: Connect */}
+            {/* Step 2: Connect wallet */}
             {step === 2 && (
               <motion.div key="s2" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -20 }} className="space-y-5">
                 <div className="text-center py-6">
@@ -411,6 +427,7 @@ export default function CryptoPaymentModal({ open, onClose, orderId, amountRub, 
                       onClick={connect}
                       disabled={loading}
                       className="w-full p-4 border-2 border-slate-200 rounded-xl flex items-center gap-4 hover:border-teal-300 hover:bg-teal-50 transition-all"
+                      data-testid={`wallet-${w.id}`}
                     >
                       <img src={w.logo} alt={w.name} className="w-10 h-10 rounded-lg" onError={(e) => e.target.style.display = 'none'} />
                       <span className="font-semibold text-slate-800">{w.name}</span>
@@ -426,7 +443,7 @@ export default function CryptoPaymentModal({ open, onClose, orderId, amountRub, 
                   </div>
                 )}
 
-                <Button variant="outline" onClick={() => setStep(1)} className="w-full h-11 rounded-xl border-slate-300">
+                <Button variant="outline" onClick={() => setStep(1)} className="w-full h-11 rounded-xl border-slate-300" data-testid="crypto-back-btn">
                   <ChevronLeft className="w-4 h-4 mr-1" /> Назад
                 </Button>
               </motion.div>
@@ -434,10 +451,10 @@ export default function CryptoPaymentModal({ open, onClose, orderId, amountRub, 
 
             {/* Step 3: Confirm */}
             {step === 3 && (
-              <motion.div key="s3" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -20 }} className="space-y-5">
-                {/* Connected */}
-                <div className="bg-gradient-to-r from-emerald-50 to-teal-50 border border-emerald-200 rounded-xl p-4 flex items-center gap-3">
-                  <div className="w-10 h-10 bg-emerald-100 rounded-full flex items-center justify-center">
+              <motion.div key="s3" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -20 }} className="space-y-4">
+                {/* Wallet connected badge */}
+                <div className="bg-gradient-to-r from-emerald-50 to-teal-50 border border-emerald-200 rounded-xl p-3 flex items-center gap-3">
+                  <div className="w-9 h-9 bg-emerald-100 rounded-full flex items-center justify-center flex-shrink-0">
                     <Check className="w-5 h-5 text-emerald-600" />
                   </div>
                   <div className="flex-1 min-w-0">
@@ -449,89 +466,93 @@ export default function CryptoPaymentModal({ open, onClose, orderId, amountRub, 
                   </button>
                 </div>
 
-                {/* Details */}
-                <div className="bg-slate-50 border border-slate-200 rounded-xl divide-y divide-slate-200">
-                  <div className="p-4 flex items-center justify-between">
-                    <span className="text-sm text-slate-500">Сеть</span>
+                {/* Payment details */}
+                <div className="bg-slate-50 border border-slate-200 rounded-xl divide-y divide-slate-200 text-sm">
+                  <div className="p-3 flex items-center justify-between">
+                    <span className="text-slate-500">Сеть</span>
                     <div className="flex items-center gap-2">
                       <img src={ch?.logo} alt="" className="w-5 h-5" onError={(e) => e.target.style.display = 'none'} />
                       <span className="font-semibold text-slate-800">{ch?.name}</span>
                     </div>
                   </div>
-                  <div className="p-4 flex items-center justify-between">
-                    <span className="text-sm text-slate-500">Токен</span>
+                  <div className="p-3 flex items-center justify-between">
+                    <span className="text-slate-500">Токен</span>
                     <div className="flex items-center gap-2">
                       <img src={tk?.logo} alt="" className="w-5 h-5" onError={(e) => e.target.style.display = 'none'} />
                       <span className="font-semibold text-slate-800">{tk?.symbol}</span>
                     </div>
                   </div>
-                  <div className="p-4 flex items-center justify-between bg-teal-50/50">
-                    <span className="text-sm text-slate-500">Сумма</span>
-                    <span className="text-xl font-bold text-teal-700">{price?.token_amount?.toFixed(2)} {tk?.symbol}</span>
+                  <div className="p-3 flex items-center justify-between bg-teal-50/50">
+                    <span className="text-slate-500">Сумма</span>
+                    <span className="text-lg font-bold text-teal-700">{price?.token_amount?.toFixed(2)} {tk?.symbol}</span>
                   </div>
                   {gas && (
-                    <div className="p-4 flex items-center justify-between">
-                      <span className="text-sm text-slate-500 flex items-center gap-1"><Fuel className="w-3 h-3" /> Комиссия</span>
-                      <span className="text-sm text-slate-600">~{gas.gas_cost_native} {gas.native_symbol}</span>
+                    <div className="p-3 flex items-center justify-between">
+                      <span className="text-slate-500 flex items-center gap-1"><Fuel className="w-3 h-3" /> Газ</span>
+                      <span className="text-slate-600">~{gas.gas_cost_native} {gas.native_symbol}</span>
                     </div>
                   )}
                 </div>
 
                 {/* QR Toggle */}
-                <button 
-                  onClick={() => setShowQR(!showQR)} 
-                  className="w-full flex items-center justify-center gap-2 text-sm text-teal-600 hover:text-teal-700 py-2 font-medium"
+                <button
+                  onClick={() => setShowQR(!showQR)}
+                  className="w-full flex items-center justify-center gap-2 text-sm text-teal-600 hover:text-teal-700 py-1.5 font-medium"
+                  data-testid="qr-toggle-btn"
                 >
                   <QrCode className="w-4 h-4" />
                   {showQR ? 'Скрыть QR-код' : 'QR-код для мобильного кошелька'}
                 </button>
 
-                {/* QR Code - always visible when toggled, use payment.receiving_address */}
-                {showQR && (
-                  <motion.div 
-                    initial={{ height: 0, opacity: 0 }} 
-                    animate={{ height: 'auto', opacity: 1 }} 
-                    transition={{ duration: 0.3 }}
-                    className="overflow-hidden"
-                  >
-                    <div className="bg-white border border-slate-200 rounded-xl p-5 flex flex-col items-center">
-                      {payment?.receiving_address ? (
-                        <>
-                          <QRCode 
-                            value={payment.receiving_address} 
-                            size={150} 
-                            level="M" 
-                          />
-                          <p className="text-xs text-slate-500 mt-3 text-center">Адрес для оплаты:</p>
-                          <div className="flex items-center gap-2 mt-1">
-                            <code className="text-xs font-mono bg-slate-100 px-2 py-1 rounded">{short(payment.receiving_address)}</code>
-                            <button onClick={() => copy(payment.receiving_address)} className="text-teal-600">
-                              <Copy className="w-4 h-4" />
-                            </button>
+                <AnimatePresence>
+                  {showQR && (
+                    <motion.div
+                      initial={{ height: 0, opacity: 0 }}
+                      animate={{ height: 'auto', opacity: 1 }}
+                      exit={{ height: 0, opacity: 0 }}
+                      transition={{ duration: 0.3 }}
+                      className="overflow-hidden"
+                    >
+                      <div className="bg-white border border-slate-200 rounded-xl p-4 flex flex-col items-center">
+                        {payment?.receiving_address ? (
+                          <>
+                            <QRCode value={payment.receiving_address} size={140} level="M" />
+                            <p className="text-xs text-slate-500 mt-3 text-center">Адрес для оплаты:</p>
+                            <div className="flex items-center gap-2 mt-1">
+                              <code className="text-xs font-mono bg-slate-100 px-2 py-1 rounded break-all">{short(payment.receiving_address)}</code>
+                              <button onClick={() => copy(payment.receiving_address)} className="text-teal-600 flex-shrink-0">
+                                <Copy className="w-4 h-4" />
+                              </button>
+                            </div>
+                          </>
+                        ) : (
+                          <div className="text-center py-4">
+                            <Loader2 className="w-8 h-8 animate-spin text-teal-500 mx-auto mb-2" />
+                            <p className="text-sm text-slate-500">Загрузка адреса...</p>
                           </div>
-                        </>
-                      ) : (
-                        <div className="text-center py-4">
-                          <Loader2 className="w-8 h-8 animate-spin text-teal-500 mx-auto mb-2" />
-                          <p className="text-sm text-slate-500">Загрузка адреса...</p>
-                        </div>
-                      )}
-                    </div>
-                  </motion.div>
-                )}
+                        )}
+                      </div>
+                    </motion.div>
+                  )}
+                </AnimatePresence>
 
                 {error && (
-                  <div className="bg-red-50 border border-red-200 rounded-xl p-4 flex items-start gap-3">
+                  <div className="bg-red-50 border border-red-200 rounded-xl p-3 flex items-start gap-3">
                     <AlertCircle className="w-5 h-5 text-red-500 flex-shrink-0 mt-0.5" />
                     <p className="text-sm text-red-700">{error}</p>
                   </div>
                 )}
 
-                <Button onClick={pay} disabled={loading} className="w-full h-12 bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-600 hover:to-teal-600 text-white rounded-xl font-semibold shadow-lg shadow-emerald-500/30">
+                <Button
+                  onClick={pay}
+                  disabled={loading}
+                  className="w-full h-12 bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-600 hover:to-teal-600 text-white rounded-xl font-semibold shadow-lg shadow-emerald-500/30"
+                  data-testid="crypto-pay-btn"
+                >
                   {loading ? <Loader2 className="w-5 h-5 animate-spin" /> : <><Wallet className="w-4 h-4 mr-2" /> Оплатить {price?.token_amount?.toFixed(2)} {tk?.symbol}</>}
                 </Button>
 
-                <Button variant="outline" onClick={() => setStep(1)} disabled={loading} className="w-full h-11 rounded-xl border-slate-300">
+                <Button variant="outline" onClick={() => setStep(1)} disabled={loading} className="w-full h-11 rounded-xl border-slate-300" data-testid="crypto-back-step3">
                   <ChevronLeft className="w-4 h-4 mr-1" /> Назад
                 </Button>
               </motion.div>
@@ -539,7 +560,7 @@ export default function CryptoPaymentModal({ open, onClose, orderId, amountRub, 
 
             {/* Step 4: Processing */}
             {step === 4 && (
-              <motion.div key="s4" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="text-center py-12">
+              <motion.div key="s4" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="text-center py-12" data-testid="crypto-step-processing">
                 <motion.div animate={{ rotate: 360 }} transition={{ duration: 2, repeat: Infinity, ease: "linear" }} className="w-16 h-16 mx-auto">
                   <Loader2 className="w-16 h-16 text-teal-500" />
                 </motion.div>
@@ -550,7 +571,7 @@ export default function CryptoPaymentModal({ open, onClose, orderId, amountRub, 
 
             {/* Step 5: Waiting */}
             {step === 5 && (
-              <motion.div key="s5" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="text-center py-10">
+              <motion.div key="s5" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="text-center py-10" data-testid="crypto-step-waiting">
                 <motion.div animate={{ rotate: 360 }} transition={{ duration: 1.5, repeat: Infinity, ease: "linear" }} className="w-16 h-16 mx-auto">
                   <RefreshCw className="w-16 h-16 text-teal-500" />
                 </motion.div>
@@ -571,16 +592,16 @@ export default function CryptoPaymentModal({ open, onClose, orderId, amountRub, 
 
             {/* Step 6: Success */}
             {step === 6 && (
-              <motion.div key="s6" initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0 }} className="text-center py-8">
+              <motion.div key="s6" initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0 }} className="text-center py-6" data-testid="crypto-step-success">
                 <motion.div initial={{ scale: 0 }} animate={{ scale: 1 }} transition={{ type: "spring", stiffness: 200, damping: 15 }} className="w-20 h-20 bg-gradient-to-br from-emerald-100 to-teal-100 rounded-full flex items-center justify-center mx-auto">
                   <Check className="w-10 h-10 text-emerald-600" />
                 </motion.div>
-                <h3 className="text-2xl font-bold text-emerald-700 mt-6">Оплата успешна!</h3>
-                <p className="text-slate-500 mt-2">Заказ оплачен и передан в обработку</p>
+                <h3 className="text-2xl font-bold text-emerald-700 mt-5">Оплата успешна!</h3>
+                <p className="text-slate-500 mt-2 text-sm">Заказ оплачен и передан в обработку</p>
 
                 {txHash && (
-                  <div className="bg-emerald-50 border border-emerald-200 rounded-xl p-4 mt-6">
-                    <p className="text-xs text-emerald-700 mb-2">Hash транзакции</p>
+                  <div className="bg-emerald-50 border border-emerald-200 rounded-xl p-3 mt-4 text-sm">
+                    <p className="text-xs text-emerald-700 mb-1.5">Hash транзакции</p>
                     <div className="flex items-center justify-center gap-3">
                       <code className="text-xs font-mono text-emerald-800">{short(txHash)}</code>
                       <button onClick={() => copy(txHash)} className="text-emerald-600 hover:text-emerald-700"><Copy className="w-4 h-4" /></button>
@@ -589,7 +610,7 @@ export default function CryptoPaymentModal({ open, onClose, orderId, amountRub, 
                   </div>
                 )}
 
-                <Button onClick={close} className="w-full h-12 bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-600 hover:to-teal-600 text-white rounded-xl font-semibold mt-6">
+                <Button onClick={close} className="w-full h-12 bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-600 hover:to-teal-600 text-white rounded-xl font-semibold mt-5" data-testid="crypto-close-success-btn">
                   Закрыть
                 </Button>
               </motion.div>
@@ -597,7 +618,7 @@ export default function CryptoPaymentModal({ open, onClose, orderId, amountRub, 
 
             {/* Step 7: Error */}
             {step === 7 && (
-              <motion.div key="s7" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="text-center py-8">
+              <motion.div key="s7" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="text-center py-8" data-testid="crypto-step-error">
                 <div className="w-20 h-20 bg-red-100 rounded-full flex items-center justify-center mx-auto">
                   <AlertCircle className="w-10 h-10 text-red-600" />
                 </div>
@@ -605,10 +626,10 @@ export default function CryptoPaymentModal({ open, onClose, orderId, amountRub, 
                 <p className="text-slate-600 mt-2 max-w-xs mx-auto text-sm">{error}</p>
 
                 <div className="flex gap-3 mt-6">
-                  <Button onClick={() => { setError(''); setStep(3); }} className="flex-1 h-11 bg-teal-500 hover:bg-teal-600 text-white rounded-xl">
+                  <Button onClick={() => { setError(''); setStep(3); }} className="flex-1 h-11 bg-teal-500 hover:bg-teal-600 text-white rounded-xl" data-testid="crypto-retry-btn">
                     Попробовать снова
                   </Button>
-                  <Button variant="outline" onClick={close} className="flex-1 h-11 rounded-xl border-slate-300">
+                  <Button variant="outline" onClick={close} className="flex-1 h-11 rounded-xl border-slate-300" data-testid="crypto-close-error-btn">
                     Закрыть
                   </Button>
                 </div>
