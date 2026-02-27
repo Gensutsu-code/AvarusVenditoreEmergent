@@ -50,14 +50,12 @@ export const FloatingPromoBanner = () => {
   const bgColor = banner.bg_color || (isDark ? '#f97316' : '#10b981');
 
   return (
-    <div className="fixed top-20 left-0 right-0 z-40 pointer-events-none">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="pointer-events-auto inline-block">
+    <div className="fixed top-20 right-4 z-40">
       <AnimatePresence mode="wait" initial={false}>
         {isExpanded ? (
           <motion.div
             key="expanded"
-            initial={{ opacity: 0, x: -50, scale: 0.8 }}
+            initial={{ opacity: 0, x: 50, scale: 0.8 }}
             animate={{ 
               opacity: 1, 
               x: 0,
@@ -69,7 +67,7 @@ export const FloatingPromoBanner = () => {
             }}
             exit={{ 
               opacity: 0, 
-              x: -50,
+              x: 50,
               scale: 0.8,
               transition: { duration: 0.3 }
             }}
@@ -154,8 +152,6 @@ export const FloatingPromoBanner = () => {
           </motion.button>
         )}
       </AnimatePresence>
-        </div>
-      </div>
     </div>
   );
 };
