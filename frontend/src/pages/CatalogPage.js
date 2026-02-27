@@ -600,7 +600,8 @@ export default function CatalogPage() {
 
         {/* Two-column layout: Sidebar + Content */}
         <div className="flex gap-6">
-          {/* Left sidebar — Filters */}
+          {/* Left sidebar — Filters (only after search) */}
+          {(searchQuery || categoryId) && (
           <aside className="hidden md:block w-64 flex-shrink-0" data-testid="filters-sidebar">
             <div className="bg-white/80 backdrop-blur-sm border border-slate-200 rounded-2xl p-5 space-y-5 sticky top-24">
               <div className="flex items-center justify-between">
