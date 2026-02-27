@@ -405,7 +405,8 @@ export default function AdminOrdersPage() {
                                     </div>
                                   ) : (
                                     <div className="text-right">
-                                      <p className="text-xs text-slate-400">{item.quantity} шт.</p>
+                                      <p className="font-medium text-slate-700">{formatPrice(item.price)} ₽ × {item.quantity}</p>
+                                      <p className="text-sm font-bold text-teal-600">{formatPrice(item.price * item.quantity)} ₽</p>
                                     </div>
                                   )}
                                 </div>
