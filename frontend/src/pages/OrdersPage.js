@@ -522,7 +522,7 @@ export default function OrdersPage() {
 
                             {/* Order total */}
                             <div className="flex justify-between items-center mt-4 pt-4 border-t border-slate-200/50">
-                              <span className="text-slate-500 text-sm">Оплата: наличными при получении</span>
+                              <span className="text-slate-500 text-sm">Оплата: {PAYMENT_METHOD_LABELS[order.payment_method] || order.payment_method || 'не указан'}</span>
                               <div className="text-right">
                                 <span className="text-sm text-slate-400">Итого: </span>
                                 {order.awaiting_confirmation && order.previous_total && order.previous_total !== order.total ? (
