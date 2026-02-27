@@ -757,6 +757,7 @@ export default function CatalogPage() {
               </div>
             )}
           </div>
+          )}
 
           {/* Right content — Products */}
           <div className="flex-1 min-w-0">
