@@ -110,27 +110,38 @@ export const SearchDropdown = ({
   return (
     <div ref={containerRef} className={`relative ${className}`}>
       {/* Search Input */}
-      <div className="relative">
-        <Search className={`absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 ${compact ? 'w-4 h-4' : 'w-5 h-5'}`} />
-        <Input
-          type="text"
-          value={query}
-          onChange={handleInputChange}
-          onKeyDown={handleKeyDown}
-          onFocus={() => query.length >= 2 && results.length > 0 && setIsOpen(true)}
-          placeholder={placeholder}
-          className={`${compact ? 'pl-9 pr-8 h-9 text-sm' : 'pl-11 pr-10 h-12'} rounded-xl border-slate-200 focus:border-teal-400 focus:ring-teal-200 bg-white/80 backdrop-blur-sm`}
-          data-testid="search-input"
-        />
-        {loading && (
-          <Loader2 className={`absolute right-3 top-1/2 -translate-y-1/2 text-teal-500 animate-spin ${compact ? 'w-4 h-4' : 'w-5 h-5'}`} />
-        )}
-        {!loading && query && (
+      <div className={`relative ${showSearchButton ? 'flex gap-2' : ''}`}>
+        <div className="relative flex-1">
+          <Search className={`absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 ${compact ? 'w-4 h-4' : 'w-5 h-5'}`} />
+          <Input
+            type="text"
+            value={query}
+            onChange={handleInputChange}
+            onKeyDown={handleKeyDown}
+            onFocus={() => query.length >= 2 && results.length > 0 && setIsOpen(true)}
+            placeholder={placeholder}
+            className={`${compact ? 'pl-9 pr-8 h-9 text-sm' : 'pl-11 pr-10 h-12'} rounded-xl border-slate-200 focus:border-teal-400 focus:ring-teal-200 bg-white/80 backdrop-blur-sm`}
+            data-testid="search-input"
+          />
+          {loading && (
+            <Loader2 className={`absolute right-3 top-1/2 -translate-y-1/2 text-teal-500 animate-spin ${compact ? 'w-4 h-4' : 'w-5 h-5'}`} />
+          )}
+          {!loading && query && (
+            <button
+              onClick={clearSearch}
+              className={`absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 transition-colors ${compact ? 'w-4 h-4' : 'w-5 h-5'}`}
+            >
+              <X className="w-full h-full" />
+            </button>
+          )}
+        </div>
+        {showSearchButton && (
           <button
-            onClick={clearSearch}
-            className={`absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 transition-colors ${compact ? 'w-4 h-4' : 'w-5 h-5'}`}
+            onClick={handleSearchSubmit}
+            className="h-12 px-6 bg-gradient-to-r from-teal-500 to-emerald-500 hover:from-teal-600 hover:to-emerald-600 text-white font-semibold rounded-xl shadow-lg shadow-teal-500/30 transition-all flex-shrink-0"
+            data-testid="search-submit-btn"
           >
-            <X className="w-full h-full" />
+            Найти
           </button>
         )}
       </div>
