@@ -42,7 +42,7 @@ const ProductCard = ({
       <div className="relative group flex-shrink-0 p-2 flex items-center">
         <Link
           to={`/product/${product.id}`}
-          className="w-[70px] h-[70px] bg-slate-50 block overflow-hidden rounded-lg border border-teal-200/50"
+          className="w-[70px] h-[70px] bg-slate-50 block overflow-hidden rounded-lg border-2 border-teal-400 shadow-sm"
           data-testid={`product-image-${product.id}`}
         >
           {product.image_url ? (
@@ -94,37 +94,39 @@ const ProductCard = ({
         </div>
       </div>
 
-      {/* Right: price + actions — centered vertically */}
-      <div className="flex-shrink-0 flex items-center gap-2 pr-3">
-        <p className="text-sm font-bold text-white bg-gradient-to-r from-rose-500 to-pink-500 px-2.5 py-1 rounded-lg whitespace-nowrap shadow-sm">{formatPrice(product.price)} ₽</p>
-        <FavoritesButton productId={product.id} size="sm" />
-        <div className="flex items-center border border-slate-200 rounded-lg bg-white">
-          <button onClick={() => updateQuantity(product.id, -1)} className="p-1.5 hover:bg-slate-50 rounded-l-lg" data-testid={`qty-minus-${product.id}`}>
-            <Minus className="w-3.5 h-3.5 text-slate-500" />
-          </button>
-          <input 
-            type="number" 
-            value={quantities[product.id] || 1}
-            onChange={(e) => {
-              const val = parseInt(e.target.value) || 1;
-              setQuantities(prev => ({ ...prev, [product.id]: Math.max(1, val) }));
-            }}
-            className="w-10 text-center text-xs font-bold text-slate-700 border-0 focus:outline-none focus:ring-0 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
-            min="1"
-            data-testid={`qty-input-${product.id}`}
-          />
-          <button onClick={() => updateQuantity(product.id, 1)} className="p-1.5 hover:bg-slate-50 rounded-r-lg" data-testid={`qty-plus-${product.id}`}>
-            <Plus className="w-3.5 h-3.5 text-slate-500" />
-          </button>
+      {/* Right: price + actions — centered vertically in bordered box */}
+      <div className="flex-shrink-0 flex items-center py-2 pr-2">
+        <div className="flex items-center gap-2 px-3 py-2 border border-slate-200 rounded-xl bg-slate-50/50">
+          <p className="text-sm font-bold text-white bg-gradient-to-r from-rose-500 to-pink-500 px-2.5 py-1 rounded-lg whitespace-nowrap shadow-sm">{formatPrice(product.price)} ₽</p>
+          <FavoritesButton productId={product.id} size="sm" />
+          <div className="flex items-center border border-slate-200 rounded-lg bg-white">
+            <button onClick={() => updateQuantity(product.id, -1)} className="p-1.5 hover:bg-slate-50 rounded-l-lg" data-testid={`qty-minus-${product.id}`}>
+              <Minus className="w-3.5 h-3.5 text-slate-500" />
+            </button>
+            <input 
+              type="number" 
+              value={quantities[product.id] || 1}
+              onChange={(e) => {
+                const val = parseInt(e.target.value) || 1;
+                setQuantities(prev => ({ ...prev, [product.id]: Math.max(1, val) }));
+              }}
+              className="w-10 text-center text-xs font-bold text-slate-700 border-0 focus:outline-none focus:ring-0 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+              min="1"
+              data-testid={`qty-input-${product.id}`}
+            />
+            <button onClick={() => updateQuantity(product.id, 1)} className="p-1.5 hover:bg-slate-50 rounded-r-lg" data-testid={`qty-plus-${product.id}`}>
+              <Plus className="w-3.5 h-3.5 text-slate-500" />
+            </button>
+          </div>
+          <Button
+            onClick={() => handleAddToCart(product)}
+            disabled={product.stock === 0}
+            className="h-8 px-3 bg-gradient-to-r from-teal-500 to-emerald-500 hover:from-teal-600 hover:to-emerald-600 text-white rounded-lg shadow-md shadow-teal-500/20 text-xs"
+            data-testid={`add-to-cart-${product.id}`}
+          >
+            <ShoppingCart className="w-3.5 h-3.5" />
+          </Button>
         </div>
-        <Button
-          onClick={() => handleAddToCart(product)}
-          disabled={product.stock === 0}
-          className="h-8 px-3 bg-gradient-to-r from-teal-500 to-emerald-500 hover:from-teal-600 hover:to-emerald-600 text-white rounded-lg shadow-md shadow-teal-500/20 text-xs"
-          data-testid={`add-to-cart-${product.id}`}
-        >
-          <ShoppingCart className="w-3.5 h-3.5" />
-        </Button>
       </div>
     </div>
   </div>
