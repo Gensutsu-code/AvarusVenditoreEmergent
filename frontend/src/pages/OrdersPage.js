@@ -537,7 +537,6 @@ export default function OrdersPage() {
                                 ))}
                               </div>
                             )}
-                            </div>
 
                             {/* Order total */}
                             <div className="flex justify-between items-center mt-4 pt-4 border-t border-slate-200/50">
