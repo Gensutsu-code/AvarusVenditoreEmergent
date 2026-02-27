@@ -94,6 +94,14 @@ const ProductCard = ({
         <p className="text-xs text-slate-400">в наличии</p>
       </div>
 
+      {/* Warehouse */}
+      {product.warehouse && (
+        <div className="hidden md:block text-center min-w-[90px]">
+          <p className="text-sm font-semibold text-blue-600">{product.warehouse}</p>
+          <p className="text-xs text-slate-400">склад</p>
+        </div>
+      )}
+
       {/* Delivery */}
       <div className="hidden md:flex items-center gap-2 text-slate-500 min-w-[100px]">
         <Truck className="w-4 h-4" />
