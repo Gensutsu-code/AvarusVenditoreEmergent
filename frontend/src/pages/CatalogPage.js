@@ -63,22 +63,12 @@ const ProductCard = ({
       </div>
 
       {/* Content */}
-      <div className="flex-1 min-w-0 p-3 flex flex-col justify-between">
-        {/* Top row: name + price */}
-        <div className="flex items-start justify-between gap-6">
-          <Link to={`/product/${product.id}`} className="flex-1 min-w-0 max-w-[65%]">
-            <h3 className="font-semibold text-[15px] leading-snug text-slate-800 hover:text-teal-600 transition-colors">
-              {product.name}
-            </h3>
-          </Link>
-          <div className="flex-shrink-0 text-right">
-            <p className="text-lg font-bold text-teal-600">{formatPrice(product.price)} <span className="text-sm">&#8381;</span></p>
-          </div>
-        </div>
-
-        {/* Bottom row: manufacturer, article, badges + actions */}
-        <div className="flex items-center justify-between mt-2 gap-2">
-          {/* Badges */}
+      <div className="flex-1 min-w-0 p-3 flex items-center gap-4">
+        {/* Left: text info */}
+        <div className="flex-1 min-w-0">
+          <h3 className="font-semibold text-[15px] leading-snug text-slate-800 hover:text-teal-600 transition-colors mb-1.5">
+            <Link to={`/product/${product.id}`}>{product.name}</Link>
+          </h3>
           <div className="flex items-center gap-1.5 flex-wrap">
             {product.manufacturer && (
               <span className="text-[11px] font-bold text-teal-600 bg-teal-50 px-1.5 py-0.5 rounded">{product.manufacturer}</span>
@@ -101,28 +91,29 @@ const ProductCard = ({
               <span className="text-[11px] text-slate-400">Кросс: {product.cross_articles}</span>
             )}
           </div>
+        </div>
 
-          {/* Actions */}
-          <div className="flex items-center gap-1.5 flex-shrink-0">
-            <FavoritesButton productId={product.id} size="sm" />
-            <div className="flex items-center border border-slate-200 rounded-lg bg-white">
-              <button onClick={() => updateQuantity(product.id, -1)} className="p-1.5 hover:bg-slate-50 rounded-l-lg" data-testid={`qty-minus-${product.id}`}>
-                <Minus className="w-3.5 h-3.5 text-slate-500" />
-              </button>
-              <span className="px-2 min-w-[28px] text-center text-xs font-bold text-slate-700">{quantities[product.id] || 1}</span>
-              <button onClick={() => updateQuantity(product.id, 1)} className="p-1.5 hover:bg-slate-50 rounded-r-lg" data-testid={`qty-plus-${product.id}`}>
-                <Plus className="w-3.5 h-3.5 text-slate-500" />
-              </button>
-            </div>
-            <Button
-              onClick={() => handleAddToCart(product)}
-              disabled={product.stock === 0}
-              className="h-8 px-3 bg-gradient-to-r from-teal-500 to-emerald-500 hover:from-teal-600 hover:to-emerald-600 text-white rounded-lg shadow-md shadow-teal-500/20 text-xs"
-              data-testid={`add-to-cart-${product.id}`}
-            >
-              <ShoppingCart className="w-3.5 h-3.5" />
-            </Button>
+        {/* Right: price + actions column */}
+        <div className="flex-shrink-0 flex items-center gap-3">
+          <p className="text-xl font-bold text-teal-600 whitespace-nowrap">{formatPrice(product.price)} <span className="text-sm">&#8381;</span></p>
+          <FavoritesButton productId={product.id} size="sm" />
+          <div className="flex items-center border border-slate-200 rounded-lg bg-white">
+            <button onClick={() => updateQuantity(product.id, -1)} className="p-1.5 hover:bg-slate-50 rounded-l-lg" data-testid={`qty-minus-${product.id}`}>
+              <Minus className="w-3.5 h-3.5 text-slate-500" />
+            </button>
+            <span className="px-2 min-w-[28px] text-center text-xs font-bold text-slate-700">{quantities[product.id] || 1}</span>
+            <button onClick={() => updateQuantity(product.id, 1)} className="p-1.5 hover:bg-slate-50 rounded-r-lg" data-testid={`qty-plus-${product.id}`}>
+              <Plus className="w-3.5 h-3.5 text-slate-500" />
+            </button>
           </div>
+          <Button
+            onClick={() => handleAddToCart(product)}
+            disabled={product.stock === 0}
+            className="h-8 px-3 bg-gradient-to-r from-teal-500 to-emerald-500 hover:from-teal-600 hover:to-emerald-600 text-white rounded-lg shadow-md shadow-teal-500/20 text-xs"
+            data-testid={`add-to-cart-${product.id}`}
+          >
+            <ShoppingCart className="w-3.5 h-3.5" />
+          </Button>
         </div>
       </div>
     </div>
