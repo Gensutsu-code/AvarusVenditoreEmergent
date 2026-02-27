@@ -426,49 +426,117 @@ export default function OrdersPage() {
                               </div>
                             )}
 
-                            {/* Order items */}
-                            <div className="border border-slate-200 rounded-xl divide-y divide-slate-100 overflow-hidden">
-                              {order.items.map((item, idx) => (
-                                <div key={idx} className="flex gap-4 p-4 bg-white">
-                                  {/* Product image */}
-                                  <div className="w-16 h-16 flex-shrink-0 bg-slate-100 rounded-xl overflow-hidden">
-                                    {item.image_url ? (
-                                      <img 
-                                        src={item.image_url.startsWith('http') ? item.image_url : `${BACKEND_URL}${item.image_url}`} 
-                                        alt={item.name}
-                                        className="w-full h-full object-cover"
-                                      />
-                                    ) : (
-                                      <div className="w-full h-full flex items-center justify-center text-slate-300">
-                                        <Package className="w-6 h-6" />
+                            {/* Order items - with comparison if changes pending */}
+                            {order.awaiting_confirmation && order.previous_items ? (
+                              <div className="space-y-4">
+                                {/* Previous items (old) */}
+                                <div className="border border-red-200 rounded-xl overflow-hidden bg-red-50/30">
+                                  <div className="bg-red-100 px-4 py-2 border-b border-red-200">
+                                    <p className="text-red-700 text-xs uppercase font-bold">Было (старые данные)</p>
+                                  </div>
+                                  <div className="divide-y divide-red-100">
+                                    {order.previous_items.map((item, idx) => (
+                                      <div key={idx} className="flex gap-4 p-4">
+                                        <div className="w-12 h-12 flex-shrink-0 bg-slate-100 rounded-lg overflow-hidden">
+                                          {item.image_url ? (
+                                            <img src={item.image_url.startsWith('http') ? item.image_url : `${BACKEND_URL}${item.image_url}`} alt={item.name} className="w-full h-full object-cover opacity-60" />
+                                          ) : (
+                                            <div className="w-full h-full flex items-center justify-center text-slate-300"><Package className="w-5 h-5" /></div>
+                                          )}
+                                        </div>
+                                        <div className="flex-1 min-w-0">
+                                          <p className="font-medium text-slate-600 line-through">{item.name}</p>
+                                          <p className="text-sm text-red-500 line-through">{formatPrice(item.price)} ₽ × {item.quantity} шт.</p>
+                                        </div>
+                                        <div className="text-right">
+                                          <p className="font-mono font-bold text-red-500 line-through">{formatPrice(item.price * item.quantity)} ₽</p>
+                                        </div>
                                       </div>
-                                    )}
+                                    ))}
                                   </div>
-                                  
-                                  {/* Product info */}
-                                  <div className="flex-1 min-w-0">
-                                    <p className="font-medium text-slate-800">{item.name}</p>
-                                    <div className="flex flex-wrap gap-x-4 gap-y-1 mt-1">
-                                      {item.manufacturer && (
-                                        <p className="text-sm font-semibold text-teal-600">{item.manufacturer}</p>
-                                      )}
-                                      {item.article && (
-                                        <p className="text-sm font-mono text-slate-500">Арт: {item.article}</p>
-                                      )}
-                                    </div>
-                                    <p className="text-sm text-slate-400 mt-1">
-                                      {formatPrice(item.price)} ₽ × {item.quantity} шт.
-                                    </p>
-                                  </div>
-                                  
-                                  {/* Item total */}
-                                  <div className="text-right">
-                                    <p className="font-mono font-bold text-teal-600">
-                                      {formatPrice(item.price * item.quantity)} ₽
-                                    </p>
+                                  <div className="bg-red-100 px-4 py-2 border-t border-red-200 flex justify-between">
+                                    <span className="text-red-700 font-medium">Итого было:</span>
+                                    <span className="font-mono font-bold text-red-700 line-through">{formatPrice(order.previous_total)} ₽</span>
                                   </div>
                                 </div>
-                              ))}
+
+                                {/* New items (current) */}
+                                <div className="border border-emerald-200 rounded-xl overflow-hidden bg-emerald-50/30">
+                                  <div className="bg-emerald-100 px-4 py-2 border-b border-emerald-200">
+                                    <p className="text-emerald-700 text-xs uppercase font-bold">Стало (новые данные)</p>
+                                  </div>
+                                  <div className="divide-y divide-emerald-100">
+                                    {order.items.map((item, idx) => (
+                                      <div key={idx} className="flex gap-4 p-4">
+                                        <div className="w-12 h-12 flex-shrink-0 bg-slate-100 rounded-lg overflow-hidden">
+                                          {item.image_url ? (
+                                            <img src={item.image_url.startsWith('http') ? item.image_url : `${BACKEND_URL}${item.image_url}`} alt={item.name} className="w-full h-full object-cover" />
+                                          ) : (
+                                            <div className="w-full h-full flex items-center justify-center text-slate-300"><Package className="w-5 h-5" /></div>
+                                          )}
+                                        </div>
+                                        <div className="flex-1 min-w-0">
+                                          <p className="font-medium text-slate-800">{item.name}</p>
+                                          <p className="text-sm text-emerald-600">{formatPrice(item.price)} ₽ × {item.quantity} шт.</p>
+                                        </div>
+                                        <div className="text-right">
+                                          <p className="font-mono font-bold text-emerald-600">{formatPrice(item.price * item.quantity)} ₽</p>
+                                        </div>
+                                      </div>
+                                    ))}
+                                  </div>
+                                  <div className="bg-emerald-100 px-4 py-2 border-t border-emerald-200 flex justify-between">
+                                    <span className="text-emerald-700 font-medium">Итого стало:</span>
+                                    <span className="font-mono font-bold text-emerald-700">{formatPrice(order.total)} ₽</span>
+                                  </div>
+                                </div>
+                              </div>
+                            ) : (
+                              /* Regular order items display */
+                              <div className="border border-slate-200 rounded-xl divide-y divide-slate-100 overflow-hidden">
+                                {order.items.map((item, idx) => (
+                                  <div key={idx} className="flex gap-4 p-4 bg-white">
+                                    {/* Product image */}
+                                    <div className="w-16 h-16 flex-shrink-0 bg-slate-100 rounded-xl overflow-hidden">
+                                      {item.image_url ? (
+                                        <img 
+                                          src={item.image_url.startsWith('http') ? item.image_url : `${BACKEND_URL}${item.image_url}`} 
+                                          alt={item.name}
+                                          className="w-full h-full object-cover"
+                                        />
+                                      ) : (
+                                        <div className="w-full h-full flex items-center justify-center text-slate-300">
+                                          <Package className="w-6 h-6" />
+                                        </div>
+                                      )}
+                                    </div>
+                                    
+                                    {/* Product info */}
+                                    <div className="flex-1 min-w-0">
+                                      <p className="font-medium text-slate-800">{item.name}</p>
+                                      <div className="flex flex-wrap gap-x-4 gap-y-1 mt-1">
+                                        {item.manufacturer && (
+                                          <p className="text-sm font-semibold text-teal-600">{item.manufacturer}</p>
+                                        )}
+                                        {item.article && (
+                                          <p className="text-sm font-mono text-slate-500">Арт: {item.article}</p>
+                                        )}
+                                      </div>
+                                      <p className="text-sm text-slate-400 mt-1">
+                                        {formatPrice(item.price)} ₽ × {item.quantity} шт.
+                                      </p>
+                                    </div>
+                                    
+                                    {/* Item total */}
+                                    <div className="text-right">
+                                      <p className="font-mono font-bold text-teal-600">
+                                        {formatPrice(item.price * item.quantity)} ₽
+                                      </p>
+                                    </div>
+                                  </div>
+                                ))}
+                              </div>
+                            )}
                             </div>
 
                             {/* Order total */}
