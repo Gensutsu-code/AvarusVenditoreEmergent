@@ -11,6 +11,7 @@ export const SearchDropdown = ({
   placeholder = "Поиск по названию или артикулу...",
   compact = false,
   onSelect,
+  showSearchButton = false,
   className = ""
 }) => {
   const [query, setQuery] = useState('');
