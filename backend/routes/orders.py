@@ -330,6 +330,72 @@ async def get_order(order_id: str, user=Depends(get_current_user)):
     return order
 
 
+@router.post("/orders/{order_id}/accept-changes")
+async def accept_order_changes(order_id: str, user=Depends(get_current_user)):
+    """Customer accepts changes made by admin"""
+    order = await db.orders.find_one({"id": order_id, "user_id": user["id"]}, {"_id": 0})
+    if not order:
+        raise HTTPException(status_code=404, detail="Order not found")
+    
+    if not order.get("awaiting_confirmation"):
+        raise HTTPException(status_code=400, detail="No pending changes")
+    
+    await db.orders.update_one(
+        {"id": order_id},
+        {"$set": {
+            "awaiting_confirmation": False,
+            "has_changes": False,
+            "changes_accepted": True,
+            "changes_accepted_at": datetime.now(timezone.utc).isoformat()
+        }}
+    )
+    
+    await create_notification(user["id"], "order", "Изменения приняты", f"Вы приняли изменения в заказе #{order_id[:8]}", "/orders")
+    
+    return {"message": "Changes accepted"}
+
+
+@router.post("/orders/{order_id}/cancel")
+async def cancel_order_by_customer(order_id: str, user=Depends(get_current_user)):
+    """Customer cancels order within 24 hours of processing"""
+    order = await db.orders.find_one({"id": order_id, "user_id": user["id"]}, {"_id": 0})
+    if not order:
+        raise HTTPException(status_code=404, detail="Order not found")
+    
+    # Check if order can be cancelled
+    if order.get("status") in ["shipped", "delivered", "cancelled"]:
+        raise HTTPException(status_code=400, detail="Заказ нельзя отменить")
+    
+    # Check 24 hour window for processing orders
+    if order.get("status") == "processing":
+        processing_started = order.get("processing_started_at")
+        if processing_started:
+            started = datetime.fromisoformat(processing_started.replace('Z', '+00:00'))
+            hours_passed = (datetime.now(timezone.utc) - started).total_seconds() / 3600
+            if hours_passed > 24:
+                raise HTTPException(status_code=400, detail="Время для отмены заказа истекло (24 часа)")
+    
+    # Restore stock
+    for item in order.get("items", []):
+        await db.products.update_one(
+            {"id": item.get("product_id")},
+            {"$inc": {"stock": item.get("quantity", 0)}}
+        )
+    
+    await db.orders.update_one(
+        {"id": order_id},
+        {"$set": {
+            "status": "cancelled",
+            "cancelled_by": "customer",
+            "cancelled_at": datetime.now(timezone.utc).isoformat()
+        }}
+    )
+    
+    await create_notification(user["id"], "order", "Заказ отменён", f"Заказ #{order_id[:8]} отменён по вашему запросу", "/orders")
+    
+    return {"message": "Order cancelled"}
+
+
 # ==================== FAVORITES ====================
 
 @router.get("/favorites")
