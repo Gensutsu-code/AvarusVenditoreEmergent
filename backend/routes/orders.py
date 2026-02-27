@@ -142,26 +142,31 @@ async def create_order(data: OrderCreate, user=Depends(get_current_user)):
     items = []
     subtotal = 0
     
+    # Calculate price multiplier based on payment adjustment
+    price_multiplier = 1 + (payment_adjustment / 100) if payment_adjustment != 0 else 1
+    
     for cart_item in cart["items"]:
         product = products_map.get(cart_item["product_id"])
         if product:
-            price = product["price"]
+            # Apply payment discount to unit price
+            original_price = product["price"]
+            final_price = round(original_price * price_multiplier, 2)
+            
             item_data = {
                 "product_id": cart_item["product_id"],
                 "name": product["name"],
                 "article": product["article"],
                 "manufacturer": product.get("manufacturer"),
-                "price": price,
+                "price": final_price,  # Final price with payment discount
+                "original_price": original_price,  # Keep original for reference
                 "quantity": cart_item["quantity"],
                 "image_url": product.get("image_url")
             }
             items.append(item_data)
-            subtotal += price * cart_item["quantity"]
+            subtotal += final_price * cart_item["quantity"]
     
-    # Apply payment method adjustment (negative = discount, positive = surcharge)
+    # Total is now subtotal (already includes payment adjustment per item)
     total = subtotal
-    if payment_adjustment != 0:
-        total = subtotal * (1 + payment_adjustment / 100)
     
     # Apply delivery fee
     delivery_settings = await db.settings.find_one({"key": "delivery_settings"})
