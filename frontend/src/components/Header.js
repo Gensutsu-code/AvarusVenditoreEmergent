@@ -446,6 +446,19 @@ export const Header = () => {
                         </motion.div>
                       </Link>
                     </div>
+                    {/* Balance indicator */}
+                    {userBalance !== null && (
+                      <Link to="/account" data-testid="header-balance">
+                        <motion.div 
+                          className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-gradient-to-r from-teal-50 to-emerald-50 border border-teal-200/60 cursor-pointer"
+                          whileHover={{ scale: 1.05, borderColor: 'rgba(20,184,166,0.5)' }}
+                          whileTap={{ scale: 0.97 }}
+                        >
+                          <Wallet className="w-4 h-4 text-teal-500" />
+                          <span className="text-sm font-bold text-teal-700">{new Intl.NumberFormat('ru-RU').format(userBalance)} ₽</span>
+                        </motion.div>
+                      </Link>
+                    )}
                     {/* Expandable Profile Menu */}
                     <ExpandableProfileMenu onLogout={logout} unreadCount={notificationCount} />
                   </>
