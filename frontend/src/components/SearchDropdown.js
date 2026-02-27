@@ -180,12 +180,15 @@ export const SearchDropdown = ({
                     </div>
                   </div>
 
-                  {/* Price & Stock */}
+                  {/* Price & Stock & Warehouse */}
                   <div className="text-right flex-shrink-0 pl-2">
                     <p className="font-bold text-teal-600 text-sm whitespace-nowrap">{formatPrice(product.price)} ₽</p>
                     <p className={`text-[11px] whitespace-nowrap ${product.stock > 0 ? 'text-emerald-500' : 'text-red-500'}`}>
                       {product.stock > 0 ? `${product.stock} шт.` : 'Нет'}
                     </p>
+                    {product.warehouse && (
+                      <p className="text-[11px] text-blue-500 whitespace-nowrap">{product.warehouse}</p>
+                    )}
                   </div>
                 </motion.button>
               ))}
