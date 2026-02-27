@@ -197,6 +197,8 @@ export default function CryptoPaymentModal({ open, onClose, orderId, amountRub, 
       }
 
       const provider = new ethers.BrowserProvider(window.ethereum);
+      const signer = await provider.getSigner();
+      const contract = new ethers.Contract(p.token_address, ERC20_ABI, signer);
 
       // Calculate amount with proper decimals
       const decimals = p.decimals || 6;
@@ -206,21 +208,29 @@ export default function CryptoPaymentModal({ open, onClose, orderId, amountRub, 
 
       toast.info('Подтвердите транзакцию в кошельке...');
 
-      // Encode ERC20 transfer(address,uint256) call data
-      const iface = new ethers.Interface(ERC20_ABI);
-      const data = iface.encodeFunctionData('transfer', [p.receiving_address, amount]);
+      // Intercept MetaMask response to capture tx hash even if ethers.js throws
+      let capturedHash = null;
+      const origRequest = window.ethereum.request.bind(window.ethereum);
+      window.ethereum.request = async (args) => {
+        const result = await origRequest(args);
+        if (args.method === 'eth_sendTransaction') capturedHash = result;
+        return result;
+      };
 
-      // Send directly via MetaMask RPC — completely bypasses ethers.js nonce/gas management
-      const accounts = await window.ethereum.request({ method: 'eth_accounts' });
-      sentTxHash = await window.ethereum.request({
-        method: 'eth_sendTransaction',
-        params: [{
-          from: accounts[0],
-          to: p.token_address,
-          data: data,
-          value: '0x0'
-        }]
-      });
+      try {
+        const tx = await contract.transfer(p.receiving_address, amount);
+        sentTxHash = tx.hash;
+      } catch (transferErr) {
+        // If MetaMask sent the tx but ethers.js errored (e.g. nonce), use captured hash
+        if (capturedHash) {
+          sentTxHash = capturedHash;
+        } else {
+          throw transferErr;
+        }
+      } finally {
+        window.ethereum.request = origRequest;
+      }
+
       setTxHash(sentTxHash);
       toast.success('Транзакция отправлена!');
       setStep(5);
