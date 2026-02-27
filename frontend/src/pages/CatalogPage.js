@@ -73,39 +73,30 @@ const ProductCard = ({
         className="flex-1 text-left min-w-0"
       >
         {product.manufacturer && (
-          <p className="text-sm font-bold text-teal-600 mb-0.5">{product.manufacturer}</p>
+          <p className="text-xs font-bold text-teal-600 mb-0.5">{product.manufacturer}</p>
         )}
-        <p className="text-sm font-mono font-semibold text-slate-500 mb-1">Арт: {product.article}</p>
-        <h3 className="font-semibold text-slate-800 hover:text-teal-600 transition-colors line-clamp-1">
+        <h3 className="font-semibold text-sm text-slate-800 hover:text-teal-600 transition-colors line-clamp-2">
           {product.name}
         </h3>
+        <p className="text-xs font-mono text-slate-400">Арт: {product.article}</p>
         {isAlternative && product.cross_articles && (
-          <p className="text-xs text-slate-500 mt-1 line-clamp-1">
+          <p className="text-xs text-slate-500 mt-0.5 line-clamp-1">
             Кросс: {product.cross_articles}
           </p>
         )}
       </Link>
 
-      {/* Stock */}
-      <div className="hidden sm:block text-center min-w-[80px]">
-        <p className={`text-sm font-semibold ${product.stock > 0 ? 'text-emerald-600' : 'text-red-500'}`}>
+      {/* Stock + Warehouse + Delivery — compact column */}
+      <div className="hidden sm:flex flex-col items-end gap-0.5 min-w-[80px] text-xs">
+        <span className={`font-semibold ${product.stock > 0 ? 'text-emerald-600' : 'text-red-500'}`}>
           {product.stock > 0 ? `${product.stock} шт.` : 'Нет'}
-        </p>
-        <p className="text-xs text-slate-400">в наличии</p>
-      </div>
-
-      {/* Warehouse */}
-      {product.warehouse && (
-        <div className="hidden md:block text-center min-w-[90px]">
-          <p className="text-sm font-semibold text-blue-600">{product.warehouse}</p>
-          <p className="text-xs text-slate-400">склад</p>
-        </div>
-      )}
-
-      {/* Delivery */}
-      <div className="hidden md:flex items-center gap-2 text-slate-500 min-w-[100px]">
-        <Truck className="w-4 h-4" />
-        <span className="text-sm">{getDeliveryText(product.delivery_days || 3)}</span>
+        </span>
+        {product.warehouse && (
+          <span className="text-blue-600 font-medium">{product.warehouse}</span>
+        )}
+        <span className="text-slate-400 flex items-center gap-1">
+          <Truck className="w-3 h-3" />{getDeliveryText(product.delivery_days || 3)}
+        </span>
       </div>
 
       {/* Price */}
