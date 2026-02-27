@@ -50,26 +50,20 @@ export const FloatingPromoBanner = () => {
   const bgColor = banner.bg_color || (isDark ? '#f97316' : '#10b981');
 
   return (
-    <div className="fixed top-20 right-4 z-40">
-      <AnimatePresence mode="wait" initial={false}>
-        {isExpanded ? (
-          <motion.div
-            key="expanded"
-            initial={{ opacity: 0, x: 50, scale: 0.8 }}
-            animate={{ 
-              opacity: 1, 
-              x: 0,
-              scale: 1,
-              transition: {
-                duration: 0.4,
-                ease: [0.25, 0.46, 0.45, 0.94]
-              }
-            }}
+    <>
+      {/* Expanded banner - centered */}
+      <AnimatePresence>
+        {isExpanded && (
+          <motion.div 
+            className="fixed top-20 left-0 right-0 z-40 flex justify-center"
+            initial={{ opacity: 0, y: -20 }}
+            animate={{ opacity: 1, y: 0 }}
             exit={{ 
-              opacity: 0, 
-              x: 50,
-              scale: 0.8,
-              transition: { duration: 0.3 }
+              opacity: 0,
+              x: '50vw',
+              y: 0,
+              scale: 0.5,
+              transition: { duration: 0.4, ease: [0.25, 0.46, 0.45, 0.94] }
             }}
           >
             <motion.div 
@@ -113,32 +107,39 @@ export const FloatingPromoBanner = () => {
               </motion.button>
             </motion.div>
           </motion.div>
-        ) : (
+        )}
+      </AnimatePresence>
+
+      {/* Collapsed button - right corner */}
+      <AnimatePresence>
+        {!isExpanded && (
           <motion.button
-            key="collapsed"
-            initial={{ scale: 0, opacity: 0, rotate: -180 }}
-            animate={{ 
-              scale: 1, 
-              opacity: 1, 
-              rotate: 0,
-              transition: {
-                type: "spring",
-                stiffness: 200,
-                damping: 15
-              }
-            }}
-            exit={{ 
-              scale: 0, 
-              opacity: 0,
-              rotate: 180,
-              transition: { duration: 0.2 }
-            }}
-            onClick={handleExpand}
-            className="flex items-center justify-center w-10 h-10 rounded-full text-white shadow-xl hover:shadow-2xl transition-shadow"
+            className="fixed top-20 right-4 z-40 flex items-center justify-center w-10 h-10 rounded-full text-white shadow-xl hover:shadow-2xl transition-shadow"
             style={{ 
               backgroundColor: bgColor,
               boxShadow: `0 8px 25px ${bgColor}50`
             }}
+            initial={{ 
+              opacity: 0, 
+              x: '-50vw',
+              scale: 0.5
+            }}
+            animate={{ 
+              opacity: 1, 
+              x: 0,
+              scale: 1,
+              transition: {
+                duration: 0.4,
+                ease: [0.25, 0.46, 0.45, 0.94]
+              }
+            }}
+            exit={{ 
+              opacity: 0,
+              x: '-50vw',
+              scale: 0.5,
+              transition: { duration: 0.3 }
+            }}
+            onClick={handleExpand}
             whileHover={{ scale: 1.15 }}
             whileTap={{ scale: 0.95 }}
             data-testid="promo-banner-collapsed"
@@ -152,7 +153,7 @@ export const FloatingPromoBanner = () => {
           </motion.button>
         )}
       </AnimatePresence>
-    </div>
+    </>
   );
 };
 
