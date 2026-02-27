@@ -95,15 +95,22 @@ export default function CryptoPaymentModal({ open, onClose, orderId, amountRub, 
     } catch (e) { console.error('Gas fetch error:', e); }
   }, [chain]);
 
-  const createPayment = useCallback(async () => {
-    if (!orderId) return;
+  const fetchPaymentInfo = useCallback(async () => {
+    if (!amountRub) return;
     try {
-      const r = await axios.post(`${API}/crypto/payment/create`, { order_id: orderId, chain, token });
-      setPayment(r.data);
+      if (orderId) {
+        // If we have an order, create a full payment session
+        const r = await axios.post(`${API}/crypto/payment/create`, { order_id: orderId, chain, token });
+        setPayment(r.data);
+      } else {
+        // No order yet — just get payment info (address, amount, token)
+        const r = await axios.get(`${API}/crypto/payment-info?chain=${chain}&token=${token}&amount_rub=${amountRub}`);
+        setPayment(r.data);
+      }
     } catch (e) {
-      console.error('Create payment error:', e);
+      console.error('Payment info error:', e);
     }
-  }, [orderId, chain, token]);
+  }, [orderId, chain, token, amountRub]);
 
   useEffect(() => {
     if (open && amountRub) {
@@ -121,8 +128,8 @@ export default function CryptoPaymentModal({ open, onClose, orderId, amountRub, 
   }, [open, chain, fetchGas]);
 
   useEffect(() => {
-    if (open && orderId) createPayment();
-  }, [open, orderId, chain, token, createPayment]);
+    if (open && amountRub) fetchPaymentInfo();
+  }, [open, chain, token, amountRub, fetchPaymentInfo]);
 
   // Refetch price when token changes
   useEffect(() => {
