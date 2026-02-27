@@ -195,8 +195,8 @@ E-commerce platform for truck spare parts with full admin panel restructuring an
 - [x] 24-hour cancel window for customers
 
 ## P1 Features (Backlog)
+- [x] Cron job for auto-canceling expired order changes (background task)
 - [ ] WalletConnect support for crypto payments
-- [ ] Cron job for auto-canceling expired order changes
 - [ ] AdminPage.js refactoring - split into smaller components
 
 ## P2 Features (Future)
