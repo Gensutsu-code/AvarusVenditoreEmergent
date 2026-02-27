@@ -570,6 +570,129 @@ export default function CatalogPage() {
             />
           </div>
 
+          {/* Filters toggle */}
+          <button
+            onClick={() => setShowFilters(!showFilters)}
+            className={`mt-4 inline-flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium transition-all ${
+              showFilters || hasActiveFilters
+                ? 'bg-teal-50 text-teal-700 border border-teal-200'
+                : 'bg-white/60 text-slate-600 border border-slate-200 hover:border-teal-200 hover:bg-teal-50'
+            }`}
+            data-testid="filters-toggle-btn"
+          >
+            <Filter className="w-4 h-4" />
+            Фильтры
+            {hasActiveFilters && (
+              <span className="bg-teal-500 text-white text-[10px] px-1.5 py-0.5 rounded-full font-bold">
+                {[filters.manufacturer, filters.warehouse, filters.inStock, filters.priceMin, filters.priceMax].filter(Boolean).length}
+              </span>
+            )}
+          </button>
+
+          {/* Filters panel */}
+          {showFilters && (
+            <motion.div
+              initial={{ opacity: 0, height: 0 }}
+              animate={{ opacity: 1, height: 'auto' }}
+              exit={{ opacity: 0, height: 0 }}
+              className="mt-3 bg-white/80 backdrop-blur-sm border border-slate-200 rounded-2xl p-5 space-y-4"
+              data-testid="filters-panel"
+            >
+              <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
+                {/* Manufacturer */}
+                <div>
+                  <label className="text-xs font-semibold uppercase text-slate-500 mb-1.5 block">Производитель</label>
+                  <select
+                    value={filters.manufacturer}
+                    onChange={e => setFilters({ ...filters, manufacturer: e.target.value })}
+                    className="w-full h-10 rounded-xl border border-slate-200 bg-white px-3 text-sm focus:border-teal-400 focus:ring-teal-200 focus:outline-none"
+                    data-testid="filter-manufacturer"
+                  >
+                    <option value="">Все</option>
+                    {filterOptions.manufacturers.map(m => (
+                      <option key={m} value={m}>{m}</option>
+                    ))}
+                  </select>
+                </div>
+
+                {/* Warehouse */}
+                <div>
+                  <label className="text-xs font-semibold uppercase text-slate-500 mb-1.5 block">Склад</label>
+                  <select
+                    value={filters.warehouse}
+                    onChange={e => setFilters({ ...filters, warehouse: e.target.value })}
+                    className="w-full h-10 rounded-xl border border-slate-200 bg-white px-3 text-sm focus:border-teal-400 focus:ring-teal-200 focus:outline-none"
+                    data-testid="filter-warehouse"
+                  >
+                    <option value="">Все</option>
+                    {filterOptions.warehouses.map(w => (
+                      <option key={w} value={w}>{w}</option>
+                    ))}
+                  </select>
+                </div>
+
+                {/* Price Min */}
+                <div>
+                  <label className="text-xs font-semibold uppercase text-slate-500 mb-1.5 block">Цена от</label>
+                  <Input
+                    type="number"
+                    value={filters.priceMin}
+                    onChange={e => setFilters({ ...filters, priceMin: e.target.value })}
+                    placeholder="0"
+                    className="h-10 rounded-xl border-slate-200 focus:border-teal-400"
+                    data-testid="filter-price-min"
+                  />
+                </div>
+
+                {/* Price Max */}
+                <div>
+                  <label className="text-xs font-semibold uppercase text-slate-500 mb-1.5 block">Цена до</label>
+                  <Input
+                    type="number"
+                    value={filters.priceMax}
+                    onChange={e => setFilters({ ...filters, priceMax: e.target.value })}
+                    placeholder="999999"
+                    className="h-10 rounded-xl border-slate-200 focus:border-teal-400"
+                    data-testid="filter-price-max"
+                  />
+                </div>
+
+                {/* In stock */}
+                <div className="flex items-end">
+                  <label className="flex items-center gap-2 h-10 cursor-pointer" data-testid="filter-in-stock">
+                    <input
+                      type="checkbox"
+                      checked={filters.inStock}
+                      onChange={e => setFilters({ ...filters, inStock: e.target.checked })}
+                      className="w-4 h-4 rounded border-slate-300 text-teal-500 focus:ring-teal-400"
+                    />
+                    <span className="text-sm text-slate-700 font-medium">В наличии</span>
+                  </label>
+                </div>
+              </div>
+
+              {/* Filter actions */}
+              <div className="flex items-center gap-3 pt-2 border-t border-slate-100">
+                <Button
+                  onClick={applyFilters}
+                  className="bg-gradient-to-r from-teal-500 to-emerald-500 hover:from-teal-600 hover:to-emerald-600 text-white rounded-xl h-9 px-5 text-sm"
+                  data-testid="apply-filters-btn"
+                >
+                  Применить
+                </Button>
+                {hasActiveFilters && (
+                  <button
+                    onClick={() => { resetFilters(); setTimeout(fetchProducts, 50); }}
+                    className="text-sm text-slate-500 hover:text-red-500 transition-colors"
+                    data-testid="reset-filters-btn"
+                  >
+                    Сбросить фильтры
+                  </button>
+                )}
+              </div>
+            </motion.div>
+          )}
+
           {/* Active filters */}
           {(searchQuery || categoryId) && (
             <div className="flex items-center gap-2 mt-4">
