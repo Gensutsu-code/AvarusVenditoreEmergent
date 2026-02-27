@@ -313,6 +313,10 @@ async def update_admin_order(order_id: str, data: AdminOrderUpdate, user=Depends
         
         update_data["change_types"] = changes
         update_data["awaiting_confirmation"] = True
+        
+        # Save previous data for comparison
+        update_data["previous_items"] = original_order.get("items", [])
+        update_data["previous_total"] = original_order.get("total", 0)
     
     if not update_data:
         raise HTTPException(status_code=400, detail="No data to update")
