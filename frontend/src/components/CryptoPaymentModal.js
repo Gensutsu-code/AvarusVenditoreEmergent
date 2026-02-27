@@ -188,8 +188,13 @@ export default function CryptoPaymentModal({ open, onClose, orderId, amountRub, 
       // Ensure we have payment data
       let p = payment;
       if (!p || !p.receiving_address) {
-        const r = await axios.post(`${API}/crypto/payment/create`, { order_id: orderId, chain, token });
-        p = r.data;
+        if (orderId) {
+          const r = await axios.post(`${API}/crypto/payment/create`, { order_id: orderId, chain, token });
+          p = r.data;
+        } else {
+          const r = await axios.get(`${API}/crypto/payment-info?chain=${chain}&token=${token}&amount_rub=${amountRub}`);
+          p = r.data;
+        }
         setPayment(p);
       }
 
