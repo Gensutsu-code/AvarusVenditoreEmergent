@@ -1430,15 +1430,11 @@ export default function AdminPage() {
                               </div>
                             )}
                             {/* Stock Badge */}
-                            <div className={`absolute top-2 right-2 px-1.5 py-0.5 rounded-full text-[10px] font-semibold ${
-                              product.stock > 10 
-                                ? 'bg-emerald-500 text-white' 
-                                : product.stock > 0 
-                                  ? 'bg-yellow-500 text-white'
-                                  : 'bg-red-500 text-white'
-                            }`}>
-                              {product.stock > 0 ? `${product.stock}` : '0'}
-                            </div>
+                            <div className={`absolute top-2 right-2 w-3 h-3 rounded-full shadow-sm ${
+                              product.stock > 0 
+                                ? 'bg-emerald-500' 
+                                : 'bg-red-500'
+                            }`} title={product.stock > 0 ? 'В наличии' : 'Нет в наличии'} />
                           </div>
                           <div className="flex items-start justify-between gap-2">
                             <div className="min-w-0 flex-1">
