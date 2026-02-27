@@ -156,6 +156,9 @@ const ProductCard = ({
       <span className={product.stock > 0 ? 'text-emerald-600' : 'text-red-500'}>
         {product.stock > 0 ? `В наличии: ${product.stock} шт.` : 'Нет в наличии'}
       </span>
+      {product.warehouse && (
+        <span className="text-blue-600 font-semibold">{product.warehouse}</span>
+      )}
       <span className="text-slate-500 flex items-center gap-1">
         <Truck className="w-4 h-4" />
         {getDeliveryText(product.delivery_days || 3)}
