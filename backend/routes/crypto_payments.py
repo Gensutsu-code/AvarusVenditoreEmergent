@@ -84,20 +84,33 @@ class CryptoSettingsUpdate(BaseModel):
 
 
 async def get_crypto_price_usd() -> float:
-    """Get current USD/RUB rate from CoinGecko"""
+    """Get current USD/RUB rate from CoinGecko with 10-minute cache"""
+    cache_key = "usdt_rub_rate"
+    now = time.time()
+    
+    if cache_key in _rate_cache:
+        cached_val, cached_at = _rate_cache[cache_key]
+        if now - cached_at < 600:  # 10 minutes
+            return cached_val
+    
     try:
         async with aiohttp.ClientSession() as session:
-            # Get RUB rate using stablecoins as base (1 USDT = 1 USD)
             url = "https://api.coingecko.com/api/v3/simple/price?ids=tether&vs_currencies=rub"
             async with session.get(url, timeout=10) as resp:
                 if resp.status == 200:
                     data = await resp.json()
-                    # USDT price in RUB
-                    return data.get("tether", {}).get("rub", 90.0)
+                    rate = data.get("tether", {}).get("rub", 90.0)
+                    _rate_cache[cache_key] = (rate, now)
+                    return rate
+                elif resp.status == 429:
+                    print("CoinGecko rate limited, using cache or fallback")
     except Exception as e:
         print(f"CoinGecko API error: {e}")
     
-    # Fallback rate
+    # Return stale cache if available
+    if cache_key in _rate_cache:
+        return _rate_cache[cache_key][0]
+    
     return 90.0
 
 
