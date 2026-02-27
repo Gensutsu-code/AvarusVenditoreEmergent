@@ -268,6 +268,10 @@ async def update_admin_order(order_id: str, data: AdminOrderUpdate, user=Depends
         valid_statuses = ["pending", "processing", "shipped", "delivered", "cancelled"]
         if update_data["status"] not in valid_statuses:
             raise HTTPException(status_code=400, detail="Invalid status")
+        
+        # Track when order moves to processing for 24-hour cancel window
+        if update_data["status"] == "processing" and original_order.get("status") != "processing":
+            update_data["processing_started_at"] = datetime.now(timezone.utc).isoformat()
     
     # Track changes for notification
     changes = []
