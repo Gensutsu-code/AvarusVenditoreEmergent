@@ -193,9 +193,8 @@ export default function FavoritesPage() {
                     {/* Stock */}
                     <div className="hidden sm:block text-center min-w-[80px]">
                       <p className={`text-sm font-semibold ${product.stock > 0 ? 'text-emerald-600' : 'text-red-500'}`}>
-                        {product.stock > 0 ? `${product.stock} шт.` : 'Нет'}
+                        {product.stock > 0 ? 'В наличии' : 'Нет в наличии'}
                       </p>
-                      <p className="text-xs text-slate-400">в наличии</p>
                     </div>
 
                     {/* Price */}

@@ -59,7 +59,11 @@ export default function ProductsTab({
                 <td className="py-2 px-2 font-mono font-semibold text-zinc-600">{product.article}</td>
                 <td className="py-2 px-2 text-zinc-500">{getCategoryName(product.category_id)}</td>
                 <td className="py-2 px-2 text-right font-mono">{formatPrice(product.price)} ₽</td>
-                <td className="py-2 px-2 text-right">{product.stock} шт.</td>
+                <td className="py-2 px-2 text-center">
+                  <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold ${product.stock > 0 ? 'bg-emerald-100 text-emerald-700' : 'bg-red-100 text-red-600'}`}>
+                    {product.stock > 0 ? 'В наличии' : 'Нет'}
+                  </span>
+                </td>
                 <td className="py-2 px-2 text-right">
                   <div className="flex justify-end gap-1">
                     <Button variant="ghost" size="sm" onClick={() => openEditProduct(product)} data-testid={`edit-${product.id}`}>
