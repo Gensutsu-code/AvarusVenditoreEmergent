@@ -71,7 +71,7 @@ const ProductCard = ({
               {product.manufacturer && (
                 <span className="text-[11px] font-bold text-teal-600 bg-teal-50 px-1.5 py-0.5 rounded">{product.manufacturer}</span>
               )}
-              <span className="text-[11px] font-mono text-slate-400">{product.article}</span>
+              <span className="text-xs font-mono font-bold text-pink-500 bg-pink-50 px-1.5 py-0.5 rounded">{product.article}</span>
             </div>
             <h3 className="font-semibold text-[13px] leading-tight text-slate-800 hover:text-teal-600 transition-colors">
               {product.name}
