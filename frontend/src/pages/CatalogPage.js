@@ -655,6 +655,62 @@ export default function CatalogPage() {
                 <span className="text-sm text-slate-700 font-medium">Только в наличии</span>
               </label>
 
+              {/* Delivery days */}
+              <div>
+                <label className="text-xs font-semibold uppercase text-slate-500 mb-1.5 block">Срок доставки</label>
+                <select
+                  value={filters.deliveryDays}
+                  onChange={e => setFilters({ ...filters, deliveryDays: e.target.value })}
+                  className="w-full h-9 rounded-lg border border-slate-200 bg-white px-2.5 text-sm focus:border-teal-400 focus:ring-teal-200 focus:outline-none"
+                  data-testid="filter-delivery"
+                >
+                  <option value="">Любой</option>
+                  <option value="1">До 1 дня</option>
+                  <option value="3">До 3 дней</option>
+                  <option value="7">До 7 дней</option>
+                  <option value="14">До 14 дней</option>
+                </select>
+              </div>
+
+              {/* Has photo */}
+              <label className="flex items-center gap-2.5 cursor-pointer" data-testid="filter-has-photo">
+                <input
+                  type="checkbox"
+                  checked={filters.hasPhoto}
+                  onChange={e => setFilters({ ...filters, hasPhoto: e.target.checked })}
+                  className="w-4 h-4 rounded border-slate-300 text-teal-500 focus:ring-teal-400"
+                />
+                <span className="text-sm text-slate-700 font-medium">С фото</span>
+              </label>
+
+              {/* Has cross-articles */}
+              <label className="flex items-center gap-2.5 cursor-pointer" data-testid="filter-has-cross">
+                <input
+                  type="checkbox"
+                  checked={filters.hasCross}
+                  onChange={e => setFilters({ ...filters, hasCross: e.target.checked })}
+                  className="w-4 h-4 rounded border-slate-300 text-teal-500 focus:ring-teal-400"
+                />
+                <span className="text-sm text-slate-700 font-medium">Есть замены</span>
+              </label>
+
+              {/* Sort */}
+              <div>
+                <label className="text-xs font-semibold uppercase text-slate-500 mb-1.5 block">Сортировка</label>
+                <select
+                  value={filters.sortBy}
+                  onChange={e => setFilters({ ...filters, sortBy: e.target.value })}
+                  className="w-full h-9 rounded-lg border border-slate-200 bg-white px-2.5 text-sm focus:border-teal-400 focus:ring-teal-200 focus:outline-none"
+                  data-testid="filter-sort"
+                >
+                  <option value="">По умолчанию</option>
+                  <option value="price_asc">Цена: по возрастанию</option>
+                  <option value="price_desc">Цена: по убыванию</option>
+                  <option value="name_asc">По названию</option>
+                  <option value="stock_desc">По наличию</option>
+                </select>
+              </div>
+
               {/* Category filter */}
               {categories.length > 0 && (
                 <div>
