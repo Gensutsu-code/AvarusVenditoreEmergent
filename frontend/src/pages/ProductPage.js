@@ -343,7 +343,7 @@ export default function ProductPage() {
                   {product.stock > 0 ? (
                     <>
                       <Check className="w-5 h-5" />
-                      <span className="font-semibold">В наличии: {product.stock} шт.</span>
+                      <span className="font-semibold">В наличии</span>
                     </>
                   ) : (
                     <>
