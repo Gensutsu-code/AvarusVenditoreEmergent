@@ -490,7 +490,18 @@ export default function CatalogPage() {
     setSearchParams({});
     setProducts([]);
     setAlternatives([]);
+    setFilters({ manufacturer: '', warehouse: '', inStock: false, priceMin: '', priceMax: '' });
   };
+
+  const applyFilters = () => {
+    fetchProducts();
+  };
+
+  const resetFilters = () => {
+    setFilters({ manufacturer: '', warehouse: '', inStock: false, priceMin: '', priceMax: '' });
+  };
+
+  const hasActiveFilters = filters.manufacturer || filters.warehouse || filters.inStock || filters.priceMin || filters.priceMax;
 
   const selectCategory = (catId) => {
     const params = new URLSearchParams();
