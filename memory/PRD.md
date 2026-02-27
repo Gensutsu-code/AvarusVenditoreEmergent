@@ -189,9 +189,14 @@ E-commerce platform for truck spare parts with full admin panel restructuring an
 - [x] Clickable URLs in news articles
 - [x] Catalog category images without grayscale
 - [x] Product card layout - price/cart controls vertically centered
+- [x] Admin orders page - inline editing without modals
+- [x] Order change notifications with accept/cancel buttons
+- [x] Sound and push notifications system
+- [x] 24-hour cancel window for customers
 
 ## P1 Features (Backlog)
 - [ ] WalletConnect support for crypto payments
+- [ ] Cron job for auto-canceling expired order changes
 - [ ] AdminPage.js refactoring - split into smaller components
 
 ## P2 Features (Future)
