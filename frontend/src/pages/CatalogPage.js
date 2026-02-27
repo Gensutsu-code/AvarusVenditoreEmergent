@@ -468,7 +468,7 @@ export default function CatalogPage() {
       case 'price_asc': return (a, b) => a.price - b.price;
       case 'price_desc': return (a, b) => b.price - a.price;
       case 'name_asc': return (a, b) => a.name.localeCompare(b.name);
-      case 'stock_desc': return (a, b) => b.stock - a.stock;
+      case 'stock_desc': return (a, b) => (b.stock > 0 ? 1 : 0) - (a.stock > 0 ? 1 : 0);
       default: return null;
     }
   };
