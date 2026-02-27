@@ -615,18 +615,45 @@ async def cancel_order_by_customer(order_id: str, user=Depends(get_current_user)
             {"$inc": {"stock": item.get("quantity", 0)}}
         )
     
+    # Refund to balance if order was paid (not cash)
+    refund_amount = 0
+    payment_method = order.get("payment_method", "cash")
+    is_paid = order.get("paid", False)
+    paid_from_balance = order.get("paid_from_balance", 0)
+    
+    if is_paid and payment_method != "cash":
+        # Use previous_total if awaiting confirmation, otherwise use total
+        refund_amount = order.get("previous_total", order.get("total", 0)) if is_awaiting else order.get("total", 0)
+        if refund_amount > 0:
+            await db.users.update_one(
+                {"id": user["id"]},
+                {"$inc": {"balance": refund_amount}}
+            )
+    elif paid_from_balance > 0:
+        refund_amount = paid_from_balance
+        await db.users.update_one(
+            {"id": user["id"]},
+            {"$inc": {"balance": refund_amount}}
+        )
+    
     await db.orders.update_one(
         {"id": order_id},
         {"$set": {
             "status": "cancelled",
             "cancelled_by": "customer",
-            "cancelled_at": datetime.now(timezone.utc).isoformat()
+            "cancelled_at": datetime.now(timezone.utc).isoformat(),
+            "awaiting_confirmation": False,
+            "refund_amount": refund_amount
         }}
     )
     
-    await create_notification(user["id"], "order", "Заказ отменён", f"Заказ #{order_id[:8]} отменён по вашему запросу", "/orders")
+    notification_msg = f"Заказ #{order_id[:8]} отменён по вашему запросу"
+    if refund_amount > 0:
+        notification_msg += f". На ваш баланс возвращено {refund_amount:.2f} ₽"
     
-    return {"message": "Order cancelled"}
+    await create_notification(user["id"], "order", "Заказ отменён", notification_msg, "/orders")
+    
+    return {"message": "Order cancelled", "refund_amount": refund_amount}
 
 
 # ==================== FAVORITES ====================
