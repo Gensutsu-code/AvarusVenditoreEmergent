@@ -145,9 +145,10 @@ E-commerce platform for truck spare parts with full admin panel restructuring an
 - [x] Checkout page teal theme
 - [x] Clickable URLs in news articles
 - [x] Catalog category images without grayscale
+- [x] Product card layout - price/cart controls vertically centered
 
 ## P1 Features (Backlog)
-- [ ] Analytics performance optimization (currently ~9s load time)
+- [ ] WalletConnect support for crypto payments
 - [ ] AdminPage.js refactoring - split into smaller components
 
 ## P2 Features (Future)
