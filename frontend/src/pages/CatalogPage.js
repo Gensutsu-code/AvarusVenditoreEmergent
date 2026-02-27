@@ -95,8 +95,8 @@ const ProductCard = ({
       </div>
 
       {/* Right: price + actions — centered vertically in bordered box */}
-      <div className="flex-shrink-0 flex items-center pr-2 py-1">
-        <div className="flex items-center gap-2 px-3 py-1.5 border border-slate-200 rounded-xl bg-slate-50/50">
+      <div className="flex-shrink-0 flex items-center pr-2 my-2">
+        <div className="flex items-center gap-2 px-3 h-full border border-slate-200 rounded-xl bg-slate-50/50">
           <p className="text-sm font-bold text-white bg-gradient-to-r from-rose-500 to-pink-500 px-2.5 py-1 rounded-lg whitespace-nowrap shadow-sm">{formatPrice(product.price)} ₽</p>
           <FavoritesButton productId={product.id} size="sm" />
           <div className="flex items-center border border-slate-200 rounded-lg bg-white">
