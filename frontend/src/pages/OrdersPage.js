@@ -45,7 +45,16 @@ export default function OrdersPage() {
       return;
     }
     fetchData();
+    // Request notification permission
+    requestNotificationPermission();
   }, [user, authLoading, navigate]);
+
+  // Poll for order updates
+  useEffect(() => {
+    if (!user) return;
+    const interval = setInterval(fetchData, 15000);
+    return () => clearInterval(interval);
+  }, [user]);
 
   const fetchData = async () => {
     try {
@@ -53,13 +62,71 @@ export default function OrdersPage() {
         axios.get(`${API}/orders`),
         axios.get(`${API}/orders/stats`)
       ]);
-      setOrders(ordersRes.data);
+      
+      // Check for new changes requiring attention
+      const newOrders = ordersRes.data;
+      if (orders.length > 0) {
+        newOrders.forEach(newOrder => {
+          const oldOrder = orders.find(o => o.id === newOrder.id);
+          if (newOrder.awaiting_confirmation && (!oldOrder || !oldOrder.awaiting_confirmation)) {
+            // New change notification
+            sendNotification(
+              'Изменения в заказе',
+              `Заказ #${newOrder.id.slice(0, 8)} был изменён. Требуется подтверждение.`,
+              { tag: `order-change-${newOrder.id}`, onClick: () => navigate('/orders') }
+            );
+            toast.warning(`Заказ #${newOrder.id.slice(0, 8)} был изменён администратором`, { duration: 10000 });
+          }
+        });
+      }
+      
+      setOrders(newOrders);
       setStats(statsRes.data);
     } catch (err) {
       console.error('Failed to fetch orders', err);
     } finally {
       setLoading(false);
     }
+  };
+
+  const handleAcceptChanges = async (orderId) => {
+    try {
+      await axios.post(`${API}/orders/${orderId}/accept-changes`);
+      toast.success('Изменения приняты');
+      fetchData();
+    } catch (err) {
+      toast.error(err.response?.data?.detail || 'Ошибка');
+    }
+  };
+
+  const handleCancelOrder = async (orderId) => {
+    if (!window.confirm('Вы уверены, что хотите отменить заказ?')) return;
+    try {
+      await axios.post(`${API}/orders/${orderId}/cancel`);
+      toast.success('Заказ отменён');
+      fetchData();
+    } catch (err) {
+      toast.error(err.response?.data?.detail || 'Ошибка отмены заказа');
+    }
+  };
+
+  const canCancelOrder = (order) => {
+    if (order.status !== 'processing') return false;
+    const processingStarted = order.processing_started_at;
+    if (!processingStarted) return true;
+    const started = new Date(processingStarted);
+    const hoursPassed = (Date.now() - started.getTime()) / (1000 * 60 * 60);
+    return hoursPassed <= 24;
+  };
+
+  const getTimeLeftToCancel = (order) => {
+    const processingStarted = order.processing_started_at;
+    if (!processingStarted) return '24 часа';
+    const started = new Date(processingStarted);
+    const hoursLeft = 24 - ((Date.now() - started.getTime()) / (1000 * 60 * 60));
+    if (hoursLeft <= 0) return '0 минут';
+    if (hoursLeft < 1) return `${Math.round(hoursLeft * 60)} минут`;
+    return `${Math.round(hoursLeft)} часов`;
   };
 
   const toggleOrderExpanded = (orderId) => {
