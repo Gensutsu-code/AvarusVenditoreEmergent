@@ -421,25 +421,50 @@ export default function CatalogPage() {
   const fetchProducts = async () => {
     setLoading(true);
     try {
+      // Build filter params
+      const filterParams = new URLSearchParams();
+      if (filters.manufacturer) filterParams.append('manufacturer', filters.manufacturer);
+      if (filters.warehouse) filterParams.append('warehouse', filters.warehouse);
+      if (filters.inStock) filterParams.append('in_stock', 'true');
+      if (filters.priceMin) filterParams.append('price_min', filters.priceMin);
+      if (filters.priceMax) filterParams.append('price_max', filters.priceMax);
+      const fStr = filterParams.toString();
+
       // If searching by text, use the advanced search endpoint
       if (searchQuery && !categoryId) {
         const res = await axios.get(`${API}/products/search-with-alternatives?search=${encodeURIComponent(searchQuery)}`);
-        setProducts(res.data.exact || []);
-        setAlternatives(res.data.alternatives || []);
-        // Initialize quantities for all products
+        let exact = res.data.exact || [];
+        let alts = res.data.alternatives || [];
+        
+        // Apply client-side filters to search results
+        const applyFilter = (list) => list.filter(p => {
+          if (filters.manufacturer && p.manufacturer !== filters.manufacturer) return false;
+          if (filters.warehouse && p.warehouse !== filters.warehouse) return false;
+          if (filters.inStock && p.stock <= 0) return false;
+          if (filters.priceMin && p.price < Number(filters.priceMin)) return false;
+          if (filters.priceMax && p.price > Number(filters.priceMax)) return false;
+          return true;
+        });
+        exact = applyFilter(exact);
+        alts = applyFilter(alts);
+        
+        setProducts(exact);
+        setAlternatives(alts);
         const q = {};
-        [...(res.data.exact || []), ...(res.data.alternatives || [])].forEach(p => q[p.id] = 1);
+        [...exact, ...alts].forEach(p => q[p.id] = 1);
         setQuantities(q);
       } else {
-        // Regular search for category browsing
+        // Regular search for category browsing — use server-side filters
         const params = new URLSearchParams();
         if (searchQuery) params.append('search', searchQuery);
         if (categoryId) params.append('category_id', categoryId);
+        if (fStr) {
+          filterParams.forEach((val, key) => params.append(key, val));
+        }
         
         const res = await axios.get(`${API}/products?${params.toString()}`);
         setProducts(res.data);
         setAlternatives([]);
-        // Initialize quantities
         const q = {};
         res.data.forEach(p => q[p.id] = 1);
         setQuantities(q);
