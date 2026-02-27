@@ -77,7 +77,7 @@ const ProductCard = ({
             <span className={`inline-flex items-center text-[11px] font-semibold px-2 py-0.5 rounded-full ${
               product.stock > 0 ? 'bg-emerald-50 text-emerald-700' : 'bg-red-50 text-red-600'
             }`}>
-              {product.stock > 0 ? `${product.stock} шт.` : 'Нет'}
+              {product.stock > 0 ? 'В наличии' : 'Нет в наличии'}
             </span>
             {product.warehouse && (
               <span className="inline-flex items-center text-[11px] font-semibold px-2 py-0.5 rounded-full bg-blue-50 text-blue-600">
