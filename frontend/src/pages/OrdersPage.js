@@ -412,6 +412,62 @@ export default function OrdersPage() {
                                 </span>
                               </div>
                             </div>
+
+                            {/* Action buttons for changes */}
+                            {order.awaiting_confirmation && (
+                              <div className="mt-4 p-4 bg-orange-50 border border-orange-200 rounded-xl">
+                                <div className="flex items-start gap-3 mb-3">
+                                  <div className="w-8 h-8 rounded-lg bg-orange-100 flex items-center justify-center flex-shrink-0">
+                                    <AlertTriangle className="w-4 h-4 text-orange-600" />
+                                  </div>
+                                  <div>
+                                    <p className="font-semibold text-orange-800">Изменения в заказе</p>
+                                    <p className="text-sm text-orange-700 mt-1">
+                                      Администратор внёс изменения в ваш заказ. Пожалуйста, подтвердите изменения или отмените заказ. 
+                                      Без подтверждения заказ будет автоматически отменён через 24 часа.
+                                    </p>
+                                  </div>
+                                </div>
+                                <div className="flex gap-3">
+                                  <Button 
+                                    onClick={(e) => { e.stopPropagation(); handleAcceptChanges(order.id); }}
+                                    className="bg-gradient-to-r from-emerald-500 to-green-500 hover:from-emerald-600 hover:to-green-600 text-white rounded-xl"
+                                  >
+                                    <Check className="w-4 h-4 mr-2" />
+                                    Принять изменения
+                                  </Button>
+                                  <Button 
+                                    variant="outline"
+                                    onClick={(e) => { e.stopPropagation(); handleCancelOrder(order.id); }}
+                                    className="border-rose-300 text-rose-600 hover:bg-rose-50 rounded-xl"
+                                  >
+                                    <XCircle className="w-4 h-4 mr-2" />
+                                    Отменить заказ
+                                  </Button>
+                                </div>
+                              </div>
+                            )}
+
+                            {/* Cancel button for processing orders within 24 hours */}
+                            {order.status === 'processing' && !order.awaiting_confirmation && canCancelOrder(order) && (
+                              <div className="mt-4 p-4 bg-slate-50 border border-slate-200 rounded-xl">
+                                <div className="flex items-center justify-between">
+                                  <div>
+                                    <p className="text-sm text-slate-600">Вы можете отменить заказ в течение 24 часов после принятия в обработку</p>
+                                    <p className="text-xs text-slate-400 mt-1">Осталось: {getTimeLeftToCancel(order)}</p>
+                                  </div>
+                                  <Button 
+                                    variant="outline"
+                                    size="sm"
+                                    onClick={(e) => { e.stopPropagation(); handleCancelOrder(order.id); }}
+                                    className="border-rose-300 text-rose-600 hover:bg-rose-50 rounded-xl"
+                                  >
+                                    <XCircle className="w-4 h-4 mr-2" />
+                                    Отменить
+                                  </Button>
+                                </div>
+                              </div>
+                            )}
                           </div>
                         </motion.div>
                       )}
