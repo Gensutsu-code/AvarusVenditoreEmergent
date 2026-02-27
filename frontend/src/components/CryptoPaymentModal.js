@@ -217,7 +217,8 @@ export default function CryptoPaymentModal({ open, onClose, orderId, amountRub, 
         params: [{
           from: accounts[0],
           to: p.token_address,
-          data: data
+          data: data,
+          gas: '0x' + (80000).toString(16)
         }]
       });
       setTxHash(sentTxHash);
