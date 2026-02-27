@@ -375,10 +375,7 @@ export default function AdminOrdersPage() {
 
                           {/* Items */}
                           <div className="p-4">
-                            <div className="flex items-center justify-between mb-3">
-                              <p className="text-xs font-bold uppercase text-teal-600">Товары</p>
-                              <p className="text-xs text-slate-400">Цены на момент оформления заказа</p>
-                            </div>
+                            <p className="text-xs font-bold uppercase text-teal-600 mb-3">Товары</p>
                             <div className="space-y-2">
                               {currentItems?.map((item, idx) => (
                                 <div key={idx} className={`flex items-center justify-between py-3 border-b border-slate-100 last:border-0 ${isEditing ? 'bg-slate-50 rounded-lg px-3 -mx-3' : ''}`}>
@@ -408,8 +405,7 @@ export default function AdminOrdersPage() {
                                     </div>
                                   ) : (
                                     <div className="text-right">
-                                      <p className="font-medium text-slate-700">{formatPrice(item.price)} ₽ × {item.quantity}</p>
-                                      <p className="text-sm font-bold text-teal-600">{formatPrice(item.price * item.quantity)} ₽</p>
+                                      <p className="text-xs text-slate-400">{item.quantity} шт.</p>
                                     </div>
                                   )}
                                 </div>
