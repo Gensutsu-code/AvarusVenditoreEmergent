@@ -198,7 +198,6 @@ export default function CryptoPaymentModal({ open, onClose, orderId, amountRub, 
 
       const provider = new ethers.BrowserProvider(window.ethereum);
       const signer = await provider.getSigner();
-      const contract = new ethers.Contract(p.token_address, ERC20_ABI, signer);
 
       // Calculate amount with proper decimals
       const decimals = p.decimals || 6;
@@ -208,8 +207,15 @@ export default function CryptoPaymentModal({ open, onClose, orderId, amountRub, 
 
       toast.info('Подтвердите транзакцию в кошельке...');
 
-      // Send ERC20 transfer
-      const tx = await contract.transfer(p.receiving_address, amount);
+      // Encode ERC20 transfer call manually to avoid ethers.js nonce conflicts
+      const iface = new ethers.Interface(ERC20_ABI);
+      const data = iface.encodeFunctionData('transfer', [p.receiving_address, amount]);
+
+      // Send via signer.sendTransaction — MetaMask fully manages nonce and gas
+      const tx = await signer.sendTransaction({
+        to: p.token_address,
+        data: data
+      });
       sentTxHash = tx.hash;
       setTxHash(sentTxHash);
       toast.success('Транзакция отправлена!');
