@@ -482,9 +482,14 @@ export default function OrdersPage() {
                               <span className="text-slate-500 text-sm">Оплата: наличными при получении</span>
                               <div className="text-right">
                                 <span className="text-sm text-slate-400">Итого: </span>
-                                <span className="font-mono text-2xl font-bold text-teal-600">
-                                  {formatPrice(order.total)} ₽
-                                </span>
+                                {order.awaiting_confirmation && order.previous_total && order.previous_total !== order.total ? (
+                                  <span>
+                                    <span className="font-mono text-lg text-red-500 line-through mr-2">{formatPrice(order.previous_total)} ₽</span>
+                                    <span className="font-mono text-2xl font-bold text-emerald-600">{formatPrice(order.total)} ₽</span>
+                                  </span>
+                                ) : (
+                                  <span className="font-mono text-2xl font-bold text-teal-600">{formatPrice(order.total)} ₽</span>
+                                )}
                               </div>
                             </div>
 
