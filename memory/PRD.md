@@ -5,6 +5,14 @@ E-commerce platform for truck spare parts with full admin panel restructuring an
 
 ## What's Been Implemented
 
+### December 2025 - Session 6 (Current)
+
+#### Product Card Layout Fix (COMPLETED)
+- **Problem**: Price/cart controls block was moved to top-right instead of being vertically centered
+- **Solution**: Changed `items-stretch` to `items-center` on the main flex container in ProductCard component
+- **Result**: Price, favorite button, quantity selector and add-to-cart button are now vertically centered in the card's right column
+- **Files**: `/app/frontend/src/pages/CatalogPage.js` (line 40)
+
 ### February 2026 - Session 5 (25 Feb 2026)
 
 #### CRM Analytics Performance Optimization (COMPLETED)
