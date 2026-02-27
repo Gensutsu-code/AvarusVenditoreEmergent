@@ -286,9 +286,13 @@ async def get_gas_estimate(chain: str):
             except:
                 pass
             
-            # Use stale cache if API failed
+            # Use stale cache or fallback prices if API failed
             if native_price_usd == 0 and cache_key in _rate_cache:
                 native_price_usd = _rate_cache[cache_key][0]
+            
+            if native_price_usd == 0:
+                fallback_prices = {"binancecoin": 650, "ethereum": 3500, "matic-network": 0.5}
+                native_price_usd = fallback_prices.get(coin_id, 0)
         
         gas_cost_usd = float(gas_cost_native) * native_price_usd
         
