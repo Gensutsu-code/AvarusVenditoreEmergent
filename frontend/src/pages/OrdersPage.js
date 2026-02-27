@@ -284,6 +284,21 @@ export default function OrdersPage() {
                           <p className="text-sm text-slate-500">
                             {formatDate(order.created_at)}
                           </p>
+                          {/* Change labels */}
+                          {order.has_changes && order.change_types && (
+                            <div className="flex flex-wrap gap-1 mt-2">
+                              {order.change_types.includes('price') && (
+                                <span className="px-2 py-0.5 text-xs font-semibold bg-orange-100 text-orange-700 border border-orange-200 rounded-lg">
+                                  Изменилась цена товара
+                                </span>
+                              )}
+                              {order.change_types.includes('quantity') && (
+                                <span className="px-2 py-0.5 text-xs font-semibold bg-amber-100 text-amber-700 border border-amber-200 rounded-lg">
+                                  Изменилось количество товара
+                                </span>
+                              )}
+                            </div>
+                          )}
                         </div>
                       </div>
                       <div className="flex items-center gap-4">
@@ -293,6 +308,11 @@ export default function OrdersPage() {
                         <span className={`px-3 py-1.5 text-xs font-bold uppercase rounded-lg ${STATUS_COLORS[order.status] || 'bg-slate-100'}`}>
                           {STATUS_LABELS[order.status] || order.status}
                         </span>
+                        {order.awaiting_confirmation && (
+                          <span className="px-3 py-1.5 text-xs font-bold uppercase rounded-lg bg-orange-100 text-orange-700 border border-orange-200 animate-pulse">
+                            Требуется подтверждение
+                          </span>
+                        )}
                         <motion.div
                           animate={{ rotate: expandedOrders[order.id] ? 180 : 0 }}
                           transition={{ duration: 0.3 }}
