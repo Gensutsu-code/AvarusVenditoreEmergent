@@ -246,51 +246,56 @@ async def get_gas_estimate(chain: str):
     if chain not in TOKENS:
         raise HTTPException(status_code=400, detail=f"Unsupported chain: {chain}")
     
+    native_symbols = {
+        "bsc": ("binancecoin", "BNB"),
+        "base": ("ethereum", "ETH"),
+        "polygon": ("matic-network", "MATIC")
+    }
+    
+    coin_id, native_sym = native_symbols.get(chain, ("ethereum", "ETH"))
+    
     try:
         w3 = get_web3_for_chain(chain)
-        
-        # Get current gas price
         gas_price = w3.eth.gas_price
-        
-        # ERC20 transfer typically uses ~65000 gas
         estimated_gas = 65000
         gas_cost_wei = gas_price * estimated_gas
         gas_cost_native = w3.from_wei(gas_cost_wei, 'ether')
         
-        # Get native token price in USD from CoinGecko
-        native_symbols = {
-            "bsc": "binancecoin",
-            "base": "ethereum", 
-            "polygon": "matic-network"
-        }
-        
+        # Get native token price with cache
         native_price_usd = 0
-        try:
-            async with aiohttp.ClientSession() as session:
-                coin_id = native_symbols.get(chain, "ethereum")
-                url = f"https://api.coingecko.com/api/v3/simple/price?ids={coin_id}&vs_currencies=usd"
-                async with session.get(url, timeout=10) as resp:
-                    if resp.status == 200:
-                        data = await resp.json()
-                        native_price_usd = data.get(coin_id, {}).get("usd", 0)
-        except:
-            pass
+        cache_key = f"native_price_{coin_id}"
+        now = time.time()
+        
+        if cache_key in _rate_cache:
+            cached_val, cached_at = _rate_cache[cache_key]
+            if now - cached_at < 600:
+                native_price_usd = cached_val
+        
+        if native_price_usd == 0:
+            try:
+                async with aiohttp.ClientSession() as session:
+                    url = f"https://api.coingecko.com/api/v3/simple/price?ids={coin_id}&vs_currencies=usd"
+                    async with session.get(url, timeout=10) as resp:
+                        if resp.status == 200:
+                            data = await resp.json()
+                            native_price_usd = data.get(coin_id, {}).get("usd", 0)
+                            _rate_cache[cache_key] = (native_price_usd, now)
+            except:
+                pass
+            
+            # Use stale cache if API failed
+            if native_price_usd == 0 and cache_key in _rate_cache:
+                native_price_usd = _rate_cache[cache_key][0]
         
         gas_cost_usd = float(gas_cost_native) * native_price_usd
-        
-        native_currency = TOKENS[chain]["nativeCurrency"] if "nativeCurrency" in TOKENS[chain] else {
-            "bsc": {"symbol": "BNB"},
-            "base": {"symbol": "ETH"},
-            "polygon": {"symbol": "MATIC"}
-        }.get(chain, {"symbol": "ETH"})
         
         return {
             "chain": chain,
             "gas_price_gwei": round(w3.from_wei(gas_price, 'gwei'), 2),
             "estimated_gas": estimated_gas,
             "gas_cost_native": round(float(gas_cost_native), 6),
-            "gas_cost_usd": round(gas_cost_usd, 2),
-            "native_symbol": native_currency.get("symbol", "ETH"),
+            "gas_cost_usd": round(gas_cost_usd, 4),
+            "native_symbol": native_sym,
             "native_price_usd": round(native_price_usd, 2)
         }
     except Exception as e:
@@ -300,7 +305,7 @@ async def get_gas_estimate(chain: str):
             "estimated_gas": 65000,
             "gas_cost_native": 0.0003,
             "gas_cost_usd": 0.10,
-            "native_symbol": {"bsc": "BNB", "base": "ETH", "polygon": "MATIC"}.get(chain, "ETH"),
+            "native_symbol": native_sym,
             "error": str(e)
         }
 
