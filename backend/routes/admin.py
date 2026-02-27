@@ -257,6 +257,11 @@ async def update_admin_order(order_id: str, data: AdminOrderUpdate, user=Depends
     if user.get("role") != "admin":
         raise HTTPException(status_code=403, detail="Admin access required")
     
+    # Get original order to compare changes
+    original_order = await db.orders.find_one({"id": order_id}, {"_id": 0})
+    if not original_order:
+        raise HTTPException(status_code=404, detail="Order not found")
+    
     update_data = {k: v for k, v in data.model_dump().items() if v is not None}
     
     if "status" in update_data:
@@ -264,34 +269,45 @@ async def update_admin_order(order_id: str, data: AdminOrderUpdate, user=Depends
         if update_data["status"] not in valid_statuses:
             raise HTTPException(status_code=400, detail="Invalid status")
     
+    # Track changes for notification
+    changes = []
+    price_changed = False
+    quantity_changed = False
+    
     if "items" in update_data:
-        original_total = 0
-        discounted_total = 0
+        original_items = {item.get("product_id", item.get("article")): item for item in original_order.get("items", [])}
+        
+        for new_item in update_data["items"]:
+            item_key = new_item.get("product_id", new_item.get("article"))
+            original_item = original_items.get(item_key, {})
+            
+            if original_item.get("price") != new_item.get("price"):
+                price_changed = True
+            if original_item.get("quantity") != new_item.get("quantity"):
+                quantity_changed = True
+        
+        # Calculate new total (without discount logic)
+        total = 0
         for item in update_data["items"]:
             item_price = item.get("price", 0)
             item_qty = item.get("quantity", 1)
-            item_discount = item.get("discount_percent", 0)
-            item_total = item_price * item_qty
-            original_total += item_total
-            discounted_total += item_total * (1 - item_discount / 100)
+            total += item_price * item_qty
         
-        update_data["original_total"] = original_total
-        order_discount = update_data.get("order_discount_percent", 0)
-        if order_discount > 0:
-            discounted_total = discounted_total * (1 - order_discount / 100)
-        update_data["total"] = round(discounted_total, 2)
+        update_data["total"] = round(total, 2)
     
-    elif "order_discount_percent" in update_data:
-        order = await db.orders.find_one({"id": order_id}, {"_id": 0})
-        if order:
-            order_discount = update_data["order_discount_percent"]
-            item_total = 0
-            for item in order.get("items", []):
-                item_price = item.get("price", 0)
-                item_qty = item.get("quantity", 1)
-                item_discount = item.get("discount_percent", 0)
-                item_total += item_price * item_qty * (1 - item_discount / 100)
-            update_data["total"] = round(item_total * (1 - order_discount / 100), 2)
+    # If there were changes, mark order for customer confirmation
+    if price_changed or quantity_changed:
+        update_data["has_changes"] = True
+        update_data["changes_at"] = datetime.now(timezone.utc).isoformat()
+        update_data["changes_expire_at"] = (datetime.now(timezone.utc).replace(hour=datetime.now(timezone.utc).hour + 24)).isoformat()
+        
+        if price_changed:
+            changes.append("price")
+        if quantity_changed:
+            changes.append("quantity")
+        
+        update_data["change_types"] = changes
+        update_data["awaiting_confirmation"] = True
     
     if not update_data:
         raise HTTPException(status_code=400, detail="No data to update")
@@ -299,6 +315,22 @@ async def update_admin_order(order_id: str, data: AdminOrderUpdate, user=Depends
     result = await db.orders.update_one({"id": order_id}, {"$set": update_data})
     if result.matched_count == 0:
         raise HTTPException(status_code=404, detail="Order not found")
+    
+    # Send notification to customer about changes
+    if price_changed or quantity_changed:
+        change_msg_parts = []
+        if price_changed:
+            change_msg_parts.append("цена товара")
+        if quantity_changed:
+            change_msg_parts.append("количество товара")
+        
+        await create_notification(
+            original_order["user_id"], 
+            "order_change",
+            f"Изменения в заказе #{order_id[:8]}",
+            f"Изменилось: {', '.join(change_msg_parts)}. Подтвердите изменения в течение 24 часов.",
+            "/orders"
+        )
     
     updated_order = await db.orders.find_one({"id": order_id}, {"_id": 0})
     return updated_order
