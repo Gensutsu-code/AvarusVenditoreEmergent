@@ -42,7 +42,7 @@ const ProductCard = ({
       <div className="relative group flex-shrink-0 p-3">
         <Link
           to={`/product/${product.id}`}
-          className="w-[90px] h-[90px] bg-slate-50 block overflow-hidden rounded-xl"
+          className="w-[90px] h-[90px] bg-slate-50 block overflow-hidden rounded-xl border border-teal-200/50"
           data-testid={`product-image-${product.id}`}
         >
           {product.image_url ? (
