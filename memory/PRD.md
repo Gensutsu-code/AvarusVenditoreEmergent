@@ -1,204 +1,101 @@
 # PRD - E-commerce Platform "AVOPT.STORE"
 
 ## Original Problem Statement
-E-commerce platform for truck spare parts with full admin panel restructuring and glassmorphism design.
+E-commerce platform for truck spare parts with full admin panel, crypto payments, order management, and glassmorphism design.
+
+## Core Requirements
+- Admin panel for managing products, orders, users
+- Client-side catalog with search, filters, favorites
+- Cart and checkout with multiple payment methods (cash, card, crypto, balance)
+- Order management with inline editing, change tracking, and client confirmation
+- Push/sound notifications
+- Bonus program with cashback
 
 ## What's Been Implemented
 
-### December 2025 - Session 6 (Current)
+### February 2026 - Order Change Payment Logic (COMPLETED)
+- **Surcharge/Refund System**: When admin edits a paid order, the system calculates the price difference:
+  - **Cash orders**: Just accept changes, no financial action
+  - **Balance-paid, price increase**: Deducts surcharge from user balance
+  - **Balance-paid, insufficient funds**: Returns payment_required action
+  - **Crypto/Card-paid, price increase**: Returns redirect to payment page
+  - **Any paid order, price decrease**: Refunds difference to user balance
+- **Cancel order with refund**: When a paid order is cancelled (by client or system), funds are refunded to user balance
+- **Bug fixes**:
+  - Removed duplicate `/orders/{order_id}/cancel` route
+  - Added `new` status to STATUS_LABELS, STATUS_COLORS, and ORDER_STATUSES
+  - Fixed hardcoded payment method text to show actual method (криптовалютой, наличными, с баланса, картой)
+  - Allow cancellation when awaiting_confirmation regardless of 24-hour processing window
+- **Endpoints**:
+  - `POST /api/orders/{id}/accept-changes` - handles all payment scenarios
+  - `POST /api/orders/{id}/cancel` - handles refunds for paid orders
+  - `POST /api/orders/{id}/pay-additional` - additional payment endpoint
+  - `GET /api/user/balance` - returns user balance
+- **Files**: `/app/backend/routes/orders.py`, `/app/backend/models.py`, `/app/frontend/src/pages/OrdersPage.js`, `/app/frontend/src/pages/AdminOrdersPage.js`
+- **Testing**: 26/26 backend + 10/10 frontend tests passed (iteration_37)
 
-#### Product Card Layout Fix (COMPLETED)
-- **Problem**: Price/cart controls block was moved to top-right instead of being vertically centered
-- **Solution**: Changed `items-stretch` to `items-center` on the main flex container in ProductCard component
-- **Result**: Price, favorite button, quantity selector and add-to-cart button are now vertically centered in the card's right column
-- **Files**: `/app/frontend/src/pages/CatalogPage.js` (line 40)
+### Earlier Sessions (Completed)
+- Product Card Redesign (Catalog Page)
+- Search Dropdown Behavior
+- Floating Promo Banner
+- Product Stock System Overhaul (boolean in-stock)
+- Admin Order Price Fix (discounts included)
+- Client Order Page UI (comparison view)
+- Admin Orders Page Overhaul (inline editing)
+- Order Change Notifications System
+- Sound & Push Notifications foundation
+- Background task for auto-cancelling expired orders
+- Crypto Payment Modal with QR codes
+- Balance/prepayment system
 
-#### Admin Orders Page Overhaul (COMPLETED)
-- **Problem**: Separate modal windows for "View" and "Edit" order actions
-- **Solution**: Complete rewrite with inline editing in expandable order cards
-- **Features**:
-  - Expandable order cards with all details visible
-  - Inline editing of customer info (name, phone, address)
-  - Inline editing of item prices and quantities
-  - Auto-calculation of totals
-  - Status dropdown for quick status changes
-  - Removed discount functionality per user request
-  - Statistics dashboard (total orders, pending, processing, delivered, revenue)
-  - Filter buttons by status
-  - Search by order number, customer name, phone
-- **Files**: `/app/frontend/src/pages/AdminOrdersPage.js` (complete rewrite)
+## Architecture
+```
+/app
+├── backend/
+│   ├── server.py           # FastAPI + lifespan background tasks
+│   ├── models.py           # Pydantic models
+│   ├── database.py         # MongoDB connection
+│   └── routes/
+│       ├── admin.py        # Admin CRUD + order editing
+│       ├── orders.py       # Cart, orders, favorites, notifications
+│       ├── auth.py         # Authentication
+│       ├── products.py     # Product catalog
+│       ├── balance.py      # Balance management
+│       ├── crypto_payments.py # Crypto payment logic
+│       ├── payments.py     # ЮKassa (MOCKED)
+│       └── ... (settings, news, chat, bonus, etc.)
+├── frontend/src/
+│   ├── pages/
+│   │   ├── OrdersPage.js       # Client orders with comparison UI
+│   │   ├── AdminOrdersPage.js  # Admin orders with inline editing
+│   │   ├── CatalogPage.js      # Product catalog
+│   │   ├── CheckoutPage.js     # Checkout flow
+│   │   └── ... (other pages)
+│   ├── components/
+│   │   ├── CryptoPaymentModal.js
+│   │   ├── SearchDropdown.js
+│   │   └── ... (other components)
+│   └── context/ (AuthContext, CartContext, ThemeContext)
+```
 
-#### Order Change Notifications System (COMPLETED)
-- **Backend Changes**:
-  - Track price/quantity changes when admin edits order
-  - Mark order as `awaiting_confirmation` with 24-hour expiry
-  - Store `change_types` array ("price", "quantity")
-  - Track `processing_started_at` for cancel window
-  - New endpoints: `POST /orders/{id}/accept-changes`, `POST /orders/{id}/cancel`
-  - Auto-cancel endpoint for expired confirmations: `GET /orders/check-expired`
-- **Frontend Changes (Customer Orders Page)**:
-  - Display change labels: "Изменилась цена товара", "Изменилось количество товара"
-  - "Требуется подтверждение" badge on orders with pending changes
-  - Action buttons: "Принять изменения", "Отменить заказ"
-  - Cancel button for processing orders within 24-hour window
-  - Time remaining display for cancel eligibility
-- **Files**: 
-  - `/app/backend/routes/admin.py` (order update with change tracking)
-  - `/app/backend/routes/orders.py` (accept/cancel endpoints)
-  - `/app/frontend/src/pages/OrdersPage.js` (change labels, action buttons)
+## Key DB Schema
+- `users`: `{ id, email, password, name, phone, role, balance: float, customer_status, individual_discount }`
+- `orders`: `{ id, user_id, items[], total, status, payment_method, paid, has_changes, change_types[], awaiting_confirmation, changes_expire_at, previous_items[], previous_total, paid_from_balance }`
+- `products`: `{ id, name, article, manufacturer, price, stock, image_url }`
 
-#### Sound & Push Notifications (COMPLETED)
-- **Utility module**: `/app/frontend/src/utils/notifications.js`
-- **Features**:
-  - `playNotificationSound()` - Web Audio API beep sound
-  - `requestNotificationPermission()` - Browser notification permission
-  - `showPushNotification()` - Browser push notifications
-  - `sendNotification()` - Combined sound + push when tab not focused
-- **Integration**: OrdersPage polls for changes and triggers notifications
+## 3rd Party Integrations
+- Resend (email), web3.py (crypto backend), ethers.js (crypto frontend)
+- CoinGecko (exchange rates), react-qr-code, framer-motion
+- ЮKassa (MOCKED card payments)
 
-### February 2026 - Session 5 (25 Feb 2026)
+## Upcoming Tasks (P1)
+1. **WalletConnect Support** - Other wallets for crypto payment modal
+2. **Full Push/Sound Notifications Integration** - All events covered
 
-#### CRM Analytics Performance Optimization (COMPLETED)
-- **Problem**: Analytics page loading took ~9 seconds
-- **Solution**: 
-  1. Replaced 30+ individual DB queries with single aggregation for daily sales
-  2. Combined 5 status count queries into single aggregation
-  3. Used `asyncio.gather()` for parallel execution of independent queries
-  4. Added 5-minute cache for analytics results
-- **Result**: Response time reduced to ~0.3-0.5 seconds (~95% improvement)
-- **Files**: `/app/backend/routes/admin.py` (lines 505-685)
+## Future/Backlog (P2)
+1. **Real Payment Gateway** - Replace ЮKassa placeholder
+2. **Refactoring**: Extract ProductCard from CatalogPage, break down large order pages
 
-### February 2026 - Session 4 (25 Feb 2026)
-
-#### Multi-Part UI Refinement (COMPLETED)
-1. **Chat Widget Teal Theme** - Replaced orange gradient with teal/emerald on button, header, send button, and message bubbles
-2. **Checkout Page Teal Theme** - Updated title gradient, payment method selection, terms checkbox, place order button, and total amount display
-3. **Admin Product Cards** - Already compact with 6-column grid matching category card layout
-4. **Admin Product Edit Modal** - 26+ teal elements including save button, labels, and form inputs
-5. **Catalog Category Images** - Removed grayscale filter, images now display in full color with scale-on-hover effect
-6. **News Article Links** - Added `linkifyText()` function to make URLs clickable with teal styling
-- Files: `ChatWidget.js`, `CheckoutPage.js`, `CatalogPage.js`, `NewsPage.js`
-
-### February 2026 - Session 3 (25 Feb 2026)
-
-#### Unified Admin Panel Design (COMPLETED)
-- Replaced all orange/purple/amber/violet colors with **teal/emerald**
-- All buttons now use unified teal gradient style
-- All section headers use consistent teal icon containers
-- Badges, spinners, hover-effects - all in teal palette
-- Files: `/app/frontend/src/pages/AdminPage.js` (~50 replacements), `/app/frontend/src/components/admin/CRMTab.js` (~15 replacements)
-
-#### Smooth Tab Animations (COMPLETED)
-- Added framer-motion animations to all tab content
-- Fade-in + slide-up effect (opacity: 0→1, y: 20→0, duration: 300ms)
-- All 15+ tabs now have smooth transitions
-- Files: `/app/frontend/src/pages/AdminPage.js`
-
-### February 2026 - Session 2 (25 Feb 2026)
-
-#### Admin Panel Redesign (COMPLETED)
-- Tabs now distributed evenly across full container width using flex-1
-- Improved visual styling with teal accents for active tabs
-- Smooth transitions between tabs
-- Files: `/app/frontend/src/pages/AdminPage.js`
-
-#### CRM Analytics (COMPLETED)
-- Full analytics dashboard with comprehensive data
-- Fetches data from `/api/admin/analytics/detailed` endpoint
-- Shows: Orders count, Revenue, Avg Order Value, Conversion Rate
-- Shows: Orders by status (new/processing/shipped/delivered/cancelled)
-- Shows: Top Products, Top Customers
-- Shows: Sales by day chart
-- Period filter: week/month/quarter/year
-- Files: `/app/frontend/src/components/admin/CRMTab.js`, `/app/backend/routes/admin.py`
-
-#### Simplified User Roles (COMPLETED)
-- Removed VIP, Wholesaler and other status labels
-- Only two roles: "Admin" and "Client"
-- CRM displays "Клиент" for non-admin users
-- Files: `/app/frontend/src/components/admin/CRMTab.js`
-
-#### Payment Flow - Return to Cart (COMPLETED)
-- Backend endpoint: POST /api/orders/{order_id}/return-to-cart
-- Returns items to cart WITHOUT cancelling the order
-- Used when crypto payment modal is closed
-- Files: `/app/backend/routes/orders.py`, `/app/frontend/src/pages/CheckoutPage.js`
-
-### February 2026 - Session 1 (25 Feb 2026)
-
-#### Quick View Feature (COMPLETED)
-- Added Quick View button (Eye icon) on product images in catalog
-- Modal with full product details
-- Files: `/app/frontend/src/pages/CatalogPage.js`
-
-#### CRM Client Cards Enhancement (COMPLETED)
-- Expandable cards with 3-column layout
-- Personal Data, Order Statistics, Popular Products & Recent Orders
-- Files: `/app/frontend/src/components/admin/CRMTab.js`, `/app/backend/routes/admin.py`
-
-#### Admin Panel Restructuring (COMPLETED)
-- "Crypto" tab moved inside "Payments" as sub-tab
-- "Import/Export" tab removed from Settings
-- Settings: Telegram, Partners, Rules
-- Payments: Payment Methods, Prepayment, Crypto
-
-## Tech Stack
-- **Frontend**: React, TailwindCSS, Shadcn/UI, Framer Motion
-- **Backend**: FastAPI, Python
-- **Database**: MongoDB
-- **3rd Party**: CoinGecko (real-time crypto rates), Resend (emails)
-
-## Key API Endpoints
-- `POST /api/orders/{order_id}/return-to-cart` - Return items to cart without cancelling order
-- `GET /api/admin/analytics/detailed?period=month` - CRM analytics data
-- `GET /api/admin/users` - Users list with order stats
-
-## Color Palette (Light Theme)
-- **Primary**: teal-500, emerald-500 (buttons, accents)
-- **Text**: slate-800 (headings), slate-600 (body), slate-400 (muted)
-- **Background**: gradient cyan/pink, white/70 glassmorphism
-
-## Test Credentials
-- **Admin**: admin@avarus.ru / admin
-
-## Routes
-- `/` - Homepage
-- `/catalog` - Product catalog with popular products
-- `/product/:id` - Product detail page
-- `/cart` - Shopping cart
-- `/checkout` - Checkout
-- `/account` - User account
-- `/orders` - User orders
-- `/admin` - Admin panel
-
-## Test Reports
-- `/app/test_reports/iteration_35.json` - Latest tests (100% success - all 6 UI features verified)
-
-## Mocked Systems
-- Prepayment/Balance topup - MOCKED
-- Crypto payment verification - MOCKED (uses real-time rate from CoinGecko)
-
-## P0 Features (DONE)
-- [x] Admin panel tabs full width
-- [x] CRM Analytics working
-- [x] Simplified user roles
-- [x] Return to cart on payment close
-- [x] Full teal/emerald design unification across app
-- [x] Chat widget teal theme
-- [x] Checkout page teal theme
-- [x] Clickable URLs in news articles
-- [x] Catalog category images without grayscale
-- [x] Product card layout - price/cart controls vertically centered
-- [x] Admin orders page - inline editing without modals
-- [x] Order change notifications with accept/cancel buttons
-- [x] Sound and push notifications system
-- [x] 24-hour cancel window for customers
-
-## P1 Features (Backlog)
-- [x] Cron job for auto-canceling expired order changes (background task)
-- [ ] WalletConnect support for crypto payments
-- [ ] AdminPage.js refactoring - split into smaller components
-
-## P2 Features (Future)
-- [ ] Real payment gateway (Stripe/YooKassa)
-- [ ] Real crypto payment verification
+## Credentials
+- Admin: admin@avarus.ru / admin
+- Client: user@demo.com / demo123
