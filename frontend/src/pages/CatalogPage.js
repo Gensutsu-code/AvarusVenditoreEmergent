@@ -450,7 +450,7 @@ export default function CatalogPage() {
     setSearchParams({});
     setProducts([]);
     setAlternatives([]);
-    setFilters({ manufacturer: '', warehouse: '', inStock: false, priceMin: '', priceMax: '' });
+    setFilters({ manufacturer: '', warehouse: '', inStock: false, priceMin: '', priceMax: '', deliveryDays: '', hasPhoto: false, hasCross: false, sortBy: '' });
   };
 
   const applyFilters = () => {
@@ -458,10 +458,20 @@ export default function CatalogPage() {
   };
 
   const resetFilters = () => {
-    setFilters({ manufacturer: '', warehouse: '', inStock: false, priceMin: '', priceMax: '' });
+    setFilters({ manufacturer: '', warehouse: '', inStock: false, priceMin: '', priceMax: '', deliveryDays: '', hasPhoto: false, hasCross: false, sortBy: '' });
   };
 
-  const hasActiveFilters = filters.manufacturer || filters.warehouse || filters.inStock || filters.priceMin || filters.priceMax;
+  const hasActiveFilters = filters.manufacturer || filters.warehouse || filters.inStock || filters.priceMin || filters.priceMax || filters.deliveryDays || filters.hasPhoto || filters.hasCross || filters.sortBy;
+
+  const getSortFn = (sortBy) => {
+    switch (sortBy) {
+      case 'price_asc': return (a, b) => a.price - b.price;
+      case 'price_desc': return (a, b) => b.price - a.price;
+      case 'name_asc': return (a, b) => a.name.localeCompare(b.name);
+      case 'stock_desc': return (a, b) => b.stock - a.stock;
+      default: return null;
+    }
+  };
 
   const selectCategory = (catId) => {
     const params = new URLSearchParams();
