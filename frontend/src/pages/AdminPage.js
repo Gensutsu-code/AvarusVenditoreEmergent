@@ -3595,13 +3595,25 @@ export default function AdminPage() {
                 </div>
                 <div>
                   <Label className="text-xs font-semibold uppercase text-teal-600">Наличие</Label>
-                  <Input
-                    type="number"
-                    value={editingProduct.stock}
-                    onChange={(e) => setEditingProduct({ ...editingProduct, stock: parseInt(e.target.value) || 0 })}
-                    className="mt-1.5 border-slate-200 focus:border-teal-500 focus:ring-teal-500"
-                    data-testid="product-stock-input"
-                  />
+                  <div className="mt-1.5 flex items-center gap-3">
+                    <button
+                      type="button"
+                      onClick={() => setEditingProduct({ ...editingProduct, stock: editingProduct.stock > 0 ? 0 : 1 })}
+                      className={`relative inline-flex h-8 w-16 items-center rounded-full transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-teal-500 focus:ring-offset-2 ${
+                        editingProduct.stock > 0 ? 'bg-emerald-500' : 'bg-slate-300'
+                      }`}
+                      data-testid="product-stock-toggle"
+                    >
+                      <span
+                        className={`inline-block h-6 w-6 transform rounded-full bg-white shadow-md transition-transform duration-200 ${
+                          editingProduct.stock > 0 ? 'translate-x-9' : 'translate-x-1'
+                        }`}
+                      />
+                    </button>
+                    <span className={`text-sm font-medium ${editingProduct.stock > 0 ? 'text-emerald-600' : 'text-slate-500'}`}>
+                      {editingProduct.stock > 0 ? 'В наличии' : 'Нет в наличии'}
+                    </span>
+                  </div>
                 </div>
                 <div>
                   <Label className="text-xs font-semibold uppercase text-teal-600">Доставка</Label>
