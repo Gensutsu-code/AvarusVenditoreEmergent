@@ -329,7 +329,7 @@ export default function CatalogPage() {
   const [selectedProduct, setSelectedProduct] = useState(null);
   const [quantities, setQuantities] = useState({});
   const [showFilters, setShowFilters] = useState(false);
-  const [filters, setFilters] = useState({ manufacturer: '', warehouse: '', inStock: false, priceMin: '', priceMax: '' });
+  const [filters, setFilters] = useState({ manufacturer: '', warehouse: '', inStock: false, priceMin: '', priceMax: '', deliveryDays: '', hasPhoto: false, hasCross: false, sortBy: '' });
   const [filterOptions, setFilterOptions] = useState({ manufacturers: [], warehouses: [] });
   
   const { addToCart } = useCart();
