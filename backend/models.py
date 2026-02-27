@@ -202,6 +202,14 @@ class OrderResponse(BaseModel):
     phone: str
     comment: Optional[str] = None
     created_at: str
+    # Change tracking fields
+    has_changes: Optional[bool] = None
+    awaiting_confirmation: Optional[bool] = None
+    change_types: Optional[List[str]] = None
+    changes_at: Optional[str] = None
+    changes_expire_at: Optional[str] = None
+    processing_started_at: Optional[str] = None
+    delivery_fee: Optional[float] = None
 
 # ==================== FAVORITES ====================
 
