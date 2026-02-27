@@ -303,7 +303,8 @@ async def update_admin_order(order_id: str, data: AdminOrderUpdate, user=Depends
     if price_changed or quantity_changed:
         update_data["has_changes"] = True
         update_data["changes_at"] = datetime.now(timezone.utc).isoformat()
-        update_data["changes_expire_at"] = (datetime.now(timezone.utc).replace(hour=datetime.now(timezone.utc).hour + 24)).isoformat()
+        expire_time = datetime.now(timezone.utc) + timedelta(hours=24)
+        update_data["changes_expire_at"] = expire_time.isoformat()
         
         if price_changed:
             changes.append("price")
