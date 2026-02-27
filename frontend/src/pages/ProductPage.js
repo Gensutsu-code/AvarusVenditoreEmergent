@@ -4,7 +4,7 @@ import axios from 'axios';
 import { 
   Package, ShoppingCart, Truck, ArrowLeft, Minus, Plus, 
   Heart, Share2, ChevronLeft, ChevronRight, Check, AlertCircle,
-  Tag, Layers
+  Tag, Layers, MapPin
 } from 'lucide-react';
 import { Button } from '../components/ui/button';
 import { useCart } from '../context/CartContext';
