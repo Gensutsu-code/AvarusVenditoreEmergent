@@ -409,6 +409,15 @@ export default function CatalogPage() {
     }
   };
 
+  const fetchFilterOptions = async () => {
+    try {
+      const res = await axios.get(`${API}/products/filters`);
+      setFilterOptions(res.data);
+    } catch (err) {
+      console.error('Failed to fetch filter options', err);
+    }
+  };
+
   const fetchProducts = async () => {
     setLoading(true);
     try {
