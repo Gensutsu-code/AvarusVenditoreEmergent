@@ -3616,6 +3616,22 @@ export default function AdminPage() {
               </div>
 
               <div>
+                <Label className="text-xs font-semibold uppercase text-teal-600">Склад</Label>
+                <select
+                  value={editingProduct.warehouse || ''}
+                  onChange={(e) => setEditingProduct({ ...editingProduct, warehouse: e.target.value })}
+                  className="mt-1.5 w-full h-10 rounded-md border border-slate-200 bg-white px-3 text-sm focus:border-teal-500 focus:ring-teal-500 focus:outline-none"
+                  data-testid="product-warehouse-select"
+                >
+                  <option value="">Не указан</option>
+                  <option value="Ростов">Ростов</option>
+                  <option value="Пятигорск">Пятигорск</option>
+                  <option value="Москва">Москва</option>
+                  <option value="Новосибирск">Новосибирск</option>
+                </select>
+              </div>
+
+              <div>
                 <Label className="text-xs font-semibold uppercase text-teal-600">Изображения</Label>
                 <div className="mt-1.5 space-y-3">
                   <input
