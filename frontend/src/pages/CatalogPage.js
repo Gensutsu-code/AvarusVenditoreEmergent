@@ -517,6 +517,7 @@ export default function CatalogPage() {
             <SearchDropdown 
               placeholder="Введите название или артикул..."
               onSelect={(product) => navigate(`/product/${product.id}`)}
+              showSearchButton
             />
           </div>
 
