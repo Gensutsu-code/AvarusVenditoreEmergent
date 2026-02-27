@@ -244,7 +244,7 @@ const ProductModalContent = ({
             <div className="flex justify-between">
               <span className="text-slate-500">Наличие:</span>
               <span className={product.stock > 0 ? 'text-emerald-600 font-semibold' : 'text-red-500'}>
-                {product.stock > 0 ? `${product.stock} шт.` : 'Нет в наличии'}
+                {product.stock > 0 ? 'В наличии' : 'Нет в наличии'}
               </span>
             </div>
             <div className="flex justify-between">
