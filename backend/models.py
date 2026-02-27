@@ -88,6 +88,7 @@ class ProductCreate(BaseModel):
     cross_articles: Optional[str] = None
     stock: int = 0
     delivery_days: int = 3
+    warehouse: Optional[str] = None
 
 class ProductUpdate(BaseModel):
     name: Optional[str] = None
@@ -101,6 +102,7 @@ class ProductUpdate(BaseModel):
     cross_articles: Optional[str] = None
     stock: Optional[int] = None
     delivery_days: Optional[int] = None
+    warehouse: Optional[str] = None
 
 class ProductResponse(BaseModel):
     id: str
@@ -115,6 +117,7 @@ class ProductResponse(BaseModel):
     cross_articles: Optional[str] = None
     stock: int
     delivery_days: int = 3
+    warehouse: Optional[str] = None
 
 # ==================== CATEGORY MODELS ====================
 
