@@ -298,6 +298,12 @@ const ProductModalContent = ({
                 {getDeliveryText(product.delivery_days || 3)}
               </span>
             </div>
+            {product.warehouse && (
+              <div className="flex justify-between">
+                <span className="text-slate-500">Склад:</span>
+                <span className="text-blue-600 font-semibold">{product.warehouse}</span>
+              </div>
+            )}
           </div>
 
           <div className="border-t border-slate-200 pt-4 flex items-center justify-between">
