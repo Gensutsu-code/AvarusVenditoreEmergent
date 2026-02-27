@@ -536,8 +536,19 @@ export default function OrdersPage() {
                                   </div>
                                   <div>
                                     <p className="font-semibold text-orange-800">Изменения в заказе</p>
+                                    {order.paid && order.payment_method !== 'cash' && order.previous_total && (
+                                      order.total > order.previous_total ? (
+                                        <p className="text-sm text-orange-700 mt-1">
+                                          Сумма заказа увеличилась. Требуется доплата <span className="font-bold">{formatPrice(order.total - order.previous_total)} ₽</span>
+                                          {order.payment_method === 'balance' ? ' (будет списана с баланса)' : ` (оплата ${order.payment_method === 'crypto' ? 'криптовалютой' : 'картой'})`}
+                                        </p>
+                                      ) : order.total < order.previous_total ? (
+                                        <p className="text-sm text-emerald-700 mt-1">
+                                          Сумма заказа уменьшилась. На ваш баланс будет возвращено <span className="font-bold">{formatPrice(order.previous_total - order.total)} ₽</span>
+                                        </p>
+                                      ) : null
+                                    )}
                                     <p className="text-sm text-orange-700 mt-1">
-                                      Администратор внёс изменения в ваш заказ. Пожалуйста, подтвердите изменения или отмените заказ. 
                                       Без подтверждения заказ будет автоматически отменён через 24 часа.
                                     </p>
                                   </div>
@@ -548,7 +559,10 @@ export default function OrdersPage() {
                                     className="bg-gradient-to-r from-emerald-500 to-green-500 hover:from-emerald-600 hover:to-green-600 text-white rounded-xl"
                                   >
                                     <Check className="w-4 h-4 mr-2" />
-                                    Принять изменения
+                                    {order.paid && order.payment_method !== 'cash' && order.total > order.previous_total 
+                                      ? `Принять и доплатить ${formatPrice(order.total - order.previous_total)} ₽`
+                                      : 'Принять изменения'
+                                    }
                                   </Button>
                                   <Button 
                                     variant="outline"
