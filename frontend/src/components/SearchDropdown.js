@@ -90,6 +90,13 @@ export const SearchDropdown = ({
     }
   };
 
+  const handleSearchSubmit = () => {
+    if (query.trim().length >= 2) {
+      setIsOpen(false);
+      navigate(`/catalog?search=${encodeURIComponent(query.trim())}`);
+    }
+  };
+
   const clearSearch = () => {
     setQuery('');
     setResults([]);
