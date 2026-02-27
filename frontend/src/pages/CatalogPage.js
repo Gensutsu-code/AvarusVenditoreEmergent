@@ -34,10 +34,10 @@ const ProductCard = ({
   isAlternative = false
 }) => (
   <div 
-    className={`bg-white rounded-xl border overflow-hidden transition-all duration-300 hover:shadow-lg hover:border-teal-300/60 ${isAlternative ? 'border-teal-200/50 bg-teal-50/20' : 'border-slate-200/80'}`}
+    className={`bg-white rounded-xl border overflow-hidden transition-all duration-300 hover:shadow-lg hover:border-teal-300/60 h-[88px] ${isAlternative ? 'border-teal-200/50 bg-teal-50/20' : 'border-slate-200/80'}`}
     data-testid={`product-card-${product.id}`}
   >
-    <div className="flex items-center">
+    <div className="flex items-center h-full">
       {/* Image */}
       <div className="relative group flex-shrink-0 p-2">
         <Link
@@ -66,7 +66,7 @@ const ProductCard = ({
       <div className="flex-1 min-w-0 py-2 pr-3 flex items-center gap-3">
         {/* Left: name top, badges bottom */}
         <div className="flex-1 min-w-0 flex flex-col justify-between gap-1.5">
-          <h3 className="font-semibold text-[13px] leading-tight text-slate-800 hover:text-teal-600 transition-colors border border-slate-200 rounded-lg px-2 py-1 bg-slate-50/50">
+          <h3 className="font-semibold text-[13px] leading-tight text-slate-800 hover:text-teal-600 transition-colors border border-slate-200 rounded-lg px-2 py-1 bg-slate-50/50 line-clamp-2 overflow-hidden">
             <Link to={`/product/${product.id}`}>{product.name}</Link>
           </h3>
           <div className="flex items-center gap-1.5 flex-wrap">
