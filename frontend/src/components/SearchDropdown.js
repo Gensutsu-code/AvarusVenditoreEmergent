@@ -76,7 +76,8 @@ export const SearchDropdown = ({
     if (onSelect) {
       onSelect(product);
     } else {
-      navigate(`/product/${product.id}`);
+      // Переход на страницу поиска с артикулом товара
+      navigate(`/catalog?search=${encodeURIComponent(product.article)}`);
     }
   };
 
