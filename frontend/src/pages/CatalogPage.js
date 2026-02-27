@@ -63,14 +63,16 @@ const ProductCard = ({
       </div>
 
       {/* Content */}
-      <div className="flex-1 min-w-0 py-2 pr-3 flex flex-col justify-between">
-        {/* Top: name */}
-        <h3 className="font-semibold text-[13px] leading-tight text-slate-800 hover:text-teal-600 transition-colors border border-slate-200 rounded-lg px-2 py-1 bg-slate-50/50 line-clamp-2 overflow-hidden">
-          <Link to={`/product/${product.id}`}>{product.name}</Link>
-        </h3>
+      <div className="flex-1 min-w-0 py-2 pr-3 flex flex-col">
+        {/* Top: name - fills available space */}
+        <div className="flex-1 border border-slate-200 rounded-lg px-2 py-1 bg-slate-50/50 mb-1.5">
+          <h3 className="font-semibold text-[13px] leading-tight text-slate-800 hover:text-teal-600 transition-colors line-clamp-2 overflow-hidden">
+            <Link to={`/product/${product.id}`}>{product.name}</Link>
+          </h3>
+        </div>
         
         {/* Bottom: badges - fixed to bottom */}
-        <div className="flex items-center gap-1.5 flex-wrap mt-auto">
+        <div className="flex items-center gap-1.5 flex-wrap">
           {product.manufacturer && (
             <span className="text-[11px] font-bold text-teal-600 bg-teal-50 px-1.5 py-0.5 rounded">{product.manufacturer}</span>
           )}
