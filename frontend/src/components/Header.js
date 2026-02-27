@@ -156,23 +156,29 @@ export const Header = () => {
   const location = useLocation();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [notificationCount, setNotificationCount] = useState(0);
+  const [userBalance, setUserBalance] = useState(null);
   
   const isAdmin = user?.role === 'admin';
 
-  // Fetch notification count for profile badge
+  // Fetch notification count and balance for profile badge
   useEffect(() => {
     if (user && !isAdmin) {
-      const fetchNotificationCount = async () => {
+      const fetchUserData = async () => {
         try {
-          const res = await fetch(`${process.env.REACT_APP_BACKEND_URL}/api/my-notifications`, {
-            headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` }
-          });
-          const data = await res.json();
-          setNotificationCount(data.unread_count || 0);
+          const token = localStorage.getItem('token');
+          const headers = { 'Authorization': `Bearer ${token}` };
+          const [notifRes, balanceRes] = await Promise.all([
+            fetch(`${process.env.REACT_APP_BACKEND_URL}/api/my-notifications`, { headers }),
+            fetch(`${process.env.REACT_APP_BACKEND_URL}/api/user/balance`, { headers })
+          ]);
+          const notifData = await notifRes.json();
+          setNotificationCount(notifData.unread_count || 0);
+          const balanceData = await balanceRes.json();
+          setUserBalance(balanceData.balance ?? 0);
         } catch (err) {}
       };
-      fetchNotificationCount();
-      const interval = setInterval(fetchNotificationCount, 15000);
+      fetchUserData();
+      const interval = setInterval(fetchUserData, 15000);
       return () => clearInterval(interval);
     }
   }, [user, isAdmin]);
