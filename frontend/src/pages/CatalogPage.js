@@ -37,7 +37,7 @@ const ProductCard = ({
     className={`bg-white rounded-2xl border overflow-hidden transition-all duration-300 hover:shadow-lg hover:border-teal-300/60 ${isAlternative ? 'border-teal-200/50 bg-teal-50/20' : 'border-slate-200/80'}`}
     data-testid={`product-card-${product.id}`}
   >
-    <div className="flex items-stretch">
+    <div className="flex items-center">
       {/* Image */}
       <div className="relative group flex-shrink-0 p-3">
         <Link
