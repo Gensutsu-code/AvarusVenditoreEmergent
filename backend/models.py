@@ -202,6 +202,9 @@ class OrderResponse(BaseModel):
     phone: str
     comment: Optional[str] = None
     created_at: str
+    # Payment fields
+    payment_method: Optional[str] = None
+    paid: Optional[bool] = None
     # Change tracking fields
     has_changes: Optional[bool] = None
     awaiting_confirmation: Optional[bool] = None
@@ -213,6 +216,9 @@ class OrderResponse(BaseModel):
     # Previous data for comparison
     previous_items: Optional[List[dict]] = None
     previous_total: Optional[float] = None
+    # Additional payment tracking
+    awaiting_additional_payment: Optional[bool] = None
+    additional_payment_amount: Optional[float] = None
 
 # ==================== FAVORITES ====================
 
