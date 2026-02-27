@@ -1,5 +1,5 @@
 import { Link, useLocation, useNavigate } from 'react-router-dom';
-import { ShoppingCart, User, Search, LogOut, Settings, Heart, Package, ClipboardList, Gift, Newspaper, Menu, X, MessageCircle, Bell } from 'lucide-react';
+import { ShoppingCart, User, Search, LogOut, Settings, Heart, Package, ClipboardList, Gift, Newspaper, Menu, X, MessageCircle, Bell, Wallet } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { useCart } from '../context/CartContext';
 import { Button } from './ui/button';
