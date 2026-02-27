@@ -65,43 +65,9 @@ const ProductCard = ({
       {/* Content */}
       <div className="flex-1 min-w-0 py-2 pr-3 flex flex-col justify-between">
         {/* Top: name */}
-        <div className="flex items-start justify-between gap-2">
-          <h3 className="font-semibold text-[13px] leading-tight text-slate-800 hover:text-teal-600 transition-colors border border-slate-200 rounded-lg px-2 py-1 bg-slate-50/50 line-clamp-2 overflow-hidden flex-1">
-            <Link to={`/product/${product.id}`}>{product.name}</Link>
-          </h3>
-          {/* Right: price + actions */}
-          <div className="flex-shrink-0 flex items-center gap-2">
-            <p className="text-sm font-bold text-white bg-gradient-to-r from-rose-500 to-pink-500 px-2.5 py-1 rounded-lg whitespace-nowrap shadow-sm">{formatPrice(product.price)} ₽</p>
-            <FavoritesButton productId={product.id} size="sm" />
-            <div className="flex items-center border border-slate-200 rounded-lg bg-white">
-              <button onClick={() => updateQuantity(product.id, -1)} className="p-1.5 hover:bg-slate-50 rounded-l-lg" data-testid={`qty-minus-${product.id}`}>
-                <Minus className="w-3.5 h-3.5 text-slate-500" />
-              </button>
-              <input 
-                type="number" 
-                value={quantities[product.id] || 1}
-                onChange={(e) => {
-                  const val = parseInt(e.target.value) || 1;
-                  setQuantities(prev => ({ ...prev, [product.id]: Math.max(1, val) }));
-                }}
-                className="w-10 text-center text-xs font-bold text-slate-700 border-0 focus:outline-none focus:ring-0 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
-                min="1"
-                data-testid={`qty-input-${product.id}`}
-              />
-              <button onClick={() => updateQuantity(product.id, 1)} className="p-1.5 hover:bg-slate-50 rounded-r-lg" data-testid={`qty-plus-${product.id}`}>
-                <Plus className="w-3.5 h-3.5 text-slate-500" />
-              </button>
-            </div>
-            <Button
-              onClick={() => handleAddToCart(product)}
-              disabled={product.stock === 0}
-              className="h-8 px-3 bg-gradient-to-r from-teal-500 to-emerald-500 hover:from-teal-600 hover:to-emerald-600 text-white rounded-lg shadow-md shadow-teal-500/20 text-xs"
-              data-testid={`add-to-cart-${product.id}`}
-            >
-              <ShoppingCart className="w-3.5 h-3.5" />
-            </Button>
-          </div>
-        </div>
+        <h3 className="font-semibold text-[13px] leading-tight text-slate-800 hover:text-teal-600 transition-colors border border-slate-200 rounded-lg px-2 py-1 bg-slate-50/50 line-clamp-2 overflow-hidden">
+          <Link to={`/product/${product.id}`}>{product.name}</Link>
+        </h3>
         
         {/* Bottom: badges - fixed to bottom */}
         <div className="flex items-center gap-1.5 flex-wrap mt-auto">
@@ -126,6 +92,39 @@ const ProductCard = ({
             <span className="text-[11px] text-slate-400">Кросс: {product.cross_articles}</span>
           )}
         </div>
+      </div>
+
+      {/* Right: price + actions — centered vertically */}
+      <div className="flex-shrink-0 flex items-center gap-2 pr-3">
+        <p className="text-sm font-bold text-white bg-gradient-to-r from-rose-500 to-pink-500 px-2.5 py-1 rounded-lg whitespace-nowrap shadow-sm">{formatPrice(product.price)} ₽</p>
+        <FavoritesButton productId={product.id} size="sm" />
+        <div className="flex items-center border border-slate-200 rounded-lg bg-white">
+          <button onClick={() => updateQuantity(product.id, -1)} className="p-1.5 hover:bg-slate-50 rounded-l-lg" data-testid={`qty-minus-${product.id}`}>
+            <Minus className="w-3.5 h-3.5 text-slate-500" />
+          </button>
+          <input 
+            type="number" 
+            value={quantities[product.id] || 1}
+            onChange={(e) => {
+              const val = parseInt(e.target.value) || 1;
+              setQuantities(prev => ({ ...prev, [product.id]: Math.max(1, val) }));
+            }}
+            className="w-10 text-center text-xs font-bold text-slate-700 border-0 focus:outline-none focus:ring-0 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+            min="1"
+            data-testid={`qty-input-${product.id}`}
+          />
+          <button onClick={() => updateQuantity(product.id, 1)} className="p-1.5 hover:bg-slate-50 rounded-r-lg" data-testid={`qty-plus-${product.id}`}>
+            <Plus className="w-3.5 h-3.5 text-slate-500" />
+          </button>
+        </div>
+        <Button
+          onClick={() => handleAddToCart(product)}
+          disabled={product.stock === 0}
+          className="h-8 px-3 bg-gradient-to-r from-teal-500 to-emerald-500 hover:from-teal-600 hover:to-emerald-600 text-white rounded-lg shadow-md shadow-teal-500/20 text-xs"
+          data-testid={`add-to-cart-${product.id}`}
+        >
+          <ShoppingCart className="w-3.5 h-3.5" />
+        </Button>
       </div>
     </div>
   </div>
