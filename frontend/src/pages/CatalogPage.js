@@ -34,39 +34,39 @@ const ProductCard = ({
   isAlternative = false
 }) => (
   <div 
-    className={`bg-white rounded-2xl border overflow-hidden transition-all duration-300 hover:shadow-lg hover:border-teal-300/60 ${isAlternative ? 'border-teal-200/50 bg-teal-50/20' : 'border-slate-200/80'}`}
+    className={`bg-white rounded-xl border overflow-hidden transition-all duration-300 hover:shadow-lg hover:border-teal-300/60 ${isAlternative ? 'border-teal-200/50 bg-teal-50/20' : 'border-slate-200/80'}`}
     data-testid={`product-card-${product.id}`}
   >
     <div className="flex items-center">
       {/* Image */}
-      <div className="relative group flex-shrink-0 p-3">
+      <div className="relative group flex-shrink-0 p-2">
         <Link
           to={`/product/${product.id}`}
-          className="w-[90px] h-[90px] bg-slate-50 block overflow-hidden rounded-xl border border-teal-200/50"
+          className="w-[60px] h-[60px] bg-slate-50 block overflow-hidden rounded-lg border border-teal-200/50"
           data-testid={`product-image-${product.id}`}
         >
           {product.image_url ? (
             <img src={product.image_url} alt={product.name} className="w-full h-full object-cover" />
           ) : (
             <div className="w-full h-full flex items-center justify-center text-slate-300">
-              <Package className="w-8 h-8" />
+              <Package className="w-5 h-5" />
             </div>
           )}
         </Link>
         <button
           onClick={() => setSelectedProduct(product)}
-          className="absolute inset-0 m-3 flex items-center justify-center bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity rounded-xl"
+          className="absolute inset-0 m-2 flex items-center justify-center bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity rounded-lg"
           data-testid={`quick-view-${product.id}`}
         >
-          <Eye className="w-5 h-5 text-white" />
+          <Eye className="w-4 h-4 text-white" />
         </button>
       </div>
 
       {/* Content */}
-      <div className="flex-1 min-w-0 p-3 flex items-center gap-4">
+      <div className="flex-1 min-w-0 py-2 pr-3 flex items-center gap-3">
         {/* Left: name top, badges bottom */}
-        <div className="flex-1 min-w-0 flex flex-col justify-between gap-4">
-          <h3 className="font-semibold text-[15px] leading-snug text-slate-800 hover:text-teal-600 transition-colors">
+        <div className="flex-1 min-w-0 flex flex-col justify-between gap-1.5">
+          <h3 className="font-semibold text-[14px] leading-tight text-slate-800 hover:text-teal-600 transition-colors">
             <Link to={`/product/${product.id}`}>{product.name}</Link>
           </h3>
           <div className="flex items-center gap-1.5 flex-wrap">
