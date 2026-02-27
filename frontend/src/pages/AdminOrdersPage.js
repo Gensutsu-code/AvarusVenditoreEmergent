@@ -2,14 +2,13 @@ import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import { 
-  Package, Search, Filter, Eye, Pencil, Trash2, Save, X, 
-  Clock, CheckCircle, Truck, XCircle, ChevronDown, ChevronUp,
-  User, Phone, MapPin, Calendar, CreditCard, RefreshCw, Percent
+  Package, Search, Eye, Pencil, Trash2, Save, X, 
+  Clock, CheckCircle, Truck, XCircle, ChevronDown,
+  User, Phone, MapPin, Calendar, CreditCard, RefreshCw,
+  AlertTriangle, Check
 } from 'lucide-react';
 import { Button } from '../components/ui/button';
 import { Input } from '../components/ui/input';
-import { Label } from '../components/ui/label';
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '../components/ui/dialog';
 import { useAuth } from '../context/AuthContext';
 import { toast } from 'sonner';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -31,9 +30,9 @@ export default function AdminOrdersPage() {
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
-  const [viewingOrder, setViewingOrder] = useState(null);
-  const [editingOrder, setEditingOrder] = useState(null);
   const [expandedOrders, setExpandedOrders] = useState({});
+  const [editingOrderId, setEditingOrderId] = useState(null);
+  const [editData, setEditData] = useState({});
 
   useEffect(() => {
     if (authLoading) return;
@@ -48,11 +47,9 @@ export default function AdminOrdersPage() {
     fetchOrders();
   }, [user, authLoading, navigate]);
 
-  // Real-time polling for orders
   useEffect(() => {
     if (!user || user.role !== 'admin') return;
-    
-    const interval = setInterval(fetchOrders, 10000); // Poll every 10 seconds
+    const interval = setInterval(fetchOrders, 10000);
     return () => clearInterval(interval);
   }, [user]);
 
@@ -71,17 +68,12 @@ export default function AdminOrdersPage() {
   const formatDate = (dateStr) => {
     const date = new Date(dateStr);
     return date.toLocaleDateString('ru-RU', { 
-      day: '2-digit', 
-      month: '2-digit', 
-      year: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit'
+      day: '2-digit', month: '2-digit', year: 'numeric',
+      hour: '2-digit', minute: '2-digit'
     });
   };
 
-  const getStatusInfo = (status) => {
-    return ORDER_STATUSES.find(s => s.value === status) || ORDER_STATUSES[0];
-  };
+  const getStatusInfo = (status) => ORDER_STATUSES.find(s => s.value === status) || ORDER_STATUSES[0];
 
   const handleStatusChange = async (orderId, newStatus) => {
     try {
@@ -95,7 +87,6 @@ export default function AdminOrdersPage() {
 
   const handleDeleteOrder = async (orderId) => {
     if (!window.confirm('Удалить заказ? Это действие нельзя отменить.')) return;
-    
     try {
       await axios.delete(`${API}/admin/orders/${orderId}`);
       setOrders(prev => prev.filter(o => o.id !== orderId));
@@ -105,60 +96,66 @@ export default function AdminOrdersPage() {
     }
   };
 
-  const handleSaveOrder = async () => {
-    if (!editingOrder) return;
-    
+  const startEditing = (order) => {
+    setEditingOrderId(order.id);
+    setEditData({
+      full_name: order.full_name || '',
+      phone: order.phone || '',
+      address: order.address || '',
+      comment: order.comment || '',
+      status: order.status,
+      items: order.items?.map(item => ({ ...item })) || []
+    });
+    setExpandedOrders(prev => ({ ...prev, [order.id]: true }));
+  };
+
+  const cancelEditing = () => {
+    setEditingOrderId(null);
+    setEditData({});
+  };
+
+  const handleSaveOrder = async (orderId) => {
     try {
-      const res = await axios.put(`${API}/admin/orders/${editingOrder.id}`, {
-        status: editingOrder.status,
-        full_name: editingOrder.full_name,
-        address: editingOrder.address,
-        phone: editingOrder.phone,
-        comment: editingOrder.comment,
-        created_at: editingOrder.created_at,
-        items: editingOrder.items,
-        order_discount_percent: editingOrder.order_discount_percent || 0
+      const res = await axios.put(`${API}/admin/orders/${orderId}`, {
+        status: editData.status,
+        full_name: editData.full_name,
+        address: editData.address,
+        phone: editData.phone,
+        comment: editData.comment,
+        items: editData.items
       });
-      setOrders(prev => prev.map(o => o.id === editingOrder.id ? res.data : o));
-      setEditingOrder(null);
-      toast.success('Заказ обновлён');
+      setOrders(prev => prev.map(o => o.id === orderId ? res.data : o));
+      setEditingOrderId(null);
+      setEditData({});
+      toast.success('Заказ сохранён');
     } catch (err) {
       toast.error('Ошибка сохранения');
     }
   };
 
-  const handleUpdateOrderItem = (index, field, value) => {
-    const newItems = [...editingOrder.items];
-    newItems[index] = { ...newItems[index], [field]: field === 'price' || field === 'quantity' || field === 'discount_percent' ? Number(value) : value };
-    setEditingOrder({ ...editingOrder, items: newItems });
+  const handleUpdateItem = (index, field, value) => {
+    const newItems = [...editData.items];
+    newItems[index] = { ...newItems[index], [field]: field === 'price' || field === 'quantity' ? Number(value) : value };
+    setEditData({ ...editData, items: newItems });
   };
 
-  const calculateOrderTotal = (items, orderDiscount = 0) => {
-    const itemsTotal = items.reduce((sum, item) => {
-      const itemTotal = item.price * item.quantity;
-      const itemDiscount = item.discount_percent || 0;
-      return sum + (itemTotal * (1 - itemDiscount / 100));
-    }, 0);
-    return itemsTotal * (1 - orderDiscount / 100);
-  };
+  const calculateTotal = (items) => items.reduce((sum, item) => sum + (item.price * item.quantity), 0);
 
   const toggleExpand = (orderId) => {
+    if (editingOrderId === orderId) return;
     setExpandedOrders(prev => ({ ...prev, [orderId]: !prev[orderId] }));
   };
 
-  // Filter orders
   const filteredOrders = orders.filter(order => {
     const matchesSearch = searchQuery === '' || 
       order.id?.toLowerCase().includes(searchQuery.toLowerCase()) ||
       order.customer_name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      order.customer_phone?.includes(searchQuery);
-    
+      order.full_name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      order.phone?.includes(searchQuery);
     const matchesStatus = statusFilter === 'all' || order.status === statusFilter;
-    
     return matchesSearch && matchesStatus;
   });
 
-  // Stats
   const stats = {
     total: orders.length,
     pending: orders.filter(o => o.status === 'pending').length,
@@ -170,11 +167,7 @@ export default function AdminOrdersPage() {
   if (authLoading || loading) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-slate-50 via-teal-50/30 to-emerald-50/20 flex items-center justify-center">
-        <motion.div 
-          className="flex flex-col items-center gap-3"
-          initial={{ opacity: 0, scale: 0.9 }}
-          animate={{ opacity: 1, scale: 1 }}
-        >
+        <motion.div className="flex flex-col items-center gap-3" initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }}>
           <div className="w-10 h-10 border-3 border-teal-500 border-t-transparent rounded-full animate-spin" />
           <span className="text-slate-500">Загрузка заказов...</span>
         </motion.div>
@@ -186,12 +179,7 @@ export default function AdminOrdersPage() {
     <div className="min-h-screen bg-gradient-to-br from-slate-50 via-teal-50/30 to-emerald-50/20" data-testid="admin-orders-page">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Header */}
-        <motion.div 
-          className="flex items-center justify-between mb-8"
-          initial={{ opacity: 0, y: -20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.4 }}
-        >
+        <motion.div className="flex items-center justify-between mb-8" initial={{ opacity: 0, y: -20 }} animate={{ opacity: 1, y: 0 }}>
           <div className="flex items-center gap-4">
             <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-teal-500 to-emerald-500 flex items-center justify-center shadow-lg shadow-teal-500/20">
               <Package className="w-6 h-6 text-white" />
@@ -203,73 +191,53 @@ export default function AdminOrdersPage() {
               <p className="text-sm text-slate-500">Всего {orders.length} заказов</p>
             </div>
           </div>
-          <Button 
-            variant="outline" 
-            size="sm" 
-            onClick={fetchOrders}
-            className="border-teal-200 text-teal-600 hover:bg-teal-50 hover:border-teal-300 rounded-xl"
-          >
+          <Button variant="outline" size="sm" onClick={fetchOrders} className="border-teal-200 text-teal-600 hover:bg-teal-50 hover:border-teal-300 rounded-xl">
             <RefreshCw className="w-4 h-4 mr-2" />
             Обновить
           </Button>
         </motion.div>
 
-        {/* Stats Cards */}
-        <motion.div 
-          className="grid grid-cols-2 md:grid-cols-5 gap-4 mb-8"
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.4, delay: 0.1 }}
-        >
-          <div className="bg-white/80 backdrop-blur-sm rounded-2xl border border-slate-200/50 p-4 shadow-sm hover:shadow-md transition-shadow">
+        {/* Stats */}
+        <motion.div className="grid grid-cols-2 md:grid-cols-5 gap-4 mb-8" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }}>
+          <div className="bg-white/80 backdrop-blur-sm rounded-2xl border border-slate-200/50 p-4 shadow-sm">
             <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-xl bg-slate-100 flex items-center justify-center">
-                <Package className="w-5 h-5 text-slate-600" />
-              </div>
+              <div className="w-10 h-10 rounded-xl bg-slate-100 flex items-center justify-center"><Package className="w-5 h-5 text-slate-600" /></div>
               <div>
                 <p className="text-slate-500 text-xs uppercase font-medium">Всего</p>
                 <p className="text-2xl font-bold text-slate-800">{stats.total}</p>
               </div>
             </div>
           </div>
-          <div className="bg-amber-50/80 backdrop-blur-sm rounded-2xl border border-amber-200/50 p-4 shadow-sm hover:shadow-md transition-shadow">
+          <div className="bg-amber-50/80 backdrop-blur-sm rounded-2xl border border-amber-200/50 p-4 shadow-sm">
             <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-xl bg-amber-100 flex items-center justify-center">
-                <Clock className="w-5 h-5 text-amber-600" />
-              </div>
+              <div className="w-10 h-10 rounded-xl bg-amber-100 flex items-center justify-center"><Clock className="w-5 h-5 text-amber-600" /></div>
               <div>
                 <p className="text-amber-600 text-xs uppercase font-medium">Ожидают</p>
                 <p className="text-2xl font-bold text-amber-700">{stats.pending}</p>
               </div>
             </div>
           </div>
-          <div className="bg-blue-50/80 backdrop-blur-sm rounded-2xl border border-blue-200/50 p-4 shadow-sm hover:shadow-md transition-shadow">
+          <div className="bg-blue-50/80 backdrop-blur-sm rounded-2xl border border-blue-200/50 p-4 shadow-sm">
             <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-xl bg-blue-100 flex items-center justify-center">
-                <Package className="w-5 h-5 text-blue-600" />
-              </div>
+              <div className="w-10 h-10 rounded-xl bg-blue-100 flex items-center justify-center"><Package className="w-5 h-5 text-blue-600" /></div>
               <div>
                 <p className="text-blue-600 text-xs uppercase font-medium">В обработке</p>
                 <p className="text-2xl font-bold text-blue-700">{stats.processing}</p>
               </div>
             </div>
           </div>
-          <div className="bg-emerald-50/80 backdrop-blur-sm rounded-2xl border border-emerald-200/50 p-4 shadow-sm hover:shadow-md transition-shadow">
+          <div className="bg-emerald-50/80 backdrop-blur-sm rounded-2xl border border-emerald-200/50 p-4 shadow-sm">
             <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-xl bg-emerald-100 flex items-center justify-center">
-                <CheckCircle className="w-5 h-5 text-emerald-600" />
-              </div>
+              <div className="w-10 h-10 rounded-xl bg-emerald-100 flex items-center justify-center"><CheckCircle className="w-5 h-5 text-emerald-600" /></div>
               <div>
                 <p className="text-emerald-600 text-xs uppercase font-medium">Доставлено</p>
                 <p className="text-2xl font-bold text-emerald-700">{stats.delivered}</p>
               </div>
             </div>
           </div>
-          <div className="bg-gradient-to-br from-teal-50 to-emerald-50 backdrop-blur-sm rounded-2xl border border-teal-200/50 p-4 shadow-sm hover:shadow-md transition-shadow">
+          <div className="bg-gradient-to-br from-teal-50 to-emerald-50 backdrop-blur-sm rounded-2xl border border-teal-200/50 p-4 shadow-sm">
             <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-teal-500 to-emerald-500 flex items-center justify-center">
-                <CreditCard className="w-5 h-5 text-white" />
-              </div>
+              <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-teal-500 to-emerald-500 flex items-center justify-center"><CreditCard className="w-5 h-5 text-white" /></div>
               <div>
                 <p className="text-teal-600 text-xs uppercase font-medium">Выручка</p>
                 <p className="text-xl font-bold bg-gradient-to-r from-teal-600 to-emerald-600 bg-clip-text text-transparent">{formatPrice(stats.totalRevenue)} ₽</p>
@@ -279,39 +247,18 @@ export default function AdminOrdersPage() {
         </motion.div>
 
         {/* Filters */}
-        <motion.div 
-          className="bg-white/80 backdrop-blur-sm rounded-2xl border border-slate-200/50 shadow-sm mb-6"
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.4, delay: 0.2 }}
-        >
+        <motion.div className="bg-white/80 backdrop-blur-sm rounded-2xl border border-slate-200/50 shadow-sm mb-6" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }}>
           <div className="p-4 flex flex-col sm:flex-row gap-4">
             <div className="relative flex-1">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
-              <Input
-                placeholder="Поиск по номеру, имени, телефону..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className="pl-10 rounded-xl border-slate-200 focus:border-teal-400 focus:ring-teal-200"
-              />
+              <Input placeholder="Поиск по номеру, имени, телефону..." value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} className="pl-10 rounded-xl border-slate-200 focus:border-teal-400" />
             </div>
             <div className="flex gap-2 flex-wrap">
-              <Button
-                variant={statusFilter === 'all' ? 'default' : 'outline'}
-                size="sm"
-                onClick={() => setStatusFilter('all')}
-                className={`rounded-xl ${statusFilter === 'all' ? 'bg-gradient-to-r from-teal-500 to-emerald-500 border-0' : 'border-slate-200 hover:border-teal-300'}`}
-              >
+              <Button variant={statusFilter === 'all' ? 'default' : 'outline'} size="sm" onClick={() => setStatusFilter('all')} className={`rounded-xl ${statusFilter === 'all' ? 'bg-gradient-to-r from-teal-500 to-emerald-500 border-0' : 'border-slate-200'}`}>
                 Все
               </Button>
               {ORDER_STATUSES.map(status => (
-                <Button
-                  key={status.value}
-                  variant={statusFilter === status.value ? 'default' : 'outline'}
-                  size="sm"
-                  onClick={() => setStatusFilter(status.value)}
-                  className={`rounded-xl ${statusFilter === status.value ? status.color : 'border-slate-200 hover:border-slate-300'}`}
-                >
+                <Button key={status.value} variant={statusFilter === status.value ? 'default' : 'outline'} size="sm" onClick={() => setStatusFilter(status.value)} className={`rounded-xl ${statusFilter === status.value ? status.color : 'border-slate-200'}`}>
                   {status.label}
                 </Button>
               ))}
@@ -322,443 +269,211 @@ export default function AdminOrdersPage() {
         {/* Orders List */}
         <div className="space-y-4">
           <AnimatePresence>
-          {filteredOrders.length === 0 ? (
-            <motion.div 
-              className="bg-white/80 backdrop-blur-sm rounded-2xl border border-slate-200/50 p-12 text-center"
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-            >
-              <div className="w-16 h-16 rounded-2xl bg-slate-100 flex items-center justify-center mx-auto mb-4">
-                <Package className="w-8 h-8 text-slate-400" />
-              </div>
-              <p className="text-slate-500">Заказы не найдены</p>
-            </motion.div>
-          ) : (
-            filteredOrders.map((order, index) => {
-              const statusInfo = getStatusInfo(order.status);
-              const StatusIcon = statusInfo.icon;
-              const isExpanded = expandedOrders[order.id];
-              
-              return (
-                <motion.div 
-                  key={order.id} 
-                  className="bg-white/80 backdrop-blur-sm rounded-2xl border border-slate-200/50 shadow-sm overflow-hidden hover:shadow-md transition-shadow"
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ duration: 0.3, delay: index * 0.05 }}
-                >
-                  {/* Order Header */}
-                  <div 
-                    className="p-4 cursor-pointer hover:bg-slate-50/50 transition-colors"
-                    onClick={() => toggleExpand(order.id)}
+            {filteredOrders.length === 0 ? (
+              <motion.div className="bg-white/80 backdrop-blur-sm rounded-2xl border border-slate-200/50 p-12 text-center" initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
+                <div className="w-16 h-16 rounded-2xl bg-slate-100 flex items-center justify-center mx-auto mb-4">
+                  <Package className="w-8 h-8 text-slate-400" />
+                </div>
+                <p className="text-slate-500">Заказы не найдены</p>
+              </motion.div>
+            ) : (
+              filteredOrders.map((order, index) => {
+                const statusInfo = getStatusInfo(order.status);
+                const StatusIcon = statusInfo.icon;
+                const isExpanded = expandedOrders[order.id];
+                const isEditing = editingOrderId === order.id;
+                const currentItems = isEditing ? editData.items : order.items;
+                const currentTotal = isEditing ? calculateTotal(editData.items) : order.total;
+                
+                return (
+                  <motion.div 
+                    key={order.id} 
+                    className={`bg-white/80 backdrop-blur-sm rounded-2xl border shadow-sm overflow-hidden transition-shadow ${isEditing ? 'border-teal-400 shadow-lg shadow-teal-500/10' : 'border-slate-200/50 hover:shadow-md'}`}
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ duration: 0.3, delay: index * 0.05 }}
                   >
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-4">
-                        <div className={`w-11 h-11 rounded-xl flex items-center justify-center border ${statusInfo.color}`}>
-                          <StatusIcon className="w-5 h-5" />
-                        </div>
-                        <div>
-                          <div className="flex items-center gap-2">
-                            <span className="font-mono font-bold text-slate-800">#{order.id?.slice(0, 8)}</span>
-                            <span className={`px-2.5 py-1 rounded-lg text-xs font-medium border ${statusInfo.color}`}>
-                              {statusInfo.label}
-                            </span>
+                    {/* Order Header */}
+                    <div className={`p-4 cursor-pointer transition-colors ${isEditing ? 'bg-teal-50/50' : 'hover:bg-slate-50/50'}`} onClick={() => toggleExpand(order.id)}>
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-4">
+                          <div className={`w-11 h-11 rounded-xl flex items-center justify-center border ${statusInfo.color}`}>
+                            <StatusIcon className="w-5 h-5" />
                           </div>
-                          <div className="flex items-center gap-3 text-sm text-slate-500 mt-1">
-                            <span className="flex items-center gap-1">
-                              <User className="w-3.5 h-3.5" />
-                              {order.customer_name}
-                            </span>
-                            <span className="flex items-center gap-1">
-                              <Calendar className="w-3.5 h-3.5" />
-                              {formatDate(order.created_at)}
-                            </span>
+                          <div>
+                            <div className="flex items-center gap-2">
+                              <span className="font-mono font-bold text-slate-800">#{order.id?.slice(0, 8)}</span>
+                              <span className={`px-2.5 py-1 rounded-lg text-xs font-medium border ${statusInfo.color}`}>{statusInfo.label}</span>
+                              {order.awaiting_confirmation && (
+                                <span className="px-2.5 py-1 rounded-lg text-xs font-medium bg-orange-100 text-orange-700 border border-orange-200 flex items-center gap-1">
+                                  <AlertTriangle className="w-3 h-3" /> Ожидает подтверждения
+                                </span>
+                              )}
+                            </div>
+                            <div className="flex items-center gap-3 text-sm text-slate-500 mt-1">
+                              <span className="flex items-center gap-1"><User className="w-3.5 h-3.5" />{order.customer_name || order.full_name}</span>
+                              <span className="flex items-center gap-1"><Calendar className="w-3.5 h-3.5" />{formatDate(order.created_at)}</span>
+                            </div>
                           </div>
                         </div>
-                      </div>
-                      <div className="flex items-center gap-4">
-                        <div className="text-right">
-                          <p className="font-bold text-lg text-slate-800">{formatPrice(order.total)} ₽</p>
-                          <p className="text-xs text-slate-400">{order.items?.length || 0} товаров</p>
+                        <div className="flex items-center gap-4">
+                          <div className="text-right">
+                            <p className="font-bold text-lg text-slate-800">{formatPrice(currentTotal)} ₽</p>
+                            <p className="text-xs text-slate-400">{currentItems?.length || 0} товаров</p>
+                          </div>
+                          <motion.div animate={{ rotate: isExpanded ? 180 : 0 }} transition={{ duration: 0.2 }}>
+                            <ChevronDown className="w-5 h-5 text-slate-400" />
+                          </motion.div>
                         </div>
-                        <motion.div
-                          animate={{ rotate: isExpanded ? 180 : 0 }}
-                          transition={{ duration: 0.2 }}
-                        >
-                          <ChevronDown className="w-5 h-5 text-slate-400" />
-                        </motion.div>
                       </div>
                     </div>
-                  </div>
-                  
-                  {/* Expanded Content */}
-                  <AnimatePresence>
-                  {isExpanded && (
-                    <motion.div 
-                      className="border-t border-slate-200/50"
-                      initial={{ height: 0, opacity: 0 }}
-                      animate={{ height: 'auto', opacity: 1 }}
-                      exit={{ height: 0, opacity: 0 }}
-                      transition={{ duration: 0.3 }}
-                    >
-                      {/* Customer Info */}
-                      <div className="p-4 bg-gradient-to-r from-slate-50 to-teal-50/30 grid grid-cols-1 md:grid-cols-3 gap-4">
-                        <div className="flex items-center gap-2">
-                          <div className="w-8 h-8 rounded-lg bg-white border border-slate-200 flex items-center justify-center">
-                            <User className="w-4 h-4 text-teal-500" />
-                          </div>
-                          <span className="text-sm text-slate-700">{order.full_name}</span>
-                        </div>
-                        <div className="flex items-center gap-2">
-                          <div className="w-8 h-8 rounded-lg bg-white border border-slate-200 flex items-center justify-center">
-                            <Phone className="w-4 h-4 text-teal-500" />
-                          </div>
-                          <span className="text-sm text-slate-700">{order.phone}</span>
-                        </div>
-                        <div className="flex items-center gap-2">
-                          <div className="w-8 h-8 rounded-lg bg-white border border-slate-200 flex items-center justify-center">
-                            <MapPin className="w-4 h-4 text-teal-500" />
-                          </div>
-                          <span className="text-sm truncate max-w-xs text-slate-700">{order.address}</span>
-                        </div>
-                      </div>
-                      
-                      {/* Items */}
-                      <div className="p-4">
-                        <p className="text-xs font-bold uppercase text-teal-600 mb-3">Товары</p>
-                        <div className="space-y-2">
-                          {order.items?.map((item, idx) => (
-                            <div key={idx} className="flex items-center justify-between py-3 border-b border-slate-100 last:border-0">
-                              <div className="flex items-center gap-3">
-                                {item.image_url && (
-                                  <img src={item.image_url} alt="" className="w-12 h-12 object-cover rounded-lg border border-slate-200" />
-                                )}
+
+                    {/* Expanded Content */}
+                    <AnimatePresence>
+                      {isExpanded && (
+                        <motion.div 
+                          className="border-t border-slate-200/50"
+                          initial={{ height: 0, opacity: 0 }}
+                          animate={{ height: 'auto', opacity: 1 }}
+                          exit={{ height: 0, opacity: 0 }}
+                          transition={{ duration: 0.3 }}
+                        >
+                          {/* Customer Info */}
+                          <div className="p-4 bg-gradient-to-r from-slate-50 to-teal-50/30">
+                            {isEditing ? (
+                              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                                 <div>
-                                  <p className="font-medium text-sm text-slate-800">{item.name}</p>
-                                  <p className="text-xs text-slate-400">{item.article}</p>
+                                  <label className="text-xs font-bold uppercase text-teal-600 mb-1 block">Получатель</label>
+                                  <Input value={editData.full_name} onChange={(e) => setEditData({...editData, full_name: e.target.value})} className="rounded-lg border-slate-200" />
+                                </div>
+                                <div>
+                                  <label className="text-xs font-bold uppercase text-teal-600 mb-1 block">Телефон</label>
+                                  <Input value={editData.phone} onChange={(e) => setEditData({...editData, phone: e.target.value})} className="rounded-lg border-slate-200" />
+                                </div>
+                                <div>
+                                  <label className="text-xs font-bold uppercase text-teal-600 mb-1 block">Адрес</label>
+                                  <Input value={editData.address} onChange={(e) => setEditData({...editData, address: e.target.value})} className="rounded-lg border-slate-200" />
                                 </div>
                               </div>
-                              <div className="text-right">
-                                <p className="font-medium text-slate-700">{formatPrice(item.price)} ₽ × {item.quantity}</p>
-                                <p className="text-sm font-bold text-teal-600">{formatPrice(item.price * item.quantity)} ₽</p>
+                            ) : (
+                              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                                <div className="flex items-center gap-2">
+                                  <div className="w-8 h-8 rounded-lg bg-white border border-slate-200 flex items-center justify-center"><User className="w-4 h-4 text-teal-500" /></div>
+                                  <span className="text-sm text-slate-700">{order.full_name}</span>
+                                </div>
+                                <div className="flex items-center gap-2">
+                                  <div className="w-8 h-8 rounded-lg bg-white border border-slate-200 flex items-center justify-center"><Phone className="w-4 h-4 text-teal-500" /></div>
+                                  <span className="text-sm text-slate-700">{order.phone}</span>
+                                </div>
+                                <div className="flex items-center gap-2">
+                                  <div className="w-8 h-8 rounded-lg bg-white border border-slate-200 flex items-center justify-center"><MapPin className="w-4 h-4 text-teal-500" /></div>
+                                  <span className="text-sm truncate max-w-xs text-slate-700">{order.address}</span>
+                                </div>
+                              </div>
+                            )}
+                          </div>
+
+                          {/* Items */}
+                          <div className="p-4">
+                            <p className="text-xs font-bold uppercase text-teal-600 mb-3">Товары</p>
+                            <div className="space-y-2">
+                              {currentItems?.map((item, idx) => (
+                                <div key={idx} className={`flex items-center justify-between py-3 border-b border-slate-100 last:border-0 ${isEditing ? 'bg-slate-50 rounded-lg px-3 -mx-3' : ''}`}>
+                                  <div className="flex items-center gap-3">
+                                    {item.image_url && (
+                                      <img src={item.image_url} alt="" className="w-12 h-12 object-cover rounded-lg border border-slate-200" />
+                                    )}
+                                    <div>
+                                      <p className="font-medium text-sm text-slate-800">{item.name}</p>
+                                      <p className="text-xs text-slate-400">{item.article}</p>
+                                    </div>
+                                  </div>
+                                  {isEditing ? (
+                                    <div className="flex items-center gap-3">
+                                      <div>
+                                        <label className="text-xs text-slate-500">Цена</label>
+                                        <Input type="number" value={item.price} onChange={(e) => handleUpdateItem(idx, 'price', e.target.value)} className="w-24 h-8 text-sm rounded-lg" min={0} />
+                                      </div>
+                                      <div>
+                                        <label className="text-xs text-slate-500">Кол-во</label>
+                                        <Input type="number" value={item.quantity} onChange={(e) => handleUpdateItem(idx, 'quantity', e.target.value)} className="w-20 h-8 text-sm rounded-lg" min={1} />
+                                      </div>
+                                      <div>
+                                        <label className="text-xs text-slate-500">Сумма</label>
+                                        <p className="h-8 flex items-center text-sm font-bold text-teal-600">{formatPrice(item.price * item.quantity)} ₽</p>
+                                      </div>
+                                    </div>
+                                  ) : (
+                                    <div className="text-right">
+                                      <p className="font-medium text-slate-700">{formatPrice(item.price)} ₽ × {item.quantity}</p>
+                                      <p className="text-sm font-bold text-teal-600">{formatPrice(item.price * item.quantity)} ₽</p>
+                                    </div>
+                                  )}
+                                </div>
+                              ))}
+                            </div>
+                            
+                            {/* Total */}
+                            <div className="mt-4 p-3 bg-gradient-to-r from-teal-50 to-emerald-50 rounded-xl border border-teal-200">
+                              <div className="flex justify-between items-center">
+                                <span className="font-bold text-teal-700">Итого:</span>
+                                <span className="text-xl font-bold text-teal-700">{formatPrice(currentTotal)} ₽</span>
                               </div>
                             </div>
-                          ))}
-                        </div>
-                      </div>
-                      
-                      {/* Actions */}
-                      <div className="p-4 bg-gradient-to-r from-slate-50 to-teal-50/30 border-t border-slate-200/50 flex items-center justify-between">
-                        <div className="flex items-center gap-2">
-                          <span className="text-sm text-slate-500">Статус:</span>
-                          <select
-                            value={order.status}
-                            onChange={(e) => handleStatusChange(order.id, e.target.value)}
-                            className="text-sm border border-slate-200 rounded-lg px-3 py-1.5 bg-white focus:border-teal-400 focus:ring-1 focus:ring-teal-200 outline-none"
-                          >
-                            {ORDER_STATUSES.map(status => (
-                              <option key={status.value} value={status.value}>{status.label}</option>
-                            ))}
-                          </select>
-                        </div>
-                        <div className="flex items-center gap-2">
-                          <Button 
-                            variant="outline" 
-                            size="sm"
-                            onClick={() => setViewingOrder(order)}
-                            className="rounded-xl border-slate-200 hover:border-teal-300 hover:bg-teal-50"
-                          >
-                            <Eye className="w-4 h-4 mr-1" />
-                            Подробнее
-                          </Button>
-                          <Button 
-                            variant="outline" 
-                            size="sm"
-                            onClick={() => setEditingOrder({...order})}
-                            className="rounded-xl border-teal-200 text-teal-600 hover:bg-teal-50"
-                          >
-                            <Pencil className="w-4 h-4 mr-1" />
-                            Редактировать
-                          </Button>
-                          <Button 
-                            variant="outline" 
-                            size="sm"
-                            className="rounded-xl text-rose-500 border-rose-200 hover:text-rose-600 hover:bg-rose-50"
-                            onClick={() => handleDeleteOrder(order.id)}
-                          >
-                            <Trash2 className="w-4 h-4" />
-                          </Button>
-                        </div>
-                      </div>
-                    </motion.div>
-                  )}
-                  </AnimatePresence>
-                </motion.div>
-              );
-            })
-          )}
+                          </div>
+
+                          {/* Actions */}
+                          <div className="p-4 bg-gradient-to-r from-slate-50 to-teal-50/30 border-t border-slate-200/50">
+                            {isEditing ? (
+                              <div className="flex items-center justify-between">
+                                <div className="flex items-center gap-2">
+                                  <span className="text-sm text-slate-500">Статус:</span>
+                                  <select value={editData.status} onChange={(e) => setEditData({...editData, status: e.target.value})} className="text-sm border border-slate-200 rounded-lg px-3 py-1.5 bg-white">
+                                    {ORDER_STATUSES.map(status => (
+                                      <option key={status.value} value={status.value}>{status.label}</option>
+                                    ))}
+                                  </select>
+                                </div>
+                                <div className="flex items-center gap-2">
+                                  <Button variant="outline" size="sm" onClick={cancelEditing} className="rounded-xl border-slate-200">
+                                    <X className="w-4 h-4 mr-1" /> Отмена
+                                  </Button>
+                                  <Button size="sm" onClick={() => handleSaveOrder(order.id)} className="rounded-xl bg-gradient-to-r from-teal-500 to-emerald-500">
+                                    <Save className="w-4 h-4 mr-1" /> Сохранить
+                                  </Button>
+                                </div>
+                              </div>
+                            ) : (
+                              <div className="flex items-center justify-between">
+                                <div className="flex items-center gap-2">
+                                  <span className="text-sm text-slate-500">Статус:</span>
+                                  <select value={order.status} onChange={(e) => handleStatusChange(order.id, e.target.value)} className="text-sm border border-slate-200 rounded-lg px-3 py-1.5 bg-white focus:border-teal-400">
+                                    {ORDER_STATUSES.map(status => (
+                                      <option key={status.value} value={status.value}>{status.label}</option>
+                                    ))}
+                                  </select>
+                                </div>
+                                <div className="flex items-center gap-2">
+                                  <Button variant="outline" size="sm" onClick={() => startEditing(order)} className="rounded-xl border-teal-200 text-teal-600 hover:bg-teal-50">
+                                    <Pencil className="w-4 h-4 mr-1" /> Редактировать
+                                  </Button>
+                                  <Button variant="outline" size="sm" className="rounded-xl text-rose-500 border-rose-200 hover:bg-rose-50" onClick={() => handleDeleteOrder(order.id)}>
+                                    <Trash2 className="w-4 h-4" />
+                                  </Button>
+                                </div>
+                              </div>
+                            )}
+                          </div>
+                        </motion.div>
+                      )}
+                    </AnimatePresence>
+                  </motion.div>
+                );
+              })
+            )}
           </AnimatePresence>
         </div>
       </div>
-
-      {/* View Order Dialog */}
-      <Dialog open={!!viewingOrder} onOpenChange={() => setViewingOrder(null)}>
-        <DialogContent className="max-w-2xl bg-white/95 backdrop-blur-sm border-slate-200/50 rounded-2xl">
-          <DialogHeader>
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-teal-500 to-emerald-500 flex items-center justify-center">
-                <Eye className="w-5 h-5 text-white" />
-              </div>
-              <DialogTitle className="text-xl font-bold text-slate-800">Заказ #{viewingOrder?.id?.slice(0, 8)}</DialogTitle>
-            </div>
-          </DialogHeader>
-          {viewingOrder && (
-            <div className="space-y-4">
-              <div className="grid grid-cols-2 gap-4">
-                <div className="bg-slate-50 rounded-xl p-3">
-                  <p className="text-xs font-bold uppercase text-teal-600 mb-1">Клиент</p>
-                  <p className="font-medium text-slate-800">{viewingOrder.full_name}</p>
-                </div>
-                <div className="bg-slate-50 rounded-xl p-3">
-                  <p className="text-xs font-bold uppercase text-teal-600 mb-1">Телефон</p>
-                  <p className="font-medium text-slate-800">{viewingOrder.phone}</p>
-                </div>
-                <div className="col-span-2 bg-slate-50 rounded-xl p-3">
-                  <p className="text-xs font-bold uppercase text-teal-600 mb-1">Адрес</p>
-                  <p className="font-medium text-slate-800">{viewingOrder.address}</p>
-                </div>
-                {viewingOrder.comment && (
-                  <div className="col-span-2 bg-amber-50 rounded-xl p-3 border border-amber-200">
-                    <p className="text-xs font-bold uppercase text-amber-600 mb-1">Комментарий</p>
-                    <p className="font-medium text-amber-800">{viewingOrder.comment}</p>
-                  </div>
-                )}
-              </div>
-              
-              <div>
-                <p className="text-xs font-bold uppercase text-teal-600 mb-3">Товары</p>
-                <div className="border border-slate-200 rounded-xl overflow-hidden">
-                  <table className="w-full text-sm">
-                    <thead className="bg-gradient-to-r from-slate-50 to-teal-50/30">
-                      <tr>
-                        <th className="text-left py-3 px-4 text-slate-600 font-medium">Товар</th>
-                        <th className="text-right py-3 px-4 text-slate-600 font-medium">Цена</th>
-                        <th className="text-right py-3 px-4 text-slate-600 font-medium">Кол-во</th>
-                        <th className="text-right py-3 px-4 text-slate-600 font-medium">Сумма</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {viewingOrder.items?.map((item, idx) => (
-                        <tr key={idx} className="border-t border-slate-100">
-                          <td className="py-3 px-4 text-slate-800">{item.name}</td>
-                          <td className="py-3 px-4 text-right text-slate-600">{formatPrice(item.price)} ₽</td>
-                          <td className="py-3 px-4 text-right text-slate-600">{item.quantity}</td>
-                          <td className="py-3 px-4 text-right font-medium text-slate-800">{formatPrice(item.price * item.quantity)} ₽</td>
-                        </tr>
-                      ))}
-                    </tbody>
-                    <tfoot className="bg-gradient-to-r from-teal-50 to-emerald-50">
-                      <tr>
-                        <td colSpan="3" className="py-3 px-4 text-right font-bold text-teal-700">Итого:</td>
-                        <td className="py-3 px-4 text-right font-bold text-lg text-teal-700">{formatPrice(viewingOrder.total)} ₽</td>
-                      </tr>
-                    </tfoot>
-                  </table>
-                </div>
-              </div>
-            </div>
-          )}
-        </DialogContent>
-      </Dialog>
-
-      {/* Edit Order Dialog */}
-      <Dialog open={!!editingOrder} onOpenChange={() => setEditingOrder(null)}>
-        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto bg-white/95 backdrop-blur-sm border-slate-200/50 rounded-2xl">
-          <DialogHeader>
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-teal-500 to-emerald-500 flex items-center justify-center">
-                <Pencil className="w-5 h-5 text-white" />
-              </div>
-              <DialogTitle className="text-xl font-bold text-slate-800">Редактировать заказ #{editingOrder?.id?.slice(0, 8)}</DialogTitle>
-            </div>
-          </DialogHeader>
-          {editingOrder && (
-            <div className="space-y-4">
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className="text-xs font-bold uppercase text-teal-600">Получатель</label>
-                  <Input
-                    value={editingOrder.full_name || ''}
-                    onChange={(e) => setEditingOrder({...editingOrder, full_name: e.target.value})}
-                    className="mt-1 rounded-xl border-slate-200 focus:border-teal-400 focus:ring-teal-200"
-                  />
-                </div>
-                <div>
-                  <label className="text-xs font-bold uppercase text-teal-600">Телефон</label>
-                  <Input
-                    value={editingOrder.phone || ''}
-                    onChange={(e) => setEditingOrder({...editingOrder, phone: e.target.value})}
-                    className="mt-1 rounded-xl border-slate-200 focus:border-teal-400 focus:ring-teal-200"
-                  />
-                </div>
-              </div>
-
-              <div>
-                <label className="text-xs font-bold uppercase text-teal-600">Адрес</label>
-                <Input
-                  value={editingOrder.address || ''}
-                  onChange={(e) => setEditingOrder({...editingOrder, address: e.target.value})}
-                  className="mt-1 rounded-xl border-slate-200 focus:border-teal-400 focus:ring-teal-200"
-                />
-              </div>
-
-              <div>
-                <label className="text-xs font-bold uppercase text-teal-600">Комментарий к заказу</label>
-                <Input
-                  value={editingOrder.comment || ''}
-                  onChange={(e) => setEditingOrder({...editingOrder, comment: e.target.value})}
-                  className="mt-1 rounded-xl border-slate-200 focus:border-teal-400 focus:ring-teal-200"
-                  placeholder="Комментарий от клиента..."
-                />
-              </div>
-
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className="text-xs font-bold uppercase text-teal-600">Дата и время заказа</label>
-                  <Input
-                    type="datetime-local"
-                    value={editingOrder.created_at ? editingOrder.created_at.slice(0, 16) : ''}
-                    onChange={(e) => setEditingOrder({...editingOrder, created_at: e.target.value ? new Date(e.target.value).toISOString() : editingOrder.created_at})}
-                    className="mt-1 rounded-xl border-slate-200 focus:border-teal-400 focus:ring-teal-200"
-                  />
-                </div>
-                <div>
-                  <label className="text-xs font-bold uppercase text-teal-600">Статус</label>
-                  <select
-                    value={editingOrder.status}
-                    onChange={(e) => setEditingOrder({...editingOrder, status: e.target.value})}
-                    className="mt-1 w-full h-10 px-3 border border-slate-200 bg-white rounded-xl focus:border-teal-400 focus:ring-1 focus:ring-teal-200 outline-none"
-                  >
-                    {ORDER_STATUSES.map(status => (
-                      <option key={status.value} value={status.value}>{status.label}</option>
-                    ))}
-                  </select>
-                </div>
-              </div>
-
-              {/* Order Items with editable prices and discounts */}
-              <div className="border-t border-slate-200 pt-4">
-                <label className="text-xs font-bold uppercase text-teal-600 mb-3 block">Товары в заказе</label>
-                <div className="space-y-3">
-                  {editingOrder.items?.map((item, idx) => (
-                    <div key={idx} className="bg-gradient-to-r from-slate-50 to-teal-50/30 p-4 rounded-xl border border-slate-200">
-                      <div className="flex items-start gap-3">
-                        {item.image_url && (
-                          <img src={item.image_url} alt={item.name} className="w-14 h-14 object-cover rounded-lg border border-slate-200" />
-                        )}
-                        <div className="flex-1 min-w-0">
-                          <p className="font-medium text-sm truncate text-slate-800">{item.name}</p>
-                          <p className="text-xs text-slate-500">{item.article}</p>
-                        </div>
-                      </div>
-                      <div className="grid grid-cols-4 gap-3 mt-3">
-                        <div>
-                          <label className="text-xs text-slate-500">Цена (₽)</label>
-                          <Input
-                            type="number"
-                            value={item.price}
-                            onChange={(e) => handleUpdateOrderItem(idx, 'price', e.target.value)}
-                            className="mt-1 h-9 text-sm rounded-lg border-slate-200 focus:border-teal-400"
-                            min={0}
-                          />
-                        </div>
-                        <div>
-                          <label className="text-xs text-slate-500">Кол-во</label>
-                          <Input
-                            type="number"
-                            value={item.quantity}
-                            onChange={(e) => handleUpdateOrderItem(idx, 'quantity', e.target.value)}
-                            className="mt-1 h-9 text-sm rounded-lg border-slate-200 focus:border-teal-400"
-                            min={1}
-                          />
-                        </div>
-                        <div>
-                          <label className="text-xs text-slate-500 flex items-center gap-1">
-                            <Percent className="w-3 h-3" /> Скидка
-                          </label>
-                          <Input
-                            type="number"
-                            value={item.discount_percent || 0}
-                            onChange={(e) => handleUpdateOrderItem(idx, 'discount_percent', e.target.value)}
-                            className="mt-1 h-9 text-sm rounded-lg border-slate-200 focus:border-teal-400"
-                            min={0}
-                            max={100}
-                          />
-                        </div>
-                        <div>
-                          <label className="text-xs text-slate-500">Сумма</label>
-                          <p className="mt-1 h-9 flex items-center text-sm font-bold text-teal-600">
-                            {new Intl.NumberFormat('ru-RU').format(
-                              item.price * item.quantity * (1 - (item.discount_percent || 0) / 100)
-                            )} ₽
-                          </p>
-                        </div>
-                      </div>
-                      {(item.discount_percent || 0) > 0 && (
-                        <p className="text-xs text-emerald-600 mt-2 font-medium">
-                          Скидка {item.discount_percent}%: -{new Intl.NumberFormat('ru-RU').format(item.price * item.quantity * (item.discount_percent / 100))} ₽
-                        </p>
-                      )}
-                    </div>
-                  ))}
-                </div>
-              </div>
-
-              {/* Order-level discount */}
-              <div className="border-t border-slate-200 pt-4">
-                <div className="bg-gradient-to-r from-amber-50 to-orange-50 p-4 rounded-xl border border-amber-200">
-                  <Label className="text-xs font-bold uppercase text-amber-600 flex items-center gap-2">
-                    <Percent className="w-4 h-4" /> Скидка на весь заказ
-                  </Label>
-                  <div className="flex items-center gap-3 mt-2">
-                    <Input
-                      type="number"
-                      value={editingOrder.order_discount_percent || 0}
-                      onChange={(e) => setEditingOrder({...editingOrder, order_discount_percent: parseFloat(e.target.value) || 0})}
-                      className="w-24 rounded-lg border-amber-200 focus:border-amber-400"
-                      min={0}
-                      max={100}
-                    />
-                    <span className="text-amber-600 font-medium">%</span>
-                  </div>
-                </div>
-              </div>
-
-              <div className="bg-gradient-to-r from-teal-50 to-emerald-50 p-4 border border-teal-200 rounded-xl">
-                <div className="flex justify-between items-center">
-                  <div>
-                    <p className="text-sm text-teal-600 font-medium">Итого со скидками:</p>
-                    <p className="text-2xl font-bold font-mono bg-gradient-to-r from-teal-600 to-emerald-600 bg-clip-text text-transparent">
-                      {new Intl.NumberFormat('ru-RU').format(calculateOrderTotal(editingOrder.items || [], editingOrder.order_discount_percent || 0))} ₽
-                    </p>
-                  </div>
-                </div>
-              </div>
-
-              <div className="flex gap-3 pt-4">
-                <Button variant="outline" onClick={() => setEditingOrder(null)} className="flex-1 rounded-xl border-slate-200 hover:bg-slate-50">
-                  <X className="w-4 h-4 mr-2" />
-                  Отмена
-                </Button>
-                <Button onClick={handleSaveOrder} className="flex-1 bg-gradient-to-r from-teal-500 to-emerald-500 hover:from-teal-600 hover:to-emerald-600 rounded-xl">
-                  <Save className="w-4 h-4 mr-2" />
-                  Сохранить
-                </Button>
-              </div>
-            </div>
-          )}
-        </DialogContent>
-      </Dialog>
     </div>
   );
 }
