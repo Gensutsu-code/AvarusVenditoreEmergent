@@ -215,6 +215,7 @@ async def create_order(data: OrderCreate, user=Depends(get_current_user)):
         "items": items,
         "total": total,
         "subtotal": round(subtotal, 2),
+        "delivery_fee": delivery_fee,
         "payment_adjustment": payment_adjustment,
         "status": "new",
         "full_name": data.full_name,
