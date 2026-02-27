@@ -717,8 +717,10 @@ export default function CatalogPage() {
               </Button>
             </div>
           </aside>
+          )}
 
-          {/* Mobile filters toggle */}
+          {/* Mobile filters toggle (only after search) */}
+          {(searchQuery || categoryId) && (
           <div className="md:hidden mb-4 w-full">
             <button
               onClick={() => setShowFilters(!showFilters)}
