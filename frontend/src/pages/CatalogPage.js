@@ -65,30 +65,25 @@ const ProductCard = ({
       {/* Content */}
       <div className="flex-1 min-w-0 p-3 flex flex-col justify-between">
         {/* Top row: name + price */}
-        <div className="flex items-start justify-between gap-3">
-          <Link to={`/product/${product.id}`} className="flex-1 min-w-0">
-            <div className="flex items-center gap-2 mb-0.5">
-              {product.manufacturer && (
-                <span className="text-[11px] font-bold text-teal-600 bg-teal-50 px-1.5 py-0.5 rounded">{product.manufacturer}</span>
-              )}
-              <span className="text-xs font-mono font-bold text-pink-500 bg-pink-50 px-1.5 py-0.5 rounded">{product.article}</span>
-            </div>
-            <h3 className="font-semibold text-[13px] leading-tight text-slate-800 hover:text-teal-600 transition-colors">
+        <div className="flex items-start justify-between gap-6">
+          <Link to={`/product/${product.id}`} className="flex-1 min-w-0 max-w-[65%]">
+            <h3 className="font-semibold text-[15px] leading-snug text-slate-800 hover:text-teal-600 transition-colors">
               {product.name}
             </h3>
-            {isAlternative && product.cross_articles && (
-              <p className="text-[11px] text-slate-400 mt-0.5 line-clamp-1">Кросс: {product.cross_articles}</p>
-            )}
           </Link>
           <div className="flex-shrink-0 text-right">
             <p className="text-lg font-bold text-teal-600">{formatPrice(product.price)} <span className="text-sm">&#8381;</span></p>
           </div>
         </div>
 
-        {/* Bottom row: badges + actions */}
+        {/* Bottom row: manufacturer, article, badges + actions */}
         <div className="flex items-center justify-between mt-2 gap-2">
           {/* Badges */}
           <div className="flex items-center gap-1.5 flex-wrap">
+            {product.manufacturer && (
+              <span className="text-[11px] font-bold text-teal-600 bg-teal-50 px-1.5 py-0.5 rounded">{product.manufacturer}</span>
+            )}
+            <span className="text-xs font-mono font-bold text-pink-500 bg-pink-50 px-1.5 py-0.5 rounded">{product.article}</span>
             <span className={`inline-flex items-center text-[11px] font-semibold px-2 py-0.5 rounded-full ${
               product.stock > 0 ? 'bg-emerald-50 text-emerald-700' : 'bg-red-50 text-red-600'
             }`}>
@@ -102,6 +97,9 @@ const ProductCard = ({
             <span className="inline-flex items-center text-[11px] text-slate-500 px-2 py-0.5 rounded-full bg-slate-50">
               <Truck className="w-3 h-3 mr-0.5" />{getDeliveryText(product.delivery_days || 3)}
             </span>
+            {isAlternative && product.cross_articles && (
+              <span className="text-[11px] text-slate-400">Кросс: {product.cross_articles}</span>
+            )}
           </div>
 
           {/* Actions */}
