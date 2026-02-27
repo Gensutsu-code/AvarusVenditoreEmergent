@@ -519,6 +519,72 @@ async def accept_order_changes(order_id: str, user=Depends(get_current_user)):
     return response_data
 
 
+@router.get("/user/balance")
+async def get_user_balance(user=Depends(get_current_user)):
+    """Get current user balance"""
+    current_user = await db.users.find_one({"id": user["id"]}, {"_id": 0, "balance": 1})
+    return {"balance": current_user.get("balance", 0) if current_user else 0}
+
+
+@router.post("/orders/{order_id}/pay-additional")
+async def pay_additional_amount(order_id: str, payment_data: dict, user=Depends(get_current_user)):
+    """Pay additional amount after admin increased order price"""
+    order = await db.orders.find_one({"id": order_id, "user_id": user["id"]}, {"_id": 0})
+    if not order:
+        raise HTTPException(status_code=404, detail="Order not found")
+    
+    if not order.get("awaiting_additional_payment"):
+        raise HTTPException(status_code=400, detail="No additional payment required")
+    
+    additional_amount = order.get("additional_payment_amount", 0)
+    payment_method = payment_data.get("payment_method", order.get("additional_payment_method"))
+    
+    # Handle different payment methods
+    if payment_method == "balance":
+        current_user = await db.users.find_one({"id": user["id"]}, {"_id": 0})
+        user_balance = current_user.get("balance", 0)
+        
+        if user_balance < additional_amount:
+            raise HTTPException(status_code=400, detail="Недостаточно средств на балансе")
+        
+        # Deduct from balance
+        await db.users.update_one(
+            {"id": user["id"]},
+            {"$inc": {"balance": -additional_amount}}
+        )
+        
+        await db.orders.update_one(
+            {"id": order_id},
+            {"$set": {
+                "awaiting_additional_payment": False,
+                "awaiting_confirmation": False,
+                "has_changes": False,
+                "changes_accepted": True,
+                "changes_accepted_at": datetime.now(timezone.utc).isoformat(),
+                "additional_payment": additional_amount,
+                "additional_payment_method": "balance",
+                "additional_paid": True
+            }}
+        )
+        
+        await create_notification(user["id"], "order", "Доплата произведена", 
+            f"С баланса списано {additional_amount:.2f} ₽ за доплату по заказу #{order_id[:8]}", "/orders")
+        
+        return {"message": "Payment successful", "method": "balance", "amount": additional_amount}
+    
+    elif payment_method in ["crypto", "card"]:
+        # For crypto/card - return payment info, actual payment handled by checkout flow
+        return {
+            "message": "Redirect to payment",
+            "action": "redirect_to_checkout",
+            "order_id": order_id,
+            "amount": additional_amount,
+            "payment_method": payment_method
+        }
+    
+    raise HTTPException(status_code=400, detail="Invalid payment method")
+
+
 @router.post("/orders/{order_id}/cancel")
 async def cancel_order_by_customer(order_id: str, user=Depends(get_current_user)):
     """Customer cancels order within 24 hours of processing"""
