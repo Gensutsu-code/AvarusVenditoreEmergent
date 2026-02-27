@@ -39,10 +39,10 @@ const ProductCard = ({
   >
     <div className="flex h-full">
       {/* Image */}
-      <div className="relative group flex-shrink-0 p-2 flex items-center">
+      <div className="relative group flex-shrink-0 p-2 flex items-stretch">
         <Link
           to={`/product/${product.id}`}
-          className="w-[70px] h-[70px] bg-slate-50 block overflow-hidden rounded-lg border-2 border-teal-400 shadow-sm"
+          className="w-[84px] bg-slate-50 block overflow-hidden rounded-lg border-2 border-teal-400 shadow-sm"
           data-testid={`product-image-${product.id}`}
         >
           {product.image_url ? (
