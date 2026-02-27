@@ -283,7 +283,7 @@ async def get_gas_estimate(chain: str):
                             data = await resp.json()
                             native_price_usd = data.get(coin_id, {}).get("usd", 0)
                             _rate_cache[cache_key] = (native_price_usd, now)
-            except:
+            except Exception:
                 pass
             
             # Use stale cache or fallback prices if API failed
