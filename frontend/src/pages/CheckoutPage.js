@@ -72,6 +72,7 @@ export default function CheckoutPage() {
     axios.get(`${API}/crypto-wallets`).then(res => setCryptoWallets(res.data)).catch(() => {});
     axios.get(`${API}/terms`).then(res => setTermsSections(res.data.sections || [])).catch(() => {});
     axios.get(`${API}/prepayment-settings`).then(res => setPrepaymentSettings(res.data)).catch(() => {});
+    axios.get(`${API}/delivery-settings`).then(res => setDeliverySettings(res.data)).catch(() => {});
   }, [user]);
 
   const fetchUserBalance = async () => {
