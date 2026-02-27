@@ -94,9 +94,13 @@ export default function CheckoutPage() {
   const currentPaymentAdjustment = payWithBalance ? (paymentSettings.balance_adjustment ?? 0) : getPaymentAdjustment(paymentMethod);
 
   const subtotal = cart.items.reduce((sum, item) => sum + item.price * item.quantity, 0);
-  const finalTotal = currentPaymentAdjustment !== 0 
+  const adjustedSubtotal = currentPaymentAdjustment !== 0 
     ? Math.round(subtotal * (1 + currentPaymentAdjustment / 100))
     : subtotal;
+  
+  const isFreeDelivery = !deliverySettings.delivery_enabled || adjustedSubtotal >= deliverySettings.min_free_delivery;
+  const deliveryFee = isFreeDelivery ? 0 : deliverySettings.delivery_price;
+  const finalTotal = adjustedSubtotal + deliveryFee;
 
   const canPayWithBalance = prepaymentSettings.prepayment_enabled && userBalance >= finalTotal;
 
