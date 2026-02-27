@@ -65,7 +65,7 @@ const ProductCard = ({
       {/* Content */}
       <div className="flex-1 min-w-0 p-3 flex items-center gap-4">
         {/* Left: name top, badges bottom */}
-        <div className="flex-1 min-w-0 flex flex-col justify-between gap-2">
+        <div className="flex-1 min-w-0 flex flex-col justify-between gap-4">
           <h3 className="font-semibold text-[15px] leading-snug text-slate-800 hover:text-teal-600 transition-colors">
             <Link to={`/product/${product.id}`}>{product.name}</Link>
           </h3>
