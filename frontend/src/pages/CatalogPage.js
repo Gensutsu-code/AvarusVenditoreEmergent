@@ -55,7 +55,7 @@ const ProductCard = ({
         </Link>
         <button
           onClick={() => setSelectedProduct(product)}
-          className="absolute inset-0 flex items-center justify-center bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity"
+          className="absolute inset-0 m-3 flex items-center justify-center bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity rounded-xl"
           data-testid={`quick-view-${product.id}`}
         >
           <Eye className="w-5 h-5 text-white" />
