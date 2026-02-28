@@ -265,7 +265,7 @@ async def update_admin_order(order_id: str, data: AdminOrderUpdate, user=Depends
     update_data = {k: v for k, v in data.model_dump().items() if v is not None}
     
     if "status" in update_data:
-        valid_statuses = ["new", "pending", "processing", "shipped", "delivered", "cancelled"]
+        valid_statuses = ["pending", "processing", "completed", "cancelled"]
         if update_data["status"] not in valid_statuses:
             raise HTTPException(status_code=400, detail="Invalid status")
         
