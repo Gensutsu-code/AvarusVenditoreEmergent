@@ -222,7 +222,7 @@ async def create_order(data: OrderCreate, user=Depends(get_current_user)):
         "subtotal": round(subtotal, 2),
         "delivery_fee": delivery_fee,
         "payment_adjustment": payment_adjustment,
-        "status": "new",
+        "status": "pending",
         "full_name": data.full_name,
         "address": data.address,
         "phone": data.phone,
