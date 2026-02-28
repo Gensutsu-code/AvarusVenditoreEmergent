@@ -199,7 +199,8 @@ export const Header = () => {
       if (newCount > lastSeenCountRef.current) {
         const now = Date.now();
         // Debounce: skip toast if another toast was shown in last 8 seconds (e.g. from checkout/order action)
-        if (now - lastToastTimeRef.current > 8000) {
+        const globalLastToast = window.__lastToastTime || 0;
+        if (now - globalLastToast > 8000) {
           const notifs = notifData.notifications || [];
           const latest = notifs.find(n => !n.read);
           if (latest) {
