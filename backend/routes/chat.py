@@ -201,6 +201,9 @@ async def send_admin_message(chat_id: str, message: ChatMessage, user=Depends(ge
     
     await db.chats.update_one({"id": chat_id}, {"$set": {"updated_at": datetime.now(timezone.utc).isoformat()}})
     
+    # Notify client about admin reply
+    await notify_user(chat["user_id"], "chat", "Ответ поддержки", f"{message.text[:80]}", "/chat")
+    
     return {"id": msg_id}
 
 
