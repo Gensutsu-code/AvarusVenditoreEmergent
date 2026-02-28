@@ -13,6 +13,13 @@ E-commerce platform for truck spare parts with full admin panel, crypto payments
 
 ## What's Been Implemented
 
+## February 2026 - Client Order Card Redesign (COMPLETED)
+- Removed recipient/phone/address from client order cards
+- Compact item layout: small image + inline article/manufacturer/warehouse/delivery
+- Added warehouse and delivery_days fields to CartItemResponse and order creation
+- Backfilled 69 existing orders with warehouse/delivery data from products
+- Files: OrdersPage.js, models.py, orders.py
+
 ## February 2026 - Surcharge Payment Method Choice (COMPLETED)
 - Client can now choose payment method for surcharges (balance, crypto, card) regardless of original payment method
 - accept-changes returns payment_required + user_balance for non-cash price increases
