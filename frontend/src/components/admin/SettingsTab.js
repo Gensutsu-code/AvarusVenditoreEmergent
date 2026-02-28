@@ -363,11 +363,15 @@ export const SettingsTab = ({
 
       {/* Delivery Settings */}
       {activeSubTab === 'delivery' && (
-        <motion.div
-          initial={{ opacity: 0, y: 10 }}
-          animate={{ opacity: 1, y: 0 }}
-        >
+        <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}>
           <DeliveryTab isDark={isDark} />
+        </motion.div>
+      )}
+
+      {/* Import */}
+      {activeSubTab === 'import' && (
+        <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}>
+          <ImportTab isDark={isDark} />
         </motion.div>
       )}
 
