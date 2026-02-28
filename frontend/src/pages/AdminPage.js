@@ -4436,6 +4436,13 @@ export default function AdminPage() {
           )}
         </DialogContent>
       </Dialog>
+
+      <UserAnalyticsModal
+        userId={analyticsUser?.id}
+        userName={analyticsUser?.name}
+        open={!!analyticsUser}
+        onClose={() => setAnalyticsUser(null)}
+      />
     </div>
     </>
   );
