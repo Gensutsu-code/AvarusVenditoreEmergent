@@ -344,6 +344,22 @@ async def update_admin_order(order_id: str, data: AdminOrderUpdate, user=Depends
     if result.matched_count == 0:
         raise HTTPException(status_code=404, detail="Order not found")
     
+    # Notify on status change
+    if "status" in update_data and update_data["status"] != original_order.get("status"):
+        status_labels = {
+            "pending": "ожидает обработки",
+            "processing": "принят в обработку",
+            "completed": "выполнен",
+            "cancelled": "отменён"
+        }
+        new_status = update_data["status"]
+        await create_notification(
+            original_order["user_id"], "order",
+            f"Статус заказа #{order_id[:8]}",
+            f"Ваш заказ {status_labels.get(new_status, new_status)}",
+            "/orders"
+        )
+    
     # Send notification to customer about changes
     if price_changed or quantity_changed:
         change_msg_parts = []
