@@ -6,6 +6,7 @@ import bcrypt
 
 from database import db, get_current_user, hash_password, verify_password, create_token
 from models import UserRegister, UserLogin, UserResponse, UserProfileUpdate
+from notify import notify_admin
 
 router = APIRouter(prefix="/auth", tags=["auth"])
 
