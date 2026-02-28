@@ -4,8 +4,15 @@ from datetime import datetime, timezone
 from database import db
 
 
+async def _client_notifs_enabled():
+    settings = await db.settings.find_one({"type": "notification_settings"}, {"_id": 0})
+    return settings.get("client_notifications_enabled", True) if settings else True
+
+
 async def notify_user(user_id: str, notif_type: str, title: str, message: str, link: str = None):
     """Create notification for a specific user"""
+    if not await _client_notifs_enabled():
+        return
     notification = {
         "id": str(uuid.uuid4()),
         "user_id": user_id,
