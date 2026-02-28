@@ -47,13 +47,13 @@ export default function AdminNotificationsPage() {
     return () => clearInterval(interval);
   }, [user, navigate, fetchNotifications]);
 
-  const fetchNotifications = async () => {
+  const fetchNotifications = useCallback(async () => {
     try {
       const res = await axios.get(`${API}/admin/notifications`);
       setNotifications(res.data.notifications || []);
       setUnreadCount(res.data.unread_count || 0);
     } catch (err) {} finally { setLoading(false); }
-  };
+  }, []);
 
   const markAsRead = async (notifId) => {
     try {
