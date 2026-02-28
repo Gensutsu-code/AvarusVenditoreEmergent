@@ -374,8 +374,8 @@ async def update_order_status(order_id: str, status: str, user=Depends(get_curre
     status_labels = {
         "pending": "в обработке",
         "processing": "комплектуется",
-        "shipped": "отправлен",
-        "delivered": "доставлен",
+        "processing": "в обработке",
+        "completed": "выполнен",
         "cancelled": "отменён"
     }
     await create_notification(
