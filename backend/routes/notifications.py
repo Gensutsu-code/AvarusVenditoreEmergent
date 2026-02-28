@@ -308,6 +308,13 @@ async def update_notification_settings(data: NotificationSettings, user=Depends(
     return {"message": "Настройки уведомлений сохранены"}
 
 
+@router.get("/client-notifications-enabled")
+async def get_client_notifications_status():
+    """Public endpoint: check if client notifications are enabled"""
+    settings = await db.settings.find_one({"type": "notification_settings"}, {"_id": 0})
+    return {"enabled": settings.get("client_notifications_enabled", True) if settings else True}
+
+
 @router.post("/admin/email/test")
 async def send_test_email(data: TestEmailRequest, user=Depends(get_current_user)):
     """Send a test email to verify configuration"""
