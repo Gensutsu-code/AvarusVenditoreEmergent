@@ -637,6 +637,97 @@ export default function OrdersPage() {
         )}
       </div>
 
+      {/* Surcharge Payment Method Picker */}
+      <AnimatePresence>
+        {surchargeModal && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 bg-black/40 backdrop-blur-sm z-50 flex items-center justify-center p-4"
+            onClick={() => setSurchargeModal(null)}
+          >
+            <motion.div
+              initial={{ scale: 0.9, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.9, opacity: 0 }}
+              className="bg-white rounded-2xl shadow-xl max-w-md w-full overflow-hidden"
+              onClick={(e) => e.stopPropagation()}
+              data-testid="surcharge-modal"
+            >
+              <div className="p-5 bg-gradient-to-r from-teal-500 to-emerald-500 text-white flex items-center justify-between">
+                <div>
+                  <h3 className="text-lg font-bold">Доплата за изменения</h3>
+                  <p className="text-teal-100 text-sm mt-0.5">Выберите способ оплаты</p>
+                </div>
+                <button onClick={() => setSurchargeModal(null)} className="p-1 rounded-lg hover:bg-white/20 transition">
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+
+              <div className="p-5">
+                <div className="text-center mb-5">
+                  <p className="text-3xl font-bold text-slate-800">{surchargeModal.amount.toFixed(2)} ₽</p>
+                  <p className="text-sm text-slate-500 mt-1">Сумма доплаты</p>
+                </div>
+
+                <div className="space-y-3">
+                  <button
+                    onClick={() => handlePaySurcharge('balance')}
+                    disabled={surchargeModal.userBalance < surchargeModal.amount}
+                    className={`w-full flex items-center gap-4 p-4 rounded-xl border-2 transition ${
+                      surchargeModal.userBalance >= surchargeModal.amount
+                        ? 'border-teal-200 hover:border-teal-400 hover:bg-teal-50 cursor-pointer'
+                        : 'border-slate-100 bg-slate-50 opacity-60 cursor-not-allowed'
+                    }`}
+                    data-testid="pay-with-balance"
+                  >
+                    <div className="w-11 h-11 rounded-xl bg-teal-100 flex items-center justify-center">
+                      <Wallet className="w-5 h-5 text-teal-600" />
+                    </div>
+                    <div className="text-left flex-1">
+                      <p className="font-semibold text-slate-800">С баланса</p>
+                      <p className="text-sm text-slate-500">
+                        Доступно: {surchargeModal.userBalance.toFixed(2)} ₽
+                        {surchargeModal.userBalance < surchargeModal.amount && ' (недостаточно)'}
+                      </p>
+                    </div>
+                  </button>
+
+                  <button
+                    onClick={() => handlePaySurcharge('crypto')}
+                    className="w-full flex items-center gap-4 p-4 rounded-xl border-2 border-blue-200 hover:border-blue-400 hover:bg-blue-50 transition cursor-pointer"
+                    data-testid="pay-with-crypto"
+                  >
+                    <div className="w-11 h-11 rounded-xl bg-blue-100 flex items-center justify-center">
+                      <svg className="w-5 h-5 text-blue-600" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M9.5 2A7.5 7.5 0 0 0 2 9.5 7.5 7.5 0 0 0 9.5 17H12v5l5-7h-3V9.5A7.5 7.5 0 0 0 6.5 2"/><circle cx="14.5" cy="9.5" r="7.5"/></svg>
+                    </div>
+                    <div className="text-left flex-1">
+                      <p className="font-semibold text-slate-800">Криптовалютой</p>
+                      <p className="text-sm text-slate-500">USDT, USDC (BSC, Base, Polygon)</p>
+                    </div>
+                  </button>
+
+                  <button
+                    onClick={() => handlePaySurcharge('card')}
+                    className="w-full flex items-center gap-4 p-4 rounded-xl border-2 border-violet-200 hover:border-violet-400 hover:bg-violet-50 transition cursor-pointer"
+                    data-testid="pay-with-card"
+                  >
+                    <div className="w-11 h-11 rounded-xl bg-violet-100 flex items-center justify-center">
+                      <CreditCard className="w-5 h-5 text-violet-600" />
+                    </div>
+                    <div className="text-left flex-1">
+                      <p className="font-semibold text-slate-800">Банковской картой</p>
+                      <p className="text-sm text-slate-500">Visa, MasterCard, МИР</p>
+                    </div>
+                  </button>
+                </div>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
       {/* Crypto Payment Modal for surcharges */}
       <CryptoPaymentModal
         open={showCryptoModal}
