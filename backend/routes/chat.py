@@ -93,6 +93,9 @@ async def send_chat_message(message: ChatMessage, user=Depends(get_current_user)
     
     await send_to_telegram_chat(chat_id, user["name"], message.text)
     
+    # Notify admin about new message
+    await notify_admin("chat", "Новое сообщение", f"{user['name']}: {message.text[:80]}", "/admin/chats")
+    
     return {"id": msg_id, "chat_id": chat_id}
 
 
