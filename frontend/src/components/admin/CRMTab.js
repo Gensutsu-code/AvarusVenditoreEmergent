@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Users, BarChart3, TrendingUp, Calendar, UserCheck, Pencil, Trash2, ChevronDown, User, ShoppingBag, Package, Clock, DollarSign, Target, RefreshCw } from 'lucide-react';
+import { Users, BarChart3, TrendingUp, Calendar, UserCheck, Pencil, Trash2, ChevronDown, User, ShoppingBag, Package, Clock, DollarSign, Target, RefreshCw, Activity } from 'lucide-react';
 import { Button } from '../../components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../../components/ui/select';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -14,6 +14,7 @@ export const CRMTab = ({
   formatPrice,
   handleEditUser,
   handleDeleteUser,
+  onViewAnalytics,
   isDark = false
 }) => {
   const [activeSubTab, setActiveSubTab] = useState('clients');
