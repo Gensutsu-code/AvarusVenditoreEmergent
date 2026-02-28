@@ -118,6 +118,7 @@ export default function AccountPage() {
       
       if (res.data.status === 'completed') {
         toast.success(res.data.message);
+        window.__lastToastTime = Date.now();
         setBalance(res.data.new_balance);
         setShowTopupModal(false);
         setTopupAmount('');
