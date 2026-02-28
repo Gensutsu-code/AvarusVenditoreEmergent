@@ -126,6 +126,11 @@ export const AdminNotifications = () => {
               ))}
             </div>
           )}
+          <div className="p-2 border-t border-zinc-100">
+            <button onClick={() => { setOpen(false); navigate('/admin/notifications'); }} className="w-full text-center text-sm text-teal-600 hover:text-teal-700 font-medium py-1.5 rounded-lg hover:bg-teal-50 transition">
+              Все уведомления
+            </button>
+          </div>
         </div>
       )}
     </div>
