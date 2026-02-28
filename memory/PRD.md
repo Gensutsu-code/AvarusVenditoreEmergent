@@ -13,6 +13,14 @@ E-commerce platform for truck spare parts with full admin panel, crypto payments
 
 ## What's Been Implemented
 
+## February 2026 - Order Status System Overhaul (COMPLETED)
+- Changed to 4 statuses only: Ожидает (pending) → Обработка (processing) → Выполнен (completed) / Отменён (cancelled)
+- Replaced dropdown select with action buttons in admin: "Принять", "Выполнен", "Отменить"
+- Buttons activate sequentially based on current status
+- Migrated all existing orders in DB (new→pending, shipped→processing, delivered→completed)
+- Hidden edit/action buttons for completed and cancelled orders
+- Testing: 8/8 backend + 12/12 frontend (iteration_38)
+
 ## February 2026 - Balance in Header (COMPLETED)
 - Added user balance display in the header (desktop + mobile)
 - Fetched from `/api/user/balance`, refreshed every 15s alongside notifications
