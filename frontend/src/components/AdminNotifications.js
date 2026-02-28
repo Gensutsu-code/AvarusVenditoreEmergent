@@ -25,34 +25,30 @@ export const AdminNotifications = () => {
         const data = res.data;
         setNotifications(data);
         
-        const newTotal = data.total || 0;
+        const newUnread = data.unread_count || 0;
         
-        // First load — set baseline
         if (lastTotalRef.current === null) {
-          lastTotalRef.current = newTotal;
+          lastTotalRef.current = newUnread;
           return;
         }
         
-        // New notifications appeared
-        if (newTotal > lastTotalRef.current) {
+        if (newUnread > lastTotalRef.current) {
           playNotificationSound();
           
-          // Determine what's new
-          if (data.new_orders > 0) {
-            toast.info(`Новый заказ! (${data.new_orders} ожидает)`, { duration: 6000 });
-          } else {
-            toast.info('Новое уведомление', { duration: 4000 });
+          const latest = (data.notifications || []).find(n => !n.read);
+          if (latest) {
+            toast.info(latest.message || latest.title, { duration: 6000 });
           }
           
           if (document.hidden || !document.hasFocus()) {
-            showPushNotification('AVOPT.STORE — Админ', `${newTotal} уведомлений требуют внимания`, { tag: 'admin-notif' });
+            showPushNotification('AVOPT.STORE — Админ', latest?.message || 'Новое уведомление', { tag: 'admin-notif' });
           }
         }
-        lastTotalRef.current = newTotal;
+        lastTotalRef.current = newUnread;
       } catch (err) {}
     };
     fetchNotifications();
-    const interval = setInterval(fetchNotifications, 5000);
+    const interval = setInterval(fetchNotifications, 3000);
     return () => clearInterval(interval);
   }, []);
 
