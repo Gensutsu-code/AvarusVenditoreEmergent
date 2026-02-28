@@ -1637,6 +1637,16 @@ export default function AdminPage() {
                         <Button 
                           variant="ghost" 
                           size="sm" 
+                          onClick={(e) => { e.stopPropagation(); setAnalyticsUser({ id: u.id, name: u.name || u.email }); }} 
+                          className="text-blue-500 hover:text-blue-600"
+                          data-testid={`analytics-user-${u.id}`}
+                          title="Аналитика"
+                        >
+                          <BarChart3 className="w-4 h-4" />
+                        </Button>
+                        <Button 
+                          variant="ghost" 
+                          size="sm" 
                           onClick={(e) => { e.stopPropagation(); handleDeleteUser(u.id); }} 
                           className="text-red-500 hover:text-red-600"
                           disabled={u.email === 'admin@avarus.ru'}
