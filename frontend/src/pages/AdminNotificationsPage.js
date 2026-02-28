@@ -40,11 +40,12 @@ export default function AdminNotificationsPage() {
   const navigate = useNavigate();
 
   useEffect(() => {
+    if (user === undefined) return; // still loading
     if (!user || user.role !== 'admin') { navigate('/login'); return; }
     fetchNotifications();
-    const interval = setInterval(fetchNotifications, 5000);
+    const interval = setInterval(fetchNotifications, 3000);
     return () => clearInterval(interval);
-  }, [user, navigate]);
+  }, [user, navigate, fetchNotifications]);
 
   const fetchNotifications = async () => {
     try {
