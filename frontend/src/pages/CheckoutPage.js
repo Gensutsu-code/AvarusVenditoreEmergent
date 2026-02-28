@@ -135,6 +135,7 @@ export default function CheckoutPage() {
         await fetchCart();
         setSuccess(true);
         toast.success('Заказ оплачен с баланса!');
+        window.__lastToastTime = Date.now();
         return;
       }
 
@@ -157,6 +158,7 @@ export default function CheckoutPage() {
         await fetchCart();
         setSuccess(true);
         toast.success('Заказ оформлен!');
+        window.__lastToastTime = Date.now();
       }
     } catch (err) {
       toast.error(err.response?.data?.detail || 'Ошибка оформления заказа');
@@ -180,6 +182,7 @@ export default function CheckoutPage() {
       await fetchCart();
       setSuccess(true);
       toast.success('Заказ оплачен криптовалютой!');
+      window.__lastToastTime = Date.now();
     } catch (err) {
       toast.error(err.response?.data?.detail || 'Оплата прошла, но ошибка создания заказа. Свяжитесь с поддержкой.');
       setSuccess(true); // Still show success since payment went through
