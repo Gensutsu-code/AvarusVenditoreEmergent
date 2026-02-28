@@ -298,6 +298,7 @@ async def update_notification_settings(data: NotificationSettings, user=Depends(
                 "order_status_enabled": data.order_status_enabled,
                 "promotions_enabled": data.promotions_enabled,
                 "order_confirmation_enabled": data.order_confirmation_enabled,
+                "client_notifications_enabled": data.client_notifications_enabled,
                 "updated_at": datetime.now(timezone.utc).isoformat()
             }
         },
