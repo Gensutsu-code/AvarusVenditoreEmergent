@@ -230,7 +230,7 @@ export default function AdminOrdersPage() {
               <div className="w-10 h-10 rounded-xl bg-emerald-100 flex items-center justify-center"><CheckCircle className="w-5 h-5 text-emerald-600" /></div>
               <div>
                 <p className="text-emerald-600 text-xs uppercase font-medium">Доставлено</p>
-                <p className="text-2xl font-bold text-emerald-700">{stats.delivered}</p>
+                <p className="text-2xl font-bold text-emerald-700">{stats.completed}</p>
               </div>
             </div>
           </div>
