@@ -271,6 +271,7 @@ async def get_notification_settings(user=Depends(get_current_user)):
             "order_status_enabled": True,
             "promotions_enabled": True,
             "order_confirmation_enabled": True,
+            "client_notifications_enabled": True,
             "resend_configured": bool(RESEND_API_KEY)
         }
     
@@ -278,6 +279,7 @@ async def get_notification_settings(user=Depends(get_current_user)):
         "order_status_enabled": settings.get("order_status_enabled", True),
         "promotions_enabled": settings.get("promotions_enabled", True),
         "order_confirmation_enabled": settings.get("order_confirmation_enabled", True),
+        "client_notifications_enabled": settings.get("client_notifications_enabled", True),
         "resend_configured": bool(RESEND_API_KEY)
     }
 
