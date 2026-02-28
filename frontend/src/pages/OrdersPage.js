@@ -465,75 +465,73 @@ export default function OrdersPage() {
                           className="border-t border-slate-200/50"
                         >
                           <div className="p-4">
-                            {/* Delivery info */}
-                            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-4 text-sm">
-                              <div className="bg-slate-50 p-3 rounded-xl">
-                                <p className="text-slate-400 text-xs uppercase mb-1">Получатель</p>
-                                <p className="font-medium text-slate-800">{order.full_name}</p>
-                              </div>
-                              <div className="bg-slate-50 p-3 rounded-xl">
-                                <p className="text-slate-400 text-xs uppercase mb-1">Телефон</p>
-                                <p className="font-medium text-slate-800">{order.phone}</p>
-                              </div>
-                              <div className="bg-slate-50 p-3 rounded-xl">
-                                <p className="text-slate-400 text-xs uppercase mb-1">Адрес</p>
-                                <p className="font-medium text-slate-800">{order.address}</p>
-                              </div>
-                            </div>
-
                             {/* Order comment */}
                             {order.comment && (
-                              <div className="mb-4 p-4 bg-amber-50 border border-amber-200 rounded-xl">
-                                <p className="text-amber-700 text-xs uppercase font-bold mb-1">Комментарий к заказу</p>
-                                <p className="text-amber-800 text-sm">{order.comment}</p>
+                              <div className="mb-3 px-3 py-2 bg-amber-50 border border-amber-200 rounded-xl">
+                                <p className="text-amber-800 text-sm"><span className="font-semibold">Комментарий:</span> {order.comment}</p>
                               </div>
                             )}
 
-                            {/* Order items - with comparison if changes pending */}
-                            <div className="border border-slate-200 rounded-xl divide-y divide-slate-100 overflow-hidden">
+                            {/* Order items - compact cards */}
+                            <div className="space-y-2">
                               {order.items.map((item, idx) => {
                                 const prevItem = order.awaiting_confirmation && order.previous_items ? order.previous_items[idx] : null;
                                 const priceChanged = prevItem && prevItem.price !== item.price;
                                 const qtyChanged = prevItem && prevItem.quantity !== item.quantity;
+                                const itemTotal = item.price * item.quantity;
+                                const prevTotal = prevItem ? prevItem.price * prevItem.quantity : null;
                                 
                                 return (
-                                  <div key={idx} className="flex gap-4 p-4 bg-white">
-                                    <div className="w-16 h-16 flex-shrink-0 bg-slate-100 rounded-xl overflow-hidden">
+                                  <div key={idx} className="flex items-center gap-3 p-3 bg-slate-50/80 rounded-xl border border-slate-100" data-testid={`order-item-${idx}`}>
+                                    <div className="w-12 h-12 flex-shrink-0 bg-white rounded-lg overflow-hidden border border-slate-200">
                                       {item.image_url ? (
                                         <img src={item.image_url.startsWith('http') ? item.image_url : `${BACKEND_URL}${item.image_url}`} alt={item.name} className="w-full h-full object-cover" />
                                       ) : (
-                                        <div className="w-full h-full flex items-center justify-center text-slate-300"><Package className="w-6 h-6" /></div>
+                                        <div className="w-full h-full flex items-center justify-center text-slate-300"><Package className="w-5 h-5" /></div>
                                       )}
                                     </div>
+
                                     <div className="flex-1 min-w-0">
-                                      <p className="font-medium text-slate-800">{item.name}</p>
-                                      <div className="flex flex-wrap gap-x-4 gap-y-1 mt-1">
-                                        {item.manufacturer && <p className="text-sm font-semibold text-teal-600">{item.manufacturer}</p>}
-                                        {item.article && <p className="text-sm font-mono text-slate-500">Арт: {item.article}</p>}
-                                      </div>
-                                      <div className="text-sm mt-1">
-                                        {priceChanged ? (
-                                          <span><span className="text-red-500 line-through">{formatPrice(prevItem.price)} ₽</span> <span className="text-emerald-600 font-semibold">{formatPrice(item.price)} ₽</span></span>
-                                        ) : (
-                                          <span className="text-slate-400">{formatPrice(item.price)} ₽</span>
-                                        )}
-                                        <span className="text-slate-400"> × </span>
-                                        {qtyChanged ? (
-                                          <span><span className="text-red-500 line-through">{prevItem.quantity} шт.</span> <span className="text-emerald-600 font-semibold">{item.quantity} шт.</span></span>
-                                        ) : (
-                                          <span className="text-slate-400">{item.quantity} шт.</span>
-                                        )}
+                                      <p className="font-medium text-slate-800 text-sm truncate">{item.name}</p>
+                                      <div className="flex flex-wrap items-center gap-x-3 gap-y-0.5 mt-0.5">
+                                        {item.article && <span className="text-xs font-mono text-slate-400">{item.article}</span>}
+                                        {item.manufacturer && <span className="text-xs text-teal-600 font-medium">{item.manufacturer}</span>}
+                                        {item.warehouse && <span className="text-xs text-slate-400">Склад: {item.warehouse}</span>}
+                                        {item.delivery_days && <span className="text-xs text-blue-500">{item.delivery_days} дн.</span>}
                                       </div>
                                     </div>
-                                    <div className="text-right">
-                                      {(priceChanged || qtyChanged) && prevItem ? (
-                                        <div>
-                                          <p className="font-mono text-red-500 line-through text-sm">{formatPrice(prevItem.price * prevItem.quantity)} ₽</p>
-                                          <p className="font-mono font-bold text-emerald-600">{formatPrice(item.price * item.quantity)} ₽</p>
-                                        </div>
-                                      ) : (
-                                        <p className="font-mono font-bold text-teal-600">{formatPrice(item.price * item.quantity)} ₽</p>
-                                      )}
+
+                                    <div className="flex items-center gap-3 flex-shrink-0">
+                                      <div className="text-right text-sm">
+                                        {priceChanged ? (
+                                          <div className="flex items-center gap-1">
+                                            <span className="text-red-400 line-through text-xs">{formatPrice(prevItem.price)}</span>
+                                            <span className="text-emerald-600 font-semibold">{formatPrice(item.price)} ₽</span>
+                                          </div>
+                                        ) : (
+                                          <span className="text-slate-500">{formatPrice(item.price)} ₽</span>
+                                        )}
+                                      </div>
+                                      <div className="text-center min-w-[40px]">
+                                        {qtyChanged ? (
+                                          <div className="flex items-center gap-1 text-sm">
+                                            <span className="text-red-400 line-through text-xs">{prevItem.quantity}</span>
+                                            <span className="text-emerald-600 font-semibold">×{item.quantity}</span>
+                                          </div>
+                                        ) : (
+                                          <span className="text-slate-400 text-sm">×{item.quantity}</span>
+                                        )}
+                                      </div>
+                                      <div className="text-right min-w-[70px]">
+                                        {(priceChanged || qtyChanged) && prevTotal ? (
+                                          <div>
+                                            <p className="text-red-400 line-through text-xs">{formatPrice(prevTotal)} ₽</p>
+                                            <p className="font-bold text-emerald-600 text-sm">{formatPrice(itemTotal)} ₽</p>
+                                          </div>
+                                        ) : (
+                                          <p className="font-bold text-teal-700 text-sm">{formatPrice(itemTotal)} ₽</p>
+                                        )}
+                                      </div>
                                     </div>
                                   </div>
                                 );
@@ -541,17 +539,16 @@ export default function OrdersPage() {
                             </div>
 
                             {/* Order total */}
-                            <div className="flex justify-between items-center mt-4 pt-4 border-t border-slate-200/50">
-                              <span className="text-slate-500 text-sm">Оплата: {PAYMENT_METHOD_LABELS[order.payment_method] || order.payment_method || 'не указан'}</span>
+                            <div className="flex justify-between items-center mt-3 pt-3 border-t border-slate-200/50">
+                              <span className="text-slate-400 text-sm">Оплата: {PAYMENT_METHOD_LABELS[order.payment_method] || order.payment_method || 'не указан'}</span>
                               <div className="text-right">
-                                <span className="text-sm text-slate-400">Итого: </span>
                                 {order.awaiting_confirmation && order.previous_total && order.previous_total !== order.total ? (
-                                  <span>
-                                    <span className="font-mono text-lg text-red-500 line-through mr-2">{formatPrice(order.previous_total)} ₽</span>
-                                    <span className="font-mono text-2xl font-bold text-emerald-600">{formatPrice(order.total)} ₽</span>
+                                  <span className="flex items-center gap-2">
+                                    <span className="font-mono text-red-400 line-through">{formatPrice(order.previous_total)} ₽</span>
+                                    <span className="font-mono text-xl font-bold text-emerald-600">{formatPrice(order.total)} ₽</span>
                                   </span>
                                 ) : (
-                                  <span className="font-mono text-2xl font-bold text-teal-600">{formatPrice(order.total)} ₽</span>
+                                  <span className="font-mono text-xl font-bold text-teal-600">{formatPrice(order.total)} ₽</span>
                                 )}
                               </div>
                             </div>
