@@ -457,6 +457,7 @@ async def accept_order_changes(order_id: str, user=Depends(get_current_user)):
         )
     
     await create_notification(user["id"], "order", "Изменения приняты", f"Вы приняли изменения в заказе #{order_id[:8]}", "/orders")
+    await notify_admin("order_accepted", "Изменения приняты", f"Клиент {user.get('name', '')} принял изменения в заказе #{order_id[:8]}", "/admin/orders")
     return response_data
 
 
