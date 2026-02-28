@@ -419,14 +419,17 @@ async def get_admin_notifications(user=Depends(get_current_user)):
     if user.get("role") != "admin":
         raise HTTPException(status_code=403, detail="Admin access required")
     
-    notifications = await db.activities.find(
-        {"is_admin_notification": True},
+    notifications = await db.notifications.find(
+        {"user_id": "ADMIN"},
         {"_id": 0}
-    ).sort("created_at", -1).limit(50).to_list(50)
+    ).sort("created_at", -1).limit(100).to_list(100)
     
-    unread_count = await db.activities.count_documents({"is_admin_notification": True, "read": False})
+    unread_count = await db.notifications.count_documents({"user_id": "ADMIN", "read": False})
     
-    return {"notifications": notifications, "unread_count": unread_count}
+    # Also count old activities for backward compat
+    old_unread = await db.activities.count_documents({"is_admin_notification": True, "read": False})
+    
+    return {"notifications": notifications, "unread_count": unread_count + old_unread, "total": len(notifications)}
 
 
 @router.post("/notifications/mark-read")
@@ -434,11 +437,27 @@ async def mark_admin_notifications_read(user=Depends(get_current_user)):
     if user.get("role") != "admin":
         raise HTTPException(status_code=403, detail="Admin access required")
     
+    await db.notifications.update_many(
+        {"user_id": "ADMIN", "read": False},
+        {"$set": {"read": True}}
+    )
     await db.activities.update_many(
         {"is_admin_notification": True, "read": False},
         {"$set": {"read": True}}
     )
     return {"message": "Notifications marked as read"}
+
+
+@router.put("/notifications/{notification_id}/read")
+async def mark_admin_notification_read(notification_id: str, user=Depends(get_current_user)):
+    if user.get("role") != "admin":
+        raise HTTPException(status_code=403, detail="Admin access required")
+    
+    await db.notifications.update_one(
+        {"id": notification_id, "user_id": "ADMIN"},
+        {"$set": {"read": True}}
+    )
+    return {"message": "Notification marked as read"}
 
 
 
