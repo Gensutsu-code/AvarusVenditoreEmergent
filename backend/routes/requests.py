@@ -147,7 +147,7 @@ async def get_admin_all_notifications(user=Depends(get_current_user)):
     discount_count = await db.discount_requests.count_documents({"status": "pending"})
     bonus_count = await db.bonus_progress.count_documents({"bonus_requested": True})
     prize_count = await db.prize_redemptions.count_documents({"status": "pending"})
-    order_count = await db.orders.count_documents({"status": "new"})
+    order_count = await db.orders.count_documents({"status": "pending"})
     chats = await db.chats.find({}, {"_id": 0}).to_list(None)
     unread_chats = sum(1 for c in chats if c.get("admin_unread", 0) > 0)
     
