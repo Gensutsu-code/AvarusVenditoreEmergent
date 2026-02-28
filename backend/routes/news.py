@@ -5,6 +5,7 @@ import uuid
 
 from database import db, get_current_user
 from models import NewsArticle
+from notify import notify_all_users
 
 router = APIRouter(tags=["news"])
 
