@@ -157,10 +157,12 @@ async def create_order(data: OrderCreate, user=Depends(get_current_user)):
                 "name": product["name"],
                 "article": product["article"],
                 "manufacturer": product.get("manufacturer"),
-                "price": final_price,  # Final price with payment discount
-                "original_price": original_price,  # Keep original for reference
+                "price": final_price,
+                "original_price": original_price,
                 "quantity": cart_item["quantity"],
-                "image_url": product.get("image_url")
+                "image_url": product.get("image_url"),
+                "warehouse": product.get("warehouse"),
+                "delivery_days": product.get("delivery_days")
             }
             items.append(item_data)
             subtotal += final_price * cart_item["quantity"]
