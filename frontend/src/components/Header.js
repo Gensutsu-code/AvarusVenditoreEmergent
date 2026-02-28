@@ -190,6 +190,11 @@ export const Header = () => {
 
   const fetchUserData = useCallback(async () => {
     if (!user || isAdmin) return;
+    // Skip all notification polling if disabled by admin
+    if (!clientNotifsEnabledRef.current) {
+      setUnreadNotifCount(0);
+      return;
+    }
     try {
       const token = localStorage.getItem('token');
       const headers = { 'Authorization': `Bearer ${token}` };
