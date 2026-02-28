@@ -249,6 +249,21 @@ async def get_admin_orders(user=Depends(get_current_user)):
         raise HTTPException(status_code=403, detail="Admin access required")
     
     orders = await db.orders.find({}, {"_id": 0}).sort("created_at", -1).to_list(1000)
+    
+    # Enrich orders with user data
+    user_ids = list(set(o.get("user_id") for o in orders if o.get("user_id")))
+    users_data = {}
+    if user_ids:
+        users_cursor = db.users.find({"id": {"$in": user_ids}}, {"_id": 0, "id": 1, "name": 1, "email": 1})
+        async for u in users_cursor:
+            users_data[u["id"]] = u
+    
+    for order in orders:
+        uid = order.get("user_id")
+        if uid and uid in users_data:
+            order["customer_name"] = users_data[uid].get("name") or users_data[uid].get("email", "")
+            order["customer_email"] = users_data[uid].get("email", "")
+    
     return orders
 
 
