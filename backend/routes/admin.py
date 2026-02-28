@@ -350,7 +350,7 @@ async def update_order_status(order_id: str, status: str, user=Depends(get_curre
     if user.get("role") != "admin":
         raise HTTPException(status_code=403, detail="Admin access required")
     
-    valid_statuses = ["pending", "processing", "shipped", "delivered", "cancelled"]
+    valid_statuses = ["pending", "processing", "completed", "cancelled"]
     if status not in valid_statuses:
         raise HTTPException(status_code=400, detail="Invalid status")
     
