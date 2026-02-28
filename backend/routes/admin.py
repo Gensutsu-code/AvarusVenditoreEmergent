@@ -588,10 +588,9 @@ async def get_detailed_analytics(period: str = "month", user=Depends(get_current
             "_id": None,
             "total_orders": {"$sum": 1},
             "total_revenue": {"$sum": "$total"},
-            "new_count": {"$sum": {"$cond": [{"$eq": ["$status", "new"]}, 1, 0]}},
+            "new_count": {"$sum": {"$cond": [{"$eq": ["$status", "pending"]}, 1, 0]}},
             "processing_count": {"$sum": {"$cond": [{"$eq": ["$status", "processing"]}, 1, 0]}},
-            "shipped_count": {"$sum": {"$cond": [{"$eq": ["$status", "shipped"]}, 1, 0]}},
-            "delivered_count": {"$sum": {"$cond": [{"$eq": ["$status", "delivered"]}, 1, 0]}},
+            "completed_count": {"$sum": {"$cond": [{"$eq": ["$status", "completed"]}, 1, 0]}},
             "cancelled_count": {"$sum": {"$cond": [{"$eq": ["$status", "cancelled"]}, 1, 0]}}
         }}
     ]
