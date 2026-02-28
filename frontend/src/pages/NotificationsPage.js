@@ -87,11 +87,8 @@ export default function NotificationsPage() {
     if (!notif.read) {
       markAsRead(notif.id);
     }
-    // Navigate based on notification type
-    if (notif.type === 'order' && notif.link) {
+    if (notif.link) {
       navigate(notif.link);
-    } else if (notif.type === 'bonus') {
-      navigate('/bonus');
     }
   };
 
