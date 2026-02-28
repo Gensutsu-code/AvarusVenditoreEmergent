@@ -89,7 +89,7 @@ export const AdminNotifications = () => {
   const handleMarkRead = async (id, e) => {
     e.stopPropagation();
     try {
-      await axios.post(`${API}/admin/notifications/${id}/read`);
+      await axios.put(`${API}/admin/notifications/${id}/read`);
       setNotifList(prev => prev.map(n => n.id === id ? { ...n, read: true } : n));
       setUnreadCount(prev => Math.max(0, prev - 1));
     } catch {}
