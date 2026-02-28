@@ -165,6 +165,16 @@ export const CRMTab = ({
                       <Button 
                         variant="ghost" 
                         size="sm"
+                        className={isDark ? 'text-teal-400 hover:text-teal-300' : 'text-teal-600 hover:text-teal-700'}
+                        onClick={(e) => { e.stopPropagation(); onViewAnalytics && onViewAnalytics({ id: user.id, name: user.name || user.email }); }}
+                        data-testid={`analytics-user-${user.id}`}
+                        title="Аналитика"
+                      >
+                        <Activity className="w-4 h-4" />
+                      </Button>
+                      <Button 
+                        variant="ghost" 
+                        size="sm"
                         onClick={(e) => { e.stopPropagation(); handleEditUser && handleEditUser(user); }}
                         data-testid={`edit-user-${user.id}`}
                       >
