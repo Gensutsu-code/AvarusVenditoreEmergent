@@ -206,6 +206,7 @@ export const Header = () => {
           if (latest) {
             toast.info(latest.message || latest.title, { id: `client-${latest.id}`, duration: 5000 });
             lastToastTimeRef.current = now;
+            window.__lastToastTime = now;
           }
           playNotificationSound();
         }
