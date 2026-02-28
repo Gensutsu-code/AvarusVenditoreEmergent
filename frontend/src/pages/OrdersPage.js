@@ -623,6 +623,25 @@ export default function OrdersPage() {
                                 </div>
                               </div>
                             )}
+
+                            {/* Cancel button for pending orders */}
+                            {order.status === 'pending' && !order.awaiting_confirmation && (
+                              <div className="mt-4 p-4 bg-slate-50 border border-slate-200 rounded-xl">
+                                <div className="flex items-center justify-between">
+                                  <p className="text-sm text-slate-600">Заказ ещё не принят в обработку — вы можете его отменить</p>
+                                  <Button 
+                                    variant="outline"
+                                    size="sm"
+                                    onClick={(e) => { e.stopPropagation(); handleCancelOrder(order.id); }}
+                                    className="border-rose-300 text-rose-600 hover:bg-rose-50 rounded-xl"
+                                    data-testid={`cancel-pending-order-${order.id}`}
+                                  >
+                                    <XCircle className="w-4 h-4 mr-2" />
+                                    Отменить заказ
+                                  </Button>
+                                </div>
+                              </div>
+                            )}
                           </div>
                         </motion.div>
                       )}
