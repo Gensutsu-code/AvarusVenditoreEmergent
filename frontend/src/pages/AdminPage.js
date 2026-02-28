@@ -139,6 +139,7 @@ export default function AdminPage() {
   const [isNewProduct, setIsNewProduct] = useState(false);
   const [isNewCategory, setIsNewCategory] = useState(false);
   const [viewingOrder, setViewingOrder] = useState(null);
+  const [analyticsUser, setAnalyticsUser] = useState(null);
   
   // Theme
   const { isDark } = useTheme();
