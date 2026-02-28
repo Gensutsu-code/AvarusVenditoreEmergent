@@ -13,6 +13,16 @@ E-commerce platform for truck spare parts with full admin panel, crypto payments
 
 ## What's Been Implemented
 
+## February 2026 - Client Analytics System (COMPLETED)
+- **Analytics button in CRM tab:** Added Activity icon button to each user card in CRMTab component, opening UserAnalyticsModal
+- **UserAnalyticsModal:** Shows page views, time on site, search queries, button clicks, recent activity across 4 tabs
+- **Click tracking:** Integrated trackClick() into 5 key actions: add_to_cart (catalog + product pages), checkout_from_cart (cart), place_order (checkout), add/remove_favorite (FavoritesButton)
+- **Backend analytics API:** POST /api/track (batch events), GET /api/admin/users/{user_id}/analytics (aggregated data)
+- **Tracker utility:** /app/frontend/src/utils/tracker.js — batched event queue with 5s flush, sendBeacon on unload
+- **CRM Analytics sub-tab:** Overall business analytics (orders, revenue, conversion, top products/customers, sales chart)
+- Files: CRMTab.js, UserAnalyticsModal.js, tracker.js, analytics.py, CatalogPage.js, ProductPage.js, CartPage.js, CheckoutPage.js, FavoritesButton.js
+- Testing: 15/15 backend tests passed (iteration_41)
+
 ## February 2026 - Full Notification System (COMPLETED)
 - **Client notifications:** status changes, price/quantity edits, chat messages, news, balance, bonuses
 - **Admin notifications:** new orders, client messages, order accept/cancel, registrations
@@ -107,6 +117,7 @@ E-commerce platform for truck spare parts with full admin panel, crypto payments
 │       ├── balance.py      # Balance management
 │       ├── crypto_payments.py # Crypto payment logic
 │       ├── payments.py     # ЮKassa (MOCKED)
+│       ├── analytics.py   # User activity tracking & admin analytics
 │       └── ... (settings, news, chat, bonus, etc.)
 ├── frontend/src/
 │   ├── pages/
@@ -126,6 +137,8 @@ E-commerce platform for truck spare parts with full admin panel, crypto payments
 - `users`: `{ id, email, password, name, phone, role, balance: float, customer_status, individual_discount }`
 - `orders`: `{ id, user_id, items[], total, status, payment_method, paid, has_changes, change_types[], awaiting_confirmation, changes_expire_at, previous_items[], previous_total, paid_from_balance }`
 - `products`: `{ id, name, article, manufacturer, price, stock, image_url }`
+- `user_analytics`: `{ user_id, event_type, page, duration, query, element, meta, created_at }`
+- `notifications`: `{ user_id, message, link, read, created_at }`
 
 ## 3rd Party Integrations
 - Resend (email), web3.py (crypto backend), ethers.js (crypto frontend)
@@ -133,12 +146,11 @@ E-commerce platform for truck spare parts with full admin panel, crypto payments
 - ЮKassa (MOCKED card payments)
 
 ## Upcoming Tasks (P1)
-1. **WalletConnect Support** - Other wallets for crypto payment modal
-2. **Full Push/Sound Notifications Integration** - All events covered
+1. **WalletConnect Support** - Wider range of crypto wallets for payment
+2. **Real Payment Gateway** - Replace ЮKassa placeholder with production provider
 
 ## Future/Backlog (P2)
-1. **Real Payment Gateway** - Replace ЮKassa placeholder
-2. **Refactoring**: Extract ProductCard from CatalogPage, break down large order pages
+1. **Refactoring**: Extract ProductCard from CatalogPage, simplify AdminPage.js, break down OrdersPage.js modals
 
 ## Credentials
 - Admin: admin@avarus.ru / admin
