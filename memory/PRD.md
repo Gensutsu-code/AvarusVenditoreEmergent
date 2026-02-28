@@ -13,6 +13,13 @@ E-commerce platform for truck spare parts with full admin panel, crypto payments
 
 ## What's Been Implemented
 
+## February 2026 - Cancel Pending Orders by Client (COMPLETED)
+- Clients can now cancel orders in "pending" (Ожидает) status
+- Updated `canCancelOrder()` in OrdersPage.js to include `pending` status
+- Added cancel button block with explanatory text for pending orders
+- Backend already supported this — only frontend change needed
+- Files: OrdersPage.js
+
 ## February 2026 - Client Analytics System (COMPLETED)
 - **Analytics button in CRM tab:** Added Activity icon button to each user card in CRMTab component, opening UserAnalyticsModal
 - **UserAnalyticsModal:** Shows page views, time on site, search queries, button clicks, recent activity across 4 tabs
