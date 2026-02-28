@@ -788,3 +788,175 @@ async def get_detailed_analytics(period: str = "month", user=Depends(get_current
     _analytics_cache_time[cache_key] = current_time
     
     return result
+
+
+# ==================== CSV IMPORT/EXPORT ====================
+
+CSV_COLUMNS = ["name", "article", "manufacturer", "category_id", "price", "stock", "description", "warehouse", "delivery_days", "cross_articles", "image_url"]
+
+@router.get("/products/csv-template")
+async def download_csv_template(user=Depends(get_current_user)):
+    if user.get("role") != "admin":
+        raise HTTPException(status_code=403, detail="Admin access required")
+    
+    output = io.StringIO()
+    writer = csv.writer(output, delimiter=';')
+    writer.writerow(CSV_COLUMNS)
+    writer.writerow(["Фильтр масляный MANN W 914/2", "W914/2", "MANN-FILTER", "", "450.00", "100", "Масляный фильтр для ВАЗ 2101-2107", "Москва", "3", "W914;W914/1", ""])
+    writer.writerow(["Колодки тормозные передние", "BP1234", "ATE", "", "1200.00", "50", "Тормозные колодки для Kia Rio", "Казань", "5", "", ""])
+    
+    output.seek(0)
+    content = output.getvalue().encode('utf-8-sig')
+    return StreamingResponse(
+        io.BytesIO(content),
+        media_type="text/csv",
+        headers={"Content-Disposition": "attachment; filename=products_template.csv"}
+    )
+
+
+@router.get("/products/csv-prompt")
+async def download_gpt_prompt(user=Depends(get_current_user)):
+    if user.get("role") != "admin":
+        raise HTTPException(status_code=403, detail="Admin access required")
+    
+    prompt = """# Промпт для ChatGPT: Заполнение CSV файла товаров
+
+## Задача
+Заполни CSV файл для импорта товаров на мой сайт автозапчастей. Формат CSV: разделитель — точка с запятой (;), кодировка UTF-8.
+
+## Колонки CSV файла (в строгом порядке):
+1. **name** — Полное название товара (например: "Фильтр масляный MANN W 914/2")
+2. **article** — Артикул/каталожный номер (например: "W914/2"). ОБЯЗАТЕЛЬНОЕ поле
+3. **manufacturer** — Производитель (например: "MANN-FILTER", "BOSCH", "ATE")
+4. **category_id** — ID категории (оставь пустым, если не знаешь)
+5. **price** — Цена в рублях, число с точкой (например: 450.00)
+6. **stock** — Количество на складе, целое число (например: 100)
+7. **description** — Описание товара (применимость, характеристики)
+8. **warehouse** — Склад/город (например: "Москва", "Казань")
+9. **delivery_days** — Срок доставки в днях, целое число (например: 3)
+10. **cross_articles** — Кросс-артикулы через точку с запятой внутри кавычек (например: "W914;W914/1;OC384")
+11. **image_url** — Ссылка на изображение (можно оставить пустым)
+
+## Пример первых строк:
+```
+name;article;manufacturer;category_id;price;stock;description;warehouse;delivery_days;cross_articles;image_url
+Фильтр масляный MANN W 914/2;W914/2;MANN-FILTER;;450.00;100;Масляный фильтр для ВАЗ 2101-2107;Москва;3;W914;W914/1;
+Колодки тормозные передние ATE;BP1234;ATE;;1200.00;50;Тормозные колодки для Kia Rio;Казань;5;;
+```
+
+## Правила:
+- Первая строка — заголовки (скопируй как есть)
+- Цены указывай БЕЗ символа ₽, только число
+- Артикул — обязательное поле, не оставляй пустым
+- Если значение содержит точку с запятой, оберни его в кавычки
+- Не используй переносы строк внутри ячеек
+
+## Мой запрос:
+[Опиши здесь какие товары нужно добавить, например: "Сгенерируй 50 позиций масляных фильтров разных производителей для японских и немецких автомобилей"]
+"""
+    
+    content = prompt.encode('utf-8')
+    return StreamingResponse(
+        io.BytesIO(content),
+        media_type="text/plain",
+        headers={"Content-Disposition": "attachment; filename=chatgpt_prompt.txt"}
+    )
+
+
+@router.post("/products/import-csv")
+async def import_products_csv(file: UploadFile = File(...), user=Depends(get_current_user)):
+    if user.get("role") != "admin":
+        raise HTTPException(status_code=403, detail="Admin access required")
+    
+    if not file.filename.endswith('.csv'):
+        raise HTTPException(status_code=400, detail="Файл должен быть в формате CSV")
+    
+    content = await file.read()
+    # Try different encodings
+    for encoding in ['utf-8-sig', 'utf-8', 'cp1251', 'latin-1']:
+        try:
+            text = content.decode(encoding)
+            break
+        except UnicodeDecodeError:
+            continue
+    else:
+        raise HTTPException(status_code=400, detail="Не удалось прочитать файл. Используйте кодировку UTF-8")
+    
+    reader = csv.DictReader(io.StringIO(text), delimiter=';')
+    
+    products = []
+    errors = []
+    row_num = 1
+    
+    for row in reader:
+        row_num += 1
+        name = (row.get('name') or '').strip()
+        article = (row.get('article') or '').strip()
+        price_str = (row.get('price') or '').strip()
+        
+        if not name:
+            errors.append(f"Строка {row_num}: отсутствует название товара")
+            continue
+        if not article:
+            errors.append(f"Строка {row_num}: отсутствует артикул")
+            continue
+        
+        try:
+            price = float(price_str.replace(',', '.')) if price_str else 0
+        except ValueError:
+            errors.append(f"Строка {row_num}: некорректная цена '{price_str}'")
+            continue
+        
+        try:
+            stock = int(row.get('stock', '0').strip() or '0')
+        except ValueError:
+            stock = 0
+        
+        try:
+            delivery_days = int(row.get('delivery_days', '3').strip() or '3')
+        except ValueError:
+            delivery_days = 3
+        
+        products.append({
+            "id": str(uuid.uuid4()),
+            "name": name,
+            "article": article,
+            "manufacturer": (row.get('manufacturer') or '').strip() or None,
+            "category_id": (row.get('category_id') or '').strip() or None,
+            "price": price,
+            "stock": stock,
+            "description": (row.get('description') or '').strip() or None,
+            "warehouse": (row.get('warehouse') or '').strip() or None,
+            "delivery_days": delivery_days,
+            "cross_articles": (row.get('cross_articles') or '').strip() or None,
+            "image_url": (row.get('image_url') or '').strip() or None,
+            "images": [],
+        })
+    
+    imported = 0
+    skipped = 0
+    if products:
+        # Check for duplicate articles
+        articles = [p["article"] for p in products]
+        existing = await db.products.find({"article": {"$in": articles}}, {"_id": 0, "article": 1}).to_list(None)
+        existing_articles = {e["article"] for e in existing}
+        
+        new_products = []
+        for p in products:
+            if p["article"] in existing_articles:
+                skipped += 1
+                errors.append(f"Артикул '{p['article']}' уже существует — пропущен")
+            else:
+                new_products.append(p)
+        
+        if new_products:
+            await db.products.insert_many(new_products)
+            imported = len(new_products)
+    
+    return {
+        "imported": imported,
+        "skipped": skipped,
+        "errors": errors[:20],
+        "total_rows": row_num - 1
+    }
+
