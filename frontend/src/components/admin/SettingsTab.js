@@ -97,6 +97,64 @@ const DeliveryTab = ({ isDark }) => {
   );
 };
 
+// Notifications Settings sub-tab
+const NotificationsTab = ({ isDark }) => {
+  const [settings, setSettings] = useState({ client_notifications_enabled: true });
+  const [saving, setSaving] = useState(false);
+  const [loaded, setLoaded] = useState(false);
+
+  useEffect(() => {
+    axios.get(`${API}/admin/notification-settings`).then(r => {
+      setSettings({ client_notifications_enabled: r.data.client_notifications_enabled !== false });
+      setLoaded(true);
+    }).catch(() => setLoaded(true));
+  }, []);
+
+  const save = async () => {
+    setSaving(true);
+    try {
+      await axios.put(`${API}/admin/notification-settings`, settings);
+      toast.success('Настройки уведомлений сохранены');
+    } catch { toast.error('Ошибка сохранения'); }
+    finally { setSaving(false); }
+  };
+
+  if (!loaded) return null;
+
+  return (
+    <div className="space-y-6">
+      <div className={`p-6 rounded-xl border ${isDark ? 'bg-zinc-800/50 border-zinc-700' : 'bg-white border-slate-200'}`}>
+        <h3 className={`text-lg font-bold mb-5 ${isDark ? 'text-white' : 'text-slate-800'}`}>Уведомления на сайте</h3>
+        <div className="space-y-5">
+          <div className="flex items-center justify-between">
+            <div>
+              <Label className={`font-medium ${isDark ? 'text-zinc-200' : 'text-slate-700'}`}>Уведомления для клиентов</Label>
+              <p className={`text-xs mt-0.5 ${isDark ? 'text-zinc-500' : 'text-slate-400'}`}>
+                Toast-уведомления и звуковые оповещения на сайте
+              </p>
+            </div>
+            <button
+              onClick={() => setSettings(s => ({ ...s, client_notifications_enabled: !s.client_notifications_enabled }))}
+              className={`relative w-12 h-6 rounded-full transition-colors ${settings.client_notifications_enabled ? 'bg-teal-500' : isDark ? 'bg-zinc-600' : 'bg-slate-300'}`}
+              data-testid="client-notifications-toggle"
+            >
+              <span className={`absolute top-0.5 left-0.5 w-5 h-5 bg-white rounded-full shadow transition-transform ${settings.client_notifications_enabled ? 'translate-x-6' : ''}`} />
+            </button>
+          </div>
+        </div>
+        <Button
+          onClick={save}
+          disabled={saving}
+          className="mt-6 bg-gradient-to-r from-teal-500 to-emerald-500 hover:from-teal-600 hover:to-emerald-600 text-white rounded-xl"
+          data-testid="save-notification-settings-btn"
+        >
+          {saving ? 'Сохранение...' : 'Сохранить'}
+        </Button>
+      </div>
+    </div>
+  );
+};
+
 // Sub-tab component for Settings section (TG + Partners + Rules)
 export const SettingsTab = ({
   // Telegram props
