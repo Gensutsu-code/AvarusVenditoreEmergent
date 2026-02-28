@@ -323,8 +323,8 @@ async def get_user_order_stats(user=Depends(get_current_user)):
     total_items = sum(sum(item.get("quantity", 0) for item in o.get("items", [])) for o in orders)
     avg_order_value = total_spent / total_orders if total_orders > 0 else 0
     
-    delivered_total = sum(o.get("total", 0) for o in orders if o.get("status") == "delivered")
-    pending_total = sum(o.get("total", 0) for o in orders if o.get("status") in ["pending", "processing", "shipped"])
+    delivered_total = sum(o.get("total", 0) for o in orders if o.get("status") == "completed")
+    pending_total = sum(o.get("total", 0) for o in orders if o.get("status") in ["pending", "processing"])
     
     by_status = {}
     for o in orders:
