@@ -310,7 +310,7 @@ export default function AdminOrdersPage() {
                               )}
                             </div>
                             <div className="flex items-center gap-3 text-sm text-slate-500 mt-1">
-                              <span className="flex items-center gap-1"><User className="w-3.5 h-3.5" />{order.customer_name || order.full_name}</span>
+                              <span className="flex items-center gap-1"><User className="w-3.5 h-3.5" />{order.customer_name || order.full_name}{order.customer_email ? ` (${order.customer_email})` : ''}</span>
                               <span className="flex items-center gap-1"><Calendar className="w-3.5 h-3.5" />{formatDate(order.created_at)}</span>
                             </div>
                           </div>
