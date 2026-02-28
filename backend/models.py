@@ -148,6 +148,8 @@ class CartItemResponse(BaseModel):
     price: float
     quantity: int
     image_url: Optional[str] = None
+    warehouse: Optional[str] = None
+    delivery_days: Optional[int] = None
 
 # ==================== ORDER MODELS ====================
 
