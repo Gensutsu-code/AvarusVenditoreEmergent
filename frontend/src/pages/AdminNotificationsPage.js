@@ -36,7 +36,7 @@ export default function AdminNotificationsPage() {
   const [unreadCount, setUnreadCount] = useState(0);
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState('all');
-  const { user } = useAuth();
+  const { user, loading: authLoading } = useAuth();
   const navigate = useNavigate();
 
   const fetchNotifications = useCallback(async () => {
@@ -48,12 +48,12 @@ export default function AdminNotificationsPage() {
   }, []);
 
   useEffect(() => {
-    if (user === undefined) return;
+    if (authLoading) return;
     if (!user || user.role !== 'admin') { navigate('/login'); return; }
     fetchNotifications();
     const interval = setInterval(fetchNotifications, 3000);
     return () => clearInterval(interval);
-  }, [user, navigate, fetchNotifications]);
+  }, [user, authLoading, navigate, fetchNotifications]);
 
   const markAsRead = async (notifId) => {
     try {
