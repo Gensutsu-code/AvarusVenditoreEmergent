@@ -10,6 +10,7 @@ import { useAuth } from '../context/AuthContext';
 import { motion, AnimatePresence } from 'framer-motion';
 import { toast } from 'sonner';
 import { sendNotification, requestNotificationPermission } from '../utils/notifications';
+import CryptoPaymentModal from '../components/CryptoPaymentModal';
 
 const API = `${process.env.REACT_APP_BACKEND_URL}/api`;
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
