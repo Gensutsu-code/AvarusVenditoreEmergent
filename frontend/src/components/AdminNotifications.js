@@ -2,6 +2,8 @@ import { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import { Bell, ArrowUpCircle, Percent, Gift, Award, ShoppingCart, MessageCircle } from 'lucide-react';
+import { playNotificationSound, showPushNotification, requestNotificationPermission } from '../utils/notifications';
+import { toast } from 'sonner';
 
 const API = `${process.env.REACT_APP_BACKEND_URL}/api`;
 
@@ -10,15 +12,44 @@ export const AdminNotifications = () => {
   const [open, setOpen] = useState(false);
   const ref = useRef(null);
   const navigate = useNavigate();
+  const lastTotalRef = useRef(null);
+
+  useEffect(() => {
+    requestNotificationPermission();
+  }, []);
 
   useEffect(() => {
     const fetchNotifications = async () => {
       try {
         const res = await axios.get(`${API}/admin/notifications`);
-        setNotifications(res.data);
-      } catch (err) {
-        // Not admin or error
-      }
+        const data = res.data;
+        setNotifications(data);
+        
+        const newTotal = data.total || 0;
+        
+        // First load — set baseline
+        if (lastTotalRef.current === null) {
+          lastTotalRef.current = newTotal;
+          return;
+        }
+        
+        // New notifications appeared
+        if (newTotal > lastTotalRef.current) {
+          playNotificationSound();
+          
+          // Determine what's new
+          if (data.new_orders > 0) {
+            toast.info(`Новый заказ! (${data.new_orders} ожидает)`, { duration: 6000 });
+          } else {
+            toast.info('Новое уведомление', { duration: 4000 });
+          }
+          
+          if (document.hidden || !document.hasFocus()) {
+            showPushNotification('AVOPT.STORE — Админ', `${newTotal} уведомлений требуют внимания`, { tag: 'admin-notif' });
+          }
+        }
+        lastTotalRef.current = newTotal;
+      } catch (err) {}
     };
     fetchNotifications();
     const interval = setInterval(fetchNotifications, 5000);
