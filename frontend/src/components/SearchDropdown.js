@@ -94,6 +94,7 @@ export const SearchDropdown = ({
 
   const handleSearchSubmit = () => {
     if (query.trim().length >= 2) {
+      trackSearch(query.trim());
       setIsOpen(false);
       navigate(`/catalog?search=${encodeURIComponent(query.trim())}`);
     }
