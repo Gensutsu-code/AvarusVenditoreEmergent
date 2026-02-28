@@ -8,6 +8,7 @@ import logging
 
 from database import db, get_current_user
 from models import ChatMessage
+from notify import notify_user, notify_admin
 
 router = APIRouter(tags=["chat"])
 
