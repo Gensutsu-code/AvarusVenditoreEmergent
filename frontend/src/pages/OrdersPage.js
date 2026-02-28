@@ -105,26 +105,13 @@ export default function OrdersPage() {
       const data = res.data;
       
       if (data.action === 'payment_required') {
-        const amount = data.amount;
-        const method = data.payment_method;
-        
-        if (method === 'crypto') {
-          // Open crypto payment modal for surcharge
-          setCryptoPaymentOrderId(orderId);
-          setCryptoPaymentAmount(amount);
-          setShowCryptoModal(true);
-          return;
-        } else if (method === 'card') {
-          // Redirect to card payment (ЮKassa)
-          toast.info(`Требуется доплата ${amount.toFixed(2)} ₽ картой`);
-          navigate(`/checkout?order_id=${orderId}&additional_payment=${amount}&method=card`);
-          return;
-        } else if (method === 'balance') {
-          toast.error(`Недостаточно средств на балансе. Требуется: ${amount.toFixed(2)} ₽`);
-          return;
-        }
-      } else if (data.action === 'balance_deducted') {
-        toast.success(`Доплата ${data.amount.toFixed(2)} ₽ списана с баланса`);
+        // Show payment method picker
+        setSurchargeModal({
+          orderId,
+          amount: data.amount,
+          userBalance: data.user_balance ?? 0
+        });
+        return;
       } else if (data.action === 'refund_to_balance') {
         toast.success(`${data.amount.toFixed(2)} ₽ возвращено на ваш баланс`);
       } else {
@@ -134,6 +121,31 @@ export default function OrdersPage() {
       fetchData();
     } catch (err) {
       toast.error(err.response?.data?.detail || 'Ошибка');
+    }
+  };
+
+  const handlePaySurcharge = async (method) => {
+    if (!surchargeModal) return;
+    const { orderId, amount } = surchargeModal;
+    
+    if (method === 'balance') {
+      try {
+        const res = await axios.post(`${API}/orders/${orderId}/pay-additional`, { payment_method: 'balance' });
+        toast.success(`Доплата ${amount.toFixed(2)} ₽ списана с баланса`);
+        setSurchargeModal(null);
+        fetchData();
+      } catch (err) {
+        toast.error(err.response?.data?.detail || 'Ошибка оплаты');
+      }
+    } else if (method === 'crypto') {
+      setSurchargeModal(null);
+      setCryptoPaymentOrderId(orderId);
+      setCryptoPaymentAmount(amount);
+      setShowCryptoModal(true);
+    } else if (method === 'card') {
+      setSurchargeModal(null);
+      toast.info(`Требуется доплата ${amount.toFixed(2)} ₽ картой`);
+      navigate(`/checkout?order_id=${orderId}&additional_payment=${amount}&method=card`);
     }
   };
 
