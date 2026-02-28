@@ -424,38 +424,39 @@ export default function AdminOrdersPage() {
                           {/* Actions */}
                           <div className="p-4 bg-gradient-to-r from-slate-50 to-teal-50/30 border-t border-slate-200/50">
                             {isEditing ? (
-                              <div className="flex items-center justify-between">
-                                <div className="flex items-center gap-2">
-                                  <span className="text-sm text-slate-500">Статус:</span>
-                                  <select value={editData.status} onChange={(e) => setEditData({...editData, status: e.target.value})} className="text-sm border border-slate-200 rounded-lg px-3 py-1.5 bg-white">
-                                    {ORDER_STATUSES.map(status => (
-                                      <option key={status.value} value={status.value}>{status.label}</option>
-                                    ))}
-                                  </select>
-                                </div>
-                                <div className="flex items-center gap-2">
-                                  <Button variant="outline" size="sm" onClick={cancelEditing} className="rounded-xl border-slate-200">
-                                    <X className="w-4 h-4 mr-1" /> Отмена
-                                  </Button>
-                                  <Button size="sm" onClick={() => handleSaveOrder(order.id)} className="rounded-xl bg-gradient-to-r from-teal-500 to-emerald-500">
-                                    <Save className="w-4 h-4 mr-1" /> Сохранить
-                                  </Button>
-                                </div>
+                              <div className="flex items-center justify-end gap-2">
+                                <Button variant="outline" size="sm" onClick={cancelEditing} className="rounded-xl border-slate-200">
+                                  <X className="w-4 h-4 mr-1" /> Отмена
+                                </Button>
+                                <Button size="sm" onClick={() => handleSaveOrder(order.id)} className="rounded-xl bg-gradient-to-r from-teal-500 to-emerald-500">
+                                  <Save className="w-4 h-4 mr-1" /> Сохранить
+                                </Button>
                               </div>
                             ) : (
                               <div className="flex items-center justify-between">
-                                <div className="flex items-center gap-2">
-                                  <span className="text-sm text-slate-500">Статус:</span>
-                                  <select value={order.status} onChange={(e) => handleStatusChange(order.id, e.target.value)} className="text-sm border border-slate-200 rounded-lg px-3 py-1.5 bg-white focus:border-teal-400">
-                                    {ORDER_STATUSES.map(status => (
-                                      <option key={status.value} value={status.value}>{status.label}</option>
-                                    ))}
-                                  </select>
+                                <div className="flex items-center gap-2" data-testid={`order-status-actions-${order.id}`}>
+                                  {order.status === 'pending' && (
+                                    <Button size="sm" onClick={() => handleStatusChange(order.id, 'processing')} className="rounded-xl bg-blue-500 hover:bg-blue-600 text-white" data-testid={`accept-order-${order.id}`}>
+                                      <Check className="w-4 h-4 mr-1" /> Принять
+                                    </Button>
+                                  )}
+                                  {order.status === 'processing' && (
+                                    <Button size="sm" onClick={() => handleStatusChange(order.id, 'completed')} className="rounded-xl bg-emerald-500 hover:bg-emerald-600 text-white" data-testid={`complete-order-${order.id}`}>
+                                      <CheckCircle className="w-4 h-4 mr-1" /> Выполнен
+                                    </Button>
+                                  )}
+                                  {order.status !== 'cancelled' && order.status !== 'completed' && (
+                                    <Button variant="outline" size="sm" onClick={() => handleStatusChange(order.id, 'cancelled')} className="rounded-xl text-rose-500 border-rose-200 hover:bg-rose-50" data-testid={`cancel-order-${order.id}`}>
+                                      <XCircle className="w-4 h-4 mr-1" /> Отменить
+                                    </Button>
+                                  )}
                                 </div>
                                 <div className="flex items-center gap-2">
-                                  <Button variant="outline" size="sm" onClick={() => startEditing(order)} className="rounded-xl border-teal-200 text-teal-600 hover:bg-teal-50">
-                                    <Pencil className="w-4 h-4 mr-1" /> Редактировать
-                                  </Button>
+                                  {order.status !== 'cancelled' && order.status !== 'completed' && (
+                                    <Button variant="outline" size="sm" onClick={() => startEditing(order)} className="rounded-xl border-teal-200 text-teal-600 hover:bg-teal-50">
+                                      <Pencil className="w-4 h-4 mr-1" /> Редактировать
+                                    </Button>
+                                  )}
                                   <Button variant="outline" size="sm" className="rounded-xl text-rose-500 border-rose-200 hover:bg-rose-50" onClick={() => handleDeleteOrder(order.id)}>
                                     <Trash2 className="w-4 h-4" />
                                   </Button>
