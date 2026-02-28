@@ -594,6 +594,7 @@ async def cancel_order_by_customer(order_id: str, user=Depends(get_current_user)
         notification_msg += f". На ваш баланс возвращено {refund_amount:.2f} ₽"
     
     await create_notification(user["id"], "order", "Заказ отменён", notification_msg, "/orders")
+    await notify_admin("order_cancelled", "Заказ отменён", f"Клиент {user.get('name', '')} отменил заказ #{order_id[:8]}", "/admin/orders")
     
     return {"message": "Order cancelled", "refund_amount": refund_amount}
 
