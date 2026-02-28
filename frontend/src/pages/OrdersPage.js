@@ -174,6 +174,7 @@ export default function OrdersPage() {
   };
 
   const canCancelOrder = (order) => {
+    if (order.status === 'pending') return true;
     if (order.status !== 'processing') return false;
     const processingStarted = order.processing_started_at;
     if (!processingStarted) return true;
