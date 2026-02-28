@@ -159,31 +159,72 @@ export const Header = () => {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [notificationCount, setNotificationCount] = useState(0);
   const [userBalance, setUserBalance] = useState(null);
+  const lastSeenCountRef = useRef(0);
+  const hasInitRef = useRef(false);
   
   const isAdmin = user?.role === 'admin';
 
-  // Fetch notification count and balance for profile badge
+  // Global notification polling with sound + push
   useEffect(() => {
     if (user && !isAdmin) {
-      const fetchUserData = async () => {
-        try {
-          const token = localStorage.getItem('token');
-          const headers = { 'Authorization': `Bearer ${token}` };
-          const [notifRes, balanceRes] = await Promise.all([
-            fetch(`${process.env.REACT_APP_BACKEND_URL}/api/my-notifications`, { headers }),
-            fetch(`${process.env.REACT_APP_BACKEND_URL}/api/user/balance`, { headers })
-          ]);
-          const notifData = await notifRes.json();
-          setNotificationCount(notifData.unread_count || 0);
-          const balanceData = await balanceRes.json();
-          setUserBalance(balanceData.balance ?? 0);
-        } catch (err) {}
-      };
-      fetchUserData();
-      const interval = setInterval(fetchUserData, 15000);
-      return () => clearInterval(interval);
+      requestNotificationPermission();
     }
   }, [user, isAdmin]);
+
+  const fetchUserData = useCallback(async () => {
+    if (!user || isAdmin) return;
+    try {
+      const token = localStorage.getItem('token');
+      const headers = { 'Authorization': `Bearer ${token}` };
+      const [notifRes, balanceRes] = await Promise.all([
+        fetch(`${process.env.REACT_APP_BACKEND_URL}/api/my-notifications`, { headers }),
+        fetch(`${process.env.REACT_APP_BACKEND_URL}/api/user/balance`, { headers })
+      ]);
+      const notifData = await notifRes.json();
+      const newCount = notifData.unread_count || 0;
+      setNotificationCount(newCount);
+      
+      const balanceData = await balanceRes.json();
+      setUserBalance(balanceData.balance ?? 0);
+
+      // On first load, just set the baseline
+      if (!hasInitRef.current) {
+        lastSeenCountRef.current = newCount;
+        hasInitRef.current = true;
+        return;
+      }
+
+      // If new unread notifications appeared since last poll
+      if (newCount > lastSeenCountRef.current) {
+        const diff = newCount - lastSeenCountRef.current;
+        // Show latest notification as toast
+        const notifs = notifData.notifications || [];
+        const latest = notifs.find(n => !n.read);
+        if (latest) {
+          toast.info(latest.message || latest.title, { duration: 6000 });
+        }
+        // Play sound (always)
+        playNotificationSound();
+        // Push notification when tab not focused
+        if (document.hidden || !document.hasFocus()) {
+          showPushNotification(
+            latest?.title || 'Новое уведомление',
+            latest?.message || `У вас ${diff} новых уведомлений`,
+            { tag: 'global-notif' }
+          );
+        }
+      }
+      lastSeenCountRef.current = newCount;
+    } catch (err) {}
+  }, [user, isAdmin]);
+
+  useEffect(() => {
+    if (user && !isAdmin) {
+      fetchUserData();
+      const interval = setInterval(fetchUserData, 10000);
+      return () => clearInterval(interval);
+    }
+  }, [user, isAdmin, fetchUserData]);
 
   const NavLink = ({ to, children, className = '' }) => {
     const isActive = location.pathname === to;
