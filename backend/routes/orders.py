@@ -580,7 +580,7 @@ async def cancel_order_by_customer(order_id: str, user=Depends(get_current_user)
         raise HTTPException(status_code=404, detail="Order not found")
     
     # Check if order can be cancelled
-    if order.get("status") in ["shipped", "delivered", "cancelled"]:
+    if order.get("status") in ["completed", "cancelled"]:
         raise HTTPException(status_code=400, detail="Заказ нельзя отменить")
     
     # Always allow cancellation when awaiting confirmation (admin made changes)
