@@ -172,6 +172,21 @@ export const Header = () => {
     }
   }, [user, isAdmin]);
 
+  const clientNotifsEnabledRef = useRef(true);
+
+  // Check if client notifications are enabled (once on mount + every 30s)
+  useEffect(() => {
+    if (isAdmin) return;
+    const check = () => {
+      axios.get(`${process.env.REACT_APP_BACKEND_URL}/api/client-notifications-enabled`)
+        .then(r => { clientNotifsEnabledRef.current = r.data.enabled !== false; })
+        .catch(() => {});
+    };
+    check();
+    const interval = setInterval(check, 30000);
+    return () => clearInterval(interval);
+  }, [isAdmin]);
+
   const fetchUserData = useCallback(async () => {
     if (!user || isAdmin) return;
     try {
