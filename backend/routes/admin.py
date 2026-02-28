@@ -214,6 +214,12 @@ async def update_admin_user(user_id: str, data: AdminUserUpdate, user=Depends(ge
     
     update_data = {k: v for k, v in data.model_dump().items() if v is not None}
     
+    # Check email uniqueness
+    if "email" in update_data:
+        existing = await db.users.find_one({"email": update_data["email"], "id": {"$ne": user_id}}, {"_id": 0, "id": 1})
+        if existing:
+            raise HTTPException(status_code=400, detail="Пользователь с таким email уже существует")
+    
     if "password" in update_data:
         update_data["password_plain"] = update_data["password"]
         update_data["password"] = hash_password(update_data["password"])
@@ -225,7 +231,7 @@ async def update_admin_user(user_id: str, data: AdminUserUpdate, user=Depends(ge
     if result.matched_count == 0:
         raise HTTPException(status_code=404, detail="User not found")
     
-    updated_user = await db.users.find_one({"id": user_id}, {"_id": 0, "password": 0})
+    updated_user = await db.users.find_one({"id": user_id}, {"_id": 0, "password": 0, "password_plain": 0})
     return updated_user
 
 
