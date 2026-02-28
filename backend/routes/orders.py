@@ -7,6 +7,7 @@ import uuid
 
 from database import db, get_current_user
 from models import CartItem, OrderCreate, OrderResponse, FavoriteItem
+from notify import notify_user, notify_admin
 
 router = APIRouter(tags=["orders"])
 
