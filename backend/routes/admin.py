@@ -285,6 +285,10 @@ async def update_admin_order(order_id: str, data: AdminOrderUpdate, user=Depends
             item_key = new_item.get("product_id", new_item.get("article"))
             original_item = original_items.get(item_key, {})
             
+            # Preserve article from original if missing
+            if not new_item.get("article") and original_item.get("article"):
+                new_item["article"] = original_item["article"]
+            
             if original_item.get("price") != new_item.get("price"):
                 price_changed = True
             if original_item.get("quantity") != new_item.get("quantity"):
