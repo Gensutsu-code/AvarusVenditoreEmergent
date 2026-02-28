@@ -42,13 +42,13 @@ def admin_token():
     return response.json()["token"]
 
 
-@pytest.fixture
+@pytest.fixture(scope="module")
 def client_headers(client_token):
     """Client request headers"""
     return {"Authorization": f"Bearer {client_token}", "Content-Type": "application/json"}
 
 
-@pytest.fixture
+@pytest.fixture(scope="module")
 def admin_headers(admin_token):
     """Admin request headers"""
     return {"Authorization": f"Bearer {admin_token}", "Content-Type": "application/json"}
