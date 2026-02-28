@@ -62,7 +62,7 @@ export const AdminNotifications = () => {
 
   if (!notifications) return null;
 
-  const total = notifications.total || 0;
+  const total = notifications.unread_count || 0;
 
   const items = [
     { key: 'new_orders', label: 'Новые заказы', icon: ShoppingCart, count: notifications.new_orders, color: 'text-blue-600 bg-blue-50', path: '/admin', tab: 'orders' },
