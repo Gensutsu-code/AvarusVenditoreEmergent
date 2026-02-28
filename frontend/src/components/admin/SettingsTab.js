@@ -191,6 +191,7 @@ export const SettingsTab = ({
   const subTabs = [
     { id: 'telegram', label: 'Telegram', icon: Send },
     { id: 'delivery', label: 'Доставка', icon: Truck },
+    { id: 'notifications', label: 'Уведомления', icon: Bell },
     { id: 'partners', label: 'Партнёры', icon: Image },
     { id: 'terms', label: 'Правила', icon: FileText },
   ];
