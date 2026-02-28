@@ -5,6 +5,7 @@ import { Button } from './ui/button';
 import { useAuth } from '../context/AuthContext';
 import { toast } from 'sonner';
 import { motion } from 'framer-motion';
+import { trackClick } from '../utils/tracker';
 
 const API = `${process.env.REACT_APP_BACKEND_URL}/api`;
 
@@ -38,6 +39,7 @@ export const FavoritesButton = ({ productId, className = '', size = 'default', s
     }
 
     setLoading(true);
+    trackClick(isFavorite ? 'remove_favorite' : 'add_favorite');
     try {
       if (isFavorite) {
         await axios.delete(`${API}/favorites/${productId}`);
