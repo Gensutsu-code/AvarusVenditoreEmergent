@@ -13,6 +13,13 @@ E-commerce platform for truck spare parts with full admin panel, crypto payments
 
 ## What's Been Implemented
 
+## February 2026 - Surcharge Payment Method Choice (COMPLETED)
+- Client can now choose payment method for surcharges (balance, crypto, card) regardless of original payment method
+- accept-changes returns payment_required + user_balance for non-cash price increases
+- New surcharge modal with 3 options, disabled balance when insufficient
+- Fixed article field preservation in admin order edit
+- Testing: 5/5 backend + 5/5 frontend (iteration_39)
+
 ## February 2026 - Order Status System Overhaul (COMPLETED)
 - Changed to 4 statuses only: Ожидает (pending) → Обработка (processing) → Выполнен (completed) / Отменён (cancelled)
 - Replaced dropdown select with action buttons in admin: "Принять", "Выполнен", "Отменить"
