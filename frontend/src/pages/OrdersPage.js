@@ -3,7 +3,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import { 
   Package, ChevronDown, ChevronUp, TrendingUp, ShoppingBag, 
-  Wallet, BarChart3, Star, CalendarDays, AlertTriangle, Check, XCircle
+  Wallet, BarChart3, Star, CalendarDays, AlertTriangle, Check, XCircle, CreditCard, X
 } from 'lucide-react';
 import { Button } from '../components/ui/button';
 import { useAuth } from '../context/AuthContext';
