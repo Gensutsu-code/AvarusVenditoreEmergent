@@ -1,0 +1,77 @@
+<?xml version="1.0" encoding="utf-8"?><testsuites name="pytest tests"><testsuite name="pytest" errors="0" failures="4" skipped="1" tests="10" time="7.779" timestamp="2026-02-28T00:43:28.218664+00:00" hostname="agent-env-68ca6d98-88ce-4fd8-823d-f14befbec041"><testcase classname="backend.tests.test_surcharge_payment.TestAcceptChangesWithSurcharge" name="test_setup_order_for_surcharge_test" time="2.024" /><testcase classname="backend.tests.test_surcharge_payment.TestAcceptChangesWithSurcharge" name="test_accept_changes_returns_payment_required" time="0.897" /><testcase classname="backend.tests.test_surcharge_payment.TestAcceptChangesWithRefund" name="test_setup_order_for_refund_test" time="0.333"><skipped type="pytest.skip" message="No suitable paid order found for refund testing">/app/backend/tests/test_surcharge_payment.py:177: No suitable paid order found for refund testing</skipped></testcase><testcase classname="backend.tests.test_surcharge_payment.TestAcceptChangesForCashOrders" name="test_cash_order_accept_returns_action_none" time="1.604" /><testcase classname="backend.tests.test_surcharge_payment.TestPayAdditionalWithBalance" name="test_pay_additional_balance_deducts_from_user" time="0.712"><failure message="requests.exceptions.JSONDecodeError: Expecting value: line 1 column 1 (char 0)">/root/.venv/lib/python3.11/site-packages/requests/models.py:976: in json
+    return complexjson.loads(self.text, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/usr/local/lib/python3.11/json/__init__.py:346: in loads
+    return _default_decoder.decode(s)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^
+/usr/local/lib/python3.11/json/decoder.py:337: in decode
+    obj, end = self.raw_decode(s, idx=_w(s, 0).end())
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/usr/local/lib/python3.11/json/decoder.py:355: in raw_decode
+    raise JSONDecodeError("Expecting value", s, err.value) from None
+E   json.decoder.JSONDecodeError: Expecting value: line 1 column 1 (char 0)
+
+During handling of the above exception, another exception occurred:
+backend/tests/test_surcharge_payment.py:288: in test_pay_additional_balance_deducts_from_user
+    orders = response.json()
+             ^^^^^^^^^^^^^^^
+/root/.venv/lib/python3.11/site-packages/requests/models.py:980: in json
+    raise RequestsJSONDecodeError(e.msg, e.doc, e.pos)
+E   requests.exceptions.JSONDecodeError: Expecting value: line 1 column 1 (char 0)</failure></testcase><testcase classname="backend.tests.test_surcharge_payment.TestPayAdditionalWithCrypto" name="test_pay_additional_crypto_returns_redirect" time="0.329"><failure message="requests.exceptions.JSONDecodeError: Expecting value: line 1 column 1 (char 0)">/root/.venv/lib/python3.11/site-packages/requests/models.py:976: in json
+    return complexjson.loads(self.text, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/usr/local/lib/python3.11/json/__init__.py:346: in loads
+    return _default_decoder.decode(s)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^
+/usr/local/lib/python3.11/json/decoder.py:337: in decode
+    obj, end = self.raw_decode(s, idx=_w(s, 0).end())
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/usr/local/lib/python3.11/json/decoder.py:355: in raw_decode
+    raise JSONDecodeError("Expecting value", s, err.value) from None
+E   json.decoder.JSONDecodeError: Expecting value: line 1 column 1 (char 0)
+
+During handling of the above exception, another exception occurred:
+backend/tests/test_surcharge_payment.py:338: in test_pay_additional_crypto_returns_redirect
+    orders = response.json()
+             ^^^^^^^^^^^^^^^
+/root/.venv/lib/python3.11/site-packages/requests/models.py:980: in json
+    raise RequestsJSONDecodeError(e.msg, e.doc, e.pos)
+E   requests.exceptions.JSONDecodeError: Expecting value: line 1 column 1 (char 0)</failure></testcase><testcase classname="backend.tests.test_surcharge_payment.TestPayAdditionalValidation" name="test_pay_additional_invalid_order_returns_404" time="0.337" /><testcase classname="backend.tests.test_surcharge_payment.TestPayAdditionalValidation" name="test_pay_additional_no_pending_payment_returns_400" time="0.340"><failure message="requests.exceptions.JSONDecodeError: Expecting value: line 1 column 1 (char 0)">/root/.venv/lib/python3.11/site-packages/requests/models.py:976: in json
+    return complexjson.loads(self.text, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/usr/local/lib/python3.11/json/__init__.py:346: in loads
+    return _default_decoder.decode(s)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^
+/usr/local/lib/python3.11/json/decoder.py:337: in decode
+    obj, end = self.raw_decode(s, idx=_w(s, 0).end())
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/usr/local/lib/python3.11/json/decoder.py:355: in raw_decode
+    raise JSONDecodeError("Expecting value", s, err.value) from None
+E   json.decoder.JSONDecodeError: Expecting value: line 1 column 1 (char 0)
+
+During handling of the above exception, another exception occurred:
+backend/tests/test_surcharge_payment.py:429: in test_pay_additional_no_pending_payment_returns_400
+    orders = response.json()
+             ^^^^^^^^^^^^^^^
+/root/.venv/lib/python3.11/site-packages/requests/models.py:980: in json
+    raise RequestsJSONDecodeError(e.msg, e.doc, e.pos)
+E   requests.exceptions.JSONDecodeError: Expecting value: line 1 column 1 (char 0)</failure></testcase><testcase classname="backend.tests.test_surcharge_payment.TestPayAdditionalValidation" name="test_pay_additional_insufficient_balance_returns_400" time="0.694"><failure message="requests.exceptions.JSONDecodeError: Expecting value: line 1 column 1 (char 0)">/root/.venv/lib/python3.11/site-packages/requests/models.py:976: in json
+    return complexjson.loads(self.text, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/usr/local/lib/python3.11/json/__init__.py:346: in loads
+    return _default_decoder.decode(s)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^
+/usr/local/lib/python3.11/json/decoder.py:337: in decode
+    obj, end = self.raw_decode(s, idx=_w(s, 0).end())
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/usr/local/lib/python3.11/json/decoder.py:355: in raw_decode
+    raise JSONDecodeError("Expecting value", s, err.value) from None
+E   json.decoder.JSONDecodeError: Expecting value: line 1 column 1 (char 0)
+
+During handling of the above exception, another exception occurred:
+backend/tests/test_surcharge_payment.py:459: in test_pay_additional_insufficient_balance_returns_400
+    orders = response.json()
+             ^^^^^^^^^^^^^^^
+/root/.venv/lib/python3.11/site-packages/requests/models.py:980: in json
+    raise RequestsJSONDecodeError(e.msg, e.doc, e.pos)
+E   requests.exceptions.JSONDecodeError: Expecting value: line 1 column 1 (char 0)</failure></testcase><testcase classname="backend.tests.test_surcharge_payment.TestUserBalanceEndpoint" name="test_user_balance_returned_in_payment_required" time="0.345" /></testsuite></testsuites>
