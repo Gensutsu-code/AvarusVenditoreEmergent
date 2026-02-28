@@ -173,7 +173,7 @@ class TestUserAnalyticsEndpoint:
     
     def test_get_client_user_id(self, client_headers):
         """Get the client user ID for analytics testing"""
-        response = requests.get(f"{BASE_URL}/api/user/me", headers=client_headers)
+        response = requests.get(f"{BASE_URL}/api/auth/me", headers=client_headers)
         assert response.status_code == 200, f"Get user failed: {response.text}"
         data = response.json()
         assert "id" in data
@@ -183,7 +183,7 @@ class TestUserAnalyticsEndpoint:
     def test_admin_can_view_user_analytics(self, admin_headers, client_headers):
         """Test that admin can view analytics for a specific user"""
         # First get the client user ID
-        user_res = requests.get(f"{BASE_URL}/api/user/me", headers=client_headers)
+        user_res = requests.get(f"{BASE_URL}/api/auth/me", headers=client_headers)
         assert user_res.status_code == 200
         client_id = user_res.json()["id"]
         
@@ -217,7 +217,7 @@ class TestUserAnalyticsEndpoint:
     def test_analytics_requires_admin(self, client_headers):
         """Test that non-admin users cannot access analytics"""
         # Get client's own ID
-        user_res = requests.get(f"{BASE_URL}/api/user/me", headers=client_headers)
+        user_res = requests.get(f"{BASE_URL}/api/auth/me", headers=client_headers)
         client_id = user_res.json()["id"]
         
         # Client tries to access analytics
@@ -270,7 +270,7 @@ class TestCRMAnalyticsIntegration:
     def test_track_then_view_analytics(self, admin_headers, client_headers):
         """Test tracking events and then viewing them in admin analytics"""
         # Get client ID
-        user_res = requests.get(f"{BASE_URL}/api/user/me", headers=client_headers)
+        user_res = requests.get(f"{BASE_URL}/api/auth/me", headers=client_headers)
         client_id = user_res.json()["id"]
         
         # Track some test events
