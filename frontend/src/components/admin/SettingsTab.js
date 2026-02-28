@@ -97,6 +97,127 @@ const DeliveryTab = ({ isDark }) => {
   );
 };
 
+// CSV Import sub-tab
+const ImportTab = ({ isDark }) => {
+  const [uploading, setUploading] = useState(false);
+  const [result, setResult] = useState(null);
+
+  const handleDownload = async (type) => {
+    const url = type === 'template' 
+      ? `${API}/admin/products/csv-template` 
+      : `${API}/admin/products/csv-prompt`;
+    try {
+      const res = await axios.get(url, { responseType: 'blob' });
+      const blob = new Blob([res.data]);
+      const link = document.createElement('a');
+      link.href = URL.createObjectURL(blob);
+      link.download = type === 'template' ? 'products_template.csv' : 'chatgpt_prompt.txt';
+      link.click();
+      URL.revokeObjectURL(link.href);
+    } catch { toast.error('Ошибка скачивания'); }
+  };
+
+  const handleUpload = async (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setUploading(true);
+    setResult(null);
+    try {
+      const formData = new FormData();
+      formData.append('file', file);
+      const res = await axios.post(`${API}/admin/products/import-csv`, formData, {
+        headers: { 'Content-Type': 'multipart/form-data' }
+      });
+      setResult(res.data);
+      if (res.data.imported > 0) toast.success(`Импортировано ${res.data.imported} товаров`);
+      else toast.info('Нет новых товаров для импорта');
+    } catch (err) {
+      toast.error(err.response?.data?.detail || 'Ошибка импорта');
+    } finally {
+      setUploading(false);
+      e.target.value = '';
+    }
+  };
+
+  return (
+    <div className="space-y-6">
+      {/* Download section */}
+      <div className={`p-6 rounded-xl border ${isDark ? 'bg-zinc-800/50 border-zinc-700' : 'bg-white border-slate-200'}`}>
+        <h3 className={`text-lg font-bold mb-2 ${isDark ? 'text-white' : 'text-slate-800'}`}>Шаблоны</h3>
+        <p className={`text-sm mb-5 ${isDark ? 'text-zinc-400' : 'text-slate-500'}`}>
+          Скачайте шаблон CSV и промпт для ChatGPT для быстрого заполнения
+        </p>
+        <div className="flex flex-wrap gap-3">
+          <Button
+            onClick={() => handleDownload('template')}
+            variant="outline"
+            className={`gap-2 rounded-xl ${isDark ? 'border-zinc-600 text-zinc-300 hover:bg-zinc-700' : 'border-slate-200 hover:bg-slate-50'}`}
+            data-testid="download-csv-template"
+          >
+            <FileSpreadsheet className="w-4 h-4 text-green-500" />
+            Скачать шаблон CSV
+          </Button>
+          <Button
+            onClick={() => handleDownload('prompt')}
+            variant="outline"
+            className={`gap-2 rounded-xl ${isDark ? 'border-zinc-600 text-zinc-300 hover:bg-zinc-700' : 'border-slate-200 hover:bg-slate-50'}`}
+            data-testid="download-gpt-prompt"
+          >
+            <Download className="w-4 h-4 text-purple-500" />
+            Скачать промпт для ChatGPT
+          </Button>
+        </div>
+      </div>
+
+      {/* Upload section */}
+      <div className={`p-6 rounded-xl border ${isDark ? 'bg-zinc-800/50 border-zinc-700' : 'bg-white border-slate-200'}`}>
+        <h3 className={`text-lg font-bold mb-2 ${isDark ? 'text-white' : 'text-slate-800'}`}>Импорт товаров</h3>
+        <p className={`text-sm mb-5 ${isDark ? 'text-zinc-400' : 'text-slate-500'}`}>
+          Загрузите CSV файл с товарами. Разделитель — точка с запятой (;). Дубликаты артикулов будут пропущены.
+        </p>
+        <label className={`inline-flex items-center gap-2 px-5 py-2.5 rounded-xl cursor-pointer transition-colors ${
+          uploading ? 'opacity-50 pointer-events-none' : ''
+        } bg-gradient-to-r from-teal-500 to-emerald-500 hover:from-teal-600 hover:to-emerald-600 text-white font-medium text-sm`}>
+          <Upload className="w-4 h-4" />
+          {uploading ? 'Загрузка...' : 'Выбрать CSV файл'}
+          <input type="file" accept=".csv" onChange={handleUpload} className="hidden" data-testid="csv-file-input" />
+        </label>
+      </div>
+
+      {/* Result section */}
+      {result && (
+        <div className={`p-6 rounded-xl border ${isDark ? 'bg-zinc-800/50 border-zinc-700' : 'bg-white border-slate-200'}`}>
+          <h3 className={`text-lg font-bold mb-4 ${isDark ? 'text-white' : 'text-slate-800'}`}>Результат импорта</h3>
+          <div className="grid grid-cols-3 gap-4 mb-4">
+            <div className={`p-4 rounded-lg text-center ${isDark ? 'bg-emerald-900/30' : 'bg-emerald-50'}`}>
+              <p className="text-2xl font-bold text-emerald-600">{result.imported}</p>
+              <p className={`text-xs ${isDark ? 'text-zinc-400' : 'text-slate-500'}`}>Импортировано</p>
+            </div>
+            <div className={`p-4 rounded-lg text-center ${isDark ? 'bg-amber-900/30' : 'bg-amber-50'}`}>
+              <p className="text-2xl font-bold text-amber-600">{result.skipped}</p>
+              <p className={`text-xs ${isDark ? 'text-zinc-400' : 'text-slate-500'}`}>Пропущено</p>
+            </div>
+            <div className={`p-4 rounded-lg text-center ${isDark ? 'bg-zinc-700/50' : 'bg-slate-50'}`}>
+              <p className="text-2xl font-bold text-slate-600">{result.total_rows}</p>
+              <p className={`text-xs ${isDark ? 'text-zinc-400' : 'text-slate-500'}`}>Всего строк</p>
+            </div>
+          </div>
+          {result.errors?.length > 0 && (
+            <div>
+              <p className={`text-sm font-medium mb-2 ${isDark ? 'text-red-400' : 'text-red-600'}`}>Ошибки:</p>
+              <div className={`max-h-40 overflow-y-auto text-xs space-y-1 p-3 rounded-lg ${isDark ? 'bg-zinc-900/50' : 'bg-slate-50'}`}>
+                {result.errors.map((err, i) => (
+                  <p key={i} className={isDark ? 'text-red-300' : 'text-red-500'}>{err}</p>
+                ))}
+              </div>
+            </div>
+          )}
+        </div>
+      )}
+    </div>
+  );
+};
+
 // Notifications Settings sub-tab
 const NotificationsTab = ({ isDark }) => {
   const [settings, setSettings] = useState({ client_notifications_enabled: true });
