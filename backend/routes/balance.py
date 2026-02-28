@@ -146,6 +146,18 @@ async def topup_balance(data: TopupRequest, user=Depends(get_current_user)):
     user_data = await db.users.find_one({"id": user["id"]}, {"_id": 0, "balance": 1})
     new_balance = user_data.get("balance", 0)
     
+    # Notify admin about topup
+    await db.notifications.insert_one({
+        "id": str(uuid.uuid4()),
+        "user_id": "ADMIN",
+        "type": "balance_topup",
+        "title": "Пополнение баланса",
+        "message": f"Клиент {user.get('name') or user.get('email')} пополнил баланс на {data.amount}₽",
+        "link": "/admin",
+        "read": False,
+        "created_at": datetime.now(timezone.utc).isoformat()
+    })
+    
     return {
         "transaction_id": transaction_id,
         "status": "completed",
