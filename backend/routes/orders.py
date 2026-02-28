@@ -649,29 +649,11 @@ async def check_favorite(product_id: str, user=Depends(get_current_user)):
 
 @router.get("/user/last-shipping")
 async def get_last_shipping(user=Depends(get_current_user)):
-    """Get user's last shipping info from orders or profile"""
-    last_order = await db.orders.find_one(
-        {"user_id": user["id"]},
-        {"_id": 0, "full_name": 1, "address": 1, "phone": 1},
-        sort=[("created_at", -1)]
-    )
-    
-    # Start with profile data as defaults
-    profile_name = user.get("name", "") or ""
-    profile_phone = user.get("phone", "") or ""
-    profile_address = user.get("address", "") or ""
-    
-    if last_order:
-        return {
-            "full_name": last_order.get("full_name") or profile_name,
-            "address": last_order.get("address") or profile_address,
-            "phone": last_order.get("phone") or profile_phone
-        }
-    
+    """Get user's shipping info from profile"""
     return {
-        "full_name": profile_name,
-        "address": profile_address,
-        "phone": profile_phone
+        "full_name": user.get("name", "") or "",
+        "address": user.get("address", "") or "",
+        "phone": user.get("phone", "") or ""
     }
 
 
