@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
-import { Bell, Check, CheckCheck, Package, Gift, CreditCard, AlertCircle, Megaphone, Trash2, ArrowLeft } from 'lucide-react';
+import { Bell, Check, CheckCheck, Package, Gift, CreditCard, AlertCircle, Megaphone, ArrowLeft, MessageCircle, Wallet, TrendingUp, UserPlus } from 'lucide-react';
 import { Button } from '../components/ui/button';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useAuth } from '../context/AuthContext';
@@ -10,10 +10,16 @@ const API = `${process.env.REACT_APP_BACKEND_URL}/api`;
 
 const TYPE_CONFIG = {
   order: { icon: Package, color: 'bg-blue-100 text-blue-600', label: 'Заказ' },
+  order_change: { icon: TrendingUp, color: 'bg-orange-100 text-orange-600', label: 'Изменение' },
   bonus: { icon: Gift, color: 'bg-purple-100 text-purple-600', label: 'Бонус' },
   payment: { icon: CreditCard, color: 'bg-green-100 text-green-600', label: 'Оплата' },
-  system: { icon: AlertCircle, color: 'bg-amber-100 text-amber-600', label: 'Система' },
+  balance: { icon: Wallet, color: 'bg-teal-100 text-teal-600', label: 'Баланс' },
+  chat: { icon: MessageCircle, color: 'bg-indigo-100 text-indigo-600', label: 'Чат' },
+  news: { icon: Megaphone, color: 'bg-pink-100 text-pink-600', label: 'Новость' },
   promo: { icon: Megaphone, color: 'bg-pink-100 text-pink-600', label: 'Акция' },
+  status_response: { icon: UserPlus, color: 'bg-cyan-100 text-cyan-600', label: 'Статус' },
+  discount_response: { icon: CreditCard, color: 'bg-emerald-100 text-emerald-600', label: 'Скидка' },
+  system: { icon: AlertCircle, color: 'bg-amber-100 text-amber-600', label: 'Система' },
 };
 
 const formatTime = (dateStr) => {
