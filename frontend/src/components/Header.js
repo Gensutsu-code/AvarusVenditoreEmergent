@@ -9,6 +9,7 @@ import { SearchDropdown } from './SearchDropdown';
 import { useState, useRef, useEffect, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { toast } from 'sonner';
+import axios from 'axios';
 import { playNotificationSound, showPushNotification, requestNotificationPermission } from '../utils/notifications';
 
 // Expandable Profile Menu Component
