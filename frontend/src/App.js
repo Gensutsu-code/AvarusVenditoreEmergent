@@ -33,6 +33,14 @@ function AppContent() {
   const { user } = useAuth();
   const { isDark } = useTheme();
   const isAdmin = user?.role === 'admin';
+  const location = useLocation();
+
+  // Track page views for non-admin users
+  useEffect(() => {
+    if (user && !isAdmin) {
+      trackPageView(location.pathname);
+    }
+  }, [location.pathname, user, isAdmin]);
 
   return (
     <div className={`min-h-screen ${isDark ? 'bg-zinc-950' : 'bg-gradient-to-br from-cyan-50 via-pink-50 to-cyan-50'}`}>
