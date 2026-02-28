@@ -501,6 +501,7 @@ export default function CatalogPage() {
       return;
     }
 
+    trackClick('add_to_cart', '/catalog');
     const qty = quantities[product.id] || 1;
     const success = await addToCart(product.id, qty);
     if (success) {

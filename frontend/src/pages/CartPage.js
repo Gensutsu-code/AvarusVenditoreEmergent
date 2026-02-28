@@ -249,7 +249,7 @@ export default function CartPage() {
 
               <motion.div whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}>
                 <Button
-                  onClick={() => navigate('/checkout')}
+                  onClick={() => { trackClick('checkout_from_cart', '/cart'); navigate('/checkout'); }}
                   className="w-full bg-gradient-to-r from-teal-500 to-emerald-500 hover:from-teal-600 hover:to-emerald-600 text-white font-bold uppercase h-14 rounded-xl shadow-lg shadow-teal-500/30 transition-all duration-300"
                   data-testid="checkout-button"
                 >

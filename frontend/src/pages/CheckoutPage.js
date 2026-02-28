@@ -108,6 +108,7 @@ export default function CheckoutPage() {
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (!form.full_name.trim() || !form.address.trim() || !form.phone.trim()) { toast.error('Заполните все обязательные поля'); return; }
+    trackClick('place_order', '/checkout');
     setLoading(true);
     
     const orderAmount = finalTotal;

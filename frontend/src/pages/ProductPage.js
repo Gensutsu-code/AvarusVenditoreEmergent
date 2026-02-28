@@ -66,6 +66,7 @@ export default function ProductPage() {
       return;
     }
 
+    trackClick('add_to_cart', '/product');
     setAddingToCart(true);
     const success = await addToCart(product.id, quantity);
     if (success) {
