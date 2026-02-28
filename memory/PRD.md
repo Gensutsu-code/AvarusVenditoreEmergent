@@ -13,6 +13,13 @@ E-commerce platform for truck spare parts with full admin panel, crypto payments
 
 ## What's Been Implemented
 
+## February 2026 - Global Notification System with Sound (COMPLETED)
+- Global polling in Header (client, 10s) and AdminNotifications (admin, 5s)
+- On new notifications: toast message + two-tone chime sound (Web Audio API)
+- Push notifications (browser Notification API) when tab is not focused
+- Tracks baseline count to only trigger on truly new notifications
+- Files: Header.js, AdminNotifications.js, utils/notifications.js
+
 ## February 2026 - Client Order Card Redesign (COMPLETED)
 - Removed recipient/phone/address from client order cards
 - Compact item layout: small image + inline article/manufacturer/warehouse/delivery
