@@ -161,6 +161,7 @@ export const Header = () => {
   const [userBalance, setUserBalance] = useState(null);
   const lastSeenCountRef = useRef(0);
   const hasInitRef = useRef(false);
+  const lastToastTimeRef = useRef(0);
   
   const isAdmin = user?.role === 'admin';
 
