@@ -16,20 +16,16 @@ const API = `${process.env.REACT_APP_BACKEND_URL}/api`;
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
 
 const STATUS_LABELS = {
-  new: 'Новый',
-  pending: 'Ожидает обработки',
-  processing: 'В обработке',
-  shipped: 'Отправлен',
-  delivered: 'Доставлен',
+  pending: 'Ожидает',
+  processing: 'Обработка',
+  completed: 'Выполнен',
   cancelled: 'Отменён'
 };
 
 const STATUS_COLORS = {
-  new: 'bg-sky-100 text-sky-700',
   pending: 'bg-amber-100 text-amber-700',
   processing: 'bg-blue-100 text-blue-700',
-  shipped: 'bg-purple-100 text-purple-700',
-  delivered: 'bg-emerald-100 text-emerald-700',
+  completed: 'bg-emerald-100 text-emerald-700',
   cancelled: 'bg-red-100 text-red-700'
 };
 
