@@ -134,7 +134,7 @@ async def get_admin_user_details(user_id: str, user=Depends(get_current_user)):
         status = o.get("status", "pending")
         orders_by_status[status] = orders_by_status.get(status, 0) + 1
     
-    delivered_total = sum(o.get("total", 0) for o in user_orders if o.get("status") == "delivered")
+    delivered_total = sum(o.get("total", 0) for o in user_orders if o.get("status") == "completed")
     
     order_dates = [o.get("created_at") for o in user_orders if o.get("created_at")]
     first_order_date = min(order_dates) if order_dates else None
