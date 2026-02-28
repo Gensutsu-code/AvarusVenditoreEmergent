@@ -1,64 +1,50 @@
 // Notification utilities with sound and push notifications
 
+let audioCtx = null;
+
+const getAudioContext = () => {
+  if (!audioCtx || audioCtx.state === 'closed') {
+    audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+  }
+  if (audioCtx.state === 'suspended') {
+    audioCtx.resume();
+  }
+  return audioCtx;
+};
+
 // Request permission for push notifications
 export const requestNotificationPermission = async () => {
-  if (!('Notification' in window)) {
-    console.log('This browser does not support notifications');
-    return false;
-  }
-  
-  if (Notification.permission === 'granted') {
-    return true;
-  }
-  
+  if (!('Notification' in window)) return false;
+  if (Notification.permission === 'granted') return true;
   if (Notification.permission !== 'denied') {
     const permission = await Notification.requestPermission();
     return permission === 'granted';
   }
-  
   return false;
 };
 
-// Play notification sound
+// Play notification sound — two-tone chime
 export const playNotificationSound = () => {
   try {
-    // Create audio context for sound
-    const audioContext = new (window.AudioContext || window.webkitAudioContext)();
-    
-    // Create oscillator for notification beep
-    const oscillator = audioContext.createOscillator();
-    const gainNode = audioContext.createGain();
-    
-    oscillator.connect(gainNode);
-    gainNode.connect(audioContext.destination);
-    
-    oscillator.frequency.value = 800; // Hz
-    oscillator.type = 'sine';
-    
-    gainNode.gain.setValueAtTime(0.3, audioContext.currentTime);
-    gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.3);
-    
-    oscillator.start(audioContext.currentTime);
-    oscillator.stop(audioContext.currentTime + 0.3);
-    
-    // Second beep
-    setTimeout(() => {
-      const oscillator2 = audioContext.createOscillator();
-      const gainNode2 = audioContext.createGain();
-      
-      oscillator2.connect(gainNode2);
-      gainNode2.connect(audioContext.destination);
-      
-      oscillator2.frequency.value = 1000; // Hz
-      oscillator2.type = 'sine';
-      
-      gainNode2.gain.setValueAtTime(0.3, audioContext.currentTime);
-      gainNode2.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.3);
-      
-      oscillator2.start(audioContext.currentTime);
-      oscillator2.stop(audioContext.currentTime + 0.3);
-    }, 150);
-    
+    const ctx = getAudioContext();
+    const now = ctx.currentTime;
+
+    const playTone = (freq, start, duration, vol) => {
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+      osc.frequency.value = freq;
+      osc.type = 'sine';
+      gain.gain.setValueAtTime(vol, start);
+      gain.gain.exponentialRampToValueAtTime(0.001, start + duration);
+      osc.start(start);
+      osc.stop(start + duration);
+    };
+
+    // Two-tone ascending chime
+    playTone(880, now, 0.15, 0.25);
+    playTone(1320, now + 0.15, 0.2, 0.2);
   } catch (err) {
     console.log('Could not play notification sound:', err);
   }
@@ -66,44 +52,34 @@ export const playNotificationSound = () => {
 
 // Show browser push notification
 export const showPushNotification = (title, body, options = {}) => {
-  if (!('Notification' in window)) return;
-  
-  if (Notification.permission === 'granted') {
-    const notification = new Notification(title, {
-      body,
-      icon: '/logo192.png',
-      badge: '/logo192.png',
-      tag: options.tag || 'default',
-      requireInteraction: options.requireInteraction || false,
-      ...options
-    });
-    
-    notification.onclick = () => {
-      window.focus();
-      if (options.onClick) options.onClick();
-      notification.close();
-    };
-    
-    // Auto close after 10 seconds
-    setTimeout(() => notification.close(), 10000);
-    
-    return notification;
-  }
+  if (!('Notification' in window) || Notification.permission !== 'granted') return;
+
+  const notification = new Notification(title, {
+    body,
+    icon: '/logo192.png',
+    badge: '/logo192.png',
+    tag: options.tag || 'default',
+    requireInteraction: false,
+    ...options
+  });
+
+  notification.onclick = () => {
+    window.focus();
+    if (options.onClick) options.onClick();
+    notification.close();
+  };
+
+  setTimeout(() => notification.close(), 8000);
+  return notification;
 };
 
 // Combined notification function
 export const sendNotification = async (title, body, options = {}) => {
-  // Play sound
   playNotificationSound();
-  
-  // Show push notification if tab is not focused or browser minimized
   if (document.hidden || !document.hasFocus()) {
     await requestNotificationPermission();
     showPushNotification(title, body, options);
   }
 };
 
-// Check if page is visible
-export const isPageVisible = () => {
-  return !document.hidden && document.hasFocus();
-};
+export const isPageVisible = () => !document.hidden && document.hasFocus();
