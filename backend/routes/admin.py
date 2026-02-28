@@ -694,10 +694,9 @@ async def get_detailed_analytics(period: str = "month", user=Depends(get_current
     
     # Orders by status from the single aggregation
     status_stats = {
-        "new": stats.get("new_count", 0),
+        "pending": stats.get("new_count", 0),
         "processing": stats.get("processing_count", 0),
-        "shipped": stats.get("shipped_count", 0),
-        "delivered": stats.get("delivered_count", 0),
+        "completed": stats.get("completed_count", 0),
         "cancelled": stats.get("cancelled_count", 0)
     }
     
