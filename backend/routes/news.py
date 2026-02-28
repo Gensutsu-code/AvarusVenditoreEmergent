@@ -45,6 +45,10 @@ async def create_news(data: NewsArticle, user=Depends(get_current_user)):
         "created_at": datetime.now(timezone.utc).isoformat()
     }
     await db.news.insert_one(article)
+    
+    # Notify all users about new article
+    await notify_all_users("news", "Новая публикация", f"{data.title}", f"/news/{article['id']}")
+    
     return {k: v for k, v in article.items() if k != "_id"}
 
 
