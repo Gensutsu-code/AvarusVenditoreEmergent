@@ -29,6 +29,7 @@ class NotificationSettings(BaseModel):
     order_status_enabled: bool = True
     promotions_enabled: bool = True
     order_confirmation_enabled: bool = True
+    client_notifications_enabled: bool = True
 
 class EmailRequest(BaseModel):
     recipient_email: EmailStr
