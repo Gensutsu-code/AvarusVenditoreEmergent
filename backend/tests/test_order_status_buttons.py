@@ -12,7 +12,7 @@ import os
 
 BASE_URL = os.environ.get('REACT_APP_BACKEND_URL', '').rstrip('/')
 if not BASE_URL:
-    BASE_URL = "https://order-accept-pay.preview.emergentagent.com"
+    BASE_URL = "https://analytics-preview-18.preview.emergentagent.com"
 
 ADMIN_EMAIL = "admin@avarus.ru"
 ADMIN_PASSWORD = "admin"
