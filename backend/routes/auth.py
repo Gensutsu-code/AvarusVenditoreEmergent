@@ -54,6 +54,7 @@ async def register(data: UserRegister):
     
     # Log admin activity
     await create_admin_activity(user_id, data.name, "registration", f"Новый пользователь: {data.email}")
+    await notify_admin("registration", "Новая регистрация", f"{data.name} ({data.email})", "/admin/users")
     
     return {
         "token": token, 
