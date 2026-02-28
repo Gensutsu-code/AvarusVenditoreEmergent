@@ -201,7 +201,7 @@ export const Header = () => {
         const notifs = notifData.notifications || [];
         const latest = notifs.find(n => !n.read);
         if (latest) {
-          toast.info(latest.message || latest.title, { duration: 6000 });
+          toast.info(latest.message || latest.title, { id: `client-${latest.id}`, duration: 5000 });
         }
         // Play sound (always)
         playNotificationSound();
