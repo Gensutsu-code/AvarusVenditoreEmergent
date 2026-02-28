@@ -14,6 +14,7 @@ import { RelatedProducts } from '../components/RelatedProducts';
 import { PopularProducts } from '../components/PopularProducts';
 import { motion } from 'framer-motion';
 import { SearchDropdown } from '../components/SearchDropdown';
+import { trackClick } from '../utils/tracker';
 
 const API = `${process.env.REACT_APP_BACKEND_URL}/api`;
 

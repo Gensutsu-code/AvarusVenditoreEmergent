@@ -5,6 +5,7 @@ import { Button } from '../components/ui/button';
 import { useCart } from '../context/CartContext';
 import { useAuth } from '../context/AuthContext';
 import { motion, AnimatePresence } from 'framer-motion';
+import { trackClick } from '../utils/tracker';
 
 export default function CartPage() {
   const { cart, updateQuantity, removeFromCart } = useCart();

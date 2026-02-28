@@ -13,6 +13,7 @@ import { useTheme } from '../context/ThemeContext';
 import { toast } from 'sonner';
 import { motion, AnimatePresence } from 'framer-motion';
 import CryptoPaymentModal from '../components/CryptoPaymentModal';
+import { trackClick } from '../utils/tracker';
 
 const API = `${process.env.REACT_APP_BACKEND_URL}/api`;
 const SITE_URL = process.env.REACT_APP_BACKEND_URL;

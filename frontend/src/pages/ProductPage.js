@@ -12,6 +12,7 @@ import { useAuth } from '../context/AuthContext';
 import { FavoritesButton } from '../components/FavoritesButton';
 import { toast } from 'sonner';
 import { motion, AnimatePresence } from 'framer-motion';
+import { trackClick } from '../utils/tracker';
 
 const API = `${process.env.REACT_APP_BACKEND_URL}/api`;
 
