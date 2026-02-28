@@ -221,7 +221,7 @@ export const Header = () => {
   useEffect(() => {
     if (user && !isAdmin) {
       fetchUserData();
-      const interval = setInterval(fetchUserData, 10000);
+      const interval = setInterval(fetchUserData, 3000);
       return () => clearInterval(interval);
     }
   }, [user, isAdmin, fetchUserData]);
