@@ -13,6 +13,15 @@ E-commerce platform for truck spare parts with full admin panel, crypto payments
 
 ## What's Been Implemented
 
+## February 2026 - Full Notification System (COMPLETED)
+- **Client notifications:** status changes, price/quantity edits, chat messages, news, balance, bonuses
+- **Admin notifications:** new orders, client messages, order accept/cancel, registrations
+- **Centralized notify.py:** notify_user(), notify_admin(), notify_all_users()
+- **AdminNotificationsPage:** /admin/notifications with filter, mark-as-read, click-to-navigate
+- **Click-to-navigate:** any notification → correct page + mark as read
+- Endpoints: GET/PUT/POST /api/admin/notifications/* 
+- Testing: 10/10 backend + 5/5 frontend (iteration_40)
+
 ## February 2026 - Global Notification System with Sound (COMPLETED)
 - Global polling in Header (client, 10s) and AdminNotifications (admin, 5s)
 - On new notifications: toast message + two-tone chime sound (Web Audio API)
