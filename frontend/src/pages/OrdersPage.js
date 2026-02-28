@@ -47,6 +47,9 @@ export default function OrdersPage() {
   const [stats, setStats] = useState(null);
   const [loading, setLoading] = useState(true);
   const [expandedOrders, setExpandedOrders] = useState({});
+  const [showCryptoModal, setShowCryptoModal] = useState(false);
+  const [cryptoPaymentOrderId, setCryptoPaymentOrderId] = useState(null);
+  const [cryptoPaymentAmount, setCryptoPaymentAmount] = useState(0);
 
   useEffect(() => {
     if (authLoading) return;
