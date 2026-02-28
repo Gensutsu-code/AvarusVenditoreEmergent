@@ -627,6 +627,15 @@ export default function OrdersPage() {
           </div>
         )}
       </div>
+
+      {/* Crypto Payment Modal for surcharges */}
+      <CryptoPaymentModal
+        open={showCryptoModal}
+        onClose={handleCryptoPaymentClose}
+        orderId={cryptoPaymentOrderId}
+        amountRub={cryptoPaymentAmount}
+        onSuccess={handleCryptoPaymentSuccess}
+      />
     </div>
   );
 }
