@@ -6,8 +6,10 @@ import { Button } from './ui/button';
 import { AdminNotifications } from './AdminNotifications';
 import { HeaderPromoBanner } from './HeaderPromoBanner';
 import { SearchDropdown } from './SearchDropdown';
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { toast } from 'sonner';
+import { playNotificationSound, showPushNotification, requestNotificationPermission } from '../utils/notifications';
 
 // Expandable Profile Menu Component
 const ExpandableProfileMenu = ({ onLogout, unreadCount = 0 }) => {
