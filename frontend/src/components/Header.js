@@ -213,27 +213,30 @@ export const Header = () => {
       // If new unread notifications appeared since last poll
       if (newCount > lastSeenCountRef.current) {
         const now = Date.now();
-        // Debounce: skip toast if another toast was shown in last 8 seconds (e.g. from checkout/order action)
-        const globalLastToast = window.__lastToastTime || 0;
-        if (now - globalLastToast > 8000) {
-          const notifs = notifData.notifications || [];
-          const latest = notifs.find(n => !n.read);
-          if (latest) {
-            toast.info(latest.message || latest.title, { id: `client-${latest.id}`, duration: 5000 });
-            lastToastTimeRef.current = now;
-            window.__lastToastTime = now;
+        // Only show toast/sound if client notifications are enabled by admin
+        if (clientNotifsEnabledRef.current) {
+          // Debounce: skip toast if another toast was shown in last 8 seconds
+          const globalLastToast = window.__lastToastTime || 0;
+          if (now - globalLastToast > 8000) {
+            const notifs = notifData.notifications || [];
+            const latest = notifs.find(n => !n.read);
+            if (latest) {
+              toast.info(latest.message || latest.title, { id: `client-${latest.id}`, duration: 5000 });
+              lastToastTimeRef.current = now;
+              window.__lastToastTime = now;
+            }
+            playNotificationSound();
           }
-          playNotificationSound();
-        }
-        // Push notification only when tab is hidden (minimized/switched)
-        if (document.hidden) {
-          const notifs = notifData.notifications || [];
-          const latest = notifs.find(n => !n.read);
-          showPushNotification(
-            latest?.title || 'Новое уведомление',
-            latest?.message || `У вас ${newCount - lastSeenCountRef.current} новых уведомлений`,
-            { tag: 'global-notif' }
-          );
+          // Push notification only when tab is hidden
+          if (document.hidden) {
+            const notifs = notifData.notifications || [];
+            const latest = notifs.find(n => !n.read);
+            showPushNotification(
+              latest?.title || 'Новое уведомление',
+              latest?.message || `У вас ${newCount - lastSeenCountRef.current} новых уведомлений`,
+              { tag: 'global-notif' }
+            );
+          }
         }
       }
       lastSeenCountRef.current = newCount;
