@@ -656,17 +656,22 @@ async def get_last_shipping(user=Depends(get_current_user)):
         sort=[("created_at", -1)]
     )
     
+    # Start with profile data as defaults
+    profile_name = user.get("name", "") or ""
+    profile_phone = user.get("phone", "") or ""
+    profile_address = user.get("address", "") or ""
+    
     if last_order:
         return {
-            "full_name": last_order.get("full_name", ""),
-            "address": last_order.get("address", ""),
-            "phone": last_order.get("phone", "")
+            "full_name": last_order.get("full_name") or profile_name,
+            "address": last_order.get("address") or profile_address,
+            "phone": last_order.get("phone") or profile_phone
         }
     
     return {
-        "full_name": user.get("name", ""),
-        "address": user.get("address", ""),
-        "phone": user.get("phone", "")
+        "full_name": profile_name,
+        "address": profile_address,
+        "phone": profile_phone
     }
 
 
