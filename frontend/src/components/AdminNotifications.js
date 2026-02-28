@@ -21,11 +21,17 @@ export const AdminNotifications = () => {
   useEffect(() => {
     const fetchNotifications = async () => {
       try {
-        const res = await axios.get(`${API}/admin/notifications`);
-        const data = res.data;
-        setNotifications(data);
+        const [notifRes, countsRes] = await Promise.all([
+          axios.get(`${API}/admin/notifications`),
+          axios.get(`${API}/admin/all-notifications`)
+        ]);
+        const notifData = notifRes.data;
+        const countsData = countsRes.data;
         
-        const newUnread = data.unread_count || 0;
+        // Merge: counts for dropdown + notifications list for toasts
+        setNotifications({ ...countsData, notifications: notifData.notifications || [], unread_count: countsData.total || 0 });
+        
+        const newUnread = countsData.total || 0;
         
         if (lastTotalRef.current === null) {
           lastTotalRef.current = newUnread;
@@ -35,7 +41,7 @@ export const AdminNotifications = () => {
         if (newUnread > lastTotalRef.current) {
           playNotificationSound();
           
-          const latest = (data.notifications || []).find(n => !n.read);
+          const latest = (notifData.notifications || []).find(n => !n.read);
           if (latest) {
             toast.info(latest.message || latest.title, { duration: 6000 });
           }
