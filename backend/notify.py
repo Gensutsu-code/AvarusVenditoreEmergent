@@ -43,6 +43,8 @@ async def notify_admin(notif_type: str, title: str, message: str, link: str = No
 
 async def notify_all_users(notif_type: str, title: str, message: str, link: str = None):
     """Create notification for all non-admin users"""
+    if not await _client_notifs_enabled():
+        return
     users = await db.users.find({"role": {"$ne": "admin"}}, {"_id": 0, "id": 1}).to_list(None)
     if not users:
         return
