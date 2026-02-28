@@ -3455,6 +3455,7 @@ export default function AdminPage() {
               formatPrice={formatPrice}
               handleEditUser={handleEditUser}
               handleDeleteUser={handleDeleteUser}
+              onViewAnalytics={setAnalyticsUser}
               isDark={isDark}
             />
             </motion.div>
