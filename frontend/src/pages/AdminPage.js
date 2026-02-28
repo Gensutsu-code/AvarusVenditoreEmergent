@@ -567,7 +567,11 @@ export default function AdminPage() {
         setUsers([...users, { ...editingUser, id: res.data.id, total_orders: 0, total_spent: 0 }]);
         toast.success('Пользователь создан');
       } else {
-        const res = await axios.put(`${API}/admin/users/${editingUser.id}`, editingUser);
+        // Send only editable fields
+        const { email, name, phone, address, address_comment, role, customer_status, individual_discount, password } = editingUser;
+        const payload = { email, name, phone, address, address_comment, role, customer_status, individual_discount };
+        if (password) payload.password = password;
+        const res = await axios.put(`${API}/admin/users/${editingUser.id}`, payload);
         setUsers(users.map(u => u.id === editingUser.id ? { ...u, ...res.data } : u));
         toast.success('Пользователь обновлён');
       }
