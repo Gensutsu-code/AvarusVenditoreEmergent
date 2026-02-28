@@ -104,32 +104,26 @@ export default function OrdersPage() {
 
   const handleAcceptChanges = async (orderId) => {
     try {
-      const order = orders.find(o => o.id === orderId);
       const res = await axios.post(`${API}/orders/${orderId}/accept-changes`);
       const data = res.data;
       
       if (data.action === 'payment_required') {
-        // Need additional payment - redirect to checkout
         const amount = data.amount;
-        const paymentMethod = data.payment_method || order?.payment_method;
+        const method = data.payment_method;
         
-        if (paymentMethod === 'balance') {
-          // Try to pay from balance
-          const balanceRes = await axios.get(`${API}/user/balance`);
-          const userBalance = balanceRes.data.balance || 0;
-          
-          if (userBalance >= amount) {
-            // Pay from balance
-            await axios.post(`${API}/orders/${orderId}/pay-additional`, { payment_method: 'balance' });
-            toast.success(`Доплата ${amount.toFixed(2)} ₽ списана с баланса`);
-          } else {
-            toast.error(`Недостаточно средств на балансе. Нужно: ${amount.toFixed(2)} ₽, на балансе: ${userBalance.toFixed(2)} ₽`);
-            return;
-          }
-        } else {
-          // Redirect to checkout for crypto/card payment
-          toast.info(`Требуется доплата ${amount.toFixed(2)} ₽`);
-          navigate(`/checkout?order_id=${orderId}&additional_payment=${amount}&method=${paymentMethod}`);
+        if (method === 'crypto') {
+          // Open crypto payment modal for surcharge
+          setCryptoPaymentOrderId(orderId);
+          setCryptoPaymentAmount(amount);
+          setShowCryptoModal(true);
+          return;
+        } else if (method === 'card') {
+          // Redirect to card payment (ЮKassa)
+          toast.info(`Требуется доплата ${amount.toFixed(2)} ₽ картой`);
+          navigate(`/checkout?order_id=${orderId}&additional_payment=${amount}&method=card`);
+          return;
+        } else if (method === 'balance') {
+          toast.error(`Недостаточно средств на балансе. Требуется: ${amount.toFixed(2)} ₽`);
           return;
         }
       } else if (data.action === 'balance_deducted') {
@@ -144,6 +138,19 @@ export default function OrdersPage() {
     } catch (err) {
       toast.error(err.response?.data?.detail || 'Ошибка');
     }
+  };
+
+  const handleCryptoPaymentSuccess = () => {
+    setShowCryptoModal(false);
+    setCryptoPaymentOrderId(null);
+    setCryptoPaymentAmount(0);
+    toast.success('Доплата произведена успешно');
+    fetchData();
+  };
+
+  const handleCryptoPaymentClose = () => {
+    setShowCryptoModal(false);
+    toast.info('Оплата не завершена. Изменения ожидают подтверждения.');
   };
 
   const handleCancelOrder = async (orderId) => {
