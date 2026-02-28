@@ -6,6 +6,7 @@ from datetime import datetime, timezone
 import uuid
 
 from database import db, get_current_user
+from utils.notifications import create_notification
 
 router = APIRouter(tags=["balance"])
 
