@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import { Search, Package, X, Loader2 } from 'lucide-react';
 import { Input } from './ui/input';
+import { trackSearch } from '../utils/tracker';
 import { motion, AnimatePresence } from 'framer-motion';
 
 const API = `${process.env.REACT_APP_BACKEND_URL}/api`;
