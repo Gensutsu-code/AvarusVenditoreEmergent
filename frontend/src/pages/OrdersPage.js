@@ -117,6 +117,7 @@ export default function OrdersPage() {
       } else {
         toast.success('Изменения приняты');
       }
+      window.__lastToastTime = Date.now();
       
       fetchData();
     } catch (err) {
@@ -154,6 +155,7 @@ export default function OrdersPage() {
     setCryptoPaymentOrderId(null);
     setCryptoPaymentAmount(0);
     toast.success('Доплата произведена успешно');
+    window.__lastToastTime = Date.now();
     fetchData();
   };
 
@@ -167,6 +169,7 @@ export default function OrdersPage() {
     try {
       await axios.post(`${API}/orders/${orderId}/cancel`);
       toast.success('Заказ отменён');
+      window.__lastToastTime = Date.now();
       fetchData();
     } catch (err) {
       toast.error(err.response?.data?.detail || 'Ошибка отмены заказа');
