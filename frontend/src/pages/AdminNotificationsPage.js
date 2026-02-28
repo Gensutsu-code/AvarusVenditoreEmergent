@@ -39,14 +39,6 @@ export default function AdminNotificationsPage() {
   const { user } = useAuth();
   const navigate = useNavigate();
 
-  useEffect(() => {
-    if (user === undefined) return; // still loading
-    if (!user || user.role !== 'admin') { navigate('/login'); return; }
-    fetchNotifications();
-    const interval = setInterval(fetchNotifications, 3000);
-    return () => clearInterval(interval);
-  }, [user, navigate, fetchNotifications]);
-
   const fetchNotifications = useCallback(async () => {
     try {
       const res = await axios.get(`${API}/admin/notifications`);
@@ -54,6 +46,14 @@ export default function AdminNotificationsPage() {
       setUnreadCount(res.data.unread_count || 0);
     } catch (err) {} finally { setLoading(false); }
   }, []);
+
+  useEffect(() => {
+    if (user === undefined) return;
+    if (!user || user.role !== 'admin') { navigate('/login'); return; }
+    fetchNotifications();
+    const interval = setInterval(fetchNotifications, 3000);
+    return () => clearInterval(interval);
+  }, [user, navigate, fetchNotifications]);
 
   const markAsRead = async (notifId) => {
     try {
