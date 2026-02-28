@@ -40,7 +40,7 @@ export const AdminNotifications = () => {
             toast.info(latest.message || latest.title, { duration: 6000 });
           }
           
-          if (document.hidden || !document.hasFocus()) {
+          if (document.hidden) {
             showPushNotification('AVOPT.STORE — Админ', latest?.message || 'Новое уведомление', { tag: 'admin-notif' });
           }
         }

@@ -205,8 +205,8 @@ export const Header = () => {
         }
         // Play sound (always)
         playNotificationSound();
-        // Push notification when tab not focused
-        if (document.hidden || !document.hasFocus()) {
+        // Push notification only when tab is hidden (minimized/switched)
+        if (document.hidden) {
           showPushNotification(
             latest?.title || 'Новое уведомление',
             latest?.message || `У вас ${diff} новых уведомлений`,

@@ -76,7 +76,7 @@ export const showPushNotification = (title, body, options = {}) => {
 // Combined notification function
 export const sendNotification = async (title, body, options = {}) => {
   playNotificationSound();
-  if (document.hidden || !document.hasFocus()) {
+  if (document.hidden) {
     await requestNotificationPermission();
     showPushNotification(title, body, options);
   }
