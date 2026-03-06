@@ -328,7 +328,7 @@ export default function AdminPage() {
       setPromoBanner(bannerRes.data);
       setTelegramSettings(telegramRes.data);
       setChats(chatsRes.data);
-      setBonusPrograms(bonusProgramsRes.data.programs || []);
+      setBonusPrograms(Array.isArray(bonusProgramsRes.data) ? bonusProgramsRes.data : bonusProgramsRes.data.programs || []);
       setBonusHistory(bonusHistoryRes.data.history || []);
       setPartners(partnersRes.data || []);
       setPrizeRedemptions(prizeRedemptionsRes.data?.redemptions || []);
@@ -3159,13 +3159,11 @@ export default function AdminPage() {
                           if (isNewProgram) {
                             const res = await axios.post(`${API}/admin/bonus/programs`, editingProgram);
                             toast.success('Программа создана');
-                            // Real-time update: add to local state
                             setBonusPrograms(prev => [...prev, res.data]);
                           } else {
-                            const res = await axios.put(`${API}/admin/bonus/programs/${editingProgram.id}`, editingProgram);
+                            await axios.put(`${API}/admin/bonus/programs/${editingProgram.id}`, editingProgram);
                             toast.success('Программа обновлена');
-                            // Real-time update: update in local state
-                            setBonusPrograms(prev => prev.map(p => p.id === editingProgram.id ? res.data : p));
+                            setBonusPrograms(prev => prev.map(p => p.id === editingProgram.id ? { ...p, ...editingProgram } : p));
                           }
                           setEditingProgram(null);
                         } catch (err) {
