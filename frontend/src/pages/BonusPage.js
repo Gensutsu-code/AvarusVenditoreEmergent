@@ -39,13 +39,11 @@ export default function BonusPage() {
 
   const fetchBonusData = async () => {
     try {
-      const [programsRes, historyRes, redemptionsRes] = await Promise.all([
+      const [programsRes, redemptionsRes] = await Promise.all([
         axios.get(`${API}/bonus/programs`),
-        axios.get(`${API}/bonus/history`),
-        axios.get(`${API}/my-prize-redemptions`).catch(() => ({ data: { redemptions: [] } }))
+        axios.get(`${API}/bonus/my-redemptions`).catch(() => ({ data: { redemptions: [] } }))
       ]);
-      setBonusPrograms(programsRes.data.programs || []);
-      setBonusHistory(historyRes.data.history || []);
+      setBonusPrograms(Array.isArray(programsRes.data) ? programsRes.data : []);
       setMyRedemptions(redemptionsRes.data.redemptions || []);
     } catch (err) {
       console.error('Failed to fetch bonus data', err);
@@ -83,7 +81,7 @@ export default function BonusPage() {
     const key = `${programId}_${prizeId}`;
     setRedeemingPrize(prev => ({ ...prev, [key]: true }));
     try {
-      const res = await axios.post(`${API}/bonus/redeem-prize/${programId}/${prizeId}`);
+      const res = await axios.post(`${API}/bonus/redeem-prize`, { program_id: programId, prize_id: prizeId });
       toast.success(res.data.message);
       setRedeemedPrize({ name: prizeName, pointsCost });
       fetchBonusData();
@@ -102,7 +100,7 @@ export default function BonusPage() {
   };
 
   // Calculate total points
-  const totalPoints = bonusPrograms.reduce((sum, p) => sum + (p.bonus_points || 0), 0);
+  const totalPoints = bonusPrograms.reduce((sum, p) => sum + (p.progress?.current_amount || 0), 0);
 
   if (authLoading || loading) {
     return (
@@ -201,7 +199,7 @@ export default function BonusPage() {
                         <p className="text-zinc-500 text-sm mt-1">{program.description}</p>
                       </div>
                       <div className="text-right">
-                        <p className="text-3xl font-bold text-orange-500">{(program.bonus_points || 0).toFixed(0)}</p>
+                        <p className="text-3xl font-bold text-orange-500">{(program.progress?.current_amount || 0).toFixed(0)}</p>
                         <p className="text-xs text-zinc-400">баллов</p>
                       </div>
                     </div>
@@ -309,7 +307,7 @@ export default function BonusPage() {
                       {!collapsedPrograms[program.id] && (
                         <div className="mt-4 grid gap-3">
                           {program.prizes.filter(p => p.enabled).map((prize) => {
-                            const canAfford = (program.bonus_points || 0) >= prize.points_cost;
+                            const canAfford = (program.progress?.current_amount || 0) >= prize.points_cost;
                             const isRedeeming = redeemingPrize[`${program.id}_${prize.id}`];
                             const isAvailable = prize.quantity === -1 || prize.quantity > 0;
                             
@@ -388,7 +386,7 @@ export default function BonusPage() {
 
                   {/* Request Bonus Button */}
                   <div className="p-6 border-t border-zinc-100 bg-zinc-50">
-                    {program.bonus_requested ? (
+                    {program.progress?.bonus_requested ? (
                       <div className="text-center p-4 bg-orange-100 rounded-xl">
                         <div className="flex items-center justify-center gap-2 text-orange-600 mb-2">
                           <Clock className="w-5 h-5 animate-pulse" />
@@ -401,7 +399,7 @@ export default function BonusPage() {
                     ) : (
                       <Button 
                         onClick={() => handleRequestBonus(program.id, program.title)}
-                        disabled={requestingBonus[program.id] || (program.bonus_points || 0) === 0}
+                        disabled={requestingBonus[program.id] || (program.progress?.current_amount || 0) === 0}
                         className="w-full bg-gradient-to-r from-orange-500 to-amber-500 hover:from-orange-600 hover:to-amber-600 text-white font-bold py-4 text-lg shadow-lg disabled:opacity-50"
                       >
                         <Send className="w-5 h-5 mr-2" />

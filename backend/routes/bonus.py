@@ -188,6 +188,40 @@ async def get_my_prize_redemptions(user=Depends(get_current_user)):
     return {"redemptions": redemptions}
 
 
+@router.post("/bonus/request/{program_id}")
+async def request_bonus(program_id: str, user=Depends(get_current_user)):
+    """Request bonus payout from accumulated points"""
+    program = await get_bonus_program(program_id)
+    if not program:
+        raise HTTPException(status_code=404, detail="Программа не найдена")
+    
+    progress = await get_user_program_progress(user["id"], program_id)
+    if progress.get("bonus_requested"):
+        raise HTTPException(status_code=400, detail="Запрос уже отправлен")
+    if progress.get("current_amount", 0) <= 0:
+        raise HTTPException(status_code=400, detail="Недостаточно баллов")
+    
+    await db.bonus_progress.update_one(
+        {"user_id": user["id"], "program_id": program_id},
+        {"$set": {"bonus_requested": True, "requested_at": datetime.now(timezone.utc).isoformat()}},
+        upsert=True
+    )
+    
+    # Notify admin
+    await db.notifications.insert_one({
+        "id": str(uuid.uuid4()),
+        "user_id": "ADMIN",
+        "type": "bonus_request",
+        "title": "Запрос бонуса",
+        "message": f"Клиент {user.get('name') or user.get('email')} запросил бонус по программе «{program.get('title', '')}»",
+        "link": "/admin",
+        "read": False,
+        "created_at": datetime.now(timezone.utc).isoformat()
+    })
+    
+    return {"message": "Запрос отправлен! Администратор свяжется с вами."}
+
+
 @router.post("/bonus/redeem-prize")
 async def redeem_prize(data: dict, user=Depends(get_current_user)):
     """Redeem a prize with bonus points"""
