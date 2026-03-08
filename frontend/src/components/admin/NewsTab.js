@@ -2,14 +2,15 @@ import React, { useState } from 'react';
 import { Button } from '../ui/button';
 import { Input } from '../ui/input';
 import { Label } from '../ui/label';
-import { Plus, Pencil, Trash2, Save, X, FileText, Image } from 'lucide-react';
+import { Plus, Pencil, Trash2, Save, X, FileText } from 'lucide-react';
 import axios from 'axios';
 import { toast } from 'sonner';
+import RichTextEditor from '../RichTextEditor';
 
 const API = process.env.REACT_APP_BACKEND_URL + '/api';
 
 const formatDate = (dateStr) => {
-  if (!dateStr) return '—';
+  if (!dateStr) return '';
   const date = new Date(dateStr);
   return date.toLocaleDateString('ru-RU', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' });
 };
@@ -17,7 +18,7 @@ const formatDate = (dateStr) => {
 export default function NewsTab({ newsList, setNewsList }) {
   const [editingNews, setEditingNews] = useState(null);
   const [isCreating, setIsCreating] = useState(false);
-  const [newNews, setNewNews] = useState({ title: '', content: '', image_url: '' });
+  const [newNews, setNewNews] = useState({ title: '', content: '' });
 
   const handleCreateNews = async () => {
     if (!newNews.title.trim() || !newNews.content.trim()) {
@@ -27,7 +28,7 @@ export default function NewsTab({ newsList, setNewsList }) {
     try {
       const res = await axios.post(`${API}/admin/news`, newNews);
       setNewsList([res.data, ...newsList]);
-      setNewNews({ title: '', content: '', image_url: '' });
+      setNewNews({ title: '', content: '' });
       setIsCreating(false);
       toast.success('Новость создана');
     } catch (err) {
@@ -41,7 +42,6 @@ export default function NewsTab({ newsList, setNewsList }) {
       await axios.put(`${API}/admin/news/${editingNews.id}`, {
         title: editingNews.title,
         content: editingNews.content,
-        image_url: editingNews.image_url
       });
       setNewsList(newsList.map(n => n.id === editingNews.id ? editingNews : n));
       setEditingNews(null);
@@ -69,8 +69,8 @@ export default function NewsTab({ newsList, setNewsList }) {
           <FileText className="w-5 h-5 text-teal-500" />
           Управление новостями
         </h2>
-        <Button 
-          onClick={() => setIsCreating(true)} 
+        <Button
+          onClick={() => setIsCreating(true)}
           className="bg-teal-500 hover:bg-teal-600"
           disabled={isCreating}
         >
@@ -86,7 +86,7 @@ export default function NewsTab({ newsList, setNewsList }) {
           <div className="space-y-3">
             <div>
               <Label className="text-xs text-zinc-500">Заголовок</Label>
-              <Input 
+              <Input
                 value={newNews.title}
                 onChange={(e) => setNewNews({ ...newNews, title: e.target.value })}
                 placeholder="Заголовок новости"
@@ -94,30 +94,21 @@ export default function NewsTab({ newsList, setNewsList }) {
             </div>
             <div>
               <Label className="text-xs text-zinc-500">Содержание</Label>
-              <textarea 
+              <RichTextEditor
                 value={newNews.content}
-                onChange={(e) => setNewNews({ ...newNews, content: e.target.value })}
-                className="w-full p-2 border border-zinc-200 rounded-lg min-h-[100px] text-sm"
-                placeholder="Текст новости..."
+                onChange={(val) => setNewNews({ ...newNews, content: val })}
+                placeholder="Текст новости... Вставляйте фото, эмодзи, форматируйте текст"
+                enableImages
+                minHeight={120}
               />
-            </div>
-            <div>
-              <Label className="text-xs text-zinc-500">URL изображения (необязательно)</Label>
-              <Input 
-                value={newNews.image_url}
-                onChange={(e) => setNewNews({ ...newNews, image_url: e.target.value })}
-                placeholder="https://..."
-              />
+              <p className="text-xs text-zinc-400 mt-1">**жирный**, _курсив_, [ссылка](url). Фото — через иконку на панели.</p>
             </div>
             <div className="flex gap-2">
               <Button onClick={handleCreateNews} className="bg-green-500 hover:bg-green-600">
                 <Save className="w-4 h-4 mr-2" />
                 Сохранить
               </Button>
-              <Button variant="outline" onClick={() => {
-                setIsCreating(false);
-                setNewNews({ title: '', content: '', image_url: '' });
-              }}>
+              <Button variant="outline" onClick={() => { setIsCreating(false); setNewNews({ title: '', content: '' }); }}>
                 <X className="w-4 h-4 mr-2" />
                 Отмена
               </Button>
@@ -133,20 +124,17 @@ export default function NewsTab({ newsList, setNewsList }) {
             {editingNews?.id === news.id ? (
               <div className="p-4 bg-zinc-50">
                 <div className="space-y-3">
-                  <Input 
+                  <Input
                     value={editingNews.title}
                     onChange={(e) => setEditingNews({ ...editingNews, title: e.target.value })}
                     placeholder="Заголовок"
                   />
-                  <textarea 
+                  <RichTextEditor
                     value={editingNews.content}
-                    onChange={(e) => setEditingNews({ ...editingNews, content: e.target.value })}
-                    className="w-full p-2 border border-zinc-200 rounded-lg min-h-[100px] text-sm"
-                  />
-                  <Input 
-                    value={editingNews.image_url || ''}
-                    onChange={(e) => setEditingNews({ ...editingNews, image_url: e.target.value })}
-                    placeholder="URL изображения"
+                    onChange={(val) => setEditingNews({ ...editingNews, content: val })}
+                    placeholder="Текст новости..."
+                    enableImages
+                    minHeight={120}
                   />
                   <div className="flex gap-2">
                     <Button onClick={handleUpdateNews} className="bg-green-500 hover:bg-green-600" size="sm">
@@ -163,23 +151,16 @@ export default function NewsTab({ newsList, setNewsList }) {
             ) : (
               <div className="p-4">
                 <div className="flex gap-4">
-                  {news.image_url && (
-                    <div className="w-20 h-20 flex-shrink-0 bg-zinc-100 rounded overflow-hidden">
-                      <img src={news.image_url} alt="" className="w-full h-full object-cover" />
-                    </div>
-                  )}
-                  {!news.image_url && (
-                    <div className="w-20 h-20 flex-shrink-0 bg-zinc-100 rounded flex items-center justify-center">
-                      <FileText className="w-8 h-8 text-zinc-300" />
-                    </div>
-                  )}
+                  <div className="w-20 h-20 flex-shrink-0 bg-zinc-100 rounded flex items-center justify-center">
+                    <FileText className="w-8 h-8 text-zinc-300" />
+                  </div>
                   <div className="flex-1">
                     <h3 className="font-semibold">{news.title}</h3>
-                    <p className="text-sm text-zinc-500 line-clamp-2 mt-1">{news.content}</p>
+                    <p className="text-sm text-zinc-500 line-clamp-2 mt-1">{news.content?.substring(0, 100)}</p>
                     <p className="text-xs text-zinc-400 mt-2">{formatDate(news.created_at)}</p>
                   </div>
                   <div className="flex gap-1">
-                    <Button variant="ghost" size="sm" onClick={() => setEditingNews(news)}>
+                    <Button variant="ghost" size="sm" onClick={() => setEditingNews({ ...news })}>
                       <Pencil className="w-4 h-4" />
                     </Button>
                     <Button variant="ghost" size="sm" onClick={() => handleDeleteNews(news.id)} className="text-red-500">

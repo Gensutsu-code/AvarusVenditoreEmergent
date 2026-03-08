@@ -118,7 +118,9 @@ export const FloatingPromoBanner = () => {
                 <a 
                   href={banner.link}
                   className="tracking-wide"
-                  onClick={(e) => e.stopPropagation()}
+                  onClick={(e) => { e.stopPropagation(); setIsExpanded(false); sessionStorage.setItem('promo_banner_collapsed', 'true'); }}
+                  target="_blank"
+                  rel="noreferrer"
                 >
                   {banner.text}
                 </a>
@@ -309,7 +311,9 @@ export const HeaderPromoBanner = () => {
                 <a 
                   href={banner.link}
                   className="tracking-wide"
-                  onClick={(e) => e.stopPropagation()}
+                  onClick={(e) => { e.stopPropagation(); setIsExpanded(false); sessionStorage.setItem('promo_banner_collapsed', 'true'); }}
+                  target="_blank"
+                  rel="noreferrer"
                 >
                   {banner.text}
                 </a>

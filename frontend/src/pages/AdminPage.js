@@ -14,6 +14,7 @@ import { Textarea } from '../components/ui/textarea';
 import { Switch } from '../components/ui/switch';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '../components/ui/dialog';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '../components/ui/tabs';
+import RichTextEditor from '../components/RichTextEditor';
 import { useAuth } from '../context/AuthContext';
 import { useTheme } from '../context/ThemeContext';
 import { toast } from 'sonner';
@@ -3308,13 +3309,16 @@ export default function AdminPage() {
                 </div>
                 <div>
                   <Label className="text-xs font-bold uppercase text-zinc-500">Содержание</Label>
-                  <Textarea value={newsForm.content} onChange={(e) => setNewsForm({...newsForm, content: e.target.value})}
-                    placeholder="Текст новости..." className="mt-1 min-h-[120px]" data-testid="news-content-input" />
-                </div>
-                <div>
-                  <Label className="text-xs font-bold uppercase text-zinc-500">URL изображения (опционально)</Label>
-                  <Input value={newsForm.image_url} onChange={(e) => setNewsForm({...newsForm, image_url: e.target.value})}
-                    placeholder="https://..." className="mt-1" />
+                  <div className="mt-1">
+                    <RichTextEditor
+                      value={newsForm.content}
+                      onChange={(val) => setNewsForm({...newsForm, content: val})}
+                      placeholder="Текст новости... Используйте **жирный**, _курсив_, вставляйте фото и эмодзи"
+                      enableImages
+                      minHeight={150}
+                    />
+                  </div>
+                  <p className="text-xs text-zinc-400 mt-1">Формат: **жирный**, _курсив_, [ссылка](url), - список. Фото вставляются через панель инструментов.</p>
                 </div>
                 <Button onClick={async () => {
                   if (!newsForm.title || !newsForm.content) { toast.error('Заполните заголовок и содержание'); return; }

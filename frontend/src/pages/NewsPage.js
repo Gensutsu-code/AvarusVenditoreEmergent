@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import axios from 'axios';
 import { Newspaper, Calendar, ArrowLeft, ChevronRight } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
+import RichContent from '../components/RichContent';
 
 const API = `${process.env.REACT_APP_BACKEND_URL}/api`;
 
@@ -96,7 +97,7 @@ export default function NewsPage() {
               </div>
               <h1 className="text-3xl font-bold text-slate-800 mb-6">{selectedArticle.title}</h1>
               <div className="prose prose-slate max-w-none text-slate-600 whitespace-pre-wrap leading-relaxed">
-                {linkifyText(selectedArticle.content)}
+                {<RichContent text={selectedArticle.content} />}
               </div>
             </div>
           </motion.article>

@@ -4,6 +4,7 @@ import { Input } from '../ui/input';
 import { Label } from '../ui/label';
 import { Switch } from '../ui/switch';
 import { Save, Upload, Trash2, ChevronLeft, ChevronRight } from 'lucide-react';
+import EmojiInput from '../EmojiInput';
 
 export default function PromoTab({
   promoBanner,
@@ -33,9 +34,9 @@ export default function PromoTab({
 
         <div>
           <Label className={`text-xs font-bold uppercase ${isDark ? 'text-zinc-500' : 'text-zinc-500'}`}>Текст баннера</Label>
-          <Input
+          <EmojiInput
             value={promoBanner.text}
-            onChange={(e) => setPromoBanner({ ...promoBanner, text: e.target.value })}
+            onChange={(val) => setPromoBanner({ ...promoBanner, text: val })}
             placeholder="Скидка 10% на все товары!"
             className={`mt-1 ${isDark ? 'bg-zinc-900/50 border-zinc-700 text-zinc-100' : ''}`}
             data-testid="promo-text"
