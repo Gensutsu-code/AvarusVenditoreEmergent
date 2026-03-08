@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
+import { useAuth } from '../context/AuthContext';
 import axios from 'axios';
 import { Search, ArrowRight, Truck, Shield, Clock, Package } from 'lucide-react';
 import { motion } from 'framer-motion';
@@ -23,6 +24,7 @@ const FEATURES = [
 ];
 
 export default function HomePage() {
+  const { user } = useAuth();
   const [partners, setPartners] = useState(DEFAULT_PARTNERS);
 
   useEffect(() => {
@@ -89,6 +91,7 @@ export default function HomePage() {
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.6, delay: 0.4 }}
               >
+                {user ? (
                 <Link to="/catalog" data-testid="go-to-search-btn">
                   <motion.button
                     className="group inline-flex items-center gap-3 bg-gradient-to-r from-teal-500 to-emerald-500 hover:from-teal-600 hover:to-emerald-600 shadow-lg shadow-teal-500/30 text-white font-bold uppercase tracking-wide px-8 py-4 rounded-2xl transition-all duration-300"
@@ -100,6 +103,17 @@ export default function HomePage() {
                     <ArrowRight className="w-5 h-5 transition-transform group-hover:translate-x-1" />
                   </motion.button>
                 </Link>
+                ) : (
+                  <motion.button
+                    className="group inline-flex items-center gap-3 bg-zinc-300 text-zinc-500 cursor-not-allowed font-bold uppercase tracking-wide px-8 py-4 rounded-2xl"
+                    disabled
+                    data-testid="go-to-search-btn-disabled"
+                  >
+                    <Search className="w-5 h-5" />
+                    К покупкам
+                    <ArrowRight className="w-5 h-5" />
+                  </motion.button>
+                )}
               </motion.div>
             </motion.div>
 
