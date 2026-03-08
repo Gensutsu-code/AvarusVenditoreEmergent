@@ -140,14 +140,14 @@ export default function HomePage() {
                         href={partner.link || '#'}
                         target={partner.link ? '_blank' : undefined}
                         rel={partner.link ? 'noopener noreferrer' : undefined}
-                        className="group relative bg-gradient-to-br from-slate-50 to-white border border-slate-100 p-3 hover:border-teal-300 hover:shadow-lg hover:shadow-teal-500/10 transition-all duration-300 rounded-xl overflow-hidden block hover:-translate-y-0.5"
+                        className="group relative bg-gradient-to-br from-slate-50 to-white border border-slate-100 p-2 hover:border-teal-300 hover:shadow-lg hover:shadow-teal-500/10 transition-all duration-300 rounded-xl overflow-hidden block hover:-translate-y-0.5"
                         initial={{ opacity: 0, scale: 0.9 }}
                         animate={{ opacity: 1, scale: 1 }}
                         transition={{ duration: 0.3, delay: 0.4 + index * 0.08 }}
                         whileHover={{ scale: 1.02 }}
                       >
                         {partner.image_url && (
-                          <div className="w-full h-10 mb-1.5 flex items-center justify-center">
+                          <div className="w-full h-16 mb-1 flex items-center justify-center">
                             <img 
                               src={partner.image_url} 
                               alt={partner.name}
