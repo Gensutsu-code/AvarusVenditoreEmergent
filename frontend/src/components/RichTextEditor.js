@@ -51,9 +51,9 @@ export default function RichTextEditor({ value, onChange, placeholder, minHeight
   };
 
   return (
-    <div className="border border-zinc-200 rounded-xl overflow-hidden">
+    <div className="border border-zinc-200 rounded-xl" style={{ overflow: 'visible' }}>
       {/* Toolbar */}
-      <div className="flex items-center gap-1 px-2 py-1.5 bg-zinc-50 border-b border-zinc-200 flex-wrap">
+      <div className="flex items-center gap-1 px-2 py-1.5 bg-zinc-50 border-b border-zinc-200 flex-wrap rounded-t-xl relative">
         <button type="button" onClick={() => wrapSelection('**', '**')} className="p-1.5 rounded hover:bg-zinc-200 transition" title="Жирный">
           <Bold className="w-4 h-4 text-zinc-600" />
         </button>
@@ -68,7 +68,7 @@ export default function RichTextEditor({ value, onChange, placeholder, minHeight
         </button>
         {enableImages && (
           <>
-            <button type="button" onClick={() => fileInputRef.current?.click()} disabled={uploading} className="p-1.5 rounded hover:bg-zinc-200 transition" title="Загрузить фото">
+            <button type="button" onClick={() => fileInputRef.current?.click()} disabled={uploading} className="p-1.5 rounded hover:bg-zinc-200 transition" title="Вставить фото в текст">
               <Image className="w-4 h-4 text-zinc-600" />
             </button>
             <input ref={fileInputRef} type="file" accept="image/*" onChange={handleImageUpload} className="hidden" />
@@ -80,7 +80,7 @@ export default function RichTextEditor({ value, onChange, placeholder, minHeight
             <Smile className="w-4 h-4 text-zinc-600" />
           </button>
           {showEmoji && (
-            <div className="absolute top-full left-0 z-50 mt-1">
+            <div className="absolute bottom-full left-0 z-[100] mb-2" style={{ filter: 'drop-shadow(0 4px 12px rgba(0,0,0,0.15))' }}>
               <div className="relative">
                 <button onClick={() => setShowEmoji(false)} className="absolute -top-2 -right-2 z-10 bg-white border rounded-full p-0.5 shadow">
                   <X className="w-3 h-3" />

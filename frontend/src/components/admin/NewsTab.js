@@ -1,8 +1,8 @@
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import { Button } from '../ui/button';
 import { Input } from '../ui/input';
 import { Label } from '../ui/label';
-import { Plus, Pencil, Trash2, Save, X, FileText } from 'lucide-react';
+import { Plus, Pencil, Trash2, Save, X, FileText, Upload } from 'lucide-react';
 import axios from 'axios';
 import { toast } from 'sonner';
 import RichTextEditor from '../RichTextEditor';
@@ -18,7 +18,25 @@ const formatDate = (dateStr) => {
 export default function NewsTab({ newsList, setNewsList }) {
   const [editingNews, setEditingNews] = useState(null);
   const [isCreating, setIsCreating] = useState(false);
-  const [newNews, setNewNews] = useState({ title: '', content: '' });
+  const [newNews, setNewNews] = useState({ title: '', content: '', image_url: '' });
+  const [uploadingCover, setUploadingCover] = useState(false);
+  const coverInputRef = useRef(null);
+  const editCoverInputRef = useRef(null);
+
+  const handleCoverUpload = async (e, target) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setUploadingCover(true);
+    try {
+      const formData = new FormData();
+      formData.append('file', file);
+      const res = await axios.post(`${API}/upload`, formData, { headers: { 'Content-Type': 'multipart/form-data' } });
+      if (target === 'new') setNewNews(prev => ({ ...prev, image_url: res.data.url }));
+      else if (target === 'edit') setEditingNews(prev => ({ ...prev, image_url: res.data.url }));
+      toast.success('Фото загружено');
+    } catch { toast.error('Ошибка загрузки'); }
+    finally { setUploadingCover(false); e.target.value = ''; }
+  };
 
   const handleCreateNews = async () => {
     if (!newNews.title.trim() || !newNews.content.trim()) {
@@ -28,7 +46,7 @@ export default function NewsTab({ newsList, setNewsList }) {
     try {
       const res = await axios.post(`${API}/admin/news`, newNews);
       setNewsList([res.data, ...newsList]);
-      setNewNews({ title: '', content: '' });
+      setNewNews({ title: '', content: '', image_url: '' });
       setIsCreating(false);
       toast.success('Новость создана');
     } catch (err) {
@@ -42,6 +60,7 @@ export default function NewsTab({ newsList, setNewsList }) {
       await axios.put(`${API}/admin/news/${editingNews.id}`, {
         title: editingNews.title,
         content: editingNews.content,
+        image_url: editingNews.image_url || '',
       });
       setNewsList(newsList.map(n => n.id === editingNews.id ? editingNews : n));
       setEditingNews(null);
@@ -101,7 +120,25 @@ export default function NewsTab({ newsList, setNewsList }) {
                 enableImages
                 minHeight={120}
               />
-              <p className="text-xs text-zinc-400 mt-1">**жирный**, _курсив_, [ссылка](url). Фото — через иконку на панели.</p>
+              <p className="text-xs text-zinc-400 mt-1">**жирный**, _курсив_, [ссылка](url). Фото в текст — через иконку на панели.</p>
+            </div>
+            <div>
+              <Label className="text-xs text-zinc-500">Обложка новости</Label>
+              <div className="flex items-center gap-3 mt-1">
+                {newNews.image_url && (
+                  <div className="relative w-20 h-20 rounded-lg overflow-hidden border">
+                    <img src={newNews.image_url} alt="" className="w-full h-full object-cover" />
+                    <button onClick={() => setNewNews({ ...newNews, image_url: '' })} className="absolute top-0.5 right-0.5 bg-red-500 text-white rounded-full w-5 h-5 flex items-center justify-center">
+                      <X className="w-3 h-3" />
+                    </button>
+                  </div>
+                )}
+                <label className={`inline-flex items-center gap-2 px-3 py-2 rounded-lg cursor-pointer border border-dashed border-zinc-300 hover:border-teal-400 hover:bg-teal-50 transition text-sm text-zinc-600 ${uploadingCover ? 'opacity-50 pointer-events-none' : ''}`}>
+                  <Upload className="w-4 h-4" />
+                  {uploadingCover ? 'Загрузка...' : 'Загрузить фото'}
+                  <input ref={coverInputRef} type="file" accept="image/*" onChange={(e) => handleCoverUpload(e, 'new')} className="hidden" />
+                </label>
+              </div>
             </div>
             <div className="flex gap-2">
               <Button onClick={handleCreateNews} className="bg-green-500 hover:bg-green-600">
@@ -136,6 +173,24 @@ export default function NewsTab({ newsList, setNewsList }) {
                     enableImages
                     minHeight={120}
                   />
+                  <div className="mt-2">
+                    <Label className="text-xs text-zinc-500">Обложка</Label>
+                    <div className="flex items-center gap-3 mt-1">
+                      {editingNews.image_url && (
+                        <div className="relative w-16 h-16 rounded-lg overflow-hidden border">
+                          <img src={editingNews.image_url} alt="" className="w-full h-full object-cover" />
+                          <button onClick={() => setEditingNews({ ...editingNews, image_url: '' })} className="absolute top-0.5 right-0.5 bg-red-500 text-white rounded-full w-4 h-4 flex items-center justify-center">
+                            <X className="w-2.5 h-2.5" />
+                          </button>
+                        </div>
+                      )}
+                      <label className={`inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg cursor-pointer border border-dashed border-zinc-300 hover:border-teal-400 transition text-xs text-zinc-600 ${uploadingCover ? 'opacity-50' : ''}`}>
+                        <Upload className="w-3.5 h-3.5" />
+                        {uploadingCover ? '...' : 'Фото'}
+                        <input ref={editCoverInputRef} type="file" accept="image/*" onChange={(e) => handleCoverUpload(e, 'edit')} className="hidden" />
+                      </label>
+                    </div>
+                  </div>
                   <div className="flex gap-2">
                     <Button onClick={handleUpdateNews} className="bg-green-500 hover:bg-green-600" size="sm">
                       <Save className="w-4 h-4 mr-1" />
@@ -151,8 +206,12 @@ export default function NewsTab({ newsList, setNewsList }) {
             ) : (
               <div className="p-4">
                 <div className="flex gap-4">
-                  <div className="w-20 h-20 flex-shrink-0 bg-zinc-100 rounded flex items-center justify-center">
-                    <FileText className="w-8 h-8 text-zinc-300" />
+                  <div className="w-20 h-20 flex-shrink-0 bg-zinc-100 rounded-lg overflow-hidden flex items-center justify-center">
+                    {news.image_url ? (
+                      <img src={news.image_url} alt="" className="w-full h-full object-cover" />
+                    ) : (
+                      <FileText className="w-8 h-8 text-zinc-300" />
+                    )}
                   </div>
                   <div className="flex-1">
                     <h3 className="font-semibold">{news.title}</h3>
