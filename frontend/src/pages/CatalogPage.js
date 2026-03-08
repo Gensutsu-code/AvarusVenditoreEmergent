@@ -92,7 +92,7 @@ const ProductCard = ({
             <Truck className="w-3 h-3 mr-0.5" />{getDeliveryText(product.delivery_days || 3)}
           </span>
           {isAlternative && product.cross_articles && (
-            <span className="text-[11px] text-slate-400">Кросс: {product.cross_articles}</span>
+            <span className="text-[11px] text-slate-400" style={{display:'none'}}>Кросс: {product.cross_articles}</span>
           )}
         </div>
       </div>
@@ -918,7 +918,7 @@ export default function CatalogPage() {
                       </h2>
                     </div>
                     <p className="text-sm text-slate-500 mb-4">
-                      Товары, у которых артикул &quot;{searchQuery}&quot; указан в кросс-номерах
+                      Возможные аналоги и замены
                     </p>
                     
                     <div className="space-y-3" data-testid="alternatives-list">
