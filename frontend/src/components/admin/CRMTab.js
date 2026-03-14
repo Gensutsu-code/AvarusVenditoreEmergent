@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Users, BarChart3, TrendingUp, Calendar, UserCheck, Pencil, Trash2, ChevronDown, User, ShoppingBag, Package, Clock, DollarSign, Target, RefreshCw, Activity } from 'lucide-react';
+import { Users, BarChart3, TrendingUp, Calendar, UserCheck, Pencil, Trash2, ChevronDown, User, ShoppingBag, Package, Clock, DollarSign, Target, RefreshCw, Activity, ShieldOff, ShieldCheck } from 'lucide-react';
 import { Button } from '../../components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../../components/ui/select';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -14,6 +14,7 @@ export const CRMTab = ({
   formatPrice,
   handleEditUser,
   handleDeleteUser,
+  handleBlockUser,
   onViewAnalytics,
   isDark = false
 }) => {
@@ -138,12 +139,17 @@ export const CRMTab = ({
                     {/* Name and email */}
                     <div>
                       <div className="flex items-center gap-2">
-                        <span className={`font-medium ${isDark ? 'text-zinc-100' : ''}`}>
+                        <span className={`font-medium ${user.blocked ? 'line-through opacity-50' : ''} ${isDark ? 'text-zinc-100' : ''}`}>
                           {user.name || 'Без имени'}
                         </span>
                         <span className={`text-xs font-bold px-2 py-0.5 rounded ${getStatusColor(user.role)}`}>
                           {getStatusLabel(user.role)}
                         </span>
+                        {user.blocked && (
+                          <span className="text-xs font-bold px-2 py-0.5 rounded bg-red-500/20 text-red-500" data-testid={`blocked-badge-${user.id}`}>
+                            Заблокирован
+                          </span>
+                        )}
                       </div>
                       <p className={`text-sm ${isDark ? 'text-zinc-500' : 'text-zinc-500'}`}>
                         {user.email}
@@ -171,6 +177,18 @@ export const CRMTab = ({
                         title="Аналитика"
                       >
                         <Activity className="w-4 h-4" />
+                      </Button>
+                      <Button 
+                        variant="ghost" 
+                        size="sm"
+                        className={user.blocked 
+                          ? 'text-green-500 hover:text-green-600' 
+                          : `${isDark ? 'text-yellow-400 hover:text-yellow-300' : 'text-yellow-600 hover:text-yellow-700'}`}
+                        onClick={(e) => { e.stopPropagation(); handleBlockUser && handleBlockUser(user.id, user.blocked); }}
+                        data-testid={`block-user-${user.id}`}
+                        title={user.blocked ? 'Разблокировать' : 'Заблокировать'}
+                      >
+                        {user.blocked ? <ShieldCheck className="w-4 h-4" /> : <ShieldOff className="w-4 h-4" />}
                       </Button>
                       <Button 
                         variant="ghost" 

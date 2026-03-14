@@ -77,6 +77,9 @@ async def login(data: UserLogin):
     if not user or not verify_password(data.password, user["password"]):
         raise HTTPException(status_code=401, detail="Invalid credentials")
     
+    if user.get("blocked"):
+        raise HTTPException(status_code=403, detail="account_blocked")
+    
     token = create_token(user["id"])
     return {
         "token": token, 

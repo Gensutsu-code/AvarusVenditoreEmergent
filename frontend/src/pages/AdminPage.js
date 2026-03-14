@@ -597,6 +597,18 @@ export default function AdminPage() {
     setEditingUser({ ...user });
   };
 
+  const handleBlockUser = async (userId, currentBlocked) => {
+    const action = currentBlocked ? 'разблокировать' : 'заблокировать';
+    if (!window.confirm(`Вы уверены, что хотите ${action} пользователя?`)) return;
+    try {
+      const res = await axios.post(`${API}/admin/users/${userId}/block`);
+      setUsers(users.map(u => u.id === userId ? { ...u, blocked: res.data.blocked } : u));
+      toast.success(res.data.blocked ? 'Пользователь заблокирован' : 'Пользователь разблокирован');
+    } catch (err) {
+      toast.error(err.response?.data?.detail || 'Ошибка');
+    }
+  };
+
   // Order management handlers
   const openEditOrder = (order) => {
     setEditingOrder({ ...order });
@@ -3511,6 +3523,7 @@ export default function AdminPage() {
               formatPrice={formatPrice}
               handleEditUser={handleEditUser}
               handleDeleteUser={handleDeleteUser}
+              handleBlockUser={handleBlockUser}
               onViewAnalytics={setAnalyticsUser}
               isDark={isDark}
             />

@@ -254,6 +254,27 @@ async def delete_admin_user(user_id: str, user=Depends(get_current_user)):
     return {"message": "User deleted"}
 
 
+@router.post("/users/{user_id}/block")
+async def toggle_block_user(user_id: str, user=Depends(get_current_user)):
+    if user.get("role") != "admin":
+        raise HTTPException(status_code=403, detail="Admin access required")
+    
+    if user_id == user["id"]:
+        raise HTTPException(status_code=400, detail="Нельзя заблокировать самого себя")
+    
+    target = await db.users.find_one({"id": user_id}, {"_id": 0, "blocked": 1, "role": 1})
+    if not target:
+        raise HTTPException(status_code=404, detail="User not found")
+    
+    if target.get("role") == "admin":
+        raise HTTPException(status_code=400, detail="Нельзя заблокировать администратора")
+    
+    new_blocked = not target.get("blocked", False)
+    await db.users.update_one({"id": user_id}, {"$set": {"blocked": new_blocked}})
+    
+    return {"blocked": new_blocked}
+
+
 # ==================== ORDER MANAGEMENT ====================
 
 @router.get("/orders")

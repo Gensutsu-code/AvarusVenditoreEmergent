@@ -46,6 +46,8 @@ async def get_current_user(credentials: HTTPAuthorizationCredentials = Depends(s
         user = await db.users.find_one({"id": user_id}, {"_id": 0, "password": 0})
         if not user:
             raise HTTPException(status_code=401, detail="User not found")
+        if user.get("blocked"):
+            raise HTTPException(status_code=403, detail="account_blocked")
         # Set defaults for new fields
         user["customer_status"] = user.get("customer_status", "retail")
         user["individual_discount"] = user.get("individual_discount", 0)

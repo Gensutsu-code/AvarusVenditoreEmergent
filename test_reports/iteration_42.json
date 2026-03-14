@@ -1,0 +1,97 @@
+{
+  "summary": "Tested User Block/Unblock Feature for Admin Panel (Iteration 42). All 8 backend tests PASSED. Frontend CRM tab shows block/unblock toggle buttons with shield icons. Block API endpoint works correctly - toggles user.blocked field. Blocked users cannot login (403 'account_blocked'). Unblocked users can login normally.",
+
+  "backend_issues": {
+    "critical": [],
+    "minor": []
+  },
+
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [],
+    "design_issues": []
+  },
+
+  "passed_tests": {
+    "backend_1": "✓ PASS: POST /api/admin/users/{user_id}/block toggles blocked status and returns {blocked: true/false}",
+    "backend_2": "✓ PASS: Cannot block yourself (returns 400 with 'Нельзя заблокировать самого себя')",
+    "backend_3": "✓ PASS: Cannot block admin users (returns 400 with 'Нельзя заблокировать администратора')",
+    "backend_4": "✓ PASS: Block non-existent user returns 404",
+    "backend_5": "✓ PASS: Blocked user cannot login - POST /api/auth/login returns 403 with detail 'account_blocked'",
+    "backend_6": "✓ PASS: Unblocked user can login normally after being unblocked",
+    "backend_7": "✓ PASS: Blocked user's existing token returns 403 on GET /api/auth/me (get_current_user check)",
+    "backend_8": "✓ PASS: GET /api/admin/users includes 'blocked' field for each user",
+    "frontend_1": "✓ PASS: CRM tab shows Клиенты subtab with 6 clients",
+    "frontend_2": "✓ PASS: Each user row has block/unblock button with data-testid='block-user-{id}'",
+    "frontend_3": "✓ PASS: Block buttons (shield icons) are visible for all non-admin users",
+    "frontend_4": "✓ PASS: CRM tab navigation works correctly from admin panel"
+  },
+
+  "backend_test_results": {
+    "total": 8,
+    "passed": 8,
+    "failed": 0,
+    "test_file": "/app/backend/tests/test_user_blocking.py",
+    "tests": [
+      "TestBlockEndpoint::test_block_user_toggles_blocked_status - PASSED",
+      "TestBlockEndpoint::test_cannot_block_yourself - PASSED",
+      "TestBlockEndpoint::test_cannot_block_admin_user - PASSED",
+      "TestBlockEndpoint::test_block_nonexistent_user - PASSED",
+      "TestBlockedUserLogin::test_blocked_user_cannot_login - PASSED",
+      "TestBlockedUserLogin::test_unblocked_user_can_login - PASSED",
+      "TestBlockedUserAuthenticatedRequest::test_blocked_user_token_returns_403_on_me - PASSED",
+      "TestBlockedUserVisibleInAdminPanel::test_blocked_field_in_users_list - PASSED"
+    ]
+  },
+
+  "frontend_test_results": {
+    "admin_login": "PASS - Admin login works",
+    "crm_tab_navigation": "PASS - CRM tab visible and clickable",
+    "clients_list": "PASS - Shows 6 clients with user data",
+    "block_buttons": "PASS - 6 block buttons found with proper data-testid attributes"
+  },
+
+  "test_report_links": [
+    "/app/backend/tests/test_user_blocking.py",
+    "/app/test_reports/pytest/pytest_user_blocking.xml"
+  ],
+
+  "action_items": [],
+
+  "critical_code_review_comments": [
+    "database.py lines 49-50: get_current_user correctly checks user.blocked and returns 403 'account_blocked'",
+    "auth.py lines 80-81: Login endpoint correctly checks blocked status before returning token",
+    "admin.py lines 257-275: Block endpoint correctly validates - cannot block self, cannot block admins, toggles blocked field",
+    "CRMTab.js lines 164-175: Block buttons have proper data-testid and handleBlockUser callback",
+    "CRMTab.js line 149: 'Заблокирован' badge with data-testid shown for blocked users",
+    "AuthContext.js lines 27-36: 403 'account_blocked' interceptor auto-logs out blocked users",
+    "LoginPage.js lines 30-35: Login shows 'Ваш аккаунт заблокирован' toast for blocked users"
+  ],
+
+  "updated_files": [
+    "/app/backend/tests/test_user_blocking.py"
+  ],
+
+  "success_rate": {
+    "backend": "100% - 8/8 pytest tests passed",
+    "frontend": "100% - All UI elements verified present"
+  },
+
+  "test_credentials": {
+    "admin": {"email": "admin@avarus.ru", "password": "admin"},
+    "client": {"email": "user@demo.com", "password": "demo123", "user_id": "65fab4bf-5637-49c0-96a5-4f9f54ca2828"}
+  },
+
+  "seed_data_creation": "No new seed data created. Used existing client user for blocking tests.",
+
+  "retest_needed": false,
+
+  "should_main_agent_self_test": false,
+
+  "mocked_apis": {
+    "has_mocked_apis": false,
+    "mocked_apis_list": []
+  },
+
+  "context_for_next_testing_agent": "User blocking feature is fully implemented and working. Block endpoint at POST /api/admin/users/{user_id}/block toggles the blocked field. Blocked users get 403 on login and on any authenticated API call. Frontend CRM tab has shield icon buttons to block/unblock users. Test user user@demo.com (ID: 65fab4bf-5637-49c0-96a5-4f9f54ca2828) was unblocked after testing."
+}

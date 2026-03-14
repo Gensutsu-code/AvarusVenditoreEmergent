@@ -28,7 +28,12 @@ export default function LoginPage() {
       toast.success('Добро пожаловать!');
       navigate('/');
     } catch (err) {
-      toast.error(err.response?.data?.detail || 'Ошибка входа');
+      const detail = err.response?.data?.detail;
+      if (detail === 'account_blocked') {
+        toast.error('Ваш аккаунт заблокирован');
+      } else {
+        toast.error('Неверный email или пароль');
+      }
     } finally {
       setLoading(false);
     }
