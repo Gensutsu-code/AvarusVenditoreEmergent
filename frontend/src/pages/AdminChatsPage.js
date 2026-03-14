@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import { 
   MessageCircle, Send, Image, Paperclip, User, Clock, CheckCheck,
-  ChevronLeft, Search, X, Play, Tag, Check, XCircle, Loader2
+  ChevronLeft, Search, X, Play, Tag, Check, XCircle, Loader2, Package
 } from 'lucide-react';
 import { Button } from '../components/ui/button';
 import { Input } from '../components/ui/input';
@@ -56,6 +56,9 @@ export default function AdminChatsPage() {
   const [adminResponse, setAdminResponse] = useState('');
   const [adminPrice, setAdminPrice] = useState('');
   const [processing, setProcessing] = useState(false);
+  const [productRequests, setProductRequests] = useState([]);
+  const [selectedProductReq, setSelectedProductReq] = useState(null);
+  const [productReqResponse, setProductReqResponse] = useState('');
   
   // Lightbox states
   const [lightboxImage, setLightboxImage] = useState(null);
@@ -76,6 +79,7 @@ export default function AdminChatsPage() {
     }
     fetchChats();
     fetchDiscountRequests();
+    fetchProductRequests();
   }, [user, authLoading, navigate]);
 
   // Polling for new messages
@@ -151,6 +155,37 @@ export default function AdminChatsPage() {
       setAdminResponse('');
       setAdminPrice('');
       fetchDiscountRequests();
+    } catch (err) {
+      toast.error(err.response?.data?.detail || 'Ошибка');
+    } finally {
+      setProcessing(false);
+    }
+  };
+
+  const fetchProductRequests = async () => {
+    try {
+      const res = await axios.get(`${API}/admin/product-requests`);
+      setProductRequests(res.data);
+    } catch (err) {
+      console.error('Failed to fetch product requests', err);
+    }
+  };
+
+  const handleRespondProductReq = async (reqId, status) => {
+    if (!productReqResponse.trim()) {
+      toast.error('Напишите ответ клиенту');
+      return;
+    }
+    setProcessing(true);
+    try {
+      await axios.put(`${API}/admin/product-requests/${reqId}/respond`, {
+        response_message: productReqResponse,
+        status
+      });
+      toast.success(status === 'fulfilled' ? 'Запрос выполнен' : status === 'rejected' ? 'Запрос отклонён' : 'Ответ отправлен');
+      setSelectedProductReq(null);
+      setProductReqResponse('');
+      fetchProductRequests();
     } catch (err) {
       toast.error(err.response?.data?.detail || 'Ошибка');
     } finally {
@@ -246,6 +281,7 @@ export default function AdminChatsPage() {
 
   const totalUnread = chats.reduce((sum, chat) => sum + (chat.unread_count || 0), 0);
   const pendingDiscounts = discountRequests.filter(r => r.status === 'pending').length;
+  const pendingProductReqs = productRequests.filter(r => r.status === 'pending').length;
 
   if (authLoading || loading) {
     return (
@@ -298,6 +334,21 @@ export default function AdminChatsPage() {
               Запросы на скидку
               {pendingDiscounts > 0 && (
                 <span className="px-1.5 py-0.5 text-xs bg-red-500 text-white rounded-full">{pendingDiscounts}</span>
+              )}
+            </button>
+            <button
+              onClick={() => { setActiveTab('products'); fetchProductRequests(); }}
+              className={`flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold transition-all ${
+                activeTab === 'products'
+                  ? 'bg-blue-500 text-white'
+                  : isDark ? 'bg-zinc-800 text-zinc-400 hover:bg-zinc-700' : 'bg-white text-slate-600 hover:bg-slate-50 border border-slate-200'
+              }`}
+              data-testid="tab-product-requests"
+            >
+              <Package className="w-4 h-4" />
+              Запросы товара
+              {pendingProductReqs > 0 && (
+                <span className="px-1.5 py-0.5 text-xs bg-red-500 text-white rounded-full">{pendingProductReqs}</span>
               )}
             </button>
           </div>
@@ -480,6 +531,167 @@ export default function AdminChatsPage() {
                 <div className="flex-1 flex items-center justify-center">
                   <div className="text-center">
                     <Tag className={`w-12 h-12 mx-auto mb-3 ${isDark ? 'text-zinc-700' : 'text-slate-300'}`} />
+                    <p className={`text-sm ${isDark ? 'text-zinc-500' : 'text-slate-400'}`}>Выберите запрос для просмотра</p>
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
+        )}
+
+        {/* Product Requests Tab */}
+        {activeTab === 'products' && (
+          <div className="glass-card overflow-hidden flex h-[calc(100vh-240px)] min-h-[500px]" data-testid="product-requests-panel">
+            {/* Requests List */}
+            <div className={`w-96 flex-shrink-0 border-r ${isDark ? 'border-zinc-800' : 'border-zinc-200'} flex flex-col overflow-y-auto`}>
+              {productRequests.length === 0 ? (
+                <div className="flex-1 flex items-center justify-center">
+                  <p className={`text-sm ${isDark ? 'text-zinc-500' : 'text-slate-400'}`}>Нет запросов</p>
+                </div>
+              ) : (
+                productRequests.map(req => (
+                  <div
+                    key={req.id}
+                    onClick={() => { setSelectedProductReq(req); setProductReqResponse(''); }}
+                    className={`p-4 border-b cursor-pointer transition-colors ${
+                      selectedProductReq?.id === req.id
+                        ? isDark ? 'bg-zinc-800' : 'bg-blue-50'
+                        : isDark ? 'hover:bg-zinc-800/50' : 'hover:bg-slate-50'
+                    } ${isDark ? 'border-zinc-800' : 'border-zinc-100'}`}
+                    data-testid={`product-request-${req.id}`}
+                  >
+                    <div className="flex items-start gap-3">
+                      <div className={`w-10 h-10 rounded-lg flex items-center justify-center flex-shrink-0 ${isDark ? 'bg-zinc-700' : 'bg-blue-100'}`}>
+                        <Package className={`w-4 h-4 ${isDark ? 'text-blue-400' : 'text-blue-500'}`} />
+                      </div>
+                      <div className="min-w-0 flex-1">
+                        <p className={`text-sm font-semibold truncate ${isDark ? 'text-zinc-100' : 'text-slate-800'}`}>
+                          {req.user_name || req.user_email}
+                        </p>
+                        <p className={`text-xs font-mono font-bold ${isDark ? 'text-zinc-400' : 'text-slate-600'}`}>
+                          {req.article}
+                        </p>
+                        <p className={`text-xs ${isDark ? 'text-zinc-600' : 'text-slate-400'}`}>
+                          Кол-во: {req.quantity} {req.product_name ? `· ${req.product_name.substring(0, 25)}...` : ''}
+                        </p>
+                      </div>
+                      <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full flex-shrink-0 ${
+                        req.status === 'pending' ? 'bg-amber-100 text-amber-700' :
+                        req.status === 'fulfilled' ? 'bg-green-100 text-green-700' :
+                        req.status === 'responded' ? 'bg-blue-100 text-blue-700' :
+                        'bg-red-100 text-red-700'
+                      }`}>
+                        {req.status === 'pending' ? 'Новый' : req.status === 'fulfilled' ? 'Выполнен' : req.status === 'responded' ? 'Ответ' : 'Отклонён'}
+                      </span>
+                    </div>
+                  </div>
+                ))
+              )}
+            </div>
+
+            {/* Request Detail */}
+            <div className="flex-1 flex flex-col">
+              {selectedProductReq ? (
+                <>
+                  <div className={`p-5 border-b ${isDark ? 'border-zinc-800' : 'border-zinc-200'}`}>
+                    <div className="flex items-center gap-4">
+                      <div className={`w-14 h-14 rounded-xl flex items-center justify-center ${isDark ? 'bg-blue-500/10 border border-blue-500/30' : 'bg-blue-100'}`}>
+                        <Package className={`w-6 h-6 ${isDark ? 'text-blue-400' : 'text-blue-600'}`} />
+                      </div>
+                      <div>
+                        <h3 className={`font-bold font-mono text-lg ${isDark ? 'text-zinc-100' : 'text-slate-800'}`}>{selectedProductReq.article}</h3>
+                        {selectedProductReq.product_name && (
+                          <p className={`text-sm ${isDark ? 'text-zinc-400' : 'text-slate-500'}`}>{selectedProductReq.product_name}</p>
+                        )}
+                        <p className={`text-sm font-semibold ${isDark ? 'text-blue-400' : 'text-blue-600'}`}>
+                          Количество: {selectedProductReq.quantity} шт.
+                        </p>
+                      </div>
+                    </div>
+                    <div className={`mt-3 flex items-center gap-3 text-sm ${isDark ? 'text-zinc-500' : 'text-slate-500'}`}>
+                      <User className="w-4 h-4" />
+                      <span>{selectedProductReq.user_name} ({selectedProductReq.user_email})</span>
+                      <Clock className="w-4 h-4 ml-2" />
+                      <span>{new Date(selectedProductReq.created_at).toLocaleString('ru-RU')}</span>
+                    </div>
+                  </div>
+
+                  <div className="flex-1 overflow-y-auto p-5 space-y-4">
+                    {selectedProductReq.comment && (
+                      <div className={`p-4 rounded-xl ${isDark ? 'bg-zinc-800/50 border border-zinc-700' : 'bg-slate-50 border border-slate-200'}`}>
+                        <p className={`text-xs font-bold uppercase tracking-wider mb-2 ${isDark ? 'text-zinc-500' : 'text-slate-400'}`}>Комментарий клиента</p>
+                        <p className={`text-sm leading-relaxed ${isDark ? 'text-zinc-300' : 'text-slate-700'}`}>{selectedProductReq.comment}</p>
+                      </div>
+                    )}
+
+                    {selectedProductReq.status !== 'pending' && (
+                      <div className={`p-4 rounded-xl ${
+                        selectedProductReq.status === 'fulfilled'
+                          ? isDark ? 'bg-green-500/10 border border-green-500/30' : 'bg-green-50 border border-green-200'
+                          : selectedProductReq.status === 'responded'
+                          ? isDark ? 'bg-blue-500/10 border border-blue-500/30' : 'bg-blue-50 border border-blue-200'
+                          : isDark ? 'bg-red-500/10 border border-red-500/30' : 'bg-red-50 border border-red-200'
+                      }`}>
+                        <p className={`text-sm font-bold ${
+                          selectedProductReq.status === 'fulfilled' ? isDark ? 'text-green-400' : 'text-green-700'
+                          : selectedProductReq.status === 'responded' ? isDark ? 'text-blue-400' : 'text-blue-700'
+                          : isDark ? 'text-red-400' : 'text-red-700'
+                        }`}>
+                          {selectedProductReq.status === 'fulfilled' ? 'Запрос выполнен' : selectedProductReq.status === 'responded' ? 'Ответ отправлен' : 'Запрос отклонён'}
+                        </p>
+                        {selectedProductReq.admin_response && (
+                          <p className={`text-sm mt-1 ${isDark ? 'text-zinc-400' : 'text-slate-600'}`}>{selectedProductReq.admin_response}</p>
+                        )}
+                      </div>
+                    )}
+
+                    {selectedProductReq.status === 'pending' && (
+                      <div className={`p-4 rounded-xl space-y-3 ${isDark ? 'bg-zinc-800/30 border border-zinc-700/50' : 'bg-white border border-slate-200'}`}>
+                        <p className={`text-xs font-bold uppercase tracking-wider ${isDark ? 'text-zinc-500' : 'text-slate-400'}`}>Ваш ответ</p>
+                        <Textarea
+                          value={productReqResponse}
+                          onChange={(e) => setProductReqResponse(e.target.value)}
+                          placeholder="Напишите ответ клиенту..."
+                          className={`min-h-[60px] ${isDark ? 'bg-zinc-900 border-zinc-700 text-zinc-100' : ''}`}
+                          data-testid="product-req-response-input"
+                        />
+                        <div className="flex gap-2">
+                          <Button
+                            onClick={() => handleRespondProductReq(selectedProductReq.id, 'fulfilled')}
+                            disabled={processing || !productReqResponse.trim()}
+                            className="flex-1 bg-green-500 hover:bg-green-600 text-white"
+                            data-testid="fulfill-product-req-btn"
+                          >
+                            {processing ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : <Check className="w-4 h-4 mr-2" />}
+                            Выполнен
+                          </Button>
+                          <Button
+                            onClick={() => handleRespondProductReq(selectedProductReq.id, 'responded')}
+                            disabled={processing || !productReqResponse.trim()}
+                            className="flex-1 bg-blue-500 hover:bg-blue-600 text-white"
+                            data-testid="respond-product-req-btn"
+                          >
+                            {processing ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : <Send className="w-4 h-4 mr-2" />}
+                            Ответить
+                          </Button>
+                          <Button
+                            onClick={() => handleRespondProductReq(selectedProductReq.id, 'rejected')}
+                            disabled={processing || !productReqResponse.trim()}
+                            variant="outline"
+                            className="border-red-300 text-red-600 hover:bg-red-50"
+                            data-testid="reject-product-req-btn"
+                          >
+                            <XCircle className="w-4 h-4" />
+                          </Button>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                </>
+              ) : (
+                <div className="flex-1 flex items-center justify-center">
+                  <div className="text-center">
+                    <Package className={`w-12 h-12 mx-auto mb-3 ${isDark ? 'text-zinc-700' : 'text-slate-300'}`} />
                     <p className={`text-sm ${isDark ? 'text-zinc-500' : 'text-slate-400'}`}>Выберите запрос для просмотра</p>
                   </div>
                 </div>

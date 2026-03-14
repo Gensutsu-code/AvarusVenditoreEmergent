@@ -16,6 +16,7 @@ import { motion } from 'framer-motion';
 import { SearchDropdown } from '../components/SearchDropdown';
 import { trackClick } from '../utils/tracker';
 import DiscountRequestModal from '../components/DiscountRequestModal';
+import ProductRequestModal from '../components/ProductRequestModal';
 
 const API = `${process.env.REACT_APP_BACKEND_URL}/api`;
 
@@ -377,6 +378,7 @@ export default function CatalogPage() {
   const [filterOptions, setFilterOptions] = useState({ manufacturers: [], warehouses: [] });
   const [individualPrices, setIndividualPrices] = useState({});
   const [discountProduct, setDiscountProduct] = useState(null);
+  const [requestModalOpen, setRequestModalOpen] = useState(false);
   
   const { addToCart } = useCart();
   const { user } = useAuth();
@@ -909,10 +911,23 @@ export default function CatalogPage() {
               </div>
             ) : products.length === 0 && alternatives.length === 0 ? (
               <div className="text-center py-12" data-testid="no-products">
-                <p className="mb-4 text-slate-500">Товары не найдены</p>
-                <Button onClick={clearFilters} variant="outline" className="rounded-xl border-slate-300 text-slate-600 hover:bg-slate-100">
-                  Сбросить фильтры
-                </Button>
+                <Package className="w-12 h-12 mx-auto mb-4 text-slate-300" />
+                <p className="mb-2 text-slate-500">Товары не найдены</p>
+                <div className="flex flex-col items-center gap-3 mt-4">
+                  <Button onClick={clearFilters} variant="outline" className="rounded-xl border-slate-300 text-slate-600 hover:bg-slate-100">
+                    Сбросить фильтры
+                  </Button>
+                  {user && (
+                    <Button
+                      onClick={() => setRequestModalOpen(true)}
+                      className="rounded-xl bg-gradient-to-r from-blue-500 to-indigo-500 text-white hover:from-blue-600 hover:to-indigo-600"
+                      data-testid="request-product-not-found-btn"
+                    >
+                      <Package className="w-4 h-4 mr-2" />
+                      Не нашли что искали? Закажите!
+                    </Button>
+                  )}
+                </div>
               </div>
             ) : (
               <div className="space-y-8">
@@ -1013,6 +1028,13 @@ export default function CatalogPage() {
         open={!!discountProduct}
         onClose={() => setDiscountProduct(null)}
         product={discountProduct}
+      />
+
+      {/* Product Request Modal (not found) */}
+      <ProductRequestModal
+        open={requestModalOpen}
+        onClose={() => setRequestModalOpen(false)}
+        initialArticle={searchQuery || ''}
       />
     </div>
   );

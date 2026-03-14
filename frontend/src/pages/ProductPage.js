@@ -14,6 +14,7 @@ import { toast } from 'sonner';
 import { motion, AnimatePresence } from 'framer-motion';
 import { trackClick } from '../utils/tracker';
 import DiscountRequestModal from '../components/DiscountRequestModal';
+import ProductRequestModal from '../components/ProductRequestModal';
 
 const API = `${process.env.REACT_APP_BACKEND_URL}/api`;
 
@@ -31,6 +32,7 @@ export default function ProductPage() {
   const [addingToCart, setAddingToCart] = useState(false);
   const [individualPrice, setIndividualPrice] = useState(null);
   const [discountOpen, setDiscountOpen] = useState(false);
+  const [requestOpen, setRequestOpen] = useState(false);
 
   useEffect(() => {
     if (id) {
@@ -467,25 +469,44 @@ export default function ProductPage() {
                 </div>
 
                 <motion.div className="flex-1" whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}>
-                  <Button
-                    onClick={handleAddToCart}
-                    disabled={product.stock === 0 || addingToCart}
-                    className="w-full h-14 font-bold uppercase tracking-wide text-base rounded-xl shadow-lg transition-all duration-300 bg-gradient-to-r from-teal-500 to-emerald-500 hover:from-teal-600 hover:to-emerald-600 shadow-teal-500/30 text-white"
-                    data-testid="add-to-cart"
-                  >
-                    {addingToCart ? (
-                      <motion.div 
-                        className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full"
-                        animate={{ rotate: 360 }}
-                        transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
-                      />
-                    ) : (
-                      <>
-                        <ShoppingCart className="w-5 h-5 mr-2" />
-                        В корзину
-                      </>
-                    )}
-                  </Button>
+                  {product.stock > 0 ? (
+                    <Button
+                      onClick={handleAddToCart}
+                      disabled={addingToCart}
+                      className="w-full h-14 font-bold uppercase tracking-wide text-base rounded-xl shadow-lg transition-all duration-300 bg-gradient-to-r from-teal-500 to-emerald-500 hover:from-teal-600 hover:to-emerald-600 shadow-teal-500/30 text-white"
+                      data-testid="add-to-cart"
+                    >
+                      {addingToCart ? (
+                        <motion.div 
+                          className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full"
+                          animate={{ rotate: 360 }}
+                          transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
+                        />
+                      ) : (
+                        <>
+                          <ShoppingCart className="w-5 h-5 mr-2" />
+                          В корзину
+                        </>
+                      )}
+                    </Button>
+                  ) : user ? (
+                    <Button
+                      onClick={() => setRequestOpen(true)}
+                      className="w-full h-14 font-bold uppercase tracking-wide text-base rounded-xl shadow-lg transition-all duration-300 bg-gradient-to-r from-blue-500 to-indigo-500 hover:from-blue-600 hover:to-indigo-600 text-white"
+                      data-testid="request-out-of-stock-btn"
+                    >
+                      <Package className="w-5 h-5 mr-2" />
+                      Запросить товар
+                    </Button>
+                  ) : (
+                    <Button
+                      disabled
+                      className="w-full h-14 font-bold uppercase tracking-wide text-base rounded-xl opacity-50"
+                      data-testid="add-to-cart"
+                    >
+                      Нет в наличии
+                    </Button>
+                  )}
                 </motion.div>
               </div>
 
@@ -595,6 +616,13 @@ export default function ProductPage() {
       <DiscountRequestModal
         open={discountOpen}
         onClose={() => setDiscountOpen(false)}
+        product={product}
+      />
+
+      {/* Product Request Modal (out of stock) */}
+      <ProductRequestModal
+        open={requestOpen}
+        onClose={() => setRequestOpen(false)}
         product={product}
       />
     </div>
