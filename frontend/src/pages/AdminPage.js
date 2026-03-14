@@ -842,7 +842,7 @@ export default function AdminPage() {
       const formData = new FormData();
       formData.append('file', file);
       
-      const res = await axios.post(`${API}/admin/products/import`, formData, {
+      const res = await axios.post(`${API}/admin/products/import-csv`, formData, {
         headers: { 'Content-Type': 'multipart/form-data' }
       });
       
@@ -859,8 +859,52 @@ export default function AdminPage() {
     }
   };
 
-  const handleExportProducts = () => {
-    window.open(`${API}/admin/products/export`, '_blank');
+  const handleExportProducts = async () => {
+    try {
+      const res = await axios.get(`${API}/admin/products/csv-export`, { responseType: 'blob' });
+      const url = window.URL.createObjectURL(new Blob([res.data]));
+      const link = document.createElement('a');
+      link.href = url;
+      link.setAttribute('download', 'products_export.csv');
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      window.URL.revokeObjectURL(url);
+    } catch (err) {
+      toast.error('Ошибка экспорта');
+    }
+  };
+
+  const handleDownloadTemplate = async () => {
+    try {
+      const res = await axios.get(`${API}/admin/products/csv-template`, { responseType: 'blob' });
+      const url = window.URL.createObjectURL(new Blob([res.data]));
+      const link = document.createElement('a');
+      link.href = url;
+      link.setAttribute('download', 'products_template.csv');
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      window.URL.revokeObjectURL(url);
+    } catch (err) {
+      toast.error('Ошибка скачивания шаблона');
+    }
+  };
+
+  const handleDownloadPrompt = async () => {
+    try {
+      const res = await axios.get(`${API}/admin/products/csv-prompt`, { responseType: 'blob' });
+      const url = window.URL.createObjectURL(new Blob([res.data]));
+      const link = document.createElement('a');
+      link.href = url;
+      link.setAttribute('download', 'chatgpt_prompt.txt');
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      window.URL.revokeObjectURL(url);
+    } catch (err) {
+      toast.error('Ошибка скачивания промпта');
+    }
   };
 
   // Order handlers
@@ -995,16 +1039,22 @@ export default function AdminPage() {
     }
   };
 
-  const handleSendBulkEmail = async () => {
+  const handleSendBulkEmail = async (userIds = null) => {
     if (!bulkEmailForm.subject || !bulkEmailForm.html_content) {
       toast.error('Заполните тему и содержание письма');
       return;
     }
-    if (!window.confirm(`Отправить рассылку всем пользователям (${users.length})?`)) return;
+    const count = userIds ? userIds.length : users.length;
+    const label = userIds ? `выбранным пользователям (${count})` : `всем пользователям (${count})`;
+    if (!window.confirm(`Отправить рассылку ${label}?`)) return;
     
     setSendingEmail(true);
     try {
-      const res = await axios.post(`${API}/admin/email/send-bulk`, bulkEmailForm);
+      const payload = { ...bulkEmailForm };
+      if (userIds && userIds.length > 0) {
+        payload.user_ids = userIds;
+      }
+      const res = await axios.post(`${API}/admin/email/send-bulk`, payload);
       toast.success(res.data.message);
       setBulkEmailForm({ subject: '', html_content: '' });
     } catch (err) {

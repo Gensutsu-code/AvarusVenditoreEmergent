@@ -863,6 +863,42 @@ name;article;manufacturer;category_id;price;stock;description;warehouse;delivery
     )
 
 
+@router.get("/products/csv-export")
+async def export_products_csv(user=Depends(get_current_user)):
+    if user.get("role") != "admin":
+        raise HTTPException(status_code=403, detail="Admin access required")
+    
+    products_cursor = db.products.find({}, {"_id": 0})
+    products_list = await products_cursor.to_list(length=100000)
+    
+    output = io.StringIO()
+    writer = csv.writer(output, delimiter=';')
+    writer.writerow(CSV_COLUMNS)
+    
+    for p in products_list:
+        writer.writerow([
+            p.get("name", ""),
+            p.get("article", ""),
+            p.get("manufacturer", ""),
+            p.get("category_id", ""),
+            p.get("price", 0),
+            p.get("stock", 0),
+            p.get("description", ""),
+            p.get("warehouse", ""),
+            p.get("delivery_days", 3),
+            p.get("cross_articles", ""),
+            p.get("image_url", "")
+        ])
+    
+    output.seek(0)
+    content = output.getvalue().encode('utf-8-sig')
+    return StreamingResponse(
+        io.BytesIO(content),
+        media_type="text/csv",
+        headers={"Content-Disposition": "attachment; filename=products_export.csv"}
+    )
+
+
 @router.post("/products/import-csv")
 async def import_products_csv(file: UploadFile = File(...), user=Depends(get_current_user)):
     if user.get("role") != "admin":

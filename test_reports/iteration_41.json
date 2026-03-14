@@ -1,0 +1,102 @@
+{
+  "summary": "Comprehensive testing of Login Fix, CSV Import/Export, and Selective Email Sending (Iteration 41). All 10 features VERIFIED: Backend API (12/12 tests pass), Frontend UI (6/6 features pass). Login works for both admin and client users. CSV endpoints work correctly. Email bulk sending accepts user_ids for selective sending.",
+
+  "backend_issues": {
+    "critical": [],
+    "minor": []
+  },
+
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [],
+    "design_issues": []
+  },
+
+  "passed_tests": {
+    "backend_login_1": "✓ PASS: POST /api/auth/login with admin@avarus.ru/admin returns 200 with token and role=admin",
+    "backend_login_2": "✓ PASS: POST /api/auth/login with user@demo.com/demo123 returns 200 with token and role=user",
+    "backend_login_3": "✓ PASS: POST /api/auth/login with invalid credentials returns 401",
+    "backend_csv_4": "✓ PASS: GET /api/admin/products/csv-template returns CSV file with headers (name, article, manufacturer, etc.)",
+    "backend_csv_5": "✓ PASS: GET /api/admin/products/csv-prompt returns text file with ChatGPT prompt",
+    "backend_csv_6": "✓ PASS: GET /api/admin/products/csv-export returns CSV file with products data",
+    "backend_csv_7": "✓ PASS: POST /api/admin/products/import-csv accepts CSV file and returns imported/skipped counts",
+    "backend_email_8": "✓ PASS: GET /api/admin/notification-settings returns resend_configured: true",
+    "backend_email_9": "✓ PASS: POST /api/admin/email/send-bulk accepts user_ids parameter for selective sending",
+    "frontend_admin_10": "✓ PASS: Admin panel loads with all 6 tabs (Каталог, Бонусы, Платежи, CRM, Маркетинг, Настройки)",
+    "frontend_email_11": "✓ PASS: Marketing tab → Рассылки subtab shows 'Все/Выборочно' toggle with user selection list",
+    "frontend_csv_12": "✓ PASS: Settings tab → Импорт subtab shows template/prompt download buttons and CSV upload"
+  },
+
+  "backend_test_results": {
+    "total": 12,
+    "passed": 12,
+    "failed": 0,
+    "test_file": "/app/backend/tests/test_login_csv_email.py",
+    "tests": [
+      "TestLogin::test_admin_login - PASSED",
+      "TestLogin::test_client_login - PASSED",
+      "TestLogin::test_invalid_login - PASSED",
+      "TestCSVEndpoints::test_csv_template_download - PASSED",
+      "TestCSVEndpoints::test_csv_prompt_download - PASSED",
+      "TestCSVEndpoints::test_csv_export - PASSED",
+      "TestCSVEndpoints::test_csv_import - PASSED",
+      "TestEmailNotifications::test_notification_settings - PASSED",
+      "TestEmailNotifications::test_bulk_email_with_user_ids - PASSED",
+      "TestAdminPanelAccess::test_admin_stats - PASSED",
+      "TestAdminPanelAccess::test_admin_users_list - PASSED",
+      "TestAdminPanelAccess::test_admin_orders_list - PASSED"
+    ]
+  },
+
+  "frontend_test_results": {
+    "admin_login": "PASS - Admin login works, redirects to admin panel",
+    "client_login": "PASS - Client login works, shows 'Добро пожаловать!' toast and redirects to homepage",
+    "admin_panel_tabs": "PASS - All 6 main tabs visible (Каталог, Бонусы, Платежи, CRM, Маркетинг, Настройки)",
+    "marketing_newsletters": "PASS - Рассылки subtab shows email settings, test email, bulk email with 'Все/Выборочно' toggle",
+    "selective_user_sending": "PASS - User selection list appears with search, select all, and individual checkboxes",
+    "settings_import": "PASS - Импорт subtab shows 'Скачать шаблон CSV', 'Скачать промпт для ChatGPT', and 'Выбрать CSV файл' buttons"
+  },
+
+  "test_report_links": [
+    "/app/backend/tests/test_login_csv_email.py",
+    "/app/test_reports/pytest/pytest_iteration41.xml"
+  ],
+
+  "action_items": [],
+
+  "critical_code_review_comments": [
+    "auth.py: verify_password() correctly handles bcrypt hashed passwords and plain password fallback for legacy support",
+    "admin.py lines 793-995: CSV import/export endpoints properly handle UTF-8-sig encoding and semicolon delimiter",
+    "notifications.py line 356-411: send_bulk endpoint correctly filters users by user_ids when provided",
+    "NotificationsTab.js lines 23-56: Implements sendMode state ('all'/'selected') with selectedUserIds array",
+    "SettingsTab.js ImportTab: Self-contained component with template/prompt downloads and CSV upload",
+    "MarketingTab.js: Properly renders NotificationsTab in Рассылки subtab with all required props"
+  ],
+
+  "updated_files": [
+    "/app/backend/tests/test_login_csv_email.py"
+  ],
+
+  "success_rate": {
+    "backend": "100% - 12/12 pytest tests passed",
+    "frontend": "100% - All 6 UI features verified via Playwright"
+  },
+
+  "test_credentials": {
+    "admin": {"email": "admin@avarus.ru", "password": "admin"},
+    "client": {"email": "user@demo.com", "password": "demo123"}
+  },
+
+  "seed_data_creation": "Created test product TEST_ART_41 during CSV import test (cleaned up after test)",
+
+  "retest_needed": false,
+
+  "should_main_agent_self_test": false,
+
+  "mocked_apis": {
+    "payment_gateways": "MOCKED - ЮKassa card payment gateway is a placeholder",
+    "email_sandbox": "NOTE - Resend API is in sandbox mode, can only send to avopt.store@gmail.com"
+  },
+
+  "context_for_next_testing_agent": "Login is fully working for both admin (admin@avarus.ru/admin) and client (user@demo.com/demo123). CSV import/export endpoints work at /api/admin/products/. Email bulk sending supports user_ids parameter for selective sending. The NotificationsTab component has 'Все/Выборочно' toggle that shows user selection list. ImportTab in SettingsTab has template and prompt download buttons."
+}

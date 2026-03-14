@@ -39,7 +39,8 @@ class EmailRequest(BaseModel):
 class BulkEmailRequest(BaseModel):
     subject: str
     html_content: str
-    recipient_type: str = "all"  # all, subscribed
+    recipient_type: str = "all"  # all, subscribed, selected
+    user_ids: Optional[List[str]] = None
 
 class TestEmailRequest(BaseModel):
     email: EmailStr
@@ -368,7 +369,11 @@ async def send_bulk_email(data: BulkEmailRequest, user=Depends(get_current_user)
         raise HTTPException(status_code=400, detail="Промо-рассылки отключены в настройках")
     
     # Get users with emails
-    query = {"email": {"$exists": True, "$ne": ""}}
+    if data.user_ids and len(data.user_ids) > 0:
+        # Selective sending to specific users
+        query = {"id": {"$in": data.user_ids}, "email": {"$exists": True, "$ne": ""}}
+    else:
+        query = {"email": {"$exists": True, "$ne": ""}}
     users_cursor = db.users.find(query, {"_id": 0, "email": 1, "name": 1})
     users_list = await users_cursor.to_list(length=10000)
     
