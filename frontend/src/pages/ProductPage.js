@@ -13,6 +13,7 @@ import { FavoritesButton } from '../components/FavoritesButton';
 import { toast } from 'sonner';
 import { motion, AnimatePresence } from 'framer-motion';
 import { trackClick } from '../utils/tracker';
+import DiscountRequestModal from '../components/DiscountRequestModal';
 
 const API = `${process.env.REACT_APP_BACKEND_URL}/api`;
 
@@ -28,6 +29,8 @@ export default function ProductPage() {
   const [quantity, setQuantity] = useState(1);
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
   const [addingToCart, setAddingToCart] = useState(false);
+  const [individualPrice, setIndividualPrice] = useState(null);
+  const [discountOpen, setDiscountOpen] = useState(false);
 
   useEffect(() => {
     if (id) {
@@ -35,6 +38,16 @@ export default function ProductPage() {
       fetchRelatedProducts();
     }
   }, [id]);
+
+  // Fetch individual price for this product
+  useEffect(() => {
+    if (user && id) {
+      axios.get(`${API}/individual-prices/my`).then(r => {
+        const ip = r.data.find(p => p.product_id === id);
+        setIndividualPrice(ip ? ip.price : null);
+      }).catch(() => {});
+    }
+  }, [user, id]);
 
   const fetchProduct = async () => {
     setLoading(true);
@@ -332,9 +345,19 @@ export default function ProductPage() {
               <div className="relative flex items-center justify-between flex-wrap gap-4">
                 <div>
                   <p className="text-xs uppercase tracking-wider mb-1 text-slate-500">Цена</p>
-                  <p className="text-4xl font-bold text-teal-600" data-testid="product-price">
-                    {formatPrice(product.price)} <span className="text-lg text-slate-400">₽</span>
-                  </p>
+                  {individualPrice != null ? (
+                    <div>
+                      <p className="text-sm line-through text-slate-400 mb-0.5">{formatPrice(product.price)} ₽</p>
+                      <p className="text-4xl font-bold text-emerald-600" data-testid="product-price">
+                        {formatPrice(individualPrice)} <span className="text-lg text-slate-400">₽</span>
+                      </p>
+                      <p className="text-xs text-emerald-600 font-semibold mt-1">Ваша индивидуальная цена</p>
+                    </div>
+                  ) : (
+                    <p className="text-4xl font-bold text-teal-600" data-testid="product-price">
+                      {formatPrice(product.price)} <span className="text-lg text-slate-400">₽</span>
+                    </p>
+                  )}
                 </div>
                 
                 <div className={`flex items-center gap-2 px-4 py-2 rounded-xl ${
@@ -470,6 +493,19 @@ export default function ProductPage() {
               <div className="flex gap-3">
                 <FavoritesButton productId={product.id} size="lg" className="flex-1" showText />
                 
+                {user && !individualPrice && (
+                  <motion.button
+                    onClick={() => setDiscountOpen(true)}
+                    className="flex items-center justify-center gap-2 px-6 py-3 rounded-xl font-medium transition-all duration-300 bg-gradient-to-r from-rose-50 to-pink-50 border border-rose-200 text-rose-600 hover:from-rose-100 hover:to-pink-100"
+                    whileHover={{ scale: 1.02 }}
+                    whileTap={{ scale: 0.98 }}
+                    data-testid="request-discount-btn"
+                  >
+                    <Tag className="w-5 h-5" />
+                    Запросить скидку
+                  </motion.button>
+                )}
+                
                 <motion.button
                   onClick={handleShare}
                   className="flex items-center justify-center gap-2 px-6 py-3 rounded-xl font-medium transition-all duration-300 bg-white/50 border border-slate-200 text-slate-600 hover:bg-white/80"
@@ -554,6 +590,13 @@ export default function ProductPage() {
           </motion.section>
         )}
       </div>
+
+      {/* Discount Request Modal */}
+      <DiscountRequestModal
+        open={discountOpen}
+        onClose={() => setDiscountOpen(false)}
+        product={product}
+      />
     </div>
   );
 }

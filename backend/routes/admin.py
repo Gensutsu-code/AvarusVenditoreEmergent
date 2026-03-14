@@ -439,6 +439,15 @@ async def update_order_status(order_id: str, status: str, user=Depends(get_curre
     
     await db.orders.update_one({"id": order_id}, {"$set": {"status": status}})
     
+    # Deactivate individual prices when order is completed
+    if status == "completed":
+        for item in order.get("items", []):
+            if item.get("has_individual_price"):
+                await db.individual_prices.update_many(
+                    {"user_id": order["user_id"], "product_id": item["product_id"], "active": True},
+                    {"$set": {"active": False, "used_in_order_id": order_id}}
+                )
+    
     # Notify user
     status_labels = {
         "pending": "ожидает обработки",

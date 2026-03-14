@@ -3,10 +3,11 @@ import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import { 
   MessageCircle, Send, Image, Paperclip, User, Clock, CheckCheck,
-  ChevronLeft, Search, X, Play
+  ChevronLeft, Search, X, Play, Tag, Check, XCircle, Loader2
 } from 'lucide-react';
 import { Button } from '../components/ui/button';
 import { Input } from '../components/ui/input';
+import { Textarea } from '../components/ui/textarea';
 import { useAuth } from '../context/AuthContext';
 import { useTheme } from '../context/ThemeContext';
 import { toast } from 'sonner';
@@ -49,6 +50,12 @@ export default function AdminChatsPage() {
   const [loading, setLoading] = useState(true);
   const [sending, setSending] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
+  const [activeTab, setActiveTab] = useState('chats'); // 'chats' | 'discounts'
+  const [discountRequests, setDiscountRequests] = useState([]);
+  const [selectedRequest, setSelectedRequest] = useState(null);
+  const [adminResponse, setAdminResponse] = useState('');
+  const [adminPrice, setAdminPrice] = useState('');
+  const [processing, setProcessing] = useState(false);
   
   // Lightbox states
   const [lightboxImage, setLightboxImage] = useState(null);
@@ -68,6 +75,7 @@ export default function AdminChatsPage() {
       return;
     }
     fetchChats();
+    fetchDiscountRequests();
   }, [user, authLoading, navigate]);
 
   // Polling for new messages
@@ -97,6 +105,56 @@ export default function AdminChatsPage() {
       console.error('Failed to fetch chats', err);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const fetchDiscountRequests = async () => {
+    try {
+      const res = await axios.get(`${API}/admin/discount-requests`);
+      setDiscountRequests(res.data);
+    } catch (err) {
+      console.error('Failed to fetch discount requests', err);
+    }
+  };
+
+  const handleApproveRequest = async (reqId) => {
+    if (!adminPrice || parseFloat(adminPrice) <= 0) {
+      toast.error('Укажите индивидуальную цену');
+      return;
+    }
+    setProcessing(true);
+    try {
+      await axios.put(`${API}/admin/discount-requests/${reqId}/approve`, {
+        individual_price: parseFloat(adminPrice),
+        response_message: adminResponse
+      });
+      toast.success('Скидка одобрена');
+      setSelectedRequest(null);
+      setAdminResponse('');
+      setAdminPrice('');
+      fetchDiscountRequests();
+    } catch (err) {
+      toast.error(err.response?.data?.detail || 'Ошибка');
+    } finally {
+      setProcessing(false);
+    }
+  };
+
+  const handleRejectRequest = async (reqId) => {
+    setProcessing(true);
+    try {
+      await axios.put(`${API}/admin/discount-requests/${reqId}/reject`, {
+        response_message: adminResponse
+      });
+      toast.success('Запрос отклонён');
+      setSelectedRequest(null);
+      setAdminResponse('');
+      setAdminPrice('');
+      fetchDiscountRequests();
+    } catch (err) {
+      toast.error(err.response?.data?.detail || 'Ошибка');
+    } finally {
+      setProcessing(false);
     }
   };
 
@@ -187,6 +245,7 @@ export default function AdminChatsPage() {
   );
 
   const totalUnread = chats.reduce((sum, chat) => sum + (chat.unread_count || 0), 0);
+  const pendingDiscounts = discountRequests.filter(r => r.status === 'pending').length;
 
   if (authLoading || loading) {
     return (
@@ -203,21 +262,235 @@ export default function AdminChatsPage() {
   return (
     <div className={`min-h-screen ${isDark ? 'bg-zinc-950' : ''}`} data-testid="admin-chats-page">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        {/* Header */}
+        {/* Header with tabs */}
         <div className="mb-6">
-          <h1 className={`text-2xl md:text-3xl font-bold tracking-tight uppercase ${isDark ? 'text-white' : 'text-slate-800'}`}>
+          <h1 className={`text-2xl md:text-3xl font-bold tracking-tight uppercase mb-4 ${isDark ? 'text-white' : 'text-slate-800'}`}>
             <span className={`bg-gradient-to-r ${isDark ? 'from-orange-400 to-orange-600' : 'from-teal-500 to-emerald-500'} bg-clip-text text-transparent`}>
-              Чаты с клиентами
+              Коммуникации
             </span>
-            {totalUnread > 0 && (
-              <span className="ml-3 px-2 py-1 text-sm bg-red-500 text-white rounded-full">
-                {totalUnread}
-              </span>
-            )}
           </h1>
+          <div className="flex gap-2">
+            <button
+              onClick={() => setActiveTab('chats')}
+              className={`flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold transition-all ${
+                activeTab === 'chats'
+                  ? isDark ? 'bg-orange-500 text-white' : 'bg-teal-500 text-white'
+                  : isDark ? 'bg-zinc-800 text-zinc-400 hover:bg-zinc-700' : 'bg-white text-slate-600 hover:bg-slate-50 border border-slate-200'
+              }`}
+              data-testid="tab-chats"
+            >
+              <MessageCircle className="w-4 h-4" />
+              Чаты
+              {totalUnread > 0 && (
+                <span className="px-1.5 py-0.5 text-xs bg-red-500 text-white rounded-full">{totalUnread}</span>
+              )}
+            </button>
+            <button
+              onClick={() => { setActiveTab('discounts'); fetchDiscountRequests(); }}
+              className={`flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold transition-all ${
+                activeTab === 'discounts'
+                  ? 'bg-rose-500 text-white'
+                  : isDark ? 'bg-zinc-800 text-zinc-400 hover:bg-zinc-700' : 'bg-white text-slate-600 hover:bg-slate-50 border border-slate-200'
+              }`}
+              data-testid="tab-discounts"
+            >
+              <Tag className="w-4 h-4" />
+              Запросы на скидку
+              {pendingDiscounts > 0 && (
+                <span className="px-1.5 py-0.5 text-xs bg-red-500 text-white rounded-full">{pendingDiscounts}</span>
+              )}
+            </button>
+          </div>
         </div>
 
-        <div className={`glass-card overflow-hidden flex h-[calc(100vh-200px)] min-h-[500px]`}>
+        {/* Discount Requests Tab */}
+        {activeTab === 'discounts' && (
+          <div className="glass-card overflow-hidden flex h-[calc(100vh-240px)] min-h-[500px]" data-testid="discount-requests-panel">
+            {/* Requests List */}
+            <div className={`w-96 flex-shrink-0 border-r ${isDark ? 'border-zinc-800' : 'border-zinc-200'} flex flex-col overflow-y-auto`}>
+              {discountRequests.length === 0 ? (
+                <div className="flex-1 flex items-center justify-center">
+                  <p className={`text-sm ${isDark ? 'text-zinc-500' : 'text-slate-400'}`}>Нет запросов</p>
+                </div>
+              ) : (
+                discountRequests.map(req => (
+                  <div
+                    key={req.id}
+                    onClick={() => { setSelectedRequest(req); setAdminResponse(''); setAdminPrice(req.individual_price ? String(req.individual_price) : ''); }}
+                    className={`p-4 border-b cursor-pointer transition-colors ${
+                      selectedRequest?.id === req.id
+                        ? isDark ? 'bg-zinc-800' : 'bg-teal-50'
+                        : isDark ? 'hover:bg-zinc-800/50' : 'hover:bg-slate-50'
+                    } ${isDark ? 'border-zinc-800' : 'border-zinc-100'}`}
+                    data-testid={`discount-request-${req.id}`}
+                  >
+                    <div className="flex items-start gap-3">
+                      {req.product_image_url ? (
+                        <img src={req.product_image_url} alt="" className="w-10 h-10 rounded-lg object-cover border flex-shrink-0" />
+                      ) : (
+                        <div className={`w-10 h-10 rounded-lg flex items-center justify-center flex-shrink-0 ${isDark ? 'bg-zinc-700' : 'bg-slate-100'}`}>
+                          <Tag className="w-4 h-4 text-slate-400" />
+                        </div>
+                      )}
+                      <div className="min-w-0 flex-1">
+                        <p className={`text-sm font-semibold truncate ${isDark ? 'text-zinc-100' : 'text-slate-800'}`}>
+                          {req.user_name || req.user_email}
+                        </p>
+                        <p className={`text-xs truncate ${isDark ? 'text-zinc-500' : 'text-slate-500'}`}>
+                          {req.product_name}
+                        </p>
+                        <p className={`text-xs font-mono ${isDark ? 'text-zinc-600' : 'text-slate-400'}`}>
+                          {req.product_article} · {new Intl.NumberFormat('ru-RU').format(req.current_price)} ₽
+                        </p>
+                      </div>
+                      <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full flex-shrink-0 ${
+                        req.status === 'pending' ? 'bg-amber-100 text-amber-700' :
+                        req.status === 'approved' ? 'bg-green-100 text-green-700' :
+                        'bg-red-100 text-red-700'
+                      }`}>
+                        {req.status === 'pending' ? 'Ожидает' : req.status === 'approved' ? 'Одобрен' : 'Отклонён'}
+                      </span>
+                    </div>
+                  </div>
+                ))
+              )}
+            </div>
+
+            {/* Request Detail */}
+            <div className="flex-1 flex flex-col">
+              {selectedRequest ? (
+                <>
+                  <div className={`p-5 border-b ${isDark ? 'border-zinc-800' : 'border-zinc-200'}`}>
+                    <div className="flex items-center gap-4">
+                      {selectedRequest.product_image_url && (
+                        <img src={selectedRequest.product_image_url} alt="" className="w-16 h-16 rounded-xl object-cover border" />
+                      )}
+                      <div>
+                        <h3 className={`font-bold ${isDark ? 'text-zinc-100' : 'text-slate-800'}`}>{selectedRequest.product_name}</h3>
+                        <p className={`text-sm font-mono ${isDark ? 'text-zinc-500' : 'text-slate-500'}`}>{selectedRequest.product_article}</p>
+                        <p className={`text-sm ${isDark ? 'text-zinc-400' : 'text-slate-600'}`}>
+                          Текущая цена: <span className="font-bold">{new Intl.NumberFormat('ru-RU').format(selectedRequest.current_price)} ₽</span>
+                        </p>
+                      </div>
+                    </div>
+                    <div className={`mt-3 flex items-center gap-3 text-sm ${isDark ? 'text-zinc-500' : 'text-slate-500'}`}>
+                      <User className="w-4 h-4" />
+                      <span>{selectedRequest.user_name} ({selectedRequest.user_email})</span>
+                      <Clock className="w-4 h-4 ml-2" />
+                      <span>{new Date(selectedRequest.created_at).toLocaleString('ru-RU')}</span>
+                    </div>
+                  </div>
+
+                  <div className="flex-1 overflow-y-auto p-5 space-y-4">
+                    {/* Client message */}
+                    <div className={`p-4 rounded-xl ${isDark ? 'bg-zinc-800/50 border border-zinc-700' : 'bg-slate-50 border border-slate-200'}`}>
+                      <p className={`text-xs font-bold uppercase tracking-wider mb-2 ${isDark ? 'text-zinc-500' : 'text-slate-400'}`}>Сообщение клиента</p>
+                      <p className={`text-sm leading-relaxed ${isDark ? 'text-zinc-300' : 'text-slate-700'}`}>{selectedRequest.message}</p>
+                    </div>
+
+                    {/* Attached image */}
+                    {selectedRequest.image_url && (
+                      <div>
+                        <p className={`text-xs font-bold uppercase tracking-wider mb-2 ${isDark ? 'text-zinc-500' : 'text-slate-400'}`}>Прикреплённое фото</p>
+                        <img
+                          src={selectedRequest.image_url}
+                          alt="Скриншот"
+                          className="max-w-sm rounded-xl border cursor-pointer hover:opacity-90 transition-opacity"
+                          onClick={() => setLightboxImage(selectedRequest.image_url)}
+                        />
+                      </div>
+                    )}
+
+                    {/* Already processed */}
+                    {selectedRequest.status !== 'pending' && (
+                      <div className={`p-4 rounded-xl ${
+                        selectedRequest.status === 'approved'
+                          ? isDark ? 'bg-green-500/10 border border-green-500/30' : 'bg-green-50 border border-green-200'
+                          : isDark ? 'bg-red-500/10 border border-red-500/30' : 'bg-red-50 border border-red-200'
+                      }`}>
+                        <p className={`text-sm font-bold ${
+                          selectedRequest.status === 'approved'
+                            ? isDark ? 'text-green-400' : 'text-green-700'
+                            : isDark ? 'text-red-400' : 'text-red-700'
+                        }`}>
+                          {selectedRequest.status === 'approved' 
+                            ? `Одобрено — индивидуальная цена: ${new Intl.NumberFormat('ru-RU').format(selectedRequest.individual_price)} ₽`
+                            : 'Отклонено'}
+                        </p>
+                        {selectedRequest.admin_response && (
+                          <p className={`text-sm mt-1 ${isDark ? 'text-zinc-400' : 'text-slate-600'}`}>{selectedRequest.admin_response}</p>
+                        )}
+                      </div>
+                    )}
+
+                    {/* Admin action area */}
+                    {selectedRequest.status === 'pending' && (
+                      <div className={`p-4 rounded-xl space-y-3 ${isDark ? 'bg-zinc-800/30 border border-zinc-700/50' : 'bg-white border border-slate-200'}`}>
+                        <p className={`text-xs font-bold uppercase tracking-wider ${isDark ? 'text-zinc-500' : 'text-slate-400'}`}>Ваш ответ</p>
+                        
+                        <div>
+                          <label className={`text-xs font-semibold block mb-1 ${isDark ? 'text-zinc-400' : 'text-slate-600'}`}>Индивидуальная цена (₽)</label>
+                          <Input
+                            type="number"
+                            value={adminPrice}
+                            onChange={(e) => setAdminPrice(e.target.value)}
+                            placeholder="Укажите цену..."
+                            className={`${isDark ? 'bg-zinc-900 border-zinc-700 text-zinc-100' : ''}`}
+                            data-testid="admin-price-input"
+                          />
+                        </div>
+
+                        <div>
+                          <label className={`text-xs font-semibold block mb-1 ${isDark ? 'text-zinc-400' : 'text-slate-600'}`}>Сообщение клиенту (необязательно)</label>
+                          <Textarea
+                            value={adminResponse}
+                            onChange={(e) => setAdminResponse(e.target.value)}
+                            placeholder="Ваш комментарий..."
+                            className={`min-h-[60px] ${isDark ? 'bg-zinc-900 border-zinc-700 text-zinc-100' : ''}`}
+                            data-testid="admin-response-input"
+                          />
+                        </div>
+
+                        <div className="flex gap-2">
+                          <Button
+                            onClick={() => handleApproveRequest(selectedRequest.id)}
+                            disabled={processing || !adminPrice}
+                            className="flex-1 bg-green-500 hover:bg-green-600 text-white"
+                            data-testid="approve-discount-btn"
+                          >
+                            {processing ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : <Check className="w-4 h-4 mr-2" />}
+                            Одобрить
+                          </Button>
+                          <Button
+                            onClick={() => handleRejectRequest(selectedRequest.id)}
+                            disabled={processing}
+                            variant="outline"
+                            className="flex-1 border-red-300 text-red-600 hover:bg-red-50"
+                            data-testid="reject-discount-btn"
+                          >
+                            {processing ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : <XCircle className="w-4 h-4 mr-2" />}
+                            Отклонить
+                          </Button>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                </>
+              ) : (
+                <div className="flex-1 flex items-center justify-center">
+                  <div className="text-center">
+                    <Tag className={`w-12 h-12 mx-auto mb-3 ${isDark ? 'text-zinc-700' : 'text-slate-300'}`} />
+                    <p className={`text-sm ${isDark ? 'text-zinc-500' : 'text-slate-400'}`}>Выберите запрос для просмотра</p>
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
+        )}
+
+        {/* Chats Tab */}
+        {activeTab === 'chats' && (
+        <div className={`glass-card overflow-hidden flex h-[calc(100vh-240px)] min-h-[500px]`}>
           {/* Chats List */}
           <div className={`w-80 flex-shrink-0 border-r ${isDark ? 'border-zinc-800' : 'border-zinc-200'} flex flex-col`}>
             {/* Search */}
@@ -404,6 +677,7 @@ export default function AdminChatsPage() {
             )}
           </div>
         </div>
+        )}
       </div>
 
       {/* Lightbox */}

@@ -1,0 +1,128 @@
+{
+  "summary": "Discount Requests Feature Testing - All features working correctly. Backend APIs (12/13 tests passed, 1 skipped). Frontend components verified: Individual prices display correctly with strikethrough original price and green individual price. Admin chats page has 'Запросы на скидку' tab showing requests list and detail panel with approve/reject functionality.",
+
+  "backend_issues": {
+    "critical": [],
+    "minor": []
+  },
+
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [],
+    "design_issues": []
+  },
+
+  "passed_tests": {
+    "backend_1": "✓ POST /api/discount-requests requires authentication - 401/403",
+    "backend_2": "✓ POST /api/discount-requests creates request successfully (or correctly returns 400 if already exists)",
+    "backend_3": "✓ GET /api/discount-requests/my returns client's requests",
+    "backend_4": "✓ GET /api/individual-prices/my returns client's active individual prices",
+    "backend_5": "✓ GET /api/admin/discount-requests requires admin role - returns 403 for clients",
+    "backend_6": "✓ GET /api/admin/discount-requests returns all requests for admin",
+    "backend_7": "✓ PUT /api/admin/discount-requests/{id}/approve requires admin - returns 403",
+    "backend_8": "✓ PUT /api/admin/discount-requests/{id}/reject requires admin - returns 403",
+    "backend_9": "✓ PUT /api/admin/discount-requests/{id}/approve returns 404 for non-existent request",
+    "backend_10": "✓ PUT /api/admin/discount-requests/{id}/approve returns 400 for invalid price (0)",
+    "backend_11": "✓ Full approval flow works - request approved, individual_prices record created",
+    "backend_12": "✓ Client can see active individual prices via /api/individual-prices/my",
+    "frontend_1": "✓ Catalog page loads correctly with data-testid='catalog-page'",
+    "frontend_2": "✓ Discount request button hidden for non-logged-in users",
+    "frontend_3": "✓ Discount request button hidden when user has individual price for product (correct)",
+    "frontend_4": "✓ Individual price shows in catalog: strikethrough original (100 ₽) + green individual price (75 ₽)",
+    "frontend_5": "✓ Individual price shows in catalog: strikethrough (1,500 ₽) + green (1,200 ₽)",
+    "frontend_6": "✓ Admin Chats page loads with data-testid='admin-chats-page'",
+    "frontend_7": "✓ 'Чаты' tab visible with data-testid='tab-chats'",
+    "frontend_8": "✓ 'Запросы на скидку' tab visible with data-testid='tab-discounts'",
+    "frontend_9": "✓ Discount requests panel shows list of 5 requests",
+    "frontend_10": "✓ Request detail shows product info, client message, and approval status",
+    "frontend_11": "✓ Approved requests show green 'Одобрено' badge with individual price"
+  },
+
+  "backend_test_results": {
+    "total": 13,
+    "passed": 12,
+    "skipped": 1,
+    "failed": 0,
+    "test_file": "/app/backend/tests/test_discount_requests.py",
+    "tests": [
+      "TestDiscountRequestsEndpoints::test_create_discount_request_requires_auth - PASSED",
+      "TestDiscountRequestsEndpoints::test_create_discount_request_success - PASSED",
+      "TestDiscountRequestsEndpoints::test_get_my_discount_requests - PASSED",
+      "TestDiscountRequestsEndpoints::test_get_my_individual_prices - PASSED",
+      "TestAdminDiscountRequestsEndpoints::test_get_all_requests_requires_admin - PASSED",
+      "TestAdminDiscountRequestsEndpoints::test_get_all_discount_requests - PASSED",
+      "TestAdminDiscountRequestsEndpoints::test_approve_request_requires_admin - PASSED",
+      "TestAdminDiscountRequestsEndpoints::test_reject_request_requires_admin - PASSED",
+      "TestAdminDiscountRequestsEndpoints::test_approve_nonexistent_request - PASSED",
+      "TestAdminDiscountRequestsEndpoints::test_approve_invalid_price - PASSED",
+      "TestDiscountRequestApprovalFlow::test_full_approval_flow - PASSED",
+      "TestDiscountRequestRejectionFlow::test_reject_request_flow - SKIPPED (no pending requests)",
+      "TestIndividualPricesInOrders::test_individual_prices_in_cart - PASSED"
+    ]
+  },
+
+  "frontend_test_results": {
+    "catalog_page": "PASS - Loads correctly, individual prices display with strikethrough + green styling",
+    "discount_button_visibility": "PASS - Hidden for non-logged users, hidden when individual price exists",
+    "admin_chats_page": "PASS - Has two tabs: Чаты and Запросы на скидку",
+    "discount_requests_tab": "PASS - Shows list of requests, detail panel with approve/reject buttons",
+    "individual_price_display": "PASS - Shows original price strikethrough + individual price in green"
+  },
+
+  "test_report_links": [
+    "/app/backend/tests/test_discount_requests.py",
+    "/app/test_reports/pytest/pytest_discount_requests.xml"
+  ],
+
+  "action_items": [],
+
+  "critical_code_review_comments": [
+    "discount_requests.py: Clean implementation with proper auth via Depends(get_current_user) and admin role checks",
+    "CatalogPage.js: ProductCard correctly shows/hides discount button based on user login and individual price existence",
+    "ProductPage.js: Correctly fetches and displays individual prices, hides 'Запросить скидку' button when price exists",
+    "AdminChatsPage.js: Well-implemented discount requests tab with request list and detail panel",
+    "Individual price styling: Original price shows with 'line-through text-slate-400', individual price in 'text-emerald-600'"
+  ],
+
+  "updated_files": [
+    "/app/backend/tests/test_discount_requests.py"
+  ],
+
+  "success_rate": {
+    "backend": "100% - 12/12 relevant pytest tests passed (1 skipped due to no pending requests)",
+    "frontend": "100% - All UI elements and flows verified working"
+  },
+
+  "test_credentials": {
+    "admin": {"email": "admin@avarus.ru", "password": "admin"},
+    "client": {"email": "user@demo.com", "password": "demo123"}
+  },
+
+  "seed_data_creation": "Test created discount requests and approved them during testing. Test records prefixed with 'TEST_'",
+
+  "existing_test_data": {
+    "approved_request_1": {
+      "product": "E82KPD36 - Фильтр топливный для DAF XF 105",
+      "original_price": 100,
+      "individual_price": 75,
+      "user": "user@demo.com"
+    },
+    "approved_request_2": {
+      "product": "E89HD734 - Фильтр масляный DAF XF 105 фирмы Hengst",
+      "original_price": 1500,
+      "individual_price": 1200,
+      "user": "user@demo.com"
+    }
+  },
+
+  "retest_needed": false,
+
+  "should_main_agent_self_test": false,
+
+  "mocked_apis": {
+    "has_mocked_apis": false,
+    "mocked_apis_list": []
+  },
+
+  "context_for_next_testing_agent": "Discount requests feature fully implemented and working. Client endpoints: POST /api/discount-requests (create), GET /api/discount-requests/my (list), GET /api/individual-prices/my (active prices). Admin endpoints: GET /api/admin/discount-requests (all), PUT /api/admin/discount-requests/{id}/approve, PUT /api/admin/discount-requests/{id}/reject. Individual prices show in CatalogPage and ProductPage with strikethrough original + green individual price. Admin manages requests via Admin Chats page → 'Запросы на скидку' tab. user@demo.com has active individual prices for E82KPD36 (75₽) and E89HD734 (1200₽)."
+}

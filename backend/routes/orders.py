@@ -144,8 +144,16 @@ async def create_order(data: OrderCreate, user=Depends(get_current_user)):
     products = await db.products.find({"id": {"$in": product_ids}}, {"_id": 0}).to_list(100)
     products_map = {p["id"]: p for p in products}
     
+    # Fetch active individual prices for this user
+    ind_prices = await db.individual_prices.find(
+        {"user_id": user["id"], "active": True, "product_id": {"$in": product_ids}},
+        {"_id": 0}
+    ).to_list(100)
+    ind_prices_map = {ip["product_id"]: ip["price"] for ip in ind_prices}
+    
     items = []
     subtotal = 0
+    used_individual_price_product_ids = []
     
     # Calculate price multiplier based on payment adjustment
     price_multiplier = 1 + (payment_adjustment / 100) if payment_adjustment != 0 else 1
@@ -153,9 +161,16 @@ async def create_order(data: OrderCreate, user=Depends(get_current_user)):
     for cart_item in cart["items"]:
         product = products_map.get(cart_item["product_id"])
         if product:
-            # Apply payment discount to unit price
             original_price = product["price"]
-            final_price = round(original_price * price_multiplier, 2)
+            
+            # Check for individual price
+            ind_price = ind_prices_map.get(cart_item["product_id"])
+            if ind_price is not None:
+                final_price = ind_price
+                used_individual_price_product_ids.append(cart_item["product_id"])
+            else:
+                # Apply payment discount to unit price
+                final_price = round(original_price * price_multiplier, 2)
             
             item_data = {
                 "product_id": cart_item["product_id"],
@@ -167,7 +182,8 @@ async def create_order(data: OrderCreate, user=Depends(get_current_user)):
                 "quantity": cart_item["quantity"],
                 "image_url": product.get("image_url"),
                 "warehouse": product.get("warehouse"),
-                "delivery_days": product.get("delivery_days")
+                "delivery_days": product.get("delivery_days"),
+                "has_individual_price": ind_price is not None
             }
             items.append(item_data)
             subtotal += final_price * cart_item["quantity"]

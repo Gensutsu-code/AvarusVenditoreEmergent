@@ -15,11 +15,20 @@ import { PopularProducts } from '../components/PopularProducts';
 import { motion } from 'framer-motion';
 import { SearchDropdown } from '../components/SearchDropdown';
 import { trackClick } from '../utils/tracker';
+import DiscountRequestModal from '../components/DiscountRequestModal';
 
 const API = `${process.env.REACT_APP_BACKEND_URL}/api`;
 
 // Simple price display component
-const PriceDisplay = ({ price, formatPrice }) => {
+const PriceDisplay = ({ price, individualPrice, formatPrice }) => {
+  if (individualPrice != null) {
+    return (
+      <div className="flex flex-col items-end">
+        <span className="text-[10px] line-through text-slate-400">{formatPrice(price)} ₽</span>
+        <span className="text-sm font-bold text-emerald-600">{formatPrice(individualPrice)} ₽</span>
+      </div>
+    );
+  }
   return <span className="text-xl font-bold text-teal-600">{formatPrice(price)} ₽</span>;
 };
 
@@ -32,6 +41,9 @@ const ProductCard = ({
   setSelectedProduct, 
   formatPrice, 
   getDeliveryText,
+  onRequestDiscount,
+  individualPrice,
+  user,
   isAlternative = false
 }) => (
   <div 
@@ -100,7 +112,24 @@ const ProductCard = ({
       {/* Right: price + actions — centered vertically in bordered box */}
       <div className="flex-shrink-0 flex items-stretch p-2">
         <div className="flex items-center gap-2 px-3 border-2 border-slate-300 rounded-xl bg-slate-50/80">
-          <p className="text-sm font-bold text-white bg-gradient-to-r from-rose-500 to-pink-500 px-2.5 py-1 rounded-lg whitespace-nowrap shadow-sm">{formatPrice(product.price)} ₽</p>
+          {individualPrice != null ? (
+            <div className="flex flex-col items-center">
+              <span className="text-[9px] line-through text-slate-400">{formatPrice(product.price)} ₽</span>
+              <span className="text-sm font-bold text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded-lg">{formatPrice(individualPrice)} ₽</span>
+            </div>
+          ) : (
+            <p className="text-sm font-bold text-white bg-gradient-to-r from-rose-500 to-pink-500 px-2.5 py-1 rounded-lg whitespace-nowrap shadow-sm">{formatPrice(product.price)} ₽</p>
+          )}
+          {user && !individualPrice && (
+            <button
+              onClick={(e) => { e.stopPropagation(); onRequestDiscount && onRequestDiscount(product); }}
+              className="text-rose-400 hover:text-rose-600 transition-colors p-1"
+              title="Запросить скидку"
+              data-testid={`request-discount-${product.id}`}
+            >
+              <Percent className="w-3.5 h-3.5" />
+            </button>
+          )}
           <FavoritesButton productId={product.id} size="sm" />
           <div className="flex items-center border border-slate-200 rounded-lg bg-white">
             <button onClick={() => updateQuantity(product.id, -1)} className="p-1.5 hover:bg-slate-50 rounded-l-lg" data-testid={`qty-minus-${product.id}`}>
@@ -346,6 +375,8 @@ export default function CatalogPage() {
   const [showFilters, setShowFilters] = useState(false);
   const [filters, setFilters] = useState({ manufacturer: '', warehouse: '', inStock: false, priceMin: '', priceMax: '', deliveryDays: '', hasPhoto: false, hasCross: false, sortBy: '' });
   const [filterOptions, setFilterOptions] = useState({ manufacturers: [], warehouses: [] });
+  const [individualPrices, setIndividualPrices] = useState({});
+  const [discountProduct, setDiscountProduct] = useState(null);
   
   const { addToCart } = useCart();
   const { user } = useAuth();
@@ -358,6 +389,17 @@ export default function CatalogPage() {
     fetchCategories();
     fetchFilterOptions();
   }, []);
+
+  // Fetch individual prices for logged-in user
+  useEffect(() => {
+    if (user) {
+      axios.get(`${API}/individual-prices/my`).then(r => {
+        const map = {};
+        r.data.forEach(ip => { map[ip.product_id] = ip.price; });
+        setIndividualPrices(map);
+      }).catch(() => {});
+    }
+  }, [user]);
 
   useEffect(() => {
     if (searchQuery || categoryId) {
@@ -902,6 +944,9 @@ export default function CatalogPage() {
                           setSelectedProduct={setSelectedProduct}
                           formatPrice={formatPrice}
                           getDeliveryText={getDeliveryText}
+                          onRequestDiscount={setDiscountProduct}
+                          individualPrice={individualPrices[product.id]}
+                          user={user}
                         />
                       ))}
                     </div>
@@ -932,6 +977,9 @@ export default function CatalogPage() {
                           setSelectedProduct={setSelectedProduct}
                           formatPrice={formatPrice}
                           getDeliveryText={getDeliveryText}
+                          onRequestDiscount={setDiscountProduct}
+                          individualPrice={individualPrices[product.id]}
+                          user={user}
                           isAlternative={true}
                         />
                       ))}
@@ -959,6 +1007,13 @@ export default function CatalogPage() {
           )}
         </DialogContent>
       </Dialog>
+
+      {/* Discount Request Modal */}
+      <DiscountRequestModal
+        open={!!discountProduct}
+        onClose={() => setDiscountProduct(null)}
+        product={discountProduct}
+      />
     </div>
   );
 }
