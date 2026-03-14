@@ -170,8 +170,18 @@ export default function CartPage() {
 
                     {/* Price */}
                     <div className="text-right">
-                      <p className="font-bold text-xl text-teal-600">{formatPrice(item.price * item.quantity)} <span className="text-sm text-slate-400">₽</span></p>
-                      <p className="text-xs text-slate-400">{formatPrice(item.price)} × {item.quantity}</p>
+                      {item.individual_price != null ? (
+                        <>
+                          <p className="font-bold text-xl text-emerald-600">{formatPrice(item.price * item.quantity)} <span className="text-sm text-slate-400">₽</span></p>
+                          <p className="text-[10px] line-through text-slate-400">{formatPrice(item.original_price)} ₽ × {item.quantity}</p>
+                          <p className="text-xs text-emerald-600">{formatPrice(item.individual_price)} × {item.quantity}</p>
+                        </>
+                      ) : (
+                        <>
+                          <p className="font-bold text-xl text-teal-600">{formatPrice(item.price * item.quantity)} <span className="text-sm text-slate-400">₽</span></p>
+                          <p className="text-xs text-slate-400">{formatPrice(item.price)} × {item.quantity}</p>
+                        </>
+                      )}
                     </div>
                   </div>
 

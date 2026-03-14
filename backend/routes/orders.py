@@ -63,16 +63,26 @@ async def get_cart(user=Depends(get_current_user)):
     products = await db.products.find({"id": {"$in": product_ids}}, {"_id": 0}).to_list(100)
     products_map = {p["id"]: p for p in products}
     
+    # Fetch active individual prices for this user
+    ind_prices = await db.individual_prices.find(
+        {"user_id": user["id"], "active": True, "product_id": {"$in": product_ids}},
+        {"_id": 0}
+    ).to_list(100)
+    ind_prices_map = {ip["product_id"]: ip["price"] for ip in ind_prices}
+    
     items_with_details = []
     for item in cart.get("items", []):
         product = products_map.get(item["product_id"])
         if product:
+            ind_price = ind_prices_map.get(item["product_id"])
             items_with_details.append({
                 "product_id": item["product_id"],
                 "name": product["name"],
                 "article": product["article"],
                 "manufacturer": product.get("manufacturer"),
-                "price": product["price"],
+                "price": ind_price if ind_price is not None else product["price"],
+                "original_price": product["price"],
+                "individual_price": ind_price,
                 "quantity": item["quantity"],
                 "image_url": product.get("image_url")
             })

@@ -592,9 +592,16 @@ export default function CheckoutPage() {
                   <div className="flex-1">
                     {item.manufacturer && <p className="text-xs font-bold text-teal-600 mb-1">{item.manufacturer}</p>}
                     <p className="text-slate-800 font-medium">{item.name}</p>
-                    <p className="text-slate-500 text-xs mt-1">{item.quantity} шт. × {formatPrice(item.price)} ₽</p>
+                    {item.individual_price != null ? (
+                      <>
+                        <p className="text-slate-400 text-[10px] line-through mt-0.5">{item.quantity} шт. × {formatPrice(item.original_price)} ₽</p>
+                        <p className="text-emerald-600 text-xs font-semibold">{item.quantity} шт. × {formatPrice(item.individual_price)} ₽ <span className="text-[10px] font-normal">(инд. цена)</span></p>
+                      </>
+                    ) : (
+                      <p className="text-slate-500 text-xs mt-1">{item.quantity} шт. × {formatPrice(item.price)} ₽</p>
+                    )}
                   </div>
-                  <span className="font-bold text-slate-800 whitespace-nowrap">{formatPrice(item.price * item.quantity)} ₽</span>
+                  <span className={`font-bold whitespace-nowrap ${item.individual_price != null ? 'text-emerald-600' : 'text-slate-800'}`}>{formatPrice(item.price * item.quantity)} ₽</span>
                 </motion.div>
               ))}
             </div>
