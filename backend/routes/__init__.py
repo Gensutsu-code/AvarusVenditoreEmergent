@@ -21,6 +21,7 @@ from .balance import router as balance_router
 from .crypto_payments import router as crypto_payments_router
 from .analytics import router as analytics_router
 from .requests import router as requests_router
+from .maintenance import router as maintenance_router
 
 # Create main API router
 api_router = APIRouter(prefix="/api")
@@ -45,5 +46,6 @@ api_router.include_router(balance_router)
 api_router.include_router(crypto_payments_router)
 api_router.include_router(analytics_router)
 api_router.include_router(requests_router)
+api_router.include_router(maintenance_router)
 
 __all__ = ["api_router"]

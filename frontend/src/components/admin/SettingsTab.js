@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Send, Image, FileText, Truck, Bell, Upload, Download, FileSpreadsheet } from 'lucide-react';
+import { Send, Image, FileText, Truck, Bell, Upload, Download, FileSpreadsheet, Power } from 'lucide-react';
 import { motion } from 'framer-motion';
 import axios from 'axios';
 import { toast } from 'sonner';
@@ -276,6 +276,99 @@ const NotificationsTab = ({ isDark }) => {
   );
 };
 
+// Maintenance Mode sub-tab
+const MaintenanceTab = ({ isDark }) => {
+  const [settings, setSettings] = useState({ enabled: false, message: '' });
+  const [saving, setSaving] = useState(false);
+
+  useEffect(() => {
+    axios.get(`${API}/maintenance/status`).then(r => setSettings(r.data)).catch(() => {});
+  }, []);
+
+  const toggle = async () => {
+    const action = settings.enabled ? 'включить' : 'выключить';
+    if (!window.confirm(`${settings.enabled ? 'Включить' : 'Выключить'} сайт?`)) return;
+    try {
+      const res = await axios.post(`${API}/maintenance/toggle`);
+      setSettings(s => ({ ...s, enabled: res.data.enabled }));
+      toast.success(res.data.enabled ? 'Сайт выключен — режим техработ' : 'Сайт включён');
+    } catch { toast.error('Ошибка'); }
+  };
+
+  const saveMessage = async () => {
+    setSaving(true);
+    try {
+      const res = await axios.put(`${API}/maintenance/settings`, { message: settings.message });
+      setSettings(res.data);
+      toast.success('Сообщение сохранено');
+    } catch { toast.error('Ошибка сохранения'); }
+    finally { setSaving(false); }
+  };
+
+  return (
+    <div className="space-y-6">
+      <div className={`p-6 rounded-xl border ${isDark ? 'bg-zinc-800/50 border-zinc-700' : 'bg-white border-slate-200'}`}>
+        <h3 className={`text-lg font-bold mb-5 ${isDark ? 'text-white' : 'text-slate-800'}`}>Режим технических работ</h3>
+
+        <div className={`p-5 rounded-xl mb-5 flex items-center justify-between ${
+          settings.enabled
+            ? isDark ? 'bg-red-500/10 border border-red-500/30' : 'bg-red-50 border border-red-200'
+            : isDark ? 'bg-green-500/10 border border-green-500/30' : 'bg-green-50 border border-green-200'
+        }`}>
+          <div className="flex items-center gap-3">
+            <div className={`w-3 h-3 rounded-full ${settings.enabled ? 'bg-red-500 animate-pulse' : 'bg-green-500'}`} />
+            <div>
+              <p className={`font-bold ${
+                settings.enabled
+                  ? isDark ? 'text-red-400' : 'text-red-700'
+                  : isDark ? 'text-green-400' : 'text-green-700'
+              }`}>
+                {settings.enabled ? 'Сайт выключен' : 'Сайт работает'}
+              </p>
+              <p className={`text-sm ${isDark ? 'text-zinc-500' : 'text-slate-500'}`}>
+                {settings.enabled ? 'Посетители видят страницу техработ' : 'Сайт доступен для всех'}
+              </p>
+            </div>
+          </div>
+          <Button
+            onClick={toggle}
+            className={settings.enabled
+              ? 'bg-green-500 hover:bg-green-600 text-white'
+              : 'bg-red-500 hover:bg-red-600 text-white'
+            }
+            data-testid="maintenance-toggle-btn"
+          >
+            <Power className="w-4 h-4 mr-2" />
+            {settings.enabled ? 'Включить сайт' : 'Выключить сайт'}
+          </Button>
+        </div>
+
+        <div className="space-y-3">
+          <Label className={`text-xs font-bold uppercase ${isDark ? 'text-zinc-500' : 'text-slate-500'}`}>
+            Сообщение для посетителей (необязательно)
+          </Label>
+          <Input
+            value={settings.message}
+            onChange={(e) => setSettings(s => ({ ...s, message: e.target.value }))}
+            placeholder="Мы обновляем сайт, чтобы сделать его ещё лучше. Скоро вернёмся!"
+            className={isDark ? 'bg-zinc-900/50 border-zinc-700 text-zinc-100 placeholder:text-zinc-600' : ''}
+            data-testid="maintenance-message-input"
+          />
+          <Button
+            onClick={saveMessage}
+            disabled={saving}
+            variant="outline"
+            size="sm"
+            data-testid="save-maintenance-message-btn"
+          >
+            {saving ? 'Сохранение...' : 'Сохранить сообщение'}
+          </Button>
+        </div>
+      </div>
+    </div>
+  );
+};
+
 // Sub-tab component for Settings section (TG + Partners + Rules)
 export const SettingsTab = ({
   // Telegram props
@@ -314,6 +407,7 @@ export const SettingsTab = ({
     { id: 'delivery', label: 'Доставка', icon: Truck },
     { id: 'import', label: 'Импорт', icon: Upload },
     { id: 'notifications', label: 'Уведомления', icon: Bell },
+    { id: 'maintenance', label: 'Техработы', icon: Power },
     { id: 'partners', label: 'Партнёры', icon: Image },
     { id: 'terms', label: 'Правила', icon: FileText },
   ];
@@ -382,6 +476,13 @@ export const SettingsTab = ({
           animate={{ opacity: 1, y: 0 }}
         >
           <NotificationsTab isDark={isDark} />
+        </motion.div>
+      )}
+
+      {/* Maintenance */}
+      {activeSubTab === 'maintenance' && (
+        <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}>
+          <MaintenanceTab isDark={isDark} />
         </motion.div>
       )}
 
