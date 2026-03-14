@@ -1,6 +1,5 @@
 import { createContext, useContext, useState, useEffect } from 'react';
 import axios from 'axios';
-import { toast } from 'sonner';
 
 const AuthContext = createContext(null);
 
@@ -20,20 +19,19 @@ export const AuthProvider = ({ children }) => {
     }
   }, [token]);
 
-  // Intercept 403 "account_blocked" responses globally
+  // Intercept 401 responses to auto-logout on invalid/expired tokens
   useEffect(() => {
     const interceptor = axios.interceptors.response.use(
       (response) => response,
       (error) => {
-        if (error.response?.status === 403 && error.response?.data?.detail === 'account_blocked') {
-          toast.error('Ваш аккаунт заблокирован');
+        if (error.response?.status === 401 && token) {
           logout();
         }
         return Promise.reject(error);
       }
     );
     return () => axios.interceptors.response.eject(interceptor);
-  }, []);
+  }, [token]);
 
   const fetchUser = async () => {
     try {

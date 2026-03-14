@@ -78,7 +78,7 @@ async def login(data: UserLogin):
         raise HTTPException(status_code=401, detail="Invalid credentials")
     
     if user.get("blocked"):
-        raise HTTPException(status_code=403, detail="account_blocked")
+        raise HTTPException(status_code=401, detail="Invalid credentials")
     
     token = create_token(user["id"])
     return {
