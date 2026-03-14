@@ -8,51 +8,46 @@ E-commerce platform for truck spare parts with full admin panel, crypto payments
 - Client-side catalog with search, filters, favorites
 - Cart and checkout with multiple payment methods (cash, card, crypto, balance)
 - Order management with inline editing, change tracking, and client confirmation
-- Push/sound notifications
-- Bonus program with cashback
+- Push/sound notifications, bonus program with cashback
 
 ## What's Been Implemented
 
+### March 14, 2026 - Maintenance Mode with Mini-Game (COMPLETED)
+- **Admin toggle**: Настройки → Техработы — кнопка включения/выключения сайта
+- **Maintenance page**: Animated wrench icon, pulsing rings, rotating gears, progress bar, live clock MSK
+- **Mini-game**: Truck runner (canvas-based, pure React, no extra deps) — прыгай через препятствия, счёт + рекорд
+- **Custom message**: Админ может задать текст для посетителей
+- **Admin access**: /login доступен во время техработ, админ видит обычный сайт
+- **Hidden link**: "Панель управления" внизу страницы для доступа к логину
+- Backend: `GET /api/maintenance/status`, `POST /api/maintenance/toggle`, `PUT /api/maintenance/settings`
+- Testing: 9/9 backend + 11/11 frontend (iteration_43)
+
 ### March 14, 2026 - User Account Blocking (COMPLETED)
-- **Admin block/unblock toggle** in CRM tab (shield icons per user)
-- **Backend**: `POST /api/admin/users/{user_id}/block` toggles `blocked` field
-- **Login protection**: Blocked users get 403 `account_blocked` on login attempt
-- **Active session protection**: `get_current_user` checks `blocked` field, returns 403 — AuthContext interceptor auto-logouts
-- **Safety guards**: Can't block yourself, can't block admins
-- **Frontend**: "Заблокирован" badge, block/unblock icons, confirmation dialogs, proper error toasts
-- Testing: 8/8 backend + 4/4 frontend tests passed (iteration_42)
+- Block/unblock toggle in CRM tab, blocked users silently can't login (generic error)
+- Active session auto-logout via 401 interceptor
+- Testing: 8/8 backend + 4/4 frontend (iteration_42)
 
 ### March 14, 2026 - Login Fix + Newsletter + CSV Import (COMPLETED)
-- **Login verification**: Confirmed working for admin and client
-- **CSV Import/Export**: Fixed URL mismatch, added export endpoint, template/prompt downloads
-- **Email Newsletter - Selective Sending**: User selection UI with search, select all/deselect
-- **Note**: Resend API in sandbox mode — only avopt.store@gmail.com can receive emails
-- Testing: 12/12 backend + 6/6 frontend tests passed (iteration_41)
+- Login verified working, CSV URL fix + export endpoint, selective email sending
+- Testing: 12/12 backend + 6/6 frontend (iteration_41)
 
-### Earlier Sessions (Completed)
+### Earlier (Completed)
 - Client Analytics, Notification System, News/Banners Editor
-- Order cancellation, Bonus system, UI improvements
-- Product Card Redesign, Search, Floating Promo Banner
-- Product Stock, Admin Order Management, Sound/Push Notifications
-- Crypto Payments, Balance system, Background tasks
+- Order cancellation, Bonus system, UI improvements, Crypto payments, Balance system
 
 ## Architecture
 ```
-/app
-├── backend/routes/
-│   ├── admin.py        # Admin CRUD, CSV, user blocking
-│   ├── auth.py         # Authentication with blocked check
-│   ├── notifications.py # Email + selective sending
-│   └── ... (orders, products, analytics, bonus, etc.)
-├── backend/database.py  # get_current_user with blocked check
-├── frontend/src/
-│   ├── context/AuthContext.js  # 403 blocked interceptor
-│   ├── pages/AdminPage.js     # Main admin with tabs
-│   ├── components/admin/
-│   │   ├── CRMTab.js          # User list with block toggle
-│   │   ├── NotificationsTab.js # Selective email sending
-│   │   └── SettingsTab.js      # Import/Export
-│   └── pages/LoginPage.js     # Blocked user error handling
+/app/backend/routes/
+  maintenance.py  # NEW: Maintenance mode toggle + settings
+  admin.py        # User blocking, CSV import/export
+  auth.py         # Login with blocked check
+  notifications.py # Selective email sending
+  ...
+/app/frontend/src/
+  pages/MaintenancePage.js  # NEW: Animated maintenance page + truck game
+  App.js                    # Maintenance status check
+  components/admin/SettingsTab.js  # MaintenanceTab sub-tab
+  context/AuthContext.js    # 401 interceptor for blocked users
 ```
 
 ## 3rd Party Integrations
@@ -64,8 +59,8 @@ E-commerce platform for truck spare parts with full admin panel, crypto payments
 2. Real Payment Gateway (replace ЮKassa)
 
 ## Future/Backlog (P2)
-1. Resend domain verification for production emails
-2. Refactoring: notification helpers, AdminPage.js simplification
+1. Resend domain verification
+2. Refactoring: notification helpers centralization
 
 ## Credentials
 - Admin: admin@avarus.ru / admin
