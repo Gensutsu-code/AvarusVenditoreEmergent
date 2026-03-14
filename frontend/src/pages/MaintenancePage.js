@@ -5,13 +5,13 @@ import { motion } from 'framer-motion';
 const TruckGame = ({ isDark }) => {
   const canvasRef = useRef(null);
   const gameRef = useRef({
-    truck: { y: 200, vy: 0, jumping: false },
+    truck: { y: 0, vy: 0, jumping: false },
     obstacles: [],
     score: 0,
-    speed: 3,
+    speed: 3.5,
     running: false,
     frame: 0,
-    groundY: 240,
+    roadY: 230,       // top edge of road
     gameOver: false,
   });
   const animRef = useRef(null);
@@ -22,10 +22,10 @@ const TruckGame = ({ isDark }) => {
 
   const startGame = useCallback(() => {
     const g = gameRef.current;
-    g.truck = { y: g.groundY, vy: 0, jumping: false };
+    g.truck = { y: g.roadY, vy: 0, jumping: false };
     g.obstacles = [];
     g.score = 0;
-    g.speed = 3;
+    g.speed = 3.5;
     g.running = true;
     g.frame = 0;
     g.gameOver = false;
@@ -83,60 +83,77 @@ const TruckGame = ({ isDark }) => {
         ctx.globalAlpha = 1;
       }
 
-      // Road
-      const roadY = g.groundY + 30;
+      // Road — truck drives ON this
+      const roadTop = g.roadY;
+      const roadH = 40;
       ctx.fillStyle = isDark ? '#333' : '#94a3b8';
-      ctx.fillRect(0, roadY, W, 40);
-      // Road lines
+      ctx.fillRect(0, roadTop, W, roadH);
+      // Road center line
       ctx.strokeStyle = isDark ? '#555' : '#fbbf24';
       ctx.lineWidth = 2;
       ctx.setLineDash([20, 15]);
       ctx.lineDashOffset = -g.frame * g.speed;
       ctx.beginPath();
-      ctx.moveTo(0, roadY + 20);
-      ctx.lineTo(W, roadY + 20);
+      ctx.moveTo(0, roadTop + roadH / 2);
+      ctx.lineTo(W, roadTop + roadH / 2);
       ctx.stroke();
       ctx.setLineDash([]);
 
-      // Ground
+      // Ground below road
       ctx.fillStyle = isDark ? '#1a1a1a' : '#d4d4d8';
-      ctx.fillRect(0, roadY + 40, W, H - roadY - 40);
+      ctx.fillRect(0, roadTop + roadH, W, H - roadTop - roadH);
+
+      // Truck dimensions
+      const TRUCK_W = 38;
+      const TRUCK_BODY_H = 16;
+      const TRUCK_CABIN_H = 10;
+      const TRUCK_TOTAL_H = TRUCK_BODY_H + TRUCK_CABIN_H;
+      const TRUCK_X = 45;
+      const WHEEL_R = 5;
 
       if (g.running) {
-        // Physics
-        g.truck.vy += 0.55;
+        // Physics — truck.y is bottom of truck body (sits on road surface)
+        g.truck.vy += 0.6;
         g.truck.y += g.truck.vy;
-        if (g.truck.y >= g.groundY) {
-          g.truck.y = g.groundY;
+        if (g.truck.y >= roadTop) {
+          g.truck.y = roadTop;
           g.truck.vy = 0;
           g.truck.jumping = false;
         }
 
-        // Spawn obstacles
+        // Spawn obstacles on the road
         g.frame++;
-        if (g.frame % Math.max(60, 100 - g.score) === 0) {
-          const h = 20 + Math.random() * 25;
-          g.obstacles.push({ x: W + 10, w: 18 + Math.random() * 12, h, type: Math.random() > 0.5 ? 'box' : 'cone' });
+        if (g.frame % Math.max(55, 95 - g.score) === 0) {
+          const h = 18 + Math.random() * 20;
+          g.obstacles.push({ x: W + 10, w: 20 + Math.random() * 10, h, type: Math.random() > 0.5 ? 'box' : 'cone' });
         }
 
         // Move obstacles
         g.obstacles.forEach(o => { o.x -= g.speed; });
         g.obstacles = g.obstacles.filter(o => o.x > -50);
 
-        // Score
+        // Score — obstacle passed the truck
         g.obstacles.forEach(o => {
-          if (!o.scored && o.x < 60) { o.scored = true; g.score++; setScore(g.score); }
+          if (!o.scored && o.x + o.w < TRUCK_X) { o.scored = true; g.score++; setScore(g.score); }
         });
 
-        // Increase speed
-        g.speed = 3 + g.score * 0.15;
+        // Speed ramp
+        g.speed = 3.5 + g.score * 0.15;
 
-        // Collision
-        const truckBox = { x: 40, y: g.truck.y - 24, w: 40, h: 24 };
+        // Collision detection — both truck and obstacles sit ON roadTop
+        // Truck hitbox: body area
+        const tx = TRUCK_X;
+        const tw = TRUCK_W;
+        const truckTop = g.truck.y - TRUCK_BODY_H;
+        const truckBottom = g.truck.y;
+
         for (const o of g.obstacles) {
-          const oBox = { x: o.x, y: g.groundY + 30 - o.h, w: o.w, h: o.h };
-          if (truckBox.x < oBox.x + oBox.w && truckBox.x + truckBox.w > oBox.x &&
-              truckBox.y + truckBox.h > oBox.y) {
+          // Obstacle sits on road: bottom at roadTop, top at roadTop - o.h
+          const obsTop = roadTop - o.h;
+          const obsBottom = roadTop;
+
+          // AABB collision
+          if (tx < o.x + o.w && tx + tw > o.x && truckBottom > obsTop && truckTop < obsBottom) {
             g.running = false;
             g.gameOver = true;
             setGameOver(true);
@@ -148,45 +165,45 @@ const TruckGame = ({ isDark }) => {
         }
       }
 
-      // Draw truck
+      // Draw truck — ty is bottom of body (sits on road)
       const ty = g.truck.y;
       // Body
       ctx.fillStyle = isDark ? '#f97316' : '#14b8a6';
-      ctx.fillRect(40, ty - 18, 36, 18);
-      // Cabin
+      ctx.fillRect(TRUCK_X, ty - TRUCK_BODY_H, TRUCK_W, TRUCK_BODY_H);
+      // Cabin (above body, toward front)
       ctx.fillStyle = isDark ? '#ea580c' : '#0d9488';
-      ctx.fillRect(62, ty - 28, 14, 10);
+      ctx.fillRect(TRUCK_X + TRUCK_W - 16, ty - TRUCK_TOTAL_H, 16, TRUCK_CABIN_H);
       // Window
       ctx.fillStyle = isDark ? '#fbbf24' : '#a7f3d0';
-      ctx.fillRect(65, ty - 26, 8, 6);
-      // Wheels
+      ctx.fillRect(TRUCK_X + TRUCK_W - 13, ty - TRUCK_TOTAL_H + 2, 10, 6);
+      // Wheels — sit at road level
       ctx.fillStyle = isDark ? '#fff' : '#1e293b';
-      ctx.beginPath(); ctx.arc(50, ty + 4, 5, 0, Math.PI * 2); ctx.fill();
-      ctx.beginPath(); ctx.arc(70, ty + 4, 5, 0, Math.PI * 2); ctx.fill();
-      // Exhaust particles when running
+      ctx.beginPath(); ctx.arc(TRUCK_X + 8, ty + 1, WHEEL_R, 0, Math.PI * 2); ctx.fill();
+      ctx.beginPath(); ctx.arc(TRUCK_X + TRUCK_W - 8, ty + 1, WHEEL_R, 0, Math.PI * 2); ctx.fill();
+      // Exhaust
       if (g.running && !g.truck.jumping) {
         for (let i = 0; i < 3; i++) {
           ctx.fillStyle = isDark ? 'rgba(255,255,255,0.15)' : 'rgba(0,0,0,0.1)';
           ctx.beginPath();
-          ctx.arc(35 - i * 8 - Math.random() * 5, ty - 10 + Math.random() * 6, 2 + Math.random() * 2, 0, Math.PI * 2);
+          ctx.arc(TRUCK_X - 5 - i * 7 - Math.random() * 4, ty - 8 + Math.random() * 6, 2 + Math.random() * 2, 0, Math.PI * 2);
           ctx.fill();
         }
       }
 
-      // Draw obstacles
+      // Draw obstacles — sit ON road (bottom at roadTop)
       g.obstacles.forEach(o => {
-        const oy = g.groundY + 30 - o.h;
+        const obsTop = roadTop - o.h;
         if (o.type === 'box') {
           ctx.fillStyle = isDark ? '#dc2626' : '#ef4444';
-          ctx.fillRect(o.x, oy, o.w, o.h);
+          ctx.fillRect(o.x, obsTop, o.w, o.h);
           ctx.fillStyle = isDark ? '#fca5a5' : '#fecaca';
-          ctx.fillRect(o.x + 2, oy + 2, o.w - 4, 3);
+          ctx.fillRect(o.x + 2, obsTop + 2, o.w - 4, 3);
         } else {
           ctx.fillStyle = isDark ? '#f59e0b' : '#f97316';
           ctx.beginPath();
-          ctx.moveTo(o.x + o.w / 2, oy);
-          ctx.lineTo(o.x + o.w, oy + o.h);
-          ctx.lineTo(o.x, oy + o.h);
+          ctx.moveTo(o.x + o.w / 2, obsTop);
+          ctx.lineTo(o.x + o.w, obsTop + o.h);
+          ctx.lineTo(o.x, obsTop + o.h);
           ctx.closePath();
           ctx.fill();
         }
@@ -215,7 +232,7 @@ const TruckGame = ({ isDark }) => {
         ctx.fillStyle = isDark ? '#a1a1aa' : '#71717a';
         ctx.font = '13px sans-serif';
         ctx.textAlign = 'center';
-        ctx.fillText('Пробел / Тап — играть', W / 2, H / 2);
+        ctx.fillText('Пробел / Тап — играть', W / 2, g.roadY - 50);
       }
 
       animRef.current = requestAnimationFrame(draw);
