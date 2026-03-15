@@ -200,12 +200,9 @@ export default function AdminPage() {
   const [selectedProgramId, setSelectedProgramId] = useState(null);
   const [programUsers, setProgramUsers] = useState([]);
   const [bonusHistory, setBonusHistory] = useState([]);
-  const [issueBonusModal, setIssueBonusModal] = useState(null); // { programId, userId, userName, amount }
-  const [bonusCodeInput, setBonusCodeInput] = useState('');
   const [bonusSubTab, setBonusSubTab] = useState('history'); // 'history' or 'prizes'
   
   // Bonus states
-  const [issuingBonus, setIssuingBonus] = useState(false);
   const [prizeRedemptions, setPrizeRedemptions] = useState([]);
   const bonusImageFileRef = useRef(null);
   const bonusBannerFileRef = useRef(null);
@@ -2443,18 +2440,13 @@ export default function AdminPage() {
                                 {programUsers.map((pu) => (
                                   <tr 
                                     key={pu.id} 
-                                    className={`transition-colors ${pu.bonus_requested ? 'bg-gradient-to-r from-teal-50 to-transparent' : 'hover:bg-slate-50'}`}
+                                    className="transition-colors hover:bg-slate-50"
                                   >
                                     <td className="py-3 px-6">
-                                      <div className="flex items-center gap-2">
-                                        <span className="font-medium text-slate-800">{pu.name}</span>
-                                        {pu.bonus_requested && (
-                                          <Gift className="w-4 h-4 text-teal-500 animate-pulse" />
-                                        )}
-                                      </div>
+                                      <span className="font-medium text-slate-800">{pu.name}</span>
                                     </td>
                                     <td className="py-3 px-6 text-right">
-                                      <span className={`font-mono font-semibold ${pu.bonus_requested ? 'text-emerald-600' : 'text-slate-700'}`}>
+                                      <span className="font-mono font-semibold text-slate-700">
                                         {pu.current_amount?.toFixed(0) || 0}
                                       </span>
                                     </td>
@@ -2464,40 +2456,11 @@ export default function AdminPage() {
                                       </span>
                                     </td>
                                     <td className="py-3 px-6 text-center">
-                                      {pu.bonus_requested ? (
-                                        <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold bg-teal-100 text-teal-700 animate-pulse">
-                                          Ожидает
-                                        </span>
-                                      ) : pu.current_amount >= (program.min_threshold || 0) ? (
-                                        <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold bg-emerald-100 text-emerald-700">
-                                          Готов
-                                        </span>
-                                      ) : (
-                                        <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold bg-slate-100 text-slate-500">
-                                          Активен
-                                        </span>
-                                      )}
+                                      <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold bg-slate-100 text-slate-500">
+                                        Активен
+                                      </span>
                                     </td>
                                     <td className="py-3 px-6 text-right">
-                                      {pu.bonus_requested && (
-                                        <Button
-                                          size="sm"
-                                          onClick={() => {
-                                            setIssueBonusModal({
-                                              programId: program.id,
-                                              programTitle: program.title,
-                                              userId: pu.id,
-                                              userName: pu.name,
-                                              amount: pu.current_amount
-                                            });
-                                            setBonusCodeInput('');
-                                          }}
-                                          className="bg-gradient-to-r from-emerald-500 to-green-500 hover:from-emerald-600 hover:to-green-600 text-white shadow-sm"
-                                        >
-                                          <Gift className="w-3 h-3 mr-1" />
-                                          Выдать
-                                        </Button>
-                                      )}
                                     </td>
                                   </tr>
                                 ))}
@@ -2906,18 +2869,6 @@ export default function AdminPage() {
                     </div>
                   </div>
 
-                  {/* Button Text Customization */}
-                  <div>
-                    <Label className="text-xs font-bold uppercase text-zinc-500">Текст кнопки запроса бонуса</Label>
-                    <Input
-                      value={editingProgram.request_button_text || ''}
-                      onChange={(e) => setEditingProgram({...editingProgram, request_button_text: e.target.value})}
-                      placeholder="Запросить бонус"
-                      className="mt-1"
-                    />
-                    <p className="text-xs text-zinc-400 mt-1">Оставьте пустым для текста по умолчанию</p>
-                  </div>
-
                   {/* Prizes Section */}
                   <div className="border-t pt-4">
                     <div className="flex items-center justify-between mb-3">
@@ -3249,85 +3200,6 @@ export default function AdminPage() {
                     >
                       <Save className="w-4 h-4 mr-2" />
                       {isNewProgram ? 'Создать' : 'Сохранить'}
-                    </Button>
-                  </div>
-                </div>
-              )}
-            </DialogContent>
-          </Dialog>
-
-          {/* Issue Bonus Modal */}
-          <Dialog open={!!issueBonusModal} onOpenChange={() => setIssueBonusModal(null)}>
-            <DialogContent className="max-w-md">
-              <DialogHeader>
-                <DialogTitle className="flex items-center gap-2">
-                  <Gift className="w-5 h-5 text-orange-500" />
-                  Выдать бонус
-                </DialogTitle>
-              </DialogHeader>
-              {issueBonusModal && (
-                <div className="space-y-4">
-                  <div className="bg-zinc-50 p-4 rounded-lg">
-                    <p className="text-sm text-zinc-500">Программа: <span className="font-medium text-zinc-700">{issueBonusModal.programTitle}</span></p>
-                    <p className="font-medium mt-1">{issueBonusModal.userName}</p>
-                    <p className="text-sm text-zinc-500">
-                      Накоплено: <span className="font-mono font-bold text-green-600">{issueBonusModal.amount?.toFixed(0)} баллов</span>
-                    </p>
-                  </div>
-                  
-                  <div>
-                    <Label className="text-xs font-bold uppercase text-zinc-500">Промокод для выдачи</Label>
-                    <Input
-                      value={bonusCodeInput}
-                      onChange={(e) => setBonusCodeInput(e.target.value)}
-                      placeholder="Введите промокод (например: BONUS500)"
-                      className="mt-1 font-mono"
-                      data-testid="bonus-code-input"
-                    />
-                    <p className="text-xs text-zinc-400 mt-1">
-                      Этот код будет отправлен пользователю
-                    </p>
-                  </div>
-                  
-                  <div className="flex justify-end gap-2 pt-2">
-                    <Button 
-                      variant="outline" 
-                      onClick={() => setIssueBonusModal(null)}
-                    >
-                      Отмена
-                    </Button>
-                    <Button
-                      onClick={async () => {
-                        if (!bonusCodeInput.trim()) {
-                          toast.error('Введите промокод');
-                          return;
-                        }
-                        setIssuingBonus(true);
-                        try {
-                          await axios.post(`${API}/admin/bonus/programs/${issueBonusModal.programId}/issue/${issueBonusModal.userId}?bonus_code=${encodeURIComponent(bonusCodeInput.trim())}`);
-                          toast.success(`Бонус выдан: ${bonusCodeInput}`);
-                          setIssueBonusModal(null);
-                          setBonusCodeInput('');
-                          // Refresh program users (only the relevant data)
-                          if (selectedProgramId) {
-                            const res = await axios.get(`${API}/admin/bonus/programs/${selectedProgramId}/users`);
-                            setProgramUsers(res.data.users || []);
-                          }
-                          // Update bonus history locally
-                          const historyRes = await axios.get(`${API}/admin/bonus/history`);
-                          setBonusHistory(historyRes.data.history || []);
-                        } catch (err) {
-                          toast.error(err.response?.data?.detail || 'Ошибка выдачи бонуса');
-                        } finally {
-                          setIssuingBonus(false);
-                        }
-                      }}
-                      disabled={issuingBonus || !bonusCodeInput.trim()}
-                      className="bg-green-500 hover:bg-green-600"
-                      data-testid="confirm-issue-bonus-btn"
-                    >
-                      <Gift className="w-4 h-4 mr-2" />
-                      {issuingBonus ? 'Выдача...' : 'Выдать бонус'}
                     </Button>
                   </div>
                 </div>

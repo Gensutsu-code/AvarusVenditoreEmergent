@@ -20,9 +20,7 @@ class BonusProgramCreate(BaseModel):
     banner_url: str = ""
     banner_height: int = 200
     header_font_size: int = 14
-    request_button_text: str = ""
     max_amount: float = 50000
-    min_threshold: float = 5000
     contribution_type: str = "order_total"
     contribution_percent: float = 100
     enabled: bool = True
@@ -141,8 +139,6 @@ async def get_user_bonus_programs(user=Depends(get_current_user)):
             continue
         
         progress = await get_user_program_progress(user["id"], program["id"])
-        current = progress.get("current_amount", 0)
-        can_request = current > 0 and not progress.get("bonus_requested", False)
         
         levels = program.get("levels", [])
         levels_sorted = sorted(levels, key=lambda x: x.get("min_points", 0))
@@ -168,7 +164,6 @@ async def get_user_bonus_programs(user=Depends(get_current_user)):
         result.append({
             **program,
             "progress": progress,
-            "can_request_bonus": can_request,
             "current_level": current_level,
             "next_level": next_level,
             "level_percentage": round(level_percentage, 1),
@@ -186,40 +181,6 @@ async def get_my_prize_redemptions(user=Depends(get_current_user)):
         {"user_id": user["id"]}, {"_id": 0}
     ).sort("created_at", -1).to_list(100)
     return {"redemptions": redemptions}
-
-
-@router.post("/bonus/request/{program_id}")
-async def request_bonus(program_id: str, user=Depends(get_current_user)):
-    """Request bonus payout from accumulated points"""
-    program = await get_bonus_program(program_id)
-    if not program:
-        raise HTTPException(status_code=404, detail="Программа не найдена")
-    
-    progress = await get_user_program_progress(user["id"], program_id)
-    if progress.get("bonus_requested"):
-        raise HTTPException(status_code=400, detail="Запрос уже отправлен")
-    if progress.get("current_amount", 0) <= 0:
-        raise HTTPException(status_code=400, detail="Недостаточно баллов")
-    
-    await db.bonus_progress.update_one(
-        {"user_id": user["id"], "program_id": program_id},
-        {"$set": {"bonus_requested": True, "requested_at": datetime.now(timezone.utc).isoformat()}},
-        upsert=True
-    )
-    
-    # Notify admin
-    await db.notifications.insert_one({
-        "id": str(uuid.uuid4()),
-        "user_id": "ADMIN",
-        "type": "bonus_request",
-        "title": "Запрос бонуса",
-        "message": f"Клиент {user.get('name') or user.get('email')} запросил бонус по программе «{program.get('title', '')}»",
-        "link": "/admin",
-        "read": False,
-        "created_at": datetime.now(timezone.utc).isoformat()
-    })
-    
-    return {"message": "Запрос отправлен! Администратор свяжется с вами."}
 
 
 @router.post("/bonus/redeem-prize")
@@ -443,13 +404,11 @@ async def get_bonus_program_users(program_id: str, user=Depends(get_current_user
             "name": u.get("name") or u.get("email", "—"),
             "email": u.get("email", ""),
             "current_amount": current_amount,
-            "bonus_requested": progress.get("bonus_requested", False),
-            "requested_at": progress.get("requested_at"),
             "current_level": current_level,
         })
 
-    # Sort: requested first, then by points desc
-    result.sort(key=lambda x: (-int(x["bonus_requested"]), -x["current_amount"]))
+    # Sort by points desc
+    result.sort(key=lambda x: -x["current_amount"])
 
     return {"users": result}
 

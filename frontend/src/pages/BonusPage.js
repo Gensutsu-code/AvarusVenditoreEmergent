@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import { 
-  Gift, Award, Star, Trophy, TrendingUp, Send, Clock, 
+  Gift, Award, Star, Trophy, TrendingUp, Clock, 
   CheckCircle, Copy, History, ChevronDown, ChevronUp, Sparkles
 } from 'lucide-react';
 import { Button } from '../components/ui/button';
@@ -20,7 +20,6 @@ export default function BonusPage() {
   const [bonusPrograms, setBonusPrograms] = useState([]);
   const [bonusHistory, setBonusHistory] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [requestingBonus, setRequestingBonus] = useState({});
   const [redeemingPrize, setRedeemingPrize] = useState({});
   const [collapsedPrograms, setCollapsedPrograms] = useState({});
   const [redeemedPrize, setRedeemedPrize] = useState(null);
@@ -56,22 +55,6 @@ export default function BonusPage() {
   const formatDate = (dateStr) => {
     const date = new Date(dateStr);
     return date.toLocaleDateString('ru-RU', { day: '2-digit', month: '2-digit', year: 'numeric' });
-  };
-
-  const handleRequestBonus = async (programId, programTitle) => {
-    const confirmText = `Вы уверены, что хотите запросить бонус по программе «${programTitle}»?`;
-    if (!window.confirm(confirmText)) return;
-    
-    setRequestingBonus(prev => ({ ...prev, [programId]: true }));
-    try {
-      const res = await axios.post(`${API}/bonus/request/${programId}`);
-      toast.success(res.data.message);
-      fetchBonusData();
-    } catch (err) {
-      toast.error(err.response?.data?.detail || 'Ошибка отправки запроса');
-    } finally {
-      setRequestingBonus(prev => ({ ...prev, [programId]: false }));
-    }
   };
 
   const handleRedeemPrize = async (programId, prizeId, prizeName, pointsCost) => {
@@ -384,29 +367,6 @@ export default function BonusPage() {
                     </div>
                   )}
 
-                  {/* Request Bonus Button */}
-                  <div className="p-6 border-t border-zinc-100 bg-zinc-50">
-                    {program.progress?.bonus_requested ? (
-                      <div className="text-center p-4 bg-orange-100 rounded-xl">
-                        <div className="flex items-center justify-center gap-2 text-orange-600 mb-2">
-                          <Clock className="w-5 h-5 animate-pulse" />
-                          <span className="font-bold">Запрос отправлен!</span>
-                        </div>
-                        <p className="text-sm text-orange-700">
-                          Администратор скоро свяжется с вами и выдаст промокод.
-                        </p>
-                      </div>
-                    ) : (
-                      <Button 
-                        onClick={() => handleRequestBonus(program.id, program.title)}
-                        disabled={requestingBonus[program.id] || (program.progress?.current_amount || 0) === 0}
-                        className="w-full bg-gradient-to-r from-orange-500 to-amber-500 hover:from-orange-600 hover:to-amber-600 text-white font-bold py-4 text-lg shadow-lg disabled:opacity-50"
-                      >
-                        <Send className="w-5 h-5 mr-2" />
-                        {requestingBonus[program.id] ? 'Отправка...' : (program.request_button_text || 'Запросить бонус')}
-                      </Button>
-                    )}
-                  </div>
                 </div>
               );
             })}
