@@ -11,6 +11,7 @@ import io
 
 from database import db, get_current_user, hash_password
 from models import AdminUserCreate, AdminUserUpdate, AdminOrderUpdate
+from routes.bonus import update_bonus_on_order_delivered
 
 router = APIRouter(prefix="/admin", tags=["admin"])
 
@@ -447,6 +448,8 @@ async def update_order_status(order_id: str, status: str, user=Depends(get_curre
                     {"user_id": order["user_id"], "product_id": item["product_id"], "active": True},
                     {"$set": {"active": False, "used_in_order_id": order_id}}
                 )
+        # Accrue bonus points
+        await update_bonus_on_order_delivered(order["user_id"], order.get("total", 0))
     
     # Notify user
     status_labels = {

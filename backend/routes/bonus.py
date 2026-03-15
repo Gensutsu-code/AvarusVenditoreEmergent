@@ -68,7 +68,7 @@ async def update_bonus_on_order_delivered(user_id: str, order_total: float):
     
     yearly_orders = await db.orders.find({
         "user_id": user_id,
-        "status": "delivered",
+        "status": "completed",
         "created_at": {"$gte": year_start, "$lte": year_end}
     }, {"_id": 0, "total": 1}).to_list(1000)
     
