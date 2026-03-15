@@ -200,7 +200,6 @@ export default function AdminPage() {
   const [selectedProgramId, setSelectedProgramId] = useState(null);
   const [programUsers, setProgramUsers] = useState([]);
   const [bonusHistory, setBonusHistory] = useState([]);
-  const [bonusSubTab, setBonusSubTab] = useState('history'); // 'history' or 'prizes'
   
   // Bonus states
   const [prizeRedemptions, setPrizeRedemptions] = useState([]);
@@ -2490,9 +2489,9 @@ export default function AdminPage() {
                       <Award className="w-5 h-5 text-white" />
                     </div>
                     <div>
-                      <h3 className="font-semibold text-slate-800">История и запросы</h3>
+                      <h3 className="font-semibold text-slate-800">История и запросы призов</h3>
                       <p className="text-sm text-slate-500">
-                        {bonusHistory.length} выдач • {prizeRedemptions.length} запросов
+                        {prizeRedemptions.length} запросов
                         {prizeRedemptions.filter(r => r.status === 'pending').length > 0 && (
                           <span className="ml-2 text-teal-500 font-medium">
                             ({prizeRedemptions.filter(r => r.status === 'pending').length} ожидают)
@@ -2502,182 +2501,93 @@ export default function AdminPage() {
                     </div>
                   </div>
                 </div>
-                
-                {/* Sub-tabs for History and Prize Requests */}
-                <div className="border-b border-slate-100">
-                  <div className="flex">
-                    <button
-                      onClick={() => setBonusSubTab && setBonusSubTab('history')}
-                      className={`flex-1 px-6 py-3 text-sm font-medium transition-colors flex items-center justify-center gap-2 ${
-                        (!bonusSubTab || bonusSubTab === 'history')
-                          ? 'text-teal-600 border-b-2 border-teal-500 bg-teal-50/50'
-                          : 'text-slate-500 hover:text-slate-700 hover:bg-slate-50'
-                      }`}
-                    >
-                      <Award className="w-4 h-4" />
-                      История выдачи
-                      <span className="text-xs px-1.5 py-0.5 rounded-full bg-slate-200 text-slate-600">{bonusHistory.length}</span>
-                    </button>
-                    <button
-                      onClick={() => setBonusSubTab && setBonusSubTab('prizes')}
-                      className={`flex-1 px-6 py-3 text-sm font-medium transition-colors flex items-center justify-center gap-2 ${
-                        bonusSubTab === 'prizes'
-                          ? 'text-emerald-600 border-b-2 border-emerald-500 bg-emerald-50/50'
-                          : 'text-slate-500 hover:text-slate-700 hover:bg-slate-50'
-                      }`}
-                    >
-                      <Gift className="w-4 h-4" />
-                      Запросы на призы
-                      {prizeRedemptions.filter(r => r.status === 'pending').length > 0 && (
-                        <span className="text-xs px-1.5 py-0.5 rounded-full bg-emerald-500 text-white animate-pulse">
-                          {prizeRedemptions.filter(r => r.status === 'pending').length}
-                        </span>
-                      )}
-                    </button>
-                  </div>
-                </div>
 
-                {/* History Content */}
-                {(!bonusSubTab || bonusSubTab === 'history') && (
-                  <div className="overflow-x-auto max-h-[350px] overflow-y-auto">
-                    {bonusHistory.length === 0 ? (
-                      <div className="text-center py-12 text-slate-400">
-                        <Award className="w-12 h-12 mx-auto mb-2 opacity-50" />
-                        <p>История пуста</p>
-                      </div>
-                    ) : (
-                      <table className="w-full">
-                        <thead className="sticky top-0 bg-white shadow-sm">
-                          <tr className="bg-slate-50/80">
-                            <th className="text-left py-3 px-6 text-xs font-semibold text-slate-500 uppercase tracking-wider">Дата</th>
-                            <th className="text-left py-3 px-6 text-xs font-semibold text-slate-500 uppercase tracking-wider">Программа</th>
-                            <th className="text-left py-3 px-6 text-xs font-semibold text-slate-500 uppercase tracking-wider">Пользователь</th>
-                            <th className="text-left py-3 px-6 text-xs font-semibold text-slate-500 uppercase tracking-wider">Промокод</th>
-                            <th className="text-right py-3 px-6 text-xs font-semibold text-slate-500 uppercase tracking-wider">Сумма</th>
-                            <th className="text-left py-3 px-6 text-xs font-semibold text-slate-500 uppercase tracking-wider">Выдал</th>
-                          </tr>
-                        </thead>
-                        <tbody className="divide-y divide-slate-100">
-                          {bonusHistory.map((item) => (
-                            <tr key={item.id} className="hover:bg-slate-50 transition-colors">
-                              <td className="py-3 px-6 text-slate-500 text-sm">
-                                {formatDate(item.created_at)}
-                              </td>
-                              <td className="py-3 px-6">
-                                <span className="text-sm text-slate-700">{item.program_title || 'Бонусная программа'}</span>
-                              </td>
-                              <td className="py-3 px-6">
-                                <span className="font-medium text-slate-800">{item.user_name}</span>
-                              </td>
-                              <td className="py-3 px-6">
-                                <code className="px-2 py-1 rounded bg-slate-100 text-sm font-mono text-slate-600">
-                                  {item.bonus_code}
-                                </code>
-                              </td>
-                              <td className="py-3 px-6 text-right">
-                                <span className="font-semibold text-slate-800">{(item.amount_at_issue || 0).toFixed(0)}</span>
-                                <span className="text-slate-400 ml-1">₽</span>
-                              </td>
-                              <td className="py-3 px-6 text-slate-500 text-sm">
-                                {item.issued_by || 'Администратор'}
-                              </td>
-                            </tr>
-                          ))}
-                        </tbody>
-                      </table>
-                    )}
-                  </div>
-                )}
-
-                {/* Prize Requests Content */}
-                {bonusSubTab === 'prizes' && (
-                  <div className="p-6">
-                    {prizeRedemptions.length === 0 ? (
-                      <div className="text-center py-8 text-slate-400">
-                        <Gift className="w-12 h-12 mx-auto mb-2 opacity-50" />
-                        <p>Нет запросов на призы</p>
-                      </div>
-                    ) : (
-                      <div className="space-y-3">
-                        {prizeRedemptions.map(redemption => (
-                          <div key={redemption.id} className={`p-4 rounded-xl border transition-all hover:shadow-md ${
-                            redemption.status === 'pending' ? 'bg-gradient-to-r from-yellow-50 to-orange-50 border-yellow-200' :
-                            redemption.status === 'approved' ? 'bg-gradient-to-r from-emerald-50 to-green-50 border-emerald-200' :
-                            redemption.status === 'issued' ? 'bg-gradient-to-r from-blue-50 to-cyan-50 border-blue-200' :
-                            'bg-gradient-to-r from-slate-50 to-slate-100 border-slate-200'
-                          }`}>
-                            <div className="flex items-center justify-between">
-                              <div>
-                                <p className="font-semibold text-slate-800">{redemption.user_name || redemption.user_email}</p>
-                                <p className="text-sm text-slate-600 mt-0.5">
-                                  Приз: <span className="font-medium text-slate-800">{redemption.prize_name}</span> 
-                                  <span className="text-slate-400 ml-1">({redemption.points_cost} баллов)</span>
-                                </p>
-                                <p className="text-xs text-slate-400 mt-1 flex items-center gap-1">
-                                  <Clock className="w-3 h-3" />
-                                  {new Date(redemption.created_at).toLocaleDateString('ru-RU')} — 
-                                  <span className={`font-medium ${
-                                    redemption.status === 'pending' ? 'text-yellow-600' :
-                                    redemption.status === 'approved' ? 'text-emerald-600' :
-                                    redemption.status === 'issued' ? 'text-blue-600' :
-                                    'text-red-600'
-                                  }`}>
-                                    {redemption.status === 'pending' && ' Ожидает'}
-                                    {redemption.status === 'approved' && ' Одобрен'}
-                                    {redemption.status === 'issued' && ' Выдан'}
-                                    {redemption.status === 'rejected' && ' Отклонён'}
-                                  </span>
-                                </p>
-                              </div>
-                              {redemption.status === 'pending' && (
-                                <div className="flex gap-2">
-                                  <Button size="sm" className="bg-gradient-to-r from-emerald-500 to-green-500 hover:from-emerald-600 hover:to-green-600 text-white shadow-sm" onClick={async () => {
-                                    try {
-                                      await axios.put(`${API}/admin/prize-redemptions/${redemption.id}?status=approved`);
-                                      setPrizeRedemptions(prev => prev.map(r => r.id === redemption.id ? {...r, status: 'approved'} : r));
-                                      toast.success('Приз одобрен');
-                                    } catch (err) { toast.error('Ошибка'); }
-                                  }} data-testid={`approve-prize-${redemption.id}`}>
-                                    Одобрить
-                                  </Button>
-                                  <Button size="sm" className="bg-gradient-to-r from-blue-500 to-cyan-500 hover:from-blue-600 hover:to-cyan-600 text-white shadow-sm" onClick={async () => {
-                                    try {
-                                      await axios.put(`${API}/admin/prize-redemptions/${redemption.id}?status=issued`);
-                                      setPrizeRedemptions(prev => prev.map(r => r.id === redemption.id ? {...r, status: 'issued'} : r));
-                                      toast.success('Приз выдан');
-                                    } catch (err) { toast.error('Ошибка'); }
-                                  }} data-testid={`issue-prize-${redemption.id}`}>
-                                    Выдать
-                                  </Button>
-                                  <Button size="sm" variant="outline" className="border-red-300 text-red-600 hover:bg-red-50" onClick={async () => {
-                                    try {
-                                      await axios.put(`${API}/admin/prize-redemptions/${redemption.id}?status=rejected`);
-                                      setPrizeRedemptions(prev => prev.map(r => r.id === redemption.id ? {...r, status: 'rejected'} : r));
-                                      toast.success('Приз отклонён');
-                                    } catch (err) { toast.error('Ошибка'); }
-                                  }} data-testid={`reject-prize-${redemption.id}`}>
-                                    Отклонить
-                                  </Button>
-                                </div>
-                              )}
-                              {redemption.status === 'approved' && (
+                <div className="p-6">
+                  {prizeRedemptions.length === 0 ? (
+                    <div className="text-center py-8 text-slate-400">
+                      <Gift className="w-12 h-12 mx-auto mb-2 opacity-50" />
+                      <p>Нет запросов на призы</p>
+                    </div>
+                  ) : (
+                    <div className="space-y-3">
+                      {prizeRedemptions.map(redemption => (
+                        <div key={redemption.id} className={`p-4 rounded-xl border transition-all hover:shadow-md ${
+                          redemption.status === 'pending' ? 'bg-gradient-to-r from-yellow-50 to-orange-50 border-yellow-200' :
+                          redemption.status === 'approved' ? 'bg-gradient-to-r from-emerald-50 to-green-50 border-emerald-200' :
+                          redemption.status === 'issued' ? 'bg-gradient-to-r from-blue-50 to-cyan-50 border-blue-200' :
+                          'bg-gradient-to-r from-slate-50 to-slate-100 border-slate-200'
+                        }`}>
+                          <div className="flex items-center justify-between">
+                            <div>
+                              <p className="font-semibold text-slate-800">{redemption.user_name || redemption.user_email}</p>
+                              <p className="text-sm text-slate-600 mt-0.5">
+                                Приз: <span className="font-medium text-slate-800">{redemption.prize_name}</span> 
+                                <span className="text-slate-400 ml-1">({redemption.points_cost} баллов)</span>
+                              </p>
+                              <p className="text-xs text-slate-400 mt-1 flex items-center gap-1">
+                                <Clock className="w-3 h-3" />
+                                {new Date(redemption.created_at).toLocaleDateString('ru-RU')} — 
+                                <span className={`font-medium ${
+                                  redemption.status === 'pending' ? 'text-yellow-600' :
+                                  redemption.status === 'approved' ? 'text-emerald-600' :
+                                  redemption.status === 'issued' ? 'text-blue-600' :
+                                  'text-red-600'
+                                }`}>
+                                  {redemption.status === 'pending' && ' Ожидает'}
+                                  {redemption.status === 'approved' && ' Одобрен'}
+                                  {redemption.status === 'issued' && ' Выдан'}
+                                  {redemption.status === 'rejected' && ' Отклонён'}
+                                </span>
+                              </p>
+                            </div>
+                            {redemption.status === 'pending' && (
+                              <div className="flex gap-2">
+                                <Button size="sm" className="bg-gradient-to-r from-emerald-500 to-green-500 hover:from-emerald-600 hover:to-green-600 text-white shadow-sm" onClick={async () => {
+                                  try {
+                                    await axios.put(`${API}/admin/prize-redemptions/${redemption.id}?status=approved`);
+                                    setPrizeRedemptions(prev => prev.map(r => r.id === redemption.id ? {...r, status: 'approved'} : r));
+                                    toast.success('Приз одобрен');
+                                  } catch (err) { toast.error('Ошибка'); }
+                                }} data-testid={`approve-prize-${redemption.id}`}>
+                                  Одобрить
+                                </Button>
                                 <Button size="sm" className="bg-gradient-to-r from-blue-500 to-cyan-500 hover:from-blue-600 hover:to-cyan-600 text-white shadow-sm" onClick={async () => {
                                   try {
                                     await axios.put(`${API}/admin/prize-redemptions/${redemption.id}?status=issued`);
                                     setPrizeRedemptions(prev => prev.map(r => r.id === redemption.id ? {...r, status: 'issued'} : r));
                                     toast.success('Приз выдан');
                                   } catch (err) { toast.error('Ошибка'); }
-                                }}>
+                                }} data-testid={`issue-prize-${redemption.id}`}>
                                   Выдать
                                 </Button>
-                              )}
-                            </div>
+                                <Button size="sm" variant="outline" className="border-red-300 text-red-600 hover:bg-red-50" onClick={async () => {
+                                  try {
+                                    await axios.put(`${API}/admin/prize-redemptions/${redemption.id}?status=rejected`);
+                                    setPrizeRedemptions(prev => prev.map(r => r.id === redemption.id ? {...r, status: 'rejected'} : r));
+                                    toast.success('Приз отклонён');
+                                  } catch (err) { toast.error('Ошибка'); }
+                                }} data-testid={`reject-prize-${redemption.id}`}>
+                                  Отклонить
+                                </Button>
+                              </div>
+                            )}
+                            {redemption.status === 'approved' && (
+                              <Button size="sm" className="bg-gradient-to-r from-blue-500 to-cyan-500 hover:from-blue-600 hover:to-cyan-600 text-white shadow-sm" onClick={async () => {
+                                try {
+                                  await axios.put(`${API}/admin/prize-redemptions/${redemption.id}?status=issued`);
+                                  setPrizeRedemptions(prev => prev.map(r => r.id === redemption.id ? {...r, status: 'issued'} : r));
+                                  toast.success('Приз выдан');
+                                } catch (err) { toast.error('Ошибка'); }
+                              }}>
+                                Выдать
+                              </Button>
+                            )}
                           </div>
-                        ))}
-                      </div>
-                    )}
-                  </div>
-                )}
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
               </div>
             </motion.div>
           </TabsContent>
