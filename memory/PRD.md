@@ -44,7 +44,7 @@ E-commerce platform for truck spare parts with full admin panel, crypto payments
 - `POST /api/admin/action-logs/{log_id}/revert` - Undo a data change
 - `DELETE /api/admin/action-logs/clear` - Clear all logs
 
-## 3rd Party: Resend (SANDBOX), web3.py, ethers.js, CoinGecko, Cloudinary. ЮKassa (MOCKED)
+## 3rd Party: Resend (домен avopt.store верифицирован, noreply@avopt.store), web3.py, ethers.js, CoinGecko, Cloudinary. ЮKassa (MOCKED)
 
 ## Upcoming: WalletConnect, Real Payment Gateway
 ## Backlog: Resend domain verification, Notification refactoring
