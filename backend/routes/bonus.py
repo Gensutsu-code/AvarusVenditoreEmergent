@@ -372,7 +372,30 @@ async def update_prize_redemption_status(redemption_id: str, status: str, user=D
         {"id": redemption_id},
         {"$set": {"status": status, "updated_at": datetime.now(timezone.utc).isoformat()}}
     )
-    
+
+    # Notify client about status change
+    status_messages = {
+        "approved": f"Ваш запрос на приз «{redemption.get('prize_name', '')}» одобрен!",
+        "issued": f"Приз «{redemption.get('prize_name', '')}» выдан! Свяжитесь с администратором для получения.",
+        "rejected": f"Ваш запрос на приз «{redemption.get('prize_name', '')}» отклонён. Баллы возвращены.",
+    }
+    status_titles = {
+        "approved": "Приз одобрен",
+        "issued": "Приз выдан",
+        "rejected": "Запрос отклонён",
+    }
+    if status in status_messages:
+        await db.notifications.insert_one({
+            "id": str(uuid.uuid4()),
+            "user_id": redemption["user_id"],
+            "type": "prize_status",
+            "title": status_titles[status],
+            "message": status_messages[status],
+            "link": "/bonus",
+            "read": False,
+            "created_at": datetime.now(timezone.utc).isoformat()
+        })
+
     return {"success": True}
 
 
