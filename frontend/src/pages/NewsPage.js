@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { useParams, useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import { Newspaper, Calendar, ArrowLeft, ChevronRight } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -35,15 +36,29 @@ export default function NewsPage() {
   const [news, setNews] = useState([]);
   const [selectedArticle, setSelectedArticle] = useState(null);
   const [loading, setLoading] = useState(true);
+  const { newsId } = useParams();
+  const navigate = useNavigate();
 
   useEffect(() => {
     axios.get(`${API}/news`)
       .then(res => {
         setNews(res.data);
+        // Auto-open article if newsId is in URL
+        if (newsId) {
+          const found = res.data.find(a => a.id === newsId);
+          if (found) {
+            setSelectedArticle(found);
+          } else {
+            // Try fetching directly if not in the list
+            axios.get(`${API}/news/${newsId}`)
+              .then(r => setSelectedArticle(r.data))
+              .catch(() => {});
+          }
+        }
         setLoading(false);
       })
       .catch(() => setLoading(false));
-  }, []);
+  }, [newsId]);
 
   const formatDate = (dateStr) => {
     try {
@@ -65,7 +80,7 @@ export default function NewsPage() {
 
         <div className="relative max-w-3xl mx-auto px-4 py-8">
           <motion.button 
-            onClick={() => setSelectedArticle(null)}
+            onClick={() => { setSelectedArticle(null); navigate('/news'); }}
             className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-white/50 backdrop-blur-sm border border-slate-200 text-slate-600 hover:text-slate-900 hover:bg-white transition-all mb-6"
             initial={{ opacity: 0, x: -20 }}
             animate={{ opacity: 1, x: 0 }}
@@ -164,7 +179,7 @@ export default function NewsPage() {
               {news.map((article, index) => (
                 <motion.button 
                   key={article.id} 
-                  onClick={() => setSelectedArticle(article)}
+                  onClick={() => { setSelectedArticle(article); navigate(`/news/${article.id}`); }}
                   className="w-full text-left glass-card overflow-hidden group"
                   initial={{ opacity: 0, y: 20 }}
                   animate={{ opacity: 1, y: 0 }}
