@@ -403,6 +403,57 @@ async def update_prize_redemption_status(redemption_id: str, status: str, user=D
     return {"success": True}
 
 
+@router.get("/admin/bonus/programs/{program_id}/users")
+async def get_bonus_program_users(program_id: str, user=Depends(get_current_user)):
+    """Get all users with their progress for a specific bonus program"""
+    if user.get("role") != "admin":
+        raise HTTPException(status_code=403, detail="Admin access required")
+
+    program = await get_bonus_program(program_id)
+    if not program:
+        raise HTTPException(status_code=404, detail="Программа не найдена")
+
+    # Get all progress records for this program
+    progress_list = await db.bonus_progress.find(
+        {"program_id": program_id}, {"_id": 0}
+    ).to_list(10000)
+
+    if not progress_list:
+        return {"users": []}
+
+    levels = sorted(program.get("levels", []), key=lambda x: x.get("min_points", 0))
+
+    result = []
+    for progress in progress_list:
+        uid = progress.get("user_id")
+        u = await db.users.find_one({"id": uid}, {"_id": 0, "id": 1, "name": 1, "email": 1})
+        if not u:
+            continue
+
+        current_amount = progress.get("current_amount", 0)
+
+        # Determine current level
+        current_level = None
+        for level in levels:
+            if current_amount >= level.get("min_points", 0):
+                current_level = level
+
+        result.append({
+            "id": u["id"],
+            "name": u.get("name") or u.get("email", "—"),
+            "email": u.get("email", ""),
+            "current_amount": current_amount,
+            "bonus_requested": progress.get("bonus_requested", False),
+            "requested_at": progress.get("requested_at"),
+            "current_level": current_level,
+        })
+
+    # Sort: requested first, then by points desc
+    result.sort(key=lambda x: (-int(x["bonus_requested"]), -x["current_amount"]))
+
+    return {"users": result}
+
+
 # ==================== COMPATIBILITY ALIASES ====================
 
 @router.get("/admin/prize-redemptions")
