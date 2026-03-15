@@ -47,6 +47,5 @@ E-commerce platform for truck spare parts with full admin panel, crypto payments
 ## 3rd Party: Resend (домен avopt.store верифицирован, noreply@avopt.store), web3.py, ethers.js, CoinGecko, Cloudinary. ЮKassa (MOCKED)
 
 ## Upcoming: WalletConnect, Real Payment Gateway
-## Backlog: Resend domain verification, Notification refactoring
 
 ## Credentials: admin@avarus.ru/admin, user@demo.com/demo123

@@ -4,7 +4,7 @@ import axios from 'axios';
 import { Button } from '../components/ui/button';
 import { Input } from '../components/ui/input';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '../components/ui/dialog';
-import { Search, X, ShoppingCart, Package, Truck, Minus, Plus, ArrowRight, Heart, ChevronLeft, ChevronRight, Percent, Eye, Filter, MapPin } from 'lucide-react';
+import { Search, X, ShoppingCart, Package, Truck, Minus, Plus, ArrowRight, Heart, ChevronLeft, ChevronRight, Percent, Eye, Filter, MapPin, ArrowUpDown } from 'lucide-react';
 import { useCart } from '../context/CartContext';
 import { useAuth } from '../context/AuthContext';
 import { toast } from 'sonner';
@@ -526,8 +526,7 @@ export default function CatalogPage() {
     switch (sortBy) {
       case 'price_asc': return (a, b) => a.price - b.price;
       case 'price_desc': return (a, b) => b.price - a.price;
-      case 'name_asc': return (a, b) => a.name.localeCompare(b.name);
-      case 'stock_desc': return (a, b) => (b.stock > 0 ? 1 : 0) - (a.stock > 0 ? 1 : 0);
+      case 'delivery_asc': return (a, b) => (a.delivery_days || 3) - (b.delivery_days || 3);
       default: return null;
     }
   };
@@ -581,6 +580,28 @@ export default function CatalogPage() {
   };
 
   const currentCategory = categories.find(c => c.id === categoryId);
+
+  const sortOptions = [
+    { value: '', label: 'По умолчанию' },
+    { value: 'delivery_asc', label: 'По скорости доставки', icon: Truck },
+    { value: 'price_asc', label: 'Сначала дешёвые' },
+    { value: 'price_desc', label: 'Сначала дорогие' },
+  ];
+
+  const handleSortChange = (val) => {
+    setFilters(prev => ({ ...prev, sortBy: val }));
+    // Re-sort will happen via useEffect below
+  };
+
+  // Re-sort on sortBy change (client-side)
+  useEffect(() => {
+    if (!filters.sortBy) return;
+    const sortFn = getSortFn(filters.sortBy);
+    if (sortFn) {
+      setProducts(prev => [...prev].sort(sortFn));
+      setAlternatives(prev => [...prev].sort(sortFn));
+    }
+  }, [filters.sortBy]);
 
   return (
     <div className="min-h-screen" data-testid="catalog-page">
@@ -764,10 +785,9 @@ export default function CatalogPage() {
                   data-testid="filter-sort"
                 >
                   <option value="">По умолчанию</option>
+                  <option value="delivery_asc">По скорости доставки</option>
                   <option value="price_asc">Цена: по возрастанию</option>
                   <option value="price_desc">Цена: по убыванию</option>
-                  <option value="name_asc">По названию</option>
-                  <option value="stock_desc">По наличию</option>
                 </select>
               </div>
 
@@ -844,7 +864,7 @@ export default function CatalogPage() {
                 </div>
                 <div>
                   <label className="text-xs font-semibold uppercase text-slate-500 mb-1 block">Сортировка</label>
-                  <select value={filters.sortBy} onChange={e => setFilters({...filters, sortBy: e.target.value})} className="w-full h-9 rounded-lg border border-slate-200 bg-white px-2.5 text-sm"><option value="">По умолчанию</option><option value="price_asc">Цена ↑</option><option value="price_desc">Цена ↓</option><option value="name_asc">По названию</option><option value="stock_desc">По наличию</option></select>
+                  <select value={filters.sortBy} onChange={e => setFilters({...filters, sortBy: e.target.value})} className="w-full h-9 rounded-lg border border-slate-200 bg-white px-2.5 text-sm"><option value="">По умолчанию</option><option value="delivery_asc">По скорости доставки</option><option value="price_asc">Цена ↑</option><option value="price_desc">Цена ↓</option></select>
                 </div>
                 <label className="flex items-center gap-2 cursor-pointer"><input type="checkbox" checked={filters.inStock} onChange={e => setFilters({...filters, inStock: e.target.checked})} className="w-4 h-4 rounded border-slate-300 text-teal-500" /><span className="text-sm text-slate-700">Только в наличии</span></label>
                 <label className="flex items-center gap-2 cursor-pointer"><input type="checkbox" checked={filters.hasPhoto} onChange={e => setFilters({...filters, hasPhoto: e.target.checked})} className="w-4 h-4 rounded border-slate-300 text-teal-500" /><span className="text-sm text-slate-700">С фото</span></label>
@@ -931,6 +951,26 @@ export default function CatalogPage() {
               </div>
             ) : (
               <div className="space-y-8">
+                {/* Sort bar — above results */}
+                <div className="flex items-center gap-2 flex-wrap" data-testid="sort-bar">
+                  <ArrowUpDown className="w-4 h-4 text-slate-400 flex-shrink-0" />
+                  {sortOptions.map(opt => (
+                    <button
+                      key={opt.value}
+                      onClick={() => handleSortChange(opt.value)}
+                      className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium transition-all ${
+                        filters.sortBy === opt.value
+                          ? 'bg-teal-500 text-white shadow-md shadow-teal-500/25'
+                          : 'bg-white/70 text-slate-600 border border-slate-200 hover:border-teal-300 hover:text-teal-600'
+                      }`}
+                      data-testid={`sort-${opt.value || 'default'}`}
+                    >
+                      {opt.icon && <opt.icon className="w-3.5 h-3.5" />}
+                      {opt.label}
+                    </button>
+                  ))}
+                </div>
+
                 {/* Exact matches */}
                 {products.length > 0 && (
                   <div>
