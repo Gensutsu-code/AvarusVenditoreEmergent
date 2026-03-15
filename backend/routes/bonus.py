@@ -226,7 +226,19 @@ async def redeem_prize(data: dict, user=Depends(get_current_user)):
         "created_at": datetime.now(timezone.utc).isoformat()
     }
     await db.prize_redemptions.insert_one(redemption)
-    
+
+    # Notify admin about prize request
+    await db.notifications.insert_one({
+        "id": str(uuid.uuid4()),
+        "user_id": "ADMIN",
+        "type": "prize_request",
+        "title": "Запрос приза",
+        "message": f"Клиент {user.get('name') or user.get('email')} запросил приз «{prize.get('name', '')}» ({points_cost} баллов)",
+        "link": "/admin",
+        "read": False,
+        "created_at": datetime.now(timezone.utc).isoformat()
+    })
+
     new_points = current_points - points_cost
     await db.bonus_progress.update_one(
         {"user_id": user["id"], "program_id": program_id},
