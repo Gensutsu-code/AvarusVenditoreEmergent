@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Send, Image, FileText, Truck, Bell, Upload, Download, FileSpreadsheet, Power } from 'lucide-react';
+import { Send, Image, FileText, Truck, Bell, Upload, Download, FileSpreadsheet, Power, Code } from 'lucide-react';
 import { motion } from 'framer-motion';
 import axios from 'axios';
 import { toast } from 'sonner';
@@ -369,6 +369,95 @@ const MaintenanceTab = ({ isDark }) => {
   );
 };
 
+// Developer Mode sub-tab
+const DeveloperModeTab = ({ isDark }) => {
+  const [enabled, setEnabled] = useState(false);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    axios.get(`${API}/admin/developer-mode`).then(r => {
+      setEnabled(r.data.enabled);
+      setLoading(false);
+    }).catch(() => setLoading(false));
+  }, []);
+
+  const toggle = async () => {
+    try {
+      const res = await axios.put(`${API}/admin/developer-mode`);
+      setEnabled(res.data.enabled);
+      toast.success(res.data.enabled ? 'Developer Mode включён' : 'Developer Mode выключен');
+    } catch { toast.error('Ошибка'); }
+  };
+
+  if (loading) return null;
+
+  return (
+    <div className="space-y-6">
+      <div className={`p-6 rounded-xl border ${isDark ? 'bg-zinc-800/50 border-zinc-700' : 'bg-white border-slate-200'}`}>
+        <h3 className={`text-lg font-bold mb-2 ${isDark ? 'text-white' : 'text-slate-800'}`}>Developer Mode</h3>
+        <p className={`text-sm mb-5 ${isDark ? 'text-zinc-400' : 'text-slate-500'}`}>
+          Режим разработчика даёт полный контроль над данными. Все действия логируются во вкладке "Логи".
+        </p>
+
+        <div className={`p-5 rounded-xl flex items-center justify-between ${
+          enabled
+            ? isDark ? 'bg-amber-500/10 border border-amber-500/30' : 'bg-amber-50 border border-amber-200'
+            : isDark ? 'bg-zinc-700/50 border border-zinc-600' : 'bg-slate-50 border border-slate-200'
+        }`}>
+          <div className="flex items-center gap-3">
+            <div className={`w-3 h-3 rounded-full ${enabled ? 'bg-amber-500 animate-pulse' : isDark ? 'bg-zinc-500' : 'bg-slate-400'}`} />
+            <div>
+              <p className={`font-bold ${
+                enabled
+                  ? isDark ? 'text-amber-400' : 'text-amber-700'
+                  : isDark ? 'text-zinc-300' : 'text-slate-700'
+              }`}>
+                {enabled ? 'Developer Mode активен' : 'Developer Mode выключен'}
+              </p>
+              <p className={`text-sm ${isDark ? 'text-zinc-500' : 'text-slate-500'}`}>
+                {enabled ? 'Все действия пользователей и админов логируются' : 'Логирование действий отключено'}
+              </p>
+            </div>
+          </div>
+          <Button
+            onClick={toggle}
+            className={enabled
+              ? isDark ? 'bg-zinc-600 hover:bg-zinc-500 text-white' : 'bg-slate-500 hover:bg-slate-600 text-white'
+              : 'bg-amber-500 hover:bg-amber-600 text-white'
+            }
+            data-testid="developer-mode-toggle-btn"
+          >
+            <Code className="w-4 h-4 mr-2" />
+            {enabled ? 'Выключить' : 'Включить'}
+          </Button>
+        </div>
+
+        <div className={`mt-5 p-4 rounded-xl ${isDark ? 'bg-zinc-900/50 border border-zinc-700' : 'bg-slate-50 border border-slate-200'}`}>
+          <h4 className={`text-sm font-bold mb-3 ${isDark ? 'text-zinc-300' : 'text-slate-700'}`}>Возможности Developer Mode:</h4>
+          <ul className={`text-sm space-y-2 ${isDark ? 'text-zinc-400' : 'text-slate-600'}`}>
+            <li className="flex items-start gap-2">
+              <span className="w-1.5 h-1.5 rounded-full bg-teal-500 mt-1.5 flex-shrink-0" />
+              Логирование всех действий пользователей и администраторов
+            </li>
+            <li className="flex items-start gap-2">
+              <span className="w-1.5 h-1.5 rounded-full bg-teal-500 mt-1.5 flex-shrink-0" />
+              Просмотр логов с фильтрацией по пользователю, типу и дате
+            </li>
+            <li className="flex items-start gap-2">
+              <span className="w-1.5 h-1.5 rounded-full bg-teal-500 mt-1.5 flex-shrink-0" />
+              Прямое редактирование данных в JSON-формате
+            </li>
+            <li className="flex items-start gap-2">
+              <span className="w-1.5 h-1.5 rounded-full bg-teal-500 mt-1.5 flex-shrink-0" />
+              Откат любого изменения данных (Undo)
+            </li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  );
+};
+
 // Sub-tab component for Settings section (TG + Partners + Rules)
 export const SettingsTab = ({
   // Telegram props
@@ -410,6 +499,7 @@ export const SettingsTab = ({
     { id: 'maintenance', label: 'Техработы', icon: Power },
     { id: 'partners', label: 'Партнёры', icon: Image },
     { id: 'terms', label: 'Правила', icon: FileText },
+    { id: 'devmode', label: 'Developer', icon: Code },
   ];
 
   return (
@@ -524,6 +614,13 @@ export const SettingsTab = ({
             termsSaving={termsSaving}
             isDark={isDark}
           />
+        </motion.div>
+      )}
+
+      {/* Developer Mode */}
+      {activeSubTab === 'devmode' && (
+        <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}>
+          <DeveloperModeTab isDark={isDark} />
         </motion.div>
       )}
     </div>

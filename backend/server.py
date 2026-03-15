@@ -2,9 +2,10 @@
 Main FastAPI Application - Refactored
 All routes are organized in /app/backend/routes/
 """
-from fastapi import FastAPI, APIRouter
+from fastapi import FastAPI, APIRouter, Request
 from fastapi.staticfiles import StaticFiles
 from starlette.middleware.cors import CORSMiddleware
+from starlette.middleware.base import BaseHTTPMiddleware
 from motor.motor_asyncio import AsyncIOMotorClient
 from dotenv import load_dotenv
 from pathlib import Path
@@ -12,6 +13,8 @@ from contextlib import asynccontextmanager
 import os
 import logging
 import asyncio
+import time
+import jwt
 
 # Load environment
 ROOT_DIR = Path(__file__).parent
@@ -112,6 +115,122 @@ async def lifespan(app: FastAPI):
 
 # Create FastAPI app with lifespan
 app = FastAPI(title="Heavy Vehicle Parts Store API", lifespan=lifespan)
+
+
+# ==================== ACTION LOGGING MIDDLEWARE ====================
+JWT_SECRET = os.environ.get('JWT_SECRET', '')
+
+# Routes to skip logging (noisy, read-only, health)
+SKIP_LOG_PATHS = {"/health", "/api/health", "/api/", "/api/uploads", "/favicon.ico"}
+SKIP_LOG_PREFIXES = ("/api/uploads/", "/api/admin/action-logs", "/api/admin/chats/", "/api/public/", "/api/admin/data/")
+
+# Classify actions by path pattern
+def classify_action(method: str, path: str) -> str:
+    path_lower = path.lower()
+    if "/auth/login" in path_lower:
+        return "Авторизация"
+    if "/auth/register" in path_lower:
+        return "Регистрация"
+    if "/admin/orders" in path_lower and method == "PUT":
+        return "Изменение заказа (админ)"
+    if "/admin/users" in path_lower and method == "POST":
+        return "Создание пользователя"
+    if "/admin/users" in path_lower and method == "PUT":
+        return "Редактирование пользователя"
+    if "/admin/users" in path_lower and "block" in path_lower:
+        return "Блокировка пользователя"
+    if "/orders" in path_lower and method == "POST":
+        return "Создание заказа"
+    if "/products" in path_lower and method == "POST":
+        return "Создание товара"
+    if "/products" in path_lower and method == "PUT":
+        return "Редактирование товара"
+    if "/products" in path_lower and method == "DELETE":
+        return "Удаление товара"
+    if "/cart" in path_lower:
+        return "Корзина"
+    if "/maintenance" in path_lower:
+        return "Техработы"
+    if "/discount-requests" in path_lower:
+        return "Запрос скидки"
+    if "/product-requests" in path_lower:
+        return "Запрос товара"
+    if "/settings" in path_lower or "/promo-banner" in path_lower:
+        return "Настройки"
+    if "/data/" in path_lower:
+        return "Прямое редактирование данных"
+    if method == "GET":
+        return "Просмотр"
+    return f"{method} {path.split('/api/')[-1][:50]}"
+
+
+class ActionLoggingMiddleware(BaseHTTPMiddleware):
+    async def dispatch(self, request: Request, call_next):
+        path = request.url.path
+        method = request.method
+
+        # Skip noisy routes
+        if path in SKIP_LOG_PATHS or any(path.startswith(p) for p in SKIP_LOG_PREFIXES):
+            return await call_next(request)
+        if method == "OPTIONS":
+            return await call_next(request)
+        # Skip most GET requests (too noisy for logs)
+        if method == "GET":
+            return await call_next(request)
+
+        # Extract user from JWT
+        user_id = None
+        user_name = None
+        user_role = None
+        auth_header = request.headers.get("authorization", "")
+        if auth_header.startswith("Bearer "):
+            token = auth_header[7:]
+            try:
+                payload = jwt.decode(token, JWT_SECRET, algorithms=["HS256"])
+                uid = payload.get("user_id")
+                if uid:
+                    u = await db.users.find_one({"id": uid}, {"_id": 0, "id": 1, "name": 1, "email": 1, "role": 1})
+                    if u:
+                        user_id = u["id"]
+                        user_name = u.get("name") or u.get("email")
+                        user_role = u.get("role")
+            except Exception:
+                pass
+
+        # For login, we'll just note the action, user_name will be extracted later
+        if "/auth/login" in path and method == "POST":
+            user_name = user_name or "login_attempt"
+
+        ip = request.client.host if request.client else "unknown"
+        start_time = time.time()
+
+        response = await call_next(request)
+
+        duration_ms = int((time.time() - start_time) * 1000)
+        action = classify_action(method, path)
+
+        # Log asynchronously (fire and forget)
+        try:
+            from routes.action_logs import log_action
+            asyncio.create_task(log_action(
+                action=action,
+                user_id=user_id,
+                user_name=user_name,
+                user_role=user_role,
+                method=method,
+                path=path,
+                ip=ip,
+                status_code=response.status_code,
+                details={"duration_ms": duration_ms},
+            ))
+        except Exception as e:
+            logger.error(f"Action logging error: {e}")
+
+        return response
+
+
+app.add_middleware(ActionLoggingMiddleware)
+
 
 # Health check endpoints
 @app.get("/health")

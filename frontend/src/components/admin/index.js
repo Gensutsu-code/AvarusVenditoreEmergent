@@ -17,3 +17,5 @@ export { default as PaymentsTab } from './PaymentsTab';
 export { default as CRMTab } from './CRMTab';
 export { default as MarketingTab } from './MarketingTab';
 export { default as SettingsTab } from './SettingsTab';
+export { default as LogsTab } from './LogsTab';
+export { default as DataEditorModal } from './DataEditorModal';

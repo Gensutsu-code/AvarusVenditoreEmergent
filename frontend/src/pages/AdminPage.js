@@ -5,7 +5,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { 
   Users, Package, ShoppingBag, TrendingUp, User,
   Plus, Pencil, Trash2, Save, Eye, FolderOpen, Megaphone, Upload, Image,
-  MessageCircle, Send, BarChart3, Download, FileSpreadsheet, Pin, Tag, X, Copy, Gift, Award, ChevronDown, Paperclip, Play, ZoomIn, ZoomOut, Settings, ChevronLeft, ChevronRight, CreditCard, FileText, Mail, Bell, Wallet, Clock
+  MessageCircle, Send, BarChart3, Download, FileSpreadsheet, Pin, Tag, X, Copy, Gift, Award, ChevronDown, Paperclip, Play, ZoomIn, ZoomOut, Settings, ChevronLeft, ChevronRight, CreditCard, FileText, Mail, Bell, Wallet, Clock, ScrollText, Code
 } from 'lucide-react';
 import { Button } from '../components/ui/button';
 import { Input } from '../components/ui/input';
@@ -32,9 +32,11 @@ import {
   PaymentsTab,
   CRMTab,
   MarketingTab,
-  SettingsTab
+  SettingsTab,
+  LogsTab
 } from '../components/admin';
 import CryptoSettingsTab from '../components/admin/CryptoSettingsTab';
+import DataEditorModal from '../components/admin/DataEditorModal';
 
 const API = `${process.env.REACT_APP_BACKEND_URL}/api`;
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
@@ -146,7 +148,7 @@ export default function AdminPage() {
   const { isDark } = useTheme();
   
   // Tab order state - New restructured order
-  const defaultTabOrder = ['products', 'bonus', 'payments', 'crm', 'marketing', 'settings'];
+  const defaultTabOrder = ['products', 'bonus', 'payments', 'crm', 'marketing', 'logs', 'settings'];
   const [tabOrder, setTabOrder] = useState(() => {
     const saved = localStorage.getItem('adminTabOrder');
     if (saved) {
@@ -156,7 +158,13 @@ export default function AdminPage() {
         return defaultTabOrder;
       }
       // Remove crypto from main tabs (moved to payments)
-      const filtered = order.filter(tab => tab !== 'crypto');
+      let filtered = order.filter(tab => tab !== 'crypto');
+      // Add logs tab if missing (migration)
+      if (!filtered.includes('logs')) {
+        const settingsIdx = filtered.indexOf('settings');
+        if (settingsIdx >= 0) filtered.splice(settingsIdx, 0, 'logs');
+        else filtered.push('logs');
+      }
       return filtered;
     }
     return defaultTabOrder;
@@ -229,6 +237,9 @@ export default function AdminPage() {
   // Terms of Service state
   const [termsSections, setTermsSections] = useState([]);
   const [termsSaving, setTermsSaving] = useState(false);
+
+  // Data Editor modal state
+  const [dataEditorTarget, setDataEditorTarget] = useState(null); // { collection, documentId }
 
   // Prepayment settings state
   const [prepaymentSettings, setPrepaymentSettings] = useState({
@@ -1135,6 +1146,7 @@ export default function AdminPage() {
     payments: { icon: CreditCard, label: 'Платежи' },
     crm: { icon: Users, label: 'CRM', count: users.length },
     marketing: { icon: Megaphone, label: 'Маркетинг' },
+    logs: { icon: ScrollText, label: 'Логи' },
     settings: { icon: Settings, label: 'Настройки' }
   };
 
@@ -3525,6 +3537,7 @@ export default function AdminPage() {
               handleDeleteUser={handleDeleteUser}
               handleBlockUser={handleBlockUser}
               onViewAnalytics={setAnalyticsUser}
+              onEditRawData={(collection, documentId) => setDataEditorTarget({ collection, documentId })}
               isDark={isDark}
             />
             </motion.div>
@@ -3561,6 +3574,17 @@ export default function AdminPage() {
               users={users}
               isDark={isDark}
             />
+            </motion.div>
+          </TabsContent>
+
+          {/* Logs Tab - Action Logging & Developer Mode */}
+          <TabsContent value="logs" className="p-6">
+            <motion.div 
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.3, ease: "easeOut" }}
+            >
+            <LogsTab isDark={isDark} />
             </motion.div>
           </TabsContent>
 
@@ -4513,6 +4537,17 @@ export default function AdminPage() {
         open={!!analyticsUser}
         onClose={() => setAnalyticsUser(null)}
       />
+
+      {/* Data Editor Modal */}
+      {dataEditorTarget && (
+        <DataEditorModal
+          collection={dataEditorTarget.collection}
+          documentId={dataEditorTarget.documentId}
+          onClose={() => setDataEditorTarget(null)}
+          onSaved={() => { fetchData(); setDataEditorTarget(null); }}
+          isDark={isDark}
+        />
+      )}
     </div>
     </>
   );
