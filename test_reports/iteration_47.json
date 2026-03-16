@@ -1,0 +1,63 @@
+{
+  "summary": "Iteration 47 testing - Admin control overhaul features. Backend: 19/19 tests passed for bonus points management, order rollback API, tracking, and analytics. Frontend: Most features working correctly except order rollback UI is inaccessible.",
+  "backend_issues": {
+    "critical": [],
+    "minor": []
+  },
+  "frontend_issues": {
+    "ui_bugs": [
+      {
+        "component": "AdminPage.js - Order Rollback Button",
+        "issue": "Order rollback button code exists (lines 1603-1612 and 3964-3975) but is NOT accessible from UI. The 'orders' TabsContent (line 1563) has no corresponding tab trigger in tabConfig (lines 1136-1144). The AdminOrdersPage.js (/admin/orders) doesn't include rollback functionality.",
+        "selector": "[data-testid='rollback-order-*']",
+        "priority": "HIGH"
+      }
+    ],
+    "integration_issues": [],
+    "design_issues": []
+  },
+  "test_report_links": [
+    "/app/backend/tests/test_iteration47_features.py",
+    "/app/test_reports/pytest/pytest_iteration47.xml"
+  ],
+  "action_items": [
+    "Add order rollback button to AdminOrdersPage.js (/admin/orders) - the code exists in AdminPage.js but is orphaned/inaccessible",
+    "Either: (1) Add 'orders' key to tabConfig in AdminPage.js to show the hidden orders tab, OR (2) Copy rollback functionality from AdminPage.js to AdminOrdersPage.js"
+  ],
+  "critical_code_review_comments": [
+    "Orphaned code: TabsContent value='orders' in AdminPage.js (line 1563-1687) is unreachable - no tab trigger exists for it",
+    "AdminOrdersPage.js lacks the rollback-status button that was supposed to be added per requirements"
+  ],
+  "updated_files": [
+    "/app/backend/tests/test_iteration47_features.py"
+  ],
+  "success_rate": {
+    "backend": "100% (19/19 passed)",
+    "frontend": "90% (most features working, order rollback UI inaccessible)"
+  },
+  "seed_data_creation": "None - used existing bonus program (cd173bac-1752-405a-b0fd-d2c75a529af6) and users",
+  "retest_needed": true,
+  "should_main_agent_self_test": false,
+  "context_for_next_testing_agent": "Backend APIs all working: add-points, remove-points, reset-points, delete prize redemptions, order rollback-status, tracking with fingerprint, user analytics. Frontend verified: Bonus tab shows Начислить/Списать/Reset buttons per user when program expanded. Prize redemptions have delete buttons. Settings tab has NO Developer Mode sub-tab. CRM tab has NO Code/JSON button. User analytics modal shows Sessions/Devices tab with browser fingerprint data (IP, geo, browser, OS, screen, etc.). ISSUE: Order rollback button not accessible - code exists but TabsContent is orphaned.",
+  "features_tested": {
+    "backend_apis": {
+      "POST /api/admin/bonus/programs/{pid}/users/{uid}/add-points": "PASS - adds points with amount and reason",
+      "POST /api/admin/bonus/programs/{pid}/users/{uid}/remove-points": "PASS - subtracts points",
+      "POST /api/admin/bonus/programs/{pid}/users/{uid}/reset-points": "PASS - resets points to 0",
+      "DELETE /api/admin/bonus/prize-redemptions/{id}": "PASS - deletes prize redemption",
+      "DELETE /api/bonus/my-redemptions/{id}": "PASS (404 for non-existent)",
+      "PUT /api/admin/orders/{id}/rollback-status": "PASS - rolls back order status",
+      "POST /api/track": "PASS - accepts browser fingerprint and stores session",
+      "GET /api/admin/users/{id}/analytics": "PASS - returns sessions with browser/geo data"
+    },
+    "frontend_ui": {
+      "Bonus tab Начислить/Списать/Reset buttons": "PASS - visible in users table when program expanded",
+      "Prize redemptions delete button": "PASS - trash icon visible",
+      "Order table rollback button (RotateCcw)": "FAIL - not accessible (orphaned code)",
+      "Order detail modal rollback button": "FAIL - not accessible (orphaned code)",
+      "Settings tab Developer Mode sub-tab removed": "PASS - not present",
+      "CRM tab Code button removed": "PASS - not present",
+      "User analytics Sessions/Devices tab": "PASS - shows browser, IP, geo, screen data"
+    }
+  }
+}

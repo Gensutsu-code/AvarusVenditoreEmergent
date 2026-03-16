@@ -485,3 +485,131 @@ async def get_admin_bonus_history(user=Depends(get_current_user)):
     
     return {"history": history}
 
+
+
+
+# ==================== ADMIN BONUS POINTS MANAGEMENT ====================
+
+class PointsAction(BaseModel):
+    amount: float
+    reason: str = ""
+
+
+@router.post("/admin/bonus/programs/{program_id}/users/{user_id}/add-points")
+async def admin_add_points(program_id: str, user_id: str, body: PointsAction, user=Depends(get_current_user)):
+    """Admin: add bonus points to a user"""
+    if user.get("role") != "admin":
+        raise HTTPException(status_code=403, detail="Admin access required")
+    if body.amount <= 0:
+        raise HTTPException(status_code=400, detail="Amount must be positive")
+
+    progress = await get_user_program_progress(user_id, program_id)
+    old_amount = progress.get("current_amount", 0)
+    new_amount = old_amount + body.amount
+
+    await db.bonus_progress.update_one(
+        {"user_id": user_id, "program_id": program_id},
+        {"$set": {"current_amount": new_amount, "updated_at": datetime.now(timezone.utc).isoformat()}},
+        upsert=True
+    )
+
+    target = await db.users.find_one({"id": user_id}, {"_id": 0, "name": 1, "email": 1})
+    target_name = (target.get("name") or target.get("email", "")) if target else ""
+
+    # Notify user
+    await db.notifications.insert_one({
+        "id": str(uuid.uuid4()),
+        "user_id": user_id,
+        "type": "bonus_points",
+        "title": "Начисление баллов",
+        "message": f"Вам начислено {body.amount:.0f} баллов. {body.reason}".strip(),
+        "link": "/bonus",
+        "read": False,
+        "created_at": datetime.now(timezone.utc).isoformat()
+    })
+
+    return {"success": True, "old_amount": old_amount, "new_amount": new_amount, "user_name": target_name}
+
+
+@router.post("/admin/bonus/programs/{program_id}/users/{user_id}/remove-points")
+async def admin_remove_points(program_id: str, user_id: str, body: PointsAction, user=Depends(get_current_user)):
+    """Admin: remove bonus points from a user"""
+    if user.get("role") != "admin":
+        raise HTTPException(status_code=403, detail="Admin access required")
+    if body.amount <= 0:
+        raise HTTPException(status_code=400, detail="Amount must be positive")
+
+    progress = await get_user_program_progress(user_id, program_id)
+    old_amount = progress.get("current_amount", 0)
+    new_amount = max(0, old_amount - body.amount)
+
+    await db.bonus_progress.update_one(
+        {"user_id": user_id, "program_id": program_id},
+        {"$set": {"current_amount": new_amount, "updated_at": datetime.now(timezone.utc).isoformat()}},
+        upsert=True
+    )
+
+    target = await db.users.find_one({"id": user_id}, {"_id": 0, "name": 1, "email": 1})
+    target_name = (target.get("name") or target.get("email", "")) if target else ""
+
+    await db.notifications.insert_one({
+        "id": str(uuid.uuid4()),
+        "user_id": user_id,
+        "type": "bonus_points",
+        "title": "Списание баллов",
+        "message": f"Списано {body.amount:.0f} баллов. {body.reason}".strip(),
+        "link": "/bonus",
+        "read": False,
+        "created_at": datetime.now(timezone.utc).isoformat()
+    })
+
+    return {"success": True, "old_amount": old_amount, "new_amount": new_amount, "user_name": target_name}
+
+
+@router.post("/admin/bonus/programs/{program_id}/users/{user_id}/reset-points")
+async def admin_reset_points(program_id: str, user_id: str, user=Depends(get_current_user)):
+    """Admin: reset bonus points to zero"""
+    if user.get("role") != "admin":
+        raise HTTPException(status_code=403, detail="Admin access required")
+
+    progress = await get_user_program_progress(user_id, program_id)
+    old_amount = progress.get("current_amount", 0)
+
+    await db.bonus_progress.update_one(
+        {"user_id": user_id, "program_id": program_id},
+        {"$set": {"current_amount": 0, "updated_at": datetime.now(timezone.utc).isoformat()}},
+        upsert=True
+    )
+
+    return {"success": True, "old_amount": old_amount, "new_amount": 0}
+
+
+# ==================== DELETE PRIZE REDEMPTIONS ====================
+
+@router.delete("/admin/bonus/prize-redemptions/{redemption_id}")
+async def delete_prize_redemption(redemption_id: str, user=Depends(get_current_user)):
+    """Admin: delete a prize redemption from history"""
+    if user.get("role") != "admin":
+        raise HTTPException(status_code=403, detail="Admin access required")
+    result = await db.prize_redemptions.delete_one({"id": redemption_id})
+    if result.deleted_count == 0:
+        raise HTTPException(status_code=404, detail="Not found")
+    return {"success": True}
+
+
+@router.delete("/admin/prize-redemptions/{redemption_id}")
+async def delete_prize_redemption_alias(redemption_id: str, user=Depends(get_current_user)):
+    """Alias"""
+    return await delete_prize_redemption(redemption_id, user)
+
+
+@router.delete("/bonus/my-redemptions/{redemption_id}")
+async def delete_my_redemption(redemption_id: str, user=Depends(get_current_user)):
+    """Client: delete own prize redemption from history (only issued/rejected)"""
+    redemption = await db.prize_redemptions.find_one({"id": redemption_id, "user_id": user["id"]}, {"_id": 0})
+    if not redemption:
+        raise HTTPException(status_code=404, detail="Not found")
+    if redemption.get("status") not in ("issued", "rejected"):
+        raise HTTPException(status_code=400, detail="Can only delete completed or rejected requests")
+    await db.prize_redemptions.delete_one({"id": redemption_id})
+    return {"success": True}

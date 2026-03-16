@@ -4,27 +4,116 @@ from datetime import datetime, timezone
 from database import db, get_current_user
 from pydantic import BaseModel
 from typing import Optional, List
+import aiohttp
+import logging
 
 router = APIRouter()
+logger = logging.getLogger(__name__)
+
+# GeoIP cache to avoid repeated API calls
+_geo_cache = {}
 
 
 class TrackEvent(BaseModel):
-    event_type: str  # page_view, search, button_click, page_leave
+    event_type: str
     page: Optional[str] = None
-    duration: Optional[int] = None  # seconds on page
-    query: Optional[str] = None  # search query
-    element: Optional[str] = None  # button/element clicked
+    duration: Optional[int] = None
+    query: Optional[str] = None
+    element: Optional[str] = None
     meta: Optional[dict] = None
 
 
 class TrackBatch(BaseModel):
     events: List[TrackEvent]
+    fingerprint: Optional[dict] = None  # browser fingerprint data
+
+
+async def resolve_geo(ip: str) -> dict:
+    """Resolve IP to geo data using ip-api.com (free, no key needed)"""
+    if not ip or ip in ("127.0.0.1", "localhost", "unknown"):
+        return {}
+    if ip in _geo_cache:
+        return _geo_cache[ip]
+    try:
+        async with aiohttp.ClientSession() as session:
+            async with session.get(f"http://ip-api.com/json/{ip}?fields=status,country,countryCode,region,regionName,city,zip,lat,lon,timezone,isp,org,as", timeout=aiohttp.ClientTimeout(total=3)) as resp:
+                if resp.status == 200:
+                    data = await resp.json()
+                    if data.get("status") == "success":
+                        geo = {
+                            "country": data.get("country", ""),
+                            "country_code": data.get("countryCode", ""),
+                            "region": data.get("regionName", ""),
+                            "city": data.get("city", ""),
+                            "zip": data.get("zip", ""),
+                            "lat": data.get("lat"),
+                            "lon": data.get("lon"),
+                            "timezone": data.get("timezone", ""),
+                            "isp": data.get("isp", ""),
+                            "org": data.get("org", ""),
+                        }
+                        _geo_cache[ip] = geo
+                        return geo
+    except Exception as e:
+        logger.warning(f"GeoIP resolve failed for {ip}: {e}")
+    return {}
 
 
 @router.post("/track")
 async def track_events(batch: TrackBatch, request: Request, user=Depends(get_current_user)):
-    """Track user activity events"""
+    """Track user activity events with browser fingerprint"""
     now = datetime.now(timezone.utc).isoformat()
+    ip = request.headers.get("x-forwarded-for", "").split(",")[0].strip() or (request.client.host if request.client else "unknown")
+
+    # Save/update browser fingerprint if provided
+    if batch.fingerprint:
+        geo = await resolve_geo(ip)
+        session_data = {
+            "user_id": user["id"],
+            "ip": ip,
+            "geo": geo,
+            "user_agent": batch.fingerprint.get("user_agent", ""),
+            "browser": batch.fingerprint.get("browser", ""),
+            "browser_version": batch.fingerprint.get("browser_version", ""),
+            "os": batch.fingerprint.get("os", ""),
+            "os_version": batch.fingerprint.get("os_version", ""),
+            "device": batch.fingerprint.get("device", ""),
+            "screen_resolution": batch.fingerprint.get("screen_resolution", ""),
+            "viewport": batch.fingerprint.get("viewport", ""),
+            "language": batch.fingerprint.get("language", ""),
+            "languages": batch.fingerprint.get("languages", []),
+            "timezone": batch.fingerprint.get("timezone", ""),
+            "timezone_offset": batch.fingerprint.get("timezone_offset", 0),
+            "platform": batch.fingerprint.get("platform", ""),
+            "cookie_enabled": batch.fingerprint.get("cookie_enabled", True),
+            "do_not_track": batch.fingerprint.get("do_not_track", False),
+            "online": batch.fingerprint.get("online", True),
+            "connection_type": batch.fingerprint.get("connection_type", ""),
+            "memory": batch.fingerprint.get("memory", 0),
+            "cores": batch.fingerprint.get("cores", 0),
+            "touch_support": batch.fingerprint.get("touch_support", False),
+            "referer": batch.fingerprint.get("referer", ""),
+            "last_seen": now,
+        }
+        # Upsert: update existing session or create new
+        await db.user_sessions.update_one(
+            {"user_id": user["id"], "ip": ip, "user_agent": session_data["user_agent"]},
+            {"$set": session_data, "$inc": {"visit_count": 1}, "$setOnInsert": {"first_seen": now}},
+            upsert=True
+        )
+        # Update user's last known data
+        await db.users.update_one(
+            {"id": user["id"]},
+            {"$set": {
+                "last_ip": ip,
+                "last_geo": geo,
+                "last_browser": session_data["browser"],
+                "last_os": session_data["os"],
+                "last_device": session_data["device"],
+                "last_seen": now,
+            }}
+        )
+
     docs = []
     for event in batch.events:
         docs.append({
@@ -35,6 +124,7 @@ async def track_events(batch: TrackBatch, request: Request, user=Depends(get_cur
             "query": event.query,
             "element": event.element,
             "meta": event.meta or {},
+            "ip": ip,
             "created_at": now
         })
     if docs:
@@ -106,10 +196,9 @@ async def get_user_analytics(user_id: str, user=Depends(get_current_user)):
         for c in clicks
     ]
 
-    # Recent activity (last 50 events)
+    # Recent activity
     recent = await db.user_analytics.find(
-        {"user_id": user_id},
-        {"_id": 0}
+        {"user_id": user_id}, {"_id": 0}
     ).sort("created_at", -1).limit(50).to_list(50)
 
     # Summary stats
@@ -124,7 +213,16 @@ async def get_user_analytics(user_id: str, user=Depends(get_current_user)):
     ]).to_list(1)
     total_time = total_time_result[0]["total"] if total_time_result else 0
 
+    # User sessions (browser/device data)
+    sessions = await db.user_sessions.find(
+        {"user_id": user_id}, {"_id": 0}
+    ).sort("last_seen", -1).limit(20).to_list(20)
+
+    # User basic info for context
+    target_user = await db.users.find_one({"id": user_id}, {"_id": 0, "password": 0})
+
     return {
+        "user": target_user,
         "summary": {
             "total_events": total_events,
             "total_page_views": total_pages,
@@ -135,5 +233,6 @@ async def get_user_analytics(user_id: str, user=Depends(get_current_user)):
         "pages": page_stats,
         "searches": search_stats,
         "clicks": click_stats,
-        "recent_activity": recent
+        "recent_activity": recent,
+        "sessions": sessions,
     }

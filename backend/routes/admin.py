@@ -438,7 +438,7 @@ async def update_order_status(order_id: str, status: str, user=Depends(get_curre
                 {"$inc": {"stock": item.get("quantity", 0)}}
             )
     
-    await db.orders.update_one({"id": order_id}, {"$set": {"status": status}})
+    await db.orders.update_one({"id": order_id}, {"$set": {"status": status, "previous_status": old_status}})
     
     # Deactivate individual prices when order is completed
     if status == "completed":
@@ -465,7 +465,30 @@ async def update_order_status(order_id: str, status: str, user=Depends(get_curre
         "/orders"
     )
     
-    return {"message": "Status updated", "status": status}
+    return {"message": "Status updated", "status": status, "previous_status": old_status}
+
+
+@router.put("/orders/{order_id}/rollback-status")
+async def rollback_order_status(order_id: str, user=Depends(get_current_user)):
+    """Rollback order to its previous status"""
+    if user.get("role") != "admin":
+        raise HTTPException(status_code=403, detail="Admin access required")
+    order = await db.orders.find_one({"id": order_id}, {"_id": 0})
+    if not order:
+        raise HTTPException(status_code=404, detail="Order not found")
+    prev = order.get("previous_status")
+    if not prev:
+        raise HTTPException(status_code=400, detail="No previous status to rollback to")
+    current = order.get("status")
+    await db.orders.update_one({"id": order_id}, {"$set": {"status": prev, "previous_status": current}})
+    
+    await create_notification(
+        order["user_id"], "order",
+        f"Статус заказа #{order_id[:8]}",
+        f"Статус заказа изменён на: {prev}",
+        "/orders"
+    )
+    return {"message": "Status rolled back", "status": prev, "previous_status": current}
 
 
 @router.delete("/orders/{order_id}")

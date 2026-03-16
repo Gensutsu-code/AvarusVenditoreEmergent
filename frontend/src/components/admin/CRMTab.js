@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Users, BarChart3, TrendingUp, Calendar, UserCheck, Pencil, Trash2, ChevronDown, User, ShoppingBag, Package, Clock, DollarSign, Target, RefreshCw, Activity, ShieldOff, ShieldCheck, Code } from 'lucide-react';
+import { Users, BarChart3, TrendingUp, Calendar, UserCheck, Pencil, Trash2, ChevronDown, User, ShoppingBag, Package, Clock, DollarSign, Target, RefreshCw, Activity, ShieldOff, ShieldCheck } from 'lucide-react';
 import { Button } from '../../components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../../components/ui/select';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -190,16 +190,6 @@ export const CRMTab = ({
                         title={user.blocked ? 'Разблокировать' : 'Заблокировать'}
                       >
                         {user.blocked ? <ShieldCheck className="w-4 h-4" /> : <ShieldOff className="w-4 h-4" />}
-                      </Button>
-                      <Button 
-                        variant="ghost" 
-                        size="sm"
-                        className={isDark ? 'text-amber-400 hover:text-amber-300' : 'text-amber-600 hover:text-amber-700'}
-                        onClick={(e) => { e.stopPropagation(); onEditRawData && onEditRawData('users', user.id); }}
-                        data-testid={`raw-edit-user-${user.id}`}
-                        title="Редактировать данные (JSON)"
-                      >
-                        <Code className="w-4 h-4" />
                       </Button>
                       <Button 
                         variant="ghost" 

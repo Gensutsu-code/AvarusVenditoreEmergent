@@ -5,7 +5,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { 
   Users, Package, ShoppingBag, TrendingUp, User,
   Plus, Pencil, Trash2, Save, Eye, FolderOpen, Megaphone, Upload, Image,
-  MessageCircle, Send, BarChart3, Download, FileSpreadsheet, Pin, Tag, X, Copy, Gift, Award, ChevronDown, Paperclip, Play, ZoomIn, ZoomOut, Settings, ChevronLeft, ChevronRight, CreditCard, FileText, Mail, Bell, Wallet, Clock, ScrollText, Code
+  MessageCircle, Send, BarChart3, Download, FileSpreadsheet, Pin, Tag, X, Copy, Gift, Award, ChevronDown, Paperclip, Play, ZoomIn, ZoomOut, Settings, ChevronLeft, ChevronRight, CreditCard, FileText, Mail, Bell, Wallet, Clock, ScrollText, Code, Minus, RotateCcw
 } from 'lucide-react';
 import { Button } from '../components/ui/button';
 import { Input } from '../components/ui/input';
@@ -36,7 +36,6 @@ import {
   LogsTab
 } from '../components/admin';
 import CryptoSettingsTab from '../components/admin/CryptoSettingsTab';
-import DataEditorModal from '../components/admin/DataEditorModal';
 
 const API = `${process.env.REACT_APP_BACKEND_URL}/api`;
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
@@ -203,6 +202,7 @@ export default function AdminPage() {
   
   // Bonus states
   const [prizeRedemptions, setPrizeRedemptions] = useState([]);
+  const [pointsModal, setPointsModal] = useState(null); // { action: 'add'|'remove', userId, userName, programId }
   const bonusImageFileRef = useRef(null);
   const bonusBannerFileRef = useRef(null);
   
@@ -233,9 +233,6 @@ export default function AdminPage() {
   // Terms of Service state
   const [termsSections, setTermsSections] = useState([]);
   const [termsSaving, setTermsSaving] = useState(false);
-
-  // Data Editor modal state
-  const [dataEditorTarget, setDataEditorTarget] = useState(null); // { collection, documentId }
 
   // Prepayment settings state
   const [prepaymentSettings, setPrepaymentSettings] = useState({
@@ -1603,6 +1600,17 @@ export default function AdminPage() {
                       </td>
                       <td className="py-2 px-2 text-right">
                         <div className="flex justify-end gap-1">
+                          <Button variant="ghost" size="sm" title="Откатить статус"
+                            onClick={async () => {
+                              try {
+                                const res = await axios.put(`${API}/admin/orders/${order.id}/rollback-status`);
+                                toast.success(`Статус откачен на: ${res.data.status}`);
+                                fetchData();
+                              } catch (err) { toast.error(err.response?.data?.detail || 'Нет предыдущего статуса'); }
+                            }}
+                            data-testid={`rollback-order-${order.id}`}>
+                            <RotateCcw className="w-4 h-4 text-amber-500" />
+                          </Button>
                           <Button variant="ghost" size="sm" onClick={() => setViewingOrder(order)} data-testid={`view-order-${order.id}`}>
                             <Eye className="w-4 h-4" />
                           </Button>
@@ -2460,6 +2468,32 @@ export default function AdminPage() {
                                       </span>
                                     </td>
                                     <td className="py-3 px-6 text-right">
+                                      <div className="flex items-center justify-end gap-1">
+                                        <Button size="sm" variant="outline" className="text-emerald-600 border-emerald-200 hover:bg-emerald-50 h-7 px-2 text-xs"
+                                          onClick={() => setPointsModal({ action: 'add', userId: pu.id, userName: pu.name, programId: program.id })}
+                                          data-testid={`add-points-${pu.id}`}>
+                                          <Plus className="w-3 h-3 mr-1" />Начислить
+                                        </Button>
+                                        <Button size="sm" variant="outline" className="text-red-500 border-red-200 hover:bg-red-50 h-7 px-2 text-xs"
+                                          onClick={() => setPointsModal({ action: 'remove', userId: pu.id, userName: pu.name, programId: program.id })}
+                                          data-testid={`remove-points-${pu.id}`}>
+                                          <Minus className="w-3 h-3 mr-1" />Списать
+                                        </Button>
+                                        <Button size="sm" variant="ghost" className="text-slate-400 hover:text-red-500 h-7 px-1.5"
+                                          onClick={async () => {
+                                            if (!window.confirm(`Обнулить баллы для ${pu.name}?`)) return;
+                                            try {
+                                              await axios.post(`${API}/admin/bonus/programs/${program.id}/users/${pu.id}/reset-points`);
+                                              toast.success('Баллы обнулены');
+                                              const res = await axios.get(`${API}/admin/bonus/programs/${program.id}/users`);
+                                              setProgramUsers(res.data.users || []);
+                                            } catch { toast.error('Ошибка'); }
+                                          }}
+                                          data-testid={`reset-points-${pu.id}`}
+                                          title="Обнулить баллы">
+                                          <Trash2 className="w-3 h-3" />
+                                        </Button>
+                                      </div>
                                     </td>
                                   </tr>
                                 ))}
@@ -2580,6 +2614,18 @@ export default function AdminPage() {
                                 } catch (err) { toast.error('Ошибка'); }
                               }}>
                                 Выдать
+                              </Button>
+                            )}
+                            {(redemption.status === 'issued' || redemption.status === 'rejected') && (
+                              <Button size="sm" variant="ghost" className="text-slate-400 hover:text-red-500" onClick={async () => {
+                                if (!window.confirm('Удалить этот запрос из истории?')) return;
+                                try {
+                                  await axios.delete(`${API}/admin/bonus/prize-redemptions/${redemption.id}`);
+                                  setPrizeRedemptions(prev => prev.filter(r => r.id !== redemption.id));
+                                  toast.success('Запрос удалён');
+                                } catch (err) { toast.error('Ошибка'); }
+                              }} data-testid={`delete-redemption-${redemption.id}`}>
+                                <Trash2 className="w-3.5 h-3.5" />
                               </Button>
                             )}
                           </div>
@@ -3117,6 +3163,58 @@ export default function AdminPage() {
             </DialogContent>
           </Dialog>
 
+          {/* Points Management Modal */}
+          <Dialog open={!!pointsModal} onOpenChange={() => setPointsModal(null)}>
+            <DialogContent className="max-w-md">
+              <DialogHeader>
+                <DialogTitle className="flex items-center gap-2">
+                  {pointsModal?.action === 'add' ? (
+                    <><Plus className="w-5 h-5 text-emerald-500" /> Начислить баллы</>
+                  ) : (
+                    <><Minus className="w-5 h-5 text-red-500" /> Списать баллы</>
+                  )}
+                </DialogTitle>
+              </DialogHeader>
+              {pointsModal && (
+                <form onSubmit={async (e) => {
+                  e.preventDefault();
+                  const fd = new FormData(e.target);
+                  const amount = parseFloat(fd.get('amount'));
+                  const reason = fd.get('reason') || '';
+                  if (!amount || amount <= 0) { toast.error('Укажите сумму'); return; }
+                  try {
+                    const url = pointsModal.action === 'add'
+                      ? `${API}/admin/bonus/programs/${pointsModal.programId}/users/${pointsModal.userId}/add-points`
+                      : `${API}/admin/bonus/programs/${pointsModal.programId}/users/${pointsModal.userId}/remove-points`;
+                    const res = await axios.post(url, { amount, reason });
+                    toast.success(`${pointsModal.action === 'add' ? 'Начислено' : 'Списано'}: ${amount} баллов`);
+                    setPointsModal(null);
+                    const usersRes = await axios.get(`${API}/admin/bonus/programs/${pointsModal.programId}/users`);
+                    setProgramUsers(usersRes.data.users || []);
+                  } catch (err) { toast.error(err.response?.data?.detail || 'Ошибка'); }
+                }} className="space-y-4">
+                  <div className="bg-slate-50 p-3 rounded-lg">
+                    <p className="font-medium text-slate-800">{pointsModal.userName}</p>
+                  </div>
+                  <div>
+                    <Label className="text-xs font-bold uppercase text-zinc-500">Количество баллов</Label>
+                    <Input name="amount" type="number" min="1" step="1" required autoFocus placeholder="100" className="mt-1 font-mono" data-testid="points-amount-input" />
+                  </div>
+                  <div>
+                    <Label className="text-xs font-bold uppercase text-zinc-500">Причина (опц.)</Label>
+                    <Input name="reason" placeholder="Бонус за отзыв" className="mt-1" data-testid="points-reason-input" />
+                  </div>
+                  <div className="flex justify-end gap-2 pt-2">
+                    <Button variant="outline" type="button" onClick={() => setPointsModal(null)}>Отмена</Button>
+                    <Button type="submit" className={pointsModal.action === 'add' ? 'bg-emerald-500 hover:bg-emerald-600' : 'bg-red-500 hover:bg-red-600'} data-testid="points-submit-btn">
+                      {pointsModal.action === 'add' ? 'Начислить' : 'Списать'}
+                    </Button>
+                  </div>
+                </form>
+              )}
+            </DialogContent>
+          </Dialog>
+
           {/* Payment Settings Tab */}
           <TabsContent value="discounts">
             <motion.div 
@@ -3319,7 +3417,6 @@ export default function AdminPage() {
               handleDeleteUser={handleDeleteUser}
               handleBlockUser={handleBlockUser}
               onViewAnalytics={setAnalyticsUser}
-              onEditRawData={(collection, documentId) => setDataEditorTarget({ collection, documentId })}
               isDark={isDark}
             />
             </motion.div>
@@ -3854,15 +3951,29 @@ export default function AdminPage() {
               {/* Status update */}
               <div className="border border-zinc-200 p-4">
                 <Label className="text-xs font-bold uppercase text-zinc-500">Статус заказа</Label>
-                <select
-                  value={viewingOrder.status}
-                  onChange={(e) => handleUpdateOrderStatus(viewingOrder.id, e.target.value)}
-                  className={`w-full mt-2 h-10 px-3 border border-zinc-200 font-semibold ${STATUS_OPTIONS.find(s => s.value === viewingOrder.status)?.color || 'bg-zinc-50'}`}
-                >
-                  {STATUS_OPTIONS.map(s => (
-                    <option key={s.value} value={s.value}>{s.label}</option>
-                  ))}
-                </select>
+                <div className="flex gap-2 mt-2">
+                  <select
+                    value={viewingOrder.status}
+                    onChange={(e) => handleUpdateOrderStatus(viewingOrder.id, e.target.value)}
+                    className={`flex-1 h-10 px-3 border border-zinc-200 font-semibold ${STATUS_OPTIONS.find(s => s.value === viewingOrder.status)?.color || 'bg-zinc-50'}`}
+                  >
+                    {STATUS_OPTIONS.map(s => (
+                      <option key={s.value} value={s.value}>{s.label}</option>
+                    ))}
+                  </select>
+                  <Button variant="outline" className="h-10 text-amber-600 border-amber-200 hover:bg-amber-50" title="Откатить статус"
+                    onClick={async () => {
+                      try {
+                        const res = await axios.put(`${API}/admin/orders/${viewingOrder.id}/rollback-status`);
+                        toast.success(`Статус откачен на: ${res.data.status}`);
+                        setViewingOrder(prev => ({...prev, status: res.data.status, previous_status: res.data.previous_status}));
+                        fetchData();
+                      } catch (err) { toast.error(err.response?.data?.detail || 'Нет предыдущего статуса'); }
+                    }}
+                    data-testid="rollback-order-status-detail">
+                    <RotateCcw className="w-4 h-4 mr-1" /> Откатить
+                  </Button>
+                </div>
               </div>
 
               {/* Document generation */}
@@ -4319,17 +4430,6 @@ export default function AdminPage() {
         open={!!analyticsUser}
         onClose={() => setAnalyticsUser(null)}
       />
-
-      {/* Data Editor Modal */}
-      {dataEditorTarget && (
-        <DataEditorModal
-          collection={dataEditorTarget.collection}
-          documentId={dataEditorTarget.documentId}
-          onClose={() => setDataEditorTarget(null)}
-          onSaved={() => { fetchData(); setDataEditorTarget(null); }}
-          isDark={isDark}
-        />
-      )}
     </div>
     </>
   );
