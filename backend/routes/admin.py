@@ -470,22 +470,29 @@ async def update_order_status(order_id: str, status: str, user=Depends(get_curre
 
 @router.put("/orders/{order_id}/rollback-status")
 async def rollback_order_status(order_id: str, user=Depends(get_current_user)):
-    """Rollback order to its previous status"""
+    """Rollback order status one step back in the chain: completed→processing→pending"""
     if user.get("role") != "admin":
         raise HTTPException(status_code=403, detail="Admin access required")
     order = await db.orders.find_one({"id": order_id}, {"_id": 0})
     if not order:
         raise HTTPException(status_code=404, detail="Order not found")
-    prev = order.get("previous_status")
-    if not prev:
-        raise HTTPException(status_code=400, detail="No previous status to rollback to")
+
+    rollback_map = {
+        "completed": "processing",
+        "processing": "pending",
+    }
     current = order.get("status")
+    prev = rollback_map.get(current)
+    if not prev:
+        raise HTTPException(status_code=400, detail="Невозможно откатить этот статус")
+
     await db.orders.update_one({"id": order_id}, {"$set": {"status": prev, "previous_status": current}})
-    
+
+    status_labels = {"pending": "ожидает обработки", "processing": "принят в обработку"}
     await create_notification(
         order["user_id"], "order",
         f"Статус заказа #{order_id[:8]}",
-        f"Статус заказа изменён на: {prev}",
+        f"Ваш заказ {status_labels.get(prev, prev)}",
         "/orders"
     )
     return {"message": "Status rolled back", "status": prev, "previous_status": current}
