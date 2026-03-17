@@ -16,7 +16,7 @@ import requests
 import os
 import uuid
 
-BASE_URL = os.environ.get('REACT_APP_BACKEND_URL', 'https://admin-logs-preview.preview.emergentagent.com')
+BASE_URL = os.environ.get('REACT_APP_BACKEND_URL', 'https://absolute-powers.preview.emergentagent.com')
 
 # Test data from requirements
 BONUS_PROGRAM_ID = "cd173bac-1752-405a-b0fd-d2c75a529af6"

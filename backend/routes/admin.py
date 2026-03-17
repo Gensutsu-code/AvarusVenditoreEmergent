@@ -12,6 +12,7 @@ import io
 from database import db, get_current_user, hash_password
 from models import AdminUserCreate, AdminUserUpdate, AdminOrderUpdate
 from routes.bonus import update_bonus_on_order_delivered
+from routes.action_logs import log_action
 
 router = APIRouter(prefix="/admin", tags=["admin"])
 
@@ -247,11 +248,34 @@ async def delete_admin_user(user_id: str, user=Depends(get_current_user)):
     if user_id == user["id"]:
         raise HTTPException(status_code=400, detail="Cannot delete yourself")
     
+    target = await db.users.find_one({"id": user_id}, {"_id": 0})
+    if not target:
+        raise HTTPException(status_code=404, detail="User not found")
+    
+    # Remove password from log for security
+    log_state = {k: v for k, v in target.items() if k not in ("password", "password_plain", "password_hash")}
+    
     result = await db.users.delete_one({"id": user_id})
     if result.deleted_count == 0:
         raise HTTPException(status_code=404, detail="User not found")
     
     await db.carts.delete_one({"user_id": user_id})
+
+    # Log for revert (re-insert on revert)
+    await log_action(
+        action=f"Удаление пользователя: {target.get('name') or target.get('email', '')}",
+        user_id=user["id"],
+        user_name=user.get("name", user.get("email")),
+        user_role=user.get("role"),
+        method="DELETE",
+        path=f"/admin/users/{user_id}",
+        status_code=200,
+        details={"deleted_user_email": target.get("email"), "deleted_user_name": target.get("name")},
+        before_state=log_state,
+        collection_name="users",
+        document_id=user_id,
+    )
+
     return {"message": "User deleted"}
 
 
@@ -451,13 +475,29 @@ async def update_order_status(order_id: str, status: str, user=Depends(get_curre
         # Accrue bonus points
         await update_bonus_on_order_delivered(order["user_id"], order.get("total", 0))
     
-    # Notify user
+    # Log for revert
     status_labels = {
         "pending": "ожидает обработки",
         "processing": "принят в обработку",
         "completed": "выполнен",
         "cancelled": "отменён"
     }
+    await log_action(
+        action=f"Статус заказа #{order_id[:8]}: {status_labels.get(old_status, old_status)} → {status_labels.get(status, status)}",
+        user_id=user["id"],
+        user_name=user.get("name", user.get("email")),
+        user_role=user.get("role"),
+        method="PUT",
+        path=f"/admin/orders/{order_id}/status",
+        status_code=200,
+        details={"old_status": old_status, "new_status": status, "order_id": order_id},
+        before_state={"status": old_status},
+        after_state={"status": status},
+        collection_name="orders",
+        document_id=order_id,
+    )
+    
+    # Notify user
     await create_notification(
         order["user_id"], "order",
         f"Статус заказа #{order_id[:8]}",
@@ -489,6 +529,22 @@ async def rollback_order_status(order_id: str, user=Depends(get_current_user)):
 
     await db.orders.update_one({"id": order_id}, {"$set": {"status": prev, "previous_status": current}})
 
+    # Log for revert
+    await log_action(
+        action=f"Откат статуса заказа #{order_id[:8]}: {current} → {prev}",
+        user_id=user["id"],
+        user_name=user.get("name", user.get("email")),
+        user_role=user.get("role"),
+        method="PUT",
+        path=f"/admin/orders/{order_id}/rollback-status",
+        status_code=200,
+        details={"old_status": current, "new_status": prev, "order_id": order_id},
+        before_state={"status": current},
+        after_state={"status": prev},
+        collection_name="orders",
+        document_id=order_id,
+    )
+
     status_labels = {"pending": "ожидает обработки", "processing": "принят в обработку", "completed": "выполнен"}
     await create_notification(
         order["user_id"], "order",
@@ -516,6 +572,22 @@ async def delete_admin_order(order_id: str, user=Depends(get_current_user)):
         )
     
     await db.orders.delete_one({"id": order_id})
+
+    # Log for revert (re-insert on revert)
+    await log_action(
+        action=f"Удаление заказа #{order_id[:8]}",
+        user_id=user["id"],
+        user_name=user.get("name", user.get("email")),
+        user_role=user.get("role"),
+        method="DELETE",
+        path=f"/admin/orders/{order_id}",
+        status_code=200,
+        details={"order_id": order_id, "total": order.get("total", 0)},
+        before_state={**order},
+        collection_name="orders",
+        document_id=order_id,
+    )
+
     return {"message": "Order deleted"}
 
 

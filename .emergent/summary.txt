@@ -1,81 +1,82 @@
 <analysis>**original_problem_statement:**
-The user initially requested a massive overhaul of the order management system. This has since expanded to include a global notification system, client analytics, a bonus/loyalty system, and significant enhancements to the admin panel.
+The user's primary goal is to have Absolute Control over the application's data and user actions via the admin panel. This was initially a request for a Developer Mode but has evolved into a more refined set of requirements:
 
-The user's most recent requests, which have been implemented, include:
-*   A fix for a critical login bug.
-*   A fix and enhancement for the email newsletter system.
-*   A feature to import products via CSV.
-*   The ability for admins to block/unblock users.
-*   A site-wide maintenance mode with a mini-game.
-*   A request discount feature for users to get individual pricing.
-*   A request product feature for out-of-stock or unlisted items.
-
-The current and most ambitious request is to implement an **Absolute Control / Developer Mode** for admins. This mode should provide:
-1.  **Comprehensive Action Logging:** Log every single action performed by both users and admins.
-2.  **Log Viewer:** A user-friendly interface in the admin panel to view and filter these logs.
-3.  **Advanced Data Collection:** Gather all possible data about clients.
-4.  **Data Viewer & Editor:** Admins should be able to view all collected data within a client's profile and directly edit any user, order, or profile data.
-5.  **Global Undo/Redo:** A mechanism to cancel or revert any action taken on the site.
+*   **Granular Admin Controls (Default On):** Instead of a toggleable Developer Mode, admin powers should be integrated directly into the UI by default.
+*   **No Raw Code Editing:** The previously implemented feature for editing raw database documents via a JSON editor has been removed at the user's request.
+*   **Contextual Action Buttons:** Admins need specific buttons for common management tasks directly where they are needed:
+    *   **User Management:** Enhanced user data collection (IP, browser fingerprint, location) with a clear visual representation.
+    *   **Bonus System:** Buttons to manually add, subtract, and reset user bonus points. Ability to delete prize redemption history.
+    *   **Order Management:** A button to roll back an order's status sequentially.
+*   **Comprehensive & Revertible Logging:** The existing Logs tab should be enhanced to make more actions revertible (undoable). The user specifically requested the ability to revert:
+    *   Bonus point adjustments.
+    *   Prize request status changes (approval, rejection, issuance).
+    *   Deletion of bonus history, orders, users, and categories.
 
 **User's preferred language**: Russian
 
 **what currently exists?**
-The application is a full-stack e-commerce platform with a React frontend and a FastAPI backend. It features a rich admin panel for managing users, orders, news, and various site settings.
+The application is a full-stack e-commerce platform with a React frontend, FastAPI backend, and MongoDB database.
 
-In this session, several major features and fixes were completed:
-*   The critical login bug was resolved.
-*   The CSV product import and email newsletter functionalities were completed and enhanced.
-*   **User Blocking:** Admins can now block/unblock users from the CRM tab. Blocked users cannot log in and are automatically logged out.
-*   **Maintenance Mode:** A toggle in the admin settings can put the entire site into a maintenance state, displaying a custom page with an animated background and a simple mini-game. Admins can still log in and use the site.
-*   **Individual Pricing:** A full Request a Discount workflow allows users to negotiate prices. Admins manage these requests in a new Запросы на скидку tab. Approved prices are automatically applied in the cart and at checkout for one completed order.
-*   **Product Requests:** Users can request out-of-stock or unlisted products. Admins manage these in a dedicated Запросы товара tab.
-*   **UI Refactoring:** The admin chat page now uses a tabbed interface to handle regular chats, discount requests, and product requests. The settings page also uses sub-tabs for better organization.
+In this session, the Absolute Control feature set was significantly reworked and expanded based on user feedback. The generic Developer Mode was replaced with specific, integrated admin tools.
+
+**Key Completed Implementations:**
+*   **Action Logging System:** A middleware logs all admin/user actions to a new Логи (Logs) tab in the admin panel, with a working revert function for certain actions.
+*   **Granular Admin Controls:**
+    *   In the Bonus Program tab, admins can now directly add, subtract, or reset points for each user and delete items from the prize request history.
+    *   In the Orders tab, a Rollback button allows reversing an order's status according to a strict sequence ( →  → , and  → ).
+*   **Enhanced User Analytics:** A new system collects user IP, browser fingerprint, and location data, which is displayed in a visually organized modal in the user management tab.
+*   **Bonus System Refactoring:** The request bonus feature was completely removed, and the UI for prize history was streamlined into a single tab.
+*   **Multiple Bug Fixes:**
+    *   Bonus points now accrue correctly when an order is marked completed.
+    *   Notifications for prize requests (to admin) and status updates (to client) are now working.
+    *   A bug preventing the bonus program's user list from loading was fixed.
+    *   Navigation from news notifications now correctly opens the specific news article.
+    *   Search result sorting was implemented on the frontend.
+    *   Resend email sender was configured for the production domain.
 
 **Last working item**:
-*   **Last item agent was working:** The agent started planning the implementation of the Absolute Control / Developer Mode feature. The work began by exploring the existing codebase (, , , , , ) to understand the scope and identify the necessary changes for adding comprehensive logging and direct data editing capabilities.
-*   **Status:** IN PROGRESS
+*   **Last item agent was working:** The agent was about to begin implementing the user's latest request: making more key admin actions revertible from the Logs tab. This involves expanding the existing revert functionality beyond simple data edits to cover bonus point changes, prize status updates, and deletions.
+*   **Status:** NOT STARTED
 *   **Agent Testing Done:** N
 *   **Which testing method agent to use?** both
 *   **User Testing Done:** N
 
 **All Pending/In progress Issue list**:
-*   There are no pending bugs. The current focus is the implementation of a new major feature.
+There are no pending bugs.
 
 **In progress Task List**:
-*   **Task 1: Implement Absolute Control / Developer Mode (P0)**
-    *   **Where to resume:** The agent has completed the initial file exploration. The next step is to design and implement the core components of this feature.
-    *   **Implementation Plan:**
-        1.  **Backend (Logging):** Create a new  collection in MongoDB. Implement a FastAPI middleware to intercept all API requests, identify the user/admin, and log the action, parameters, and a timestamp.
-        2.  **Backend (Data Editing):** Create new admin-only API endpoints (e.g., ) that allow updating MongoDB documents with raw JSON.
-        3.  **Frontend (Admin Panel):**
-            *   Create a new Logs tab/page to display data from the  collection in a readable format with search and filter capabilities.
-            *   In the , add a Developer Mode or Edit Raw Data button for each user/order. This button should open a modal with a JSON editor (e.g., ) to view and submit changes to the raw data.
-            *   In , add a toggle to enable/disable Developer Mode for the admin.
-        4.  **Undo/Redo (Phase 2):** After logging is implemented, enhance it to store the before state of a document on any modification. Then, create an endpoint to revert a document to its before state based on a log ID. This is a simpler first step towards the complex global undo request.
-    *   **What will be achieved with this?** Admins will gain powerful tools for auditing site activity and directly managing all data, fulfilling the user's request for absolute control.
-    *   **Status:** IN PROGRESS
-    *   **Should Test frontend/backend/both after fix?** both
-    - **Blocked on something:** None
+There are no tasks currently in progress. The last task was completed, and the agent is ready to start the next one.
 
 **Upcoming and Future Tasks**
 
 **Upcoming Tasks:**
-*   There are no other upcoming tasks. The Absolute Control feature is the sole priority.
+*   **Task 1: Expand Revertible Actions in Logs (P0)**
+    *   **Description:** The user wants the ability to undo a wider range of actions directly from the Logs tab. This requires modifying the backend to save the  for these actions.
+    *   **Actions to make revertible:**
+        1.  Bonus point accrual, subtraction, and reset.
+        2.  Prize request status changes (approve, reject, issue).
+        3.  Deletion of prize request history items.
+        4.  Order status changes.
+        5.  Deletions (users, orders, categories).
+    *   **Implementation Plan:**
+        *   **Backend:** For each relevant endpoint in , , etc., fetch the document state *before* performing the modification or deletion.
+        *   **Logging:** Save the fetched  into the corresponding document in the  collection and set .
+        *   **Frontend:** No changes are expected on the frontend, as  is already built to display a Revert button for any log with .
+*   **Task 2: Add Rollback Button to Main Orders List (P1)**
+    *   **Description:** The user  (continued) the agent when the agent was about to run tests, and the agent correctly inferred this meant a missing piece of UI. The rollback button was added to the expanded order view and the order modal, but it's not on the main  list view. It should be added there for consistency.
 
 **Future Tasks:**
-*   **Task 1: WalletConnect Support (P2):** Integrate WalletConnect to support a wider range of crypto wallets for payment.
-*   **Task 2: Real Payment Gateway Integration (P2):** Replace the placeholder ЮKassa card payment system with a production-ready payment provider.
+*   **WalletConnect Support (P2):** Integrate WalletConnect for crypto wallet payments.
+*   **Real Payment Gateway Integration (P2):** Replace the placeholder ЮKassa payment system.
 
 **Completed work in this session**
-- **Critical Login Failure (RESOLVED):** Fixed the site-wide login bug.
-- **CSV Product Import Feature (COMPLETED):** Implemented missing backend endpoints and wired up frontend buttons.
-- **Email Newsletter System (COMPLETED):** Added a selective user sending feature to the admin panel.
-- **User Blocking/Unblocking (COMPLETED):** Implemented a full flow for admins to block and unblock users.
-- **Site Maintenance Mode (COMPLETED):** Created a feature to take the site offline, showing a custom page with a mini-game.
-- **Individual Price / Request Discount Feature (COMPLETED):** Built the entire workflow for users to request, and admins to approve, individual product prices. This included fixing bugs related to UI layout and price application in the cart/checkout.
-- **Request Product Feature (COMPLETED):** Implemented a system for users to request out-of-stock or unlisted items, with a management interface for admins.
-- **Admin Panel UI Refactoring (COMPLETED):** Reorganized the admin chat and settings pages into a more scalable tabbed interface.
-- **Mini-Game Bug Fix (COMPLETED):** Corrected the physics and visual positioning of elements in the maintenance page mini-game.
+- **Absolute Control Rework:** Replaced Developer Mode with granular, integrated admin controls for bonus points, prize history, and order status rollbacks.
+- **Enhanced User Tracking:** Implemented collection and display of user IP, browser fingerprint, and location.
+- **Bonus System Overhaul:** Fixed point accrual, removed the request bonus feature, fixed user list loading, and implemented all required notifications.
+- **News Notification Fix:** Corrected routing to allow deep-linking to news articles from notifications.
+- **Search Result Sorting:** Added sorting controls to the catalog search page.
+- **Resend Domain Verification:** Configured the production sending email address.
+- **Action Logging System:** Built the backend middleware and frontend tab for viewing and reverting actions.
 
 **Earlier issues found/mentioned but not fixed**
 None.
@@ -87,81 +88,78 @@ None.
 
 
 **Key Technical Concepts**
-*   **Maintenance Mode:** A global flag fetched on app load () redirects all non-admin traffic to a dedicated  page. The page itself is a React component with an HTML5 Canvas for the game.
-*   **Individual Pricing:** A new  collection links users, products, and special prices. The  endpoint was modified to join this data and return the correct price. The  endpoint deactivates the special price after an order is marked completed.
-*   **User Blocking:** An  field was added to the  collection. A check in the  dependency and  endpoint rejects access for blocked users, forcing a logout or preventing login.
-*   **Tabbed Admin Interface:** The  component now manages state for three different data types (chats, discount requests, product requests) and uses local state to toggle between different views, creating a tabbed layout.
+*   **Action Logging & Revert:** A FastAPI middleware logs actions to MongoDB. Log entries with a  property can be reverted via a dedicated API endpoint, effectively creating an undo system.
+*   **Granular Admin Controls:** The design shifted from a generic dev mode to specific, feature-rich API endpoints and UI buttons for actions like  or .
+*   **Sequential State Rollback:** The order status rollback is not a simple undo but follows a defined state machine:  ->  -> , and  -> .
+*   **Client-Side Fingerprinting:** The frontend uses the  library to create a unique browser identifier, which is sent to the backend for tracking user sessions.
 
 **key DB schema**
-*   **users**: added 
-*   **site_settings**: added 
-*   **individual_prices**: (New Collection) 
-*   **discount_requests**: (New Collection) 
-*   **product_requests**: (New Collection) 
+*   **action_logs**: (New Collection) 
+*   **user_sessions**: (New Collection) 
+*   **orders**: added  to facilitate rollbacks before the logic was centralized.
 
 **changes in tech stack**
-*   No new third-party libraries were installed in this session.
+*   **Frontend:**  was added for browser fingerprinting.
+*   **Backend:**  was installed for IP-based geolocation. **CRITICAL: This dependency was not added to  and will cause a failure in the next session if not fixed immediately.**
 
 **All files of reference**
-*   **/app/backend/src/routes/admin.py**: Core file for adding new admin-level controls.
-*   **/app/backend/src/models.py**: Will need new Pydantic models for logging.
-*   **/app/frontend/src/pages/AdminPage.js**: The main container for all admin functionality.
-*   **/app/frontend/src/components/Admin/CRMTab.js**: Where the UI for direct user/order editing will likely go.
-*   **/app/frontend/src/components/Admin/SettingsTab.js**: Location for the developer mode toggle and future log viewer.
-*   **/app/frontend/src/pages/AdminChatsPage.js**: Recently refactored, shows a pattern for adding new admin tabs.
+*    (Order and user management)
+*    (Bonus and prize management)
+*    (Revert logic)
+*    (Main admin UI container)
+*    (Orders list UI)
+*    (Logs viewer UI)
 
 **Areas that need refactoring**:
-*   ****: This component now manages logic for three separate tabs (Chats, Discount Requests, Product Requests). It has become very large and complex. It should be broken down, with each tab's content and logic extracted into its own component (e.g., , ).
-*   ****: This component acts as a state and logic handler for many of its child tabs. As more complex features like logging and data editing are added, centralizing state with React Context or a library like Zustand would be beneficial.
-*   **Backend Logging:** The upcoming logging feature should be implemented cleanly using a single FastAPI middleware or a reusable decorator, rather than scattering logging calls throughout every endpoint.
+*   **** has become extremely large and manages state for numerous tabs (Bonus, Logs, CRM, etc.). It should be broken down, with each tab's logic and data fetching encapsulated in its own component to improve maintainability.
 
 **key api endpoints**
-*   : Toggles a user's blocked status.
-*   : Toggles site-wide maintenance mode.
-*   : Publicly checks if maintenance mode is enabled.
-*   : Submits a new discount request.
-*   : Endpoints for admins to manage discount requests.
-*   : Submits a new product-on-demand request.
-*   : Endpoints for admins to manage product requests.
+*   : Add bonus points to a user.
+*   : Subtract bonus points.
+*   : Delete a prize request history item.
+*   : Roll back an order's status.
+*   : Fetch all action logs.
+*   : Revert a specific logged action.
+*   : Endpoint for the frontend to send session and analytics data.
 
 **Critical Info for New Agent**
-1.  **Current Priority (P0): Implement Absolute Control Mode.** This is a large, multi-part feature. Your primary focus is building the infrastructure for comprehensive action logging and direct data editing for admins. Start by designing the logging mechanism (a FastAPI middleware is recommended) and the data editing UI (a JSON editor in a modal is a good approach).
-2.  **De-scope Global Undo for Now:** The user's request for a global undo feature is extremely complex. It is safer to first implement robust logging that captures the before and after state of data. You can then propose a simpler revert this change feature as a second step, rather than attempting a full stack-based undo system from the start.
-3.  **Refactor as You Go:** The admin panel components (, ) are growing large. As you add the new Developer Mode and Logs features, take the opportunity to refactor by extracting tab content into dedicated child components to keep the codebase maintainable.
+1.  **Dependency Fix is P0:** The  library was installed but **not** added to . Your very first action must be to run  to persist this dependency and prevent environment errors.
+2.  **Next Task (P1): Expand Revertible Actions.** The immediate goal is to implement the user's request to make more actions undoable from the Logs tab. This is primarily a backend task involving modifying various admin endpoints to log the  of documents before they are changed or deleted.
+3.  **Refactor :** This file is a monolith. As you add new features or modify existing ones within the admin panel, prioritize breaking out tab content and logic into separate, more manageable components.
 
 **documents and test reports created in this job**
-*   Multiple test reports from  are available in , with the latest being , , and .
-*   A new  file was created and updated throughout the session at .
+*   
+*   
+*    (updated multiple times)
 
 **Last 10 User Messages and any pending HUMAN messages**
-1.  **Request:** Add the Absolute Control mode for admins, part 2 (logging, data collection). **Status: In Progress**
-2.  **Request:** Add the Absolute Control mode for admins, part 1 (data editing, undo/redo). **Status: In Progress**
-3.  **Request:** Implement a request product feature for out-of-stock or not-found items. **Status: COMPLETED**
-4.  **Bug Report:** The individual discount price is not applied in the cart and checkout. **Status: COMPLETED**
-5.  **Bug Report:** The discount request modal UI is broken on smaller screens. **Status: COMPLETED**
-6.  **Request:** Implement the request discount (individual price) feature. **Status: COMPLETED**
-7.  **Bug Fix Request:** The mini-game truck is floating and passes through obstacles. **Status: COMPLETED**
-8.  **Request:** Implement site-wide maintenance mode with a cool animation and a mini-game. **Status: COMPLETED**
-9.  **Clarification:** The user should not be notified that they are blocked; they should just see a generic login error. **Status: COMPLETED**
-10. **Request:** Implement a feature to block users from the admin panel. **Status: COMPLETED**
+1.  **User:** Need to make bonus/prize/order/deletion actions revertible via logs. **Status: NOT STARTED**
+2.  **User:** Need to be able to revert a  order status. **Status: COMPLETED**
+3.  **User:** Order status rollback must be strictly sequential. **Status: COMPLETED**
+4.  **User:** continue (Interpreted as finish implementing the rollback button on all order pages). **Status: COMPLETED**
+5.  **User:** Detailed requirements for the Absolute Control rework (remove dev mode, add granular buttons, enhance tracking). **Status: COMPLETED**
+6.  **User:** Fix missing notifications for client on prize status changes. **Status: COMPLETED**
+7.  **User:** Fix missing notification for admin on new prize request. **Status: COMPLETED**
+8.  **User:** Fix bug where bonus points are not awarded. **Status: COMPLETED**
+9.  **User:** Combine prize history and requests into a single tab. **Status: COMPLETED**
+10. **User:** Remove the request bonus button and all related functionality. **Status: COMPLETED**
 
 **Project Health Check:**
-*   **Broken:**
-    *   None. All previously reported bugs and issues have been resolved.
-*   **Mocked:**
-    *   The ЮKassa credit/debit card payment system is still a non-functional placeholder.
+*   **Broken:** The backend environment is implicitly broken because the  dependency is not in .
+*   **Mocked:** The ЮKassa credit card payment system is a non-functional placeholder.
 
 **3rd Party Integrations**
-*   **Resend:** Email notifications and newsletters.
-*   **Cloudinary:** Image hosting for news content.
-*   **web3.py:** Backend crypto functions.
-*   **ethers.js:** Frontend wallet interactions.
-*   **CoinGecko:** Real-time crypto exchange rates.
+*   **Resend:** For sending emails.
+*   **Cloudinary:** For image hosting.
+*   **web3.py / ethers.js:** For crypto wallet interactions.
+*   **CoinGecko:** For real-time crypto prices.
+*   **FingerprintJS:** For browser fingerprinting to track user sessions.
+*   **GeoIP2:** For IP-based geolocation.
 
 **Testing status**
-*   **Testing agent used after significant changes:** YES. The testing agent was run successfully after every major feature implementation (user blocking, maintenance mode, discount/product requests, and associated bug fixes).
+*   **Testing agent used after significant changes:** YES, but the final set of changes (order rollback refinement) was only tested manually via  and screenshots. A full regression test was not run at the very end.
 *   **Troubleshoot agent used after agent stuck in loop:** NO
-*   **Test files created:** None in this session, but existing tests were passed.
+*   **Test files created:** None.
 *   **Known regressions:** None.
 
 **Credentials to test flow:**
@@ -169,4 +167,5 @@ None.
 *   **Client:**  / 
 
 **What agent forgot to execute**
-*   The agent has been diligent in following user requests. No tasks appear to have been overlooked. The current task (Absolute Control) was correctly identified as a large, new initiative and was in the planning/exploration phase when the session ended.</analysis>
+*   **Critical:** The agent installed the  package but failed to update . This needs to be the first action taken in the next fork.
+*   The agent did not run a final full regression test with the  after the last set of changes to the order rollback functionality.</analysis>

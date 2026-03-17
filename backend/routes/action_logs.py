@@ -51,8 +51,11 @@ async def log_action(
     after_state: dict = None,
     collection_name: str = None,
     document_id: str = None,
+    document_query: dict = None,
 ):
-    """Utility function to create an action log entry."""
+    """Utility function to create an action log entry.
+    document_query: optional MongoDB query to find the document (for composite keys like bonus_progress).
+    """
     log_entry = {
         "id": str(uuid.uuid4()),
         "action": action,
@@ -68,6 +71,7 @@ async def log_action(
         "after_state": after_state,
         "collection_name": collection_name,
         "document_id": document_id,
+        "document_query": document_query,
         "reverted": False,
         "created_at": datetime.now(timezone.utc).isoformat()
     }
@@ -171,15 +175,25 @@ async def revert_action(log_id: str, user=Depends(get_current_user)):
 
     collection_name = log_entry.get("collection_name")
     document_id = log_entry.get("document_id")
-    if not collection_name or not document_id:
-        raise HTTPException(status_code=400, detail="Missing collection/document info")
+    document_query = log_entry.get("document_query")
+    if not collection_name:
+        raise HTTPException(status_code=400, detail="Missing collection info")
+    if not document_id and not document_query:
+        raise HTTPException(status_code=400, detail="Missing document identifier")
 
     collection = db[collection_name]
-    current_doc = await collection.find_one({"id": document_id}, {"_id": 0})
+    # Build query to find the document
+    query = document_query if document_query else {"id": document_id}
+    current_doc = await collection.find_one(query, {"_id": 0})
 
-    # Restore the before state
     before = log_entry["before_state"]
-    await collection.update_one({"id": document_id}, {"$set": before})
+
+    if current_doc:
+        # Document exists — update it back to before_state
+        await collection.update_one(query, {"$set": before})
+    else:
+        # Document was deleted — re-insert it
+        await collection.insert_one({**before})
 
     # Mark as reverted
     await db.action_logs.update_one({"id": log_id}, {"$set": {"reverted": True, "reverted_at": datetime.now(timezone.utc).isoformat()}})
@@ -197,6 +211,7 @@ async def revert_action(log_id: str, user=Depends(get_current_user)):
         after_state=before,
         collection_name=collection_name,
         document_id=document_id,
+        document_query=document_query,
     )
 
     return {"success": True, "message": "Изменение отменено"}

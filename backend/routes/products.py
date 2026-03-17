@@ -5,6 +5,7 @@ from typing import List, Optional
 import uuid
 
 from database import db, get_current_user
+from routes.action_logs import log_action
 from models import (
     ProductCreate, ProductUpdate, ProductResponse,
     CategoryCreate, CategoryUpdate, CategoryResponse
@@ -57,11 +58,28 @@ async def delete_category(category_id: str, user=Depends(get_current_user)):
     if user.get("role") != "admin":
         raise HTTPException(status_code=403, detail="Admin access required")
     
-    result = await db.categories.delete_one({"id": category_id})
-    if result.deleted_count == 0:
+    category = await db.categories.find_one({"id": category_id}, {"_id": 0})
+    if not category:
         raise HTTPException(status_code=404, detail="Category not found")
     
+    await db.categories.delete_one({"id": category_id})
     await db.products.update_many({"category_id": category_id}, {"$set": {"category_id": None}})
+
+    # Log for revert (re-insert on revert)
+    await log_action(
+        action=f"Удаление категории: {category.get('name', '')}",
+        user_id=user["id"],
+        user_name=user.get("name", user.get("email")),
+        user_role=user.get("role"),
+        method="DELETE",
+        path=f"/categories/{category_id}",
+        status_code=200,
+        details={"category_name": category.get("name")},
+        before_state={**category},
+        collection_name="categories",
+        document_id=category_id,
+    )
+
     return {"message": "Category deleted"}
 
 

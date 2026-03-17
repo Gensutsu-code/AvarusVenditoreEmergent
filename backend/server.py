@@ -122,7 +122,10 @@ JWT_SECRET = os.environ.get('JWT_SECRET', '')
 
 # Routes to skip logging (noisy, read-only, health)
 SKIP_LOG_PATHS = {"/health", "/api/health", "/api/", "/api/uploads", "/favicon.ico"}
-SKIP_LOG_PREFIXES = ("/api/uploads/", "/api/admin/action-logs", "/api/admin/chats/", "/api/public/", "/api/admin/data/")
+SKIP_LOG_PREFIXES = ("/api/uploads/", "/api/admin/action-logs", "/api/admin/chats/", "/api/public/", "/api/admin/data/",
+    # Routes with explicit action logging (revertible)
+    "/api/admin/bonus/", "/api/admin/prize-redemptions/", "/api/admin/orders/",
+)
 
 # Classify actions by path pattern
 def classify_action(method: str, path: str) -> str:

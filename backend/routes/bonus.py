@@ -6,6 +6,7 @@ from pydantic import BaseModel
 import uuid
 
 from database import db, get_current_user
+from routes.action_logs import log_action
 
 router = APIRouter(tags=["bonus"])
 
@@ -373,6 +374,23 @@ async def update_prize_redemption_status(redemption_id: str, status: str, user=D
         {"$set": {"status": status, "updated_at": datetime.now(timezone.utc).isoformat()}}
     )
 
+    # Log for revert
+    status_labels = {"approved": "одобрен", "issued": "выдан", "rejected": "отклонён", "pending": "ожидает"}
+    await log_action(
+        action=f"Статус приза: {redemption.get('prize_name', '')} → {status_labels.get(status, status)}",
+        user_id=user["id"],
+        user_name=user.get("name", user.get("email")),
+        user_role=user.get("role"),
+        method="PUT",
+        path=f"/admin/bonus/prize-redemptions/{redemption_id}/status",
+        status_code=200,
+        details={"old_status": old_status, "new_status": status, "prize_name": redemption.get("prize_name")},
+        before_state={**redemption},
+        after_state={"status": status},
+        collection_name="prize_redemptions",
+        document_id=redemption_id,
+    )
+
     # Notify client about status change
     status_messages = {
         "approved": f"Ваш запрос на приз «{redemption.get('prize_name', '')}» одобрен!",
@@ -528,6 +546,22 @@ async def admin_add_points(program_id: str, user_id: str, body: PointsAction, us
         "created_at": datetime.now(timezone.utc).isoformat()
     })
 
+    # Log for revert
+    await log_action(
+        action=f"Начисление баллов: +{body.amount:.0f} → {target_name}",
+        user_id=user["id"],
+        user_name=user.get("name", user.get("email")),
+        user_role=user.get("role"),
+        method="POST",
+        path=f"/admin/bonus/programs/{program_id}/users/{user_id}/add-points",
+        status_code=200,
+        details={"amount": body.amount, "reason": body.reason, "target_user": user_id},
+        before_state={"current_amount": old_amount},
+        after_state={"current_amount": new_amount},
+        collection_name="bonus_progress",
+        document_query={"user_id": user_id, "program_id": program_id},
+    )
+
     return {"success": True, "old_amount": old_amount, "new_amount": new_amount, "user_name": target_name}
 
 
@@ -563,6 +597,22 @@ async def admin_remove_points(program_id: str, user_id: str, body: PointsAction,
         "created_at": datetime.now(timezone.utc).isoformat()
     })
 
+    # Log for revert
+    await log_action(
+        action=f"Списание баллов: -{body.amount:.0f} ← {target_name}",
+        user_id=user["id"],
+        user_name=user.get("name", user.get("email")),
+        user_role=user.get("role"),
+        method="POST",
+        path=f"/admin/bonus/programs/{program_id}/users/{user_id}/remove-points",
+        status_code=200,
+        details={"amount": body.amount, "reason": body.reason, "target_user": user_id},
+        before_state={"current_amount": old_amount},
+        after_state={"current_amount": new_amount},
+        collection_name="bonus_progress",
+        document_query={"user_id": user_id, "program_id": program_id},
+    )
+
     return {"success": True, "old_amount": old_amount, "new_amount": new_amount, "user_name": target_name}
 
 
@@ -581,6 +631,25 @@ async def admin_reset_points(program_id: str, user_id: str, user=Depends(get_cur
         upsert=True
     )
 
+    target = await db.users.find_one({"id": user_id}, {"_id": 0, "name": 1, "email": 1})
+    target_name = (target.get("name") or target.get("email", "")) if target else ""
+
+    # Log for revert
+    await log_action(
+        action=f"Сброс баллов: {old_amount:.0f} → 0 ({target_name})",
+        user_id=user["id"],
+        user_name=user.get("name", user.get("email")),
+        user_role=user.get("role"),
+        method="POST",
+        path=f"/admin/bonus/programs/{program_id}/users/{user_id}/reset-points",
+        status_code=200,
+        details={"old_amount": old_amount, "target_user": user_id},
+        before_state={"current_amount": old_amount},
+        after_state={"current_amount": 0},
+        collection_name="bonus_progress",
+        document_query={"user_id": user_id, "program_id": program_id},
+    )
+
     return {"success": True, "old_amount": old_amount, "new_amount": 0}
 
 
@@ -591,9 +660,29 @@ async def delete_prize_redemption(redemption_id: str, user=Depends(get_current_u
     """Admin: delete a prize redemption from history"""
     if user.get("role") != "admin":
         raise HTTPException(status_code=403, detail="Admin access required")
+    redemption = await db.prize_redemptions.find_one({"id": redemption_id}, {"_id": 0})
+    if not redemption:
+        raise HTTPException(status_code=404, detail="Not found")
+
     result = await db.prize_redemptions.delete_one({"id": redemption_id})
     if result.deleted_count == 0:
         raise HTTPException(status_code=404, detail="Not found")
+
+    # Log for revert (re-insert on revert)
+    await log_action(
+        action=f"Удаление заявки на приз: {redemption.get('prize_name', '')}",
+        user_id=user["id"],
+        user_name=user.get("name", user.get("email")),
+        user_role=user.get("role"),
+        method="DELETE",
+        path=f"/admin/bonus/prize-redemptions/{redemption_id}",
+        status_code=200,
+        details={"prize_name": redemption.get("prize_name"), "user_name": redemption.get("user_name")},
+        before_state={**redemption},
+        collection_name="prize_redemptions",
+        document_id=redemption_id,
+    )
+
     return {"success": True}
 
 

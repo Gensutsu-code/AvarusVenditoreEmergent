@@ -462,9 +462,11 @@ export default function AdminOrdersPage() {
                                   )}
                                 </div>
                                 <div className="flex items-center gap-2">
-                                  <Button variant="outline" size="sm" onClick={() => handleRollbackStatus(order.id)} className="rounded-xl text-amber-500 border-amber-200 hover:bg-amber-50" data-testid={`rollback-order-${order.id}`} title="Откатить статус">
-                                    <RotateCcw className="w-4 h-4 mr-1" /> Откатить
-                                  </Button>
+                                  {['completed', 'processing', 'cancelled'].includes(order.status) && (
+                                    <Button variant="outline" size="sm" onClick={() => handleRollbackStatus(order.id)} className="rounded-xl text-amber-500 border-amber-200 hover:bg-amber-50" data-testid={`rollback-order-${order.id}`} title="Откатить статус">
+                                      <RotateCcw className="w-4 h-4 mr-1" /> Откатить
+                                    </Button>
+                                  )}
                                   {order.status !== 'cancelled' && order.status !== 'completed' && (
                                     <Button variant="outline" size="sm" onClick={() => startEditing(order)} className="rounded-xl border-teal-200 text-teal-600 hover:bg-teal-50">
                                       <Pencil className="w-4 h-4 mr-1" /> Редактировать
