@@ -480,6 +480,7 @@ async def rollback_order_status(order_id: str, user=Depends(get_current_user)):
     rollback_map = {
         "completed": "processing",
         "processing": "pending",
+        "cancelled": "pending",
     }
     current = order.get("status")
     prev = rollback_map.get(current)
@@ -488,7 +489,7 @@ async def rollback_order_status(order_id: str, user=Depends(get_current_user)):
 
     await db.orders.update_one({"id": order_id}, {"$set": {"status": prev, "previous_status": current}})
 
-    status_labels = {"pending": "ожидает обработки", "processing": "принят в обработку"}
+    status_labels = {"pending": "ожидает обработки", "processing": "принят в обработку", "completed": "выполнен"}
     await create_notification(
         order["user_id"], "order",
         f"Статус заказа #{order_id[:8]}",
