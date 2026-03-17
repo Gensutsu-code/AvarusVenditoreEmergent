@@ -190,24 +190,25 @@ export const Header = () => {
 
   const fetchUserData = useCallback(async () => {
     if (!user || isAdmin) return;
-    // Skip all notification polling if disabled by admin
-    if (!clientNotifsEnabledRef.current) {
-      setUnreadNotifCount(0);
-      return;
-    }
     try {
       const token = localStorage.getItem('token');
       const headers = { 'Authorization': `Bearer ${token}` };
-      const [notifRes, balanceRes] = await Promise.all([
-        fetch(`${process.env.REACT_APP_BACKEND_URL}/api/my-notifications`, { headers }),
-        fetch(`${process.env.REACT_APP_BACKEND_URL}/api/user/balance`, { headers })
-      ]);
+
+      // Always fetch balance regardless of notification settings
+      const balanceRes = await fetch(`${process.env.REACT_APP_BACKEND_URL}/api/user/balance`, { headers });
+      const balanceData = await balanceRes.json();
+      setUserBalance(balanceData.balance ?? 0);
+
+      // Skip notification polling if disabled by admin
+      if (!clientNotifsEnabledRef.current) {
+        setNotificationCount(0);
+        return;
+      }
+
+      const notifRes = await fetch(`${process.env.REACT_APP_BACKEND_URL}/api/my-notifications`, { headers });
       const notifData = await notifRes.json();
       const newCount = notifData.unread_count || 0;
       setNotificationCount(newCount);
-      
-      const balanceData = await balanceRes.json();
-      setUserBalance(balanceData.balance ?? 0);
 
       // On first load, just set the baseline
       if (!hasInitRef.current) {
@@ -219,30 +220,27 @@ export const Header = () => {
       // If new unread notifications appeared since last poll
       if (newCount > lastSeenCountRef.current) {
         const now = Date.now();
-        // Only show toast/sound if client notifications are enabled by admin
-        if (clientNotifsEnabledRef.current) {
-          // Debounce: skip toast if another toast was shown in last 8 seconds
-          const globalLastToast = window.__lastToastTime || 0;
-          if (now - globalLastToast > 8000) {
-            const notifs = notifData.notifications || [];
-            const latest = notifs.find(n => !n.read);
-            if (latest) {
-              toast.info(latest.message || latest.title, { id: `client-${latest.id}`, duration: 5000 });
-              lastToastTimeRef.current = now;
-              window.__lastToastTime = now;
-            }
-            playNotificationSound();
+        // Debounce: skip toast if another toast was shown in last 8 seconds
+        const globalLastToast = window.__lastToastTime || 0;
+        if (now - globalLastToast > 8000) {
+          const notifs = notifData.notifications || [];
+          const latest = notifs.find(n => !n.read);
+          if (latest) {
+            toast.info(latest.message || latest.title, { id: `client-${latest.id}`, duration: 5000 });
+            lastToastTimeRef.current = now;
+            window.__lastToastTime = now;
           }
-          // Push notification only when tab is hidden
-          if (document.hidden) {
-            const notifs = notifData.notifications || [];
-            const latest = notifs.find(n => !n.read);
-            showPushNotification(
-              latest?.title || 'Новое уведомление',
-              latest?.message || `У вас ${newCount - lastSeenCountRef.current} новых уведомлений`,
-              { tag: 'global-notif' }
-            );
-          }
+          playNotificationSound();
+        }
+        // Push notification only when tab is hidden
+        if (document.hidden) {
+          const notifs = notifData.notifications || [];
+          const latest = notifs.find(n => !n.read);
+          showPushNotification(
+            latest?.title || 'Новое уведомление',
+            latest?.message || `У вас ${newCount - lastSeenCountRef.current} новых уведомлений`,
+            { tag: 'global-notif' }
+          );
         }
       }
       lastSeenCountRef.current = newCount;
