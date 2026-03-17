@@ -5,7 +5,7 @@ import {
   Package, Search, Eye, Pencil, Trash2, Save, X, 
   Clock, CheckCircle, Truck, XCircle, ChevronDown,
   User, Phone, MapPin, Calendar, CreditCard, RefreshCw,
-  AlertTriangle, Check
+  AlertTriangle, Check, RotateCcw
 } from 'lucide-react';
 import { Button } from '../components/ui/button';
 import { Input } from '../components/ui/input';
@@ -92,6 +92,16 @@ export default function AdminOrdersPage() {
       toast.success('Заказ удалён');
     } catch (err) {
       toast.error('Ошибка удаления');
+    }
+  };
+
+  const handleRollbackStatus = async (orderId) => {
+    try {
+      const res = await axios.put(`${API}/admin/orders/${orderId}/rollback-status`);
+      setOrders(prev => prev.map(o => o.id === orderId ? { ...o, status: res.data.status, previous_status: res.data.previous_status } : o));
+      toast.success(`Статус откачен на: ${ORDER_STATUSES.find(s => s.value === res.data.status)?.label || res.data.status}`);
+    } catch (err) {
+      toast.error(err.response?.data?.detail || 'Нет предыдущего статуса для отката');
     }
   };
 
@@ -452,6 +462,9 @@ export default function AdminOrdersPage() {
                                   )}
                                 </div>
                                 <div className="flex items-center gap-2">
+                                  <Button variant="outline" size="sm" onClick={() => handleRollbackStatus(order.id)} className="rounded-xl text-amber-500 border-amber-200 hover:bg-amber-50" data-testid={`rollback-order-${order.id}`} title="Откатить статус">
+                                    <RotateCcw className="w-4 h-4 mr-1" /> Откатить
+                                  </Button>
                                   {order.status !== 'cancelled' && order.status !== 'completed' && (
                                     <Button variant="outline" size="sm" onClick={() => startEditing(order)} className="rounded-xl border-teal-200 text-teal-600 hover:bg-teal-50">
                                       <Pencil className="w-4 h-4 mr-1" /> Редактировать
