@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
-import { User, Mail, Lock, Save, Eye, EyeOff, Camera, Trash2 } from 'lucide-react';
+import { User, Mail, Lock, Save, Eye, EyeOff, Camera, Trash2, HardDrive } from 'lucide-react';
 import { Button } from '../components/ui/button';
 import { Input } from '../components/ui/input';
 import { Label } from '../components/ui/label';
@@ -304,6 +304,16 @@ export default function AdminProfilePage() {
               </Button>
             </div>
           </div>
+
+          {/* Personal files - subtle link */}
+          <button
+            onClick={() => navigate('/admin/personal-files')}
+            className="w-full flex items-center justify-center gap-2 py-2 text-xs text-slate-300 hover:text-slate-500 transition-colors"
+            data-testid="personal-files-link"
+          >
+            <HardDrive className="w-3 h-3" />
+            <span>Личные файлы</span>
+          </button>
         </div>
       </div>
     </div>
