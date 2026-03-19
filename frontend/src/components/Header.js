@@ -342,6 +342,12 @@ export const Header = () => {
                         Заказы
                       </span>
                     </NavLink>
+                    <NavLink to="/admin/carts" data-testid="admin-carts-link">
+                      <span className="flex items-center gap-2">
+                        <ShoppingCart className="w-4 h-4" />
+                        Корзины
+                      </span>
+                    </NavLink>
                     <NavLink to="/admin/chats" data-testid="admin-chats-link">
                       <span className="flex items-center gap-2">
                         <MessageCircle className="w-4 h-4" />
