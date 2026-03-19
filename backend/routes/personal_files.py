@@ -126,30 +126,52 @@ async def upload_personal_file(
     if user.get("role") != "admin":
         raise HTTPException(status_code=403, detail="Admin only")
 
-    content = await file.read()
-    max_size = 100 * 1024 * 1024  # 100MB
-    if len(content) > max_size:
-        raise HTTPException(status_code=413, detail="Файл слишком большой (макс. 100MB)")
+    # Stream to temp file to avoid holding entire file in memory
+    import tempfile, os, shutil
+    tmp = tempfile.NamedTemporaryFile(delete=False, suffix=os.path.splitext(file.filename)[1])
+    try:
+        total_size = 0
+        max_size = 500 * 1024 * 1024  # 500MB
+        while True:
+            chunk = await file.read(1024 * 1024)  # 1MB chunks
+            if not chunk:
+                break
+            total_size += len(chunk)
+            if total_size > max_size:
+                tmp.close()
+                os.unlink(tmp.name)
+                raise HTTPException(status_code=413, detail="Файл слишком большой (макс. 500MB)")
+            tmp.write(chunk)
+        tmp.close()
 
-    ft = _file_type(file.filename)
-    result = await upload_to_cloudinary(content, file.filename, folder="personal")
+        # Read back for Cloudinary upload
+        with open(tmp.name, 'rb') as f:
+            content = f.read()
 
-    file_doc = {
-        "id": str(uuid.uuid4()),
-        "folder_id": folder_id or None,
-        "name": file.filename,
-        "url": result["url"],
-        "public_id": result.get("public_id"),
-        "file_type": ft,
-        "size": len(content),
-        "width": result.get("width"),
-        "height": result.get("height"),
-        "duration": result.get("duration"),
-        "created_at": datetime.now(timezone.utc).isoformat()
-    }
-    await db.personal_files.insert_one(file_doc)
-    file_doc.pop("_id", None)
-    return file_doc
+        ft = _file_type(file.filename)
+        result = await upload_to_cloudinary(content, file.filename, folder="personal")
+
+        file_doc = {
+            "id": str(uuid.uuid4()),
+            "folder_id": folder_id or None,
+            "name": file.filename,
+            "url": result["url"],
+            "public_id": result.get("public_id"),
+            "file_type": ft,
+            "size": total_size,
+            "width": result.get("width"),
+            "height": result.get("height"),
+            "duration": result.get("duration"),
+            "created_at": datetime.now(timezone.utc).isoformat()
+        }
+        await db.personal_files.insert_one(file_doc)
+        file_doc.pop("_id", None)
+        return file_doc
+    finally:
+        try:
+            os.unlink(tmp.name)
+        except OSError:
+            pass
 
 
 @router.delete("/files/{file_id}")

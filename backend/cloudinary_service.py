@@ -50,37 +50,46 @@ def is_video(filename: str) -> bool:
 
 async def upload_to_cloudinary(file_content: bytes, filename: str, folder: str = "chat") -> dict:
     """
-    Upload file to Cloudinary and return public URL
-    
-    Args:
-        file_content: File content as bytes
-        filename: Original filename
-        folder: Folder path in Cloudinary
-    
-    Returns:
-        dict with url, public_id, resource_type, is_image, is_video
+    Upload file to Cloudinary and return public URL.
+    Uses chunked upload for large files (>90MB).
     """
     try:
         resource_type = get_resource_type(filename)
         
-        # Generate unique public_id
         import uuid
-        file_ext = Path(filename).suffix
+        import tempfile
         public_id = f"{folder}/{uuid.uuid4()}"
         
-        # Upload to Cloudinary
-        result = cloudinary.uploader.upload(
-            file_content,
-            public_id=public_id,
-            resource_type=resource_type,
-            folder=None,  # Already included in public_id
-            overwrite=True,
-            invalidate=True
-        )
+        use_chunked = len(file_content) > 90 * 1024 * 1024  # >90MB
+
+        if use_chunked:
+            # Write to temp file and use upload_large for chunked upload
+            with tempfile.NamedTemporaryFile(delete=False, suffix=Path(filename).suffix) as tmp:
+                tmp.write(file_content)
+                tmp_path = tmp.name
+            try:
+                result = cloudinary.uploader.upload_large(
+                    tmp_path,
+                    public_id=public_id,
+                    resource_type=resource_type,
+                    chunk_size=20_000_000,  # 20MB chunks
+                    overwrite=True,
+                    invalidate=True
+                )
+            finally:
+                import os
+                os.unlink(tmp_path)
+        else:
+            result = cloudinary.uploader.upload(
+                file_content,
+                public_id=public_id,
+                resource_type=resource_type,
+                folder=None,
+                overwrite=True,
+                invalidate=True
+            )
         
-        # Get the secure URL
         url = result.get('secure_url')
-        
         logger.info(f"File uploaded to Cloudinary: {filename} -> {url}")
         
         return {
@@ -93,7 +102,7 @@ async def upload_to_cloudinary(file_content: bytes, filename: str, folder: str =
             'bytes': result.get('bytes'),
             'width': result.get('width'),
             'height': result.get('height'),
-            'duration': result.get('duration')  # For videos
+            'duration': result.get('duration')
         }
         
     except Exception as e:
