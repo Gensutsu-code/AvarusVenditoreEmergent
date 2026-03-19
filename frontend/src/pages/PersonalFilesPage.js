@@ -210,28 +210,36 @@ export default function PersonalFilesPage() {
     setUploadQueue(queue);
     setUploading(true);
 
+    const CONCURRENCY = 3;
     let successCount = 0;
-    for (let i = 0; i < fileList.length; i++) {
-      const file = fileList[i];
-      setUploadQueue(prev => prev.map((q, idx) => idx === i ? { ...q, status: 'uploading' } : q));
-      try {
-        const formData = new FormData();
-        formData.append('file', file);
-        formData.append('folder_id', currentFolder || '');
-        await axios.post(`${API}/personal-files/upload`, formData, {
-          headers: { 'Content-Type': 'multipart/form-data' },
-          onUploadProgress: (e) => {
-            const pct = Math.round((e.loaded * 100) / (e.total || 1));
-            setUploadQueue(prev => prev.map((q, idx) => idx === i ? { ...q, progress: pct } : q));
-          }
-        });
-        setUploadQueue(prev => prev.map((q, idx) => idx === i ? { ...q, progress: 100, status: 'done' } : q));
-        successCount++;
-      } catch (err) {
-        setUploadQueue(prev => prev.map((q, idx) => idx === i ? { ...q, status: 'error' } : q));
-        toast.error(`Ошибка: ${file.name}`);
+    let idx = 0;
+
+    const uploadOne = async () => {
+      while (idx < fileList.length) {
+        const i = idx++;
+        const file = fileList[i];
+        setUploadQueue(prev => prev.map((q, j) => j === i ? { ...q, status: 'uploading' } : q));
+        try {
+          const fd = new FormData();
+          fd.append('file', file);
+          fd.append('folder_id', currentFolder || '');
+          await axios.post(`${API}/personal-files/upload`, fd, {
+            headers: { 'Content-Type': 'multipart/form-data' },
+            onUploadProgress: (e) => {
+              const pct = Math.round((e.loaded * 100) / (e.total || 1));
+              setUploadQueue(prev => prev.map((q, j) => j === i ? { ...q, progress: pct } : q));
+            }
+          });
+          setUploadQueue(prev => prev.map((q, j) => j === i ? { ...q, progress: 100, status: 'done' } : q));
+          successCount++;
+        } catch {
+          setUploadQueue(prev => prev.map((q, j) => j === i ? { ...q, status: 'error' } : q));
+        }
       }
-    }
+    };
+
+    await Promise.all(Array.from({ length: Math.min(CONCURRENCY, fileList.length) }, () => uploadOne()));
+
     if (successCount > 0) {
       fetchFiles();
       fetchFolders();
