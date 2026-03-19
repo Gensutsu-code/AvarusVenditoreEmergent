@@ -156,6 +156,7 @@ export default function PersonalFilesPage() {
   const [searchQuery, setSearchQuery] = useState('');
   const [loading, setLoading] = useState(false);
   const [uploading, setUploading] = useState(false);
+  const [uploadQueue, setUploadQueue] = useState([]); // [{name, progress, status}]
   const [previewFile, setPreviewFile] = useState(null);
   const [newFolderName, setNewFolderName] = useState('');
   const [showNewFolder, setShowNewFolder] = useState(false);
@@ -205,27 +206,38 @@ export default function PersonalFilesPage() {
     const fileList = e.target.files;
     if (!fileList || fileList.length === 0) return;
 
+    const queue = Array.from(fileList).map(f => ({ name: f.name, progress: 0, status: 'pending', size: f.size }));
+    setUploadQueue(queue);
     setUploading(true);
+
     let successCount = 0;
-    for (const file of fileList) {
+    for (let i = 0; i < fileList.length; i++) {
+      const file = fileList[i];
+      setUploadQueue(prev => prev.map((q, idx) => idx === i ? { ...q, status: 'uploading' } : q));
       try {
         const formData = new FormData();
         formData.append('file', file);
         formData.append('folder_id', currentFolder || '');
         await axios.post(`${API}/personal-files/upload`, formData, {
-          headers: { 'Content-Type': 'multipart/form-data' }
+          headers: { 'Content-Type': 'multipart/form-data' },
+          onUploadProgress: (e) => {
+            const pct = Math.round((e.loaded * 100) / (e.total || 1));
+            setUploadQueue(prev => prev.map((q, idx) => idx === i ? { ...q, progress: pct } : q));
+          }
         });
+        setUploadQueue(prev => prev.map((q, idx) => idx === i ? { ...q, progress: 100, status: 'done' } : q));
         successCount++;
       } catch (err) {
-        toast.error(`Ошибка загрузки: ${file.name}`);
+        setUploadQueue(prev => prev.map((q, idx) => idx === i ? { ...q, status: 'error' } : q));
+        toast.error(`Ошибка: ${file.name}`);
       }
     }
     if (successCount > 0) {
-      toast.success(`Загружено: ${successCount} файл(ов)`);
       fetchFiles();
       fetchFolders();
     }
     setUploading(false);
+    setTimeout(() => setUploadQueue([]), 3000);
     if (fileInputRef.current) fileInputRef.current.value = '';
   };
 
@@ -583,6 +595,54 @@ export default function PersonalFilesPage() {
       {/* Preview Modal */}
       <AnimatePresence>
         {previewFile && <PreviewModal file={previewFile} onClose={() => setPreviewFile(null)} />}
+      </AnimatePresence>
+
+      {/* Upload Progress Panel */}
+      <AnimatePresence>
+        {uploadQueue.length > 0 && (
+          <motion.div
+            initial={{ y: 100, opacity: 0 }}
+            animate={{ y: 0, opacity: 1 }}
+            exit={{ y: 100, opacity: 0 }}
+            className="fixed bottom-4 right-4 z-40 w-80 bg-slate-900 border border-slate-700 rounded-2xl shadow-2xl overflow-hidden"
+            data-testid="pf-upload-progress"
+          >
+            <div className="px-4 py-2.5 border-b border-slate-800 flex items-center justify-between">
+              <span className="text-xs font-semibold text-slate-300">
+                {uploading ? 'Загрузка файлов...' : 'Загрузка завершена'}
+              </span>
+              <span className="text-[10px] text-slate-500">
+                {uploadQueue.filter(q => q.status === 'done').length}/{uploadQueue.length}
+              </span>
+            </div>
+            <div className="max-h-48 overflow-y-auto p-2 space-y-1.5">
+              {uploadQueue.map((item, i) => (
+                <div key={i} className="px-2 py-1.5 rounded-lg bg-slate-800/50">
+                  <div className="flex items-center justify-between mb-1">
+                    <span className="text-[11px] text-slate-400 truncate max-w-[200px]">{item.name}</span>
+                    <span className="text-[10px] ml-2 flex-shrink-0">
+                      {item.status === 'done' && <span className="text-teal-400">OK</span>}
+                      {item.status === 'error' && <span className="text-red-400">ERR</span>}
+                      {item.status === 'uploading' && <span className="text-blue-400">{item.progress}%</span>}
+                      {item.status === 'pending' && <span className="text-slate-600">...</span>}
+                    </span>
+                  </div>
+                  <div className="h-1 bg-slate-700 rounded-full overflow-hidden">
+                    <motion.div
+                      className={`h-full rounded-full ${
+                        item.status === 'error' ? 'bg-red-500' :
+                        item.status === 'done' ? 'bg-teal-500' : 'bg-blue-500'
+                      }`}
+                      initial={{ width: 0 }}
+                      animate={{ width: `${item.progress}%` }}
+                      transition={{ duration: 0.2 }}
+                    />
+                  </div>
+                </div>
+              ))}
+            </div>
+          </motion.div>
+        )}
       </AnimatePresence>
     </div>
   );
