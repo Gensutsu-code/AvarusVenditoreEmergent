@@ -26,6 +26,7 @@ class PasswordCheck(BaseModel):
 
 class FolderCreate(BaseModel):
     name: str
+    parent_id: Optional[str] = None
 
 
 class FolderRename(BaseModel):
@@ -55,22 +56,47 @@ async def verify_password(body: PasswordCheck, user=Depends(get_current_user)):
 # ==================== FOLDERS ====================
 
 @router.get("/folders")
-async def list_folders(user=Depends(get_current_user)):
+async def list_folders(parent_id: Optional[str] = None, user=Depends(get_current_user)):
     if user.get("role") != "admin":
         raise HTTPException(status_code=403, detail="Admin only")
-    folders = await db.personal_folders.find({}, {"_id": 0}).sort("created_at", 1).to_list(1000)
+    query = {"parent_id": parent_id}
+    folders = await db.personal_folders.find(query, {"_id": 0}).sort("created_at", 1).to_list(1000)
     for f in folders:
         f["file_count"] = await db.personal_files.count_documents({"folder_id": f["id"]})
+        f["subfolder_count"] = await db.personal_folders.count_documents({"parent_id": f["id"]})
     return {"folders": folders}
+
+
+@router.get("/folders/{folder_id}/breadcrumb")
+async def get_breadcrumb(folder_id: str, user=Depends(get_current_user)):
+    """Get breadcrumb path from root to this folder"""
+    if user.get("role") != "admin":
+        raise HTTPException(status_code=403, detail="Admin only")
+    crumbs = []
+    current = folder_id
+    for _ in range(20):  # safety limit
+        folder = await db.personal_folders.find_one({"id": current}, {"_id": 0})
+        if not folder:
+            break
+        crumbs.insert(0, {"id": folder["id"], "name": folder["name"]})
+        current = folder.get("parent_id")
+        if not current:
+            break
+    return {"breadcrumbs": crumbs}
 
 
 @router.post("/folders")
 async def create_folder(body: FolderCreate, user=Depends(get_current_user)):
     if user.get("role") != "admin":
         raise HTTPException(status_code=403, detail="Admin only")
+    if body.parent_id:
+        parent = await db.personal_folders.find_one({"id": body.parent_id})
+        if not parent:
+            raise HTTPException(status_code=404, detail="Parent folder not found")
     folder = {
         "id": str(uuid.uuid4()),
         "name": body.name.strip(),
+        "parent_id": body.parent_id,
         "created_at": datetime.now(timezone.utc).isoformat()
     }
     await db.personal_folders.insert_one(folder)
@@ -93,7 +119,19 @@ async def rename_folder(folder_id: str, body: FolderRename, user=Depends(get_cur
 async def delete_folder(folder_id: str, user=Depends(get_current_user)):
     if user.get("role") != "admin":
         raise HTTPException(status_code=403, detail="Admin only")
-    files = await db.personal_files.find({"folder_id": folder_id}, {"_id": 0}).to_list(10000)
+
+    # Recursively collect all subfolder ids
+    async def collect_ids(fid):
+        ids = [fid]
+        subs = await db.personal_folders.find({"parent_id": fid}, {"_id": 0, "id": 1}).to_list(1000)
+        for s in subs:
+            ids.extend(await collect_ids(s["id"]))
+        return ids
+
+    all_folder_ids = await collect_ids(folder_id)
+
+    # Delete all files in all folders
+    files = await db.personal_files.find({"folder_id": {"$in": all_folder_ids}}, {"_id": 0}).to_list(10000)
     for f in files:
         if f.get("storage") == "local" and f.get("local_filename"):
             try:
@@ -103,8 +141,8 @@ async def delete_folder(folder_id: str, user=Depends(get_current_user)):
         elif f.get("public_id"):
             rt = "video" if f.get("file_type") == "video" else "image"
             await delete_from_cloudinary(f["public_id"], resource_type=rt)
-    await db.personal_files.delete_many({"folder_id": folder_id})
-    await db.personal_folders.delete_one({"id": folder_id})
+    await db.personal_files.delete_many({"folder_id": {"$in": all_folder_ids}})
+    await db.personal_folders.delete_many({"id": {"$in": all_folder_ids}})
     return {"success": True}
 
 
@@ -114,6 +152,7 @@ async def delete_folder(folder_id: str, user=Depends(get_current_user)):
 async def list_files(
     folder_id: Optional[str] = None,
     search: Optional[str] = None,
+    file_type: Optional[str] = None,
     user=Depends(get_current_user)
 ):
     if user.get("role") != "admin":
@@ -123,6 +162,13 @@ async def list_files(
         query["folder_id"] = folder_id
     if search:
         query["name"] = {"$regex": search, "$options": "i"}
+    if file_type and file_type != "all":
+        if file_type == "photo":
+            query["file_type"] = "image"
+        elif file_type == "gif":
+            query["file_type"] = "gif"
+        elif file_type == "video":
+            query["file_type"] = "video"
     files = await db.personal_files.find(query, {"_id": 0}).sort("created_at", -1).to_list(10000)
     return {"files": files}
 
