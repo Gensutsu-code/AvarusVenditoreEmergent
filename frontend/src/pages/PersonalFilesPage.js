@@ -12,6 +12,16 @@ import { toast } from 'sonner';
 import axios from 'axios';
 
 const API = process.env.REACT_APP_BACKEND_URL + '/api';
+const BASE_URL = process.env.REACT_APP_BACKEND_URL;
+
+function fileUrl(file) {
+  if (!file?.url) return '';
+  if (file.url.startsWith('http')) return file.url;
+  // Local file — needs auth token in URL
+  const token = localStorage.getItem('token');
+  const sep = file.url.includes('?') ? '&' : '?';
+  return BASE_URL + file.url + (token ? `${sep}token=${token}` : '');
+}
 
 function formatSize(bytes) {
   if (!bytes) return '';
@@ -119,7 +129,7 @@ function PreviewModal({ file, onClose }) {
         {/* Content */}
         {file.file_type === 'video' ? (
           <video
-            src={file.url}
+            src={fileUrl(file)}
             controls
             autoPlay
             className="max-w-full max-h-[80vh] rounded-xl"
@@ -127,7 +137,7 @@ function PreviewModal({ file, onClose }) {
           />
         ) : (
           <img
-            src={file.url}
+            src={fileUrl(file)}
             alt={file.name}
             className="max-w-full max-h-[80vh] rounded-xl object-contain"
             data-testid="pf-preview-image"
@@ -554,7 +564,7 @@ export default function PersonalFilesPage() {
                     {file.file_type === 'video' ? (
                       <>
                         <video
-                          src={file.url}
+                          src={fileUrl(file)}
                           className="w-full h-full object-cover"
                           muted
                           preload="metadata"
@@ -566,7 +576,7 @@ export default function PersonalFilesPage() {
                         </div>
                       </>
                     ) : (file.file_type === 'image' || file.file_type === 'gif') ? (
-                      <img src={file.url} alt={file.name} className="w-full h-full object-cover" loading="lazy" />
+                      <img src={fileUrl(file)} alt={file.name} className="w-full h-full object-cover" loading="lazy" />
                     ) : (
                       <FileIcon type={file.file_type} />
                     )}
