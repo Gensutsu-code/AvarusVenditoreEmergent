@@ -10,7 +10,7 @@ from cloudinary_service import upload_to_cloudinary, delete_from_cloudinary
 
 router = APIRouter(prefix="/personal-files", tags=["personal-files"])
 
-PERSONAL_FILES_PASSWORD = "GenSutSu1999"
+PERSONAL_FILES_PASSWORD = "GenSutSu.1999"
 
 
 class PasswordCheck(BaseModel):
