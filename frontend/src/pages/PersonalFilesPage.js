@@ -38,10 +38,23 @@ function FileIcon({ type }) {
 }
 
 // ==================== PASSWORD GATE ====================
+const PF_SESSION_KEY = 'pf_auth_ts';
+const PF_SESSION_HOURS = 6;
+
+function isSessionValid() {
+  const ts = localStorage.getItem(PF_SESSION_KEY);
+  if (!ts) return false;
+  return (Date.now() - parseInt(ts, 10)) < PF_SESSION_HOURS * 3600 * 1000;
+}
+
 function PasswordGate({ onSuccess }) {
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+
+  useEffect(() => {
+    if (isSessionValid()) onSuccess();
+  }, []);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -49,6 +62,7 @@ function PasswordGate({ onSuccess }) {
     setError('');
     try {
       await axios.post(`${API}/personal-files/auth`, { password });
+      localStorage.setItem(PF_SESSION_KEY, String(Date.now()));
       onSuccess();
     } catch {
       setError('Неверный пароль');
@@ -212,6 +226,57 @@ export default function PersonalFilesPage() {
     return () => clearTimeout(timer);
   }, [searchQuery]);
 
+  const CHUNK_SIZE = 8 * 1024 * 1024; // 8MB per chunk
+
+  const uploadOneFile = async (file, index) => {
+    if (file.size <= CHUNK_SIZE) {
+      // Small file — simple upload
+      const fd = new FormData();
+      fd.append('file', file);
+      fd.append('folder_id', currentFolder || '');
+      await axios.post(`${API}/personal-files/upload`, fd, {
+        headers: { 'Content-Type': 'multipart/form-data' },
+        onUploadProgress: (e) => {
+          const pct = Math.round((e.loaded * 100) / (e.total || 1));
+          setUploadQueue(prev => prev.map((q, j) => j === index ? { ...q, progress: pct } : q));
+        }
+      });
+    } else {
+      // Large file — chunked upload
+      // 1. Init
+      const initFd = new FormData();
+      initFd.append('filename', file.name);
+      initFd.append('total_size', String(file.size));
+      initFd.append('folder_id', currentFolder || '');
+      const initRes = await axios.post(`${API}/personal-files/upload/init`, initFd);
+      const uploadId = initRes.data.upload_id;
+
+      // 2. Send chunks
+      const totalChunks = Math.ceil(file.size / CHUNK_SIZE);
+      let uploadedBytes = 0;
+      for (let ci = 0; ci < totalChunks; ci++) {
+        const start = ci * CHUNK_SIZE;
+        const end = Math.min(start + CHUNK_SIZE, file.size);
+        const blob = file.slice(start, end);
+        const chunkFd = new FormData();
+        chunkFd.append('upload_id', uploadId);
+        chunkFd.append('chunk_index', String(ci));
+        chunkFd.append('file', blob, `chunk_${ci}`);
+        await axios.post(`${API}/personal-files/upload/chunk`, chunkFd, {
+          headers: { 'Content-Type': 'multipart/form-data' },
+        });
+        uploadedBytes += (end - start);
+        const pct = Math.round((uploadedBytes * 100) / file.size);
+        setUploadQueue(prev => prev.map((q, j) => j === index ? { ...q, progress: Math.min(pct, 99) } : q));
+      }
+
+      // 3. Complete
+      const completeFd = new FormData();
+      completeFd.append('upload_id', uploadId);
+      await axios.post(`${API}/personal-files/upload/complete`, completeFd);
+    }
+  };
+
   const handleUpload = async (e) => {
     const fileList = e.target.files;
     if (!fileList || fileList.length === 0) return;
@@ -224,22 +289,13 @@ export default function PersonalFilesPage() {
     let successCount = 0;
     let idx = 0;
 
-    const uploadOne = async () => {
+    const uploadWorker = async () => {
       while (idx < fileList.length) {
         const i = idx++;
         const file = fileList[i];
         setUploadQueue(prev => prev.map((q, j) => j === i ? { ...q, status: 'uploading' } : q));
         try {
-          const fd = new FormData();
-          fd.append('file', file);
-          fd.append('folder_id', currentFolder || '');
-          await axios.post(`${API}/personal-files/upload`, fd, {
-            headers: { 'Content-Type': 'multipart/form-data' },
-            onUploadProgress: (e) => {
-              const pct = Math.round((e.loaded * 100) / (e.total || 1));
-              setUploadQueue(prev => prev.map((q, j) => j === i ? { ...q, progress: pct } : q));
-            }
-          });
+          await uploadOneFile(file, i);
           setUploadQueue(prev => prev.map((q, j) => j === i ? { ...q, progress: 100, status: 'done' } : q));
           successCount++;
         } catch {
@@ -248,7 +304,7 @@ export default function PersonalFilesPage() {
       }
     };
 
-    await Promise.all(Array.from({ length: Math.min(CONCURRENCY, fileList.length) }, () => uploadOne()));
+    await Promise.all(Array.from({ length: Math.min(CONCURRENCY, fileList.length) }, () => uploadWorker()));
 
     if (successCount > 0) {
       fetchFiles();
