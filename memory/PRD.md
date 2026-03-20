@@ -1,48 +1,57 @@
 # PRD - E-commerce Platform "AVOPT.STORE"
 
 ## Original Problem Statement
-E-commerce platform for truck spare parts with full admin panel, crypto payments, order management, bonus system, and complete admin control ("Absolute Control").
+E-commerce platform for truck spare parts with full admin panel, crypto payments, order management, bonus system, and complete admin control ("Absolute Control"). Includes a private file manager for admin with hybrid storage.
 
 ## Core Features Implemented
 
-### Personal Files Storage (March 19, 2026) — NEW
-- Password-protected private file storage for admin (password: GenSutSu1999)
-- Upload photos, videos, GIFs to Cloudinary
-- Folder creation, renaming, deletion (with cascade file delete)
-- Search by filename
-- Grid view with thumbnails, video play overlay, GIF badges
-- Enlarged preview modal (images) / video player
-- Access via subtle "Личные файлы" button on admin profile page
-- Dark theme (bg-slate-950), Russian interface
+### Video Sprite Previews (March 20, 2026) — LATEST
+- Fixed sprite generation for ALL videos (Cloudinary + local storage)
+- Sprite sheet + VTT generated in background after upload
+- Seek bar hover shows frame preview in video player
+- Temp files cleaned up after sprite generation
+
+### Upload Cancellation (March 20, 2026) — LATEST
+- Cancel button in upload progress panel aborts all in-progress uploads
+- Backend DELETE /api/personal-files/upload/{upload_id} cleans up partial chunks
+- Frontend calls cleanup for chunked uploads on cancel
+
+### Personal Files Storage (March 19, 2026)
+- Password-protected private file storage for admin (password: GenSutSu.1999)
+- Hybrid storage: Cloudinary (<90MB), local (>90MB)
+- Chunked uploads for large files, parallel processing
+- Nested folders, file type filters, search
+- Custom video player: double-tap seek, fullscreen, quality badges
+- 6-hour session persistence
 
 ### Admin Cart Management (March 19, 2026)
-- View all client carts from "Корзины" link in header
-- Add/remove products, change quantities, set individual prices
-- Search by client name, email, product
+- View/edit all client carts, add/remove products, set individual prices
 
 ### Revertible Actions in Logs (March 17, 2026)
 - All key admin actions revertible from Logs tab
-- Bonus add/subtract/reset, prize status, deletions (prizes/orders/users/categories)
 
 ### Full Admin Control ("Absolute Control")
-- Granular admin controls for bonus points, prize history, order rollback
-- Enhanced user tracking (browser fingerprint, GeoIP)
-- Action logging middleware with revert system
+- Granular admin controls, user tracking (fingerprint, GeoIP), action logging
 
 ### Earlier Features
 - E-commerce catalog, cart, checkout, orders
-- Bonus/loyalty system with tiers, crypto payments (ETH/USDT)
-- News, chat widget, notifications, search with sorting
-- Individual pricing per user, product/discount requests
+- Bonus/loyalty system, crypto payments (ETH/USDT)
+- News, chat widget, notifications, search, individual pricing
 
 ## Key Collections
-- `personal_folders`: {id, name, created_at}
-- `personal_files`: {id, folder_id, name, url, public_id, file_type, size, created_at}
+- `personal_folders`: {id, name, parent_id, created_at}
+- `personal_files`: {id, folder_id, name, url, public_id, file_type, size, width, height, quality, duration, storage, local_filename, sprite_ready, sprite_cols, sprite_rows, created_at}
 - `action_logs`: {id, action, before_state, document_query, collection_name, reverted}
+- `upload_sessions`: {id, filename, folder_id, total_size, created_at}
 
-## 3rd Party: Resend, Cloudinary, web3.py, ethers.js, CoinGecko, FingerprintJS, GeoIP2. ЮKassa (MOCKED)
+## 3rd Party
+Resend, Cloudinary, web3.py, ethers.js, CoinGecko, FingerprintJS, GeoIP2, ffmpeg/pymediainfo. YuKassa (MOCKED)
 
 ## Credentials
 - Admin: admin@avarus.ru / admin
 - Client: user@demo.com / demo123
-- Personal files: GenSutSu1999
+- Personal files: GenSutSu.1999
+
+## Backlog
+- P2: Real payment gateway (YuKassa) integration
+- P2: Refactor PersonalFilesPage.js and AdminPage.js into smaller components
