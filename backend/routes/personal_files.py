@@ -556,64 +556,43 @@ async def complete_chunked_upload(
     shutil.rmtree(chunk_dir, ignore_errors=True)
     await db.upload_sessions.delete_one({"id": upload_id})
 
-    # Probe video metadata BEFORE any upload/move (file is at final_path)
+    # Probe video metadata BEFORE uploading (file is at final_path)
     vinfo = _probe_video(final_path) if ft == "video" else {}
 
-    # Small files go to Cloudinary, large stay local
-    if total_size <= CLOUDINARY_LIMIT:
-        with open(final_path, 'rb') as f:
-            content = f.read()
-        result = await upload_to_cloudinary(content, filename, folder="personal")
-        # DON'T delete final_path yet if it's a video — sprite task needs it
-        file_doc = {
-            "id": str(uuid.uuid4()),
-            "folder_id": session.get("folder_id"),
-            "name": filename,
-            "url": result["url"],
-            "public_id": result.get("public_id"),
-            "storage": "cloudinary",
-            "local_filename": None,
-            "file_type": ft,
-            "size": total_size,
-            "width": result.get("width") or vinfo.get("width"),
-            "height": result.get("height") or vinfo.get("height"),
-            "duration": result.get("duration") or vinfo.get("duration"),
-            "quality": _video_quality_label(result.get("height") or vinfo.get("height")) if ft == "video" else None,
-            "created_at": datetime.now(timezone.utc).isoformat()
-        }
-        # For non-video files, delete temp immediately
-        if ft != "video":
-            try: os.unlink(final_path)
-            except OSError: pass
-    else:
-        file_doc = {
-            "id": str(uuid.uuid4()),
-            "folder_id": session.get("folder_id"),
-            "name": filename,
-            "url": f"/api/personal-files/serve/{final_filename}",
-            "public_id": None,
-            "storage": "local",
-            "local_filename": final_filename,
-            "file_type": ft,
-            "size": total_size,
-            "width": vinfo.get("width"),
-            "height": vinfo.get("height"),
-            "duration": vinfo.get("duration"),
-            "quality": vinfo.get("quality"),
-            "created_at": datetime.now(timezone.utc).isoformat()
-        }
+    # Upload ALL files to Cloudinary (use upload_large for big files)
+    with open(final_path, 'rb') as f:
+        content = f.read()
+    result = await upload_to_cloudinary(content, filename, folder="personal")
+
+    file_doc = {
+        "id": str(uuid.uuid4()),
+        "folder_id": session.get("folder_id"),
+        "name": filename,
+        "url": result["url"],
+        "public_id": result.get("public_id"),
+        "storage": "cloudinary",
+        "local_filename": None,
+        "file_type": ft,
+        "size": total_size,
+        "width": result.get("width") or vinfo.get("width"),
+        "height": result.get("height") or vinfo.get("height"),
+        "duration": result.get("duration") or vinfo.get("duration"),
+        "quality": _video_quality_label(result.get("height") or vinfo.get("height")) if ft == "video" else None,
+        "created_at": datetime.now(timezone.utc).isoformat()
+    }
 
     await db.personal_files.insert_one(file_doc)
     file_doc.pop("_id", None)
 
-    # Start sprite generation for ALL video files
+    # Start sprite generation for video files (temp file deleted after)
     duration = file_doc.get("duration") or vinfo.get("duration")
     if ft == "video" and duration and os.path.isfile(final_path):
         import asyncio
-        # For Cloudinary: pass cleanup_path so temp file is deleted after sprites are done
-        # For local: no cleanup needed, file is permanent
-        cleanup = final_path if file_doc.get("storage") == "cloudinary" else None
-        asyncio.create_task(_generate_sprite(file_doc["id"], final_path, duration, cleanup_path=cleanup))
+        asyncio.create_task(_generate_sprite(file_doc["id"], final_path, duration, cleanup_path=final_path))
+    else:
+        # Non-video: delete temp immediately
+        try: os.unlink(final_path)
+        except OSError: pass
 
     return file_doc
 
@@ -632,8 +611,6 @@ async def upload_personal_file(
 
     content = await file.read()
     total_size = len(content)
-    if total_size > CLOUDINARY_LIMIT:
-        raise HTTPException(status_code=413, detail="Используйте чанковую загрузку для больших файлов")
 
     ft = _file_type(file.filename)
 
