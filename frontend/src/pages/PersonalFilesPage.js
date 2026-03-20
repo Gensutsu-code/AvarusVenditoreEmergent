@@ -620,6 +620,7 @@ export default function PersonalFilesPage() {
       fd.append('folder_id', currentFolder || '');
       await axios.post(`${API}/personal-files/upload`, fd, {
         headers: { 'Content-Type': 'multipart/form-data' }, signal,
+        timeout: 120000,
         onUploadProgress: (e) => {
           const pct = Math.round((e.loaded * 100) / (e.total || 1));
           setUploadQueue(prev => prev.map((q, j) => j === index ? { ...q, progress: pct } : q));
@@ -632,13 +633,11 @@ export default function PersonalFilesPage() {
       initFd.append('folder_id', currentFolder || '');
       const initRes = await axios.post(`${API}/personal-files/upload/init`, initFd, { signal });
       const uploadId = initRes.data.upload_id;
-      // Store upload_id for cleanup on cancel
       setUploadQueue(prev => prev.map((q, j) => j === index ? { ...q, uploadId } : q));
       const totalChunks = Math.ceil(file.size / CHUNK_SIZE);
       let uploaded = 0;
       for (let ci = 0; ci < totalChunks; ci++) {
         if (signal.aborted) {
-          // Cleanup partial chunks on server
           try { await axios.delete(`${API}/personal-files/upload/${uploadId}`); } catch {}
           throw new DOMException('Aborted', 'AbortError');
         }
@@ -647,14 +646,28 @@ export default function PersonalFilesPage() {
         chunkFd.append('upload_id', uploadId);
         chunkFd.append('chunk_index', String(ci));
         chunkFd.append('file', blob, `chunk_${ci}`);
-        await axios.post(`${API}/personal-files/upload/chunk`, chunkFd, { signal, timeout: 120000 }); // 2min per chunk
+        // Retry up to 3 times on 502/network errors
+        let lastErr = null;
+        for (let attempt = 0; attempt < 3; attempt++) {
+          try {
+            await axios.post(`${API}/personal-files/upload/chunk`, chunkFd, { signal, timeout: 120000 });
+            lastErr = null;
+            break;
+          } catch (chunkErr) {
+            lastErr = chunkErr;
+            if (chunkErr.name === 'AbortError' || chunkErr.code === 'ERR_CANCELED') throw chunkErr;
+            if (attempt < 2) await new Promise(r => setTimeout(r, 1000 * (attempt + 1)));
+          }
+        }
+        if (lastErr) throw lastErr;
         uploaded += blob.size;
         const pct = Math.round((uploaded * 100) / file.size);
         setUploadQueue(prev => prev.map((q, j) => j === index ? { ...q, progress: Math.min(pct, 99) } : q));
       }
+      setUploadQueue(prev => prev.map((q, j) => j === index ? { ...q, progress: 99, status: 'uploading' } : q));
       const completeFd = new FormData();
       completeFd.append('upload_id', uploadId);
-      await axios.post(`${API}/personal-files/upload/complete`, completeFd, { signal, timeout: 600000 }); // 10min timeout for Cloudinary upload
+      await axios.post(`${API}/personal-files/upload/complete`, completeFd, { signal, timeout: 600000 });
     }
   };
 

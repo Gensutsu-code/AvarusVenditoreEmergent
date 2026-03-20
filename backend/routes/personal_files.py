@@ -16,7 +16,7 @@ router = APIRouter(prefix="/personal-files", tags=["personal-files"])
 
 PERSONAL_FILES_PASSWORD = "GenSutSu.1999"
 LOCAL_UPLOAD_DIR = os.path.join(os.path.dirname(os.path.dirname(__file__)), "uploads", "personal")
-CLOUDINARY_LIMIT = 90 * 1024 * 1024  # 90MB
+CLOUDINARY_MAX = 95 * 1024 * 1024  # Cloudinary free plan limit ~100MB, use 95MB to be safe
 CHUNK_DIR = os.path.join(LOCAL_UPLOAD_DIR, "chunks")
 SPRITES_DIR = os.path.join(LOCAL_UPLOAD_DIR, "sprites")
 SPRITE_INTERVAL = 5  # seconds between thumbnail frames
@@ -559,36 +559,56 @@ async def complete_chunked_upload(
     # Probe video metadata BEFORE uploading (file is at final_path)
     vinfo = _probe_video(final_path) if ft == "video" else {}
 
-    # Upload to Cloudinary from file path (memory-efficient, no f.read())
-    result = await upload_file_to_cloudinary(final_path, filename, folder="personal")
-
-    file_doc = {
-        "id": str(uuid.uuid4()),
-        "folder_id": session.get("folder_id"),
-        "name": filename,
-        "url": result["url"],
-        "public_id": result.get("public_id"),
-        "storage": "cloudinary",
-        "local_filename": None,
-        "file_type": ft,
-        "size": total_size,
-        "width": result.get("width") or vinfo.get("width"),
-        "height": result.get("height") or vinfo.get("height"),
-        "duration": result.get("duration") or vinfo.get("duration"),
-        "quality": _video_quality_label(result.get("height") or vinfo.get("height")) if ft == "video" else None,
-        "created_at": datetime.now(timezone.utc).isoformat()
-    }
+    # Cloudinary has 100MB limit on free plan. Large files stay local.
+    if total_size <= CLOUDINARY_MAX:
+        result = await upload_file_to_cloudinary(final_path, filename, folder="personal")
+        file_doc = {
+            "id": str(uuid.uuid4()),
+            "folder_id": session.get("folder_id"),
+            "name": filename,
+            "url": result["url"],
+            "public_id": result.get("public_id"),
+            "storage": "cloudinary",
+            "local_filename": None,
+            "file_type": ft,
+            "size": total_size,
+            "width": result.get("width") or vinfo.get("width"),
+            "height": result.get("height") or vinfo.get("height"),
+            "duration": result.get("duration") or vinfo.get("duration"),
+            "quality": _video_quality_label(result.get("height") or vinfo.get("height")) if ft == "video" else None,
+            "created_at": datetime.now(timezone.utc).isoformat()
+        }
+    else:
+        # Large file: store locally, serve via API
+        file_doc = {
+            "id": str(uuid.uuid4()),
+            "folder_id": session.get("folder_id"),
+            "name": filename,
+            "url": f"/api/personal-files/serve/{final_filename}",
+            "public_id": None,
+            "storage": "local",
+            "local_filename": final_filename,
+            "file_type": ft,
+            "size": total_size,
+            "width": vinfo.get("width"),
+            "height": vinfo.get("height"),
+            "duration": vinfo.get("duration"),
+            "quality": _video_quality_label(vinfo.get("height")) if ft == "video" else None,
+            "created_at": datetime.now(timezone.utc).isoformat()
+        }
 
     await db.personal_files.insert_one(file_doc)
     file_doc.pop("_id", None)
 
-    # Start sprite generation for video files (temp file deleted after)
+    # Start sprite generation for video files
     duration = file_doc.get("duration") or vinfo.get("duration")
     if ft == "video" and duration and os.path.isfile(final_path):
         import asyncio
-        asyncio.create_task(_generate_sprite(file_doc["id"], final_path, duration, cleanup_path=final_path))
-    else:
-        # Non-video: delete temp immediately
+        # For Cloudinary files: cleanup temp after sprites. For local: keep file.
+        cleanup = final_path if file_doc.get("storage") == "cloudinary" else None
+        asyncio.create_task(_generate_sprite(file_doc["id"], final_path, duration, cleanup_path=cleanup))
+    elif file_doc.get("storage") == "cloudinary":
+        # Non-video Cloudinary: delete temp immediately
         try: os.unlink(final_path)
         except OSError: pass
 

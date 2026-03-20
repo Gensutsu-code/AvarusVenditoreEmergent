@@ -6,14 +6,13 @@ E-commerce platform for truck spare parts with full admin panel, crypto payments
 ## Core Features
 
 ### Large Video Upload Fix (March 20, 2026) — LATEST
-- Memory-efficient upload: `upload_file_to_cloudinary()` streams from file path, no `f.read()` for large files
-- Chunk size reduced from 8MB to 4MB (proxy-safe)
-- Timeouts: 10min for Cloudinary upload, 2min per chunk
-- Better error messages in toast notifications
-
-### All Files to Cloudinary (March 20, 2026)
-- Removed local storage - ALL files go to Cloudinary
-- Cloudinary `upload_large` with 20MB chunks for big files
+- Root cause: Cloudinary free plan has 100MB file limit → 370MB videos crashed
+- Fix: Hybrid storage restored — files <=95MB go to Cloudinary, >95MB stored locally
+- upload_file_to_cloudinary() streams from file path (no memory overload)
+- Frontend retry logic: 3 attempts per chunk with backoff on 502/network errors
+- Chunk size: 4MB (safe for K8s proxy)
+- Timeouts: 2min/chunk, 10min/complete
+- Tested with actual 370MB video: 93 chunks, 0 errors, successful upload
 
 ### Drag & Drop + Bulk Operations (March 20, 2026)
 - Selection mode, bulk add tags/move/delete, drag-drop to folders
@@ -31,8 +30,7 @@ E-commerce platform for truck spare parts with full admin panel, crypto payments
 Resend, Cloudinary, web3.py, ethers.js, CoinGecko, FingerprintJS, GeoIP2, ffmpeg/pymediainfo. YuKassa (MOCKED)
 
 ## Credentials
-- Admin: admin@avarus.ru / admin
-- Client: user@demo.com / demo123
+- Admin: admin@avarus.ru / admin, Client: user@demo.com / demo123
 - Personal files: GenSutSu.1999
 
 ## Backlog
