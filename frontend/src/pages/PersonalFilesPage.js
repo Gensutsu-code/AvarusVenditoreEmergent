@@ -436,10 +436,16 @@ export default function PersonalFilesPage() {
       initFd.append('folder_id', currentFolder || '');
       const initRes = await axios.post(`${API}/personal-files/upload/init`, initFd, { signal });
       const uploadId = initRes.data.upload_id;
+      // Store upload_id for cleanup on cancel
+      setUploadQueue(prev => prev.map((q, j) => j === index ? { ...q, uploadId } : q));
       const totalChunks = Math.ceil(file.size / CHUNK_SIZE);
       let uploaded = 0;
       for (let ci = 0; ci < totalChunks; ci++) {
-        if (signal.aborted) throw new DOMException('Aborted', 'AbortError');
+        if (signal.aborted) {
+          // Cleanup partial chunks on server
+          try { await axios.delete(`${API}/personal-files/upload/${uploadId}`); } catch {}
+          throw new DOMException('Aborted', 'AbortError');
+        }
         const blob = file.slice(ci * CHUNK_SIZE, Math.min((ci + 1) * CHUNK_SIZE, file.size));
         const chunkFd = new FormData();
         chunkFd.append('upload_id', uploadId);
@@ -489,7 +495,15 @@ export default function PersonalFilesPage() {
     if (fileInputRef.current) fileInputRef.current.value = '';
   };
 
-  const cancelUpload = () => { abortRef.current?.abort(); };
+  const cancelUpload = () => {
+    abortRef.current?.abort();
+    // Cleanup any pending chunked upload sessions
+    uploadQueue.forEach(item => {
+      if (item.uploadId && item.status === 'uploading') {
+        axios.delete(`${API}/personal-files/upload/${item.uploadId}`).catch(() => {});
+      }
+    });
+  };
 
   // ==================== FOLDER ACTIONS ====================
   const handleCreateFolder = async () => {

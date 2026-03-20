@@ -363,6 +363,17 @@ async def upload_chunk(
     return {"success": True, "chunk_index": chunk_index}
 
 
+@router.delete("/upload/{upload_id}")
+async def cancel_chunked_upload(upload_id: str, user=Depends(get_current_user)):
+    """Cancel and cleanup a chunked upload session"""
+    if user.get("role") != "admin":
+        raise HTTPException(status_code=403, detail="Admin only")
+    chunk_dir = os.path.join(CHUNK_DIR, upload_id)
+    shutil.rmtree(chunk_dir, ignore_errors=True)
+    await db.upload_sessions.delete_one({"id": upload_id})
+    return {"success": True}
+
+
 @router.post("/upload/complete")
 async def complete_chunked_upload(
     upload_id: str = Form(...),
