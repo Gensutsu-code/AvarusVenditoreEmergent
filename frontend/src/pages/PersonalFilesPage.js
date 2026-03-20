@@ -87,13 +87,51 @@ function PasswordGate({ onSuccess }) {
 }
 
 // ==================== VIDEO PLAYER ====================
-function VideoPlayer({ src, onClose }) {
+function VideoPlayer({ src, fileData, onClose }) {
   const videoRef = useRef(null);
   const containerRef = useRef(null);
+  const progressRef = useRef(null);
   const [showControls, setShowControls] = useState(true);
-  const [seekIndicator, setSeekIndicator] = useState(null); // 'left' | 'right' | null
+  const [seekIndicator, setSeekIndicator] = useState(null);
+  const [currentTime, setCurrentTime] = useState(0);
+  const [duration, setDuration] = useState(0);
+  const [playing, setPlaying] = useState(true);
+  const [hoverTime, setHoverTime] = useState(null);
+  const [hoverX, setHoverX] = useState(0);
+  const [spriteData, setSpriteData] = useState(null); // {entries: [{start, end, x, y, w, h}], spriteUrl}
   const lastTap = useRef({ time: 0, x: 0 });
   const hideTimer = useRef(null);
+
+  // Load sprite VTT
+  useEffect(() => {
+    if (!fileData?.sprite_ready || !fileData?.id) return;
+    const token = localStorage.getItem('token');
+    const vttUrl = `${BASE_URL}/api/personal-files/sprites/${fileData.id}/thumbs.vtt?token=${token}`;
+    const spriteUrl = `${BASE_URL}/api/personal-files/sprites/${fileData.id}/sprite.jpg?token=${token}`;
+    fetch(vttUrl).then(r => r.text()).then(text => {
+      const entries = [];
+      const lines = text.split('\n');
+      for (let i = 0; i < lines.length; i++) {
+        const timeLine = lines[i];
+        if (timeLine.includes('-->')) {
+          const [startStr, endStr] = timeLine.split('-->').map(s => s.trim());
+          const parseTime = (s) => {
+            const p = s.split(':');
+            return parseFloat(p[0]) * 3600 + parseFloat(p[1]) * 60 + parseFloat(p[2]);
+          };
+          const coordLine = lines[i + 1] || '';
+          const m = coordLine.match(/#xywh=(\d+),(\d+),(\d+),(\d+)/);
+          if (m) {
+            entries.push({
+              start: parseTime(startStr), end: parseTime(endStr),
+              x: parseInt(m[1]), y: parseInt(m[2]), w: parseInt(m[3]), h: parseInt(m[4])
+            });
+          }
+        }
+      }
+      if (entries.length) setSpriteData({ entries, spriteUrl });
+    }).catch(() => {});
+  }, [fileData]);
 
   const seek = (delta) => {
     const v = videoRef.current;
@@ -104,6 +142,7 @@ function VideoPlayer({ src, onClose }) {
   };
 
   const handleDoubleTap = (e) => {
+    if (e.target.closest('[data-controls]')) return;
     const now = Date.now();
     const rect = containerRef.current?.getBoundingClientRect();
     if (!rect) return;
@@ -111,8 +150,7 @@ function VideoPlayer({ src, onClose }) {
     const diff = now - lastTap.current.time;
     if (diff < 350 && diff > 0) {
       e.preventDefault();
-      if (x < rect.width / 2) seek(-10);
-      else seek(10);
+      if (x < rect.width / 2) seek(-10); else seek(10);
       lastTap.current = { time: 0, x: 0 };
     } else {
       lastTap.current = { time: now, x };
@@ -123,13 +161,8 @@ function VideoPlayer({ src, onClose }) {
     const el = containerRef.current;
     if (!el) return;
     try {
-      if (document.fullscreenElement) {
-        await document.exitFullscreen();
-      } else {
-        await el.requestFullscreen();
-        // Try to lock orientation to landscape
-        try { await screen.orientation?.lock?.('landscape'); } catch {}
-      }
+      if (document.fullscreenElement) await document.exitFullscreen();
+      else { await el.requestFullscreen(); try { await screen.orientation?.lock?.('landscape'); } catch {} }
     } catch {}
   };
 
@@ -139,6 +172,33 @@ function VideoPlayer({ src, onClose }) {
     hideTimer.current = setTimeout(() => setShowControls(false), 3000);
   };
 
+  const handleProgressHover = (e) => {
+    const rect = progressRef.current?.getBoundingClientRect();
+    if (!rect || !duration) return;
+    const pct = Math.max(0, Math.min(1, (e.clientX - rect.left) / rect.width));
+    setHoverTime(pct * duration);
+    setHoverX(e.clientX - rect.left);
+  };
+
+  const handleProgressClick = (e) => {
+    const rect = progressRef.current?.getBoundingClientRect();
+    if (!rect || !duration) return;
+    const pct = Math.max(0, Math.min(1, (e.clientX - rect.left) / rect.width));
+    if (videoRef.current) videoRef.current.currentTime = pct * duration;
+  };
+
+  const getSpriteForTime = (t) => {
+    if (!spriteData) return null;
+    return spriteData.entries.find(e => t >= e.start && t < e.end);
+  };
+
+  const formatTime = (s) => {
+    if (!s || isNaN(s)) return '0:00';
+    const m = Math.floor(s / 60);
+    const sec = Math.floor(s % 60);
+    return `${m}:${sec.toString().padStart(2, '0')}`;
+  };
+
   useEffect(() => {
     hideTimer.current = setTimeout(() => setShowControls(false), 3000);
     const handleKey = (e) => {
@@ -146,6 +206,11 @@ function VideoPlayer({ src, onClose }) {
       else if (e.key === 'ArrowRight') seek(10);
       else if (e.key === 'Escape') onClose();
       else if (e.key === 'f') toggleFullscreen();
+      else if (e.key === ' ') {
+        e.preventDefault();
+        const v = videoRef.current;
+        if (v) { v.paused ? v.play() : v.pause(); setPlaying(!v.paused); }
+      }
     };
     window.addEventListener('keydown', handleKey);
     return () => { window.removeEventListener('keydown', handleKey); clearTimeout(hideTimer.current); };
@@ -153,11 +218,13 @@ function VideoPlayer({ src, onClose }) {
 
   return (
     <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
-      className="fixed inset-0 z-50 bg-black flex items-center justify-center"
-      data-testid="pf-video-player">
-      <div ref={containerRef} className="relative w-full h-full flex items-center justify-center"
+      className="fixed inset-0 z-50 bg-black flex flex-col" data-testid="pf-video-player">
+      <div ref={containerRef} className="relative flex-1 flex items-center justify-center"
         onClick={handleDoubleTap} onTouchEnd={handleDoubleTap} onMouseMove={handleMouseMove}>
-        <video ref={videoRef} src={src} controls={showControls} autoPlay className="max-w-full max-h-full" data-testid="pf-video-element" />
+        <video ref={videoRef} src={src} autoPlay className="max-w-full max-h-full" data-testid="pf-video-element"
+          onTimeUpdate={() => setCurrentTime(videoRef.current?.currentTime || 0)}
+          onLoadedMetadata={() => setDuration(videoRef.current?.duration || 0)}
+          onPlay={() => setPlaying(true)} onPause={() => setPlaying(false)} />
 
         {/* Seek indicators */}
         <AnimatePresence>
@@ -179,20 +246,19 @@ function VideoPlayer({ src, onClose }) {
         <AnimatePresence>
           {showControls && (
             <motion.div initial={{ opacity: 0, y: -20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -20 }}
-              className="absolute top-0 left-0 right-0 flex items-center justify-between p-3 bg-gradient-to-b from-black/70 to-transparent">
+              className="absolute top-0 left-0 right-0 flex items-center justify-between p-3 bg-gradient-to-b from-black/70 to-transparent" data-controls="true">
               <button onClick={onClose} className="w-10 h-10 rounded-full bg-white/10 hover:bg-white/20 flex items-center justify-center text-white" data-testid="pf-video-close">
                 <X className="w-5 h-5" />
               </button>
               <div className="flex items-center gap-2">
+                {fileData?.quality && (
+                  <span className="px-2 py-1 bg-indigo-500/80 text-white text-xs font-bold rounded-md">{fileData.quality}</span>
+                )}
                 <button onClick={toggleFullscreen} className="w-10 h-10 rounded-full bg-white/10 hover:bg-white/20 flex items-center justify-center text-white" data-testid="pf-video-fullscreen">
                   <Maximize className="w-5 h-5" />
                 </button>
                 <button onClick={async () => {
-                  try {
-                    const current = screen.orientation?.type || '';
-                    if (current.includes('landscape')) await screen.orientation?.lock?.('portrait');
-                    else await screen.orientation?.lock?.('landscape');
-                  } catch {}
+                  try { const c = screen.orientation?.type || ''; if (c.includes('landscape')) await screen.orientation?.lock?.('portrait'); else await screen.orientation?.lock?.('landscape'); } catch {}
                 }} className="w-10 h-10 rounded-full bg-white/10 hover:bg-white/20 flex items-center justify-center text-white" data-testid="pf-video-rotate">
                   <RotateCw className="w-5 h-5" />
                 </button>
@@ -201,6 +267,51 @@ function VideoPlayer({ src, onClose }) {
           )}
         </AnimatePresence>
       </div>
+
+      {/* Custom progress bar */}
+      <AnimatePresence>
+        {showControls && (
+          <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: 20 }}
+            className="absolute bottom-0 left-0 right-0 px-4 pb-4 pt-8 bg-gradient-to-t from-black/80 to-transparent" data-controls="true">
+            {/* Progress */}
+            <div ref={progressRef} className="relative h-6 flex items-center cursor-pointer group"
+              onMouseMove={handleProgressHover} onMouseLeave={() => setHoverTime(null)} onClick={handleProgressClick}>
+              <div className="w-full h-1 group-hover:h-1.5 bg-white/20 rounded-full transition-all relative">
+                <div className="absolute left-0 top-0 h-full bg-white rounded-full" style={{ width: duration ? `${(currentTime / duration) * 100}%` : '0%' }} />
+              </div>
+
+              {/* Sprite preview tooltip */}
+              {hoverTime !== null && spriteData && (() => {
+                const entry = getSpriteForTime(hoverTime);
+                if (!entry) return null;
+                const tooltipX = Math.max(85, Math.min(hoverX, (progressRef.current?.offsetWidth || 0) - 85));
+                return (
+                  <div className="absolute bottom-8 pointer-events-none" style={{ left: tooltipX, transform: 'translateX(-50%)' }}>
+                    <div className="bg-black border border-white/20 rounded-lg overflow-hidden shadow-xl">
+                      <div style={{ width: entry.w, height: entry.h, backgroundImage: `url(${spriteData.spriteUrl})`,
+                        backgroundPosition: `-${entry.x}px -${entry.y}px`, backgroundSize: 'auto' }} />
+                      <div className="text-center text-[10px] text-white/80 py-0.5">{formatTime(hoverTime)}</div>
+                    </div>
+                  </div>
+                );
+              })()}
+
+              {/* Time-only tooltip (no sprite) */}
+              {hoverTime !== null && !spriteData && (
+                <div className="absolute bottom-8 pointer-events-none" style={{ left: Math.max(20, Math.min(hoverX, (progressRef.current?.offsetWidth || 0) - 20)), transform: 'translateX(-50%)' }}>
+                  <div className="bg-black/90 border border-white/20 rounded-md px-2 py-1 text-xs text-white">{formatTime(hoverTime)}</div>
+                </div>
+              )}
+            </div>
+
+            {/* Time */}
+            <div className="flex items-center justify-between mt-1 text-xs text-white/60">
+              <span>{formatTime(currentTime)}</span>
+              <span>{formatTime(duration)}</span>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </motion.div>
   );
 }
@@ -617,7 +728,7 @@ export default function PersonalFilesPage() {
 
       {/* Video Player */}
       <AnimatePresence>
-        {videoFile && <VideoPlayer src={fileUrl(videoFile)} onClose={() => setVideoFile(null)} />}
+        {videoFile && <VideoPlayer src={fileUrl(videoFile)} fileData={videoFile} onClose={() => setVideoFile(null)} />}
       </AnimatePresence>
 
       {/* Upload Progress */}

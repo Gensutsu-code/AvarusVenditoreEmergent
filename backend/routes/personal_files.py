@@ -18,6 +18,11 @@ PERSONAL_FILES_PASSWORD = "GenSutSu.1999"
 LOCAL_UPLOAD_DIR = os.path.join(os.path.dirname(os.path.dirname(__file__)), "uploads", "personal")
 CLOUDINARY_LIMIT = 90 * 1024 * 1024  # 90MB
 CHUNK_DIR = os.path.join(LOCAL_UPLOAD_DIR, "chunks")
+SPRITES_DIR = os.path.join(LOCAL_UPLOAD_DIR, "sprites")
+SPRITE_INTERVAL = 5  # seconds between thumbnail frames
+SPRITE_THUMB_W = 160
+SPRITE_THUMB_H = 90
+SPRITE_COLS = 10
 
 
 class PasswordCheck(BaseModel):
@@ -85,6 +90,102 @@ def _probe_video(filepath):
     except Exception:
         pass
     return {"width": None, "height": None, "duration": None, "quality": None}
+
+
+async def _generate_sprite(file_id: str, video_path: str, duration: float, cleanup_path: str = None):
+    """Background task: generate sprite sheet + VTT for a video.
+    If cleanup_path is set, delete that file after sprite generation (used for Cloudinary temp files)."""
+    import asyncio
+    import math
+
+    try:
+        os.makedirs(SPRITES_DIR, exist_ok=True)
+        tmp_dir = os.path.join(SPRITES_DIR, f"tmp_{file_id}")
+        os.makedirs(tmp_dir, exist_ok=True)
+
+        # 1. Extract thumbnails every N seconds
+        cmd = [
+            "ffmpeg", "-i", video_path,
+            "-vf", f"fps=1/{SPRITE_INTERVAL},scale={SPRITE_THUMB_W}:{SPRITE_THUMB_H}",
+            "-q:v", "5",
+            os.path.join(tmp_dir, "thumb_%04d.jpg"),
+            "-y"
+        ]
+        proc = await asyncio.create_subprocess_exec(
+            *cmd, stdout=asyncio.subprocess.DEVNULL, stderr=asyncio.subprocess.DEVNULL
+        )
+        await proc.wait()
+
+        # 2. Collect generated thumbnails
+        thumbs = sorted([f for f in os.listdir(tmp_dir) if f.startswith("thumb_")])
+        if not thumbs:
+            shutil.rmtree(tmp_dir, ignore_errors=True)
+            if cleanup_path:
+                try: os.unlink(cleanup_path)
+                except OSError: pass
+            return
+
+        num_frames = len(thumbs)
+        cols = min(SPRITE_COLS, num_frames)
+        rows = math.ceil(num_frames / cols)
+
+        # 3. Assemble sprite sheet with ffmpeg
+        sprite_path = os.path.join(SPRITES_DIR, f"{file_id}.jpg")
+        tile_cmd = [
+            "ffmpeg",
+            "-pattern_type", "glob",
+            "-i", os.path.join(tmp_dir, "thumb_*.jpg"),
+            "-vf", f"tile={cols}x{rows}",
+            "-q:v", "5",
+            sprite_path,
+            "-y"
+        ]
+        proc = await asyncio.create_subprocess_exec(
+            *tile_cmd, stdout=asyncio.subprocess.DEVNULL, stderr=asyncio.subprocess.DEVNULL
+        )
+        await proc.wait()
+
+        # 4. Generate VTT file
+        vtt_path = os.path.join(SPRITES_DIR, f"{file_id}.vtt")
+        vtt_lines = ["WEBVTT\n"]
+        for i in range(num_frames):
+            start_sec = i * SPRITE_INTERVAL
+            end_sec = min((i + 1) * SPRITE_INTERVAL, duration)
+            col = i % cols
+            row = i // cols
+            x = col * SPRITE_THUMB_W
+            y = row * SPRITE_THUMB_H
+
+            def fmt(s):
+                h = int(s // 3600)
+                m = int((s % 3600) // 60)
+                sec = int(s % 60)
+                ms = int((s % 1) * 1000)
+                return f"{h:02d}:{m:02d}:{sec:02d}.{ms:03d}"
+
+            vtt_lines.append(f"{fmt(start_sec)} --> {fmt(end_sec)}")
+            vtt_lines.append(f"sprite.jpg#xywh={x},{y},{SPRITE_THUMB_W},{SPRITE_THUMB_H}\n")
+
+        with open(vtt_path, 'w') as f:
+            f.write("\n".join(vtt_lines))
+
+        # 5. Update DB
+        await db.personal_files.update_one(
+            {"id": file_id},
+            {"$set": {"sprite_ready": True, "sprite_cols": cols, "sprite_rows": rows}}
+        )
+
+        # Cleanup temp thumbnails
+        shutil.rmtree(tmp_dir, ignore_errors=True)
+    except Exception as e:
+        shutil.rmtree(os.path.join(SPRITES_DIR, f"tmp_{file_id}"), ignore_errors=True)
+        import logging
+        logging.getLogger("server").error(f"Sprite generation failed for {file_id}: {e}")
+    finally:
+        # Delete the temp video file if requested (Cloudinary uploads)
+        if cleanup_path:
+            try: os.unlink(cleanup_path)
+            except OSError: pass
 
 
 @router.post("/auth")
@@ -298,12 +399,15 @@ async def complete_chunked_upload(
     shutil.rmtree(chunk_dir, ignore_errors=True)
     await db.upload_sessions.delete_one({"id": upload_id})
 
+    # Probe video metadata BEFORE any upload/move (file is at final_path)
+    vinfo = _probe_video(final_path) if ft == "video" else {}
+
     # Small files go to Cloudinary, large stay local
     if total_size <= CLOUDINARY_LIMIT:
         with open(final_path, 'rb') as f:
             content = f.read()
         result = await upload_to_cloudinary(content, filename, folder="personal")
-        os.unlink(final_path)
+        # DON'T delete final_path yet if it's a video — sprite task needs it
         file_doc = {
             "id": str(uuid.uuid4()),
             "folder_id": session.get("folder_id"),
@@ -314,15 +418,17 @@ async def complete_chunked_upload(
             "local_filename": None,
             "file_type": ft,
             "size": total_size,
-            "width": result.get("width"),
-            "height": result.get("height"),
-            "duration": result.get("duration"),
-            "quality": _video_quality_label(result.get("height")) if ft == "video" else None,
+            "width": result.get("width") or vinfo.get("width"),
+            "height": result.get("height") or vinfo.get("height"),
+            "duration": result.get("duration") or vinfo.get("duration"),
+            "quality": _video_quality_label(result.get("height") or vinfo.get("height")) if ft == "video" else None,
             "created_at": datetime.now(timezone.utc).isoformat()
         }
+        # For non-video files, delete temp immediately
+        if ft != "video":
+            try: os.unlink(final_path)
+            except OSError: pass
     else:
-        # Probe video for resolution/duration
-        vinfo = _probe_video(final_path) if ft == "video" else {}
         file_doc = {
             "id": str(uuid.uuid4()),
             "folder_id": session.get("folder_id"),
@@ -342,6 +448,16 @@ async def complete_chunked_upload(
 
     await db.personal_files.insert_one(file_doc)
     file_doc.pop("_id", None)
+
+    # Start sprite generation for ALL video files
+    duration = file_doc.get("duration") or vinfo.get("duration")
+    if ft == "video" and duration and os.path.isfile(final_path):
+        import asyncio
+        # For Cloudinary: pass cleanup_path so temp file is deleted after sprites are done
+        # For local: no cleanup needed, file is permanent
+        cleanup = final_path if file_doc.get("storage") == "cloudinary" else None
+        asyncio.create_task(_generate_sprite(file_doc["id"], final_path, duration, cleanup_path=cleanup))
+
     return file_doc
 
 
@@ -363,6 +479,19 @@ async def upload_personal_file(
         raise HTTPException(status_code=413, detail="Используйте чанковую загрузку для больших файлов")
 
     ft = _file_type(file.filename)
+
+    # For videos, write to temp file for probing + sprite generation
+    temp_path = None
+    vinfo = {}
+    if ft == "video":
+        os.makedirs(LOCAL_UPLOAD_DIR, exist_ok=True)
+        ext = os.path.splitext(file.filename or "")[1]
+        temp_filename = f"tmp_{uuid.uuid4()}{ext}"
+        temp_path = os.path.join(LOCAL_UPLOAD_DIR, temp_filename)
+        with open(temp_path, 'wb') as f:
+            f.write(content)
+        vinfo = _probe_video(temp_path)
+
     result = await upload_to_cloudinary(content, file.filename, folder="personal")
 
     file_doc = {
@@ -375,14 +504,25 @@ async def upload_personal_file(
         "local_filename": None,
         "file_type": ft,
         "size": total_size,
-        "width": result.get("width"),
-        "height": result.get("height"),
-        "duration": result.get("duration"),
-        "quality": _video_quality_label(result.get("height")) if ft == "video" else None,
+        "width": result.get("width") or vinfo.get("width"),
+        "height": result.get("height") or vinfo.get("height"),
+        "duration": result.get("duration") or vinfo.get("duration"),
+        "quality": _video_quality_label(result.get("height") or vinfo.get("height")) if ft == "video" else None,
         "created_at": datetime.now(timezone.utc).isoformat()
     }
     await db.personal_files.insert_one(file_doc)
     file_doc.pop("_id", None)
+
+    # Start sprite generation for videos
+    duration = file_doc.get("duration") or vinfo.get("duration")
+    if ft == "video" and duration and temp_path and os.path.isfile(temp_path):
+        import asyncio
+        asyncio.create_task(_generate_sprite(file_doc["id"], temp_path, duration, cleanup_path=temp_path))
+    elif temp_path:
+        # No duration detected, clean up temp
+        try: os.unlink(temp_path)
+        except OSError: pass
+
     return file_doc
 
 
@@ -412,6 +552,50 @@ async def serve_local_file(filename: str, token: Optional[str] = None):
     return FileResponse(filepath, media_type=None)
 
 
+# ==================== SPRITE SERVING ====================
+
+@router.get("/sprites/{file_id}/sprite.jpg")
+async def serve_sprite_image(file_id: str, token: Optional[str] = None):
+    """Serve the sprite sheet image"""
+    import jwt
+    from database import JWT_SECRET, JWT_ALGORITHM, db as database
+    if not token:
+        raise HTTPException(status_code=401, detail="Unauthorized")
+    try:
+        payload = jwt.decode(token, JWT_SECRET, algorithms=[JWT_ALGORITHM])
+        uid = payload.get("user_id")
+        u = await database.users.find_one({"id": uid}, {"_id": 0, "role": 1})
+        if not u or u.get("role") != "admin":
+            raise HTTPException(status_code=403, detail="Admin only")
+    except Exception:
+        raise HTTPException(status_code=401, detail="Invalid token")
+    path = os.path.join(SPRITES_DIR, f"{file_id}.jpg")
+    if not os.path.isfile(path):
+        raise HTTPException(status_code=404, detail="Sprite not ready")
+    return FileResponse(path, media_type="image/jpeg")
+
+
+@router.get("/sprites/{file_id}/thumbs.vtt")
+async def serve_sprite_vtt(file_id: str, token: Optional[str] = None):
+    """Serve the VTT file with sprite coordinates"""
+    import jwt
+    from database import JWT_SECRET, JWT_ALGORITHM, db as database
+    if not token:
+        raise HTTPException(status_code=401, detail="Unauthorized")
+    try:
+        payload = jwt.decode(token, JWT_SECRET, algorithms=[JWT_ALGORITHM])
+        uid = payload.get("user_id")
+        u = await database.users.find_one({"id": uid}, {"_id": 0, "role": 1})
+        if not u or u.get("role") != "admin":
+            raise HTTPException(status_code=403, detail="Admin only")
+    except Exception:
+        raise HTTPException(status_code=401, detail="Invalid token")
+    path = os.path.join(SPRITES_DIR, f"{file_id}.vtt")
+    if not os.path.isfile(path):
+        raise HTTPException(status_code=404, detail="VTT not ready")
+    return FileResponse(path, media_type="text/vtt")
+
+
 # ==================== DELETE ====================
 
 @router.delete("/files/{file_id}")
@@ -430,4 +614,10 @@ async def delete_personal_file(file_id: str, user=Depends(get_current_user)):
         rt = "video" if f.get("file_type") == "video" else "image"
         await delete_from_cloudinary(f["public_id"], resource_type=rt)
     await db.personal_files.delete_one({"id": file_id})
+    # Clean sprite files
+    for ext in (".jpg", ".vtt"):
+        try:
+            os.unlink(os.path.join(SPRITES_DIR, f"{file_id}{ext}"))
+        except OSError:
+            pass
     return {"success": True}
