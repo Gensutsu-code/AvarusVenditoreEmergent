@@ -2,7 +2,7 @@
 from fastapi import APIRouter, HTTPException, Depends, UploadFile, File, Form
 from fastapi.responses import FileResponse
 from pydantic import BaseModel
-from typing import Optional
+from typing import Optional, List
 from datetime import datetime, timezone
 import uuid
 import os
@@ -36,6 +36,10 @@ class FolderCreate(BaseModel):
 
 class FolderRename(BaseModel):
     name: str
+
+
+class TagsUpdate(BaseModel):
+    tags: List[str]
 
 
 def _file_type(filename: str) -> str:
@@ -297,6 +301,7 @@ async def list_files(
     folder_id: Optional[str] = None,
     search: Optional[str] = None,
     file_type: Optional[str] = None,
+    tag: Optional[str] = None,
     user=Depends(get_current_user)
 ):
     if user.get("role") != "admin":
@@ -305,7 +310,10 @@ async def list_files(
     if folder_id:
         query["folder_id"] = folder_id
     if search:
-        query["name"] = {"$regex": search, "$options": "i"}
+        query["$or"] = [
+            {"name": {"$regex": search, "$options": "i"}},
+            {"tags": {"$regex": search, "$options": "i"}}
+        ]
     if file_type and file_type != "all":
         if file_type == "photo":
             query["file_type"] = "image"
@@ -313,8 +321,65 @@ async def list_files(
             query["file_type"] = "gif"
         elif file_type == "video":
             query["file_type"] = "video"
+    if tag:
+        query["tags"] = tag
     files = await db.personal_files.find(query, {"_id": 0}).sort("created_at", -1).to_list(10000)
     return {"files": files}
+
+
+@router.get("/tags")
+async def list_all_tags(user=Depends(get_current_user)):
+    """Get all unique tags across all files"""
+    if user.get("role") != "admin":
+        raise HTTPException(status_code=403, detail="Admin only")
+    pipeline = [
+        {"$match": {"tags": {"$exists": True, "$ne": []}}},
+        {"$unwind": "$tags"},
+        {"$group": {"_id": "$tags", "count": {"$sum": 1}}},
+        {"$sort": {"count": -1}},
+        {"$limit": 200}
+    ]
+    results = await db.personal_files.aggregate(pipeline).to_list(200)
+    return {"tags": [{"name": r["_id"], "count": r["count"]} for r in results]}
+
+
+@router.put("/files/{file_id}/tags")
+async def update_file_tags(file_id: str, body: TagsUpdate, user=Depends(get_current_user)):
+    """Set tags for a file"""
+    if user.get("role") != "admin":
+        raise HTTPException(status_code=403, detail="Admin only")
+    clean_tags = list(dict.fromkeys(t.strip().lower() for t in body.tags if t.strip()))
+    result = await db.personal_files.update_one(
+        {"id": file_id},
+        {"$set": {"tags": clean_tags}}
+    )
+    if result.matched_count == 0:
+        raise HTTPException(status_code=404, detail="File not found")
+    return {"tags": clean_tags}
+
+
+@router.get("/files/{file_id}/similar")
+async def get_similar_files(file_id: str, limit: int = 10, user=Depends(get_current_user)):
+    """Get files with similar tags"""
+    if user.get("role") != "admin":
+        raise HTTPException(status_code=403, detail="Admin only")
+    file = await db.personal_files.find_one({"id": file_id}, {"_id": 0})
+    if not file:
+        raise HTTPException(status_code=404, detail="File not found")
+    tags = file.get("tags") or []
+    if not tags:
+        return {"files": []}
+    similar = await db.personal_files.find(
+        {"tags": {"$in": tags}, "id": {"$ne": file_id}},
+        {"_id": 0}
+    ).sort("created_at", -1).to_list(limit)
+    # Sort by number of matching tags
+    for s in similar:
+        s["_match_count"] = len(set(s.get("tags", [])) & set(tags))
+    similar.sort(key=lambda x: x["_match_count"], reverse=True)
+    for s in similar:
+        s.pop("_match_count", None)
+    return {"files": similar}
 
 
 # ==================== CHUNKED UPLOAD ====================

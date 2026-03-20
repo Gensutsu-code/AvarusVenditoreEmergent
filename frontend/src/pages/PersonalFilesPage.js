@@ -5,9 +5,9 @@ import { Button } from '../components/ui/button';
 import { Input } from '../components/ui/input';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
-  Folder, FolderPlus, Upload, Search, Trash2, X, ChevronRight,
+  Folder, FolderPlus, Upload, Search, Trash2, X, ChevronRight, ChevronLeft,
   Play, Image, Film, FileText, Lock, Eye, MoreVertical, Pencil,
-  Check, Maximize, SkipBack, SkipForward, RotateCw, Home
+  Check, Maximize, SkipBack, SkipForward, RotateCw, Home, Tag, Plus
 } from 'lucide-react';
 import { toast } from 'sonner';
 import axios from 'axios';
@@ -86,8 +86,101 @@ function PasswordGate({ onSuccess }) {
   );
 }
 
+// ==================== TAG INPUT ====================
+function TagInput({ tags = [], onChange, allTags = [] }) {
+  const [input, setInput] = useState('');
+  const [showSuggestions, setShowSuggestions] = useState(false);
+  const inputRef = useRef(null);
+
+  const suggestions = allTags
+    .filter(t => t.name.includes(input.toLowerCase()) && !tags.includes(t.name))
+    .slice(0, 8);
+
+  const addTag = (tag) => {
+    const clean = tag.trim().toLowerCase();
+    if (clean && !tags.includes(clean)) {
+      onChange([...tags, clean]);
+    }
+    setInput('');
+    setShowSuggestions(false);
+    inputRef.current?.focus();
+  };
+
+  const removeTag = (tag) => onChange(tags.filter(t => t !== tag));
+
+  return (
+    <div className="relative" data-testid="pf-tag-input">
+      <div className="flex flex-wrap gap-1.5 items-center">
+        {tags.map(tag => (
+          <span key={tag} className="inline-flex items-center gap-1 px-2 py-0.5 bg-slate-700/80 text-slate-300 text-[11px] rounded-full">
+            {tag}
+            <button onClick={(e) => { e.stopPropagation(); removeTag(tag); }} className="hover:text-red-400 transition-colors">
+              <X className="w-2.5 h-2.5" />
+            </button>
+          </span>
+        ))}
+        <div className="relative">
+          <input ref={inputRef} value={input} onChange={e => { setInput(e.target.value); setShowSuggestions(true); }}
+            onFocus={() => setShowSuggestions(true)}
+            onBlur={() => setTimeout(() => setShowSuggestions(false), 200)}
+            onKeyDown={e => { if (e.key === 'Enter' && input.trim()) { e.preventDefault(); addTag(input); } }}
+            placeholder="+ тег" className="bg-transparent text-[11px] text-slate-400 placeholder:text-slate-600 outline-none w-16" data-testid="pf-tag-text-input" />
+          {showSuggestions && input && suggestions.length > 0 && (
+            <div className="absolute top-full left-0 mt-1 z-50 bg-slate-800 border border-slate-700 rounded-lg shadow-xl py-1 min-w-[120px]">
+              {suggestions.map(s => (
+                <button key={s.name} onMouseDown={e => { e.preventDefault(); addTag(s.name); }}
+                  className="w-full px-3 py-1 text-left text-[11px] text-slate-300 hover:bg-slate-700 flex items-center justify-between">
+                  <span>{s.name}</span>
+                  <span className="text-slate-600 text-[9px]">{s.count}</span>
+                </button>
+              ))}
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ==================== SIMILAR FILES BAR ====================
+function SimilarFilesBar({ fileId, onSelect }) {
+  const [similar, setSimilar] = useState([]);
+
+  useEffect(() => {
+    if (!fileId) return;
+    axios.get(`${API}/personal-files/files/${fileId}/similar?limit=12`).then(r => {
+      setSimilar(r.data.files || []);
+    }).catch(() => {});
+  }, [fileId]);
+
+  if (!similar.length) return null;
+
+  return (
+    <div className="px-4 py-2 bg-slate-900/90 border-t border-slate-800" data-testid="pf-similar-bar">
+      <p className="text-[10px] text-slate-500 uppercase tracking-wider mb-1.5">Похожие по тегам</p>
+      <div className="flex gap-2 overflow-x-auto pb-1 scrollbar-thin">
+        {similar.map(f => (
+          <button key={f.id} onClick={() => onSelect(f)} data-testid={`pf-similar-${f.id}`}
+            className="flex-shrink-0 w-16 group">
+            <div className="w-16 h-16 rounded-lg overflow-hidden bg-slate-800 border border-slate-700 group-hover:border-slate-500 transition-colors">
+              {f.file_type === 'video' ? (
+                <div className="w-full h-full flex items-center justify-center bg-slate-800">
+                  <Play className="w-4 h-4 text-slate-500" />
+                </div>
+              ) : (
+                <img src={fileUrl(f)} alt="" className="w-full h-full object-cover" loading="lazy" />
+              )}
+            </div>
+            <p className="text-[9px] text-slate-500 truncate mt-0.5">{f.name}</p>
+          </button>
+        ))}
+      </div>
+    </div>
+  );
+}
+
 // ==================== VIDEO PLAYER ====================
-function VideoPlayer({ src, fileData, onClose }) {
+function VideoPlayer({ src, fileData, onClose, onPrev, onNext, allTags, onTagsChange }) {
   const videoRef = useRef(null);
   const containerRef = useRef(null);
   const progressRef = useRef(null);
@@ -202,8 +295,8 @@ function VideoPlayer({ src, fileData, onClose }) {
   useEffect(() => {
     hideTimer.current = setTimeout(() => setShowControls(false), 3000);
     const handleKey = (e) => {
-      if (e.key === 'ArrowLeft') seek(-10);
-      else if (e.key === 'ArrowRight') seek(10);
+      if (e.key === 'ArrowLeft' && !e.shiftKey) seek(-10);
+      else if (e.key === 'ArrowRight' && !e.shiftKey) seek(10);
       else if (e.key === 'Escape') onClose();
       else if (e.key === 'f') toggleFullscreen();
       else if (e.key === ' ') {
@@ -216,6 +309,17 @@ function VideoPlayer({ src, fileData, onClose }) {
     return () => { window.removeEventListener('keydown', handleKey); clearTimeout(hideTimer.current); };
   }, []);
 
+  const handleSimilarSelect = (f) => {
+    if (f.file_type === 'video') {
+      // Will be handled by parent via onNext/onPrev mechanism
+      onClose();
+      setTimeout(() => onTagsChange?.('openFile', f), 100);
+    } else {
+      onClose();
+      setTimeout(() => onTagsChange?.('openFile', f), 100);
+    }
+  };
+
   return (
     <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
       className="fixed inset-0 z-50 bg-black flex flex-col" data-testid="pf-video-player">
@@ -225,6 +329,20 @@ function VideoPlayer({ src, fileData, onClose }) {
           onTimeUpdate={() => setCurrentTime(videoRef.current?.currentTime || 0)}
           onLoadedMetadata={() => setDuration(videoRef.current?.duration || 0)}
           onPlay={() => setPlaying(true)} onPause={() => setPlaying(false)} />
+
+        {/* Nav arrows */}
+        {onPrev && (
+          <button onClick={(e) => { e.stopPropagation(); onPrev(); }} data-testid="pf-video-prev"
+            className="absolute left-3 top-1/2 -translate-y-1/2 w-10 h-10 rounded-full bg-white/10 hover:bg-white/20 flex items-center justify-center text-white z-10 transition-colors">
+            <ChevronLeft className="w-6 h-6" />
+          </button>
+        )}
+        {onNext && (
+          <button onClick={(e) => { e.stopPropagation(); onNext(); }} data-testid="pf-video-next"
+            className="absolute right-3 top-1/2 -translate-y-1/2 w-10 h-10 rounded-full bg-white/10 hover:bg-white/20 flex items-center justify-center text-white z-10 transition-colors">
+            <ChevronRight className="w-6 h-6" />
+          </button>
+        )}
 
         {/* Seek indicators */}
         <AnimatePresence>
@@ -312,26 +430,85 @@ function VideoPlayer({ src, fileData, onClose }) {
           </motion.div>
         )}
       </AnimatePresence>
+
+      {/* Tags + Similar files */}
+      <div className="bg-slate-900/95 border-t border-slate-800">
+        {fileData && (
+          <div className="px-4 py-2 flex items-center gap-2 flex-wrap">
+            <Tag className="w-3 h-3 text-slate-600 flex-shrink-0" />
+            <TagInput tags={fileData.tags || []} allTags={allTags}
+              onChange={(newTags) => onTagsChange?.('updateTags', { fileId: fileData.id, tags: newTags })} />
+          </div>
+        )}
+        <SimilarFilesBar fileId={fileData?.id} onSelect={handleSimilarSelect} />
+      </div>
     </motion.div>
   );
 }
 
-// ==================== IMAGE PREVIEW ====================
-function ImagePreview({ file, onClose }) {
+// ==================== IMAGE/GIF PREVIEW ====================
+function ImagePreview({ file, onClose, onPrev, onNext, allTags, onTagsChange }) {
+  const isGif = file.file_type === 'gif';
+
+  useEffect(() => {
+    const handleKey = (e) => {
+      if (e.key === 'Escape') onClose();
+      else if (e.key === 'ArrowLeft' && onPrev) onPrev();
+      else if (e.key === 'ArrowRight' && onNext) onNext();
+    };
+    window.addEventListener('keydown', handleKey);
+    return () => window.removeEventListener('keydown', handleKey);
+  }, [onClose, onPrev, onNext]);
+
+  const handleSimilarSelect = (f) => {
+    onClose();
+    setTimeout(() => onTagsChange?.('openFile', f), 100);
+  };
+
   return (
     <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
-      className="fixed inset-0 z-50 flex items-center justify-center bg-black/90 backdrop-blur-sm p-4" onClick={onClose} data-testid="pf-preview-modal">
-      <motion.div initial={{ scale: 0.9 }} animate={{ scale: 1 }} exit={{ scale: 0.9 }}
-        className="relative max-w-[90vw] max-h-[90vh] flex flex-col items-center" onClick={e => e.stopPropagation()}>
-        <button onClick={onClose} className="absolute -top-2 -right-2 z-10 w-10 h-10 rounded-full bg-white/10 hover:bg-white/20 flex items-center justify-center text-white" data-testid="pf-preview-close">
+      className="fixed inset-0 z-50 flex flex-col bg-black/95 backdrop-blur-sm" onClick={onClose}
+      data-testid="pf-preview-modal">
+      <div className="flex-1 flex items-center justify-center relative p-4 min-h-0" onClick={e => e.stopPropagation()}>
+        {/* Close */}
+        <button onClick={onClose} className="absolute top-3 right-3 z-10 w-10 h-10 rounded-full bg-white/10 hover:bg-white/20 flex items-center justify-center text-white" data-testid="pf-preview-close">
           <X className="w-5 h-5" />
         </button>
-        <img src={fileUrl(file)} alt={file.name} className="max-w-full max-h-[80vh] rounded-xl object-contain" />
-        <div className="mt-3 text-center">
-          <p className="text-white text-sm font-medium truncate max-w-[400px]">{file.name}</p>
-          <p className="text-slate-400 text-xs">{formatSize(file.size)}</p>
+
+        {/* Nav arrows */}
+        {onPrev && (
+          <button onClick={onPrev} data-testid="pf-preview-prev"
+            className="absolute left-3 top-1/2 -translate-y-1/2 w-10 h-10 rounded-full bg-white/10 hover:bg-white/20 flex items-center justify-center text-white z-10 transition-colors">
+            <ChevronLeft className="w-6 h-6" />
+          </button>
+        )}
+        {onNext && (
+          <button onClick={onNext} data-testid="pf-preview-next"
+            className="absolute right-3 top-1/2 -translate-y-1/2 w-10 h-10 rounded-full bg-white/10 hover:bg-white/20 flex items-center justify-center text-white z-10 transition-colors">
+            <ChevronRight className="w-6 h-6" />
+          </button>
+        )}
+
+        <motion.div initial={{ scale: 0.9 }} animate={{ scale: 1 }} exit={{ scale: 0.9 }}
+          className={`relative flex flex-col items-center ${isGif ? 'max-w-[95vw] max-h-[85vh]' : 'max-w-[90vw] max-h-[80vh]'}`}>
+          <img src={fileUrl(file)} alt={file.name}
+            className={`rounded-xl object-contain ${isGif ? 'max-h-[75vh] max-w-[95vw]' : 'max-h-[70vh] max-w-[90vw]'}`} />
+          <div className="mt-3 text-center">
+            <p className="text-white text-sm font-medium truncate max-w-[400px]">{file.name}</p>
+            <p className="text-slate-400 text-xs">{formatSize(file.size)}{isGif ? ' \u00b7 GIF' : ''}</p>
+          </div>
+        </motion.div>
+      </div>
+
+      {/* Tags + Similar */}
+      <div className="bg-slate-900/95 border-t border-slate-800" onClick={e => e.stopPropagation()}>
+        <div className="px-4 py-2 flex items-center gap-2 flex-wrap">
+          <Tag className="w-3 h-3 text-slate-600 flex-shrink-0" />
+          <TagInput tags={file.tags || []} allTags={allTags}
+            onChange={(newTags) => onTagsChange?.('updateTags', { fileId: file.id, tags: newTags })} />
         </div>
-      </motion.div>
+        <SimilarFilesBar fileId={file.id} onSelect={handleSimilarSelect} />
+      </div>
     </motion.div>
   );
 }
@@ -360,6 +537,8 @@ export default function PersonalFilesPage() {
   const [editingFolder, setEditingFolder] = useState(null);
   const [editFolderName, setEditFolderName] = useState('');
   const [contextMenu, setContextMenu] = useState(null);
+  const [activeTag, setActiveTag] = useState(null);
+  const [allTags, setAllTags] = useState([]);
 
   useEffect(() => {
     if (authLoading) return;
@@ -381,11 +560,19 @@ export default function PersonalFilesPage() {
       if (currentFolder) params.folder_id = currentFolder;
       if (searchQuery) params.search = searchQuery;
       if (typeFilter !== 'all') params.file_type = typeFilter;
+      if (activeTag) params.tag = activeTag;
       const res = await axios.get(`${API}/personal-files/files`, { params });
       setFiles(res.data.files || []);
     } catch {}
     finally { setLoading(false); }
-  }, [currentFolder, searchQuery, typeFilter]);
+  }, [currentFolder, searchQuery, typeFilter, activeTag]);
+
+  const fetchTags = useCallback(async () => {
+    try {
+      const res = await axios.get(`${API}/personal-files/tags`);
+      setAllTags(res.data.tags || []);
+    } catch {}
+  }, []);
 
   const fetchBreadcrumbs = useCallback(async () => {
     if (!currentFolder) { setBreadcrumbs([]); return; }
@@ -400,18 +587,20 @@ export default function PersonalFilesPage() {
     fetchFolders();
     fetchFiles();
     fetchBreadcrumbs();
-  }, [authenticated, fetchFolders, fetchFiles, fetchBreadcrumbs]);
+    fetchTags();
+  }, [authenticated, fetchFolders, fetchFiles, fetchBreadcrumbs, fetchTags]);
 
   useEffect(() => {
     if (!authenticated) return;
     const t = setTimeout(fetchFiles, 300);
     return () => clearTimeout(t);
-  }, [searchQuery]);
+  }, [searchQuery, activeTag]);
 
   const navigateToFolder = (folderId) => {
     setCurrentFolder(folderId);
     setSearchQuery('');
     setTypeFilter('all');
+    setActiveTag(null);
   };
 
   // ==================== UPLOAD ====================
@@ -544,6 +733,45 @@ export default function PersonalFilesPage() {
     else setPreviewFile(file);
   };
 
+  // Navigation: prev/next file in current list
+  const currentOpenFile = videoFile || previewFile;
+  const currentIndex = currentOpenFile ? files.findIndex(f => f.id === currentOpenFile.id) : -1;
+
+  const goToPrevFile = () => {
+    if (currentIndex <= 0) return;
+    const prev = files[currentIndex - 1];
+    setPreviewFile(null);
+    setVideoFile(null);
+    setTimeout(() => openFile(prev), 50);
+  };
+
+  const goToNextFile = () => {
+    if (currentIndex < 0 || currentIndex >= files.length - 1) return;
+    const next = files[currentIndex + 1];
+    setPreviewFile(null);
+    setVideoFile(null);
+    setTimeout(() => openFile(next), 50);
+  };
+
+  const hasPrev = currentIndex > 0;
+  const hasNext = currentIndex >= 0 && currentIndex < files.length - 1;
+
+  // Handle actions from child components (tags, similar)
+  const handleViewerAction = async (action, data) => {
+    if (action === 'updateTags') {
+      try {
+        await axios.put(`${API}/personal-files/files/${data.fileId}/tags`, { tags: data.tags });
+        // Update in local state
+        setFiles(prev => prev.map(f => f.id === data.fileId ? { ...f, tags: data.tags } : f));
+        if (videoFile?.id === data.fileId) setVideoFile(prev => ({ ...prev, tags: data.tags }));
+        if (previewFile?.id === data.fileId) setPreviewFile(prev => ({ ...prev, tags: data.tags }));
+        fetchTags();
+      } catch { toast.error('Ошибка сохранения тегов'); }
+    } else if (action === 'openFile') {
+      openFile(data);
+    }
+  };
+
   if (!authenticated) return <PasswordGate onSuccess={() => setAuthenticated(true)} />;
 
   return (
@@ -665,8 +893,8 @@ export default function PersonalFilesPage() {
           </div>
         )}
 
-        {/* Type filters */}
-        <div className="flex items-center gap-2 mb-4">
+        {/* Type filters + Tag filters */}
+        <div className="flex items-center gap-2 mb-2 flex-wrap">
           {TYPE_FILTERS.map(f => (
             <button key={f.key} onClick={() => setTypeFilter(f.key)} data-testid={`pf-filter-${f.key}`}
               className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-all ${
@@ -679,6 +907,30 @@ export default function PersonalFilesPage() {
           ))}
           <span className="text-[10px] text-slate-600 ml-2">{files.length} файлов</span>
         </div>
+
+        {/* Tag cloud */}
+        {allTags.length > 0 && (
+          <div className="flex items-center gap-1.5 mb-4 flex-wrap" data-testid="pf-tag-cloud">
+            <Tag className="w-3 h-3 text-slate-600 flex-shrink-0" />
+            {activeTag && (
+              <button onClick={() => setActiveTag(null)}
+                className="px-2 py-0.5 rounded-full text-[10px] font-medium bg-slate-700 text-slate-300 hover:bg-slate-600 transition-colors flex items-center gap-1">
+                <X className="w-2.5 h-2.5" /> Сбросить
+              </button>
+            )}
+            {allTags.slice(0, 20).map(t => (
+              <button key={t.name} onClick={() => setActiveTag(activeTag === t.name ? null : t.name)}
+                data-testid={`pf-tag-filter-${t.name}`}
+                className={`px-2 py-0.5 rounded-full text-[10px] font-medium transition-all ${
+                  activeTag === t.name
+                    ? 'bg-teal-600 text-white'
+                    : 'bg-slate-800/50 text-slate-500 hover:text-slate-300 hover:bg-slate-800'
+                }`}>
+                {t.name} <span className="text-slate-600 ml-0.5">{t.count}</span>
+              </button>
+            ))}
+          </div>
+        )}
 
         {/* Files grid */}
         {loading ? (
@@ -714,7 +966,20 @@ export default function PersonalFilesPage() {
                 </div>
                 <div className="p-2">
                   <p className="text-xs text-slate-400 truncate">{file.name}</p>
-                  <p className="text-[10px] text-slate-600">{formatSize(file.size)}</p>
+                  <div className="flex items-center gap-1 mt-0.5">
+                    <p className="text-[10px] text-slate-600">{formatSize(file.size)}</p>
+                    {file.tags?.length > 0 && (
+                      <div className="flex gap-0.5 overflow-hidden flex-1 min-w-0">
+                        {file.tags.slice(0, 2).map(t => (
+                          <span key={t} className="px-1 py-px bg-slate-700/60 text-slate-500 text-[8px] rounded truncate"
+                            onClick={e => { e.stopPropagation(); setActiveTag(t); }}>
+                            {t}
+                          </span>
+                        ))}
+                        {file.tags.length > 2 && <span className="text-[8px] text-slate-600">+{file.tags.length - 2}</span>}
+                      </div>
+                    )}
+                  </div>
                 </div>
                 <button onClick={e => { e.stopPropagation(); handleDeleteFile(file.id, file.name); }}
                   className="absolute top-1.5 right-1.5 w-7 h-7 rounded-lg bg-black/50 hover:bg-red-500/80 flex items-center justify-center text-white opacity-0 group-hover:opacity-100 transition-all"
@@ -737,12 +1002,16 @@ export default function PersonalFilesPage() {
 
       {/* Image Preview */}
       <AnimatePresence>
-        {previewFile && <ImagePreview file={previewFile} onClose={() => setPreviewFile(null)} />}
+        {previewFile && <ImagePreview file={previewFile} onClose={() => setPreviewFile(null)}
+          onPrev={hasPrev ? goToPrevFile : null} onNext={hasNext ? goToNextFile : null}
+          allTags={allTags} onTagsChange={handleViewerAction} />}
       </AnimatePresence>
 
       {/* Video Player */}
       <AnimatePresence>
-        {videoFile && <VideoPlayer src={fileUrl(videoFile)} fileData={videoFile} onClose={() => setVideoFile(null)} />}
+        {videoFile && <VideoPlayer src={fileUrl(videoFile)} fileData={videoFile} onClose={() => setVideoFile(null)}
+          onPrev={hasPrev ? goToPrevFile : null} onNext={hasNext ? goToNextFile : null}
+          allTags={allTags} onTagsChange={handleViewerAction} />}
       </AnimatePresence>
 
       {/* Upload Progress */}
