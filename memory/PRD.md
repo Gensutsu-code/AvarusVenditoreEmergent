@@ -5,44 +5,48 @@ E-commerce platform for truck spare parts with full admin panel, crypto payments
 
 ## Core Features Implemented
 
-### Video Sprite Previews (March 20, 2026) — LATEST
-- Fixed sprite generation for ALL videos (Cloudinary + local storage)
-- Sprite sheet + VTT generated in background after upload
-- Seek bar hover shows frame preview in video player
-- Temp files cleaned up after sprite generation
+### File Tags, Navigation & Similar Files (March 20, 2026) — LATEST
+- Add/remove tags on files (chips UI with autocomplete from existing tags)
+- Tag cloud filter panel - click tag to filter, "Сбросить" to clear
+- Search by tags (in addition to filename)
+- Tag chips on file cards (max 2 visible + overflow count)
+- Prev/Next navigation arrows in image/GIF/video preview modals (+ keyboard arrows)
+- Larger GIF modal (fullscreen-like, 95vw/85vh)
+- "Похожие по тегам" section in preview modals showing similar files
+- Clicking similar file opens it directly
 
-### Upload Cancellation (March 20, 2026) — LATEST
-- Cancel button in upload progress panel aborts all in-progress uploads
-- Backend DELETE /api/personal-files/upload/{upload_id} cleans up partial chunks
-- Frontend calls cleanup for chunked uploads on cancel
+### Video Sprite Previews (March 20, 2026)
+- Fixed sprite generation for ALL videos (Cloudinary + local storage)
+- Seek bar hover shows frame preview in video player
+
+### Upload Cancellation (March 20, 2026)
+- Cancel button aborts all in-progress uploads
+- Backend cleanup endpoint for partial chunked uploads
 
 ### Personal Files Storage (March 19, 2026)
-- Password-protected private file storage for admin (password: GenSutSu.1999)
+- Password-protected private file storage (password: GenSutSu.1999)
 - Hybrid storage: Cloudinary (<90MB), local (>90MB)
-- Chunked uploads for large files, parallel processing
-- Nested folders, file type filters, search
-- Custom video player: double-tap seek, fullscreen, quality badges
+- Chunked uploads, parallel processing, nested folders
+- File type filters, search, custom video player
 - 6-hour session persistence
 
-### Admin Cart Management (March 19, 2026)
-- View/edit all client carts, add/remove products, set individual prices
-
-### Revertible Actions in Logs (March 17, 2026)
-- All key admin actions revertible from Logs tab
-
-### Full Admin Control ("Absolute Control")
-- Granular admin controls, user tracking (fingerprint, GeoIP), action logging
+### Admin Cart Management, Revertible Actions, Full Admin Control
+- See previous PRD entries
 
 ### Earlier Features
-- E-commerce catalog, cart, checkout, orders
-- Bonus/loyalty system, crypto payments (ETH/USDT)
-- News, chat widget, notifications, search, individual pricing
+- E-commerce catalog, cart, checkout, orders, bonus system, crypto payments
 
 ## Key Collections
 - `personal_folders`: {id, name, parent_id, created_at}
-- `personal_files`: {id, folder_id, name, url, public_id, file_type, size, width, height, quality, duration, storage, local_filename, sprite_ready, sprite_cols, sprite_rows, created_at}
+- `personal_files`: {id, folder_id, name, url, public_id, file_type, size, width, height, quality, duration, storage, local_filename, sprite_ready, sprite_cols, sprite_rows, tags[], created_at}
 - `action_logs`: {id, action, before_state, document_query, collection_name, reverted}
-- `upload_sessions`: {id, filename, folder_id, total_size, created_at}
+
+## Key API Endpoints
+- `PUT /api/personal-files/files/{file_id}/tags` - update tags
+- `GET /api/personal-files/tags` - list all unique tags with counts
+- `GET /api/personal-files/files?tag=xxx` - filter by tag
+- `GET /api/personal-files/files/{file_id}/similar` - similar files by tags
+- `DELETE /api/personal-files/upload/{upload_id}` - cancel chunked upload
 
 ## 3rd Party
 Resend, Cloudinary, web3.py, ethers.js, CoinGecko, FingerprintJS, GeoIP2, ffmpeg/pymediainfo. YuKassa (MOCKED)
