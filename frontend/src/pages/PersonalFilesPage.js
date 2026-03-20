@@ -601,7 +601,7 @@ export default function PersonalFilesPage() {
                 )}
                 {file.file_type === 'video' && (
                   <span className="absolute bottom-10 left-2 px-1.5 py-0.5 bg-indigo-500/80 text-white text-[9px] font-bold rounded-md uppercase">
-                    <Film className="w-2.5 h-2.5 inline mr-0.5" />VIDEO
+                    <Film className="w-2.5 h-2.5 inline mr-0.5" />{file.quality || 'VIDEO'}
                   </span>
                 )}
               </motion.div>

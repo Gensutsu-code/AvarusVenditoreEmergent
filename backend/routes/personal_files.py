@@ -44,6 +44,49 @@ def _file_type(filename: str) -> str:
     return "other"
 
 
+def _video_quality_label(height):
+    if not height:
+        return None
+    if height >= 2160:
+        return "4K"
+    if height >= 1440:
+        return "2K"
+    if height >= 1080:
+        return "1080p"
+    if height >= 720:
+        return "720p"
+    if height >= 480:
+        return "480p"
+    if height >= 360:
+        return "360p"
+    return f"{height}p"
+
+
+def _probe_video(filepath):
+    """Extract video resolution and duration using pymediainfo"""
+    try:
+        from pymediainfo import MediaInfo
+        info = MediaInfo.parse(filepath)
+        for track in info.tracks:
+            if track.track_type == "Video":
+                w = track.width
+                h = track.height
+                dur = track.duration / 1000 if track.duration else None
+                return {
+                    "width": w,
+                    "height": h,
+                    "duration": dur,
+                    "quality": _video_quality_label(h),
+                }
+        # Fallback: get duration from General track
+        for track in info.tracks:
+            if track.track_type == "General" and track.duration:
+                return {"width": None, "height": None, "duration": track.duration / 1000, "quality": None}
+    except Exception:
+        pass
+    return {"width": None, "height": None, "duration": None, "quality": None}
+
+
 @router.post("/auth")
 async def verify_password(body: PasswordCheck, user=Depends(get_current_user)):
     if user.get("role") != "admin":
@@ -274,9 +317,12 @@ async def complete_chunked_upload(
             "width": result.get("width"),
             "height": result.get("height"),
             "duration": result.get("duration"),
+            "quality": _video_quality_label(result.get("height")) if ft == "video" else None,
             "created_at": datetime.now(timezone.utc).isoformat()
         }
     else:
+        # Probe video for resolution/duration
+        vinfo = _probe_video(final_path) if ft == "video" else {}
         file_doc = {
             "id": str(uuid.uuid4()),
             "folder_id": session.get("folder_id"),
@@ -287,9 +333,10 @@ async def complete_chunked_upload(
             "local_filename": final_filename,
             "file_type": ft,
             "size": total_size,
-            "width": None,
-            "height": None,
-            "duration": None,
+            "width": vinfo.get("width"),
+            "height": vinfo.get("height"),
+            "duration": vinfo.get("duration"),
+            "quality": vinfo.get("quality"),
             "created_at": datetime.now(timezone.utc).isoformat()
         }
 
@@ -331,6 +378,7 @@ async def upload_personal_file(
         "width": result.get("width"),
         "height": result.get("height"),
         "duration": result.get("duration"),
+        "quality": _video_quality_label(result.get("height")) if ft == "video" else None,
         "created_at": datetime.now(timezone.utc).isoformat()
     }
     await db.personal_files.insert_one(file_doc)
