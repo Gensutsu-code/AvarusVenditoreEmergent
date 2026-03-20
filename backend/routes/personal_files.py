@@ -42,6 +42,20 @@ class TagsUpdate(BaseModel):
     tags: List[str]
 
 
+class BulkMove(BaseModel):
+    file_ids: List[str]
+    folder_id: Optional[str] = None
+
+
+class BulkTags(BaseModel):
+    file_ids: List[str]
+    tags: List[str]
+
+
+class BulkDelete(BaseModel):
+    file_ids: List[str]
+
+
 def _file_type(filename: str) -> str:
     ext = filename.rsplit(".", 1)[-1].lower() if "." in filename else ""
     if ext in ("jpg", "jpeg", "png", "webp", "bmp", "svg", "heic", "heif"):
@@ -342,6 +356,73 @@ async def list_all_tags(user=Depends(get_current_user)):
     results = await db.personal_files.aggregate(pipeline).to_list(200)
     return {"tags": [{"name": r["_id"], "count": r["count"]} for r in results]}
 
+
+# ==================== BULK OPERATIONS ====================
+# (must be before /files/{file_id} routes to avoid path conflicts)
+
+@router.put("/files/bulk/move")
+async def bulk_move_files(body: BulkMove, user=Depends(get_current_user)):
+    """Move multiple files to a different folder"""
+    if user.get("role") != "admin":
+        raise HTTPException(status_code=403, detail="Admin only")
+    if body.folder_id:
+        folder = await db.personal_folders.find_one({"id": body.folder_id})
+        if not folder:
+            raise HTTPException(status_code=404, detail="Target folder not found")
+    result = await db.personal_files.update_many(
+        {"id": {"$in": body.file_ids}},
+        {"$set": {"folder_id": body.folder_id}}
+    )
+    return {"moved": result.modified_count}
+
+
+@router.put("/files/bulk/tags")
+async def bulk_add_tags(body: BulkTags, user=Depends(get_current_user)):
+    """Add tags to multiple files (merges with existing)"""
+    if user.get("role") != "admin":
+        raise HTTPException(status_code=403, detail="Admin only")
+    new_tags = [t.strip().lower() for t in body.tags if t.strip()]
+    if not new_tags:
+        return {"updated": 0}
+    files = await db.personal_files.find(
+        {"id": {"$in": body.file_ids}}, {"_id": 0, "id": 1, "tags": 1}
+    ).to_list(10000)
+    count = 0
+    for f in files:
+        existing = f.get("tags") or []
+        merged = list(dict.fromkeys(existing + new_tags))
+        await db.personal_files.update_one({"id": f["id"]}, {"$set": {"tags": merged}})
+        count += 1
+    return {"updated": count}
+
+
+@router.delete("/files/bulk")
+async def bulk_delete_files(body: BulkDelete, user=Depends(get_current_user)):
+    """Delete multiple files"""
+    if user.get("role") != "admin":
+        raise HTTPException(status_code=403, detail="Admin only")
+    files = await db.personal_files.find(
+        {"id": {"$in": body.file_ids}}, {"_id": 0}
+    ).to_list(10000)
+    for f in files:
+        if f.get("storage") == "local" and f.get("local_filename"):
+            try:
+                os.unlink(os.path.join(LOCAL_UPLOAD_DIR, f["local_filename"]))
+            except OSError:
+                pass
+        elif f.get("public_id"):
+            rt = "video" if f.get("file_type") == "video" else "image"
+            await delete_from_cloudinary(f["public_id"], resource_type=rt)
+        for ext in (".jpg", ".vtt"):
+            try:
+                os.unlink(os.path.join(SPRITES_DIR, f"{f['id']}{ext}"))
+            except OSError:
+                pass
+    result = await db.personal_files.delete_many({"id": {"$in": body.file_ids}})
+    return {"deleted": result.deleted_count}
+
+
+# ==================== SINGLE FILE OPERATIONS ====================
 
 @router.put("/files/{file_id}/tags")
 async def update_file_tags(file_id: str, body: TagsUpdate, user=Depends(get_current_user)):

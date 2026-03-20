@@ -7,7 +7,8 @@ import { motion, AnimatePresence } from 'framer-motion';
 import {
   Folder, FolderPlus, Upload, Search, Trash2, X, ChevronRight, ChevronLeft,
   Play, Image, Film, FileText, Lock, Eye, MoreVertical, Pencil,
-  Check, Maximize, SkipBack, SkipForward, RotateCw, Home, Tag, Plus
+  Check, Maximize, SkipBack, SkipForward, RotateCw, Home, Tag, Plus,
+  CheckSquare, Square, Move, Tags
 } from 'lucide-react';
 import { toast } from 'sonner';
 import axios from 'axios';
@@ -539,6 +540,12 @@ export default function PersonalFilesPage() {
   const [contextMenu, setContextMenu] = useState(null);
   const [activeTag, setActiveTag] = useState(null);
   const [allTags, setAllTags] = useState([]);
+  const [selectedFiles, setSelectedFiles] = useState(new Set());
+  const [selectionMode, setSelectionMode] = useState(false);
+  const [showBulkTagInput, setShowBulkTagInput] = useState(false);
+  const [bulkTagValue, setBulkTagValue] = useState('');
+  const [showMoveModal, setShowMoveModal] = useState(false);
+  const [dragOverFolder, setDragOverFolder] = useState(null);
 
   useEffect(() => {
     if (authLoading) return;
@@ -772,6 +779,106 @@ export default function PersonalFilesPage() {
     }
   };
 
+  // ==================== SELECTION & BULK ====================
+  const toggleSelection = (fileId) => {
+    setSelectedFiles(prev => {
+      const next = new Set(prev);
+      if (next.has(fileId)) next.delete(fileId); else next.add(fileId);
+      return next;
+    });
+  };
+
+  const selectAll = () => {
+    if (selectedFiles.size === files.length) {
+      setSelectedFiles(new Set());
+    } else {
+      setSelectedFiles(new Set(files.map(f => f.id)));
+    }
+  };
+
+  const exitSelection = () => {
+    setSelectionMode(false);
+    setSelectedFiles(new Set());
+    setShowBulkTagInput(false);
+    setBulkTagValue('');
+    setShowMoveModal(false);
+  };
+
+  const handleBulkAddTags = async () => {
+    const tags = bulkTagValue.split(',').map(t => t.trim()).filter(Boolean);
+    if (!tags.length || !selectedFiles.size) return;
+    try {
+      await axios.put(`${API}/personal-files/files/bulk/tags`, {
+        file_ids: [...selectedFiles], tags
+      });
+      toast.success(`Теги добавлены к ${selectedFiles.size} файлам`);
+      fetchFiles(); fetchTags();
+      setShowBulkTagInput(false); setBulkTagValue('');
+    } catch { toast.error('Ошибка'); }
+  };
+
+  const handleBulkDelete = async () => {
+    if (!window.confirm(`Удалить ${selectedFiles.size} файлов?`)) return;
+    try {
+      await axios.delete(`${API}/personal-files/files/bulk`, {
+        data: { file_ids: [...selectedFiles] }
+      });
+      toast.success(`Удалено ${selectedFiles.size} файлов`);
+      setSelectedFiles(new Set());
+      fetchFiles(); fetchFolders(); fetchTags();
+    } catch { toast.error('Ошибка'); }
+  };
+
+  const handleBulkMove = async (targetFolderId) => {
+    try {
+      await axios.put(`${API}/personal-files/files/bulk/move`, {
+        file_ids: [...selectedFiles], folder_id: targetFolderId
+      });
+      toast.success(`Перемещено ${selectedFiles.size} файлов`);
+      setSelectedFiles(new Set());
+      setShowMoveModal(false);
+      fetchFiles(); fetchFolders();
+    } catch { toast.error('Ошибка'); }
+  };
+
+  // ==================== DRAG & DROP ====================
+  const handleDragStart = (e, fileId) => {
+    if (!selectionMode) {
+      setSelectionMode(true);
+      setSelectedFiles(new Set([fileId]));
+    } else if (!selectedFiles.has(fileId)) {
+      setSelectedFiles(prev => new Set([...prev, fileId]));
+    }
+    e.dataTransfer.setData('text/plain', fileId);
+    e.dataTransfer.effectAllowed = 'move';
+  };
+
+  const handleFolderDragOver = (e, folderId) => {
+    e.preventDefault();
+    e.dataTransfer.dropEffect = 'move';
+    setDragOverFolder(folderId);
+  };
+
+  const handleFolderDragLeave = () => {
+    setDragOverFolder(null);
+  };
+
+  const handleFolderDrop = async (e, folderId) => {
+    e.preventDefault();
+    setDragOverFolder(null);
+    const ids = selectedFiles.size > 0 ? [...selectedFiles] : [e.dataTransfer.getData('text/plain')];
+    if (!ids.length) return;
+    try {
+      await axios.put(`${API}/personal-files/files/bulk/move`, {
+        file_ids: ids, folder_id: folderId
+      });
+      toast.success(`Перемещено ${ids.length} файлов`);
+      setSelectedFiles(new Set());
+      setSelectionMode(false);
+      fetchFiles(); fetchFolders();
+    } catch { toast.error('Ошибка перемещения'); }
+  };
+
   if (!authenticated) return <PasswordGate onSuccess={() => setAuthenticated(true)} />;
 
   return (
@@ -809,6 +916,11 @@ export default function PersonalFilesPage() {
           <Button variant="ghost" size="sm" className="text-slate-400 hover:text-white hover:bg-slate-800 rounded-xl"
             onClick={() => fileInputRef.current?.click()} disabled={uploading} data-testid="pf-upload-btn">
             <Upload className="w-4 h-4 mr-1" /> {uploading ? 'Загрузка...' : 'Загрузить'}
+          </Button>
+          <Button variant="ghost" size="sm" data-testid="pf-select-mode-btn"
+            className={`rounded-xl ${selectionMode ? 'bg-teal-600/20 text-teal-400 hover:bg-teal-600/30' : 'text-slate-400 hover:text-white hover:bg-slate-800'}`}
+            onClick={() => selectionMode ? exitSelection() : setSelectionMode(true)}>
+            <CheckSquare className="w-4 h-4 mr-1" /> {selectionMode ? 'Отмена' : 'Выбрать'}
           </Button>
         </div>
       </div>
@@ -855,7 +967,14 @@ export default function PersonalFilesPage() {
                     </div>
                   ) : (
                     <button onClick={() => navigateToFolder(folder.id)} data-testid={`pf-folder-${folder.id}`}
-                      className="w-full bg-slate-800/30 hover:bg-slate-800/60 border border-slate-800 hover:border-slate-700 rounded-xl p-3 flex flex-col items-center gap-1.5 transition-all">
+                      onDragOver={e => handleFolderDragOver(e, folder.id)}
+                      onDragLeave={handleFolderDragLeave}
+                      onDrop={e => handleFolderDrop(e, folder.id)}
+                      className={`w-full border rounded-xl p-3 flex flex-col items-center gap-1.5 transition-all ${
+                        dragOverFolder === folder.id
+                          ? 'bg-teal-600/20 border-teal-500 scale-105 shadow-lg shadow-teal-500/20'
+                          : 'bg-slate-800/30 hover:bg-slate-800/60 border-slate-800 hover:border-slate-700'
+                      }`}>
                       <Folder className="w-8 h-8 text-amber-400" />
                       <span className="text-xs text-slate-300 truncate w-full text-center">{folder.name}</span>
                       <span className="text-[10px] text-slate-600">
@@ -944,10 +1063,19 @@ export default function PersonalFilesPage() {
           </div>
         ) : (
           <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-2">
-            {files.map(file => (
+            {files.map(file => {
+              const isSelected = selectedFiles.has(file.id);
+              return (
               <motion.div key={file.id} layout initial={{ opacity: 0 }} animate={{ opacity: 1 }}
-                className="group relative bg-slate-800/30 border border-slate-800 hover:border-slate-700 rounded-xl overflow-hidden cursor-pointer transition-all hover:shadow-lg"
-                onClick={() => openFile(file)} data-testid={`pf-file-${file.id}`}>
+                draggable={selectionMode}
+                onDragStart={e => handleDragStart(e, file.id)}
+                className={`group relative rounded-xl overflow-hidden cursor-pointer transition-all hover:shadow-lg ${
+                  isSelected
+                    ? 'bg-teal-900/30 border-2 border-teal-500 ring-1 ring-teal-500/30'
+                    : 'bg-slate-800/30 border border-slate-800 hover:border-slate-700'
+                }`}
+                onClick={() => selectionMode ? toggleSelection(file.id) : openFile(file)}
+                data-testid={`pf-file-${file.id}`}>
                 <div className="aspect-square relative bg-slate-900 flex items-center justify-center overflow-hidden">
                   {file.file_type === 'video' ? (
                     <>
@@ -963,6 +1091,17 @@ export default function PersonalFilesPage() {
                   ) : (
                     <FileText className="w-5 h-5 text-slate-400" />
                   )}
+
+                  {/* Selection checkbox */}
+                  {selectionMode && (
+                    <div className="absolute top-1.5 left-1.5 z-10">
+                      <div className={`w-5 h-5 rounded flex items-center justify-center transition-all ${
+                        isSelected ? 'bg-teal-500 text-white' : 'bg-black/50 border border-white/30 text-transparent'
+                      }`}>
+                        <Check className="w-3 h-3" />
+                      </div>
+                    </div>
+                  )}
                 </div>
                 <div className="p-2">
                   <p className="text-xs text-slate-400 truncate">{file.name}</p>
@@ -972,7 +1111,7 @@ export default function PersonalFilesPage() {
                       <div className="flex gap-0.5 overflow-hidden flex-1 min-w-0">
                         {file.tags.slice(0, 2).map(t => (
                           <span key={t} className="px-1 py-px bg-slate-700/60 text-slate-500 text-[8px] rounded truncate"
-                            onClick={e => { e.stopPropagation(); setActiveTag(t); }}>
+                            onClick={e => { e.stopPropagation(); if (!selectionMode) setActiveTag(t); }}>
                             {t}
                           </span>
                         ))}
@@ -981,24 +1120,99 @@ export default function PersonalFilesPage() {
                     )}
                   </div>
                 </div>
-                <button onClick={e => { e.stopPropagation(); handleDeleteFile(file.id, file.name); }}
-                  className="absolute top-1.5 right-1.5 w-7 h-7 rounded-lg bg-black/50 hover:bg-red-500/80 flex items-center justify-center text-white opacity-0 group-hover:opacity-100 transition-all"
-                  data-testid={`pf-delete-file-${file.id}`}>
-                  <Trash2 className="w-3.5 h-3.5" />
-                </button>
-                {file.file_type === 'gif' && (
+                {!selectionMode && (
+                  <button onClick={e => { e.stopPropagation(); handleDeleteFile(file.id, file.name); }}
+                    className="absolute top-1.5 right-1.5 w-7 h-7 rounded-lg bg-black/50 hover:bg-red-500/80 flex items-center justify-center text-white opacity-0 group-hover:opacity-100 transition-all"
+                    data-testid={`pf-delete-file-${file.id}`}>
+                    <Trash2 className="w-3.5 h-3.5" />
+                  </button>
+                )}
+                {file.file_type === 'gif' && !selectionMode && (
                   <span className="absolute top-1.5 left-1.5 px-1.5 py-0.5 bg-pink-500/80 text-white text-[9px] font-bold rounded-md uppercase">GIF</span>
                 )}
+                {file.file_type === 'gif' && selectionMode && (
+                  <span className="absolute top-1.5 right-1.5 px-1.5 py-0.5 bg-pink-500/80 text-white text-[9px] font-bold rounded-md uppercase">GIF</span>
+                )}
                 {file.file_type === 'video' && (
-                  <span className="absolute bottom-10 left-2 px-1.5 py-0.5 bg-indigo-500/80 text-white text-[9px] font-bold rounded-md uppercase">
+                  <span className={`absolute bottom-10 px-1.5 py-0.5 bg-indigo-500/80 text-white text-[9px] font-bold rounded-md uppercase ${selectionMode ? 'right-2' : 'left-2'}`}>
                     <Film className="w-2.5 h-2.5 inline mr-0.5" />{file.quality || 'VIDEO'}
                   </span>
                 )}
               </motion.div>
-            ))}
+              );
+            })}
           </div>
         )}
       </div>
+
+      {/* Bulk Actions Bar */}
+      <AnimatePresence>
+        {selectionMode && selectedFiles.size > 0 && (
+          <motion.div initial={{ y: 100, opacity: 0 }} animate={{ y: 0, opacity: 1 }} exit={{ y: 100, opacity: 0 }}
+            className="fixed bottom-4 left-1/2 -translate-x-1/2 z-40 bg-slate-900/95 backdrop-blur-lg border border-slate-700 rounded-2xl shadow-2xl px-4 py-2.5 flex items-center gap-3"
+            data-testid="pf-bulk-bar">
+            <button onClick={selectAll} className="text-xs text-slate-400 hover:text-white transition-colors flex items-center gap-1" data-testid="pf-select-all">
+              <CheckSquare className="w-3.5 h-3.5" />
+              {selectedFiles.size === files.length ? 'Снять все' : 'Выбрать все'}
+            </button>
+            <span className="text-[10px] text-teal-400 font-medium">{selectedFiles.size} выбрано</span>
+            <div className="w-px h-5 bg-slate-700" />
+
+            {/* Bulk tags */}
+            {showBulkTagInput ? (
+              <div className="flex items-center gap-1.5">
+                <input value={bulkTagValue} onChange={e => setBulkTagValue(e.target.value)}
+                  onKeyDown={e => e.key === 'Enter' && handleBulkAddTags()}
+                  placeholder="тег1, тег2..." className="h-7 px-2 text-xs bg-slate-800 border border-slate-600 rounded-lg text-white w-32 outline-none focus:border-teal-500"
+                  data-testid="pf-bulk-tag-input" autoFocus />
+                <Button size="sm" className="h-7 text-xs bg-teal-600 hover:bg-teal-500 rounded-lg px-2" onClick={handleBulkAddTags} data-testid="pf-bulk-tag-submit">
+                  <Check className="w-3 h-3" />
+                </Button>
+                <Button size="sm" variant="ghost" className="h-7 text-xs text-slate-400 rounded-lg px-1" onClick={() => { setShowBulkTagInput(false); setBulkTagValue(''); }}>
+                  <X className="w-3 h-3" />
+                </Button>
+              </div>
+            ) : (
+              <Button size="sm" variant="ghost" className="h-7 text-xs text-slate-400 hover:text-teal-400 hover:bg-slate-800 rounded-lg"
+                onClick={() => setShowBulkTagInput(true)} data-testid="pf-bulk-tag-btn">
+                <Tags className="w-3.5 h-3.5 mr-1" /> Теги
+              </Button>
+            )}
+
+            {/* Move to folder */}
+            <div className="relative">
+              <Button size="sm" variant="ghost" className="h-7 text-xs text-slate-400 hover:text-blue-400 hover:bg-slate-800 rounded-lg"
+                onClick={() => setShowMoveModal(!showMoveModal)} data-testid="pf-bulk-move-btn">
+                <Move className="w-3.5 h-3.5 mr-1" /> Переместить
+              </Button>
+              <AnimatePresence>
+                {showMoveModal && (
+                  <motion.div initial={{ opacity: 0, y: 5 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: 5 }}
+                    className="absolute bottom-full left-0 mb-2 bg-slate-800 border border-slate-700 rounded-xl shadow-xl py-1 min-w-[160px] max-h-48 overflow-y-auto"
+                    data-testid="pf-move-modal">
+                    <button onClick={() => handleBulkMove(null)}
+                      className="w-full px-3 py-1.5 text-left text-xs text-slate-300 hover:bg-slate-700 flex items-center gap-2">
+                      <Home className="w-3 h-3" /> Корень
+                    </button>
+                    {folders.map(f => (
+                      <button key={f.id} onClick={() => handleBulkMove(f.id)}
+                        className="w-full px-3 py-1.5 text-left text-xs text-slate-300 hover:bg-slate-700 flex items-center gap-2">
+                        <Folder className="w-3 h-3 text-amber-400" /> {f.name}
+                      </button>
+                    ))}
+                  </motion.div>
+                )}
+              </AnimatePresence>
+            </div>
+
+            {/* Bulk delete */}
+            <Button size="sm" variant="ghost" className="h-7 text-xs text-red-400 hover:text-red-300 hover:bg-red-500/10 rounded-lg"
+              onClick={handleBulkDelete} data-testid="pf-bulk-delete-btn">
+              <Trash2 className="w-3.5 h-3.5 mr-1" /> Удалить
+            </Button>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       {/* Image Preview */}
       <AnimatePresence>
