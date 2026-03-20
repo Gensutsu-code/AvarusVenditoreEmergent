@@ -611,7 +611,7 @@ export default function PersonalFilesPage() {
   };
 
   // ==================== UPLOAD ====================
-  const CHUNK_SIZE = 8 * 1024 * 1024;
+  const CHUNK_SIZE = 4 * 1024 * 1024; // 4MB per chunk (safe for proxy limits)
 
   const uploadOneFile = async (file, index, signal) => {
     if (file.size <= CHUNK_SIZE) {
@@ -647,14 +647,14 @@ export default function PersonalFilesPage() {
         chunkFd.append('upload_id', uploadId);
         chunkFd.append('chunk_index', String(ci));
         chunkFd.append('file', blob, `chunk_${ci}`);
-        await axios.post(`${API}/personal-files/upload/chunk`, chunkFd, { signal });
+        await axios.post(`${API}/personal-files/upload/chunk`, chunkFd, { signal, timeout: 120000 }); // 2min per chunk
         uploaded += blob.size;
         const pct = Math.round((uploaded * 100) / file.size);
         setUploadQueue(prev => prev.map((q, j) => j === index ? { ...q, progress: Math.min(pct, 99) } : q));
       }
       const completeFd = new FormData();
       completeFd.append('upload_id', uploadId);
-      await axios.post(`${API}/personal-files/upload/complete`, completeFd, { signal });
+      await axios.post(`${API}/personal-files/upload/complete`, completeFd, { signal, timeout: 600000 }); // 10min timeout for Cloudinary upload
     }
   };
 
@@ -677,9 +677,14 @@ export default function PersonalFilesPage() {
           setUploadQueue(prev => prev.map((q, j) => j === i ? { ...q, progress: 100, status: 'done' } : q));
           ok++;
         } catch (err) {
-          const status = err.name === 'AbortError' || err.code === 'ERR_CANCELED' ? 'cancelled' : 'error';
+          const isCancelled = err.name === 'AbortError' || err.code === 'ERR_CANCELED';
+          const status = isCancelled ? 'cancelled' : 'error';
           setUploadQueue(prev => prev.map((q, j) => j === i ? { ...q, status } : q));
-          if (status === 'cancelled') break;
+          if (status === 'error') {
+            const msg = err.response?.data?.detail || err.message || 'Ошибка загрузки';
+            toast.error(`${fileList[i].name}: ${msg}`);
+          }
+          if (isCancelled) break;
         }
       }
     };

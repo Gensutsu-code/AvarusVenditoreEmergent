@@ -10,7 +10,7 @@ import shutil
 import tempfile
 
 from database import db, get_current_user
-from cloudinary_service import upload_to_cloudinary, delete_from_cloudinary
+from cloudinary_service import upload_to_cloudinary, delete_from_cloudinary, upload_file_to_cloudinary
 
 router = APIRouter(prefix="/personal-files", tags=["personal-files"])
 
@@ -559,10 +559,8 @@ async def complete_chunked_upload(
     # Probe video metadata BEFORE uploading (file is at final_path)
     vinfo = _probe_video(final_path) if ft == "video" else {}
 
-    # Upload ALL files to Cloudinary (use upload_large for big files)
-    with open(final_path, 'rb') as f:
-        content = f.read()
-    result = await upload_to_cloudinary(content, filename, folder="personal")
+    # Upload to Cloudinary from file path (memory-efficient, no f.read())
+    result = await upload_file_to_cloudinary(final_path, filename, folder="personal")
 
     file_doc = {
         "id": str(uuid.uuid4()),

@@ -1,35 +1,31 @@
 # PRD - E-commerce Platform "AVOPT.STORE"
 
 ## Original Problem Statement
-E-commerce platform for truck spare parts with full admin panel, crypto payments, order management, bonus system, and complete admin control ("Absolute Control"). Includes a private file manager for admin.
+E-commerce platform for truck spare parts with full admin panel, crypto payments, order management, bonus system, and complete admin control. Includes a private file manager for admin.
 
-## Core Features Implemented
+## Core Features
 
-### All Videos to Cloudinary (March 20, 2026) — LATEST
-- Removed local storage logic - ALL files uploaded to Cloudinary
-- Cloudinary `upload_large` handles files >90MB automatically
-- Sprite generation preserved via temp files (deleted after)
+### Large Video Upload Fix (March 20, 2026) — LATEST
+- Memory-efficient upload: `upload_file_to_cloudinary()` streams from file path, no `f.read()` for large files
+- Chunk size reduced from 8MB to 4MB (proxy-safe)
+- Timeouts: 10min for Cloudinary upload, 2min per chunk
+- Better error messages in toast notifications
+
+### All Files to Cloudinary (March 20, 2026)
+- Removed local storage - ALL files go to Cloudinary
+- Cloudinary `upload_large` with 20MB chunks for big files
 
 ### Drag & Drop + Bulk Operations (March 20, 2026)
-- Selection mode with checkboxes, bulk add tags/move/delete
-- Drag & Drop files onto folders
+- Selection mode, bulk add tags/move/delete, drag-drop to folders
 
 ### File Tags, Navigation & Similar Files (March 20, 2026)
-- Tags system, tag cloud filter, search by tags
-- Prev/Next navigation, larger GIF modal, similar files
+- Tags system, tag cloud filter, prev/next nav, similar files
 
 ### Video Sprite Previews + Upload Cancel (March 20, 2026)
-- Sprite generation for all videos, cancel uploads with cleanup
+- Sprite generation for all videos, cancel uploads
 
 ### Personal Files Storage (March 19, 2026)
-- Password-protected, chunked uploads, nested folders, video player
-
-## Key API Endpoints (File Manager)
-- PUT/DELETE /api/personal-files/files/bulk/{move,tags,delete}
-- PUT /api/personal-files/files/{file_id}/tags
-- GET /api/personal-files/tags, /files/{file_id}/similar
-- POST /api/personal-files/upload, /upload/init, /upload/chunk, /upload/complete
-- DELETE /api/personal-files/upload/{upload_id}
+- Password-protected (GenSutSu.1999), chunked uploads, nested folders, video player
 
 ## 3rd Party
 Resend, Cloudinary, web3.py, ethers.js, CoinGecko, FingerprintJS, GeoIP2, ffmpeg/pymediainfo. YuKassa (MOCKED)
@@ -40,5 +36,5 @@ Resend, Cloudinary, web3.py, ethers.js, CoinGecko, FingerprintJS, GeoIP2, ffmpeg
 - Personal files: GenSutSu.1999
 
 ## Backlog
-- P2: Real payment gateway (YuKassa) integration
+- P2: Real payment gateway (YuKassa)
 - P2: Refactor PersonalFilesPage.js and AdminPage.js

@@ -109,6 +109,46 @@ async def upload_to_cloudinary(file_content: bytes, filename: str, folder: str =
         logger.error(f"Failed to upload to Cloudinary: {e}")
         raise
 
+
+async def upload_file_to_cloudinary(file_path: str, filename: str, folder: str = "personal") -> dict:
+    """
+    Upload file to Cloudinary from a file path (memory-efficient for large files).
+    Always uses upload_large to handle any file size.
+    """
+    try:
+        resource_type = get_resource_type(filename)
+        import uuid
+        public_id = f"{folder}/{uuid.uuid4()}"
+
+        result = cloudinary.uploader.upload_large(
+            file_path,
+            public_id=public_id,
+            resource_type=resource_type,
+            chunk_size=20_000_000,  # 20MB chunks
+            overwrite=True,
+            invalidate=True
+        )
+
+        url = result.get('secure_url')
+        logger.info(f"File uploaded to Cloudinary (from path): {filename} -> {url}")
+
+        return {
+            'url': url,
+            'public_id': result.get('public_id'),
+            'resource_type': resource_type,
+            'is_image': is_image(filename),
+            'is_video': is_video(filename),
+            'format': result.get('format'),
+            'bytes': result.get('bytes'),
+            'width': result.get('width'),
+            'height': result.get('height'),
+            'duration': result.get('duration')
+        }
+
+    except Exception as e:
+        logger.error(f"Failed to upload file to Cloudinary: {e}")
+        raise
+
 async def delete_from_cloudinary(public_id: str, resource_type: str = 'image') -> bool:
     """Delete file from Cloudinary"""
     try:
