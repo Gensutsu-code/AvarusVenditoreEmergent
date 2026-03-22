@@ -26,7 +26,6 @@ from .discount_requests import router as discount_requests_router
 from .product_requests import router as product_requests_router
 from .action_logs import router as action_logs_router
 from .admin_carts import router as admin_carts_router
-from .personal_files import router as personal_files_router
 
 # Create main API router
 api_router = APIRouter(prefix="/api")
@@ -56,6 +55,5 @@ api_router.include_router(discount_requests_router)
 api_router.include_router(product_requests_router)
 api_router.include_router(action_logs_router)
 api_router.include_router(admin_carts_router)
-api_router.include_router(personal_files_router)
 
 __all__ = ["api_router"]

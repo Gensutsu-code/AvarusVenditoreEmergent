@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Send, Image, FileText, Truck, Bell, Upload, Download, FileSpreadsheet, Power, Code, Lock } from 'lucide-react';
+import { Send, Image, FileText, Truck, Bell, Upload, Download, FileSpreadsheet, Power, Code } from 'lucide-react';
 import { motion } from 'framer-motion';
 import axios from 'axios';
 import { toast } from 'sonner';
@@ -9,7 +9,6 @@ import { Button } from '../ui/button';
 
 // Import existing components
 import { TelegramTab, PartnersTab, TermsTab } from './index';
-import PersonalFilesPage from '../../pages/PersonalFilesPage';
 
 const API = `${process.env.REACT_APP_BACKEND_URL}/api`;
 
@@ -500,7 +499,6 @@ export const SettingsTab = ({
     { id: 'maintenance', label: 'Техработы', icon: Power },
     { id: 'partners', label: 'Партнёры', icon: Image },
     { id: 'terms', label: 'Правила', icon: FileText },
-    { id: 'files', label: 'Файлы', icon: Lock },
   ];
 
   return (
@@ -529,13 +527,6 @@ export const SettingsTab = ({
           );
         })}
       </div>
-
-      {/* Personal Files */}
-      {activeSubTab === 'files' && (
-        <div className="-mx-6 -mb-6">
-          <PersonalFilesPage embedded />
-        </div>
-      )}
 
       {/* Telegram Settings */}
       {activeSubTab === 'telegram' && (
