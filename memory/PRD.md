@@ -5,7 +5,14 @@ E-commerce platform for truck spare parts with full admin panel, crypto payments
 
 ## Core Features
 
-### Large Video Upload Fix (March 20, 2026) — LATEST
+### Video Thumbnail Fix — Single Frame from Middle (March 22, 2026) — LATEST
+- Bug: Video grid thumbnails showed two sprite frames instead of one
+- Fix: Backend now generates a separate single-frame thumbnail (`_thumb.jpg`) from the middle of each video
+- For existing videos with sprite sheets: thumbnail is auto-generated on-demand from the sprite (PIL crop of middle frame)
+- Frontend uses simple `<img>` tag instead of CSS sprite background — eliminates all CSS bounding issues
+- Endpoint: `GET /api/personal-files/sprites/{file_id}/thumb.jpg`
+
+### Large Video Upload Fix (March 20, 2026)
 - Root cause: Cloudinary free plan has 100MB file limit → 370MB videos crashed
 - Fix: Hybrid storage restored — files <=95MB go to Cloudinary, >95MB stored locally
 - upload_file_to_cloudinary() streams from file path (no memory overload)
@@ -36,3 +43,4 @@ Resend, Cloudinary, web3.py, ethers.js, CoinGecko, FingerprintJS, GeoIP2, ffmpeg
 ## Backlog
 - P2: Real payment gateway (YuKassa)
 - P2: Refactor PersonalFilesPage.js and AdminPage.js
+- P3: Smart sorting (by date, size, label, tags)

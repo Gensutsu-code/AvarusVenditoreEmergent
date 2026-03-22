@@ -1,171 +1,132 @@
 <analysis>**original_problem_statement:**
-The user's primary goal is to have Absolute Control over the application's data and user actions via the admin panel. This was initially a request for a Developer Mode but has evolved into a more refined set of requirements:
+E-commerce platform with a comprehensive admin panel. The user's focus is on gaining absolute control over data and building a robust, private Admin File Manager. The system requires large file upload support, advanced video playback capabilities, custom file organization (tags, folders, bulk actions), and a custom security layer (password protection for the file manager).
 
-*   **Granular Admin Controls (Default On):** Instead of a toggleable Developer Mode, admin powers should be integrated directly into the UI by default.
-*   **No Raw Code Editing:** The previously implemented feature for editing raw database documents via a JSON editor has been removed at the user's request.
-*   **Contextual Action Buttons:** Admins need specific buttons for common management tasks directly where they are needed:
-    *   **User Management:** Enhanced user data collection (IP, browser fingerprint, location) with a clear visual representation.
-    *   **Bonus System:** Buttons to manually add, subtract, and reset user bonus points. Ability to delete prize redemption history.
-    *   **Order Management:** A button to roll back an order's status sequentially.
-*   **Comprehensive & Revertible Logging:** The existing Logs tab should be enhanced to make more actions revertible (undoable). The user specifically requested the ability to revert:
-    *   Bonus point adjustments.
-    *   Prize request status changes (approval, rejection, issuance).
-    *   Deletion of bonus history, orders, users, and categories.
+**User's preferred language**: Russian (Next agent MUST respond in Russian only).
 
-**User's preferred language**: Russian
+**what currently exists?** 
+A heavily customized, private Admin File Manager built for the e-commerce application. It uses a hybrid storage model: files <95MB are uploaded to Cloudinary, and files >95MB are chunked (4MB chunks with auto-retry) and stored locally. The file manager features nested folders, drag-and-drop file movement, a tagging system with bulk operations, custom file aliasing (hiding original filenames), and an advanced video player that supports double-tap seeking, automatic sprite sheet generation for hover previews, and HTTP 206 Range streaming for large local files.
 
-**what currently exists?**
-The application is a full-stack e-commerce platform with a React frontend, FastAPI backend, and MongoDB database.
-
-In this session, the Absolute Control feature set was significantly reworked and expanded based on user feedback. The generic Developer Mode was replaced with specific, integrated admin tools.
-
-**Key Completed Implementations:**
-*   **Action Logging System:** A middleware logs all admin/user actions to a new Логи (Logs) tab in the admin panel, with a working revert function for certain actions.
-*   **Granular Admin Controls:**
-    *   In the Bonus Program tab, admins can now directly add, subtract, or reset points for each user and delete items from the prize request history.
-    *   In the Orders tab, a Rollback button allows reversing an order's status according to a strict sequence ( →  → , and  → ).
-*   **Enhanced User Analytics:** A new system collects user IP, browser fingerprint, and location data, which is displayed in a visually organized modal in the user management tab.
-*   **Bonus System Refactoring:** The request bonus feature was completely removed, and the UI for prize history was streamlined into a single tab.
-*   **Multiple Bug Fixes:**
-    *   Bonus points now accrue correctly when an order is marked completed.
-    *   Notifications for prize requests (to admin) and status updates (to client) are now working.
-    *   A bug preventing the bonus program's user list from loading was fixed.
-    *   Navigation from news notifications now correctly opens the specific news article.
-    *   Search result sorting was implemented on the frontend.
-    *   Resend email sender was configured for the production domain.
-
-**Last working item**:
-*   **Last item agent was working:** The agent was about to begin implementing the user's latest request: making more key admin actions revertible from the Logs tab. This involves expanding the existing revert functionality beyond simple data edits to cover bonus point changes, prize status updates, and deletions.
-*   **Status:** NOT STARTED
-*   **Agent Testing Done:** N
-*   **Which testing method agent to use?** both
-*   **User Testing Done:** N
+**Last working item**: 
+- **Last item agent was working:** Fixing a CSS/UI bug on the frontend where video thumbnail previews in the file grid are showing two frames (from the generated sprite sheet) instead of a single frame. The agent previously added , but the user reported that two frames are still visible. The agent took a mobile-view screenshot to investigate just before the handoff.
+- **Status:** IN PROGRESS
+- **Agent Testing Done:** N (Screenshot taken, but fix not yet implemented)
+- **Which testing method agent to use?** screenshot tool (since this is a pure CSS/Frontend rendering issue).
+- **User Testing Done:** N
 
 **All Pending/In progress Issue list**:
-There are no pending bugs.
+- **Issue 1:** Video thumbnail preview in the grid shows two frames instead of one (P0).
+  - **Attempted fixes:** The agent applied  to the sprite container style, assuming the sprite sheet was tiling. This failed, meaning the issue is likely related to the  or bounding box width/height mismatch relative to the calculated sprite frame size.
+  - **Next debug checklist:** Inspect  or the corresponding rendering logic inside . Check how , , and the container's physical / are calculated. Ensure the container aspect ratio matches the single frame aspect ratio, and that  correctly scales the entire sprite sheet.
+  - **Why fix this issue and what will be achieved with the fix?** To provide a clean, professional grid view where each video card shows exactly one coherent thumbnail frame.
+  - **Status:** IN PROGRESS
+  - **Is recurring issue?** Y (Third iteration of trying to fix the thumbnail/preview display).
+  - **Should Test frontend/backend/both after fix?** frontend (using screenshot tool).
+  - **Blocked on other issue:** None
 
 **In progress Task List**:
-There are no tasks currently in progress. The last task was completed, and the agent is ready to start the next one.
+None. The active context is solely focused on the bug fix described above.
 
-**Upcoming and Future Tasks**
+**Upcoming and Future Tasks**:
+- **Task 1:** Refactor  and  (P2). 
+  - *Where to resume:* . The component has grown to over 1300 lines. Break it down into modular components (, , , , ).
+- **Task 2:** Add Smart Sorting for files (P3).
+  - *Where to resume:* Frontend file list view. Implement sorting by date, size, label, and number of tags, and save these as user preferences.
+- **Task 3:** Real Payment Gateway Integration (P3). 
+  - *Where to resume:* Replace the mocked ЮKassa logic.
 
-**Upcoming Tasks:**
-*   **Task 1: Expand Revertible Actions in Logs (P0)**
-    *   **Description:** The user wants the ability to undo a wider range of actions directly from the Logs tab. This requires modifying the backend to save the  for these actions.
-    *   **Actions to make revertible:**
-        1.  Bonus point accrual, subtraction, and reset.
-        2.  Prize request status changes (approve, reject, issue).
-        3.  Deletion of prize request history items.
-        4.  Order status changes.
-        5.  Deletions (users, orders, categories).
-    *   **Implementation Plan:**
-        *   **Backend:** For each relevant endpoint in , , etc., fetch the document state *before* performing the modification or deletion.
-        *   **Logging:** Save the fetched  into the corresponding document in the  collection and set .
-        *   **Frontend:** No changes are expected on the frontend, as  is already built to display a Revert button for any log with .
-*   **Task 2: Add Rollback Button to Main Orders List (P1)**
-    *   **Description:** The user  (continued) the agent when the agent was about to run tests, and the agent correctly inferred this meant a missing piece of UI. The rollback button was added to the expanded order view and the order modal, but it's not on the main  list view. It should be added there for consistency.
+**Completed work in this session**:
+- Cloudinary vs Local Sprite Fix in  (DONE)
+- File Upload Cancellation API and Frontend AbortController implementation (DONE)
+- Tagging System (add/remove, filter, search, similar files) (DONE)
+- Bulk Operations (selection mode, bulk tags, bulk move/delete) and Drag & Drop folders (DONE)
+- 370MB+ Large Video Upload Crash Fix (Moved to 4MB chunks, added 502 retry logic, hard fallback to local storage for >95MB to respect Cloudinary limits) (DONE)
+- Video Streaming Fix (Added  parsing and HTTP 206 Partial Content support to ) (DONE)
+- Frontend Video autoPlay/muted fallback logic to bypass browser autoplay policies (DONE)
+- Hide original filenames and implement custom editable  system (DONE)
 
-**Future Tasks:**
-*   **WalletConnect Support (P2):** Integrate WalletConnect for crypto wallet payments.
-*   **Real Payment Gateway Integration (P2):** Replace the placeholder ЮKassa payment system.
-
-**Completed work in this session**
-- **Absolute Control Rework:** Replaced Developer Mode with granular, integrated admin controls for bonus points, prize history, and order status rollbacks.
-- **Enhanced User Tracking:** Implemented collection and display of user IP, browser fingerprint, and location.
-- **Bonus System Overhaul:** Fixed point accrual, removed the request bonus feature, fixed user list loading, and implemented all required notifications.
-- **News Notification Fix:** Corrected routing to allow deep-linking to news articles from notifications.
-- **Search Result Sorting:** Added sorting controls to the catalog search page.
-- **Resend Domain Verification:** Configured the production sending email address.
-- **Action Logging System:** Built the backend middleware and frontend tab for viewing and reverting actions.
-
-**Earlier issues found/mentioned but not fixed**
+**Earlier issues found/mentioned but not fixed**:
 None.
 
-**Known issue recurrence from previous fork**
-None.
+**Known issue recurrence from previous fork**:
+- **Issue recurrence in previous fork:** Video sprite generation and frontend thumbnail display.
+- **Recurrence count:** 4
+- **Status:** IN PROGRESS
+- *Note:* The backend generation is now flawless. The recurrence is entirely focused on how the frontend handles CSS bounds to display a single frame of the sprite sheet in the grid view.
 
-**Code Architecture**
+**Code Architecture**:
 
 
-**Key Technical Concepts**
-*   **Action Logging & Revert:** A FastAPI middleware logs actions to MongoDB. Log entries with a  property can be reverted via a dedicated API endpoint, effectively creating an undo system.
-*   **Granular Admin Controls:** The design shifted from a generic dev mode to specific, feature-rich API endpoints and UI buttons for actions like  or .
-*   **Sequential State Rollback:** The order status rollback is not a simple undo but follows a defined state machine:  ->  -> , and  -> .
-*   **Client-Side Fingerprinting:** The frontend uses the  library to create a unique browser identifier, which is sent to the backend for tracking user sessions.
+**Key Technical Concepts**:
+- **Hybrid Storage Routing:** Files > 95MB are kept local to bypass Cloudinary's 100MB free-tier limit. Smaller files go to Cloudinary.
+- **Chunked File Uploads:** Custom implementation bypassing Kubernetes Nginx proxy limits (set to 4MB chunks) with an auto-retry mechanism on HTTP 502 errors.
+- **HTTP 206 Range Streaming:** Used in FastAPI to stream massive local  files to the frontend React video player.
+- **Token-in-Query Authentication:** Local streaming uses  in the  attribute of video/img tags since native HTML elements cannot pass Bearer headers.
 
-**key DB schema**
-*   **action_logs**: (New Collection) 
-*   **user_sessions**: (New Collection) 
-*   **orders**: added  to facilitate rollbacks before the logic was centralized.
+**key DB schema**:
+- :  (Note: Original filename is kept in DB but hidden from UI).
+- : 
 
-**changes in tech stack**
-*   **Frontend:**  was added for browser fingerprinting.
-*   **Backend:**  was installed for IP-based geolocation. **CRITICAL: This dependency was not added to  and will cause a failure in the next session if not fixed immediately.**
+**changes in tech stack**:
+None newly introduced in this session.
 
-**All files of reference**
-*    (Order and user management)
-*    (Bonus and prize management)
-*    (Revert logic)
-*    (Main admin UI container)
-*    (Orders list UI)
-*    (Logs viewer UI)
+**All files of reference**:
+-  (Updated to handle 206 streaming, labels, tags, and bulk operations).
+-  (Updated to handle file-path based uploads to avoid RAM crashes).
+-  (Contains the current CSS bug for ).
 
 **Areas that need refactoring**:
-*   **** has become extremely large and manages state for numerous tabs (Bonus, Logs, CRM, etc.). It should be broken down, with each tab's logic and data fetching encapsulated in its own component to improve maintainability.
+-  is dangerously large (>1300 lines) and complex. State management for uploads, selections, and playback are tightly coupled.
 
-**key api endpoints**
-*   : Add bonus points to a user.
-*   : Subtract bonus points.
-*   : Delete a prize request history item.
-*   : Roll back an order's status.
-*   : Fetch all action logs.
-*   : Revert a specific logged action.
-*   : Endpoint for the frontend to send session and analytics data.
+**key api endpoints**:
+-  &  (Chunked upload)
+-  (Upload cancellation/cleanup)
+-  (Supports Range requests)
+- , ,  (Bulk ops)
+-  (Update file alias)
 
-**Critical Info for New Agent**
-1.  **Dependency Fix is P0:** The  library was installed but **not** added to . Your very first action must be to run  to persist this dependency and prevent environment errors.
-2.  **Next Task (P1): Expand Revertible Actions.** The immediate goal is to implement the user's request to make more actions undoable from the Logs tab. This is primarily a backend task involving modifying various admin endpoints to log the  of documents before they are changed or deleted.
-3.  **Refactor :** This file is a monolith. As you add new features or modify existing ones within the admin panel, prioritize breaking out tab content and logic into separate, more manageable components.
+**Critical Info for New Agent**:
+- **Headless Browser Limitation:** Playwright (Screenshot tool) *cannot* decode or play video files because it lacks the necessary codecs. If you see black screens or error logs regarding video decoding in Playwright, do NOT assume the application is broken. Rely on HTTP 206 network responses for video streaming health. However, for CSS issues (like the current thumbnail frame issue), screenshots are perfectly valid.
+- **Cloudinary Limits:** Do not attempt to send files larger than 95MB to Cloudinary. The free tier strictly rejects >100MB, which was causing previous crashes. 
 
-**documents and test reports created in this job**
-*   
-*   
-*    (updated multiple times)
+**documents and test reports created in this job**:
+-  (Sprite fix)
+-  (Upload cancel)
+-  (Tags & Navigation)
+-  (Drag & Drop)
+-  (Kept fully updated)
 
-**Last 10 User Messages and any pending HUMAN messages**
-1.  **User:** Need to make bonus/prize/order/deletion actions revertible via logs. **Status: NOT STARTED**
-2.  **User:** Need to be able to revert a  order status. **Status: COMPLETED**
-3.  **User:** Order status rollback must be strictly sequential. **Status: COMPLETED**
-4.  **User:** continue (Interpreted as finish implementing the rollback button on all order pages). **Status: COMPLETED**
-5.  **User:** Detailed requirements for the Absolute Control rework (remove dev mode, add granular buttons, enhance tracking). **Status: COMPLETED**
-6.  **User:** Fix missing notifications for client on prize status changes. **Status: COMPLETED**
-7.  **User:** Fix missing notification for admin on new prize request. **Status: COMPLETED**
-8.  **User:** Fix bug where bonus points are not awarded. **Status: COMPLETED**
-9.  **User:** Combine prize history and requests into a single tab. **Status: COMPLETED**
-10. **User:** Remove the request bonus button and all related functionality. **Status: COMPLETED**
+**Last 10 User Messages and any pending HUMAN messages**:
+1. **User:** добавь возможность добавлять теги к файлам и фильтровать... добавь рекомендации по похожим тегам (Add tags, filtering, and similar file recommendations). **Status: COMPLETED**
+2. **Agent:** Implemented tags and asked for approval on drag-and-drop/bulk selection features.
+3. **User:** сделай это улучшение (Do this improvement). **Status: COMPLETED**
+4. **User:** при загрузке видео выдает ошибку сразу, сделай так чтобы все видео заливались на cloudinary (Video upload errors, put everything on Cloudinary). **Status: COMPLETED/REVERTED** (Agent tried, but hit size limits later).
+5. **User:** выдает ошибку снова... размер видео 370мб (Upload fails again for 370MB file). **Status: COMPLETED** (Agent fixed chunk limits, added retries, and forced local storage for >95MB).
+6. **User:** почему видео не воспроизводятся? нужно исправить (Why aren't videos playing?). **Status: COMPLETED** (Agent added 206 Range request support).
+7. **User:** нельзя поставить видео на паузу, нет превью видео, надо исправить (Can't pause, no previews in grid). **Status: COMPLETED**
+8. **User:** превью должно показывать только одну сцену а не все сразу (Preview shows all sprite scenes, should be one). **Status: COMPLETED** (Agent added object positioning/CSS).
+9. **User:** нужно скрывать названия файлов. Нужно добавить возможность давать внутреннее название (Hide filenames, add internal descriptions). **Status: COMPLETED**
+10. **User:** на видео все равно два превью вместо одного (There are still two previews on the video instead of one). **Status: IN PROGRESS** (Agent added , but user replied again).
+11. **User (Pending):** я вижу два кадра (I see two frames). **Status: IN PROGRESS** (Agent took a mobile screenshot but hasn't pushed a fix yet).
 
 **Project Health Check:**
-*   **Broken:** The backend environment is implicitly broken because the  dependency is not in .
-*   **Mocked:** The ЮKassa credit card payment system is a non-functional placeholder.
+- **Broken:** CSS for video sprite thumbnails in the frontend grid ().
+- **Mocked:** ЮKassa payment gateway.
 
-**3rd Party Integrations**
-*   **Resend:** For sending emails.
-*   **Cloudinary:** For image hosting.
-*   **web3.py / ethers.js:** For crypto wallet interactions.
-*   **CoinGecko:** For real-time crypto prices.
-*   **FingerprintJS:** For browser fingerprinting to track user sessions.
-*   **GeoIP2:** For IP-based geolocation.
+**3rd Party Integrations**:
+- Cloudinary (Image/Video hosting for <95MB) — requires User API Key (present in .env)
+- Resend (Emails) — requires User API Key
+- FFmpeg/ffprobe (System tools for video sprites) — Local environment
 
-**Testing status**
-*   **Testing agent used after significant changes:** YES, but the final set of changes (order rollback refinement) was only tested manually via  and screenshots. A full regression test was not run at the very end.
-*   **Troubleshoot agent used after agent stuck in loop:** NO
-*   **Test files created:** None.
-*   **Known regressions:** None.
+**Testing status**:
+- Testing agent used after significant changes: YES (Iterations 51-54 utilized testing agent for backend validation).
+- Troubleshoot agent used after agent stuck in loop: NO
+- Test files created: None
+- Known regressions: None known beyond the current CSS bug.
 
 **Credentials to test flow:**
-*   **Admin:**  / 
-*   **Client:**  / 
+- Admin:  / 
+- Client:  / 
+- Personal Files Password: 
 
-**What agent forgot to execute**
-*   **Critical:** The agent installed the  package but failed to update . This needs to be the first action taken in the next fork.
-*   The agent did not run a final full regression test with the  after the last set of changes to the order rollback functionality.</analysis>
+**What agent forgot to execute**:
+The agent took a screenshot to investigate the two frames CSS issue on mobile but ended the session before actually diagnosing or replacing the CSS logic for  in .</analysis>

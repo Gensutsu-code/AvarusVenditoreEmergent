@@ -33,18 +33,11 @@ function videoThumbUrl(file) {
   return '';
 }
 
-// For local videos with sprites, returns CSS props to show first frame only
-function spriteThumbStyle(file) {
-  if (!file?.sprite_ready) return null;
+// For local videos: returns URL of a single thumbnail from the middle of the video
+function videoThumbLocal(file) {
+  if (!file?.thumb_ready && !file?.sprite_ready) return '';
   const token = localStorage.getItem('token');
-  const spriteUrl = `${BASE_URL}/api/personal-files/sprites/${file.id}/sprite.jpg?token=${token}`;
-  const cols = file.sprite_cols || 10;
-  return {
-    backgroundImage: `url(${spriteUrl})`,
-    backgroundSize: `${cols * 100}% auto`,
-    backgroundPosition: '0 0',
-    backgroundRepeat: 'no-repeat',
-  };
+  return `${BASE_URL}/api/personal-files/sprites/${file.id}/thumb.jpg?token=${token}`;
 }
 
 function formatSize(bytes) {
@@ -1219,8 +1212,8 @@ export default function PersonalFilesPage() {
                     <>
                       {videoThumbUrl(file) ? (
                         <img src={videoThumbUrl(file)} alt={file.name} className="w-full h-full object-cover" loading="lazy" />
-                      ) : spriteThumbStyle(file) ? (
-                        <div className="w-full h-full" style={spriteThumbStyle(file)} />
+                      ) : videoThumbLocal(file) ? (
+                        <img src={videoThumbLocal(file)} alt={file.name} className="w-full h-full object-cover" loading="lazy" />
                       ) : (
                         <div className="w-full h-full bg-slate-800" />
                       )}

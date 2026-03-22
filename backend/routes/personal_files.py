@@ -191,10 +191,25 @@ async def _generate_sprite(file_id: str, video_path: str, duration: float, clean
         with open(vtt_path, 'w') as f:
             f.write("\n".join(vtt_lines))
 
-        # 5. Update DB
+        # 5. Generate single thumbnail from middle of video
+        mid_thumb_path = os.path.join(SPRITES_DIR, f"{file_id}_thumb.jpg")
+        mid_time = duration / 2
+        mid_cmd = [
+            "ffmpeg", "-ss", str(mid_time), "-i", video_path,
+            "-vframes", "1", "-q:v", "3",
+            "-vf", f"scale={SPRITE_THUMB_W * 2}:{SPRITE_THUMB_H * 2}",
+            mid_thumb_path, "-y"
+        ]
+        mid_proc = await asyncio.create_subprocess_exec(
+            *mid_cmd, stdout=asyncio.subprocess.DEVNULL, stderr=asyncio.subprocess.DEVNULL
+        )
+        await mid_proc.wait()
+        thumb_ready = os.path.isfile(mid_thumb_path)
+
+        # 6. Update DB
         await db.personal_files.update_one(
             {"id": file_id},
-            {"$set": {"sprite_ready": True, "sprite_cols": cols, "sprite_rows": rows}}
+            {"$set": {"sprite_ready": True, "sprite_cols": cols, "sprite_rows": rows, "thumb_ready": thumb_ready}}
         )
 
         # Cleanup temp thumbnails
@@ -786,6 +801,52 @@ async def serve_sprite_image(file_id: str, token: Optional[str] = None):
     if not os.path.isfile(path):
         raise HTTPException(status_code=404, detail="Sprite not ready")
     return FileResponse(path, media_type="image/jpeg")
+
+
+@router.get("/sprites/{file_id}/thumb.jpg")
+async def serve_video_thumbnail(file_id: str, token: Optional[str] = None):
+    """Serve a single thumbnail from the middle of the video.
+    If thumb doesn't exist yet, extract middle frame from the sprite sheet."""
+    import jwt
+    from database import JWT_SECRET, JWT_ALGORITHM, db as database
+    if not token:
+        raise HTTPException(status_code=401, detail="Unauthorized")
+    try:
+        payload = jwt.decode(token, JWT_SECRET, algorithms=[JWT_ALGORITHM])
+        uid = payload.get("user_id")
+        u = await database.users.find_one({"id": uid}, {"_id": 0, "role": 1})
+        if not u or u.get("role") != "admin":
+            raise HTTPException(status_code=403, detail="Admin only")
+    except Exception:
+        raise HTTPException(status_code=401, detail="Invalid token")
+
+    thumb_path = os.path.join(SPRITES_DIR, f"{file_id}_thumb.jpg")
+
+    # Generate from sprite sheet if thumb doesn't exist yet
+    if not os.path.isfile(thumb_path):
+        sprite_path = os.path.join(SPRITES_DIR, f"{file_id}.jpg")
+        if not os.path.isfile(sprite_path):
+            raise HTTPException(status_code=404, detail="Thumbnail not ready")
+        try:
+            from PIL import Image
+            file_doc = await database.personal_files.find_one({"id": file_id}, {"_id": 0})
+            cols = file_doc.get("sprite_cols", SPRITE_COLS) if file_doc else SPRITE_COLS
+            img = Image.open(sprite_path)
+            frame_w = SPRITE_THUMB_W
+            frame_h = SPRITE_THUMB_H
+            total_frames = (img.width // frame_w) * (img.height // frame_h)
+            mid_idx = total_frames // 2
+            col = mid_idx % cols
+            row = mid_idx // cols
+            x, y = col * frame_w, row * frame_h
+            frame = img.crop((x, y, x + frame_w, y + frame_h))
+            frame = frame.resize((frame_w * 2, frame_h * 2), Image.LANCZOS)
+            frame.save(thumb_path, "JPEG", quality=85)
+        except Exception:
+            raise HTTPException(status_code=404, detail="Thumbnail generation failed")
+
+    return FileResponse(thumb_path, media_type="image/jpeg")
+
 
 
 @router.get("/sprites/{file_id}/thumbs.vtt")
