@@ -24,6 +24,20 @@ function fileUrl(file) {
   return BASE_URL + file.url + (token ? `${sep}token=${token}` : '');
 }
 
+function videoThumbUrl(file) {
+  if (!file?.url) return '';
+  // Cloudinary: generate thumbnail from video
+  if (file.url.startsWith('http') && file.url.includes('cloudinary.com') && file.url.includes('/video/upload/')) {
+    return file.url.replace('/video/upload/', '/video/upload/so_0,w_320,h_180,c_fill,f_jpg/');
+  }
+  // Local video with sprite: use sprite image
+  if (file.sprite_ready) {
+    const token = localStorage.getItem('token');
+    return `${BASE_URL}/api/personal-files/sprites/${file.id}/sprite.jpg?token=${token}`;
+  }
+  return '';
+}
+
 function formatSize(bytes) {
   if (!bytes) return '';
   if (bytes < 1024) return bytes + ' B';
@@ -237,18 +251,25 @@ function VideoPlayer({ src, fileData, onClose, onPrev, onNext, allTags, onTagsCh
   };
 
   const handleDoubleTap = (e) => {
-    if (e.target.closest('[data-controls]')) return;
+    if (e.target.closest('[data-controls]') || e.target.closest('button')) return;
     const now = Date.now();
     const rect = containerRef.current?.getBoundingClientRect();
     if (!rect) return;
     const x = (e.clientX || e.changedTouches?.[0]?.clientX || 0) - rect.left;
     const diff = now - lastTap.current.time;
     if (diff < 350 && diff > 0) {
+      // Double tap - seek
       e.preventDefault();
+      clearTimeout(lastTap.current.timer);
       if (x < rect.width / 2) seek(-10); else seek(10);
-      lastTap.current = { time: 0, x: 0 };
+      lastTap.current = { time: 0, x: 0, timer: null };
     } else {
-      lastTap.current = { time: now, x };
+      // Single tap - wait to confirm it's not a double tap, then toggle play/pause
+      const timer = setTimeout(() => {
+        const v = videoRef.current;
+        if (v) { v.paused ? v.play().catch(() => {}) : v.pause(); }
+      }, 350);
+      lastTap.current = { time: now, x, timer };
     }
   };
 
@@ -1139,7 +1160,11 @@ export default function PersonalFilesPage() {
                 <div className="aspect-square relative bg-slate-900 flex items-center justify-center overflow-hidden">
                   {file.file_type === 'video' ? (
                     <>
-                      <video src={fileUrl(file)} className="w-full h-full object-cover" muted preload="none" />
+                      {videoThumbUrl(file) ? (
+                        <img src={videoThumbUrl(file)} alt={file.name} className="w-full h-full object-cover" loading="lazy" />
+                      ) : (
+                        <div className="w-full h-full bg-slate-800" />
+                      )}
                       <div className="absolute inset-0 flex items-center justify-center bg-black/30">
                         <div className="w-10 h-10 rounded-full bg-white/20 backdrop-blur-sm flex items-center justify-center">
                           <Play className="w-5 h-5 text-white ml-0.5" />
