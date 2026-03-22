@@ -493,7 +493,6 @@ export const SettingsTab = ({
   const [activeSubTab, setActiveSubTab] = useState('telegram');
 
   const subTabs = [
-    { id: 'files', label: 'Файлы', icon: Lock },
     { id: 'telegram', label: 'Telegram', icon: Send },
     { id: 'delivery', label: 'Доставка', icon: Truck },
     { id: 'import', label: 'Импорт', icon: Upload },
@@ -501,6 +500,7 @@ export const SettingsTab = ({
     { id: 'maintenance', label: 'Техработы', icon: Power },
     { id: 'partners', label: 'Партнёры', icon: Image },
     { id: 'terms', label: 'Правила', icon: FileText },
+    { id: 'files', label: 'Файлы', icon: Lock },
   ];
 
   return (
