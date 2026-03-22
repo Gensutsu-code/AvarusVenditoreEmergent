@@ -503,18 +503,60 @@ function VideoPlayer({ src, fileData, onClose, onPrev, onNext, allTags, onTagsCh
         )}
       </AnimatePresence>
 
-      {/* Tags + Similar files */}
+      {/* Tags + Label + Similar files */}
       <div className="bg-slate-900/95 border-t border-slate-800">
         {fileData && (
-          <div className="px-4 py-2 flex items-center gap-2 flex-wrap">
-            <Tag className="w-3 h-3 text-slate-600 flex-shrink-0" />
-            <TagInput tags={fileData.tags || []} allTags={allTags}
-              onChange={(newTags) => onTagsChange?.('updateTags', { fileId: fileData.id, tags: newTags })} />
+          <div className="px-4 py-2 space-y-1.5">
+            <EditableLabel file={fileData} onSave={(id, label) => onTagsChange?.('updateLabel', { fileId: id, label })} />
+            <div className="flex items-center gap-2 flex-wrap">
+              <Tag className="w-3 h-3 text-slate-600 flex-shrink-0" />
+              <TagInput tags={fileData.tags || []} allTags={allTags}
+                onChange={(newTags) => onTagsChange?.('updateTags', { fileId: fileData.id, tags: newTags })} />
+            </div>
           </div>
         )}
         <SimilarFilesBar fileId={fileData?.id} onSelect={handleSimilarSelect} />
       </div>
     </motion.div>
+  );
+}
+
+// ==================== EDITABLE LABEL ====================
+function EditableLabel({ file, onSave }) {
+  const [editing, setEditing] = useState(false);
+  const [value, setValue] = useState(file.label || '');
+  const inputRef = useRef(null);
+
+  useEffect(() => { setValue(file.label || ''); }, [file.label]);
+  useEffect(() => { if (editing) inputRef.current?.focus(); }, [editing]);
+
+  const save = async () => {
+    setEditing(false);
+    if (value.trim() !== (file.label || '')) {
+      await onSave(file.id, value.trim());
+    }
+  };
+
+  if (editing) {
+    return (
+      <input ref={inputRef} value={value} onChange={e => setValue(e.target.value)}
+        onBlur={save} onKeyDown={e => { if (e.key === 'Enter') save(); if (e.key === 'Escape') { setValue(file.label || ''); setEditing(false); }}}
+        className="bg-transparent text-white text-sm font-medium outline-none border-b border-slate-600 focus:border-teal-500 max-w-[400px] w-full text-center"
+        placeholder="Добавить описание..." data-testid="pf-label-input" />
+    );
+  }
+
+  return (
+    <button onClick={(e) => { e.stopPropagation(); setEditing(true); }}
+      className="text-sm font-medium truncate max-w-[400px] cursor-pointer hover:opacity-80 transition-opacity flex items-center gap-1.5"
+      data-testid="pf-label-display">
+      {file.label ? (
+        <span className="text-white">{file.label}</span>
+      ) : (
+        <span className="text-slate-500 italic text-xs">Добавить описание...</span>
+      )}
+      <Pencil className="w-3 h-3 text-slate-500 flex-shrink-0" />
+    </button>
   );
 }
 
@@ -563,10 +605,10 @@ function ImagePreview({ file, onClose, onPrev, onNext, allTags, onTagsChange }) 
 
         <motion.div initial={{ scale: 0.9 }} animate={{ scale: 1 }} exit={{ scale: 0.9 }}
           className={`relative flex flex-col items-center ${isGif ? 'max-w-[95vw] max-h-[85vh]' : 'max-w-[90vw] max-h-[80vh]'}`}>
-          <img src={fileUrl(file)} alt={file.name}
+          <img src={fileUrl(file)} alt={file.label || ''}
             className={`rounded-xl object-contain ${isGif ? 'max-h-[75vh] max-w-[95vw]' : 'max-h-[70vh] max-w-[90vw]'}`} />
           <div className="mt-3 text-center">
-            <p className="text-white text-sm font-medium truncate max-w-[400px]">{file.name}</p>
+            <EditableLabel file={file} onSave={(id, label) => onTagsChange?.('updateLabel', { fileId: id, label })} />
             <p className="text-slate-400 text-xs">{formatSize(file.size)}{isGif ? ' \u00b7 GIF' : ''}</p>
           </div>
         </motion.div>
@@ -857,12 +899,18 @@ export default function PersonalFilesPage() {
     if (action === 'updateTags') {
       try {
         await axios.put(`${API}/personal-files/files/${data.fileId}/tags`, { tags: data.tags });
-        // Update in local state
         setFiles(prev => prev.map(f => f.id === data.fileId ? { ...f, tags: data.tags } : f));
         if (videoFile?.id === data.fileId) setVideoFile(prev => ({ ...prev, tags: data.tags }));
         if (previewFile?.id === data.fileId) setPreviewFile(prev => ({ ...prev, tags: data.tags }));
         fetchTags();
       } catch { toast.error('Ошибка сохранения тегов'); }
+    } else if (action === 'updateLabel') {
+      try {
+        await axios.put(`${API}/personal-files/files/${data.fileId}/label`, { label: data.label });
+        setFiles(prev => prev.map(f => f.id === data.fileId ? { ...f, label: data.label || null } : f));
+        if (videoFile?.id === data.fileId) setVideoFile(prev => ({ ...prev, label: data.label || null }));
+        if (previewFile?.id === data.fileId) setPreviewFile(prev => ({ ...prev, label: data.label || null }));
+      } catch { toast.error('Ошибка сохранения описания'); }
     } else if (action === 'openFile') {
       openFile(data);
     }
@@ -1199,9 +1247,9 @@ export default function PersonalFilesPage() {
                   )}
                 </div>
                 <div className="p-2">
-                  <p className="text-xs text-slate-400 truncate">{file.name}</p>
+                  <p className="text-xs text-slate-400 truncate">{file.label || formatSize(file.size)}</p>
                   <div className="flex items-center gap-1 mt-0.5">
-                    <p className="text-[10px] text-slate-600">{formatSize(file.size)}</p>
+                    {file.label && <p className="text-[10px] text-slate-600">{formatSize(file.size)}</p>}
                     {file.tags?.length > 0 && (
                       <div className="flex gap-0.5 overflow-hidden flex-1 min-w-0">
                         {file.tags.slice(0, 2).map(t => (

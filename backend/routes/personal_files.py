@@ -42,6 +42,10 @@ class TagsUpdate(BaseModel):
     tags: List[str]
 
 
+class LabelUpdate(BaseModel):
+    label: str
+
+
 class BulkMove(BaseModel):
     file_ids: List[str]
     folder_id: Optional[str] = None
@@ -325,7 +329,7 @@ async def list_files(
         query["folder_id"] = folder_id
     if search:
         query["$or"] = [
-            {"name": {"$regex": search, "$options": "i"}},
+            {"label": {"$regex": search, "$options": "i"}},
             {"tags": {"$regex": search, "$options": "i"}}
         ]
     if file_type and file_type != "all":
@@ -437,6 +441,21 @@ async def update_file_tags(file_id: str, body: TagsUpdate, user=Depends(get_curr
     if result.matched_count == 0:
         raise HTTPException(status_code=404, detail="File not found")
     return {"tags": clean_tags}
+
+
+@router.put("/files/{file_id}/label")
+async def update_file_label(file_id: str, body: LabelUpdate, user=Depends(get_current_user)):
+    """Set display label (description) for a file without changing original name"""
+    if user.get("role") != "admin":
+        raise HTTPException(status_code=403, detail="Admin only")
+    label = body.label.strip()
+    result = await db.personal_files.update_one(
+        {"id": file_id},
+        {"$set": {"label": label if label else None}}
+    )
+    if result.matched_count == 0:
+        raise HTTPException(status_code=404, detail="File not found")
+    return {"label": label if label else None}
 
 
 @router.get("/files/{file_id}/similar")
