@@ -30,12 +30,20 @@ function videoThumbUrl(file) {
   if (file.url.startsWith('http') && file.url.includes('cloudinary.com') && file.url.includes('/video/upload/')) {
     return file.url.replace('/video/upload/', '/video/upload/so_0,w_320,h_180,c_fill,f_jpg/');
   }
-  // Local video with sprite: use sprite image
-  if (file.sprite_ready) {
-    const token = localStorage.getItem('token');
-    return `${BASE_URL}/api/personal-files/sprites/${file.id}/sprite.jpg?token=${token}`;
-  }
   return '';
+}
+
+// For local videos with sprites, returns CSS props to show first frame only
+function spriteThumbStyle(file) {
+  if (!file?.sprite_ready) return null;
+  const token = localStorage.getItem('token');
+  const spriteUrl = `${BASE_URL}/api/personal-files/sprites/${file.id}/sprite.jpg?token=${token}`;
+  const cols = file.sprite_cols || 10;
+  return {
+    backgroundImage: `url(${spriteUrl})`,
+    backgroundSize: `${cols * 100}% auto`,
+    backgroundPosition: '0 0',
+  };
 }
 
 function formatSize(bytes) {
@@ -1162,6 +1170,8 @@ export default function PersonalFilesPage() {
                     <>
                       {videoThumbUrl(file) ? (
                         <img src={videoThumbUrl(file)} alt={file.name} className="w-full h-full object-cover" loading="lazy" />
+                      ) : spriteThumbStyle(file) ? (
+                        <div className="w-full h-full" style={spriteThumbStyle(file)} />
                       ) : (
                         <div className="w-full h-full bg-slate-800" />
                       )}
