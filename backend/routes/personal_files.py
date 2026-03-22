@@ -1,6 +1,6 @@
 """Personal Files - private file storage for admin"""
-from fastapi import APIRouter, HTTPException, Depends, UploadFile, File, Form
-from fastapi.responses import FileResponse
+from fastapi import APIRouter, HTTPException, Depends, UploadFile, File, Form, Request
+from fastapi.responses import FileResponse, StreamingResponse
 from pydantic import BaseModel
 from typing import Optional, List
 from datetime import datetime, timezone
@@ -681,8 +681,8 @@ async def upload_personal_file(
 # ==================== SERVE LOCAL FILES ====================
 
 @router.get("/serve/{filename}")
-async def serve_local_file(filename: str, token: Optional[str] = None):
-    """Serve locally stored large files. Token via query param."""
+async def serve_local_file(filename: str, token: Optional[str] = None, request: Request = None):
+    """Serve locally stored large files with Range support for video streaming."""
     import jwt
     from database import JWT_SECRET, JWT_ALGORITHM, db as database
 
@@ -701,7 +701,49 @@ async def serve_local_file(filename: str, token: Optional[str] = None):
     filepath = os.path.join(LOCAL_UPLOAD_DIR, safe_name)
     if not os.path.isfile(filepath):
         raise HTTPException(status_code=404, detail="File not found")
-    return FileResponse(filepath, media_type=None)
+
+    file_size = os.path.getsize(filepath)
+    ext = os.path.splitext(safe_name)[1].lower()
+    content_type = {
+        '.mp4': 'video/mp4', '.webm': 'video/webm', '.mov': 'video/quicktime',
+        '.avi': 'video/x-msvideo', '.mkv': 'video/x-matroska',
+        '.jpg': 'image/jpeg', '.jpeg': 'image/jpeg', '.png': 'image/png',
+        '.gif': 'image/gif', '.webp': 'image/webp',
+    }.get(ext, 'application/octet-stream')
+
+    # Handle Range header for video streaming
+    range_header = request.headers.get("range") if request else None
+    if range_header:
+        range_str = range_header.replace("bytes=", "")
+        parts = range_str.split("-")
+        start = int(parts[0]) if parts[0] else 0
+        end = int(parts[1]) if parts[1] else file_size - 1
+        end = min(end, file_size - 1)
+        length = end - start + 1
+
+        def iter_file():
+            with open(filepath, "rb") as f:
+                f.seek(start)
+                remaining = length
+                while remaining > 0:
+                    chunk = f.read(min(65536, remaining))
+                    if not chunk:
+                        break
+                    remaining -= len(chunk)
+                    yield chunk
+
+        return StreamingResponse(
+            iter_file(),
+            status_code=206,
+            media_type=content_type,
+            headers={
+                "Content-Range": f"bytes {start}-{end}/{file_size}",
+                "Accept-Ranges": "bytes",
+                "Content-Length": str(length),
+            }
+        )
+
+    return FileResponse(filepath, media_type=content_type, headers={"Accept-Ranges": "bytes"})
 
 
 # ==================== SPRITE SERVING ====================

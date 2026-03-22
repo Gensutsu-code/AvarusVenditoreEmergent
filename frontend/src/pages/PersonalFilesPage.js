@@ -189,10 +189,11 @@ function VideoPlayer({ src, fileData, onClose, onPrev, onNext, allTags, onTagsCh
   const [seekIndicator, setSeekIndicator] = useState(null);
   const [currentTime, setCurrentTime] = useState(0);
   const [duration, setDuration] = useState(0);
-  const [playing, setPlaying] = useState(true);
+  const [playing, setPlaying] = useState(false);
   const [hoverTime, setHoverTime] = useState(null);
   const [hoverX, setHoverX] = useState(0);
-  const [spriteData, setSpriteData] = useState(null); // {entries: [{start, end, x, y, w, h}], spriteUrl}
+  const [spriteData, setSpriteData] = useState(null);
+  const [isMuted, setIsMuted] = useState(false);
   const lastTap = useRef({ time: 0, x: 0 });
   const hideTimer = useRef(null);
 
@@ -303,7 +304,11 @@ function VideoPlayer({ src, fileData, onClose, onPrev, onNext, allTags, onTagsCh
       else if (e.key === ' ') {
         e.preventDefault();
         const v = videoRef.current;
-        if (v) { v.paused ? v.play() : v.pause(); setPlaying(!v.paused); }
+        if (v) { v.paused ? v.play().catch(() => {}) : v.pause(); }
+      }
+      else if (e.key === 'm') {
+        const v = videoRef.current;
+        if (v) { v.muted = !v.muted; setIsMuted(v.muted); }
       }
     };
     window.addEventListener('keydown', handleKey);
@@ -326,10 +331,47 @@ function VideoPlayer({ src, fileData, onClose, onPrev, onNext, allTags, onTagsCh
       className="fixed inset-0 z-50 bg-black flex flex-col" data-testid="pf-video-player">
       <div ref={containerRef} className="relative flex-1 flex items-center justify-center"
         onClick={handleDoubleTap} onTouchEnd={handleDoubleTap} onMouseMove={handleMouseMove}>
-        <video ref={videoRef} src={src} autoPlay className="max-w-full max-h-full" data-testid="pf-video-element"
+        <video ref={videoRef} src={src} playsInline autoPlay className="max-w-full max-h-full" data-testid="pf-video-element"
           onTimeUpdate={() => setCurrentTime(videoRef.current?.currentTime || 0)}
-          onLoadedMetadata={() => setDuration(videoRef.current?.duration || 0)}
+          onLoadedMetadata={() => {
+            setDuration(videoRef.current?.duration || 0);
+            const v = videoRef.current;
+            if (v) {
+              v.play().catch(() => {
+                // Autoplay blocked - try muted
+                v.muted = true;
+                setIsMuted(true);
+                v.play().catch(() => {});
+              });
+            }
+          }}
           onPlay={() => setPlaying(true)} onPause={() => setPlaying(false)} />
+
+        {/* Big play button when paused */}
+        {!playing && (
+          <button onClick={(e) => { e.stopPropagation(); videoRef.current?.play().catch(() => {}); }}
+            className="absolute inset-0 flex items-center justify-center z-5" data-testid="pf-video-play-overlay">
+            <div className="w-16 h-16 rounded-full bg-white/20 backdrop-blur-sm flex items-center justify-center hover:bg-white/30 transition-colors">
+              <Play className="w-8 h-8 text-white ml-1" />
+            </div>
+          </button>
+        )}
+
+        {/* Unmute button if muted due to autoplay policy */}
+        {isMuted && playing && (
+          <button onClick={(e) => {
+              e.stopPropagation();
+              if (videoRef.current) { videoRef.current.muted = false; setIsMuted(false); }
+            }}
+            className="absolute top-14 right-3 z-10 px-3 py-1.5 bg-white/20 backdrop-blur-sm rounded-lg text-white text-xs hover:bg-white/30 transition-colors flex items-center gap-1.5"
+            data-testid="pf-video-unmute">
+            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M5.586 15H4a1 1 0 01-1-1v-4a1 1 0 011-1h1.586l4.707-4.707C10.923 3.663 12 4.109 12 5v14c0 .891-1.077 1.337-1.707.707L5.586 15z" />
+              <path strokeLinecap="round" strokeLinejoin="round" d="M17 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2" />
+            </svg>
+            Включить звук
+          </button>
+        )}
 
         {/* Nav arrows */}
         {onPrev && (
@@ -1097,7 +1139,7 @@ export default function PersonalFilesPage() {
                 <div className="aspect-square relative bg-slate-900 flex items-center justify-center overflow-hidden">
                   {file.file_type === 'video' ? (
                     <>
-                      <video src={fileUrl(file)} className="w-full h-full object-cover" muted preload="metadata" />
+                      <video src={fileUrl(file)} className="w-full h-full object-cover" muted preload="none" />
                       <div className="absolute inset-0 flex items-center justify-center bg-black/30">
                         <div className="w-10 h-10 rounded-full bg-white/20 backdrop-blur-sm flex items-center justify-center">
                           <Play className="w-5 h-5 text-white ml-0.5" />
