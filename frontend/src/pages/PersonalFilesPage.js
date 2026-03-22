@@ -1211,9 +1211,9 @@ export default function PersonalFilesPage() {
                   {file.file_type === 'video' ? (
                     <>
                       {videoThumbUrl(file) ? (
-                        <img src={videoThumbUrl(file)} alt={file.name} className="w-full h-full object-cover" loading="lazy" />
+                        <img src={videoThumbUrl(file)} alt="" className="w-full h-full object-cover" loading="lazy" />
                       ) : videoThumbLocal(file) ? (
-                        <img src={videoThumbLocal(file)} alt={file.name} className="w-full h-full object-cover" loading="lazy" />
+                        <img src={videoThumbLocal(file)} alt="" className="w-full h-full object-cover" loading="lazy" />
                       ) : (
                         <div className="w-full h-full bg-slate-800" />
                       )}
@@ -1224,7 +1224,7 @@ export default function PersonalFilesPage() {
                       </div>
                     </>
                   ) : (file.file_type === 'image' || file.file_type === 'gif') ? (
-                    <img src={fileUrl(file)} alt={file.name} className="w-full h-full object-cover" loading="lazy" />
+                    <img src={fileUrl(file)} alt="" className="w-full h-full object-cover" loading="lazy" />
                   ) : (
                     <FileText className="w-5 h-5 text-slate-400" />
                   )}

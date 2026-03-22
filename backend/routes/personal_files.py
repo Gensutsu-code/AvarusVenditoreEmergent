@@ -191,13 +191,13 @@ async def _generate_sprite(file_id: str, video_path: str, duration: float, clean
         with open(vtt_path, 'w') as f:
             f.write("\n".join(vtt_lines))
 
-        # 5. Generate single thumbnail from middle of video
+        # 5. Generate single thumbnail from middle of video (high quality)
         mid_thumb_path = os.path.join(SPRITES_DIR, f"{file_id}_thumb.jpg")
         mid_time = duration / 2
         mid_cmd = [
             "ffmpeg", "-ss", str(mid_time), "-i", video_path,
-            "-vframes", "1", "-q:v", "3",
-            "-vf", f"scale={SPRITE_THUMB_W * 2}:{SPRITE_THUMB_H * 2}",
+            "-vframes", "1", "-q:v", "2",
+            "-vf", "scale=640:360:force_original_aspect_ratio=decrease,pad=640:360:(ow-iw)/2:(oh-ih)/2",
             mid_thumb_path, "-y"
         ]
         mid_proc = await asyncio.create_subprocess_exec(
@@ -822,28 +822,54 @@ async def serve_video_thumbnail(file_id: str, token: Optional[str] = None):
 
     thumb_path = os.path.join(SPRITES_DIR, f"{file_id}_thumb.jpg")
 
-    # Generate from sprite sheet if thumb doesn't exist yet
+    # Generate high-quality thumb if it doesn't exist yet
     if not os.path.isfile(thumb_path):
-        sprite_path = os.path.join(SPRITES_DIR, f"{file_id}.jpg")
-        if not os.path.isfile(sprite_path):
-            raise HTTPException(status_code=404, detail="Thumbnail not ready")
-        try:
-            from PIL import Image
-            file_doc = await database.personal_files.find_one({"id": file_id}, {"_id": 0})
-            cols = file_doc.get("sprite_cols", SPRITE_COLS) if file_doc else SPRITE_COLS
-            img = Image.open(sprite_path)
-            frame_w = SPRITE_THUMB_W
-            frame_h = SPRITE_THUMB_H
-            total_frames = (img.width // frame_w) * (img.height // frame_h)
-            mid_idx = total_frames // 2
-            col = mid_idx % cols
-            row = mid_idx // cols
-            x, y = col * frame_w, row * frame_h
-            frame = img.crop((x, y, x + frame_w, y + frame_h))
-            frame = frame.resize((frame_w * 2, frame_h * 2), Image.LANCZOS)
-            frame.save(thumb_path, "JPEG", quality=85)
-        except Exception:
-            raise HTTPException(status_code=404, detail="Thumbnail generation failed")
+        import asyncio
+        file_doc = await database.personal_files.find_one({"id": file_id}, {"_id": 0})
+        if not file_doc:
+            raise HTTPException(status_code=404, detail="File not found")
+
+        generated = False
+        # Try to extract from original video file (local storage)
+        if file_doc.get("storage") == "local" and file_doc.get("url"):
+            local_name = file_doc["url"].split("/")[-1].split("?")[0]
+            video_path = os.path.join(LOCAL_UPLOAD_DIR, local_name)
+            if os.path.isfile(video_path):
+                duration = file_doc.get("duration", 10)
+                mid_time = duration / 2
+                cmd = [
+                    "ffmpeg", "-ss", str(mid_time), "-i", video_path,
+                    "-vframes", "1", "-q:v", "2",
+                    "-vf", "scale=640:360:force_original_aspect_ratio=decrease,pad=640:360:(ow-iw)/2:(oh-ih)/2",
+                    thumb_path, "-y"
+                ]
+                proc = await asyncio.create_subprocess_exec(
+                    *cmd, stdout=asyncio.subprocess.DEVNULL, stderr=asyncio.subprocess.DEVNULL
+                )
+                await proc.wait()
+                generated = os.path.isfile(thumb_path)
+
+        # Fallback: crop from sprite sheet
+        if not generated:
+            sprite_path = os.path.join(SPRITES_DIR, f"{file_id}.jpg")
+            if not os.path.isfile(sprite_path):
+                raise HTTPException(status_code=404, detail="Thumbnail not ready")
+            try:
+                from PIL import Image
+                cols = file_doc.get("sprite_cols", SPRITE_COLS)
+                img = Image.open(sprite_path)
+                frame_w = SPRITE_THUMB_W
+                frame_h = SPRITE_THUMB_H
+                total_frames = (img.width // frame_w) * (img.height // frame_h)
+                mid_idx = total_frames // 2
+                col = mid_idx % cols
+                row = mid_idx // cols
+                x, y = col * frame_w, row * frame_h
+                frame = img.crop((x, y, x + frame_w, y + frame_h))
+                frame = frame.resize((640, 360), Image.LANCZOS)
+                frame.save(thumb_path, "JPEG", quality=90)
+            except Exception:
+                raise HTTPException(status_code=404, detail="Thumbnail generation failed")
 
     return FileResponse(thumb_path, media_type="image/jpeg")
 

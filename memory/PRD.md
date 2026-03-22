@@ -6,10 +6,12 @@ E-commerce platform for truck spare parts with full admin panel, crypto payments
 ## Core Features
 
 ### Video Thumbnail Fix — Single Frame from Middle (March 22, 2026) — LATEST
-- Bug: Video grid thumbnails showed two sprite frames instead of one
-- Fix: Backend now generates a separate single-frame thumbnail (`_thumb.jpg`) from the middle of each video
-- For existing videos with sprite sheets: thumbnail is auto-generated on-demand from the sprite (PIL crop of middle frame)
+- Bug: Video grid thumbnails showed two sprite frames instead of one + low quality
+- Fix: Backend generates a separate high-quality single-frame thumbnail (640x360) from the middle of each video via ffmpeg
+- For existing videos: thumbnail auto-generated on-demand (from local video via ffmpeg, or from sprite sheet via PIL crop)
+- Generated thumbs are cached on disk for subsequent requests
 - Frontend uses simple `<img>` tag instead of CSS sprite background — eliminates all CSS bounding issues
+- Alt text removed from thumbnails to hide original filenames
 - Endpoint: `GET /api/personal-files/sprites/{file_id}/thumb.jpg`
 
 ### Large Video Upload Fix (March 20, 2026)
