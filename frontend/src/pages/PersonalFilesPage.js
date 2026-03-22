@@ -43,6 +43,7 @@ function spriteThumbStyle(file) {
     backgroundImage: `url(${spriteUrl})`,
     backgroundSize: `${cols * 100}% auto`,
     backgroundPosition: '0 0',
+    backgroundRepeat: 'no-repeat',
   };
 }
 
