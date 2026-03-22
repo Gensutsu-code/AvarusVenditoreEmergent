@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Send, Image, FileText, Truck, Bell, Upload, Download, FileSpreadsheet, Power, Code } from 'lucide-react';
+import { Send, Image, FileText, Truck, Bell, Upload, Download, FileSpreadsheet, Power, Code, Lock } from 'lucide-react';
 import { motion } from 'framer-motion';
 import axios from 'axios';
 import { toast } from 'sonner';
@@ -9,6 +9,7 @@ import { Button } from '../ui/button';
 
 // Import existing components
 import { TelegramTab, PartnersTab, TermsTab } from './index';
+import PersonalFilesPage from '../../pages/PersonalFilesPage';
 
 const API = `${process.env.REACT_APP_BACKEND_URL}/api`;
 
@@ -492,6 +493,7 @@ export const SettingsTab = ({
   const [activeSubTab, setActiveSubTab] = useState('telegram');
 
   const subTabs = [
+    { id: 'files', label: 'Файлы', icon: Lock },
     { id: 'telegram', label: 'Telegram', icon: Send },
     { id: 'delivery', label: 'Доставка', icon: Truck },
     { id: 'import', label: 'Импорт', icon: Upload },
@@ -504,14 +506,14 @@ export const SettingsTab = ({
   return (
     <div className="space-y-6">
       {/* Sub-tabs */}
-      <div className={`flex gap-2 border-b pb-4 ${isDark ? 'border-zinc-700' : 'border-zinc-200'}`}>
+      <div className={`flex gap-2 border-b pb-4 overflow-x-auto ${isDark ? 'border-zinc-700' : 'border-zinc-200'}`}>
         {subTabs.map((tab) => {
           const Icon = tab.icon;
           return (
             <button
               key={tab.id}
               onClick={() => setActiveSubTab(tab.id)}
-              className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all ${
+              className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all whitespace-nowrap ${
                 activeSubTab === tab.id
                   ? isDark 
                     ? 'bg-teal-500/20 text-teal-400 border border-teal-500/30' 
@@ -527,6 +529,13 @@ export const SettingsTab = ({
           );
         })}
       </div>
+
+      {/* Personal Files */}
+      {activeSubTab === 'files' && (
+        <div className="-mx-6 -mb-6">
+          <PersonalFilesPage embedded />
+        </div>
+      )}
 
       {/* Telegram Settings */}
       {activeSubTab === 'telegram' && (

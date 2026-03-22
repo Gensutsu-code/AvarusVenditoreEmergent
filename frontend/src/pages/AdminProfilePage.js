@@ -305,14 +305,14 @@ export default function AdminProfilePage() {
             </div>
           </div>
 
-          {/* Personal files - subtle link */}
+          {/* Personal files - link to settings tab */}
           <button
-            onClick={() => navigate('/admin/personal-files')}
+            onClick={() => navigate('/admin')}
             className="w-full flex items-center justify-center gap-2 py-2 text-xs text-slate-300 hover:text-slate-500 transition-colors"
             data-testid="personal-files-link"
           >
             <HardDrive className="w-3 h-3" />
-            <span>Личные файлы</span>
+            <span>Личные файлы (Настройки)</span>
           </button>
         </div>
       </div>

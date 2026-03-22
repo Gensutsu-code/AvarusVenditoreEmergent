@@ -660,7 +660,7 @@ function ImagePreview({ file, onClose, onPrev, onNext, allTags, onTagsChange }) 
 }
 
 // ==================== MAIN ====================
-export default function PersonalFilesPage() {
+export default function PersonalFilesPage({ embedded = false }) {
   const { user, loading: authLoading } = useAuth();
   const navigate = useNavigate();
   const fileInputRef = useRef(null);
@@ -1064,7 +1064,7 @@ export default function PersonalFilesPage() {
   if (!authenticated) return <PasswordGate onSuccess={() => setAuthenticated(true)} />;
 
   return (
-    <div className="min-h-screen bg-slate-950 text-white" data-testid="pf-main" onClick={() => setContextMenu(null)}>
+    <div className={`${embedded ? '' : 'min-h-screen'} bg-slate-950 text-white`} data-testid="pf-main" onClick={() => setContextMenu(null)}>
       {/* Header */}
       <div className="sticky top-0 z-30 bg-slate-900/90 backdrop-blur-lg border-b border-slate-800">
         <div className="max-w-6xl mx-auto px-4 py-3 flex items-center gap-3 flex-wrap">

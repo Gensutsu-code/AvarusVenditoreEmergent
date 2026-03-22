@@ -5,7 +5,14 @@ E-commerce platform for truck spare parts with full admin panel, crypto payments
 
 ## Core Features
 
-### Upload Resilience & Broken Thumbnail Fix (March 22, 2026) — LATEST
+### Personal Files Moved to Settings Tab (March 22, 2026) — LATEST
+- Moved PersonalFilesPage from separate route `/admin/personal-files` into admin panel Settings → Файлы sub-tab
+- Password gate preserved — requires password before accessing files
+- Embedded mode: no min-h-screen, fits within Settings container
+- Removed standalone route from App.js
+- Updated AdminProfilePage link to point to admin panel
+
+### Upload Resilience & Broken Thumbnail Fix (March 22, 2026)
 - Fixed broken video thumbnails for corrupted MP4 files (moov atom missing) — shows clean dark placeholder
 - Added Cloudinary fallback to local storage if Cloudinary upload fails (both single and chunked)
 - Added retry logic (3 attempts) for the `complete` step on frontend

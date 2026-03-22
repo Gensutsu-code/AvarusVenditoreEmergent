@@ -24,7 +24,6 @@ import AdminProfilePage from "./pages/AdminProfilePage";
 import AdminOrdersPage from "./pages/AdminOrdersPage";
 import AdminChatsPage from "./pages/AdminChatsPage";
 import AdminCartsPage from "./pages/AdminCartsPage";
-import PersonalFilesPage from "./pages/PersonalFilesPage";
 import FavoritesPage from "./pages/FavoritesPage";
 import OrdersPage from "./pages/OrdersPage";
 import BonusPage from "./pages/BonusPage";
@@ -81,7 +80,6 @@ function AppContent() {
           <Route path="/admin/orders" element={<AdminOrdersPage />} />
           <Route path="/admin/chats" element={<AdminChatsPage />} />
           <Route path="/admin/carts" element={<AdminCartsPage />} />
-          <Route path="/admin/personal-files" element={<PersonalFilesPage />} />
           <Route path="/favorites" element={<FavoritesPage />} />
           <Route path="/orders" element={<OrdersPage />} />
           <Route path="/bonus" element={<BonusPage />} />
