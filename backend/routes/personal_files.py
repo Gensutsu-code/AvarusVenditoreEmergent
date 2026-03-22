@@ -595,23 +595,44 @@ async def complete_chunked_upload(
 
     # Cloudinary has 100MB limit on free plan. Large files stay local.
     if total_size <= CLOUDINARY_MAX:
-        result = await upload_file_to_cloudinary(final_path, filename, folder="personal")
-        file_doc = {
-            "id": str(uuid.uuid4()),
-            "folder_id": session.get("folder_id"),
-            "name": filename,
-            "url": result["url"],
-            "public_id": result.get("public_id"),
-            "storage": "cloudinary",
-            "local_filename": None,
-            "file_type": ft,
-            "size": total_size,
-            "width": result.get("width") or vinfo.get("width"),
-            "height": result.get("height") or vinfo.get("height"),
-            "duration": result.get("duration") or vinfo.get("duration"),
-            "quality": _video_quality_label(result.get("height") or vinfo.get("height")) if ft == "video" else None,
-            "created_at": datetime.now(timezone.utc).isoformat()
-        }
+        try:
+            result = await upload_file_to_cloudinary(final_path, filename, folder="personal")
+            file_doc = {
+                "id": str(uuid.uuid4()),
+                "folder_id": session.get("folder_id"),
+                "name": filename,
+                "url": result["url"],
+                "public_id": result.get("public_id"),
+                "storage": "cloudinary",
+                "local_filename": None,
+                "file_type": ft,
+                "size": total_size,
+                "width": result.get("width") or vinfo.get("width"),
+                "height": result.get("height") or vinfo.get("height"),
+                "duration": result.get("duration") or vinfo.get("duration"),
+                "quality": _video_quality_label(result.get("height") or vinfo.get("height")) if ft == "video" else None,
+                "created_at": datetime.now(timezone.utc).isoformat()
+            }
+        except Exception as cloud_err:
+            import logging
+            logging.getLogger("server").warning(f"Cloudinary upload failed, storing locally: {cloud_err}")
+            # Fallback to local storage if Cloudinary fails
+            file_doc = {
+                "id": str(uuid.uuid4()),
+                "folder_id": session.get("folder_id"),
+                "name": filename,
+                "url": f"/api/personal-files/serve/{final_filename}",
+                "public_id": None,
+                "storage": "local",
+                "local_filename": final_filename,
+                "file_type": ft,
+                "size": total_size,
+                "width": vinfo.get("width"),
+                "height": vinfo.get("height"),
+                "duration": vinfo.get("duration"),
+                "quality": _video_quality_label(vinfo.get("height")) if ft == "video" else None,
+                "created_at": datetime.now(timezone.utc).isoformat()
+            }
     else:
         # Large file: store locally, serve via API
         file_doc = {
@@ -678,24 +699,49 @@ async def upload_personal_file(
             f.write(content)
         vinfo = _probe_video(temp_path)
 
-    result = await upload_to_cloudinary(content, file.filename, folder="personal")
-
-    file_doc = {
-        "id": str(uuid.uuid4()),
-        "folder_id": folder_id or None,
-        "name": file.filename,
-        "url": result["url"],
-        "public_id": result.get("public_id"),
-        "storage": "cloudinary",
-        "local_filename": None,
-        "file_type": ft,
-        "size": total_size,
-        "width": result.get("width") or vinfo.get("width"),
-        "height": result.get("height") or vinfo.get("height"),
-        "duration": result.get("duration") or vinfo.get("duration"),
-        "quality": _video_quality_label(result.get("height") or vinfo.get("height")) if ft == "video" else None,
-        "created_at": datetime.now(timezone.utc).isoformat()
-    }
+    try:
+        result = await upload_to_cloudinary(content, file.filename, folder="personal")
+        file_doc = {
+            "id": str(uuid.uuid4()),
+            "folder_id": folder_id or None,
+            "name": file.filename,
+            "url": result["url"],
+            "public_id": result.get("public_id"),
+            "storage": "cloudinary",
+            "local_filename": None,
+            "file_type": ft,
+            "size": total_size,
+            "width": result.get("width") or vinfo.get("width"),
+            "height": result.get("height") or vinfo.get("height"),
+            "duration": result.get("duration") or vinfo.get("duration"),
+            "quality": _video_quality_label(result.get("height") or vinfo.get("height")) if ft == "video" else None,
+            "created_at": datetime.now(timezone.utc).isoformat()
+        }
+    except Exception as cloud_err:
+        import logging
+        logging.getLogger("server").warning(f"Cloudinary upload failed, storing locally: {cloud_err}")
+        os.makedirs(LOCAL_UPLOAD_DIR, exist_ok=True)
+        ext = os.path.splitext(file.filename or "")[1]
+        local_filename = f"{uuid.uuid4()}{ext}"
+        local_path = os.path.join(LOCAL_UPLOAD_DIR, local_filename)
+        with open(local_path, 'wb') as lf:
+            lf.write(content)
+        file_doc = {
+            "id": str(uuid.uuid4()),
+            "folder_id": folder_id or None,
+            "name": file.filename,
+            "url": f"/api/personal-files/serve/{local_filename}",
+            "public_id": None,
+            "storage": "local",
+            "local_filename": local_filename,
+            "file_type": ft,
+            "size": total_size,
+            "width": vinfo.get("width"),
+            "height": vinfo.get("height"),
+            "duration": vinfo.get("duration"),
+            "quality": _video_quality_label(vinfo.get("height")) if ft == "video" else None,
+            "created_at": datetime.now(timezone.utc).isoformat()
+        }
     await db.personal_files.insert_one(file_doc)
     file_doc.pop("_id", None)
 
@@ -835,7 +881,7 @@ async def serve_video_thumbnail(file_id: str, token: Optional[str] = None):
             local_name = file_doc["url"].split("/")[-1].split("?")[0]
             video_path = os.path.join(LOCAL_UPLOAD_DIR, local_name)
             if os.path.isfile(video_path):
-                duration = file_doc.get("duration", 10)
+                duration = file_doc.get("duration") or 10
                 mid_time = duration / 2
                 cmd = [
                     "ffmpeg", "-ss", str(mid_time), "-i", video_path,

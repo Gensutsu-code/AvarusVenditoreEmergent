@@ -35,9 +35,13 @@ function videoThumbUrl(file) {
 
 // For local videos: returns URL of a single thumbnail from the middle of the video
 function videoThumbLocal(file) {
-  if (!file?.thumb_ready && !file?.sprite_ready) return '';
-  const token = localStorage.getItem('token');
-  return `${BASE_URL}/api/personal-files/sprites/${file.id}/thumb.jpg?token=${token}`;
+  if (!file?.id) return '';
+  // Always try — backend generates on-demand from local video or sprite
+  if (file.storage === 'local' || file.sprite_ready || file.thumb_ready) {
+    const token = localStorage.getItem('token');
+    return `${BASE_URL}/api/personal-files/sprites/${file.id}/thumb.jpg?token=${token}`;
+  }
+  return '';
 }
 
 function formatSize(bytes) {
@@ -808,7 +812,20 @@ export default function PersonalFilesPage() {
       setUploadQueue(prev => prev.map((q, j) => j === index ? { ...q, progress: 99, status: 'uploading' } : q));
       const completeFd = new FormData();
       completeFd.append('upload_id', uploadId);
-      await axios.post(`${API}/personal-files/upload/complete`, completeFd, { signal, timeout: 600000 });
+      // Retry complete step up to 3 times (Cloudinary upload can be slow)
+      let completeErr = null;
+      for (let attempt = 0; attempt < 3; attempt++) {
+        try {
+          await axios.post(`${API}/personal-files/upload/complete`, completeFd, { signal, timeout: 600000 });
+          completeErr = null;
+          break;
+        } catch (err) {
+          completeErr = err;
+          if (err.name === 'AbortError' || err.code === 'ERR_CANCELED') throw err;
+          if (attempt < 2) await new Promise(r => setTimeout(r, 2000 * (attempt + 1)));
+        }
+      }
+      if (completeErr) throw completeErr;
     }
   };
 
@@ -1245,12 +1262,12 @@ export default function PersonalFilesPage() {
                   {file.file_type === 'video' ? (
                     <>
                       {videoThumbUrl(file) ? (
-                        <img src={videoThumbUrl(file)} alt="" className="w-full h-full object-cover" loading="lazy" />
+                        <img src={videoThumbUrl(file)} alt="" className="w-full h-full object-cover" loading="lazy"
+                          onError={e => { e.target.style.display = 'none'; }} />
                       ) : videoThumbLocal(file) ? (
-                        <img src={videoThumbLocal(file)} alt="" className="w-full h-full object-cover" loading="lazy" />
-                      ) : (
-                        <div className="w-full h-full bg-slate-800" />
-                      )}
+                        <img src={videoThumbLocal(file)} alt="" className="w-full h-full object-cover" loading="lazy"
+                          onError={e => { e.target.style.display = 'none'; }} />
+                      ) : null}
                       <div className="absolute inset-0 flex items-center justify-center bg-black/30">
                         <div className="w-10 h-10 rounded-full bg-white/20 backdrop-blur-sm flex items-center justify-center">
                           <Play className="w-5 h-5 text-white ml-0.5" />

@@ -5,6 +5,13 @@ E-commerce platform for truck spare parts with full admin panel, crypto payments
 
 ## Core Features
 
+### Upload Resilience & Broken Thumbnail Fix (March 22, 2026) — LATEST
+- Fixed broken video thumbnails for corrupted MP4 files (moov atom missing) — shows clean dark placeholder
+- Added Cloudinary fallback to local storage if Cloudinary upload fails (both single and chunked)
+- Added retry logic (3 attempts) for the `complete` step on frontend
+- Fixed `duration: None` TypeError in thumb generation
+- Frontend `onError` handler hides broken thumbnail images gracefully
+
 ### Auto-Slideshow for Photos (March 22, 2026) — LATEST
 - Added auto-scroll slideshow for photo/GIF preview modal
 - Play/Pause button + speed slider (0.1s — 10s interval)
