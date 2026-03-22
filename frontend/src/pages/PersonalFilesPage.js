@@ -6,7 +6,7 @@ import { Input } from '../components/ui/input';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   Folder, FolderPlus, Upload, Search, Trash2, X, ChevronRight, ChevronLeft,
-  Play, Image, Film, FileText, Lock, Eye, MoreVertical, Pencil,
+  Play, Pause, Image, Film, FileText, Lock, Eye, MoreVertical, Pencil,
   Check, Maximize, SkipBack, SkipForward, RotateCw, Home, Tag, Plus,
   CheckSquare, Square, Move, Tags
 } from 'lucide-react';
@@ -557,41 +557,75 @@ function EditableLabel({ file, onSave }) {
 // ==================== IMAGE/GIF PREVIEW ====================
 function ImagePreview({ file, onClose, onPrev, onNext, allTags, onTagsChange }) {
   const isGif = file.file_type === 'gif';
+  const [isPlaying, setIsPlaying] = useState(false);
+  const [speed, setSpeed] = useState(2);
+  const intervalRef = useRef(null);
+
+  // Slideshow auto-advance
+  useEffect(() => {
+    if (isPlaying && onNext) {
+      intervalRef.current = setInterval(() => {
+        onNext();
+      }, speed * 1000);
+    }
+    return () => { if (intervalRef.current) clearInterval(intervalRef.current); };
+  }, [isPlaying, speed, onNext]);
+
+  // Stop slideshow if no next
+  useEffect(() => {
+    if (isPlaying && !onNext) setIsPlaying(false);
+  }, [onNext, isPlaying]);
 
   useEffect(() => {
     const handleKey = (e) => {
-      if (e.key === 'Escape') onClose();
-      else if (e.key === 'ArrowLeft' && onPrev) onPrev();
-      else if (e.key === 'ArrowRight' && onNext) onNext();
+      if (e.key === 'Escape') { setIsPlaying(false); onClose(); }
+      else if (e.key === 'ArrowLeft' && onPrev) { setIsPlaying(false); onPrev(); }
+      else if (e.key === 'ArrowRight' && onNext) { setIsPlaying(false); onNext(); }
+      else if (e.key === ' ') { e.preventDefault(); setIsPlaying(p => !p); }
     };
     window.addEventListener('keydown', handleKey);
     return () => window.removeEventListener('keydown', handleKey);
   }, [onClose, onPrev, onNext]);
 
   const handleSimilarSelect = (f) => {
+    setIsPlaying(false);
     onClose();
     setTimeout(() => onTagsChange?.('openFile', f), 100);
   };
 
+  const speedLabel = speed < 1 ? `${(speed * 1000).toFixed(0)}мс` : `${speed}с`;
+
   return (
     <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
-      className="fixed inset-0 z-50 flex flex-col bg-black/95 backdrop-blur-sm" onClick={onClose}
+      className="fixed inset-0 z-50 flex flex-col bg-black/95 backdrop-blur-sm" onClick={() => { setIsPlaying(false); onClose(); }}
       data-testid="pf-preview-modal">
       <div className="flex-1 flex items-center justify-center relative p-4 min-h-0" onClick={e => e.stopPropagation()}>
         {/* Close */}
-        <button onClick={onClose} className="absolute top-3 right-3 z-10 w-10 h-10 rounded-full bg-white/10 hover:bg-white/20 flex items-center justify-center text-white" data-testid="pf-preview-close">
+        <button onClick={() => { setIsPlaying(false); onClose(); }} className="absolute top-3 right-3 z-10 w-10 h-10 rounded-full bg-white/10 hover:bg-white/20 flex items-center justify-center text-white" data-testid="pf-preview-close">
           <X className="w-5 h-5" />
         </button>
 
+        {/* Slideshow controls */}
+        <div className="absolute top-3 left-1/2 -translate-x-1/2 z-10 flex items-center gap-3 bg-black/60 backdrop-blur-md rounded-full px-4 py-2" data-testid="pf-slideshow-controls">
+          <button onClick={() => setIsPlaying(p => !p)} className="w-8 h-8 rounded-full bg-white/10 hover:bg-white/25 flex items-center justify-center text-white transition-colors" data-testid="pf-slideshow-toggle">
+            {isPlaying ? <Pause className="w-4 h-4" /> : <Play className="w-4 h-4 ml-0.5" />}
+          </button>
+          <input type="range" min={0.1} max={10} step={0.1} value={speed}
+            onChange={e => setSpeed(parseFloat(e.target.value))}
+            className="w-24 sm:w-32 h-1 accent-teal-500 cursor-pointer"
+            data-testid="pf-slideshow-speed" />
+          <span className="text-white/70 text-xs font-mono w-10 text-center">{speedLabel}</span>
+        </div>
+
         {/* Nav arrows */}
         {onPrev && (
-          <button onClick={onPrev} data-testid="pf-preview-prev"
+          <button onClick={() => { setIsPlaying(false); onPrev(); }} data-testid="pf-preview-prev"
             className="absolute left-3 top-1/2 -translate-y-1/2 w-10 h-10 rounded-full bg-white/10 hover:bg-white/20 flex items-center justify-center text-white z-10 transition-colors">
             <ChevronLeft className="w-6 h-6" />
           </button>
         )}
         {onNext && (
-          <button onClick={onNext} data-testid="pf-preview-next"
+          <button onClick={() => { setIsPlaying(false); onNext(); }} data-testid="pf-preview-next"
             className="absolute right-3 top-1/2 -translate-y-1/2 w-10 h-10 rounded-full bg-white/10 hover:bg-white/20 flex items-center justify-center text-white z-10 transition-colors">
             <ChevronRight className="w-6 h-6" />
           </button>

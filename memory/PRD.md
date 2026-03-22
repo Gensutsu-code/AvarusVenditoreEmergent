@@ -5,7 +5,14 @@ E-commerce platform for truck spare parts with full admin panel, crypto payments
 
 ## Core Features
 
-### Video Thumbnail Fix — Single Frame from Middle (March 22, 2026) — LATEST
+### Auto-Slideshow for Photos (March 22, 2026) — LATEST
+- Added auto-scroll slideshow for photo/GIF preview modal
+- Play/Pause button + speed slider (0.1s — 10s interval)
+- Controls: Space to toggle, arrows to navigate (stops slideshow), Escape to close
+- Slideshow auto-stops when reaching the last file
+- UI: floating control bar at top center with glassmorphism backdrop
+
+### Video Thumbnail Fix — Single Frame from Middle (March 22, 2026)
 - Bug: Video grid thumbnails showed two sprite frames instead of one + low quality
 - Fix: Backend generates a separate high-quality single-frame thumbnail (640x360) from the middle of each video via ffmpeg
 - For existing videos: thumbnail auto-generated on-demand (from local video via ffmpeg, or from sprite sheet via PIL crop)
