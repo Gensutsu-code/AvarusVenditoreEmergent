@@ -24,6 +24,9 @@ import AdminProfilePage from "./pages/AdminProfilePage";
 import AdminOrdersPage from "./pages/AdminOrdersPage";
 import AdminChatsPage from "./pages/AdminChatsPage";
 import AdminCartsPage from "./pages/AdminCartsPage";
+import ForgotPasswordPage from "./pages/ForgotPasswordPage";
+import ResetPasswordPage from "./pages/ResetPasswordPage";
+import Footer from "./components/Footer";
 import FavoritesPage from "./pages/FavoritesPage";
 import OrdersPage from "./pages/OrdersPage";
 import BonusPage from "./pages/BonusPage";
@@ -92,6 +95,8 @@ function AppContent() {
     '/account': 'account',
     '/news': 'news',
     '/orders': 'orders',
+    '/cart': 'cart',
+    '/favorites': 'favorites',
   };
   const pageKey = Object.entries(pageMaintenanceMap).find(([route]) => location.pathname.startsWith(route))?.[1];
   const pageMaint = pageKey && maintenance.pages?.[pageKey];
@@ -111,6 +116,8 @@ function AppContent() {
           <Route path="/checkout" element={<CheckoutPage />} />
           <Route path="/login" element={<LoginPage />} />
           <Route path="/register" element={<RegisterPage />} />
+          <Route path="/forgot-password" element={<ForgotPasswordPage />} />
+          <Route path="/reset-password" element={<ResetPasswordPage />} />
           <Route path="/account" element={<AccountPage />} />
           <Route path="/admin" element={<AdminPage />} />
           <Route path="/admin/profile" element={<AdminProfilePage />} />
@@ -128,6 +135,7 @@ function AppContent() {
         </Routes>
         )}
       </main>
+      {!isAdmin && <Footer />}
       {!isAdmin && <FloatingPromoBanner />}
       {!isAdmin && <ChatWidget />}
       <Toaster position="top-center" />

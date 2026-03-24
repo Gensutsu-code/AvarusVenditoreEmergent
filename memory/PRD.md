@@ -12,6 +12,13 @@ E-commerce platform for truck spare parts with full admin panel, crypto payments
 - Removed standalone route from App.js
 - Updated AdminProfilePage link to point to admin panel
 
+### Footer + Password Recovery + Maintenance for Cart/Favorites (March 24, 2026) — LATEST
+- Footer component with editable contacts (email, address), social links (Telegram, WhatsApp, VK), and copyright
+- Admin UI: Настройки → Футер for editing all footer fields
+- Password recovery via email: forgot-password page → sends reset link → reset-password page
+- Added Cart and Favorites pages to per-page maintenance system
+- Backend: `GET/PUT /api/maintenance/footer`, `POST /api/auth/forgot-password`, `POST /api/auth/reset-password`
+
 ### Chat Fix (March 24, 2026) — LATEST
 - Fixed `messages.map is not a function` — API returns `{messages:[]}`, frontend now handles both formats
 - Fixed field name mismatches: `msg.content` → `msg.text`, `msg.sender` → `msg.sender_type`, `msg.type` → `msg.message_type`

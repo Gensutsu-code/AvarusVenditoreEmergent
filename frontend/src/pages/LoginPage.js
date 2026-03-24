@@ -140,6 +140,12 @@ export default function LoginPage() {
               </Button>
             </motion.div>
           </form>
+
+          <div className="text-center mt-3">
+            <Link to="/forgot-password" className={`text-sm ${isDark ? 'text-zinc-500 hover:text-zinc-300' : 'text-slate-500 hover:text-slate-700'}`} data-testid="forgot-password-link">
+              Забыли пароль?
+            </Link>
+          </div>
         </motion.div>
 
         <motion.p 

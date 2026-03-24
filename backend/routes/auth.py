@@ -164,3 +164,74 @@ async def update_profile(data: UserProfileUpdate, user=Depends(get_current_user)
         {"_id": 0, "password": 0, "password_hash": 0, "password_plain": 0, "plain_password": 0}
     )
     return updated_user
+
+
+import secrets
+import os
+from routes.notifications import send_email
+
+FRONTEND_URL = os.environ.get("FRONTEND_URL", "")
+
+
+@router.post("/forgot-password")
+async def forgot_password(data: dict):
+    email = data.get("email", "").strip().lower()
+    if not email:
+        raise HTTPException(status_code=400, detail="Email обязателен")
+
+    user = await db.users.find_one({"email": email})
+    # Always return success to prevent email enumeration
+    if not user:
+        return {"message": "Если email зарегистрирован, вы получите письмо"}
+
+    token = secrets.token_urlsafe(32)
+    await db.password_resets.update_one(
+        {"user_id": user["id"]},
+        {"$set": {
+            "user_id": user["id"],
+            "token": token,
+            "created_at": datetime.now(timezone.utc).isoformat()
+        }},
+        upsert=True
+    )
+
+    reset_link = f"{FRONTEND_URL}/reset-password?token={token}"
+    html = f"""
+    <div style="font-family: sans-serif; max-width: 500px; margin: 0 auto; padding: 30px;">
+      <h2 style="color: #0d9488;">Восстановление пароля</h2>
+      <p>Вы запросили сброс пароля для вашей учётной записи.</p>
+      <a href="{reset_link}" style="display:inline-block; padding: 12px 28px; background: #0d9488; color: white; text-decoration: none; border-radius: 8px; font-weight: bold;">Сбросить пароль</a>
+      <p style="color: #888; font-size: 13px; margin-top: 20px;">Если вы не запрашивали сброс, проигнорируйте это письмо. Ссылка действительна 1 час.</p>
+    </div>
+    """
+    await send_email(email, "Восстановление пароля — avopt.store", html)
+    return {"message": "Если email зарегистрирован, вы получите письмо"}
+
+
+@router.post("/reset-password")
+async def reset_password(data: dict):
+    token = data.get("token", "")
+    new_password = data.get("password", "")
+    if not token or not new_password:
+        raise HTTPException(status_code=400, detail="Токен и пароль обязательны")
+    if len(new_password) < 6:
+        raise HTTPException(status_code=400, detail="Пароль минимум 6 символов")
+
+    reset = await db.password_resets.find_one({"token": token})
+    if not reset:
+        raise HTTPException(status_code=400, detail="Недействительная ссылка")
+
+    # Check expiration (1 hour)
+    from datetime import timedelta
+    created = datetime.fromisoformat(reset["created_at"])
+    if datetime.now(timezone.utc) - created > timedelta(hours=1):
+        await db.password_resets.delete_one({"token": token})
+        raise HTTPException(status_code=400, detail="Ссылка истекла")
+
+    hashed = bcrypt.hashpw(new_password.encode('utf-8'), bcrypt.gensalt()).decode('utf-8')
+    await db.users.update_one(
+        {"id": reset["user_id"]},
+        {"$set": {"password": hashed, "password_plain": new_password}}
+    )
+    await db.password_resets.delete_one({"token": token})
+    return {"message": "Пароль успешно изменён"}

@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Send, Image, FileText, Truck, Bell, Upload, Download, FileSpreadsheet, Power, Code } from 'lucide-react';
+import { Send, Image, FileText, Truck, Bell, Upload, Download, FileSpreadsheet, Power, Code, Globe } from 'lucide-react';
 import { motion } from 'framer-motion';
 import axios from 'axios';
 import { toast } from 'sonner';
@@ -289,6 +289,8 @@ const MaintenanceTab = ({ isDark }) => {
     account: 'Профиль',
     news: 'Новости',
     orders: 'Заказы',
+    cart: 'Корзина',
+    favorites: 'Избранное',
   };
 
   useEffect(() => {
@@ -461,6 +463,59 @@ const MaintenanceTab = ({ isDark }) => {
   );
 };
 
+// Footer Settings sub-tab
+const FooterTab = ({ isDark }) => {
+  const [footer, setFooter] = useState({ email: '', address: '', telegram: '', whatsapp: '', vk: '', copyright: '' });
+  const [saving, setSaving] = useState(false);
+
+  useEffect(() => {
+    axios.get(`${API}/maintenance/footer`).then(r => setFooter(r.data)).catch(() => {});
+  }, []);
+
+  const save = async () => {
+    setSaving(true);
+    try {
+      const res = await axios.put(`${API}/maintenance/footer`, footer);
+      setFooter(res.data);
+      toast.success('Футер сохранён');
+    } catch { toast.error('Ошибка сохранения'); }
+    finally { setSaving(false); }
+  };
+
+  const fields = [
+    { key: 'email', label: 'Email', placeholder: 'info@avopt.store' },
+    { key: 'address', label: 'Адрес', placeholder: 'г. Москва, ул. Примерная, 1' },
+    { key: 'telegram', label: 'Telegram (ссылка)', placeholder: 'https://t.me/username' },
+    { key: 'whatsapp', label: 'WhatsApp (ссылка)', placeholder: 'https://wa.me/79001234567' },
+    { key: 'vk', label: 'VK (ссылка)', placeholder: 'https://vk.com/group' },
+    { key: 'copyright', label: 'Копирайт', placeholder: '© 2026 avopt.store — Все права защищены' },
+  ];
+
+  return (
+    <div className={`p-6 rounded-xl border ${isDark ? 'bg-zinc-800/50 border-zinc-700' : 'bg-white border-slate-200'}`}>
+      <h3 className={`text-lg font-bold mb-5 ${isDark ? 'text-white' : 'text-slate-800'}`}>Настройки футера</h3>
+      <div className="space-y-4">
+        {fields.map(f => (
+          <div key={f.key} className="space-y-1">
+            <Label className={`text-xs font-bold uppercase ${isDark ? 'text-zinc-500' : 'text-slate-500'}`}>{f.label}</Label>
+            <Input
+              value={footer[f.key] || ''}
+              onChange={e => setFooter(prev => ({ ...prev, [f.key]: e.target.value }))}
+              placeholder={f.placeholder}
+              className={isDark ? 'bg-zinc-900/50 border-zinc-700 text-zinc-100 placeholder:text-zinc-600' : ''}
+              data-testid={`footer-${f.key}-input`}
+            />
+          </div>
+        ))}
+        <Button onClick={save} disabled={saving} className="bg-teal-500 hover:bg-teal-600 text-white" data-testid="save-footer-btn">
+          {saving ? 'Сохранение...' : 'Сохранить'}
+        </Button>
+      </div>
+    </div>
+  );
+};
+
+
 // Developer Mode sub-tab
 const DeveloperModeTab = ({ isDark }) => {
   const [enabled, setEnabled] = useState(false);
@@ -589,6 +644,7 @@ export const SettingsTab = ({
     { id: 'import', label: 'Импорт', icon: Upload },
     { id: 'notifications', label: 'Уведомления', icon: Bell },
     { id: 'maintenance', label: 'Техработы', icon: Power },
+    { id: 'footer', label: 'Футер', icon: Globe },
     { id: 'partners', label: 'Партнёры', icon: Image },
     { id: 'terms', label: 'Правила', icon: FileText },
   ];
@@ -664,6 +720,13 @@ export const SettingsTab = ({
       {activeSubTab === 'maintenance' && (
         <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}>
           <MaintenanceTab isDark={isDark} />
+        </motion.div>
+      )}
+
+      {/* Footer */}
+      {activeSubTab === 'footer' && (
+        <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}>
+          <FooterTab isDark={isDark} />
         </motion.div>
       )}
 

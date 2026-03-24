@@ -4,7 +4,7 @@ from database import db, get_current_user
 
 router = APIRouter(prefix="/maintenance", tags=["maintenance"])
 
-PAGE_KEYS = ["catalog", "bonus", "account", "news", "orders"]
+PAGE_KEYS = ["catalog", "bonus", "account", "news", "orders", "cart", "favorites"]
 
 
 @router.get("/status")
@@ -95,3 +95,31 @@ async def update_page_maintenance(data: dict, user=Depends(get_current_user)):
         upsert=True,
     )
     return {"pages": sanitized}
+
+
+@router.get("/footer")
+async def get_footer_settings():
+    """Public: get footer contacts and copyright"""
+    doc = await db.site_settings.find_one({"key": "footer"}, {"_id": 0})
+    if not doc:
+        return {"email": "", "address": "", "telegram": "", "whatsapp": "", "vk": "", "copyright": ""}
+    return {k: doc.get(k, "") for k in ["email", "address", "telegram", "whatsapp", "vk", "copyright"]}
+
+
+@router.put("/footer")
+async def update_footer_settings(data: dict, user=Depends(get_current_user)):
+    if user.get("role") != "admin":
+        raise HTTPException(status_code=403, detail="Admin access required")
+
+    fields = {}
+    for k in ["email", "address", "telegram", "whatsapp", "vk", "copyright"]:
+        if k in data:
+            fields[k] = str(data[k])
+
+    await db.site_settings.update_one(
+        {"key": "footer"},
+        {"$set": {**fields, "key": "footer"}},
+        upsert=True,
+    )
+    doc = await db.site_settings.find_one({"key": "footer"}, {"_id": 0})
+    return {k: doc.get(k, "") for k in ["email", "address", "telegram", "whatsapp", "vk", "copyright"]}
