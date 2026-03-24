@@ -280,13 +280,25 @@ const NotificationsTab = ({ isDark }) => {
 const MaintenanceTab = ({ isDark }) => {
   const [settings, setSettings] = useState({ enabled: false, message: '' });
   const [saving, setSaving] = useState(false);
+  const [pageSettings, setPageSettings] = useState({});
+  const [savingPages, setSavingPages] = useState(false);
+
+  const PAGE_LABELS = {
+    catalog: 'Поиск товаров',
+    bonus: 'Бонусы',
+    account: 'Профиль',
+    news: 'Новости',
+    orders: 'Заказы',
+  };
 
   useEffect(() => {
-    axios.get(`${API}/maintenance/status`).then(r => setSettings(r.data)).catch(() => {});
+    axios.get(`${API}/maintenance/status`).then(r => {
+      setSettings({ enabled: r.data.enabled, message: r.data.message });
+      if (r.data.pages) setPageSettings(r.data.pages);
+    }).catch(() => {});
   }, []);
 
   const toggle = async () => {
-    const action = settings.enabled ? 'включить' : 'выключить';
     if (!window.confirm(`${settings.enabled ? 'Включить' : 'Выключить'} сайт?`)) return;
     try {
       const res = await axios.post(`${API}/maintenance/toggle`);
@@ -305,8 +317,33 @@ const MaintenanceTab = ({ isDark }) => {
     finally { setSaving(false); }
   };
 
+  const togglePage = (key) => {
+    setPageSettings(prev => ({
+      ...prev,
+      [key]: { ...prev[key], enabled: !prev[key]?.enabled, message: prev[key]?.message || '' }
+    }));
+  };
+
+  const setPageMessage = (key, message) => {
+    setPageSettings(prev => ({
+      ...prev,
+      [key]: { ...prev[key], enabled: prev[key]?.enabled || false, message }
+    }));
+  };
+
+  const savePageSettings = async () => {
+    setSavingPages(true);
+    try {
+      const res = await axios.put(`${API}/maintenance/pages`, { pages: pageSettings });
+      setPageSettings(res.data.pages);
+      toast.success('Настройки страниц сохранены');
+    } catch { toast.error('Ошибка сохранения'); }
+    finally { setSavingPages(false); }
+  };
+
   return (
     <div className="space-y-6">
+      {/* Global maintenance */}
       <div className={`p-6 rounded-xl border ${isDark ? 'bg-zinc-800/50 border-zinc-700' : 'bg-white border-slate-200'}`}>
         <h3 className={`text-lg font-bold mb-5 ${isDark ? 'text-white' : 'text-slate-800'}`}>Режим технических работ</h3>
 
@@ -364,6 +401,61 @@ const MaintenanceTab = ({ isDark }) => {
             {saving ? 'Сохранение...' : 'Сохранить сообщение'}
           </Button>
         </div>
+      </div>
+
+      {/* Per-page maintenance */}
+      <div className={`p-6 rounded-xl border ${isDark ? 'bg-zinc-800/50 border-zinc-700' : 'bg-white border-slate-200'}`}>
+        <h3 className={`text-lg font-bold mb-2 ${isDark ? 'text-white' : 'text-slate-800'}`}>Техработы по страницам</h3>
+        <p className={`text-sm mb-5 ${isDark ? 'text-zinc-500' : 'text-slate-500'}`}>
+          Отключайте отдельные страницы — остальной сайт продолжит работать. Шапка остаётся видной.
+        </p>
+
+        <div className="space-y-4">
+          {Object.entries(PAGE_LABELS).map(([key, label]) => {
+            const pg = pageSettings[key] || { enabled: false, message: '' };
+            return (
+              <div key={key} className={`p-4 rounded-xl border transition-colors ${
+                pg.enabled
+                  ? isDark ? 'bg-red-500/5 border-red-500/20' : 'bg-red-50/50 border-red-200'
+                  : isDark ? 'border-zinc-700/50' : 'border-slate-200'
+              }`}>
+                <div className="flex items-center justify-between mb-2">
+                  <div className="flex items-center gap-3">
+                    <div className={`w-2 h-2 rounded-full ${pg.enabled ? 'bg-red-500 animate-pulse' : 'bg-green-500'}`} />
+                    <span className={`font-medium text-sm ${isDark ? 'text-zinc-200' : 'text-slate-700'}`}>{label}</span>
+                  </div>
+                  <button
+                    onClick={() => togglePage(key)}
+                    className={`text-xs font-bold px-3 py-1 rounded-lg transition-colors ${
+                      pg.enabled
+                        ? isDark ? 'bg-green-500/20 text-green-400 hover:bg-green-500/30' : 'bg-green-100 text-green-700 hover:bg-green-200'
+                        : isDark ? 'bg-red-500/20 text-red-400 hover:bg-red-500/30' : 'bg-red-100 text-red-700 hover:bg-red-200'
+                    }`}
+                    data-testid={`page-maint-toggle-${key}`}
+                  >
+                    {pg.enabled ? 'Включить' : 'Отключить'}
+                  </button>
+                </div>
+                <Input
+                  value={pg.message}
+                  onChange={(e) => setPageMessage(key, e.target.value)}
+                  placeholder="Текст для посетителей (необязательно)"
+                  className={`text-sm h-8 ${isDark ? 'bg-zinc-900/50 border-zinc-700 text-zinc-100 placeholder:text-zinc-600' : ''}`}
+                  data-testid={`page-maint-message-${key}`}
+                />
+              </div>
+            );
+          })}
+        </div>
+
+        <Button
+          onClick={savePageSettings}
+          disabled={savingPages}
+          className="mt-5 bg-teal-500 hover:bg-teal-600 text-white"
+          data-testid="save-page-maintenance-btn"
+        >
+          {savingPages ? 'Сохранение...' : 'Сохранить настройки страниц'}
+        </Button>
       </div>
     </div>
   );

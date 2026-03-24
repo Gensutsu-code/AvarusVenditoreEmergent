@@ -12,6 +12,13 @@ E-commerce platform for truck spare parts with full admin panel, crypto payments
 - Removed standalone route from App.js
 - Updated AdminProfilePage link to point to admin panel
 
+### Maintenance Mode: Real-time + Per-Page (March 24, 2026) — LATEST
+- Polling every 15s ensures maintenance activates instantly (no page reload needed)
+- Per-page maintenance: admin can disable individual pages (catalog, bonus, account, news, orders) with custom messages
+- Disabled page shows header + maintenance banner; rest of site works normally
+- Backend: `GET/PUT /api/maintenance/pages` endpoints
+- Admin UI: Настройки → Техработы → "Техработы по страницам" section
+
 ### Upload Resilience & Broken Thumbnail Fix (March 22, 2026)
 - Fixed broken video thumbnails for corrupted MP4 files (moov atom missing) — shows clean dark placeholder
 - Added Cloudinary fallback to local storage if Cloudinary upload fails (both single and chunked)
