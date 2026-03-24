@@ -103,9 +103,9 @@ function AppContent() {
   const isPageDown = pageMaint?.enabled && !isAdmin;
 
   return (
-    <div className={`min-h-screen ${isDark ? 'bg-zinc-950' : 'bg-gradient-to-br from-cyan-50 via-pink-50 to-cyan-50'}`}>
+    <div className={`min-h-screen flex flex-col ${isDark ? 'bg-zinc-950' : 'bg-gradient-to-br from-cyan-50 via-pink-50 to-cyan-50'}`}>
       <Header />
-      <main>
+      <main className="flex-1">
         {isPageDown ? (
           <PageMaintenanceBanner message={pageMaint.message} />
         ) : (
