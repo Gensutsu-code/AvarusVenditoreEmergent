@@ -154,6 +154,12 @@ async def get_all_chats(user=Depends(get_current_user)):
             "read": False
         })
         chat["unread_count"] = unread_count
+        # Get last message text
+        last_msg = await db.chat_messages.find_one(
+            {"chat_id": chat["id"]}, {"_id": 0, "text": 1},
+            sort=[("created_at", -1)]
+        )
+        chat["last_message"] = last_msg.get("text", "") if last_msg else ""
     
     return chats
 

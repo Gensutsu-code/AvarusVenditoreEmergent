@@ -197,9 +197,9 @@ export default function AdminChatsPage() {
     if (showLoading) setLoading(true);
     try {
       const res = await axios.get(`${API}/admin/chats/${chatId}/messages`);
-      setMessages(res.data);
-      // Mark as read
-      await axios.post(`${API}/admin/chats/${chatId}/read`);
+      const msgs = Array.isArray(res.data) ? res.data : (res.data.messages || []);
+      setMessages(msgs);
+      // Mark as read via client endpoint  
       fetchChats(); // Refresh unread count
     } catch (err) {
       console.error('Failed to fetch messages', err);
@@ -219,9 +219,8 @@ export default function AdminChatsPage() {
     
     setSending(true);
     try {
-      await axios.post(`${API}/admin/chats/${selectedChat.id}/messages`, {
-        content: newMessage.trim(),
-        type: 'text'
+      await axios.post(`${API}/admin/chats/${selectedChat.id}/send`, {
+        text: newMessage.trim()
       });
       setNewMessage('');
       fetchMessages(selectedChat.id, false);
@@ -233,24 +232,8 @@ export default function AdminChatsPage() {
   };
 
   const handleFileUpload = async (e) => {
-    const file = e.target.files?.[0];
-    if (!file || !selectedChat) return;
-    
-    const formData = new FormData();
-    formData.append('file', file);
-    
-    setSending(true);
-    try {
-      await axios.post(`${API}/admin/chats/${selectedChat.id}/upload`, formData, {
-        headers: { 'Content-Type': 'multipart/form-data' }
-      });
-      fetchMessages(selectedChat.id, false);
-    } catch (err) {
-      toast.error('Ошибка загрузки файла');
-    } finally {
-      setSending(false);
-      if (fileInputRef.current) fileInputRef.current.value = '';
-    }
+    toast.info('Загрузка файлов в чат пока не поддерживается');
+    if (fileInputRef.current) fileInputRef.current.value = '';
   };
 
   const formatTime = (dateStr) => {
@@ -783,7 +766,7 @@ export default function AdminChatsPage() {
                 {/* Messages */}
                 <div className="flex-1 overflow-y-auto p-4 space-y-4">
                   {messages.map((msg, index) => {
-                    const isAdmin = msg.sender === 'admin';
+                    const isAdmin = msg.sender_type === 'admin';
                     const showDate = index === 0 || 
                       formatDate(messages[index - 1].created_at) !== formatDate(msg.created_at);
                     
@@ -806,25 +789,25 @@ export default function AdminChatsPage() {
                               ? isDark ? 'bg-orange-500/20 text-orange-100' : 'bg-teal-500/20 text-green-900'
                               : isDark ? 'bg-zinc-800 text-zinc-200' : 'bg-white text-slate-700'
                           } rounded-2xl px-4 py-2 shadow-sm`}>
-                            {msg.type === 'image' ? (
+                            {msg.message_type === 'image' ? (
                               <img 
-                                src={msg.content} 
+                                src={msg.file_url || msg.text} 
                                 alt="" 
                                 className="max-w-full rounded-lg cursor-pointer hover:opacity-90 transition-opacity"
-                                onClick={() => setLightboxImage(msg.content)}
+                                onClick={() => setLightboxImage(msg.file_url || msg.text)}
                               />
-                            ) : msg.type === 'video' ? (
+                            ) : msg.message_type === 'video' ? (
                               <div 
                                 className="relative cursor-pointer group"
-                                onClick={() => setLightboxVideo(msg.content)}
+                                onClick={() => setLightboxVideo(msg.file_url || msg.text)}
                               >
-                                <video src={msg.content} className="max-w-full rounded-lg" />
+                                <video src={msg.file_url || msg.text} className="max-w-full rounded-lg" />
                                 <div className="absolute inset-0 flex items-center justify-center bg-black/30 rounded-lg group-hover:bg-black/40 transition-colors">
                                   <Play className="w-12 h-12 text-white" />
                                 </div>
                               </div>
                             ) : (
-                              <p className="whitespace-pre-wrap">{msg.content}</p>
+                              <p className="whitespace-pre-wrap">{msg.text}</p>
                             )}
                             <div className={`flex items-center gap-1 justify-end mt-1 ${
                               isAdmin 

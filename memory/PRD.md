@@ -12,6 +12,13 @@ E-commerce platform for truck spare parts with full admin panel, crypto payments
 - Removed standalone route from App.js
 - Updated AdminProfilePage link to point to admin panel
 
+### Chat Fix (March 24, 2026) — LATEST
+- Fixed `messages.map is not a function` — API returns `{messages:[]}`, frontend now handles both formats
+- Fixed field name mismatches: `msg.content` → `msg.text`, `msg.sender` → `msg.sender_type`, `msg.type` → `msg.message_type`
+- Fixed admin reply endpoint: `/admin/chats/{id}/messages` → `/admin/chats/{id}/send`
+- Added last_message text to chat list API
+- Disabled non-existent file upload endpoint (shows info toast)
+
 ### Maintenance Mode: Real-time + Per-Page (March 24, 2026) — LATEST
 - Polling every 15s ensures maintenance activates instantly (no page reload needed)
 - Per-page maintenance: admin can disable individual pages (catalog, bonus, account, news, orders) with custom messages
