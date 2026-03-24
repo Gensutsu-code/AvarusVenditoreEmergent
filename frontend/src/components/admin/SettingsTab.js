@@ -465,7 +465,10 @@ const MaintenanceTab = ({ isDark }) => {
 
 // Footer Settings sub-tab
 const FooterTab = ({ isDark }) => {
-  const [footer, setFooter] = useState({ email: '', address: '', telegram: '', whatsapp: '', vk: '', copyright: '' });
+  const [footer, setFooter] = useState({
+    email: '', address: '', telegram: '', whatsapp: '', copyright: '',
+    show_email: true, show_address: true, show_telegram: true, show_whatsapp: true
+  });
   const [saving, setSaving] = useState(false);
 
   useEffect(() => {
@@ -483,11 +486,10 @@ const FooterTab = ({ isDark }) => {
   };
 
   const fields = [
-    { key: 'email', label: 'Email', placeholder: 'info@avopt.store' },
-    { key: 'address', label: 'Адрес', placeholder: 'г. Москва, ул. Примерная, 1' },
-    { key: 'telegram', label: 'Telegram (ссылка)', placeholder: 'https://t.me/username' },
-    { key: 'whatsapp', label: 'WhatsApp (ссылка)', placeholder: 'https://wa.me/79001234567' },
-    { key: 'vk', label: 'VK (ссылка)', placeholder: 'https://vk.com/group' },
+    { key: 'email', toggle: 'show_email', label: 'Email', placeholder: 'info@avopt.store' },
+    { key: 'address', toggle: 'show_address', label: 'Адрес', placeholder: 'г. Москва, ул. Примерная, 1' },
+    { key: 'telegram', toggle: 'show_telegram', label: 'Telegram (ссылка)', placeholder: 'https://t.me/username' },
+    { key: 'whatsapp', toggle: 'show_whatsapp', label: 'WhatsApp (ссылка)', placeholder: 'https://wa.me/79001234567' },
     { key: 'copyright', label: 'Копирайт', placeholder: '© 2026 avopt.store — Все права защищены' },
   ];
 
@@ -497,12 +499,27 @@ const FooterTab = ({ isDark }) => {
       <div className="space-y-4">
         {fields.map(f => (
           <div key={f.key} className="space-y-1">
-            <Label className={`text-xs font-bold uppercase ${isDark ? 'text-zinc-500' : 'text-slate-500'}`}>{f.label}</Label>
+            <div className="flex items-center justify-between">
+              <Label className={`text-xs font-bold uppercase ${isDark ? 'text-zinc-500' : 'text-slate-500'}`}>{f.label}</Label>
+              {f.toggle && (
+                <button
+                  onClick={() => setFooter(prev => ({ ...prev, [f.toggle]: !prev[f.toggle] }))}
+                  className={`text-[10px] font-bold px-2 py-0.5 rounded transition-colors ${
+                    footer[f.toggle]
+                      ? isDark ? 'bg-green-500/20 text-green-400' : 'bg-green-100 text-green-700'
+                      : isDark ? 'bg-zinc-700 text-zinc-500' : 'bg-slate-200 text-slate-400'
+                  }`}
+                  data-testid={`footer-toggle-${f.key}`}
+                >
+                  {footer[f.toggle] ? 'ВКЛ' : 'ВЫКЛ'}
+                </button>
+              )}
+            </div>
             <Input
               value={footer[f.key] || ''}
               onChange={e => setFooter(prev => ({ ...prev, [f.key]: e.target.value }))}
               placeholder={f.placeholder}
-              className={isDark ? 'bg-zinc-900/50 border-zinc-700 text-zinc-100 placeholder:text-zinc-600' : ''}
+              className={`${isDark ? 'bg-zinc-900/50 border-zinc-700 text-zinc-100 placeholder:text-zinc-600' : ''} ${f.toggle && !footer[f.toggle] ? 'opacity-40' : ''}`}
               data-testid={`footer-${f.key}-input`}
             />
           </div>

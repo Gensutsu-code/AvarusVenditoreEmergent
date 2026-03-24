@@ -102,8 +102,17 @@ async def get_footer_settings():
     """Public: get footer contacts and copyright"""
     doc = await db.site_settings.find_one({"key": "footer"}, {"_id": 0})
     if not doc:
-        return {"email": "", "address": "", "telegram": "", "whatsapp": "", "vk": "", "copyright": ""}
-    return {k: doc.get(k, "") for k in ["email", "address", "telegram", "whatsapp", "vk", "copyright"]}
+        return {"email": "", "address": "", "telegram": "", "whatsapp": "", "copyright": "",
+                "show_email": True, "show_address": True, "show_telegram": True, "show_whatsapp": True}
+    fields = ["email", "address", "telegram", "whatsapp", "copyright",
+              "show_email", "show_address", "show_telegram", "show_whatsapp"]
+    result = {}
+    for k in fields:
+        if k.startswith("show_"):
+            result[k] = doc.get(k, True)
+        else:
+            result[k] = doc.get(k, "")
+    return result
 
 
 @router.put("/footer")
@@ -112,9 +121,12 @@ async def update_footer_settings(data: dict, user=Depends(get_current_user)):
         raise HTTPException(status_code=403, detail="Admin access required")
 
     fields = {}
-    for k in ["email", "address", "telegram", "whatsapp", "vk", "copyright"]:
+    for k in ["email", "address", "telegram", "whatsapp", "copyright"]:
         if k in data:
             fields[k] = str(data[k])
+    for k in ["show_email", "show_address", "show_telegram", "show_whatsapp"]:
+        if k in data:
+            fields[k] = bool(data[k])
 
     await db.site_settings.update_one(
         {"key": "footer"},
@@ -122,4 +134,11 @@ async def update_footer_settings(data: dict, user=Depends(get_current_user)):
         upsert=True,
     )
     doc = await db.site_settings.find_one({"key": "footer"}, {"_id": 0})
-    return {k: doc.get(k, "") for k in ["email", "address", "telegram", "whatsapp", "vk", "copyright"]}
+    result = {}
+    for k in ["email", "address", "telegram", "whatsapp", "copyright",
+              "show_email", "show_address", "show_telegram", "show_whatsapp"]:
+        if k.startswith("show_"):
+            result[k] = doc.get(k, True)
+        else:
+            result[k] = doc.get(k, "")
+    return result
