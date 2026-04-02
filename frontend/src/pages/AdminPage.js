@@ -1188,56 +1188,6 @@ export default function AdminPage() {
           </Button>
         </div>
 
-        {/* Stats Cards - Modern Design */}
-        {stats && (
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
-            <div className="bg-gradient-to-br from-blue-500 to-blue-600 rounded-xl p-5 text-white shadow-lg">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-blue-100 text-sm font-medium">Пользователей</p>
-                  <p className="text-3xl font-bold mt-1">{stats.total_users}</p>
-                </div>
-                <div className="w-12 h-12 bg-white/20 rounded-full flex items-center justify-center">
-                  <Users className="w-6 h-6" />
-                </div>
-              </div>
-            </div>
-            <div className="bg-gradient-to-br from-green-500 to-green-600 rounded-xl p-5 text-white shadow-lg">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-green-100 text-sm font-medium">Товаров</p>
-                  <p className="text-3xl font-bold mt-1">{stats.total_products}</p>
-                </div>
-                <div className="w-12 h-12 bg-white/20 rounded-full flex items-center justify-center">
-                  <Package className="w-6 h-6" />
-                </div>
-              </div>
-            </div>
-            <div className="bg-gradient-to-br from-teal-500 to-emerald-500 rounded-xl p-5 text-white shadow-lg">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-teal-100 text-sm font-medium">Заказов</p>
-                  <p className="text-3xl font-bold mt-1">{stats.total_orders}</p>
-                </div>
-                <div className="w-12 h-12 bg-white/20 rounded-full flex items-center justify-center">
-                  <ShoppingBag className="w-6 h-6" />
-                </div>
-              </div>
-            </div>
-            <div className="bg-gradient-to-br from-emerald-500 to-teal-500 rounded-xl p-5 text-white shadow-lg">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-emerald-100 text-sm font-medium">Выручка</p>
-                  <p className="text-2xl font-bold mt-1">{formatPrice(stats.total_revenue)} ₽</p>
-                </div>
-                <div className="w-12 h-12 bg-white/20 rounded-full flex items-center justify-center">
-                  <TrendingUp className="w-6 h-6" />
-                </div>
-              </div>
-            </div>
-          </div>
-        )}
-
         {/* Tab Order Editor */}
         {editingTabOrder && (
           <div className="mb-4 p-4 bg-teal-50 border border-teal-200 rounded-xl">
