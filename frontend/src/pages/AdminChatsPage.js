@@ -809,13 +809,17 @@ export default function AdminChatsPage() {
                             ) : (
                               <p className="whitespace-pre-wrap">{msg.text}</p>
                             )}
-                            <div className={`flex items-center gap-1 justify-end mt-1 ${
-                              isAdmin 
-                                ? isDark ? 'text-orange-300/60' : 'text-teal-600/60'
-                                : isDark ? 'text-zinc-500' : 'text-slate-400'
-                            }`}>
-                              <span className="text-xs">{formatTime(msg.created_at)}</span>
-                              {isAdmin && <CheckCheck className="w-3 h-3" />}
+                            <div className={`flex items-center gap-1 justify-end mt-1`}>
+                              <span className={`text-xs ${
+                                isAdmin 
+                                  ? isDark ? 'text-orange-300/60' : 'text-teal-600/60'
+                                  : isDark ? 'text-zinc-500' : 'text-slate-400'
+                              }`}>{formatTime(msg.created_at)}</span>
+                              {isAdmin && (
+                                msg.read 
+                                  ? <CheckCheck className="w-3 h-3 text-blue-500" />
+                                  : <Check className="w-3 h-3 text-zinc-400" />
+                              )}
                             </div>
                           </div>
                         </motion.div>

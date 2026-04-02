@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import axios from 'axios';
-import { MessageCircle, X, Send, Paperclip, Image, Smile, FileText, Download, ZoomIn, ZoomOut, ChevronLeft, ChevronRight, Play } from 'lucide-react';
+import { MessageCircle, X, Send, Paperclip, Image, Smile, FileText, Download, ZoomIn, ZoomOut, ChevronLeft, ChevronRight, Play, Check, CheckCheck } from 'lucide-react';
 import { Button } from './ui/button';
 import { Input } from './ui/input';
 import { useAuth } from '../context/AuthContext';
@@ -461,12 +461,17 @@ export const ChatWidget = () => {
                           <p className="whitespace-pre-wrap break-words">{msg.text}</p>
                         )}
                         
-                        {/* Time and edited badge */}
+                        {/* Time, edited badge, and read status */}
                         <div className={`flex items-center gap-1 text-[10px] mt-1 ${
                           msg.sender_type === 'user' ? 'text-teal-100' : 'text-slate-400'
                         }`}>
                           {formatTime(msg.created_at)}
                           {msg.edited && <span>(ред.)</span>}
+                          {msg.sender_type === 'user' && (
+                            msg.read 
+                              ? <CheckCheck className="w-3 h-3 text-blue-400" />
+                              : <Check className="w-3 h-3 text-zinc-400" />
+                          )}
                         </div>
                       </div>
                     </div>

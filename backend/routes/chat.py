@@ -54,6 +54,36 @@ async def send_to_telegram_chat(chat_id: str, user_name: str, text: str, message
         logging.error(f"Failed to send to Telegram chat: {e}")
 
 
+async def send_admin_reply_to_telegram(chat_id: str, text: str):
+    """Send admin reply to Telegram so admin sees full conversation"""
+    if not TELEGRAM_CHAT_BOT_TOKEN:
+        return
+
+    settings = await db.telegram_chat_settings.find_one({"setting_type": "chat_bot"})
+    if not settings or not settings.get("admin_chat_id"):
+        return
+
+    admin_tg_chat_id = settings["admin_chat_id"]
+
+    formatted_text = f"✅ *Ответ отправлен*\n\n"
+    formatted_text += f"🆔 *Чат:* `{chat_id[:8]}...`\n\n"
+    formatted_text += f"📝 {text}"
+
+    try:
+        async with httpx.AsyncClient() as client:
+            await client.post(
+                f"https://api.telegram.org/bot{TELEGRAM_CHAT_BOT_TOKEN}/sendMessage",
+                json={
+                    "chat_id": admin_tg_chat_id,
+                    "text": formatted_text,
+                    "parse_mode": "Markdown"
+                },
+                timeout=10
+            )
+    except Exception as e:
+        logging.error(f"Failed to send admin reply to Telegram: {e}")
+
+
 # ==================== USER CHAT ====================
 
 @router.post("/chat/send")
@@ -206,6 +236,9 @@ async def send_admin_message(chat_id: str, message: ChatMessage, user=Depends(ge
     await db.chat_messages.insert_one(chat_message)
     
     await db.chats.update_one({"id": chat_id}, {"$set": {"updated_at": datetime.now(timezone.utc).isoformat()}})
+    
+    # Send reply to Telegram
+    await send_admin_reply_to_telegram(chat_id, message.text)
     
     # Notify client about admin reply
     await notify_user(chat["user_id"], "chat", "Ответ поддержки", f"{message.text[:80]}", "/chat")
