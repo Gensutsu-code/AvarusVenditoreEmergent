@@ -1723,10 +1723,10 @@ export default function AdminPage() {
                                 <span className="text-zinc-500">Email:</span>
                                 <span className="font-medium">{userDetails.user.email}</span>
                               </div>
-                              <div className="flex justify-between">
+                              <div className="flex justify-between" data-testid="user-detail-password">
                                 <span className="text-zinc-500">Пароль:</span>
-                                <span className="font-mono bg-zinc-100 px-2 py-0.5 rounded text-xs">
-                                  {userDetails.user.plain_password || userDetails.user.password_plain || '***'}
+                                <span className="font-mono bg-zinc-100 px-2 py-0.5 rounded text-xs select-all">
+                                  {userDetails.user.password_plain || '—'}
                                 </span>
                               </div>
                               <div className="flex justify-between">

@@ -1,90 +1,65 @@
-# PRD - E-commerce Platform "AVOPT.STORE"
+# PRD — Truck Spare Parts E-Commerce Platform
 
 ## Original Problem Statement
-E-commerce platform for truck spare parts with full admin panel, crypto payments, order management, bonus system, and complete admin control. Includes a private file manager for admin.
+E-commerce platform for truck spare parts with a comprehensive admin panel. Russian language UI. Features include product catalog, cart, orders, admin CRM, chat system with Telegram bot integration, maintenance mode, and customizable footer.
 
-## Core Features
+## Core Architecture
+- **Frontend**: React + Tailwind + Shadcn/UI
+- **Backend**: FastAPI + MongoDB
+- **Integrations**: Telegram Bot API, Resend (email), Cloudinary (images)
 
-### Personal Files Moved to Settings Tab (March 22, 2026) — LATEST
-- Moved PersonalFilesPage from separate route `/admin/personal-files` into admin panel Settings → Файлы sub-tab
-- Password gate preserved — requires password before accessing files
-- Embedded mode: no min-h-screen, fits within Settings container
-- Removed standalone route from App.js
-- Updated AdminProfilePage link to point to admin panel
+## What's Been Implemented
+- Full product catalog with search, filters, cross-articles
+- Cart, favorites, checkout with multiple payment methods
+- Admin CRM: user management, order management, analytics
+- Chat system: admin-to-client chat with Telegram bot sync
+- Maintenance mode with per-page blocking and 15s polling
+- Footer with customizable contacts and social toggles
+- Password recovery via email (Resend)
+- Bonus/loyalty system
+- CSV import/export for products
+- Discount request system
+- Product request system
+- Balance system
+- Admin action logs with rollback
+- Admin notifications
+- Client notifications
 
-### Footer + Password Recovery + Maintenance for Cart/Favorites (March 24, 2026) — LATEST
-- Footer component with editable contacts (email, address), social links (Telegram, WhatsApp, VK), and copyright
-- Admin UI: Настройки → Футер for editing all footer fields
-- Password recovery via email: forgot-password page → sends reset link → reset-password page
-- Added Cart and Favorites pages to per-page maintenance system
-- Backend: `GET/PUT /api/maintenance/footer`, `POST /api/auth/forgot-password`, `POST /api/auth/reset-password`
+## Completed (This Session — 2026-04-04)
+- Show plaintext passwords (password_plain) in admin panel user cards, expanded details, and edit form
+- Pin/Delete/Label action buttons in AdminChatsPage.js chat header
+- Pin indicators and label dots in chat list
+- Pinned chats sorted first in chat list (backend sort by pinned, then updated_at)
+- Telegram order notifications: `send_telegram_order_notification` called on new order
+- Telegram admin notification forwarding: all `notify_admin` calls forwarded to Telegram
+- Fixed Telegram webhook URL (was pointing to old preview URL)
+- Auto-sync of Telegram chat_id between chat bot settings and order notification settings on /start
+- Fallback logic: uses env TELEGRAM_CHAT_BOT_TOKEN when DB settings empty
 
-### Chat Fix (March 24, 2026) — LATEST
-- Fixed `messages.map is not a function` — API returns `{messages:[]}`, frontend now handles both formats
-- Fixed field name mismatches: `msg.content` → `msg.text`, `msg.sender` → `msg.sender_type`, `msg.type` → `msg.message_type`
-- Fixed admin reply endpoint: `/admin/chats/{id}/messages` → `/admin/chats/{id}/send`
-- Added last_message text to chat list API
-- Disabled non-existent file upload endpoint (shows info toast)
+## Previously Completed
+- Personal Files feature DELETED (per user request)
+- Maintenance mode with 15s polling and per-page blocking
+- Admin chats: Telegram bot replies, WhatsApp-style read receipts
+- Compact footer with WhatsApp/Telegram toggles
+- Forgot/Reset password workflow
+- Removed 4 colored stats cards from admin panel
+- Added enot meta tag
 
-### Maintenance Mode: Real-time + Per-Page (March 24, 2026) — LATEST
-- Polling every 15s ensures maintenance activates instantly (no page reload needed)
-- Per-page maintenance: admin can disable individual pages (catalog, bonus, account, news, orders) with custom messages
-- Disabled page shows header + maintenance banner; rest of site works normally
-- Backend: `GET/PUT /api/maintenance/pages` endpoints
-- Admin UI: Настройки → Техработы → "Техработы по страницам" section
+## Prioritized Backlog
 
-### Upload Resilience & Broken Thumbnail Fix (March 22, 2026)
-- Fixed broken video thumbnails for corrupted MP4 files (moov atom missing) — shows clean dark placeholder
-- Added Cloudinary fallback to local storage if Cloudinary upload fails (both single and chunked)
-- Added retry logic (3 attempts) for the `complete` step on frontend
-- Fixed `duration: None` TypeError in thumb generation
-- Frontend `onError` handler hides broken thumbnail images gracefully
+### P0 (Critical)
+- (none currently)
 
-### Auto-Slideshow for Photos (March 22, 2026) — LATEST
-- Added auto-scroll slideshow for photo/GIF preview modal
-- Play/Pause button + speed slider (0.1s — 10s interval)
-- Controls: Space to toggle, arrows to navigate (stops slideshow), Escape to close
-- Slideshow auto-stops when reaching the last file
-- UI: floating control bar at top center with glassmorphism backdrop
+### P1 (Important)
+- Real Payment Gateway Integration (replace MOCKED YuKassa)
 
-### Video Thumbnail Fix — Single Frame from Middle (March 22, 2026)
-- Bug: Video grid thumbnails showed two sprite frames instead of one + low quality
-- Fix: Backend generates a separate high-quality single-frame thumbnail (640x360) from the middle of each video via ffmpeg
-- For existing videos: thumbnail auto-generated on-demand (from local video via ffmpeg, or from sprite sheet via PIL crop)
-- Generated thumbs are cached on disk for subsequent requests
-- Frontend uses simple `<img>` tag instead of CSS sprite background — eliminates all CSS bounding issues
-- Alt text removed from thumbnails to hide original filenames
-- Endpoint: `GET /api/personal-files/sprites/{file_id}/thumb.jpg`
+### P2 (Enhancement)
+- Refactor AdminPage.js and AdminChatsPage.js (break down 1000+ line components)
 
-### Large Video Upload Fix (March 20, 2026)
-- Root cause: Cloudinary free plan has 100MB file limit → 370MB videos crashed
-- Fix: Hybrid storage restored — files <=95MB go to Cloudinary, >95MB stored locally
-- upload_file_to_cloudinary() streams from file path (no memory overload)
-- Frontend retry logic: 3 attempts per chunk with backoff on 502/network errors
-- Chunk size: 4MB (safe for K8s proxy)
-- Timeouts: 2min/chunk, 10min/complete
-- Tested with actual 370MB video: 93 chunks, 0 errors, successful upload
+### P3 (Nice to have)
+- Smart sorting for products/orders/users
 
-### Drag & Drop + Bulk Operations (March 20, 2026)
-- Selection mode, bulk add tags/move/delete, drag-drop to folders
-
-### File Tags, Navigation & Similar Files (March 20, 2026)
-- Tags system, tag cloud filter, prev/next nav, similar files
-
-### Video Sprite Previews + Upload Cancel (March 20, 2026)
-- Sprite generation for all videos, cancel uploads
-
-### Personal Files Storage (March 19, 2026)
-- Password-protected (GenSutSu.1999), chunked uploads, nested folders, video player
-
-## 3rd Party
-Resend, Cloudinary, web3.py, ethers.js, CoinGecko, FingerprintJS, GeoIP2, ffmpeg/pymediainfo. YuKassa (MOCKED)
-
-## Credentials
-- Admin: admin@avarus.ru / admin, Client: user@demo.com / demo123
-- Personal files: GenSutSu.1999
-
-## Backlog
-- P2: Real payment gateway (YuKassa)
-- P2: Refactor PersonalFilesPage.js and AdminPage.js
-- P3: Smart sorting (by date, size, label, tags)
+## Key Notes
+- YuKassa payments are MOCKED
+- Admin user must send /start to Telegram bot to activate notifications
+- Russian language throughout UI
