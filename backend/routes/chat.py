@@ -175,7 +175,7 @@ async def get_all_chats(user=Depends(get_current_user)):
     if user.get("role") != "admin":
         raise HTTPException(status_code=403, detail="Admin access required")
     
-    chats = await db.chats.find({}, {"_id": 0}).sort("updated_at", -1).to_list(100)
+    chats = await db.chats.find({}, {"_id": 0}).sort([("pinned", -1), ("updated_at", -1)]).to_list(100)
     
     for chat in chats:
         unread_count = await db.chat_messages.count_documents({

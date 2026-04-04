@@ -70,7 +70,7 @@ async def get_admin_users(user=Depends(get_current_user)):
     if user.get("role") != "admin":
         raise HTTPException(status_code=403, detail="Admin access required")
     
-    users = await db.users.find({}, {"_id": 0, "password": 0, "password_plain": 0}).to_list(1000)
+    users = await db.users.find({}, {"_id": 0, "password": 0}).to_list(1000)
     
     for u in users:
         user_orders = await db.orders.find({"user_id": u["id"]}, {"_id": 0}).sort("created_at", -1).to_list(1000)
@@ -236,7 +236,7 @@ async def update_admin_user(user_id: str, data: AdminUserUpdate, user=Depends(ge
     if result.matched_count == 0:
         raise HTTPException(status_code=404, detail="User not found")
     
-    updated_user = await db.users.find_one({"id": user_id}, {"_id": 0, "password": 0, "password_plain": 0})
+    updated_user = await db.users.find_one({"id": user_id}, {"_id": 0, "password": 0})
     return updated_user
 
 

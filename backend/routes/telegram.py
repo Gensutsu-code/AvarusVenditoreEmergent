@@ -30,13 +30,23 @@ class TelegramSettings(BaseModel):
 async def send_telegram_order_notification(order: dict, user: dict):
     """Send order notification to Telegram"""
     try:
-        settings = await db.settings.find_one({"key": "telegram"}, {"_id": 0})
-        if not settings or not settings.get("value", {}).get("enabled"):
-            return
+        # Try DB settings first, fall back to env token
+        bot_token = None
+        chat_id = None
         
-        tg_settings = settings.get("value", {})
-        bot_token = tg_settings.get("bot_token")
-        chat_id = tg_settings.get("chat_id")
+        settings = await db.settings.find_one({"key": "telegram"}, {"_id": 0})
+        if settings and settings.get("value", {}).get("enabled"):
+            tg_settings = settings.get("value", {})
+            bot_token = tg_settings.get("bot_token") or TELEGRAM_CHAT_BOT_TOKEN
+            chat_id = tg_settings.get("chat_id")
+        
+        # Fallback: use env token + chat bot admin_chat_id
+        if not bot_token:
+            bot_token = TELEGRAM_CHAT_BOT_TOKEN
+        if not chat_id:
+            chat_settings = await db.telegram_chat_settings.find_one({"setting_type": "chat_bot"})
+            if chat_settings:
+                chat_id = chat_settings.get("admin_chat_id")
         
         if not bot_token or not chat_id:
             return
@@ -219,6 +229,18 @@ async def telegram_chat_webhook(update: TelegramUpdate):
         await db.telegram_chat_settings.update_one(
             {"setting_type": "chat_bot"},
             {"$set": {"admin_chat_id": chat_id_tg, "updated_at": datetime.now(timezone.utc).isoformat()}},
+            upsert=True
+        )
+        # Also save to order notification settings for convenience
+        existing_tg = await db.settings.find_one({"key": "telegram"})
+        tg_val = existing_tg.get("value", {}) if existing_tg else {}
+        tg_val["chat_id"] = chat_id_tg
+        tg_val["enabled"] = True
+        if not tg_val.get("bot_token"):
+            tg_val["bot_token"] = TELEGRAM_CHAT_BOT_TOKEN or ""
+        await db.settings.update_one(
+            {"key": "telegram"},
+            {"$set": {"key": "telegram", "value": tg_val}},
             upsert=True
         )
         try:

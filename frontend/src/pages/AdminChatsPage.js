@@ -3,7 +3,8 @@ import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import { 
   MessageCircle, Send, Image, Paperclip, User, Clock, CheckCheck,
-  ChevronLeft, Search, X, Play, Tag, Check, XCircle, Loader2, Package
+  ChevronLeft, Search, X, Play, Tag, Check, XCircle, Loader2, Package,
+  Pin, Trash2, MoreVertical
 } from 'lucide-react';
 import { Button } from '../components/ui/button';
 import { Input } from '../components/ui/input';
@@ -255,6 +256,39 @@ export default function AdminChatsPage() {
       return date.toLocaleDateString('ru-RU', { day: 'numeric', month: 'short' });
     }
   };
+
+  const togglePin = async (chatId) => {
+    try {
+      await axios.put(`${API}/admin/chats/${chatId}/pin`);
+      fetchChats();
+    } catch { toast.error('Ошибка'); }
+  };
+
+  const deleteChat = async (chatId) => {
+    if (!window.confirm('Удалить чат?')) return;
+    try {
+      await axios.delete(`${API}/admin/chats/${chatId}`);
+      if (selectedChat?.id === chatId) setSelectedChat(null);
+      fetchChats();
+      toast.success('Чат удалён');
+    } catch { toast.error('Ошибка'); }
+  };
+
+  const updateLabel = async (chatId, label) => {
+    try {
+      await axios.put(`${API}/admin/chats/${chatId}/label?label=${encodeURIComponent(label)}`);
+      fetchChats();
+    } catch { toast.error('Ошибка'); }
+  };
+
+  const LABELS = [
+    { value: '', label: 'Без метки', color: '' },
+    { value: 'important', label: 'Важный', color: 'bg-red-500' },
+    { value: 'vip', label: 'VIP', color: 'bg-yellow-500' },
+    { value: 'resolved', label: 'Решён', color: 'bg-green-500' },
+    { value: 'waiting', label: 'Ожидание', color: 'bg-blue-500' },
+  ];
+
 
   const filteredChats = chats.filter(chat => 
     !searchQuery || 
@@ -720,16 +754,25 @@ export default function AdminChatsPage() {
                     }`}
                     whileHover={{ x: 2 }}
                   >
-                    <div className={`w-10 h-10 rounded-full flex items-center justify-center ${isDark ? 'bg-zinc-800' : 'bg-slate-100'}`}>
+                    <div className={`w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0 ${isDark ? 'bg-zinc-800' : 'bg-slate-100'}`}>
                       <User className={`w-5 h-5 ${isDark ? 'text-zinc-400' : 'text-slate-500'}`} />
                     </div>
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center justify-between">
-                        <span className={`font-medium truncate ${isDark ? 'text-zinc-200' : 'text-slate-700'}`}>
-                          {chat.user_name || 'Без имени'}
-                        </span>
+                        <div className="flex items-center gap-1.5 min-w-0">
+                          {chat.pinned && <Pin className={`w-3 h-3 flex-shrink-0 ${isDark ? 'text-orange-400' : 'text-teal-500'}`} />}
+                          <span className={`font-medium truncate ${isDark ? 'text-zinc-200' : 'text-slate-700'}`}>
+                            {chat.user_name || 'Без имени'}
+                          </span>
+                          {chat.labels?.map(l => {
+                            const labelDef = LABELS.find(lb => lb.value === l);
+                            return labelDef ? (
+                              <span key={l} className={`w-2 h-2 rounded-full flex-shrink-0 ${labelDef.color}`} title={labelDef.label} />
+                            ) : null;
+                          })}
+                        </div>
                         {chat.unread_count > 0 && (
-                          <span className="w-5 h-5 bg-red-500 text-white text-xs rounded-full flex items-center justify-center">
+                          <span className="w-5 h-5 bg-red-500 text-white text-xs rounded-full flex items-center justify-center flex-shrink-0">
                             {chat.unread_count}
                           </span>
                         )}
@@ -749,17 +792,79 @@ export default function AdminChatsPage() {
             {selectedChat ? (
               <>
                 {/* Chat Header */}
-                <div className={`p-4 border-b ${isDark ? 'border-zinc-800' : 'border-zinc-200'} flex items-center gap-3`}>
-                  <div className={`w-10 h-10 rounded-full flex items-center justify-center ${isDark ? 'bg-zinc-800' : 'bg-slate-100'}`}>
-                    <User className={`w-5 h-5 ${isDark ? 'text-orange-400' : 'text-teal-600'}`} />
+                <div className={`p-4 border-b ${isDark ? 'border-zinc-800' : 'border-zinc-200'} flex items-center justify-between`}>
+                  <div className="flex items-center gap-3">
+                    <div className={`w-10 h-10 rounded-full flex items-center justify-center ${isDark ? 'bg-zinc-800' : 'bg-slate-100'}`}>
+                      <User className={`w-5 h-5 ${isDark ? 'text-orange-400' : 'text-teal-600'}`} />
+                    </div>
+                    <div>
+                      <div className="flex items-center gap-2">
+                        <h3 className={`font-medium ${isDark ? 'text-zinc-200' : 'text-slate-700'}`}>
+                          {selectedChat.user_name || 'Без имени'}
+                        </h3>
+                        {selectedChat.pinned && (
+                          <Pin className={`w-3 h-3 ${isDark ? 'text-orange-400' : 'text-teal-500'}`} />
+                        )}
+                        {selectedChat.labels?.map(l => {
+                          const labelDef = LABELS.find(lb => lb.value === l);
+                          return labelDef ? (
+                            <span key={l} className={`text-[10px] font-bold px-1.5 py-0.5 rounded-full text-white ${labelDef.color}`}>
+                              {labelDef.label}
+                            </span>
+                          ) : null;
+                        })}
+                      </div>
+                      <p className={`text-xs ${isDark ? 'text-zinc-500' : 'text-slate-400'}`}>
+                        {selectedChat.user_email}
+                      </p>
+                    </div>
                   </div>
-                  <div>
-                    <h3 className={`font-medium ${isDark ? 'text-zinc-200' : 'text-slate-700'}`}>
-                      {selectedChat.user_name || 'Без имени'}
-                    </h3>
-                    <p className={`text-xs ${isDark ? 'text-zinc-500' : 'text-slate-400'}`}>
-                      {selectedChat.user_email}
-                    </p>
+                  {/* Action Buttons */}
+                  <div className="flex items-center gap-1">
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => togglePin(selectedChat.id)}
+                      title={selectedChat.pinned ? 'Открепить' : 'Закрепить'}
+                      className={selectedChat.pinned ? (isDark ? 'text-orange-400' : 'text-teal-500') : (isDark ? 'text-zinc-400 hover:text-zinc-200' : 'text-slate-400 hover:text-slate-600')}
+                      data-testid="chat-pin-btn"
+                    >
+                      <Pin className="w-4 h-4" />
+                    </Button>
+                    {/* Label dropdown */}
+                    <div className="relative group">
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className={isDark ? 'text-zinc-400 hover:text-zinc-200' : 'text-slate-400 hover:text-slate-600'}
+                        data-testid="chat-label-btn"
+                      >
+                        <Tag className="w-4 h-4" />
+                      </Button>
+                      <div className={`absolute right-0 top-full mt-1 w-36 rounded-lg shadow-xl border z-50 hidden group-hover:block ${isDark ? 'bg-zinc-800 border-zinc-700' : 'bg-white border-zinc-200'}`}>
+                        {LABELS.map(l => (
+                          <button
+                            key={l.value}
+                            onClick={() => updateLabel(selectedChat.id, l.value)}
+                            className={`w-full text-left px-3 py-2 text-xs flex items-center gap-2 transition-colors ${isDark ? 'hover:bg-zinc-700 text-zinc-300' : 'hover:bg-zinc-50 text-slate-700'}`}
+                            data-testid={`chat-label-${l.value || 'none'}`}
+                          >
+                            {l.color && <span className={`w-2 h-2 rounded-full ${l.color}`} />}
+                            {l.label}
+                            {selectedChat.labels?.includes(l.value) && <Check className="w-3 h-3 ml-auto" />}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => deleteChat(selectedChat.id)}
+                      className="text-red-400 hover:text-red-500"
+                      data-testid="chat-delete-btn"
+                    >
+                      <Trash2 className="w-4 h-4" />
+                    </Button>
                   </div>
                 </div>
 

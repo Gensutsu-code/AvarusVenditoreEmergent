@@ -4,7 +4,7 @@ from datetime import datetime
 import json
 
 class AdminAPITester:
-    def __init__(self, base_url="https://admin-filemanager.preview.emergentagent.com/api"):
+    def __init__(self, base_url="https://spare-parts-admin-1.preview.emergentagent.com/api"):
         self.base_url = base_url
         self.admin_token = None
         self.user_token = None
