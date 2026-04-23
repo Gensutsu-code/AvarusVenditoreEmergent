@@ -51,6 +51,13 @@ function PageMaintenanceBanner({ message }) {
       <p className={`text-center max-w-md ${isDark ? 'text-zinc-400' : 'text-zinc-500'}`}>
         {message || 'Этот раздел временно недоступен. Пожалуйста, попробуйте позже.'}
       </p>
+      <a
+        href="/login"
+        className={`mt-8 text-[11px] opacity-20 hover:opacity-60 transition-opacity ${isDark ? 'text-zinc-500' : 'text-zinc-400'}`}
+        data-testid="page-maintenance-admin-link"
+      >
+        Панель управления
+      </a>
     </div>
   );
 }
@@ -83,12 +90,15 @@ function AppContent() {
     }
   }, [location.pathname, user, isAdmin]);
 
-  // Show maintenance page for non-admin users (allow login route for admin access)
-  if (maintenanceChecked && maintenance.enabled && !loading && !isAdmin && location.pathname !== '/login') {
+  // Routes that must always be accessible (login, admin panel, auth flows)
+  const isProtectedRoute = location.pathname === '/login' || location.pathname === '/register' || location.pathname.startsWith('/admin') || location.pathname === '/forgot-password' || location.pathname === '/reset-password';
+
+  // Show maintenance page for non-admin users (allow login/register/admin routes for admin access)
+  if (maintenanceChecked && maintenance.enabled && !loading && !isAdmin && !isProtectedRoute) {
     return <MaintenancePage message={maintenance.message} />;
   }
 
-  // Per-page maintenance check
+  // Per-page maintenance check — skip for login/admin routes
   const pageMaintenanceMap = {
     '/catalog': 'catalog',
     '/bonus': 'bonus',
@@ -100,7 +110,7 @@ function AppContent() {
   };
   const pageKey = Object.entries(pageMaintenanceMap).find(([route]) => location.pathname.startsWith(route))?.[1];
   const pageMaint = pageKey && maintenance.pages?.[pageKey];
-  const isPageDown = pageMaint?.enabled && !isAdmin;
+  const isPageDown = pageMaint?.enabled && !isAdmin && !isProtectedRoute;
 
   return (
     <div className={`min-h-screen flex flex-col ${isDark ? 'bg-zinc-950' : 'bg-gradient-to-br from-cyan-50 via-pink-50 to-cyan-50'}`}>
