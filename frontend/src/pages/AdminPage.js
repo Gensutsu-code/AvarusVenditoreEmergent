@@ -4161,7 +4161,7 @@ export default function AdminPage() {
                 <Input
                   type="datetime-local"
                   value={editingOrder.created_at ? editingOrder.created_at.slice(0, 16) : ''}
-                  onChange={(e) => setEditingOrder({ ...editingOrder, created_at: e.target.value ? new Date(e.target.value).toISOString() : editingOrder.created_at })}
+                  onChange={(e) => setEditingOrder({ ...editingOrder, created_at: e.target.value ? e.target.value + ':00' : editingOrder.created_at })}
                   className="mt-1"
                   data-testid="order-date-input"
                 />
