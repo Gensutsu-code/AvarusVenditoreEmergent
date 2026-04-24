@@ -605,10 +605,7 @@ async def get_admin_notifications(user=Depends(get_current_user)):
     
     unread_count = await db.notifications.count_documents({"user_id": "ADMIN", "read": False})
     
-    # Also count old activities for backward compat
-    old_unread = await db.activities.count_documents({"is_admin_notification": True, "read": False})
-    
-    return {"notifications": notifications, "unread_count": unread_count + old_unread, "total": len(notifications)}
+    return {"notifications": notifications, "unread_count": unread_count, "total": len(notifications)}
 
 
 @router.post("/notifications/mark-read")

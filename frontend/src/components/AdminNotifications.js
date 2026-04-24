@@ -95,6 +95,15 @@ export const AdminNotifications = () => {
     } catch {}
   };
 
+  const handleMarkAllRead = async (e) => {
+    e.stopPropagation();
+    try {
+      await axios.post(`${API}/admin/notifications/mark-read`);
+      setNotifList(prev => prev.map(n => ({ ...n, read: true })));
+      setUnreadCount(0);
+    } catch {}
+  };
+
   return (
     <div className="relative" ref={ref} data-testid="admin-notifications">
       <button
@@ -114,7 +123,20 @@ export const AdminNotifications = () => {
         <div className="absolute right-0 top-full mt-2 w-80 bg-white border border-zinc-200 rounded-lg shadow-xl z-50" data-testid="notifications-dropdown">
           <div className="p-3 border-b border-zinc-100 flex items-center justify-between">
             <p className="font-semibold text-sm text-zinc-800">Уведомления</p>
-            {unreadCount > 0 && <span className="text-xs text-zinc-400">{unreadCount} непрочитанных</span>}
+            <div className="flex items-center gap-2">
+              {unreadCount > 0 && (
+                <>
+                  <span className="text-xs text-zinc-400">{unreadCount} непрочитанных</span>
+                  <button
+                    onClick={handleMarkAllRead}
+                    className="text-xs text-teal-600 hover:text-teal-700 font-medium"
+                    data-testid="mark-all-read-btn"
+                  >
+                    Прочитать все
+                  </button>
+                </>
+              )}
+            </div>
           </div>
           {notifList.length === 0 ? (
             <div className="p-6 text-center text-sm text-zinc-400">
