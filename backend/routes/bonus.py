@@ -60,7 +60,7 @@ async def get_user_program_progress(user_id: str, program_id: str):
 
 
 async def update_bonus_on_order_delivered(user_id: str, order_total: float):
-    """Called when order status changes to 'delivered'"""
+    """Called when order status changes to 'completed'"""
     programs = await get_all_bonus_programs()
     
     current_year = datetime.now(timezone.utc).year
@@ -114,6 +114,66 @@ async def update_bonus_on_order_delivered(user_id: str, order_total: float):
     return {"updated": True}
 
 
+
+@router.post("/admin/bonus/recalculate")
+async def recalculate_all_bonuses(user=Depends(get_current_user)):
+    """Recalculate bonus points for all users based on completed orders"""
+    if user.get("role") != "admin":
+        raise HTTPException(status_code=403, detail="Admin access required")
+    
+    programs = await get_all_bonus_programs()
+    if not programs:
+        return {"message": "No bonus programs found", "updated_users": 0}
+    
+    # Get all unique user_ids with completed orders
+    pipeline = [
+        {"$match": {"status": "completed"}},
+        {"$group": {"_id": "$user_id", "total": {"$sum": "$total"}, "count": {"$sum": 1}}}
+    ]
+    user_totals = await db.orders.aggregate(pipeline).to_list(10000)
+    
+    updated = 0
+    for ut in user_totals:
+        uid = ut["_id"]
+        order_total = ut["total"]
+        
+        for program in programs:
+            if not program.get("enabled"):
+                continue
+            
+            program_id = program["id"]
+            
+            contribution_type = program.get("contribution_type", "order_total")
+            contribution_percent = program.get("contribution_percent", 100)
+            
+            if contribution_type == "percentage":
+                base_amount = order_total * (contribution_percent / 100)
+            else:
+                base_amount = order_total
+            
+            levels = program.get("levels", [])
+            levels_sorted = sorted(levels, key=lambda x: x.get("min_points", 0))
+            
+            current_level = None
+            for level in levels_sorted:
+                if order_total >= level.get("min_points", 0):
+                    current_level = level
+            
+            if current_level and current_level.get("cashback_percent", 0) > 0:
+                bonus_points = base_amount * (current_level["cashback_percent"] / 100)
+            else:
+                bonus_points = base_amount
+            
+            await db.bonus_progress.update_one(
+                {"user_id": uid, "program_id": program_id},
+                {"$set": {"current_amount": bonus_points, "updated_at": datetime.now(timezone.utc).isoformat()}},
+                upsert=True
+            )
+            updated += 1
+    
+    return {"message": f"Recalculated bonuses for {len(user_totals)} users", "updated_users": len(user_totals)}
+
+
 # ==================== USER ROUTES ====================
 
 @router.get("/bonus/programs")
@@ -127,7 +187,7 @@ async def get_user_bonus_programs(user=Depends(get_current_user)):
     
     yearly_orders = await db.orders.find({
         "user_id": user["id"],
-        "status": "delivered",
+        "status": "completed",
         "created_at": {"$gte": year_start, "$lte": year_end}
     }, {"_id": 0, "total": 1}).to_list(1000)
     
