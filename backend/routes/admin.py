@@ -405,6 +405,21 @@ async def update_admin_order(order_id: str, data: AdminOrderUpdate, user=Depends
     
     # Notify on status change
     if "status" in update_data and update_data["status"] != original_order.get("status"):
+        new_status = update_data["status"]
+        old_status = original_order.get("status")
+        
+        # Accrue bonus points when order is completed
+        if new_status == "completed":
+            await update_bonus_on_order_delivered(original_order["user_id"], update_data.get("total", original_order.get("total", 0)))
+        
+        # Restore stock when order is cancelled
+        if new_status == "cancelled" and old_status != "cancelled":
+            for item in original_order.get("items", []):
+                await db.products.update_one(
+                    {"id": item.get("product_id")},
+                    {"$inc": {"stock": item.get("quantity", 0)}}
+                )
+        
         status_labels = {
             "pending": "ожидает обработки",
             "processing": "принят в обработку",
