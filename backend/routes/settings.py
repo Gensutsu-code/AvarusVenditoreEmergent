@@ -46,7 +46,7 @@ async def update_discount_settings(user=Depends(get_current_user)):
 async def get_payment_settings():
     """Get payment method settings (public)"""
     defaults = {
-        "card_adjustment": 0, "crypto_adjustment": -20, "cash_adjustment": -15, "balance_adjustment": 0,
+        "card_adjustment": 0, "crypto_adjustment": 0, "cash_adjustment": 0, "balance_adjustment": 0,
         "card_enabled": True, "crypto_enabled": True, "cash_enabled": True, "balance_enabled": True
     }
     settings = await db.settings.find_one({"key": "payment_settings"})
@@ -61,7 +61,7 @@ async def get_admin_payment_settings(user=Depends(get_current_user)):
     if user.get("role") != "admin":
         raise HTTPException(status_code=403, detail="Admin access required")
     defaults = {
-        "card_adjustment": 0, "crypto_adjustment": -20, "cash_adjustment": -15, "balance_adjustment": 0,
+        "card_adjustment": 0, "crypto_adjustment": 0, "cash_adjustment": 0, "balance_adjustment": 0,
         "card_enabled": True, "crypto_enabled": True, "cash_enabled": True, "balance_enabled": True
     }
     settings = await db.settings.find_one({"key": "payment_settings"})
@@ -77,8 +77,8 @@ async def update_payment_settings(data: dict, user=Depends(get_current_user)):
         raise HTTPException(status_code=403, detail="Admin access required")
     settings_data = {
         "card_adjustment": data.get("card_adjustment", 0),
-        "crypto_adjustment": data.get("crypto_adjustment", -20),
-        "cash_adjustment": data.get("cash_adjustment", -15),
+        "crypto_adjustment": data.get("crypto_adjustment", 0),
+        "cash_adjustment": data.get("cash_adjustment", 0),
         "balance_adjustment": data.get("balance_adjustment", 0),
         "card_enabled": data.get("card_enabled", True),
         "crypto_enabled": data.get("crypto_enabled", True),

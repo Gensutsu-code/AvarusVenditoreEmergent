@@ -34,7 +34,7 @@ export default function CheckoutPage() {
   const [orderId, setOrderId] = useState(null);
   const [paymentMethod, setPaymentMethod] = useState('cash');
   const [paymentSettings, setPaymentSettings] = useState({ 
-    card_adjustment: 0, crypto_adjustment: -20, cash_adjustment: -15, balance_adjustment: 0,
+    card_adjustment: 0, crypto_adjustment: 0, cash_adjustment: 0, balance_adjustment: 0,
     card_enabled: true, crypto_enabled: true, cash_enabled: true, balance_enabled: true
   });
   const [cryptoWallets, setCryptoWallets] = useState({});
@@ -91,7 +91,7 @@ export default function CheckoutPage() {
   };
 
   const formatPrice = (price) => new Intl.NumberFormat('ru-RU').format(Math.round(price));
-  const getPaymentAdjustment = (method) => paymentSettings[`${method}_adjustment`] ?? (method === 'cash' ? -15 : method === 'crypto' ? -20 : 0);
+  const getPaymentAdjustment = (method) => paymentSettings[`${method}_adjustment`] ?? 0;
   const currentPaymentAdjustment = payWithBalance ? (paymentSettings.balance_adjustment ?? 0) : getPaymentAdjustment(paymentMethod);
 
   const subtotal = cart.items.reduce((sum, item) => sum + item.price * item.quantity, 0);
