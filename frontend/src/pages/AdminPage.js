@@ -5,7 +5,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { 
   Users, Package, ShoppingBag, TrendingUp, User,
   Plus, Pencil, Trash2, Save, Eye, FolderOpen, Megaphone, Upload, Image,
-  MessageCircle, Send, BarChart3, Download, FileSpreadsheet, Pin, Tag, X, Copy, Gift, Award, ChevronDown, Paperclip, Play, ZoomIn, ZoomOut, Settings, ChevronLeft, ChevronRight, CreditCard, FileText, Mail, Bell, Wallet, Clock, ScrollText, Code, Minus, RotateCcw
+  MessageCircle, Send, BarChart3, Download, FileSpreadsheet, Pin, Tag, X, Copy, Gift, Award, ChevronDown, ChevronUp, Paperclip, Play, ZoomIn, ZoomOut, Settings, ChevronLeft, ChevronRight, CreditCard, FileText, Mail, Bell, Wallet, Clock, ScrollText, Code, Minus, RotateCcw
 } from 'lucide-react';
 import { Button } from '../components/ui/button';
 import { Input } from '../components/ui/input';
@@ -2818,6 +2818,35 @@ export default function AdminPage() {
                         {(editingProgram.prizes || []).map((prize, idx) => (
                           <div key={prize.id} className="border rounded-lg p-3 bg-zinc-50">
                             <div className="flex items-start justify-between gap-2 mb-2">
+                              <div className="flex flex-col gap-0.5 mr-1">
+                                <button
+                                  type="button"
+                                  disabled={idx === 0}
+                                  onClick={() => {
+                                    const prizes = [...(editingProgram.prizes || [])];
+                                    [prizes[idx - 1], prizes[idx]] = [prizes[idx], prizes[idx - 1]];
+                                    setEditingProgram({...editingProgram, prizes});
+                                  }}
+                                  className={`p-0.5 rounded transition-colors ${idx === 0 ? 'text-zinc-300' : 'text-zinc-500 hover:text-zinc-800 hover:bg-zinc-200'}`}
+                                  data-testid={`prize-move-up-${idx}`}
+                                >
+                                  <ChevronUp className="w-4 h-4" />
+                                </button>
+                                <button
+                                  type="button"
+                                  disabled={idx === (editingProgram.prizes || []).length - 1}
+                                  onClick={() => {
+                                    const prizes = [...(editingProgram.prizes || [])];
+                                    [prizes[idx], prizes[idx + 1]] = [prizes[idx + 1], prizes[idx]];
+                                    setEditingProgram({...editingProgram, prizes});
+                                  }}
+                                  className={`p-0.5 rounded transition-colors ${idx === (editingProgram.prizes || []).length - 1 ? 'text-zinc-300' : 'text-zinc-500 hover:text-zinc-800 hover:bg-zinc-200'}`}
+                                  data-testid={`prize-move-down-${idx}`}
+                                >
+                                  <ChevronDown className="w-4 h-4" />
+                                </button>
+                              </div>
+                              <span className="text-xs font-mono text-zinc-400 mt-2 mr-1">#{idx + 1}</span>
                               <Input
                                 value={prize.name}
                                 onChange={(e) => {

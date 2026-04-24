@@ -3,7 +3,8 @@ import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import { 
   Gift, Award, Star, Trophy, TrendingUp, Clock, 
-  CheckCircle, Copy, History, ChevronDown, ChevronUp, Sparkles
+  CheckCircle, Copy, History, ChevronDown, ChevronUp, Sparkles,
+  LayoutList, LayoutGrid
 } from 'lucide-react';
 import { Button } from '../components/ui/button';
 import { useAuth } from '../context/AuthContext';
@@ -23,6 +24,7 @@ export default function BonusPage() {
   const [redeemingPrize, setRedeemingPrize] = useState({});
   const [collapsedPrograms, setCollapsedPrograms] = useState({});
   const [redeemedPrize, setRedeemedPrize] = useState(null);
+  const [prizeView, setPrizeView] = useState('list');
   const [copiedCode, setCopiedCode] = useState(null);
   const [showHistory, setShowHistory] = useState(false);
   const [myRedemptions, setMyRedemptions] = useState([]);
@@ -276,18 +278,38 @@ export default function BonusPage() {
                   {/* Prizes Section - Expanded by default */}
                   {program.prizes && program.prizes.filter(p => p.enabled).length > 0 && (
                     <div className="p-6 border-t border-zinc-100">
-                      <button 
-                        className="flex items-center justify-between w-full"
-                        onClick={() => setCollapsedPrograms(prev => ({ ...prev, [program.id]: !prev[program.id] }))}
-                      >
-                        <h3 className="font-bold text-zinc-900 flex items-center gap-2">
-                          <Award className="w-5 h-5 text-orange-500" />
-                          Доступные призы ({program.prizes.filter(p => p.enabled).length})
-                        </h3>
-                        {collapsedPrograms[program.id] ? <ChevronDown className="w-5 h-5" /> : <ChevronUp className="w-5 h-5" />}
-                      </button>
+                      <div className="flex items-center justify-between">
+                        <button 
+                          className="flex items-center gap-2"
+                          onClick={() => setCollapsedPrograms(prev => ({ ...prev, [program.id]: !prev[program.id] }))}
+                        >
+                          <h3 className="font-bold text-zinc-900 flex items-center gap-2">
+                            <Award className="w-5 h-5 text-orange-500" />
+                            Доступные призы ({program.prizes.filter(p => p.enabled).length})
+                          </h3>
+                          {collapsedPrograms[program.id] ? <ChevronDown className="w-5 h-5" /> : <ChevronUp className="w-5 h-5" />}
+                        </button>
+                        {!collapsedPrograms[program.id] && (
+                          <div className="flex items-center gap-1 bg-zinc-100 rounded-lg p-0.5" data-testid="prize-view-toggle">
+                            <button
+                              onClick={() => setPrizeView('list')}
+                              className={`p-1.5 rounded-md transition-colors ${prizeView === 'list' ? 'bg-white shadow text-orange-600' : 'text-zinc-400 hover:text-zinc-600'}`}
+                              data-testid="prize-view-list"
+                            >
+                              <LayoutList className="w-4 h-4" />
+                            </button>
+                            <button
+                              onClick={() => setPrizeView('grid')}
+                              className={`p-1.5 rounded-md transition-colors ${prizeView === 'grid' ? 'bg-white shadow text-orange-600' : 'text-zinc-400 hover:text-zinc-600'}`}
+                              data-testid="prize-view-grid"
+                            >
+                              <LayoutGrid className="w-4 h-4" />
+                            </button>
+                          </div>
+                        )}
+                      </div>
                       
-                      {!collapsedPrograms[program.id] && (
+                      {!collapsedPrograms[program.id] && prizeView === 'list' && (
                         <div className="mt-4 grid gap-3">
                           {program.prizes.filter(p => p.enabled).map((prize) => {
                             const canAfford = (program.progress?.current_amount || 0) >= prize.points_cost;
@@ -302,6 +324,7 @@ export default function BonusPage() {
                                     ? 'border-green-200 bg-green-50 hover:border-green-300' 
                                     : 'border-zinc-200 bg-zinc-50'
                                 }`}
+                                data-testid={`prize-item-${prize.id}`}
                               >
                                 {prize.image_url ? (
                                   <img 
@@ -344,6 +367,66 @@ export default function BonusPage() {
                                 >
                                   {isRedeeming ? '...' : !isAvailable ? 'Нет в наличии' : canAfford ? 'Получить' : 'Недостаточно'}
                                 </Button>
+                              </div>
+                            );
+                          })}
+                        </div>
+                      )}
+
+                      {!collapsedPrograms[program.id] && prizeView === 'grid' && (
+                        <div className="mt-4 grid grid-cols-2 sm:grid-cols-3 gap-3">
+                          {program.prizes.filter(p => p.enabled).map((prize) => {
+                            const canAfford = (program.progress?.current_amount || 0) >= prize.points_cost;
+                            const isRedeeming = redeemingPrize[`${program.id}_${prize.id}`];
+                            const isAvailable = prize.quantity === -1 || prize.quantity > 0;
+                            
+                            return (
+                              <div 
+                                key={prize.id}
+                                className={`flex flex-col rounded-xl border-2 overflow-hidden transition-all ${
+                                  canAfford && isAvailable 
+                                    ? 'border-green-200 bg-green-50 hover:border-green-300' 
+                                    : 'border-zinc-200 bg-zinc-50'
+                                }`}
+                                data-testid={`prize-card-${prize.id}`}
+                              >
+                                {prize.image_url ? (
+                                  <img 
+                                    src={prize.image_url} 
+                                    alt={prize.name} 
+                                    className="w-full h-32 object-cover"
+                                    onError={(e) => { e.target.style.display = 'none'; }}
+                                  />
+                                ) : (
+                                  <div className="w-full h-32 bg-gradient-to-br from-orange-100 to-orange-200 flex items-center justify-center">
+                                    <Gift className="w-12 h-12 text-orange-500" />
+                                  </div>
+                                )}
+                                <div className="p-3 flex flex-col flex-1">
+                                  <h4 className="font-semibold text-zinc-900 text-sm leading-tight">{prize.name}</h4>
+                                  {prize.description && (
+                                    <p className="text-xs text-zinc-500 mt-1 line-clamp-2">{prize.description}</p>
+                                  )}
+                                  <div className="flex items-center gap-2 mt-2">
+                                    <span className="text-sm font-bold text-orange-600">{prize.points_cost}</span>
+                                    <span className="text-xs text-zinc-400">баллов</span>
+                                    {prize.quantity >= 0 && (
+                                      <span className="text-[10px] text-zinc-400 ml-auto">x{prize.quantity}</span>
+                                    )}
+                                  </div>
+                                  <Button
+                                    onClick={() => handleRedeemPrize(program.id, prize.id, prize.name, prize.points_cost)}
+                                    disabled={!canAfford || !isAvailable || isRedeeming}
+                                    size="sm"
+                                    className={`mt-2 w-full text-xs ${
+                                      canAfford && isAvailable
+                                        ? 'bg-green-500 hover:bg-green-600'
+                                        : 'bg-zinc-300 cursor-not-allowed'
+                                    }`}
+                                  >
+                                    {isRedeeming ? '...' : !isAvailable ? 'Нет в наличии' : canAfford ? 'Получить' : 'Недостаточно'}
+                                  </Button>
+                                </div>
                               </div>
                             );
                           })}
