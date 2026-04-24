@@ -113,6 +113,7 @@ export default function AdminOrdersPage() {
       address: order.address || '',
       comment: order.comment || '',
       status: order.status,
+      created_at: order.created_at || '',
       items: order.items?.map(item => ({ ...item })) || []
     });
     setExpandedOrders(prev => ({ ...prev, [order.id]: true }));
@@ -131,7 +132,8 @@ export default function AdminOrdersPage() {
         address: editData.address,
         phone: editData.phone,
         comment: editData.comment,
-        items: editData.items
+        items: editData.items,
+        created_at: editData.created_at
       });
       setOrders(prev => prev.map(o => o.id === orderId ? res.data : o));
       setEditingOrderId(null);
@@ -362,6 +364,16 @@ export default function AdminOrdersPage() {
                                 <div>
                                   <label className="text-xs font-bold uppercase text-teal-600 mb-1 block">Адрес</label>
                                   <Input value={editData.address} onChange={(e) => setEditData({...editData, address: e.target.value})} className="rounded-lg border-slate-200" />
+                                </div>
+                                <div>
+                                  <label className="text-xs font-bold uppercase text-teal-600 mb-1 block">Дата и время заказа</label>
+                                  <Input 
+                                    type="datetime-local" 
+                                    value={editData.created_at ? editData.created_at.slice(0, 16) : ''} 
+                                    onChange={(e) => setEditData({...editData, created_at: e.target.value ? new Date(e.target.value).toISOString() : editData.created_at})} 
+                                    className="rounded-lg border-slate-200"
+                                    data-testid="order-date-input"
+                                  />
                                 </div>
                               </div>
                             ) : (
