@@ -101,6 +101,16 @@ const ProductCard = ({
               <MapPin className="w-3 h-3 mr-0.5" />{product.warehouse}
             </span>
           )}
+          {product.is_original && (
+            <span className="inline-flex items-center gap-0.5 text-[11px] font-bold px-2 py-0.5 rounded-full bg-teal-500 text-white" data-testid={`badge-original-${product.id}`}>
+              Оригинал
+            </span>
+          )}
+          {product.has_guarantee && (
+            <span className="inline-flex items-center gap-0.5 text-[11px] font-bold px-2 py-0.5 rounded-full bg-amber-500 text-white" data-testid={`badge-guarantee-${product.id}`}>
+              Гарантия
+            </span>
+          )}
           <span className="inline-flex items-center text-[11px] text-slate-500 px-2 py-0.5 rounded-full bg-slate-50">
             <Truck className="w-3 h-3 mr-0.5" />{getDeliveryText(product.delivery_days || 3)}
           </span>

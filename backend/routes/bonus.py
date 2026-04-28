@@ -61,6 +61,8 @@ async def get_user_program_progress(user_id: str, program_id: str):
 
 async def update_bonus_on_order_delivered(user_id: str, order_total: float):
     """Called when order status changes to 'completed'"""
+    from notify import notify_user
+    
     programs = await get_all_bonus_programs()
     
     current_year = datetime.now(timezone.utc).year
@@ -110,6 +112,16 @@ async def update_bonus_on_order_delivered(user_id: str, order_total: float):
             {"$set": {"current_amount": new_points}},
             upsert=True
         )
+        
+        # Notify user about bonus accrual
+        if bonus_points > 0:
+            await notify_user(
+                user_id,
+                "bonus",
+                "Начисление баллов",
+                f"Вам начислено {int(bonus_points)} бонусных баллов за выполненный заказ. Баланс: {int(new_points)} баллов",
+                "/bonus"
+            )
     
     return {"updated": True}
 

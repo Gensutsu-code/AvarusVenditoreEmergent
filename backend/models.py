@@ -89,6 +89,8 @@ class ProductCreate(BaseModel):
     stock: int = 0
     delivery_days: int = 3
     warehouse: Optional[str] = None
+    is_original: Optional[bool] = False
+    has_guarantee: Optional[bool] = False
 
 class ProductUpdate(BaseModel):
     name: Optional[str] = None
@@ -103,6 +105,8 @@ class ProductUpdate(BaseModel):
     stock: Optional[int] = None
     delivery_days: Optional[int] = None
     warehouse: Optional[str] = None
+    is_original: Optional[bool] = None
+    has_guarantee: Optional[bool] = None
 
 class ProductResponse(BaseModel):
     id: str
@@ -118,6 +122,8 @@ class ProductResponse(BaseModel):
     stock: int
     delivery_days: int = 3
     warehouse: Optional[str] = None
+    is_original: Optional[bool] = False
+    has_guarantee: Optional[bool] = False
 
 # ==================== CATEGORY MODELS ====================
 

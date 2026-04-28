@@ -3608,6 +3608,28 @@ export default function AdminPage() {
                 </select>
               </div>
 
+              {/* Badges */}
+              <div className="flex items-center gap-6">
+                <label className="flex items-center gap-2 cursor-pointer" data-testid="product-original-toggle">
+                  <input
+                    type="checkbox"
+                    checked={editingProduct.is_original || false}
+                    onChange={(e) => setEditingProduct({ ...editingProduct, is_original: e.target.checked })}
+                    className="w-4 h-4 accent-teal-500 rounded"
+                  />
+                  <span className="text-sm font-medium text-zinc-700">Оригинал</span>
+                </label>
+                <label className="flex items-center gap-2 cursor-pointer" data-testid="product-guarantee-toggle">
+                  <input
+                    type="checkbox"
+                    checked={editingProduct.has_guarantee || false}
+                    onChange={(e) => setEditingProduct({ ...editingProduct, has_guarantee: e.target.checked })}
+                    className="w-4 h-4 accent-amber-500 rounded"
+                  />
+                  <span className="text-sm font-medium text-zinc-700">Гарантия</span>
+                </label>
+              </div>
+
               <div>
                 <Label className="text-xs font-semibold uppercase text-teal-600">Изображения</Label>
                 <div className="mt-1.5 space-y-3">

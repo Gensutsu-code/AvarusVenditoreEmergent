@@ -1,5 +1,5 @@
 import { Link } from 'react-router-dom';
-import { ShoppingCart, Package } from 'lucide-react';
+import { ShoppingCart, Package, ShieldCheck, BadgeCheck } from 'lucide-react';
 import { Button } from './ui/button';
 import { useCart } from '../context/CartContext';
 import { useAuth } from '../context/AuthContext';
@@ -65,6 +65,20 @@ export const ProductCard = ({ product, index = 0 }) => {
             )}
             {/* Overlay on hover */}
             <div className="absolute inset-0 bg-gradient-to-t from-white/60 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+            
+            {/* Badges */}
+            <div className="absolute top-2 left-2 flex flex-col gap-1">
+              {product.is_original && (
+                <span className="inline-flex items-center gap-1 bg-teal-500 text-white text-[10px] font-bold px-2 py-0.5 rounded-md shadow" data-testid={`badge-original-${product.id}`}>
+                  <BadgeCheck className="w-3 h-3" /> Оригинал
+                </span>
+              )}
+              {product.has_guarantee && (
+                <span className="inline-flex items-center gap-1 bg-amber-500 text-white text-[10px] font-bold px-2 py-0.5 rounded-md shadow" data-testid={`badge-guarantee-${product.id}`}>
+                  <ShieldCheck className="w-3 h-3" /> Гарантия
+                </span>
+              )}
+            </div>
             
             {/* Quick add button */}
             <motion.div 
