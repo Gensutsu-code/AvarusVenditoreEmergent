@@ -395,6 +395,9 @@ async def update_admin_order(order_id: str, data: AdminOrderUpdate, user=Depends
         # Save previous data for comparison
         update_data["previous_items"] = original_order.get("items", [])
         update_data["previous_total"] = original_order.get("total", 0)
+        # Recalculate total from items
+        new_total = sum(item.get("price", 0) * item.get("quantity", 0) for item in update_data["items"])
+        update_data["total"] = new_total
     
     if not update_data:
         raise HTTPException(status_code=400, detail="No data to update")

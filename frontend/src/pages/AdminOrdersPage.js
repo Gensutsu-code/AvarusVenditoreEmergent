@@ -5,7 +5,7 @@ import {
   Package, Search, Eye, Pencil, Trash2, Save, X, 
   Clock, CheckCircle, Truck, XCircle, ChevronDown,
   User, Phone, MapPin, Calendar, CreditCard, RefreshCw,
-  AlertTriangle, Check, RotateCcw
+  AlertTriangle, Check, RotateCcw, Plus
 } from 'lucide-react';
 import { Button } from '../components/ui/button';
 import { Input } from '../components/ui/input';
@@ -32,6 +32,9 @@ export default function AdminOrdersPage() {
   const [expandedOrders, setExpandedOrders] = useState({});
   const [editingOrderId, setEditingOrderId] = useState(null);
   const [editData, setEditData] = useState({});
+  const [productSearch, setProductSearch] = useState('');
+  const [productResults, setProductResults] = useState([]);
+  const [searchingProducts, setSearchingProducts] = useState(false);
 
   useEffect(() => {
     if (authLoading) return;
@@ -148,6 +151,38 @@ export default function AdminOrdersPage() {
     const newItems = [...editData.items];
     newItems[index] = { ...newItems[index], [field]: field === 'price' || field === 'quantity' ? Number(value) : value };
     setEditData({ ...editData, items: newItems });
+  };
+
+  const handleRemoveItem = (index) => {
+    const newItems = editData.items.filter((_, i) => i !== index);
+    setEditData({ ...editData, items: newItems });
+  };
+
+  const handleSearchProducts = async (query) => {
+    setProductSearch(query);
+    if (query.length < 2) { setProductResults([]); return; }
+    setSearchingProducts(true);
+    try {
+      const res = await axios.get(`${API}/products?search=${encodeURIComponent(query)}&limit=5`);
+      const products = res.data.products || res.data || [];
+      setProductResults(products);
+    } catch { setProductResults([]); }
+    setSearchingProducts(false);
+  };
+
+  const handleAddProduct = (product) => {
+    const newItem = {
+      product_id: product.id,
+      name: product.name,
+      article: product.article || '',
+      price: product.price,
+      quantity: 1,
+      image_url: product.image_url || ''
+    };
+    setEditData({ ...editData, items: [...editData.items, newItem] });
+    setProductSearch('');
+    setProductResults([]);
+    toast.success(`${product.name} добавлен`);
   };
 
   const calculateTotal = (items) => items.reduce((sum, item) => sum + (item.price * item.quantity), 0);
@@ -423,6 +458,14 @@ export default function AdminOrdersPage() {
                                         <label className="text-xs text-slate-500">Сумма</label>
                                         <p className="h-8 flex items-center text-sm font-bold text-teal-600">{formatPrice(item.price * item.quantity)} ₽</p>
                                       </div>
+                                      <button
+                                        onClick={() => handleRemoveItem(idx)}
+                                        className="mt-4 p-1.5 rounded-lg text-red-400 hover:text-red-600 hover:bg-red-50 transition-colors"
+                                        title="Удалить товар"
+                                        data-testid={`remove-item-${idx}`}
+                                      >
+                                        <Trash2 className="w-4 h-4" />
+                                      </button>
                                     </div>
                                   ) : (
                                     <div className="text-right">
@@ -433,6 +476,47 @@ export default function AdminOrdersPage() {
                                 </div>
                               ))}
                             </div>
+
+                            {/* Add Product (only when editing) */}
+                            {isEditing && (
+                              <div className="mt-3 border-2 border-dashed border-teal-200 rounded-xl p-3" data-testid="add-product-section">
+                                <label className="text-xs font-bold uppercase text-teal-600 mb-2 block">Добавить товар</label>
+                                <div className="relative">
+                                  <Search className="absolute left-3 top-2.5 w-4 h-4 text-slate-400" />
+                                  <Input
+                                    value={productSearch}
+                                    onChange={(e) => handleSearchProducts(e.target.value)}
+                                    placeholder="Поиск по названию или артикулу..."
+                                    className="pl-9 rounded-lg border-slate-200"
+                                    data-testid="add-product-search"
+                                  />
+                                  {productResults.length > 0 && (
+                                    <div className="absolute z-20 top-full left-0 right-0 mt-1 bg-white border border-slate-200 rounded-xl shadow-xl max-h-48 overflow-y-auto">
+                                      {productResults.map(p => (
+                                        <button
+                                          key={p.id}
+                                          onClick={() => handleAddProduct(p)}
+                                          className="w-full flex items-center gap-3 px-3 py-2 hover:bg-teal-50 transition-colors text-left"
+                                          data-testid={`add-product-${p.id}`}
+                                        >
+                                          {p.image_url ? (
+                                            <img src={p.image_url} alt="" className="w-8 h-8 rounded object-cover" />
+                                          ) : (
+                                            <div className="w-8 h-8 rounded bg-slate-100 flex items-center justify-center"><Package className="w-4 h-4 text-slate-400" /></div>
+                                          )}
+                                          <div className="flex-1 min-w-0">
+                                            <p className="text-sm font-medium text-slate-800 truncate">{p.name}</p>
+                                            <p className="text-xs text-slate-400">{p.article} — {formatPrice(p.price)} ₽</p>
+                                          </div>
+                                          <Plus className="w-4 h-4 text-teal-500 flex-shrink-0" />
+                                        </button>
+                                      ))}
+                                    </div>
+                                  )}
+                                  {searchingProducts && <p className="text-xs text-slate-400 mt-1">Поиск...</p>}
+                                </div>
+                              </div>
+                            )}
                             
                             {/* Total */}
                             <div className="mt-4 p-3 bg-gradient-to-r from-teal-50 to-emerald-50 rounded-xl border border-teal-200">
