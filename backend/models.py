@@ -91,6 +91,7 @@ class ProductCreate(BaseModel):
     warehouse: Optional[str] = None
     is_original: Optional[bool] = False
     has_guarantee: Optional[bool] = False
+    bonus_eligible: Optional[bool] = True
 
 class ProductUpdate(BaseModel):
     name: Optional[str] = None
@@ -107,6 +108,7 @@ class ProductUpdate(BaseModel):
     warehouse: Optional[str] = None
     is_original: Optional[bool] = None
     has_guarantee: Optional[bool] = None
+    bonus_eligible: Optional[bool] = None
 
 class ProductResponse(BaseModel):
     id: str
@@ -124,6 +126,7 @@ class ProductResponse(BaseModel):
     warehouse: Optional[str] = None
     is_original: Optional[bool] = False
     has_guarantee: Optional[bool] = False
+    bonus_eligible: Optional[bool] = True
 
 # ==================== CATEGORY MODELS ====================
 

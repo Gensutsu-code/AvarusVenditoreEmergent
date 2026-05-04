@@ -299,3 +299,113 @@ async def get_all_balance_transactions(user=Depends(get_current_user), limit: in
             t["user_email"] = user_data.get("email", "")
     
     return {"transactions": transactions}
+
+
+# Admin: Adjust user balance (credit/debit)
+class AdminBalanceAdjust(BaseModel):
+    amount: float
+    reason: str = ""
+
+
+@router.post("/admin/users/{user_id}/balance/credit")
+async def admin_credit_balance(user_id: str, body: AdminBalanceAdjust, user=Depends(get_current_user)):
+    """Admin: add funds to a user's balance"""
+    if user.get("role") != "admin":
+        raise HTTPException(status_code=403, detail="Admin access required")
+    if body.amount <= 0:
+        raise HTTPException(status_code=400, detail="Сумма должна быть положительной")
+
+    target = await db.users.find_one({"id": user_id}, {"_id": 0, "id": 1, "name": 1, "email": 1, "balance": 1})
+    if not target:
+        raise HTTPException(status_code=404, detail="Пользователь не найден")
+
+    old_balance = target.get("balance", 0) or 0
+    new_balance = old_balance + body.amount
+
+    await db.users.update_one({"id": user_id}, {"$inc": {"balance": body.amount}})
+
+    now = datetime.now(timezone.utc).isoformat()
+    transaction_id = str(uuid.uuid4())
+    await db.balance_transactions.insert_one({
+        "id": transaction_id,
+        "user_id": user_id,
+        "type": "admin_credit",
+        "amount": body.amount,
+        "method": "admin",
+        "status": "completed",
+        "description": f"Начисление администратором. {body.reason}".strip(),
+        "admin_id": user.get("id"),
+        "admin_name": user.get("name") or user.get("email"),
+        "created_at": now,
+    })
+
+    # Notify user
+    await db.notifications.insert_one({
+        "id": str(uuid.uuid4()),
+        "user_id": user_id,
+        "type": "balance",
+        "title": "Пополнение баланса",
+        "message": f"На ваш баланс зачислено {body.amount:.2f} ₽. {body.reason}".strip(),
+        "link": "/account",
+        "read": False,
+        "created_at": now,
+    })
+
+    return {
+        "success": True,
+        "old_balance": old_balance,
+        "new_balance": new_balance,
+        "transaction_id": transaction_id,
+    }
+
+
+@router.post("/admin/users/{user_id}/balance/debit")
+async def admin_debit_balance(user_id: str, body: AdminBalanceAdjust, user=Depends(get_current_user)):
+    """Admin: remove funds from a user's balance (can go negative)"""
+    if user.get("role") != "admin":
+        raise HTTPException(status_code=403, detail="Admin access required")
+    if body.amount <= 0:
+        raise HTTPException(status_code=400, detail="Сумма должна быть положительной")
+
+    target = await db.users.find_one({"id": user_id}, {"_id": 0, "id": 1, "name": 1, "email": 1, "balance": 1})
+    if not target:
+        raise HTTPException(status_code=404, detail="Пользователь не найден")
+
+    old_balance = target.get("balance", 0) or 0
+    new_balance = old_balance - body.amount  # may be negative
+
+    await db.users.update_one({"id": user_id}, {"$inc": {"balance": -body.amount}})
+
+    now = datetime.now(timezone.utc).isoformat()
+    transaction_id = str(uuid.uuid4())
+    await db.balance_transactions.insert_one({
+        "id": transaction_id,
+        "user_id": user_id,
+        "type": "admin_debit",
+        "amount": -body.amount,
+        "method": "admin",
+        "status": "completed",
+        "description": f"Списание администратором. {body.reason}".strip(),
+        "admin_id": user.get("id"),
+        "admin_name": user.get("name") or user.get("email"),
+        "created_at": now,
+    })
+
+    # Notify user
+    await db.notifications.insert_one({
+        "id": str(uuid.uuid4()),
+        "user_id": user_id,
+        "type": "balance",
+        "title": "Списание с баланса",
+        "message": f"С вашего баланса списано {body.amount:.2f} ₽. {body.reason}".strip(),
+        "link": "/account",
+        "read": False,
+        "created_at": now,
+    })
+
+    return {
+        "success": True,
+        "old_balance": old_balance,
+        "new_balance": new_balance,
+        "transaction_id": transaction_id,
+    }

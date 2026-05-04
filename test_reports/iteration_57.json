@@ -1,0 +1,42 @@
+{
+  "summary": "Iteration 57 — Returns improvements + Admin balance management + Product bonus_eligible toggle. Backend pytest 15/15 passed (photos required for both 'return' and 'warranty', duplicate quantity protection blocking re-returns, program_bonus_totals dict serialization with sum-equals-total invariant, bonus_eligible filtering producing program_bonuses={} on non-eligible items while still keeping 10% deduction, admin credit/debit happy-path + amount<=0 → 400, non-admin → 403, non-existent user → 404, debit going negative successfully, balance_transactions of types admin_credit/admin_debit recorded, balance notifications sent, /api/products PUT/GET preserves bonus_eligible, default True for legacy products). Frontend automation verified the /returns client page renders 8 returns and the admin panel loads correctly; deeper UI tests for credit-balance-btn / debit-balance-btn / product-bonus-toggle / badge-bonus could not be completed because the CRM tab user cards required a card-row click that the automation could not reliably resolve in the available iterations. All required data-testids exist in the source code (verified via grep).",
+  "backend_issues": {
+    "critical": [],
+    "minor": []
+  },
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [],
+    "design_issues": []
+  },
+  "test_report_links": [
+    "/app/backend/tests/test_iteration57_features.py",
+    "/app/test_reports/pytest/pytest_iteration57.xml",
+    "/app/backend/tests/test_returns_system.py"
+  ],
+  "action_items": [
+    "Main agent should self-verify the UI flows the automation could not reach (manual or curl-equivalent fronted DOM inspection): credit-balance-btn-{id} → balance-modal opens → balance-amount-input + balance-reason-input → balance-confirm-btn submits and toast appears; debit modal shows warning text containing 'минус' when amount > current balance; product-bonus-toggle visible in product edit modal and default checked; badge-bonus-{id} rendered on ProductCard for products with bonus_eligible !== false; ClientReturnsPage and AdminReturnsPage render attached photo thumbnails (clickable). All data-testid hooks are confirmed to exist in source — these checks are quick visual checks."
+  ],
+  "critical_code_review_comments": [
+    "routes/returns.py approve_return: when program_bonus_totals is missing AND bonus_progress lookup fails (no progress doc), legacy bonus deduction is silently dropped. Acceptable but worth a structured log.",
+    "routes/balance.py admin_debit_balance: no audit trail field for admin_id is present in older records — implementation now records admin_id and admin_name (good). Consider also writing an action_log entry for compliance.",
+    "ReturnModal: photos are uploaded via /api/upload (Cloudinary, requires auth). If upload returns non-2xx the user is left without clear error feedback — recommend toast on failure (frontend only).",
+    "AdminPage product edit form: the bonus_eligible toggle uses `editingProduct.bonus_eligible !== false` for checked state which correctly defaults legacy products to True — good. Make sure the saved payload is included in PUT body even when unchanged."
+  ],
+  "updated_files": [
+    "/app/backend/tests/test_iteration57_features.py"
+  ],
+  "success_rate": {
+    "backend": "100% (15/15 passed)",
+    "frontend": "partial — only smoke navigation verified; deeper UI assertions skipped (data-testids confirmed present in source)"
+  },
+  "test_credentials": {
+    "admin": "admin@avarus.ru / admin",
+    "client_with_completed_orders": "0x0errorr@gmail.com / admin123"
+  },
+  "seed_data_creation": "Created 2 new returns for client 0x0errorr@gmail.com during testing (one normal return for program_bonus_totals verification, one for bonus_eligible filtering test which restores product flag in finally block). Two TEST_credit balance transactions and one TEST_debit (negative-going) followed by TEST_restore credit applied to client account.",
+  "retest_needed": false,
+  "should_main_agent_self_test": true,
+  "context_for_next_testing_agent": "Backend for iteration 57 is fully covered by /app/backend/tests/test_iteration57_features.py — re-run any time. Returns model now includes: photos (list, required, len>=1), program_bonus_totals (dict), per-item program_bonuses (dict) and per-item bonus_eligible (bool). Approve uses program_bonus_totals when present (per-program deduction from bonus_progress.current_amount); fallback to even distribution for legacy returns. Admin balance endpoints: POST /api/admin/users/{id}/balance/credit and /debit, both 200 with {success, old_balance, new_balance, transaction_id}; debit can go negative; both create balance_transactions and notification (type='balance'). Products: bonus_eligible defaults True if absent; PUT /api/products/{id} accepts the field; legacy products without the field are returned with bonus_eligible=True. Update_bonus_on_order_delivered now uses eligible_total computed from products' bonus_eligible flag.",
+  "rca_of_the_issue": "N/A — no critical bugs surfaced. The frontend UI assertions that could not be completed were due to the testing agent not finding a reliable selector to expand CRM user cards (cards expand on row-click, not on a dedicated testid). All required interactive testids (credit-balance-btn-{id}, debit-balance-btn-{id}, balance-modal, balance-amount-input, balance-reason-input, balance-confirm-btn, product-bonus-toggle, add-photo-btn, photo-file-input, badge-bonus-{id}) are confirmed in source via grep."
+}

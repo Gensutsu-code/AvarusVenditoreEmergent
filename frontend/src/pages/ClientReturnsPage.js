@@ -179,6 +179,29 @@ export default function ClientReturnsPage() {
                               </div>
                             )}
 
+                            {ret.photos && ret.photos.length > 0 && (
+                              <div>
+                                <p className="text-xs text-slate-400 mb-2">Фото</p>
+                                <div className="flex flex-wrap gap-2">
+                                  {ret.photos.map((url, i) => (
+                                    <a
+                                      key={i}
+                                      href={url.startsWith('http') ? url : `${BACKEND_URL}${url}`}
+                                      target="_blank"
+                                      rel="noreferrer"
+                                      className="block w-20 h-20 rounded-xl overflow-hidden border border-slate-200 hover:border-teal-400 transition"
+                                    >
+                                      <img
+                                        src={url.startsWith('http') ? url : `${BACKEND_URL}${url}`}
+                                        alt={`photo-${i}`}
+                                        className="w-full h-full object-cover"
+                                      />
+                                    </a>
+                                  ))}
+                                </div>
+                              </div>
+                            )}
+
                             <div>
                               <p className="text-xs text-slate-400 mb-2">Товары к возврату</p>
                               <div className="space-y-2">

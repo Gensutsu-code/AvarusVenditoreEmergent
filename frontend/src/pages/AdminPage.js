@@ -3395,6 +3395,7 @@ export default function AdminPage() {
             >
             <CRMTab
               users={users}
+              setUsers={setUsers}
               stats={stats}
               formatPrice={formatPrice}
               handleEditUser={handleEditUser}
@@ -3609,7 +3610,7 @@ export default function AdminPage() {
               </div>
 
               {/* Badges */}
-              <div className="flex items-center gap-6">
+              <div className="flex items-center gap-6 flex-wrap">
                 <label className="flex items-center gap-2 cursor-pointer" data-testid="product-original-toggle">
                   <input
                     type="checkbox"
@@ -3627,6 +3628,15 @@ export default function AdminPage() {
                     className="w-4 h-4 accent-amber-500 rounded"
                   />
                   <span className="text-sm font-medium text-zinc-700">Гарантия</span>
+                </label>
+                <label className="flex items-center gap-2 cursor-pointer" data-testid="product-bonus-toggle">
+                  <input
+                    type="checkbox"
+                    checked={editingProduct.bonus_eligible !== false}
+                    onChange={(e) => setEditingProduct({ ...editingProduct, bonus_eligible: e.target.checked })}
+                    className="w-4 h-4 accent-emerald-500 rounded"
+                  />
+                  <span className="text-sm font-medium text-zinc-700">Участвует в бонусной программе</span>
                 </label>
               </div>
 

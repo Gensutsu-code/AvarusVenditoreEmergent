@@ -1,15 +1,17 @@
 import { useState, useEffect } from 'react';
-import { Users, BarChart3, TrendingUp, Calendar, UserCheck, Pencil, Trash2, ChevronDown, User, ShoppingBag, Package, Clock, DollarSign, Target, RefreshCw, Activity, ShieldOff, ShieldCheck } from 'lucide-react';
+import { Users, BarChart3, TrendingUp, Calendar, UserCheck, Pencil, Trash2, ChevronDown, User, ShoppingBag, Package, Clock, DollarSign, Target, RefreshCw, Activity, ShieldOff, ShieldCheck, Plus, Minus, Wallet, X } from 'lucide-react';
 import { Button } from '../../components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../../components/ui/select';
 import { motion, AnimatePresence } from 'framer-motion';
 import axios from 'axios';
+import { toast } from 'sonner';
 
 const API = `${process.env.REACT_APP_BACKEND_URL}/api`;
 
 // Sub-tab component for CRM section (Analytics + Clients)
 export const CRMTab = ({
   users,
+  setUsers,
   stats,
   formatPrice,
   handleEditUser,
@@ -24,6 +26,10 @@ export const CRMTab = ({
   const [statsPeriod, setStatsPeriod] = useState('month');
   const [analyticsData, setAnalyticsData] = useState(null);
   const [loadingAnalytics, setLoadingAnalytics] = useState(false);
+  const [balanceModal, setBalanceModal] = useState(null); // { user, action: 'credit'|'debit' }
+  const [balanceAmount, setBalanceAmount] = useState('');
+  const [balanceReason, setBalanceReason] = useState('');
+  const [balanceSubmitting, setBalanceSubmitting] = useState(false);
 
   // Fetch analytics data
   useEffect(() => {
@@ -63,6 +69,49 @@ export const CRMTab = ({
 
   const toggleUserExpand = (userId) => {
     setExpandedUser(expandedUser === userId ? null : userId);
+  };
+
+  const openBalanceModal = (u, action) => {
+    setBalanceModal({ user: u, action });
+    setBalanceAmount('');
+    setBalanceReason('');
+  };
+
+  const closeBalanceModal = () => {
+    setBalanceModal(null);
+    setBalanceAmount('');
+    setBalanceReason('');
+  };
+
+  const submitBalanceAdjust = async () => {
+    if (!balanceModal) return;
+    const amount = parseFloat(balanceAmount);
+    if (!amount || amount <= 0) {
+      toast.error('Введите положительную сумму');
+      return;
+    }
+    setBalanceSubmitting(true);
+    try {
+      const endpoint = balanceModal.action === 'credit' ? 'credit' : 'debit';
+      const res = await axios.post(
+        `${API}/admin/users/${balanceModal.user.id}/balance/${endpoint}`,
+        { amount, reason: balanceReason.trim() }
+      );
+      // Update user balance locally
+      if (setUsers) {
+        setUsers((prev) => prev.map((u) => (u.id === balanceModal.user.id ? { ...u, balance: res.data.new_balance } : u)));
+      }
+      toast.success(
+        balanceModal.action === 'credit'
+          ? `Начислено ${amount.toFixed(2)} ₽`
+          : `Списано ${amount.toFixed(2)} ₽`
+      );
+      closeBalanceModal();
+    } catch (err) {
+      toast.error(err.response?.data?.detail || 'Ошибка');
+    } finally {
+      setBalanceSubmitting(false);
+    }
   };
 
   return (
@@ -296,9 +345,27 @@ export const CRMTab = ({
                             </div>
                           </div>
                           <div className="space-y-2 text-sm">
-                            <div className="flex justify-between">
+                            <div className="flex justify-between items-center">
                               <span className={isDark ? 'text-zinc-500' : 'text-zinc-500'}>Баланс:</span>
-                              <span className={`font-medium ${isDark ? 'text-zinc-200' : ''}`}>{formatPrice(user.balance || 0)} ₽</span>
+                              <div className="flex items-center gap-2">
+                                <span className={`font-medium ${isDark ? 'text-zinc-200' : ''}`} data-testid={`user-balance-${user.id}`}>{formatPrice(user.balance || 0)} ₽</span>
+                                <button
+                                  onClick={(e) => { e.stopPropagation(); openBalanceModal(user, 'credit'); }}
+                                  className={`w-7 h-7 rounded-lg flex items-center justify-center transition ${isDark ? 'bg-emerald-500/20 hover:bg-emerald-500/30 text-emerald-400' : 'bg-emerald-100 hover:bg-emerald-200 text-emerald-600'}`}
+                                  title="Начислить"
+                                  data-testid={`credit-balance-btn-${user.id}`}
+                                >
+                                  <Plus className="w-3.5 h-3.5" />
+                                </button>
+                                <button
+                                  onClick={(e) => { e.stopPropagation(); openBalanceModal(user, 'debit'); }}
+                                  className={`w-7 h-7 rounded-lg flex items-center justify-center transition ${isDark ? 'bg-rose-500/20 hover:bg-rose-500/30 text-rose-400' : 'bg-rose-100 hover:bg-rose-200 text-rose-600'}`}
+                                  title="Списать"
+                                  data-testid={`debit-balance-btn-${user.id}`}
+                                >
+                                  <Minus className="w-3.5 h-3.5" />
+                                </button>
+                              </div>
                             </div>
                             <div className="flex justify-between">
                               <span className={isDark ? 'text-zinc-500' : 'text-zinc-500'}>Бонусы:</span>
@@ -637,6 +704,113 @@ export const CRMTab = ({
           )}
         </motion.div>
       )}
+
+      {/* Balance Adjustment Modal */}
+      <AnimatePresence>
+        {balanceModal && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4"
+            onClick={closeBalanceModal}
+            data-testid="balance-modal"
+          >
+            <motion.div
+              initial={{ scale: 0.95 }}
+              animate={{ scale: 1 }}
+              exit={{ scale: 0.95 }}
+              className={`rounded-2xl shadow-xl max-w-md w-full overflow-hidden ${isDark ? 'bg-zinc-900 border border-zinc-700' : 'bg-white'}`}
+              onClick={(e) => e.stopPropagation()}
+            >
+              <div className={`px-5 py-4 border-b flex items-center justify-between ${isDark ? 'border-zinc-700' : 'border-slate-200'}`}>
+                <div className="flex items-center gap-3">
+                  <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${
+                    balanceModal.action === 'credit'
+                      ? (isDark ? 'bg-emerald-500/20 text-emerald-400' : 'bg-emerald-100 text-emerald-600')
+                      : (isDark ? 'bg-rose-500/20 text-rose-400' : 'bg-rose-100 text-rose-600')
+                  }`}>
+                    {balanceModal.action === 'credit' ? <Plus className="w-5 h-5" /> : <Minus className="w-5 h-5" />}
+                  </div>
+                  <div>
+                    <h3 className={`text-lg font-bold ${isDark ? 'text-zinc-100' : 'text-slate-800'}`}>
+                      {balanceModal.action === 'credit' ? 'Начислить на баланс' : 'Списать с баланса'}
+                    </h3>
+                    <p className={`text-xs ${isDark ? 'text-zinc-500' : 'text-slate-500'}`}>
+                      {balanceModal.user.name || balanceModal.user.email} · Текущий баланс: {formatPrice(balanceModal.user.balance || 0)} ₽
+                    </p>
+                  </div>
+                </div>
+                <button
+                  onClick={closeBalanceModal}
+                  className={`p-1.5 rounded-lg transition ${isDark ? 'hover:bg-zinc-800 text-zinc-400' : 'hover:bg-slate-100 text-slate-400'}`}
+                >
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+
+              <div className="p-5 space-y-4">
+                <div>
+                  <label className={`block text-sm font-medium mb-2 ${isDark ? 'text-zinc-300' : 'text-slate-600'}`}>
+                    Сумма (₽) <span className="text-rose-500">*</span>
+                  </label>
+                  <input
+                    type="number"
+                    min="0"
+                    step="0.01"
+                    value={balanceAmount}
+                    onChange={(e) => setBalanceAmount(e.target.value)}
+                    placeholder="0.00"
+                    className={`w-full px-3 py-2 border rounded-xl focus:outline-none focus:border-teal-400 ${
+                      isDark ? 'bg-zinc-800 border-zinc-700 text-zinc-100' : 'bg-white border-slate-200'
+                    }`}
+                    data-testid="balance-amount-input"
+                    autoFocus
+                  />
+                </div>
+                <div>
+                  <label className={`block text-sm font-medium mb-2 ${isDark ? 'text-zinc-300' : 'text-slate-600'}`}>
+                    Причина / комментарий
+                  </label>
+                  <textarea
+                    value={balanceReason}
+                    onChange={(e) => setBalanceReason(e.target.value)}
+                    rows={2}
+                    placeholder="Например: компенсация, бонус, корректировка..."
+                    className={`w-full px-3 py-2 border rounded-xl focus:outline-none focus:border-teal-400 resize-none ${
+                      isDark ? 'bg-zinc-800 border-zinc-700 text-zinc-100' : 'bg-white border-slate-200'
+                    }`}
+                    data-testid="balance-reason-input"
+                  />
+                </div>
+                {balanceModal.action === 'debit' && balanceAmount && parseFloat(balanceAmount) > (balanceModal.user.balance || 0) && (
+                  <div className={`p-3 rounded-xl text-sm ${isDark ? 'bg-amber-500/10 text-amber-400 border border-amber-500/20' : 'bg-amber-50 text-amber-700 border border-amber-200'}`}>
+                    ⚠ Баланс пользователя уйдёт в минус: {formatPrice((balanceModal.user.balance || 0) - parseFloat(balanceAmount))} ₽
+                  </div>
+                )}
+              </div>
+
+              <div className={`px-5 py-4 border-t flex items-center justify-end gap-3 ${isDark ? 'border-zinc-700' : 'border-slate-200'}`}>
+                <Button variant="outline" onClick={closeBalanceModal} className="rounded-xl">
+                  Отмена
+                </Button>
+                <Button
+                  onClick={submitBalanceAdjust}
+                  disabled={balanceSubmitting || !balanceAmount || parseFloat(balanceAmount) <= 0}
+                  className={
+                    balanceModal.action === 'credit'
+                      ? 'bg-gradient-to-r from-emerald-500 to-green-500 hover:from-emerald-600 hover:to-green-600 text-white rounded-xl'
+                      : 'bg-gradient-to-r from-rose-500 to-rose-600 hover:from-rose-600 hover:to-rose-700 text-white rounded-xl'
+                  }
+                  data-testid="balance-confirm-btn"
+                >
+                  {balanceSubmitting ? 'Отправка...' : balanceModal.action === 'credit' ? 'Начислить' : 'Списать'}
+                </Button>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 };

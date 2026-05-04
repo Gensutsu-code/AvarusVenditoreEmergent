@@ -1,18 +1,23 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useRef } from 'react';
 import axios from 'axios';
 import { motion, AnimatePresence } from 'framer-motion';
-import { X, AlertTriangle, RefreshCw, ShieldCheck, Package } from 'lucide-react';
+import { X, AlertTriangle, RefreshCw, ShieldCheck, Package, Camera, Upload, Trash2 } from 'lucide-react';
 import { Button } from './ui/button';
 import { toast } from 'sonner';
 
 const API = `${process.env.REACT_APP_BACKEND_URL}/api`;
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
 
+const MAX_PHOTOS = 5;
+
 export default function ReturnModal({ order, onClose, onSuccess }) {
   const [returnType, setReturnType] = useState(null); // "return" | "warranty"
   const [selectedItems, setSelectedItems] = useState({}); // {product_id: quantity}
   const [reason, setReason] = useState('');
+  const [photos, setPhotos] = useState([]); // [{url, filename}]
+  const [uploadingPhotos, setUploadingPhotos] = useState(false);
   const [submitting, setSubmitting] = useState(false);
+  const fileInputRef = useRef(null);
 
   const formatPrice = (p) => new Intl.NumberFormat('ru-RU').format(p);
 
@@ -61,6 +66,10 @@ export default function ReturnModal({ order, onClose, onSuccess }) {
       toast.error('Укажите причину возврата');
       return;
     }
+    if (photos.length < 1) {
+      toast.error('Приложите хотя бы одно фото товара');
+      return;
+    }
     setSubmitting(true);
     try {
       const items = Object.entries(selectedItems).map(([product_id, quantity]) => ({
@@ -72,6 +81,7 @@ export default function ReturnModal({ order, onClose, onSuccess }) {
         order_id: order.id,
         items,
         reason: reason.trim(),
+        photos: photos.map((p) => p.url),
       });
       toast.success(
         returnType === 'return'
@@ -85,6 +95,41 @@ export default function ReturnModal({ order, onClose, onSuccess }) {
     } finally {
       setSubmitting(false);
     }
+  };
+
+  const handlePhotoUpload = async (files) => {
+    const fileList = Array.from(files || []);
+    if (!fileList.length) return;
+    if (photos.length + fileList.length > MAX_PHOTOS) {
+      toast.error(`Можно прикрепить не более ${MAX_PHOTOS} фото`);
+      return;
+    }
+    setUploadingPhotos(true);
+    try {
+      const uploads = await Promise.all(
+        fileList.map(async (file) => {
+          if (!file.type.startsWith('image/')) {
+            throw new Error('Допустимы только изображения');
+          }
+          const formData = new FormData();
+          formData.append('file', file);
+          const res = await axios.post(`${API}/upload`, formData, {
+            headers: { 'Content-Type': 'multipart/form-data' },
+          });
+          return { url: res.data.url, filename: res.data.filename || file.name };
+        })
+      );
+      setPhotos((prev) => [...prev, ...uploads]);
+    } catch (err) {
+      toast.error(err.message || err.response?.data?.detail || 'Не удалось загрузить фото');
+    } finally {
+      setUploadingPhotos(false);
+      if (fileInputRef.current) fileInputRef.current.value = '';
+    }
+  };
+
+  const removePhoto = (idx) => {
+    setPhotos((prev) => prev.filter((_, i) => i !== idx));
   };
 
   return (
@@ -279,6 +324,64 @@ export default function ReturnModal({ order, onClose, onSuccess }) {
                   />
                 </div>
 
+                {/* Photos — required */}
+                <div className="mb-4">
+                  <label className="block text-sm font-medium text-slate-600 mb-2">
+                    Фото товара / дефекта <span className="text-rose-500">*</span>
+                    <span className="text-xs text-slate-400 ml-2">(минимум 1, максимум {MAX_PHOTOS})</span>
+                  </label>
+                  <div className="grid grid-cols-3 sm:grid-cols-5 gap-2">
+                    {photos.map((ph, idx) => (
+                      <div
+                        key={idx}
+                        className="relative aspect-square bg-slate-100 rounded-xl overflow-hidden border border-slate-200 group"
+                        data-testid={`return-photo-${idx}`}
+                      >
+                        <img
+                          src={ph.url.startsWith('http') ? ph.url : `${BACKEND_URL}${ph.url}`}
+                          alt={`photo-${idx}`}
+                          className="w-full h-full object-cover"
+                        />
+                        <button
+                          type="button"
+                          onClick={() => removePhoto(idx)}
+                          className="absolute top-1 right-1 w-6 h-6 rounded-full bg-rose-500 text-white opacity-0 group-hover:opacity-100 transition flex items-center justify-center"
+                          data-testid={`remove-photo-${idx}`}
+                        >
+                          <Trash2 className="w-3 h-3" />
+                        </button>
+                      </div>
+                    ))}
+                    {photos.length < MAX_PHOTOS && (
+                      <button
+                        type="button"
+                        onClick={() => fileInputRef.current?.click()}
+                        disabled={uploadingPhotos}
+                        className="aspect-square rounded-xl border-2 border-dashed border-slate-300 hover:border-teal-400 hover:bg-teal-50/50 flex flex-col items-center justify-center gap-1 text-slate-400 hover:text-teal-600 transition disabled:opacity-50"
+                        data-testid="add-photo-btn"
+                      >
+                        {uploadingPhotos ? (
+                          <div className="w-5 h-5 border-2 border-teal-400 border-t-transparent rounded-full animate-spin" />
+                        ) : (
+                          <>
+                            <Camera className="w-5 h-5" />
+                            <span className="text-[10px]">Добавить</span>
+                          </>
+                        )}
+                      </button>
+                    )}
+                  </div>
+                  <input
+                    ref={fileInputRef}
+                    type="file"
+                    accept="image/*"
+                    multiple
+                    className="hidden"
+                    onChange={(e) => handlePhotoUpload(e.target.files)}
+                    data-testid="photo-file-input"
+                  />
+                </div>
+
                 {/* Summary */}
                 {hasSelection && (
                   <div className="p-4 bg-slate-50 rounded-xl border border-slate-200 space-y-1">
@@ -341,7 +444,7 @@ export default function ReturnModal({ order, onClose, onSuccess }) {
             {returnType && (
               <Button
                 onClick={submit}
-                disabled={!hasSelection || !reason.trim() || submitting}
+                disabled={!hasSelection || !reason.trim() || photos.length < 1 || submitting || uploadingPhotos}
                 className="bg-gradient-to-r from-teal-500 to-emerald-500 hover:from-teal-600 hover:to-emerald-600 text-white rounded-xl shadow-lg shadow-teal-500/30 disabled:opacity-50"
                 data-testid="return-submit-btn"
               >

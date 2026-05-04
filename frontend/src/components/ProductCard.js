@@ -1,5 +1,5 @@
 import { Link } from 'react-router-dom';
-import { ShoppingCart, Package, ShieldCheck, BadgeCheck } from 'lucide-react';
+import { ShoppingCart, Package, ShieldCheck, BadgeCheck, Gift } from 'lucide-react';
 import { Button } from './ui/button';
 import { useCart } from '../context/CartContext';
 import { useAuth } from '../context/AuthContext';
@@ -76,6 +76,11 @@ export const ProductCard = ({ product, index = 0 }) => {
               {product.has_guarantee && (
                 <span className="inline-flex items-center gap-1 bg-amber-500 text-white text-[10px] font-bold px-2 py-0.5 rounded-md shadow" data-testid={`badge-guarantee-${product.id}`}>
                   <ShieldCheck className="w-3 h-3" /> Гарантия
+                </span>
+              )}
+              {product.bonus_eligible !== false && (
+                <span className="inline-flex items-center gap-1 bg-emerald-500 text-white text-[10px] font-bold px-2 py-0.5 rounded-md shadow" data-testid={`badge-bonus-${product.id}`}>
+                  <Gift className="w-3 h-3" /> Бонусы
                 </span>
               )}
             </div>

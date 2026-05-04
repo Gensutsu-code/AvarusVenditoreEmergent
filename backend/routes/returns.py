@@ -15,11 +15,14 @@ async def create_return(data: dict, user=Depends(get_current_user)):
     order_id = data.get("order_id")
     items = data.get("items", [])
     reason = data.get("reason", "")
+    photos = data.get("photos", [])  # list of image URLs
 
     if not return_type or return_type not in ("return", "warranty"):
         raise HTTPException(status_code=400, detail="Invalid return type")
     if not order_id or not items:
         raise HTTPException(status_code=400, detail="Order and items required")
+    if not isinstance(photos, list) or len(photos) < 1:
+        raise HTTPException(status_code=400, detail="Необходимо приложить минимум 1 фото")
 
     order = await db.orders.find_one({"id": order_id, "user_id": user["id"]}, {"_id": 0})
     if not order:
@@ -33,45 +36,50 @@ async def create_return(data: dict, user=Depends(get_current_user)):
         if item.get("product_id") not in order_item_ids:
             raise HTTPException(status_code=400, detail=f"Item {item.get('product_id')} not in order")
 
-    # Calculate refund amounts
-    total_refund = 0
-    total_deduction = 0
-    total_bonus_deduction = 0
-    return_items = []
+    # Check already-returned quantities (pending or approved blocks the quantity)
+    existing_returns = await db.returns.find(
+        {"order_id": order_id, "status": {"$in": ["pending", "approved"]}},
+        {"_id": 0, "items": 1}
+    ).to_list(100)
+    already_returned = {}
+    for r in existing_returns:
+        for ri in r.get("items", []):
+            pid = ri.get("product_id")
+            already_returned[pid] = already_returned.get(pid, 0) + (ri.get("quantity", 0) or 0)
 
+    # Compute available quantities
     for item in items:
-        order_item = next((oi for oi in order.get("items", []) if oi.get("product_id") == item.get("product_id")), None)
+        pid = item.get("product_id")
+        qty_requested = item.get("quantity", 1) or 1
+        order_item = next((oi for oi in order.get("items", []) if oi.get("product_id") == pid), None)
         if not order_item:
             continue
+        max_qty = (order_item.get("quantity", 1) or 1) - already_returned.get(pid, 0)
+        if qty_requested > max_qty:
+            name = order_item.get("name", pid)
+            if max_qty <= 0:
+                raise HTTPException(status_code=400, detail=f"Товар «{name}» уже был возвращён полностью")
+            raise HTTPException(
+                status_code=400,
+                detail=f"По товару «{name}» можно вернуть не более {max_qty} шт. (остальные уже в заявках)"
+            )
 
-        qty = min(item.get("quantity", 1), order_item.get("quantity", 1))
-        item_total = order_item.get("price", 0) * qty
+    # Get eligibility info for each product
+    product_eligibility = {}
+    for item in items:
+        pid = item.get("product_id")
+        product = await db.products.find_one({"id": pid}, {"_id": 0, "bonus_eligible": 1})
+        product_eligibility[pid] = (product is None) or product.get("bonus_eligible", True)
 
-        if return_type == "return":
-            deduction = round(item_total * 0.10, 2)
-            refund = round(item_total - deduction, 2)
-            total_deduction += deduction
-            total_refund += refund
-        else:
-            refund = 0
-            deduction = 0
+    # Calculate refund amounts + per-item bonus breakdown per program
+    total_refund = 0.0
+    total_deduction = 0.0
+    return_items = []
 
-        return_items.append({
-            "product_id": order_item.get("product_id"),
-            "name": order_item.get("name", ""),
-            "article": order_item.get("article", ""),
-            "price": order_item.get("price", 0),
-            "quantity": qty,
-            "image_url": order_item.get("image_url", ""),
-            "item_total": item_total,
-            "deduction": deduction if return_type == "return" else 0,
-            "refund": refund if return_type == "return" else 0,
-        })
-
-    # Calculate bonus deduction for "return" type
+    # Pre-compute user's yearly_total + program level info (for "return" type)
+    program_infos = []  # list of dicts {id, cashback_pct, contrib_type, contrib_pct}
     if return_type == "return":
         programs = await db.bonus_programs.find({"enabled": True}, {"_id": 0}).to_list(10)
-        # Compute user's yearly_total to determine current cashback level
         current_year = datetime.now(timezone.utc).year
         year_start = f"{current_year}-01-01T00:00:00"
         year_end = f"{current_year}-12-31T23:59:59"
@@ -88,20 +96,63 @@ async def create_return(data: dict, user=Depends(get_current_user)):
             for level in levels:
                 if yearly_total >= level.get("min_points", 0):
                     current_level = level
+            program_infos.append({
+                "id": program["id"],
+                "cashback_pct": current_level.get("cashback_percent", 0) if current_level else 0,
+                "contrib_type": program.get("contribution_type", "order_total"),
+                "contrib_pct": program.get("contribution_percent", 100),
+            })
 
-            cashback_pct = current_level.get("cashback_percent", 0) if current_level else 0
-            contrib_type = program.get("contribution_type", "order_total")
-            contrib_pct = program.get("contribution_percent", 100)
+    # Per-program accumulator for total_bonus_deduction
+    program_bonus_totals = {p["id"]: 0.0 for p in program_infos}
 
-            for ri in return_items:
-                base = ri["item_total"]
-                if contrib_type == "percentage":
-                    base = base * (contrib_pct / 100)
-                if cashback_pct > 0:
-                    bonus = base * (cashback_pct / 100)
+    for item in items:
+        pid = item.get("product_id")
+        order_item = next((oi for oi in order.get("items", []) if oi.get("product_id") == pid), None)
+        if not order_item:
+            continue
+
+        qty = min(item.get("quantity", 1), order_item.get("quantity", 1))
+        item_total = order_item.get("price", 0) * qty
+
+        if return_type == "return":
+            deduction = round(item_total * 0.10, 2)
+            refund = round(item_total - deduction, 2)
+            total_deduction += deduction
+            total_refund += refund
+        else:
+            refund = 0
+            deduction = 0
+
+        # Per-item per-program bonus calculation
+        item_program_bonuses = {}
+        if return_type == "return" and product_eligibility.get(pid, True):
+            for pinfo in program_infos:
+                base = item_total
+                if pinfo["contrib_type"] == "percentage":
+                    base = base * (pinfo["contrib_pct"] / 100)
+                if pinfo["cashback_pct"] > 0:
+                    b = base * (pinfo["cashback_pct"] / 100)
                 else:
-                    bonus = base
-                total_bonus_deduction += bonus
+                    b = base
+                item_program_bonuses[pinfo["id"]] = round(b, 2)
+                program_bonus_totals[pinfo["id"]] = program_bonus_totals.get(pinfo["id"], 0.0) + b
+
+        return_items.append({
+            "product_id": pid,
+            "name": order_item.get("name", ""),
+            "article": order_item.get("article", ""),
+            "price": order_item.get("price", 0),
+            "quantity": qty,
+            "image_url": order_item.get("image_url", ""),
+            "item_total": item_total,
+            "deduction": deduction if return_type == "return" else 0,
+            "refund": refund if return_type == "return" else 0,
+            "bonus_eligible": product_eligibility.get(pid, True),
+            "program_bonuses": item_program_bonuses,  # per-program bonus deduction for this item
+        })
+
+    total_bonus_deduction = round(sum(program_bonus_totals.values()), 2)
 
     return_id = str(uuid.uuid4())
     return_doc = {
@@ -113,10 +164,12 @@ async def create_return(data: dict, user=Depends(get_current_user)):
         "type": return_type,
         "items": return_items,
         "reason": reason,
+        "photos": photos,
         "status": "pending",
         "total_refund": total_refund,
         "total_deduction": total_deduction,
-        "total_bonus_deduction": round(total_bonus_deduction, 2),
+        "total_bonus_deduction": total_bonus_deduction,
+        "program_bonus_totals": {k: round(v, 2) for k, v in program_bonus_totals.items()},
         "created_at": datetime.now(timezone.utc).isoformat(),
         "updated_at": datetime.now(timezone.utc).isoformat(),
         "admin_comment": ""
@@ -197,23 +250,41 @@ async def approve_return(return_id: str, data: dict = None, user=Depends(get_cur
                 "created_at": datetime.now(timezone.utc).isoformat()
             })
 
-        # Deduct bonus points (distribute across enabled programs proportionally)
+        # Deduct bonus points per-program (uses stored breakdown when available)
         bonus_deduction = ret.get("total_bonus_deduction", 0)
+        program_totals = ret.get("program_bonus_totals", {}) or {}
         if bonus_deduction > 0:
-            programs = await db.bonus_programs.find({"enabled": True}, {"_id": 0}).to_list(10)
-            num_programs = max(1, len(programs))
-            per_program_deduction = bonus_deduction / num_programs
-            for program in programs:
-                progress = await db.bonus_progress.find_one(
-                    {"user_id": ret["user_id"], "program_id": program["id"]},
-                    {"_id": 0}
-                )
-                if progress:
-                    new_amount = max(0, progress.get("current_amount", 0) - per_program_deduction)
-                    await db.bonus_progress.update_one(
-                        {"user_id": ret["user_id"], "program_id": program["id"]},
-                        {"$set": {"current_amount": new_amount}}
+            if program_totals:
+                # Use stored per-program breakdown
+                for program_id, amount in program_totals.items():
+                    if amount <= 0:
+                        continue
+                    progress = await db.bonus_progress.find_one(
+                        {"user_id": ret["user_id"], "program_id": program_id},
+                        {"_id": 0}
                     )
+                    if progress:
+                        new_amount = max(0, progress.get("current_amount", 0) - amount)
+                        await db.bonus_progress.update_one(
+                            {"user_id": ret["user_id"], "program_id": program_id},
+                            {"$set": {"current_amount": new_amount}}
+                        )
+            else:
+                # Fallback for legacy returns without breakdown: distribute evenly
+                programs = await db.bonus_programs.find({"enabled": True}, {"_id": 0}).to_list(10)
+                num_programs = max(1, len(programs))
+                per_program_deduction = bonus_deduction / num_programs
+                for program in programs:
+                    progress = await db.bonus_progress.find_one(
+                        {"user_id": ret["user_id"], "program_id": program["id"]},
+                        {"_id": 0}
+                    )
+                    if progress:
+                        new_amount = max(0, progress.get("current_amount", 0) - per_program_deduction)
+                        await db.bonus_progress.update_one(
+                            {"user_id": ret["user_id"], "program_id": program["id"]},
+                            {"$set": {"current_amount": new_amount}}
+                        )
 
         await notify_user(
             ret["user_id"], "return",

@@ -59,60 +59,84 @@ async def get_user_program_progress(user_id: str, program_id: str):
     return progress
 
 
-async def update_bonus_on_order_delivered(user_id: str, order_total: float):
-    """Called when order status changes to 'completed'"""
+async def _calc_bonus_eligible_total(order_items: list, fallback_total: float) -> float:
+    """Calculate the portion of order total that counts for bonus accrual.
+    Only items whose product has bonus_eligible != False are counted."""
+    if not order_items:
+        return fallback_total
+    eligible = 0.0
+    has_any = False
+    for item in order_items:
+        pid = item.get("product_id")
+        if not pid:
+            continue
+        product = await db.products.find_one({"id": pid}, {"_id": 0, "bonus_eligible": 1})
+        # Default True if missing (backward compatibility)
+        if product is None or product.get("bonus_eligible", True):
+            eligible += (item.get("price", 0) or 0) * (item.get("quantity", 0) or 0)
+            has_any = True
+    # If product lookups failed for all items, fall back to the provided total
+    return eligible if has_any or eligible > 0 else fallback_total
+
+
+async def update_bonus_on_order_delivered(user_id: str, order_total: float, order_items: list = None):
+    """Called when order status changes to 'completed'.
+    Only bonus_eligible items contribute to the accrual base."""
     from notify import notify_user
-    
+
     programs = await get_all_bonus_programs()
-    
+
     current_year = datetime.now(timezone.utc).year
     year_start = f"{current_year}-01-01T00:00:00"
     year_end = f"{current_year}-12-31T23:59:59"
-    
+
     yearly_orders = await db.orders.find({
         "user_id": user_id,
         "status": "completed",
         "created_at": {"$gte": year_start, "$lte": year_end}
     }, {"_id": 0, "total": 1}).to_list(1000)
-    
+
     yearly_total = sum(order.get("total", 0) for order in yearly_orders)
-    
+
+    # Compute eligible amount (only products with bonus_eligible != False)
+    eligible_total = await _calc_bonus_eligible_total(order_items or [], order_total)
+
     for program in programs:
         if not program.get("enabled"):
             continue
-        
+
         program_id = program["id"]
         progress = await get_user_program_progress(user_id, program_id)
-        
+
         contribution_type = program.get("contribution_type", "order_total")
         contribution_percent = program.get("contribution_percent", 100)
-        
+
         if contribution_type == "percentage":
-            base_amount = order_total * (contribution_percent / 100)
+            base_amount = eligible_total * (contribution_percent / 100)
         else:
-            base_amount = order_total
-        
+            base_amount = eligible_total
+
         levels = program.get("levels", [])
         levels_sorted = sorted(levels, key=lambda x: x.get("min_points", 0))
-        
+
         current_level = None
         for level in levels_sorted:
             if yearly_total >= level.get("min_points", 0):
                 current_level = level
-        
+
         if current_level and current_level.get("cashback_percent", 0) > 0:
             bonus_points = base_amount * (current_level["cashback_percent"] / 100)
         else:
             bonus_points = base_amount
-        
+
         new_points = progress.get("current_amount", 0) + bonus_points
-        
+
         await db.bonus_progress.update_one(
             {"user_id": user_id, "program_id": program_id},
             {"$set": {"current_amount": new_points}},
             upsert=True
         )
-        
+
         # Notify user about bonus accrual
         if bonus_points > 0:
             await notify_user(
@@ -122,7 +146,7 @@ async def update_bonus_on_order_delivered(user_id: str, order_total: float):
                 f"Вам начислено {int(bonus_points)} бонусных баллов за выполненный заказ. Баланс: {int(new_points)} баллов",
                 "/bonus"
             )
-    
+
     return {"updated": True}
 
 

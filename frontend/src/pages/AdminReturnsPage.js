@@ -280,6 +280,30 @@ export default function AdminReturnsPage() {
                       </div>
                     )}
 
+                    {ret.photos && ret.photos.length > 0 && (
+                      <div className="mb-4">
+                        <p className="text-xs text-slate-400 mb-2">Фото от клиента ({ret.photos.length})</p>
+                        <div className="flex flex-wrap gap-2">
+                          {ret.photos.map((url, i) => (
+                            <a
+                              key={i}
+                              href={url.startsWith('http') ? url : `${BACKEND_URL}${url}`}
+                              target="_blank"
+                              rel="noreferrer"
+                              className="block w-24 h-24 rounded-xl overflow-hidden border border-slate-200 hover:border-teal-400 transition"
+                              data-testid={`admin-photo-${ret.id}-${i}`}
+                            >
+                              <img
+                                src={url.startsWith('http') ? url : `${BACKEND_URL}${url}`}
+                                alt={`photo-${i}`}
+                                className="w-full h-full object-cover"
+                              />
+                            </a>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+
                     {ret.status === 'pending' && (
                       <div className="flex gap-3">
                         <Button
