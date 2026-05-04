@@ -20,11 +20,25 @@ async def send_to_telegram_chat(chat_id: str, user_name: str, text: str, message
     if not TELEGRAM_CHAT_BOT_TOKEN:
         return
     
-    settings = await db.telegram_chat_settings.find_one({"setting_type": "chat_bot"})
-    if not settings or not settings.get("admin_chat_id"):
-        return
+    # Try multiple sources for admin_chat_id
+    admin_tg_chat_id = None
     
-    admin_tg_chat_id = settings["admin_chat_id"]
+    settings = await db.telegram_chat_settings.find_one({"setting_type": "chat_bot"})
+    if settings and settings.get("admin_chat_id"):
+        admin_tg_chat_id = settings["admin_chat_id"]
+    
+    if not admin_tg_chat_id:
+        tg_settings = await db.settings.find_one({"key": "telegram_settings"})
+        if tg_settings and tg_settings.get("value", {}).get("chat_id"):
+            admin_tg_chat_id = tg_settings["value"]["chat_id"]
+    
+    if not admin_tg_chat_id:
+        tg_order = await db.settings.find_one({"key": "telegram"})
+        if tg_order and tg_order.get("value", {}).get("chat_id"):
+            admin_tg_chat_id = tg_order["value"]["chat_id"]
+    
+    if not admin_tg_chat_id:
+        return
     
     formatted_text = "💬 *Новое сообщение в чат*\n\n"
     formatted_text += f"👤 *От:* {user_name}\n"
@@ -59,11 +73,16 @@ async def send_admin_reply_to_telegram(chat_id: str, text: str):
     if not TELEGRAM_CHAT_BOT_TOKEN:
         return
 
+    admin_tg_chat_id = None
     settings = await db.telegram_chat_settings.find_one({"setting_type": "chat_bot"})
-    if not settings or not settings.get("admin_chat_id"):
+    if settings and settings.get("admin_chat_id"):
+        admin_tg_chat_id = settings["admin_chat_id"]
+    if not admin_tg_chat_id:
+        tg_settings = await db.settings.find_one({"key": "telegram_settings"})
+        if tg_settings and tg_settings.get("value", {}).get("chat_id"):
+            admin_tg_chat_id = tg_settings["value"]["chat_id"]
+    if not admin_tg_chat_id:
         return
-
-    admin_tg_chat_id = settings["admin_chat_id"]
 
     formatted_text = f"✅ *Ответ отправлен*\n\n"
     formatted_text += f"🆔 *Чат:* `{chat_id[:8]}...`\n\n"

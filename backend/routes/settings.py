@@ -1,7 +1,7 @@
 """Settings routes (payments, promo banner, telegram)"""
 from fastapi import APIRouter, HTTPException, Depends
 from typing import Optional
-
+from datetime import datetime, timezone
 from database import db, get_current_user
 from models import PaymentMethodSettings, TelegramSettings, PromoBannerUpdate
 
@@ -204,9 +204,29 @@ async def update_telegram_settings(data: TelegramSettings, user=Depends(get_curr
     if user.get("role") != "admin":
         raise HTTPException(status_code=403, detail="Admin access required")
     
+    settings_data = data.model_dump()
+    
     await db.settings.update_one(
         {"key": "telegram_settings"},
-        {"$set": {"value": data.model_dump()}},
+        {"$set": {"value": settings_data}},
         upsert=True
     )
+    
+    # Sync chat_id to chat bot settings and order notification settings
+    if settings_data.get("chat_id"):
+        await db.telegram_chat_settings.update_one(
+            {"setting_type": "chat_bot"},
+            {"$set": {"admin_chat_id": settings_data["chat_id"], "updated_at": datetime.now(timezone.utc).isoformat()}},
+            upsert=True
+        )
+        await db.settings.update_one(
+            {"key": "telegram"},
+            {"$set": {"key": "telegram", "value": {
+                "enabled": settings_data.get("enabled", False),
+                "bot_token": settings_data.get("bot_token", ""),
+                "chat_id": settings_data["chat_id"]
+            }}},
+            upsert=True
+        )
+    
     return {"success": True}
