@@ -1,5 +1,5 @@
 import { Link, useLocation, useNavigate } from 'react-router-dom';
-import { ShoppingCart, User, Search, LogOut, Settings, Heart, Package, ClipboardList, Gift, Newspaper, Menu, X, MessageCircle, Bell, Wallet } from 'lucide-react';
+import { ShoppingCart, User, Search, LogOut, Settings, Heart, Package, ClipboardList, Gift, Newspaper, Menu, X, MessageCircle, Bell, Wallet, RefreshCw } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { useCart } from '../context/CartContext';
 import { Button } from './ui/button';
@@ -255,11 +255,12 @@ export const Header = () => {
     }
   }, [user, isAdmin, fetchUserData]);
 
-  const NavLink = ({ to, children, className = '' }) => {
+  const NavLink = ({ to, children, className = '', ...rest }) => {
     const isActive = location.pathname === to;
     return (
       <Link 
         to={to} 
+        {...rest}
         className={`relative px-3 py-2.5 text-sm font-medium transition-all duration-300 rounded-xl flex items-center justify-center
           ${isActive 
             ? 'text-teal-600 bg-teal-500/10'
@@ -352,6 +353,12 @@ export const Header = () => {
                       <span className="flex items-center gap-2">
                         <MessageCircle className="w-4 h-4" />
                         Чаты
+                      </span>
+                    </NavLink>
+                    <NavLink to="/admin/returns" data-testid="admin-returns-link">
+                      <span className="flex items-center gap-2">
+                        <RefreshCw className="w-4 h-4" />
+                        Возвраты
                       </span>
                     </NavLink>
                     <NavLink to="/admin/profile" data-testid="admin-profile-link">
@@ -604,6 +611,10 @@ export const Header = () => {
                       <Link to="/admin/chats" onClick={() => setMobileMenuOpen(false)} className="flex items-center gap-3 p-3 rounded-xl text-slate-600 hover:bg-slate-50">
                         <MessageCircle className="w-5 h-5" />
                         Чаты
+                      </Link>
+                      <Link to="/admin/returns" onClick={() => setMobileMenuOpen(false)} className="flex items-center gap-3 p-3 rounded-xl text-slate-600 hover:bg-slate-50">
+                        <RefreshCw className="w-5 h-5" />
+                        Возвраты
                       </Link>
                     </>
                   ) : (

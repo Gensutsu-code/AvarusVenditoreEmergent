@@ -3,7 +3,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import { 
   Package, ChevronDown, ChevronUp, TrendingUp, ShoppingBag, 
-  Wallet, BarChart3, Star, CalendarDays, AlertTriangle, Check, XCircle, CreditCard, X
+  Wallet, BarChart3, Star, CalendarDays, AlertTriangle, Check, XCircle, CreditCard, X, RefreshCw
 } from 'lucide-react';
 import { Button } from '../components/ui/button';
 import { useAuth } from '../context/AuthContext';
@@ -11,6 +11,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { toast } from 'sonner';
 import { sendNotification, requestNotificationPermission } from '../utils/notifications';
 import CryptoPaymentModal from '../components/CryptoPaymentModal';
+import ReturnModal from '../components/ReturnModal';
 
 const API = `${process.env.REACT_APP_BACKEND_URL}/api`;
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
@@ -47,6 +48,7 @@ export default function OrdersPage() {
   const [cryptoPaymentOrderId, setCryptoPaymentOrderId] = useState(null);
   const [cryptoPaymentAmount, setCryptoPaymentAmount] = useState(0);
   const [surchargeModal, setSurchargeModal] = useState(null); // { orderId, amount, userBalance }
+  const [returnOrder, setReturnOrder] = useState(null);
 
   useEffect(() => {
     if (authLoading) return;
@@ -256,6 +258,14 @@ export default function OrdersPage() {
               {orders.length > 0 ? `${orders.length} заказов` : 'История покупок'}
             </p>
           </div>
+          <Link
+            to="/returns"
+            className="ml-auto inline-flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium bg-white/70 border border-slate-200 text-slate-700 hover:bg-teal-50 hover:border-teal-300 hover:text-teal-700 transition"
+            data-testid="my-returns-link"
+          >
+            <RefreshCw className="w-4 h-4" />
+            Мои возвраты
+          </Link>
         </motion.div>
 
         {loading ? (
@@ -645,6 +655,34 @@ export default function OrdersPage() {
                                 </div>
                               </div>
                             )}
+
+                            {/* Return button for completed orders */}
+                            {order.status === 'completed' && (
+                              <div className="mt-4 p-4 bg-teal-50 border border-teal-200 rounded-xl">
+                                <div className="flex items-center justify-between gap-3 flex-wrap">
+                                  <div>
+                                    <p className="text-sm font-medium text-teal-800">
+                                      Нужен возврат или замена по гарантии?
+                                    </p>
+                                    <p className="text-xs text-teal-600 mt-0.5">
+                                      Вы можете оформить заявку на возврат средств или замену товара.
+                                    </p>
+                                  </div>
+                                  <Button
+                                    size="sm"
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      setReturnOrder(order);
+                                    }}
+                                    className="bg-gradient-to-r from-teal-500 to-emerald-500 hover:from-teal-600 hover:to-emerald-600 text-white rounded-xl shadow"
+                                    data-testid={`create-return-btn-${order.id}`}
+                                  >
+                                    <RefreshCw className="w-4 h-4 mr-2" />
+                                    Оформить возврат
+                                  </Button>
+                                </div>
+                              </div>
+                            )}
                           </div>
                         </motion.div>
                       )}
@@ -756,6 +794,18 @@ export default function OrdersPage() {
         amountRub={cryptoPaymentAmount}
         onSuccess={handleCryptoPaymentSuccess}
       />
+
+      {/* Return Modal */}
+      {returnOrder && (
+        <ReturnModal
+          order={returnOrder}
+          onClose={() => setReturnOrder(null)}
+          onSuccess={() => {
+            toast.success('Перейдите в раздел «Мои возвраты», чтобы отслеживать статус');
+            fetchData();
+          }}
+        />
+      )}
     </div>
   );
 }

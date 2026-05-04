@@ -35,6 +35,8 @@ import ProductPage from "./pages/ProductPage";
 import NotificationsPage from "./pages/NotificationsPage";
 import AdminNotificationsPage from "./pages/AdminNotificationsPage";
 import MaintenancePage from "./pages/MaintenancePage";
+import ClientReturnsPage from "./pages/ClientReturnsPage";
+import AdminReturnsPage from "./pages/AdminReturnsPage";
 
 const API = `${process.env.REACT_APP_BACKEND_URL}/api`;
 
@@ -134,6 +136,8 @@ function AppContent() {
           <Route path="/admin/orders" element={<AdminOrdersPage />} />
           <Route path="/admin/chats" element={<AdminChatsPage />} />
           <Route path="/admin/carts" element={<AdminCartsPage />} />
+          <Route path="/admin/returns" element={<AdminReturnsPage />} />
+          <Route path="/returns" element={<ClientReturnsPage />} />
           <Route path="/favorites" element={<FavoritesPage />} />
           <Route path="/orders" element={<OrdersPage />} />
           <Route path="/bonus" element={<BonusPage />} />

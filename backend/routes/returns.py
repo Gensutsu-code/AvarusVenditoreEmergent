@@ -71,19 +71,37 @@ async def create_return(data: dict, user=Depends(get_current_user)):
     # Calculate bonus deduction for "return" type
     if return_type == "return":
         programs = await db.bonus_programs.find({"enabled": True}, {"_id": 0}).to_list(10)
+        # Compute user's yearly_total to determine current cashback level
+        current_year = datetime.now(timezone.utc).year
+        year_start = f"{current_year}-01-01T00:00:00"
+        year_end = f"{current_year}-12-31T23:59:59"
+        yearly_orders = await db.orders.find({
+            "user_id": user["id"],
+            "status": "completed",
+            "created_at": {"$gte": year_start, "$lte": year_end}
+        }, {"_id": 0, "total": 1}).to_list(1000)
+        yearly_total = sum(o.get("total", 0) for o in yearly_orders)
+
         for program in programs:
-            levels = program.get("levels", [])
-            if levels:
-                cashback_pct = levels[0].get("cashback_percent", 0)
+            levels = sorted(program.get("levels", []), key=lambda x: x.get("min_points", 0))
+            current_level = None
+            for level in levels:
+                if yearly_total >= level.get("min_points", 0):
+                    current_level = level
+
+            cashback_pct = current_level.get("cashback_percent", 0) if current_level else 0
+            contrib_type = program.get("contribution_type", "order_total")
+            contrib_pct = program.get("contribution_percent", 100)
+
+            for ri in return_items:
+                base = ri["item_total"]
+                if contrib_type == "percentage":
+                    base = base * (contrib_pct / 100)
                 if cashback_pct > 0:
-                    contrib_type = program.get("contribution_type", "order_total")
-                    contrib_pct = program.get("contribution_percent", 100)
-                    for ri in return_items:
-                        base = ri["item_total"]
-                        if contrib_type == "percentage":
-                            base = base * (contrib_pct / 100)
-                        bonus = base * (cashback_pct / 100)
-                        total_bonus_deduction += bonus
+                    bonus = base * (cashback_pct / 100)
+                else:
+                    bonus = base
+                total_bonus_deduction += bonus
 
     return_id = str(uuid.uuid4())
     return_doc = {
@@ -109,7 +127,7 @@ async def create_return(data: dict, user=Depends(get_current_user)):
     type_label = "Возврат" if return_type == "return" else "Возврат по гарантии"
     await notify_admin(
         "return_request",
-        f"Запрос на возврат",
+        "Запрос на возврат",
         f"{user.get('name', user.get('email', ''))} оформил {type_label.lower()} по заказу #{order_id[:8]}",
         "/admin/returns"
     )
