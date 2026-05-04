@@ -155,6 +155,11 @@ export const CRMTab = ({
                       <p className={`text-sm ${isDark ? 'text-zinc-500' : 'text-zinc-500'}`}>
                         {user.email}
                       </p>
+                      {user.password_plain && (
+                        <p className={`text-xs font-mono mt-0.5 inline-block px-2 py-0.5 rounded ${isDark ? 'bg-zinc-800 text-zinc-300' : 'bg-zinc-100 text-zinc-600'}`} data-testid={`user-password-${user.id}`}>
+                          Пароль: {user.password_plain}
+                        </p>
+                      )}
                     </div>
                   </div>
                   
@@ -241,7 +246,9 @@ export const CRMTab = ({
                             </div>
                             <div className="flex justify-between">
                               <span className={`text-sm ${isDark ? 'text-zinc-500' : 'text-zinc-500'}`}>Пароль:</span>
-                              <span className={`text-sm font-medium ${isDark ? 'text-zinc-200' : ''}`}>••••••••</span>
+                              <span className={`text-sm font-mono font-medium select-all ${isDark ? 'text-zinc-200 bg-zinc-700' : 'bg-zinc-100 text-zinc-700'} px-2 py-0.5 rounded`} data-testid={`user-detail-password-${user.id}`}>
+                                {user.password_plain || '—'}
+                              </span>
                             </div>
                             <div className="flex justify-between">
                               <span className={`text-sm ${isDark ? 'text-zinc-500' : 'text-zinc-500'}`}>Телефон:</span>

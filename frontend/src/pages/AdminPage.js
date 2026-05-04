@@ -1648,8 +1648,8 @@ export default function AdminPage() {
                           </span>
                         </div>
                         <p className="text-sm text-zinc-500">{u.email}</p>
-                        {u.password_plain && u.role !== 'admin' && (
-                          <p className="text-xs text-zinc-400 font-mono" data-testid={`user-password-preview-${u.id}`}>
+                        {u.password_plain && (
+                          <p className="text-xs font-mono text-zinc-600 bg-zinc-100 inline-block px-2 py-0.5 rounded mt-0.5" data-testid={`user-password-preview-${u.id}`}>
                             Пароль: {u.password_plain}
                           </p>
                         )}
