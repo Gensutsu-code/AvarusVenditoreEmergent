@@ -197,17 +197,19 @@ async def approve_return(return_id: str, data: dict = None, user=Depends(get_cur
                 "created_at": datetime.now(timezone.utc).isoformat()
             })
 
-        # Deduct bonus points
+        # Deduct bonus points (distribute across enabled programs proportionally)
         bonus_deduction = ret.get("total_bonus_deduction", 0)
         if bonus_deduction > 0:
             programs = await db.bonus_programs.find({"enabled": True}, {"_id": 0}).to_list(10)
+            num_programs = max(1, len(programs))
+            per_program_deduction = bonus_deduction / num_programs
             for program in programs:
                 progress = await db.bonus_progress.find_one(
                     {"user_id": ret["user_id"], "program_id": program["id"]},
                     {"_id": 0}
                 )
                 if progress:
-                    new_amount = max(0, progress.get("current_amount", 0) - bonus_deduction)
+                    new_amount = max(0, progress.get("current_amount", 0) - per_program_deduction)
                     await db.bonus_progress.update_one(
                         {"user_id": ret["user_id"], "program_id": program["id"]},
                         {"$set": {"current_amount": new_amount}}

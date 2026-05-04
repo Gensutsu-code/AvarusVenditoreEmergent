@@ -1,13 +1,14 @@
 # Test Credentials
 
-## Admin Account
-- Email: admin@avarus.ru
-- Password: admin
+## Admin
+- **Email**: admin@avarus.ru
+- **Password**: admin
+- **Role**: admin
 
-## Client Account
-- Email: user@demo.com
-- Password: demo123
+## Client (with completed orders, has bonus points, used for return tests)
+- **Email**: 0x0errorr@gmail.com
+- **Password**: admin123
 
-## Telegram Bot
-- Token: 8451316251:AAF18Lk8pl_tpH7ppM-KJ7TVW7sb8QA2kHw
-- Webhook URL: https://spare-parts-admin-1.preview.emergentagent.com/api/telegram/chat-webhook
+## Client (secondary, no completed orders)
+- **Email**: user@demo.com
+- **Password**: demo123
