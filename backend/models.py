@@ -92,6 +92,13 @@ class ProductCreate(BaseModel):
     is_original: Optional[bool] = False
     has_guarantee: Optional[bool] = False
     bonus_eligible: Optional[bool] = True
+    # Discount/promo fields
+    discount_active: Optional[bool] = False
+    discount_type: Optional[str] = None  # "percent" | "amount"
+    discount_value: Optional[float] = 0
+    discount_label: Optional[str] = ""
+    discount_description: Optional[str] = ""
+    discount_until: Optional[str] = None  # ISO date string
 
 class ProductUpdate(BaseModel):
     name: Optional[str] = None
@@ -109,6 +116,12 @@ class ProductUpdate(BaseModel):
     is_original: Optional[bool] = None
     has_guarantee: Optional[bool] = None
     bonus_eligible: Optional[bool] = None
+    discount_active: Optional[bool] = None
+    discount_type: Optional[str] = None
+    discount_value: Optional[float] = None
+    discount_label: Optional[str] = None
+    discount_description: Optional[str] = None
+    discount_until: Optional[str] = None
 
 class ProductResponse(BaseModel):
     id: str
@@ -127,6 +140,12 @@ class ProductResponse(BaseModel):
     is_original: Optional[bool] = False
     has_guarantee: Optional[bool] = False
     bonus_eligible: Optional[bool] = True
+    discount_active: Optional[bool] = False
+    discount_type: Optional[str] = None
+    discount_value: Optional[float] = 0
+    discount_label: Optional[str] = ""
+    discount_description: Optional[str] = ""
+    discount_until: Optional[str] = None
 
 # ==================== CATEGORY MODELS ====================
 

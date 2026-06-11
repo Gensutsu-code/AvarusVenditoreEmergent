@@ -1,11 +1,12 @@
 import { Link } from 'react-router-dom';
-import { ShoppingCart, Package, ShieldCheck, BadgeCheck, Gift } from 'lucide-react';
+import { ShoppingCart, Package, ShieldCheck, BadgeCheck, Gift, Tag, Truck } from 'lucide-react';
 import { Button } from './ui/button';
 import { useCart } from '../context/CartContext';
 import { useAuth } from '../context/AuthContext';
 import { toast } from 'sonner';
 import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
+import { computeDiscount, formatDiscountBadge, formatUntilDate, getDeliveryBadge } from '../utils/productHelpers';
 
 export const ProductCard = ({ product, index = 0 }) => {
   const { addToCart } = useCart();
@@ -33,6 +34,10 @@ export const ProductCard = ({ product, index = 0 }) => {
   const formatPrice = (price) => {
     return new Intl.NumberFormat('ru-RU').format(price);
   };
+
+  const discount = computeDiscount(product);
+  const deliveryBadge = getDeliveryBadge(product.delivery_days);
+  const untilFormatted = formatUntilDate(discount?.until);
 
   return (
     <motion.div
@@ -66,7 +71,7 @@ export const ProductCard = ({ product, index = 0 }) => {
             {/* Overlay on hover */}
             <div className="absolute inset-0 bg-gradient-to-t from-white/60 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
             
-            {/* Badges */}
+            {/* Badges (top-left) */}
             <div className="absolute top-2 left-2 flex flex-col gap-1">
               {product.is_original && (
                 <span className="inline-flex items-center gap-1 bg-teal-500 text-white text-[10px] font-bold px-2 py-0.5 rounded-md shadow" data-testid={`badge-original-${product.id}`}>
@@ -84,6 +89,34 @@ export const ProductCard = ({ product, index = 0 }) => {
                 </span>
               )}
             </div>
+
+            {/* Discount badge (top-right) with tooltip */}
+            {discount && (
+              <div className="absolute top-2 right-2 group/discount" data-testid={`badge-discount-${product.id}`}>
+                <span className="inline-flex items-center gap-1 bg-gradient-to-r from-rose-500 to-pink-500 text-white text-xs font-extrabold px-2.5 py-1 rounded-lg shadow-lg shadow-rose-500/30 cursor-help">
+                  <Tag className="w-3 h-3" />
+                  {formatDiscountBadge(discount)}
+                </span>
+                {/* Tooltip */}
+                <div
+                  className="absolute right-0 top-full mt-2 w-60 p-3 bg-white/95 backdrop-blur-sm border border-rose-200 rounded-xl shadow-xl text-left opacity-0 invisible group-hover/discount:opacity-100 group-hover/discount:visible transition-all duration-200 z-30 pointer-events-none"
+                  data-testid={`discount-tooltip-${product.id}`}
+                >
+                  {discount.label && (
+                    <p className="text-sm font-bold text-rose-600 mb-1">{discount.label}</p>
+                  )}
+                  <p className="text-xs text-slate-500 mb-1">
+                    Скидка: <span className="font-semibold text-rose-500">{formatDiscountBadge(discount)}</span>
+                  </p>
+                  {discount.description && (
+                    <p className="text-xs text-slate-600 mt-1">{discount.description}</p>
+                  )}
+                  {untilFormatted && (
+                    <p className="text-[10px] text-slate-400 mt-1">До {untilFormatted}</p>
+                  )}
+                </div>
+              </div>
+            )}
             
             {/* Quick add button */}
             <motion.div 
@@ -110,16 +143,37 @@ export const ProductCard = ({ product, index = 0 }) => {
             <h3 className="font-semibold text-slate-800 mb-3 line-clamp-2 group-hover:text-teal-600 transition-colors duration-300">
               {product.name}
             </h3>
-            <div className="flex items-center justify-between gap-2">
-              <span className="text-xl font-bold text-teal-600">
-                {formatPrice(product.price)} <span className="text-sm text-slate-400">₽</span>
-              </span>
+            <div className="flex items-center justify-between gap-2 mb-2">
+              <div className="flex flex-col">
+                {discount ? (
+                  <>
+                    <span className="text-xs text-slate-400 line-through" data-testid={`old-price-${product.id}`}>
+                      {formatPrice(product.price)} ₽
+                    </span>
+                    <span className="text-xl font-bold text-rose-600" data-testid={`new-price-${product.id}`}>
+                      {formatPrice(discount.finalPrice)} <span className="text-sm text-rose-400">₽</span>
+                    </span>
+                  </>
+                ) : (
+                  <span className="text-xl font-bold text-teal-600">
+                    {formatPrice(product.price)} <span className="text-sm text-slate-400">₽</span>
+                  </span>
+                )}
+              </div>
               {product.stock !== undefined && product.stock <= 5 && product.stock > 0 && (
                 <span className="text-xs text-amber-600 bg-amber-100 px-2 py-1 rounded-lg">
                   Осталось {product.stock}
                 </span>
               )}
             </div>
+            {/* Delivery badge */}
+            <span
+              className={`inline-flex items-center gap-1 text-[11px] font-semibold px-2 py-0.5 rounded-md border ${deliveryBadge.classes}`}
+              data-testid={`delivery-badge-${product.id}`}
+            >
+              <Truck className="w-3 h-3" />
+              {deliveryBadge.label}
+            </span>
           </div>
         </motion.div>
       </Link>

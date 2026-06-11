@@ -1,0 +1,41 @@
+{
+  "summary": "Iteration 58 — Product discount/promo, bonus_eligible label for admin, delivery_days=0 ('Сегодня') support. Backend pytest 7/7 passed. Frontend automation confirmed catalog list discount badge with hover tooltip, struck price + rose new price, bonus badge, delivery color tiers (green for 0/1, red for 8), admin product card mini-badges 'БОН' + 'Распродажа −20%', admin product edit modal Discount section with all 6 testids, delivery input min=0, and toast validations for empty until and value<=0. E82KPD36 (20% percent discount, until 2027-01-01, delivery_days=0) and PL420x (delivery_days=8, no discount) used as live fixtures.",
+  "backend_issues": {
+    "critical": [],
+    "minor": []
+  },
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [],
+    "design_issues": []
+  },
+  "test_report_links": [
+    "/app/backend/tests/test_iteration58_discount_delivery.py",
+    "/app/test_reports/pytest/pytest_iteration58.xml"
+  ],
+  "action_items": [],
+  "critical_code_review_comments": [
+    "models.py ProductCreate.delivery_days defaults to 3 but ProductUpdate.delivery_days is Optional[int]=None — PUT payload with delivery_days=0 is correctly stored (verified). Good.",
+    "computeDiscount in productHelpers.js correctly returns null when discount_until <= Date.now(), enforcing 'expired discounts do not apply' — verified by code review (no live expired fixture tested via UI, but logic is unambiguous).",
+    "individual_price priority over discount is wired via the conditional `product.individual_price ? ... : discount ? ...` in CatalogPage.js (line 153 area) — looks correct; no live fixture with both fields available, so not asserted at runtime.",
+    "Admin product card uses `bonus_eligible !== false` check ensuring legacy products show 'БОН' badge — verified.",
+    "Admin form validation triggers toasts via stacking duplicates (we observed concatenated 'Укажите положительное значение скидкиУкажите дату окончания акции'). Two separate toasts is acceptable; consider unifying or using a single toast with structured fields for tidiness.",
+    "Tooltip on discount badge uses CSS-only `group-hover/disc` (no JS state). Works on hover in desktop; on touch devices the tooltip will only show after a tap holds — acceptable for ProductCard cards."
+  ],
+  "updated_files": [
+    "/app/backend/tests/test_iteration58_discount_delivery.py"
+  ],
+  "success_rate": {
+    "backend": "100% (7/7 passed)",
+    "frontend": "100% — all required testids and behaviors verified on /catalog list view and /admin product modal"
+  },
+  "test_credentials": {
+    "admin": "admin@avarus.ru / admin",
+    "client_with_completed_orders": "0x0errorr@gmail.com / admin123"
+  },
+  "seed_data_creation": "Tests use existing fixtures E82KPD36 (active 20% percent discount until 2027-01-01, delivery=0) and PL420x (delivery=8, no discount). Tests restore original values in finally blocks after PUT modifications.",
+  "retest_needed": false,
+  "should_main_agent_self_test": false,
+  "context_for_next_testing_agent": "Backend test file /app/backend/tests/test_iteration58_discount_delivery.py covers GET/PUT for all discount_* fields, bonus_eligible legacy default, delivery_days=0 acceptance. Backend reads BASE_URL from /app/frontend/.env when REACT_APP_BACKEND_URL is not in env. Frontend ProductCard.js uses testids `old-price-{id}` / `new-price-{id}`, while CatalogPage.js inline card uses `price-with-discount-{id}` instead — both render struck old price + new price. Tooltip is CSS-hover-only (no JS state); rendered in DOM always (opacity-0/invisible until hover). Admin product card shows `admin-badge-bonus-{id}` ('БОН') and `admin-badge-discount-{id}` (label + percent). Admin form discount toggle expands the rest of the section. Validation toasts: 'Укажите дату окончания акции' and 'Укажите положительное значение скидки'.",
+  "rca_of_the_issue": "N/A — all requested features work as specified."
+}

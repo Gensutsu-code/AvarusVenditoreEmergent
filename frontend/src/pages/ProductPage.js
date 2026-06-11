@@ -15,6 +15,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { trackClick } from '../utils/tracker';
 import DiscountRequestModal from '../components/DiscountRequestModal';
 import ProductRequestModal from '../components/ProductRequestModal';
+import { computeDiscount, formatDiscountBadge, formatUntilDate } from '../utils/productHelpers';
 
 const API = `${process.env.REACT_APP_BACKEND_URL}/api`;
 
@@ -355,11 +356,39 @@ export default function ProductPage() {
                       </p>
                       <p className="text-xs text-emerald-600 font-semibold mt-1">Ваша индивидуальная цена</p>
                     </div>
-                  ) : (
-                    <p className="text-4xl font-bold text-teal-600" data-testid="product-price">
-                      {formatPrice(product.price)} <span className="text-lg text-slate-400">₽</span>
-                    </p>
-                  )}
+                  ) : (() => {
+                    const discount = computeDiscount(product);
+                    if (discount) {
+                      const until = formatUntilDate(discount.until);
+                      return (
+                        <div>
+                          <p className="text-sm line-through text-slate-400 mb-0.5">{formatPrice(product.price)} ₽</p>
+                          <div className="flex items-center gap-3 flex-wrap">
+                            <p className="text-4xl font-bold text-rose-600" data-testid="product-price">
+                              {formatPrice(discount.finalPrice)} <span className="text-lg text-rose-400">₽</span>
+                            </p>
+                            <span className="inline-flex items-center gap-1 bg-gradient-to-r from-rose-500 to-pink-500 text-white text-sm font-extrabold px-3 py-1 rounded-lg shadow shadow-rose-500/30">
+                              {formatDiscountBadge(discount)}
+                            </span>
+                          </div>
+                          {discount.label && (
+                            <p className="text-sm font-semibold text-rose-600 mt-1">{discount.label}</p>
+                          )}
+                          {discount.description && (
+                            <p className="text-xs text-slate-500 mt-1">{discount.description}</p>
+                          )}
+                          {until && (
+                            <p className="text-[11px] text-slate-400 mt-1">Акция до {until}</p>
+                          )}
+                        </div>
+                      );
+                    }
+                    return (
+                      <p className="text-4xl font-bold text-teal-600" data-testid="product-price">
+                        {formatPrice(product.price)} <span className="text-lg text-slate-400">₽</span>
+                      </p>
+                    );
+                  })()}
                 </div>
                 
                 <div className={`flex items-center gap-2 px-4 py-2 rounded-xl ${

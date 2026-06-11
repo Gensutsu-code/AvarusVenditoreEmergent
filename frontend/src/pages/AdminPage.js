@@ -19,6 +19,7 @@ import { useAuth } from '../context/AuthContext';
 import { useTheme } from '../context/ThemeContext';
 import { toast } from 'sonner';
 import UserAnalyticsModal from '../components/UserAnalyticsModal';
+import { computeDiscount, formatDiscountBadge } from '../utils/productHelpers';
 
 // Import admin tab components
 import {
@@ -371,14 +372,37 @@ export default function AdminPage() {
       return;
     }
 
+    // Validate discount fields if active
+    if (editingProduct.discount_active) {
+      if (!editingProduct.discount_until) {
+        toast.error('Укажите дату окончания акции');
+        return;
+      }
+      if (!editingProduct.discount_value || editingProduct.discount_value <= 0) {
+        toast.error('Укажите положительное значение скидки');
+        return;
+      }
+      const until = new Date(editingProduct.discount_until);
+      if (isNaN(until.getTime())) {
+        toast.error('Некорректная дата окончания акции');
+        return;
+      }
+    }
+
+    // Normalize delivery_days
+    const payload = {
+      ...editingProduct,
+      delivery_days: Math.max(0, parseInt(editingProduct.delivery_days) || 0),
+    };
+
     try {
       if (isNewProduct) {
-        const res = await axios.post(`${API}/products`, editingProduct);
+        const res = await axios.post(`${API}/products`, payload);
         // Real-time update: add to local state
         setProducts(prev => [...prev, res.data]);
         toast.success('Товар создан');
       } else {
-        const res = await axios.put(`${API}/products/${editingProduct.id}`, editingProduct);
+        const res = await axios.put(`${API}/products/${editingProduct.id}`, payload);
         // Real-time update: update in local state
         setProducts(prev => prev.map(p => p.id === editingProduct.id ? res.data : p));
         toast.success('Товар обновлён');
@@ -471,7 +495,16 @@ export default function AdminPage() {
       description: '',
       image_url: '',
       images: [],
-      cross_articles: ''
+      cross_articles: '',
+      is_original: false,
+      has_guarantee: false,
+      bonus_eligible: true,
+      discount_active: false,
+      discount_type: 'percent',
+      discount_value: 0,
+      discount_label: '',
+      discount_description: '',
+      discount_until: null
     });
   };
 
@@ -1459,6 +1492,31 @@ export default function AdminPage() {
                                 ? 'bg-emerald-500' 
                                 : 'bg-red-500'
                             }`} title={product.stock > 0 ? 'В наличии' : 'Нет в наличии'} />
+                            {/* Badges top-left */}
+                            <div className="absolute top-1.5 left-1.5 flex flex-col gap-0.5">
+                              {product.is_original && (
+                                <span className="bg-teal-500 text-white text-[8px] font-bold px-1.5 py-0.5 rounded shadow" title="Оригинал">ORIG</span>
+                              )}
+                              {product.has_guarantee && (
+                                <span className="bg-amber-500 text-white text-[8px] font-bold px-1.5 py-0.5 rounded shadow" title="Гарантия">ГАР</span>
+                              )}
+                              {product.bonus_eligible !== false && (
+                                <span className="bg-emerald-500 text-white text-[8px] font-bold px-1.5 py-0.5 rounded shadow" title="Участвует в бонусной программе" data-testid={`admin-badge-bonus-${product.id}`}>БОН</span>
+                              )}
+                            </div>
+                            {/* Discount badge top-right */}
+                            {(() => {
+                              const d = computeDiscount(product);
+                              if (!d) return null;
+                              return (
+                                <div className="absolute bottom-1.5 left-1.5 right-1.5" data-testid={`admin-badge-discount-${product.id}`}>
+                                  <div className="bg-gradient-to-r from-rose-500 to-pink-500 text-white text-[10px] font-bold px-2 py-0.5 rounded shadow truncate flex items-center justify-between gap-1">
+                                    <span className="truncate">{d.label || 'Акция'}</span>
+                                    <span className="flex-shrink-0">{formatDiscountBadge(d)}</span>
+                                  </div>
+                                </div>
+                              );
+                            })()}
                           </div>
                           <div className="flex items-start justify-between gap-2">
                             <div className="min-w-0 flex-1">
@@ -3582,14 +3640,20 @@ export default function AdminPage() {
                   </div>
                 </div>
                 <div>
-                  <Label className="text-xs font-semibold uppercase text-teal-600">Доставка</Label>
+                  <Label className="text-xs font-semibold uppercase text-teal-600">Доставка (дней)</Label>
                   <Input
                     type="number"
-                    value={editingProduct.delivery_days}
-                    onChange={(e) => setEditingProduct({ ...editingProduct, delivery_days: parseInt(e.target.value) || 3 })}
+                    min="0"
+                    value={editingProduct.delivery_days ?? 3}
+                    onChange={(e) => {
+                      const v = e.target.value;
+                      const parsed = v === '' ? 0 : parseInt(v);
+                      setEditingProduct({ ...editingProduct, delivery_days: isNaN(parsed) ? 0 : Math.max(0, parsed) });
+                    }}
                     className="mt-1.5 border-slate-200 focus:border-teal-500 focus:ring-teal-500"
                     data-testid="product-delivery-input"
                   />
+                  <p className="text-[11px] text-slate-400 mt-1">0 = «Сегодня», 1 = «1 день», и т.д.</p>
                 </div>
               </div>
 
@@ -3638,6 +3702,120 @@ export default function AdminPage() {
                   />
                   <span className="text-sm font-medium text-zinc-700">Участвует в бонусной программе</span>
                 </label>
+              </div>
+
+              {/* Discount/Promo Section */}
+              <div className="rounded-xl border border-rose-200 bg-gradient-to-br from-rose-50/50 to-pink-50/30 p-4 space-y-3" data-testid="product-discount-section">
+                <div className="flex items-center justify-between gap-2 flex-wrap">
+                  <div className="flex items-center gap-2">
+                    <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-rose-500 to-pink-500 flex items-center justify-center">
+                      <span className="text-white text-xs font-bold">%</span>
+                    </div>
+                    <Label className="text-sm font-bold text-rose-700">Скидка / Акция</Label>
+                  </div>
+                  <label className="flex items-center gap-2 cursor-pointer" data-testid="product-discount-toggle">
+                    <input
+                      type="checkbox"
+                      checked={editingProduct.discount_active === true}
+                      onChange={(e) => setEditingProduct({ ...editingProduct, discount_active: e.target.checked })}
+                      className="w-4 h-4 accent-rose-500 rounded"
+                    />
+                    <span className="text-sm font-medium text-zinc-700">Включена</span>
+                  </label>
+                </div>
+
+                {editingProduct.discount_active && (
+                  <div className="space-y-3">
+                    <div className="grid grid-cols-2 gap-3">
+                      <div>
+                        <Label className="text-xs font-semibold uppercase text-rose-600">Тип скидки</Label>
+                        <select
+                          value={editingProduct.discount_type || 'percent'}
+                          onChange={(e) => setEditingProduct({ ...editingProduct, discount_type: e.target.value })}
+                          className="mt-1.5 w-full h-10 rounded-md border border-slate-200 bg-white px-3 text-sm focus:border-rose-500 focus:outline-none"
+                          data-testid="product-discount-type"
+                        >
+                          <option value="percent">Процент (%)</option>
+                          <option value="amount">Сумма (₽)</option>
+                        </select>
+                      </div>
+                      <div>
+                        <Label className="text-xs font-semibold uppercase text-rose-600">
+                          Значение {editingProduct.discount_type === 'amount' ? '(₽)' : '(%)'}
+                        </Label>
+                        <Input
+                          type="number"
+                          min="0"
+                          step="0.01"
+                          value={editingProduct.discount_value ?? ''}
+                          onChange={(e) => setEditingProduct({ ...editingProduct, discount_value: parseFloat(e.target.value) || 0 })}
+                          placeholder={editingProduct.discount_type === 'amount' ? '500' : '15'}
+                          className="mt-1.5 border-slate-200 focus:border-rose-500"
+                          data-testid="product-discount-value"
+                        />
+                      </div>
+                    </div>
+                    <div>
+                      <Label className="text-xs font-semibold uppercase text-rose-600">Название акции</Label>
+                      <Input
+                        type="text"
+                        value={editingProduct.discount_label || ''}
+                        onChange={(e) => setEditingProduct({ ...editingProduct, discount_label: e.target.value })}
+                        placeholder="Например: Чёрная пятница"
+                        className="mt-1.5 border-slate-200 focus:border-rose-500"
+                        data-testid="product-discount-label"
+                        maxLength={60}
+                      />
+                    </div>
+                    <div>
+                      <Label className="text-xs font-semibold uppercase text-rose-600">Описание акции</Label>
+                      <textarea
+                        rows={2}
+                        value={editingProduct.discount_description || ''}
+                        onChange={(e) => setEditingProduct({ ...editingProduct, discount_description: e.target.value })}
+                        placeholder="Краткое описание, отображается в подсказке"
+                        className="mt-1.5 w-full px-3 py-2 border border-slate-200 rounded-md text-sm focus:border-rose-500 focus:outline-none resize-none"
+                        data-testid="product-discount-description"
+                        maxLength={200}
+                      />
+                    </div>
+                    <div>
+                      <Label className="text-xs font-semibold uppercase text-rose-600">
+                        Действует до <span className="text-rose-500">*</span>
+                      </Label>
+                      <Input
+                        type="date"
+                        value={editingProduct.discount_until ? String(editingProduct.discount_until).slice(0, 10) : ''}
+                        onChange={(e) => setEditingProduct({ ...editingProduct, discount_until: e.target.value || null })}
+                        className="mt-1.5 border-slate-200 focus:border-rose-500"
+                        data-testid="product-discount-until"
+                      />
+                      <p className="text-[11px] text-slate-400 mt-1">После этой даты скидка автоматически отключается</p>
+                    </div>
+                    {/* Preview */}
+                    {editingProduct.price > 0 && editingProduct.discount_value > 0 && (
+                      <div className="p-3 bg-white rounded-lg border border-rose-200">
+                        <p className="text-xs text-slate-400 mb-1">Предпросмотр</p>
+                        {(() => {
+                          const p = parseFloat(editingProduct.price) || 0;
+                          const v = parseFloat(editingProduct.discount_value) || 0;
+                          let finalPrice = p;
+                          if (editingProduct.discount_type === 'percent') {
+                            finalPrice = Math.max(0, p - (p * v) / 100);
+                          } else {
+                            finalPrice = Math.max(0, p - v);
+                          }
+                          return (
+                            <div className="flex items-center gap-2">
+                              <span className="line-through text-slate-400 text-sm">{formatPrice(p)} ₽</span>
+                              <span className="text-xl font-bold text-rose-600">{formatPrice(finalPrice)} ₽</span>
+                            </div>
+                          );
+                        })()}
+                      </div>
+                    )}
+                  </div>
+                )}
               </div>
 
               <div>

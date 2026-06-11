@@ -4,7 +4,7 @@ import axios from 'axios';
 import { Button } from '../components/ui/button';
 import { Input } from '../components/ui/input';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '../components/ui/dialog';
-import { Search, X, ShoppingCart, Package, Truck, Minus, Plus, ArrowRight, Heart, ChevronLeft, ChevronRight, Percent, Eye, Filter, MapPin, ArrowUpDown } from 'lucide-react';
+import { Search, X, ShoppingCart, Package, Truck, Minus, Plus, ArrowRight, Heart, ChevronLeft, ChevronRight, Percent, Eye, Filter, MapPin, ArrowUpDown, Tag, Gift } from 'lucide-react';
 import { useCart } from '../context/CartContext';
 import { useAuth } from '../context/AuthContext';
 import { toast } from 'sonner';
@@ -17,6 +17,7 @@ import { SearchDropdown } from '../components/SearchDropdown';
 import { trackClick } from '../utils/tracker';
 import DiscountRequestModal from '../components/DiscountRequestModal';
 import ProductRequestModal from '../components/ProductRequestModal';
+import { computeDiscount, formatDiscountBadge, formatUntilDate, getDeliveryBadge } from '../utils/productHelpers';
 
 const API = `${process.env.REACT_APP_BACKEND_URL}/api`;
 
@@ -46,7 +47,11 @@ const ProductCard = ({
   individualPrice,
   user,
   isAlternative = false
-}) => (
+}) => {
+  const discount = computeDiscount(product);
+  const deliveryBadge = getDeliveryBadge(product.delivery_days);
+  const untilFormatted = formatUntilDate(discount?.until);
+  return (
   <div 
     className={`bg-white rounded-xl border overflow-hidden transition-all duration-300 hover:shadow-lg hover:border-teal-300/60 h-[100px] ${isAlternative ? 'border-teal-200/50 bg-teal-50/20' : 'border-slate-200/80'}`}
     data-testid={`product-card-${product.id}`}
@@ -111,8 +116,30 @@ const ProductCard = ({
               Гарантия
             </span>
           )}
-          <span className="inline-flex items-center text-[11px] text-slate-500 px-2 py-0.5 rounded-full bg-slate-50">
-            <Truck className="w-3 h-3 mr-0.5" />{getDeliveryText(product.delivery_days || 3)}
+          {product.bonus_eligible !== false && (
+            <span className="inline-flex items-center gap-0.5 text-[11px] font-bold px-2 py-0.5 rounded-full bg-emerald-500 text-white" data-testid={`badge-bonus-${product.id}`}>
+              <Gift className="w-3 h-3 mr-0.5" />Бонусы
+            </span>
+          )}
+          {discount && (
+            <span className="relative inline-flex items-center gap-0.5 text-[11px] font-bold px-2 py-0.5 rounded-full bg-gradient-to-r from-rose-500 to-pink-500 text-white cursor-help group/disc" data-testid={`badge-discount-${product.id}`}>
+              <Tag className="w-3 h-3 mr-0.5" />{formatDiscountBadge(discount)}
+              <div className="absolute left-0 top-full mt-1 w-60 p-3 bg-white border border-rose-200 rounded-xl shadow-xl text-left opacity-0 invisible group-hover/disc:opacity-100 group-hover/disc:visible transition-all duration-200 z-30 pointer-events-none" data-testid={`discount-tooltip-${product.id}`}>
+                {discount.label && (
+                  <p className="text-sm font-bold text-rose-600 mb-1">{discount.label}</p>
+                )}
+                <p className="text-xs text-slate-500">Скидка: <span className="font-semibold text-rose-500">{formatDiscountBadge(discount)}</span></p>
+                {discount.description && (
+                  <p className="text-xs text-slate-600 mt-1">{discount.description}</p>
+                )}
+                {untilFormatted && (
+                  <p className="text-[10px] text-slate-400 mt-1">До {untilFormatted}</p>
+                )}
+              </div>
+            </span>
+          )}
+          <span className={`inline-flex items-center text-[11px] font-semibold px-2 py-0.5 rounded-full border ${deliveryBadge.classes}`} data-testid={`delivery-badge-${product.id}`}>
+            <Truck className="w-3 h-3 mr-0.5" />{deliveryBadge.label}
           </span>
           {isAlternative && product.cross_articles && (
             <span className="text-[11px] text-slate-400" style={{display:'none'}}>Кросс: {product.cross_articles}</span>
@@ -127,6 +154,11 @@ const ProductCard = ({
             <div className="flex flex-col items-center">
               <span className="text-[9px] line-through text-slate-400">{formatPrice(product.price)} ₽</span>
               <span className="text-sm font-bold text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded-lg">{formatPrice(individualPrice)} ₽</span>
+            </div>
+          ) : discount ? (
+            <div className="flex flex-col items-center" data-testid={`price-with-discount-${product.id}`}>
+              <span className="text-[9px] line-through text-slate-400">{formatPrice(product.price)} ₽</span>
+              <p className="text-sm font-bold text-white bg-gradient-to-r from-rose-500 to-pink-500 px-2.5 py-0.5 rounded-lg whitespace-nowrap shadow-sm">{formatPrice(discount.finalPrice)} ₽</p>
             </div>
           ) : (
             <p className="text-sm font-bold text-white bg-gradient-to-r from-rose-500 to-pink-500 px-2.5 py-1 rounded-lg whitespace-nowrap shadow-sm">{formatPrice(product.price)} ₽</p>
@@ -173,7 +205,8 @@ const ProductCard = ({
       </div>
     </div>
   </div>
-);
+  );
+};
 
 // Product Modal Content with Image Slideshow
 const ProductModalContent = ({ 
