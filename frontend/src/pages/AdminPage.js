@@ -1492,18 +1492,14 @@ export default function AdminPage() {
                                 ? 'bg-emerald-500' 
                                 : 'bg-red-500'
                             }`} title={product.stock > 0 ? 'В наличии' : 'Нет в наличии'} />
-                            {/* Badges top-left */}
-                            <div className="absolute top-1.5 left-1.5 flex flex-col gap-0.5">
-                              {product.is_original && (
-                                <span className="bg-teal-500 text-white text-[8px] font-bold px-1.5 py-0.5 rounded shadow" title="Оригинал">ORIG</span>
-                              )}
-                              {product.has_guarantee && (
-                                <span className="bg-amber-500 text-white text-[8px] font-bold px-1.5 py-0.5 rounded shadow" title="Гарантия">ГАР</span>
-                              )}
-                              {product.bonus_eligible !== false && (
-                                <span className="bg-emerald-500 text-white text-[8px] font-bold px-1.5 py-0.5 rounded shadow" title="Участвует в бонусной программе" data-testid={`admin-badge-bonus-${product.id}`}>БОН</span>
-                              )}
-                            </div>
+                            {/* Badges top-left — only Bonus (full label) */}
+                            {product.bonus_eligible !== false && (
+                              <div className="absolute top-1.5 left-1.5">
+                                <span className="inline-flex items-center gap-1 bg-emerald-500 text-white text-[10px] font-bold px-2 py-0.5 rounded-md shadow whitespace-nowrap" title="Участвует в бонусной программе" data-testid={`admin-badge-bonus-${product.id}`}>
+                                  <Gift className="w-3 h-3" />Бонусы
+                                </span>
+                              </div>
+                            )}
                             {/* Discount badge top-right */}
                             {(() => {
                               const d = computeDiscount(product);

@@ -53,10 +53,10 @@ const ProductCard = ({
   const untilFormatted = formatUntilDate(discount?.until);
   return (
   <div 
-    className={`bg-white rounded-xl border overflow-hidden transition-all duration-300 hover:shadow-lg hover:border-teal-300/60 h-[100px] ${isAlternative ? 'border-teal-200/50 bg-teal-50/20' : 'border-slate-200/80'}`}
+    className={`bg-white rounded-xl border overflow-hidden transition-all duration-300 hover:shadow-lg hover:border-teal-300/60 min-h-[110px] ${isAlternative ? 'border-teal-200/50 bg-teal-50/20' : 'border-slate-200/80'}`}
     data-testid={`product-card-${product.id}`}
   >
-    <div className="flex h-full">
+    <div className="flex min-h-[110px]">
       {/* Image */}
       <div className="relative group flex-shrink-0 p-2 flex items-stretch">
         <Link
@@ -84,46 +84,50 @@ const ProductCard = ({
       {/* Content */}
       <div className="flex-1 min-w-0 py-2 pr-3 flex flex-col">
         {/* Top: name - fills available space */}
-        <div className="flex-1 border border-slate-200 rounded-lg px-2 py-1 bg-slate-50/50 mb-1.5">
+        <div className="flex-1 border border-slate-200 rounded-lg px-2 py-1 bg-slate-50/50 mb-1.5 min-w-0">
           <h3 className="font-semibold text-[13px] leading-tight text-slate-800 hover:text-teal-600 transition-colors line-clamp-2 overflow-hidden">
             <Link to={`/product/${product.id}`}>{product.name}</Link>
           </h3>
         </div>
         
-        {/* Bottom: badges - fixed to bottom */}
-        <div className="flex items-center gap-1.5 flex-wrap">
+        {/* Bottom: badges - unified style, all 22px height, rounded-full */}
+        <div className="flex items-center gap-1.5 flex-wrap min-w-0">
           {product.manufacturer && (
-            <span className="text-[11px] font-bold text-teal-600 bg-teal-50 px-1.5 py-0.5 rounded">{product.manufacturer}</span>
+            <span className="inline-flex items-center h-[22px] text-[11px] font-extrabold uppercase tracking-wide text-white bg-gradient-to-r from-teal-500 to-cyan-500 px-2.5 rounded-full shadow-sm shadow-teal-500/30 whitespace-nowrap">
+              {product.manufacturer}
+            </span>
           )}
-          <span className="text-xs font-mono font-bold text-pink-500 bg-pink-50 px-1.5 py-0.5 rounded">{product.article}</span>
-          <span className={`inline-flex items-center text-[11px] font-semibold px-2 py-0.5 rounded-full ${
-            product.stock > 0 ? 'bg-emerald-50 text-emerald-700' : 'bg-red-50 text-red-600'
+          <span className="inline-flex items-center h-[22px] text-[11px] font-mono font-extrabold text-white bg-gradient-to-r from-pink-500 to-rose-500 px-2.5 rounded-full shadow-sm shadow-pink-500/30 whitespace-nowrap">
+            {product.article}
+          </span>
+          <span className={`inline-flex items-center h-[22px] text-[11px] font-semibold px-2.5 rounded-full whitespace-nowrap ${
+            product.stock > 0 ? 'bg-emerald-50 text-emerald-700 border border-emerald-200' : 'bg-red-50 text-red-600 border border-red-200'
           }`}>
             {product.stock > 0 ? 'В наличии' : 'Нет в наличии'}
           </span>
           {product.warehouse && (
-            <span className="inline-flex items-center text-[11px] font-semibold px-2 py-0.5 rounded-full bg-blue-50 text-blue-600">
+            <span className="inline-flex items-center h-[22px] text-[11px] font-semibold px-2.5 rounded-full bg-blue-50 text-blue-600 border border-blue-200 whitespace-nowrap">
               <MapPin className="w-3 h-3 mr-0.5" />{product.warehouse}
             </span>
           )}
+          {product.bonus_eligible !== false && (
+            <span className="inline-flex items-center h-[22px] gap-1 text-[11px] font-semibold px-2.5 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200 whitespace-nowrap" data-testid={`badge-bonus-${product.id}`}>
+              <Gift className="w-3 h-3" />Бонусы
+            </span>
+          )}
           {product.is_original && (
-            <span className="inline-flex items-center gap-0.5 text-[11px] font-bold px-2 py-0.5 rounded-full bg-teal-500 text-white" data-testid={`badge-original-${product.id}`}>
+            <span className="inline-flex items-center h-[22px] text-[11px] font-semibold px-2.5 rounded-full bg-teal-50 text-teal-700 border border-teal-200 whitespace-nowrap" data-testid={`badge-original-${product.id}`}>
               Оригинал
             </span>
           )}
           {product.has_guarantee && (
-            <span className="inline-flex items-center gap-0.5 text-[11px] font-bold px-2 py-0.5 rounded-full bg-amber-500 text-white" data-testid={`badge-guarantee-${product.id}`}>
+            <span className="inline-flex items-center h-[22px] text-[11px] font-semibold px-2.5 rounded-full bg-amber-50 text-amber-700 border border-amber-200 whitespace-nowrap" data-testid={`badge-guarantee-${product.id}`}>
               Гарантия
             </span>
           )}
-          {product.bonus_eligible !== false && (
-            <span className="inline-flex items-center gap-0.5 text-[11px] font-bold px-2 py-0.5 rounded-full bg-emerald-500 text-white" data-testid={`badge-bonus-${product.id}`}>
-              <Gift className="w-3 h-3 mr-0.5" />Бонусы
-            </span>
-          )}
           {discount && (
-            <span className="relative inline-flex items-center gap-0.5 text-[11px] font-bold px-2 py-0.5 rounded-full bg-gradient-to-r from-rose-500 to-pink-500 text-white cursor-help group/disc" data-testid={`badge-discount-${product.id}`}>
-              <Tag className="w-3 h-3 mr-0.5" />{formatDiscountBadge(discount)}
+            <span className="relative inline-flex items-center h-[22px] gap-1 text-[11px] font-bold px-2.5 rounded-full bg-gradient-to-r from-rose-500 to-pink-500 text-white cursor-help shadow-sm shadow-rose-500/30 whitespace-nowrap group/disc" data-testid={`badge-discount-${product.id}`}>
+              <Tag className="w-3 h-3" />{formatDiscountBadge(discount)}
               <div className="absolute left-0 top-full mt-1 w-60 p-3 bg-white border border-rose-200 rounded-xl shadow-xl text-left opacity-0 invisible group-hover/disc:opacity-100 group-hover/disc:visible transition-all duration-200 z-30 pointer-events-none" data-testid={`discount-tooltip-${product.id}`}>
                 {discount.label && (
                   <p className="text-sm font-bold text-rose-600 mb-1">{discount.label}</p>
@@ -138,7 +142,7 @@ const ProductCard = ({
               </div>
             </span>
           )}
-          <span className={`inline-flex items-center text-[11px] font-semibold px-2 py-0.5 rounded-full border ${deliveryBadge.classes}`} data-testid={`delivery-badge-${product.id}`}>
+          <span className={`inline-flex items-center h-[22px] text-[11px] font-semibold px-2.5 rounded-full border whitespace-nowrap ${deliveryBadge.classes}`} data-testid={`delivery-badge-${product.id}`}>
             <Truck className="w-3 h-3 mr-0.5" />{deliveryBadge.label}
           </span>
           {isAlternative && product.cross_articles && (
@@ -152,12 +156,12 @@ const ProductCard = ({
         <div className="flex items-center gap-2 px-3 border-2 border-slate-300 rounded-xl bg-slate-50/80">
           {individualPrice != null ? (
             <div className="flex flex-col items-center">
-              <span className="text-[9px] line-through text-slate-400">{formatPrice(product.price)} ₽</span>
+              <span className="text-xs font-semibold line-through text-slate-500 decoration-rose-400 decoration-2">{formatPrice(product.price)} ₽</span>
               <span className="text-sm font-bold text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded-lg">{formatPrice(individualPrice)} ₽</span>
             </div>
           ) : discount ? (
             <div className="flex flex-col items-center" data-testid={`price-with-discount-${product.id}`}>
-              <span className="text-[9px] line-through text-slate-400">{formatPrice(product.price)} ₽</span>
+              <span className="text-xs font-semibold line-through text-slate-500 decoration-rose-400 decoration-2">{formatPrice(product.price)} ₽</span>
               <p className="text-sm font-bold text-white bg-gradient-to-r from-rose-500 to-pink-500 px-2.5 py-0.5 rounded-lg whitespace-nowrap shadow-sm">{formatPrice(discount.finalPrice)} ₽</p>
             </div>
           ) : (
