@@ -53,20 +53,43 @@ const ProductCard = ({
   const untilFormatted = formatUntilDate(discount?.until);
   return (
   <div 
-    className={`relative bg-white rounded-xl border overflow-hidden transition-all duration-300 hover:shadow-lg hover:border-teal-300/60 min-h-[110px] ${isAlternative ? 'border-teal-200/50 bg-teal-50/20' : 'border-slate-200/80'} ${product.stock <= 0 ? 'group/oos opacity-70 hover:opacity-50' : ''}`}
+    className={`relative bg-white rounded-xl border overflow-hidden transition-all duration-500 hover:shadow-lg hover:border-teal-300/60 min-h-[110px] ${isAlternative ? 'border-teal-200/50 bg-teal-50/20' : 'border-slate-200/80'} ${product.stock <= 0 ? 'group/oos' : ''}`}
     data-testid={`product-card-${product.id}`}
   >
     {product.stock <= 0 && (
-      <div className="absolute inset-0 z-20 flex items-center justify-center pointer-events-none" data-testid={`out-of-stock-overlay-${product.id}`}>
-        <div className="px-3 py-1 rounded-lg bg-white/85 backdrop-blur-sm border border-rose-200 shadow-sm">
-          <p className="text-sm font-bold text-rose-600 uppercase tracking-wide">
-            <span className="group-hover/oos:hidden">Нет в наличии</span>
-            <span className="hidden group-hover/oos:inline">Товар закончился</span>
-          </p>
+      <>
+        {/* Diagonal warning stripes — subtle vintage pattern */}
+        <div
+          className="absolute inset-0 z-10 pointer-events-none opacity-10 group-hover/oos:opacity-20 transition-opacity duration-500"
+          style={{
+            backgroundImage:
+              'repeating-linear-gradient(45deg, rgba(225,29,72,0.7) 0, rgba(225,29,72,0.7) 8px, transparent 8px, transparent 20px)',
+          }}
+        />
+        {/* Greyscale + dim layer applied via CSS sibling on the content (see below) */}
+        <div
+          className="absolute inset-0 z-20 flex items-center justify-center pointer-events-none"
+          data-testid={`out-of-stock-overlay-${product.id}`}
+        >
+          <div className="relative transform -rotate-6 group-hover/oos:rotate-3 group-hover/oos:scale-105 transition-all duration-500 ease-out">
+            {/* Rubber stamp */}
+            <div className="relative px-4 py-1.5 border-[3px] border-rose-600/80 rounded-md bg-rose-50/85 backdrop-blur-[2px] shadow-[0_4px_12px_rgba(225,29,72,0.25)]">
+              <div className="absolute inset-1 border border-rose-500/40 border-dashed rounded-sm pointer-events-none" />
+              <p className="relative text-[13px] font-black uppercase text-rose-700 tracking-[0.18em] whitespace-nowrap">
+                <span className="group-hover/oos:hidden">Нет в наличии</span>
+                <span className="hidden group-hover/oos:inline">Товар закончился</span>
+              </p>
+            </div>
+            {/* Animated red dot ping */}
+            <span className="absolute -top-1 -right-1 flex h-2.5 w-2.5">
+              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-rose-400 opacity-75" />
+              <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-rose-500" />
+            </span>
+          </div>
         </div>
-      </div>
+      </>
     )}
-    <div className="flex min-h-[110px]">
+    <div className={`flex min-h-[110px] transition-all duration-500 ${product.stock <= 0 ? 'grayscale-[80%] opacity-70 group-hover/oos:grayscale group-hover/oos:opacity-50' : ''}`}>
       {/* Image */}
       <div className="relative group flex-shrink-0 p-2 flex items-stretch">
         <Link
