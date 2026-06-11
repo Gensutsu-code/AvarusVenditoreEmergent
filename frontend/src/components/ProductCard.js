@@ -50,26 +50,30 @@ export const ProductCard = ({ product, index = 0 }) => {
         className="block group relative"
         data-testid={`product-card-${product.id}`}
       >
-        {/* Discount tag — attached to top-right corner, sticking out */}
+        {/* Discount ribbon — attached to outer right edge, unfurls on hover */}
         {discount && (
-          <div className="absolute -top-2 -right-2 z-30 group/disc" data-testid={`badge-discount-${product.id}`}>
-            <div className="relative">
-              <div className="inline-flex items-center gap-1 px-2.5 py-1 rounded-md bg-gradient-to-br from-rose-500 to-pink-600 text-white text-[11px] font-extrabold shadow-md shadow-rose-500/40 cursor-help select-none">
-                <Tag className="w-3 h-3" />{formatDiscountBadge(discount)}
-              </div>
-              <div className="absolute -bottom-1 -left-0.5 w-1.5 h-1.5 bg-rose-700 rounded-full shadow-inner" />
-              <div className="absolute right-0 top-full mt-2 w-60 p-3 bg-white border border-rose-200 rounded-xl shadow-xl text-left opacity-0 invisible group-hover/disc:opacity-100 group-hover/disc:visible transition-all duration-200 z-40 pointer-events-none" data-testid={`discount-tooltip-${product.id}`}>
-                {discount.label && (
-                  <p className="text-sm font-bold text-rose-600 mb-1">{discount.label}</p>
-                )}
-                <p className="text-xs text-slate-500">Скидка: <span className="font-semibold text-rose-500">{formatDiscountBadge(discount)}</span></p>
-                {discount.description && (
-                  <p className="text-xs text-slate-600 mt-1">{discount.description}</p>
-                )}
-                {untilFormatted && (
-                  <p className="text-[10px] text-slate-400 mt-1">До {untilFormatted}</p>
-                )}
-              </div>
+          <div className="absolute left-full top-3 z-30 group/disc" data-testid={`badge-discount-${product.id}`}>
+            <div
+              className="relative h-7 bg-gradient-to-r from-rose-500 to-pink-600 shadow-md shadow-rose-500/40 flex items-center pl-2 pr-4 cursor-help"
+              style={{ clipPath: 'polygon(0 0, 100% 0, 88% 50%, 100% 100%, 0 100%)' }}
+            >
+              <span className="overflow-hidden transition-all duration-500 ease-out max-w-0 group-hover/disc:max-w-[80px] flex-shrink-0">
+                <span className="text-white text-[10px] font-bold uppercase tracking-[0.18em] whitespace-nowrap mr-1.5 inline-block">Скидка</span>
+              </span>
+              <Tag className="w-3 h-3 text-white" />
+              <span className="text-white text-[12px] font-extrabold whitespace-nowrap ml-1">{formatDiscountBadge(discount)}</span>
+            </div>
+            <div className="absolute right-0 top-full mt-2 w-60 p-3 bg-white border border-rose-200 rounded-xl shadow-xl text-left opacity-0 invisible group-hover/disc:opacity-100 group-hover/disc:visible transition-all duration-200 z-40 pointer-events-none" data-testid={`discount-tooltip-${product.id}`}>
+              {discount.label && (
+                <p className="text-sm font-bold text-rose-600 mb-1">{discount.label}</p>
+              )}
+              <p className="text-xs text-slate-500">Скидка: <span className="font-semibold text-rose-500">{formatDiscountBadge(discount)}</span></p>
+              {discount.description && (
+                <p className="text-xs text-slate-600 mt-1">{discount.description}</p>
+              )}
+              {untilFormatted && (
+                <p className="text-[10px] text-slate-400 mt-1">До {untilFormatted}</p>
+              )}
             </div>
           </div>
         )}
