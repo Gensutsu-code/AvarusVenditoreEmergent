@@ -56,37 +56,23 @@ export const ProductCard = ({ product, index = 0 }) => {
           transition={{ duration: 0.3 }}
         >
           {product.stock <= 0 && (
-            <>
-              {/* Diagonal stripes background */}
-              <div
-                className="absolute inset-0 z-10 pointer-events-none opacity-10 group-hover/oos:opacity-25 transition-opacity duration-500"
-                style={{
-                  backgroundImage:
-                    'repeating-linear-gradient(45deg, rgba(225,29,72,0.7) 0, rgba(225,29,72,0.7) 10px, transparent 10px, transparent 24px)',
-                }}
-              />
-              {/* Rubber stamp */}
-              <div
-                className="absolute inset-0 z-20 flex items-center justify-center pointer-events-none"
-                data-testid={`out-of-stock-overlay-${product.id}`}
-              >
-                <div className="relative transform -rotate-[8deg] group-hover/oos:rotate-[4deg] group-hover/oos:scale-110 transition-all duration-500 ease-out">
-                  <div className="relative px-5 py-2 border-[4px] border-rose-600/80 rounded-lg bg-rose-50/85 backdrop-blur-[2px] shadow-[0_6px_18px_rgba(225,29,72,0.3)]">
-                    <div className="absolute inset-1.5 border border-rose-500/40 border-dashed rounded-md pointer-events-none" />
-                    <p className="relative text-base font-black uppercase text-rose-700 tracking-[0.22em] whitespace-nowrap">
-                      <span className="group-hover/oos:hidden">Нет в наличии</span>
-                      <span className="hidden group-hover/oos:inline">Товар закончился</span>
-                    </p>
-                  </div>
-                  <span className="absolute -top-1.5 -right-1.5 flex h-3 w-3">
-                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-rose-400 opacity-75" />
-                    <span className="relative inline-flex rounded-full h-3 w-3 bg-rose-500" />
-                  </span>
-                </div>
+            <div
+              className="absolute top-3 right-3 z-20 pointer-events-none"
+              data-testid={`out-of-stock-overlay-${product.id}`}
+            >
+              <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-white/90 backdrop-blur-sm border border-slate-200 shadow-sm transition-all duration-300 group-hover/oos:border-rose-200 group-hover/oos:bg-rose-50/90">
+                <span className="relative flex h-2 w-2">
+                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-rose-400 opacity-60" />
+                  <span className="relative inline-flex rounded-full h-2 w-2 bg-rose-400" />
+                </span>
+                <span className="text-xs font-semibold text-slate-600 group-hover/oos:text-rose-600 transition-colors">
+                  <span className="group-hover/oos:hidden">Нет в наличии</span>
+                  <span className="hidden group-hover/oos:inline">Товар закончился</span>
+                </span>
               </div>
-            </>
+            </div>
           )}
-          <div className={product.stock <= 0 ? 'grayscale-[80%] opacity-70 group-hover/oos:grayscale group-hover/oos:opacity-50 transition-all duration-500' : ''}>
+          <div className={product.stock <= 0 ? 'opacity-75 group-hover/oos:opacity-60 transition-opacity duration-300' : ''}>
           {/* Image */}
           <div className="aspect-square bg-slate-100 overflow-hidden relative">
             {product.image_url ? (
