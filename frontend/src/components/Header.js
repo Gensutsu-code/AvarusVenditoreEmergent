@@ -1,5 +1,5 @@
 import { Link, useLocation, useNavigate } from 'react-router-dom';
-import { ShoppingCart, User, Search, LogOut, Settings, Heart, Package, ClipboardList, Gift, Newspaper, Menu, X, MessageCircle, Bell, Wallet, RefreshCw, Bot } from 'lucide-react';
+import { ShoppingCart, User, Search, LogOut, Settings, Heart, Package, ClipboardList, Gift, Newspaper, Menu, X, MessageCircle, Bell, Wallet, RefreshCw } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { useCart } from '../context/CartContext';
 import { Button } from './ui/button';
@@ -361,12 +361,6 @@ export const Header = () => {
                         Возвраты
                       </span>
                     </NavLink>
-                    <NavLink to="/admin/telegram" data-testid="admin-telegram-link">
-                      <span className="flex items-center gap-2">
-                        <Bot className="w-4 h-4" />
-                        Telegram
-                      </span>
-                    </NavLink>
                     <NavLink to="/admin/profile" data-testid="admin-profile-link">
                       <User className="w-4 h-4" />
                     </NavLink>
@@ -621,10 +615,6 @@ export const Header = () => {
                       <Link to="/admin/returns" onClick={() => setMobileMenuOpen(false)} className="flex items-center gap-3 p-3 rounded-xl text-slate-600 hover:bg-slate-50">
                         <RefreshCw className="w-5 h-5" />
                         Возвраты
-                      </Link>
-                      <Link to="/admin/telegram" onClick={() => setMobileMenuOpen(false)} className="flex items-center gap-3 p-3 rounded-xl text-slate-600 hover:bg-slate-50">
-                        <Bot className="w-5 h-5" />
-                        Telegram
                       </Link>
                     </>
                   ) : (
