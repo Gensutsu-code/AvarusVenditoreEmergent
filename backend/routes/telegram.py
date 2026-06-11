@@ -1,5 +1,5 @@
 """Telegram integration routes"""
-from fastapi import APIRouter, HTTPException, Depends
+from fastapi import APIRouter, HTTPException, Depends, Request
 from pydantic import BaseModel
 from typing import Dict, Any, Optional
 from datetime import datetime, timezone
@@ -14,6 +14,27 @@ router = APIRouter(tags=["telegram"])
 logger = logging.getLogger(__name__)
 
 TELEGRAM_CHAT_BOT_TOKEN = os.environ.get('TELEGRAM_CHAT_BOT_TOKEN')
+
+
+def _public_base_url(request: Request) -> str:
+    """Determine the public base URL from incoming request (proxy-aware).
+    Falls back to BACKEND_URL env var only if request data is unavailable.
+    Priority:
+      1. X-Forwarded-Proto + X-Forwarded-Host  (Kubernetes ingress / production proxy)
+      2. Host header + request scheme
+      3. BACKEND_URL env (fallback)
+    """
+    if request is None:
+        return os.environ.get('BACKEND_URL', '').rstrip('/')
+
+    fwd_host = request.headers.get('x-forwarded-host') or request.headers.get('host')
+    fwd_proto = request.headers.get('x-forwarded-proto')
+
+    if fwd_host:
+        scheme = fwd_proto or request.url.scheme or 'https'
+        return f"{scheme}://{fwd_host}".rstrip('/')
+
+    return os.environ.get('BACKEND_URL', '').rstrip('/')
 
 
 class TelegramUpdate(BaseModel):
@@ -298,17 +319,18 @@ async def telegram_chat_webhook(update: TelegramUpdate):
 
 
 @router.post("/admin/chat/setup-telegram-webhook")
-async def setup_telegram_chat_webhook(user=Depends(get_current_user)):
-    """Setup Telegram webhook for chat bot"""
+async def setup_telegram_chat_webhook(request: Request, user=Depends(get_current_user)):
+    """Setup Telegram webhook for chat bot.
+    Auto-detects public base URL from request headers (works behind proxy)."""
     if user.get("role") != "admin":
         raise HTTPException(status_code=403, detail="Admin access required")
     
     if not TELEGRAM_CHAT_BOT_TOKEN:
         raise HTTPException(status_code=400, detail="TELEGRAM_CHAT_BOT_TOKEN не настроен")
     
-    backend_url = os.environ.get('BACKEND_URL', '')
+    backend_url = _public_base_url(request)
     if not backend_url:
-        raise HTTPException(status_code=400, detail="BACKEND_URL не настроен")
+        raise HTTPException(status_code=400, detail="Не удалось определить публичный URL")
     
     webhook_url = f"{backend_url}/api/telegram/chat-webhook"
     
@@ -333,18 +355,20 @@ async def setup_telegram_chat_webhook(user=Depends(get_current_user)):
 # ==================== DIAGNOSTICS ====================
 
 @router.get("/admin/telegram/diagnostics")
-async def telegram_diagnostics(user=Depends(get_current_user)):
+async def telegram_diagnostics(request: Request, user=Depends(get_current_user)):
     """Comprehensive Telegram bot diagnostics for admin"""
     if user.get("role") != "admin":
         raise HTTPException(status_code=403, detail="Admin access required")
 
-    backend_url = os.environ.get('BACKEND_URL', '')
+    backend_url = _public_base_url(request)
+    env_backend_url = os.environ.get('BACKEND_URL', '').rstrip('/')
     token_present = bool(TELEGRAM_CHAT_BOT_TOKEN)
     expected_webhook_url = f"{backend_url}/api/telegram/chat-webhook" if backend_url else ""
 
     result = {
         "env": {
             "backend_url": backend_url or None,
+            "env_var_backend_url": env_backend_url or None,
             "token_present": token_present,
         },
         "expected_webhook_url": expected_webhook_url,
@@ -405,7 +429,7 @@ async def telegram_diagnostics(user=Depends(get_current_user)):
 
 
 @router.post("/admin/telegram/test-message")
-async def telegram_test_message(user=Depends(get_current_user)):
+async def telegram_test_message(request: Request, user=Depends(get_current_user)):
     """Send a test message to admin's Telegram chat"""
     if user.get("role") != "admin":
         raise HTTPException(status_code=403, detail="Admin access required")
@@ -428,7 +452,7 @@ async def telegram_test_message(user=Depends(get_current_user)):
             detail="admin_chat_id не задан. Откройте Telegram-бот и отправьте ему /start"
         )
 
-    backend_url = os.environ.get('BACKEND_URL', '?')
+    backend_url = _public_base_url(request)
     text = (
         "🧪 *Тестовое сообщение*\n\n"
         f"Backend: `{backend_url}`\n"

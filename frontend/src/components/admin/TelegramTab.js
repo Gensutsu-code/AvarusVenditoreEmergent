@@ -227,9 +227,15 @@ export default function TelegramTab({
                 <Globe className="w-3.5 h-3.5" /> Webhook & окружение
               </p>
               <div className="flex justify-between gap-3 flex-wrap text-xs">
-                <span className={isDark ? 'text-zinc-500' : 'text-slate-500'}>BACKEND_URL:</span>
+                <span className={isDark ? 'text-zinc-500' : 'text-slate-500'}>BACKEND_URL (авто):</span>
                 <code className={`font-mono px-2 py-0.5 rounded ${isDark ? 'bg-zinc-800' : 'bg-white'}`}>{diag.env.backend_url || '—'}</code>
               </div>
+              {diag.env.env_var_backend_url && diag.env.env_var_backend_url !== diag.env.backend_url && (
+                <div className="flex justify-between gap-3 flex-wrap text-xs">
+                  <span className={isDark ? 'text-zinc-500' : 'text-slate-500'}>BACKEND_URL (env, устарел):</span>
+                  <code className="font-mono px-2 py-0.5 rounded bg-amber-100 text-amber-700">{diag.env.env_var_backend_url}</code>
+                </div>
+              )}
               <div className="flex justify-between gap-3 flex-wrap text-xs">
                 <span className={isDark ? 'text-zinc-500' : 'text-slate-500'}>Ожидаемый webhook:</span>
                 <code className={`font-mono px-2 py-0.5 rounded break-all ${isDark ? 'bg-zinc-800' : 'bg-white'}`}>{diag.expected_webhook_url || '—'}</code>
