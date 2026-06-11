@@ -328,3 +328,142 @@ async def setup_telegram_chat_webhook(user=Depends(get_current_user)):
                 raise HTTPException(status_code=400, detail=result.get("description", "Ошибка установки webhook"))
     except httpx.RequestError as e:
         raise HTTPException(status_code=500, detail=f"Ошибка подключения к Telegram: {str(e)}")
+
+
+# ==================== DIAGNOSTICS ====================
+
+@router.get("/admin/telegram/diagnostics")
+async def telegram_diagnostics(user=Depends(get_current_user)):
+    """Comprehensive Telegram bot diagnostics for admin"""
+    if user.get("role") != "admin":
+        raise HTTPException(status_code=403, detail="Admin access required")
+
+    backend_url = os.environ.get('BACKEND_URL', '')
+    token_present = bool(TELEGRAM_CHAT_BOT_TOKEN)
+    expected_webhook_url = f"{backend_url}/api/telegram/chat-webhook" if backend_url else ""
+
+    result = {
+        "env": {
+            "backend_url": backend_url or None,
+            "token_present": token_present,
+        },
+        "expected_webhook_url": expected_webhook_url,
+        "bot_info": None,
+        "webhook_info": None,
+        "admin_chat_id": None,
+        "chat_settings": None,
+        "errors": [],
+        "checks": {
+            "token_configured": token_present,
+            "backend_url_configured": bool(backend_url),
+            "webhook_matches": False,
+            "admin_chat_id_present": False,
+        }
+    }
+
+    # Chat settings (admin_chat_id)
+    chat_settings = await db.telegram_chat_settings.find_one({"setting_type": "chat_bot"}, {"_id": 0})
+    if chat_settings:
+        result["chat_settings"] = chat_settings
+        result["admin_chat_id"] = chat_settings.get("admin_chat_id")
+        result["checks"]["admin_chat_id_present"] = bool(chat_settings.get("admin_chat_id"))
+
+    # Site settings telegram block
+    site_settings = await db.settings.find_one({"key": "telegram"}, {"_id": 0})
+    if site_settings:
+        result["site_telegram_settings"] = site_settings.get("value", {})
+
+    if not token_present:
+        result["errors"].append("TELEGRAM_CHAT_BOT_TOKEN не задан в окружении")
+        return result
+
+    try:
+        async with httpx.AsyncClient(timeout=10.0) as client:
+            # Bot info
+            bot_res = await client.get(f"https://api.telegram.org/bot{TELEGRAM_CHAT_BOT_TOKEN}/getMe")
+            bot_data = bot_res.json()
+            if bot_data.get("ok"):
+                result["bot_info"] = bot_data.get("result")
+            else:
+                result["errors"].append(f"getMe: {bot_data.get('description', 'unknown')}")
+
+            # Webhook info
+            wh_res = await client.get(f"https://api.telegram.org/bot{TELEGRAM_CHAT_BOT_TOKEN}/getWebhookInfo")
+            wh_data = wh_res.json()
+            if wh_data.get("ok"):
+                wh_info = wh_data.get("result", {})
+                result["webhook_info"] = wh_info
+                result["checks"]["webhook_matches"] = (
+                    bool(expected_webhook_url) and wh_info.get("url") == expected_webhook_url
+                )
+            else:
+                result["errors"].append(f"getWebhookInfo: {wh_data.get('description', 'unknown')}")
+    except Exception as e:
+        result["errors"].append(f"Telegram API: {str(e)}")
+
+    return result
+
+
+@router.post("/admin/telegram/test-message")
+async def telegram_test_message(user=Depends(get_current_user)):
+    """Send a test message to admin's Telegram chat"""
+    if user.get("role") != "admin":
+        raise HTTPException(status_code=403, detail="Admin access required")
+
+    if not TELEGRAM_CHAT_BOT_TOKEN:
+        raise HTTPException(status_code=400, detail="TELEGRAM_CHAT_BOT_TOKEN не настроен")
+
+    chat_settings = await db.telegram_chat_settings.find_one({"setting_type": "chat_bot"}, {"_id": 0})
+    chat_id = chat_settings.get("admin_chat_id") if chat_settings else None
+
+    # Fallback to site settings chat_id
+    if not chat_id:
+        site_settings = await db.settings.find_one({"key": "telegram"}, {"_id": 0})
+        if site_settings:
+            chat_id = site_settings.get("value", {}).get("chat_id")
+
+    if not chat_id:
+        raise HTTPException(
+            status_code=400,
+            detail="admin_chat_id не задан. Откройте Telegram-бот и отправьте ему /start"
+        )
+
+    backend_url = os.environ.get('BACKEND_URL', '?')
+    text = (
+        "🧪 *Тестовое сообщение*\n\n"
+        f"Backend: `{backend_url}`\n"
+        f"Время: `{datetime.now(timezone.utc).strftime('%Y-%m-%d %H:%M:%S UTC')}`\n\n"
+        "Если вы это видите — связь с Telegram настроена корректно ✅"
+    )
+
+    try:
+        async with httpx.AsyncClient(timeout=10.0) as client:
+            res = await client.post(
+                f"https://api.telegram.org/bot{TELEGRAM_CHAT_BOT_TOKEN}/sendMessage",
+                json={"chat_id": chat_id, "text": text, "parse_mode": "Markdown"},
+            )
+            data = res.json()
+            if data.get("ok"):
+                return {"success": True, "message": "Тестовое сообщение отправлено", "chat_id": chat_id}
+            raise HTTPException(status_code=400, detail=data.get("description", "Telegram отказал в отправке"))
+    except httpx.RequestError as e:
+        raise HTTPException(status_code=500, detail=f"Ошибка подключения к Telegram: {str(e)}")
+
+
+@router.post("/admin/telegram/delete-webhook")
+async def telegram_delete_webhook(user=Depends(get_current_user)):
+    """Delete current webhook (useful for switching environments)"""
+    if user.get("role") != "admin":
+        raise HTTPException(status_code=403, detail="Admin access required")
+    if not TELEGRAM_CHAT_BOT_TOKEN:
+        raise HTTPException(status_code=400, detail="TELEGRAM_CHAT_BOT_TOKEN не настроен")
+
+    try:
+        async with httpx.AsyncClient(timeout=10.0) as client:
+            res = await client.post(f"https://api.telegram.org/bot{TELEGRAM_CHAT_BOT_TOKEN}/deleteWebhook")
+            data = res.json()
+            if data.get("ok"):
+                return {"success": True, "message": "Webhook удалён"}
+            raise HTTPException(status_code=400, detail=data.get("description", "Ошибка удаления webhook"))
+    except httpx.RequestError as e:
+        raise HTTPException(status_code=500, detail=f"Ошибка подключения к Telegram: {str(e)}")
