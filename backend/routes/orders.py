@@ -13,6 +13,42 @@ from routes.telegram import send_telegram_order_notification
 router = APIRouter(tags=["orders"])
 
 
+def compute_promo_discount(product: dict, base_price: float) -> tuple:
+    """Compute promo discount for a product.
+    Returns (discounted_price, discount_amount, is_active).
+    Promo applies on top of any base_price (which may already be individual_price or payment-adjusted).
+    """
+    if not product or not product.get("discount_active"):
+        return base_price, 0.0, False
+
+    # Check expiry
+    until = product.get("discount_until")
+    if until:
+        try:
+            until_dt = datetime.fromisoformat(until.replace("Z", "+00:00")) if "T" in str(until) else datetime.fromisoformat(f"{until}T23:59:59+00:00")
+            if until_dt <= datetime.now(timezone.utc):
+                return base_price, 0.0, False
+        except Exception:
+            pass
+
+    dtype = product.get("discount_type")
+    dval = float(product.get("discount_value") or 0)
+    if dval <= 0:
+        return base_price, 0.0, False
+
+    if dtype == "percent":
+        pct = min(99.0, max(0.0, dval))
+        amount = round(base_price * pct / 100, 2)
+    elif dtype == "amount":
+        amount = max(0.0, dval)
+    else:
+        return base_price, 0.0, False
+
+    final_price = max(0.0, round(base_price - amount, 2))
+    return final_price, round(amount, 2), True
+
+
+
 # Helper functions
 async def create_admin_activity(user_id: str, user_name: str, activity_type: str, message: str):
     """Create admin activity notification"""
@@ -76,14 +112,25 @@ async def get_cart(user=Depends(get_current_user)):
         product = products_map.get(item["product_id"])
         if product:
             ind_price = ind_prices_map.get(item["product_id"])
+            base_price = ind_price if ind_price is not None else product["price"]
+            # Apply promo discount on top of base price
+            promo_final, promo_amount, promo_active = compute_promo_discount(product, base_price)
+            final_unit_price = promo_final if promo_active else base_price
             items_with_details.append({
                 "product_id": item["product_id"],
                 "name": product["name"],
                 "article": product["article"],
                 "manufacturer": product.get("manufacturer"),
-                "price": ind_price if ind_price is not None else product["price"],
+                "price": final_unit_price,
                 "original_price": product["price"],
                 "individual_price": ind_price,
+                "promo_active": promo_active,
+                "promo_amount": promo_amount,
+                "promo_discount_type": product.get("discount_type") if promo_active else None,
+                "promo_discount_value": product.get("discount_value") if promo_active else None,
+                "promo_label": product.get("discount_label") if promo_active else None,
+                "promo_until": product.get("discount_until") if promo_active else None,
+                "base_price_before_promo": base_price,
                 "quantity": item["quantity"],
                 "image_url": product.get("image_url")
             })
@@ -174,14 +221,18 @@ async def create_order(data: OrderCreate, user=Depends(get_current_user)):
         if product:
             original_price = product["price"]
             
-            # Check for individual price
+            # Determine base price (individual_price > original) and track flag
             ind_price = ind_prices_map.get(cart_item["product_id"])
             if ind_price is not None:
-                final_price = ind_price
+                base_price = ind_price
                 used_individual_price_product_ids.append(cart_item["product_id"])
             else:
                 # Apply payment discount to unit price
-                final_price = round(original_price * price_multiplier, 2)
+                base_price = round(original_price * price_multiplier, 2)
+
+            # Apply product promo discount on top of base price
+            promo_final, promo_amount, promo_active = compute_promo_discount(product, base_price)
+            final_price = promo_final if promo_active else base_price
             
             item_data = {
                 "product_id": cart_item["product_id"],
@@ -190,6 +241,12 @@ async def create_order(data: OrderCreate, user=Depends(get_current_user)):
                 "manufacturer": product.get("manufacturer"),
                 "price": final_price,
                 "original_price": original_price,
+                "base_price_before_promo": base_price,
+                "promo_active": promo_active,
+                "promo_amount": promo_amount,
+                "promo_discount_type": product.get("discount_type") if promo_active else None,
+                "promo_discount_value": product.get("discount_value") if promo_active else None,
+                "promo_label": product.get("discount_label") if promo_active else None,
                 "quantity": cart_item["quantity"],
                 "image_url": product.get("image_url"),
                 "warehouse": product.get("warehouse"),

@@ -174,7 +174,22 @@ export default function CartPage() {
                         <>
                           <p className="font-bold text-xl text-emerald-600">{formatPrice(item.price * item.quantity)} <span className="text-sm text-slate-400">₽</span></p>
                           <p className="text-[10px] line-through text-slate-400">{formatPrice(item.original_price)} ₽ × {item.quantity}</p>
-                          <p className="text-xs text-emerald-600">{formatPrice(item.individual_price)} × {item.quantity}</p>
+                          {item.promo_active ? (
+                            <>
+                              <p className="text-[10px] text-slate-400">{formatPrice(item.base_price_before_promo)} × {item.quantity}</p>
+                              <p className="text-xs text-rose-500 font-semibold">−{formatPrice(item.promo_amount)} ₽ {item.promo_label && `(${item.promo_label})`}</p>
+                              <p className="text-xs text-emerald-600">{formatPrice(item.price)} × {item.quantity}</p>
+                            </>
+                          ) : (
+                            <p className="text-xs text-emerald-600">{formatPrice(item.individual_price)} × {item.quantity}</p>
+                          )}
+                        </>
+                      ) : item.promo_active ? (
+                        <>
+                          <p className="font-bold text-xl text-rose-600">{formatPrice(item.price * item.quantity)} <span className="text-sm text-rose-400">₽</span></p>
+                          <p className="text-[10px] line-through text-slate-400">{formatPrice(item.original_price)} ₽ × {item.quantity}</p>
+                          <p className="text-xs text-rose-500 font-semibold">−{formatPrice(item.promo_amount)} ₽ {item.promo_label && `(${item.promo_label})`}</p>
+                          <p className="text-xs text-rose-600">{formatPrice(item.price)} × {item.quantity}</p>
                         </>
                       ) : (
                         <>

@@ -595,13 +595,27 @@ export default function CheckoutPage() {
                     {item.individual_price != null ? (
                       <>
                         <p className="text-slate-400 text-[10px] line-through mt-0.5">{item.quantity} шт. × {formatPrice(item.original_price)} ₽</p>
-                        <p className="text-emerald-600 text-xs font-semibold">{item.quantity} шт. × {formatPrice(item.individual_price)} ₽ <span className="text-[10px] font-normal">(инд. цена)</span></p>
+                        {item.promo_active ? (
+                          <>
+                            <p className="text-slate-400 text-[10px]">{item.quantity} шт. × {formatPrice(item.base_price_before_promo)} ₽ <span className="font-normal">(инд. цена)</span></p>
+                            <p className="text-rose-500 text-xs font-semibold">−{formatPrice(item.promo_amount)} ₽ {item.promo_label && `(${item.promo_label})`}</p>
+                            <p className="text-emerald-600 text-xs font-semibold">{item.quantity} шт. × {formatPrice(item.price)} ₽</p>
+                          </>
+                        ) : (
+                          <p className="text-emerald-600 text-xs font-semibold">{item.quantity} шт. × {formatPrice(item.individual_price)} ₽ <span className="text-[10px] font-normal">(инд. цена)</span></p>
+                        )}
+                      </>
+                    ) : item.promo_active ? (
+                      <>
+                        <p className="text-slate-400 text-[10px] line-through mt-0.5">{item.quantity} шт. × {formatPrice(item.original_price)} ₽</p>
+                        <p className="text-rose-500 text-xs font-semibold">−{formatPrice(item.promo_amount)} ₽ {item.promo_label && `(${item.promo_label})`}</p>
+                        <p className="text-rose-600 text-xs font-semibold">{item.quantity} шт. × {formatPrice(item.price)} ₽</p>
                       </>
                     ) : (
                       <p className="text-slate-500 text-xs mt-1">{item.quantity} шт. × {formatPrice(item.price)} ₽</p>
                     )}
                   </div>
-                  <span className={`font-bold whitespace-nowrap ${item.individual_price != null ? 'text-emerald-600' : 'text-slate-800'}`}>{formatPrice(item.price * item.quantity)} ₽</span>
+                  <span className={`font-bold whitespace-nowrap ${item.individual_price != null ? 'text-emerald-600' : item.promo_active ? 'text-rose-600' : 'text-slate-800'}`}>{formatPrice(item.price * item.quantity)} ₽</span>
                 </motion.div>
               ))}
             </div>

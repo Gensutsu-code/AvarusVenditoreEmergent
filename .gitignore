@@ -149,3 +149,4 @@ backend/uploads/personal/a644ae61-009b-4787-9a1e-87a57448f4a9.mp4
 credentials.json
 *.key
 .credentials
+frontend/node_modules/.cache/default-development/29.pack
