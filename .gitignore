@@ -144,3 +144,8 @@ backend/uploads/personal/226bde03-4ba1-4e87-acb9-a57f5bff6598.mp4
 backend/uploads/personal/d2ad7f6b-cfd7-4828-b9e7-6cd18fb10b0b.mp4
 backend/uploads/personal/f548d11f-28e6-4acb-933e-77c47484cde4.mp4
 backend/uploads/personal/a644ae61-009b-4787-9a1e-87a57448f4a9.mp4
+.env
+.env.*
+credentials.json
+*.key
+.credentials
