@@ -51,10 +51,20 @@ export const ProductCard = ({ product, index = 0 }) => {
         data-testid={`product-card-${product.id}`}
       >
         <motion.div 
-          className="glass-card overflow-hidden hover:border-teal-400/50"
+          className={`glass-card overflow-hidden hover:border-teal-400/50 relative ${product.stock <= 0 ? 'opacity-70 hover:opacity-50' : ''}`}
           whileHover={{ scale: 1.02, y: -4 }}
           transition={{ duration: 0.3 }}
         >
+          {product.stock <= 0 && (
+            <div className="absolute inset-0 z-20 flex items-center justify-center pointer-events-none" data-testid={`out-of-stock-overlay-${product.id}`}>
+              <div className="px-4 py-2 rounded-xl bg-white/85 backdrop-blur-sm border border-rose-200 shadow-md">
+                <p className="text-base font-bold text-rose-600 uppercase tracking-wide">
+                  <span className="group-hover:hidden">Нет в наличии</span>
+                  <span className="hidden group-hover:inline">Товар закончился</span>
+                </p>
+              </div>
+            </div>
+          )}
           {/* Image */}
           <div className="aspect-square bg-slate-100 overflow-hidden relative">
             {product.image_url ? (

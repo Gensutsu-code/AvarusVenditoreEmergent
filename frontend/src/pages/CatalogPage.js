@@ -53,9 +53,19 @@ const ProductCard = ({
   const untilFormatted = formatUntilDate(discount?.until);
   return (
   <div 
-    className={`bg-white rounded-xl border overflow-hidden transition-all duration-300 hover:shadow-lg hover:border-teal-300/60 min-h-[110px] ${isAlternative ? 'border-teal-200/50 bg-teal-50/20' : 'border-slate-200/80'}`}
+    className={`relative bg-white rounded-xl border overflow-hidden transition-all duration-300 hover:shadow-lg hover:border-teal-300/60 min-h-[110px] ${isAlternative ? 'border-teal-200/50 bg-teal-50/20' : 'border-slate-200/80'} ${product.stock <= 0 ? 'group/oos opacity-70 hover:opacity-50' : ''}`}
     data-testid={`product-card-${product.id}`}
   >
+    {product.stock <= 0 && (
+      <div className="absolute inset-0 z-20 flex items-center justify-center pointer-events-none" data-testid={`out-of-stock-overlay-${product.id}`}>
+        <div className="px-3 py-1 rounded-lg bg-white/85 backdrop-blur-sm border border-rose-200 shadow-sm">
+          <p className="text-sm font-bold text-rose-600 uppercase tracking-wide">
+            <span className="group-hover/oos:hidden">Нет в наличии</span>
+            <span className="hidden group-hover/oos:inline">Товар закончился</span>
+          </p>
+        </div>
+      </div>
+    )}
     <div className="flex min-h-[110px]">
       {/* Image */}
       <div className="relative group flex-shrink-0 p-2 flex items-stretch">
@@ -99,11 +109,6 @@ const ProductCard = ({
           )}
           <span className="inline-flex items-center h-[22px] text-[11px] font-mono font-extrabold text-white bg-gradient-to-r from-pink-500 to-rose-500 px-2.5 rounded-full shadow-sm shadow-pink-500/30 whitespace-nowrap">
             {product.article}
-          </span>
-          <span className={`inline-flex items-center h-[22px] text-[11px] font-semibold px-2.5 rounded-full whitespace-nowrap ${
-            product.stock > 0 ? 'bg-emerald-50 text-emerald-700 border border-emerald-200' : 'bg-red-50 text-red-600 border border-red-200'
-          }`}>
-            {product.stock > 0 ? 'В наличии' : 'Нет в наличии'}
           </span>
           {product.warehouse && (
             <span className="inline-flex items-center h-[22px] text-[11px] font-semibold px-2.5 rounded-full bg-blue-50 text-blue-600 border border-blue-200 whitespace-nowrap">
