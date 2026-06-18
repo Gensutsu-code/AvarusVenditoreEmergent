@@ -18,6 +18,7 @@ import { trackClick } from '../utils/tracker';
 import DiscountRequestModal from '../components/DiscountRequestModal';
 import ProductRequestModal from '../components/ProductRequestModal';
 import { computeDiscount, computeNewBadge, formatDiscountBadge, formatUntilDate, getDeliveryBadge } from '../utils/productHelpers';
+import DiscountPromoBanner from '../components/DiscountPromoBanner';
 
 const API = `${process.env.REACT_APP_BACKEND_URL}/api`;
 
@@ -1004,6 +1005,9 @@ export default function CatalogPage() {
             {/* Categories - show when no search/category selected */}
             {!searchQuery && !categoryId && (
               <div className="mb-8">
+                {/* Promo banner — auto-appears when there are active discounts */}
+                <DiscountPromoBanner onOpenDiscounts={() => selectCategory('discounted')} />
+
                 <h2 className="text-lg font-semibold mb-4 text-slate-800">Категории</h2>
                 <div
                   className="grid gap-3"

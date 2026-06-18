@@ -181,6 +181,81 @@ async def get_product_filters():
 
 
 
+@router.get("/products/discount-summary")
+async def get_discount_summary():
+    """Public endpoint: returns aggregate info about active discounts for the catalog promo banner.
+
+    Returns:
+      - total_count: number of products on sale (active promo OR tier discount)
+      - max_percent: highest percent across active promos and tiers
+      - earliest_until: closest discount_until ISO datetime (only for time-bound promos)
+      - featured: up to 3 sample products (id, name, image_url, price, percent)
+    """
+    now = datetime.now(timezone.utc)
+    now_iso = now.isoformat()
+    query = {
+        "$or": [
+            {
+                "$and": [
+                    {"discount_active": True},
+                    {"$or": [
+                        {"discount_until": None},
+                        {"discount_until": ""},
+                        {"discount_until": {"$gt": now_iso}}
+                    ]}
+                ]
+            },
+            {"discount_tiers": {"$exists": True, "$type": "array", "$ne": []}}
+        ]
+    }
+    products = await db.products.find(query, {"_id": 0}).to_list(500)
+    total_count = len(products)
+    max_percent = 0.0
+    earliest_until: Optional[str] = None
+    featured = []
+    for p in products:
+        # Highest percent from active promo
+        if p.get("discount_active") and p.get("discount_type") == "percent":
+            val = float(p.get("discount_value") or 0)
+            if val > max_percent:
+                max_percent = val
+        # Highest percent from tiers
+        for t in (p.get("discount_tiers") or []):
+            if isinstance(t, dict) and t.get("type") == "percent":
+                val = float(t.get("value") or 0)
+                if val > max_percent:
+                    max_percent = val
+        # Earliest expiration
+        du = p.get("discount_until")
+        if du:
+            if earliest_until is None or str(du) < str(earliest_until):
+                earliest_until = du
+    # Featured: top 3 by discount percent
+    def _percent_of(p):
+        candidates = [0.0]
+        if p.get("discount_active") and p.get("discount_type") == "percent":
+            candidates.append(float(p.get("discount_value") or 0))
+        for t in (p.get("discount_tiers") or []):
+            if isinstance(t, dict) and t.get("type") == "percent":
+                candidates.append(float(t.get("value") or 0))
+        return max(candidates)
+    products_sorted = sorted(products, key=_percent_of, reverse=True)
+    for p in products_sorted[:3]:
+        featured.append({
+            "id": p.get("id"),
+            "name": p.get("name"),
+            "image_url": p.get("image_url"),
+            "price": p.get("price"),
+            "percent": _percent_of(p),
+        })
+    return {
+        "total_count": total_count,
+        "max_percent": max_percent,
+        "earliest_until": earliest_until,
+        "featured": featured,
+    }
+
+
 @router.get("/products", response_model=List[ProductResponse])
 async def get_products(
     search: Optional[str] = None,

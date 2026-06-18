@@ -50,6 +50,12 @@ E-commerce platform for truck spare parts with a comprehensive admin panel. Russ
 
 ## Completed (Session 2026-06-18 — iter 59)
 
+### Discount Promo Banner (P1 enhancement, 2026-06-18)
+- New `GET /api/products/discount-summary` returns `{total_count, max_percent, earliest_until, featured[]}`
+- Auto-appearing rose/fuchsia gradient banner on `/catalog` home (when not searching/browsing a category) — only renders when there are active discounts
+- Live countdown ticker (days/hours/minutes/seconds) tied to soonest `discount_until`
+- One-click CTA "Смотреть все" → `?category=discounted` (testid: `discount-promo-banner`, `discount-promo-cta`, `discount-promo-count`, `discount-promo-countdown`, `discount-promo-max-percent`)
+
 ### Virtual Catalog Categories (P0)
 - New virtual category tabs on `/catalog`: **Ассортимент**, **Новинки**, **Скидки и Акции**
 - Backend: `GET /api/products?virtual_category=assortment|new|discounted`
