@@ -181,6 +181,57 @@ async def get_product_filters():
 
 
 
+@router.get("/products/new-summary")
+async def get_new_summary():
+    """Public endpoint: returns aggregate info about active 'Новинки' products for the catalog banner.
+
+    Returns:
+      - total_count: number of products with is_new=true and (new_until None OR > now)
+      - earliest_until: closest new_until ISO datetime
+      - featured: up to 10 newest products (sorted by created_at descending) with id/name/image/price/manufacturer/article/stock
+    """
+    now = datetime.now(timezone.utc)
+    now_iso = now.isoformat()
+    query = {
+        "is_new": True,
+        "$or": [
+            {"new_until": None},
+            {"new_until": {"$gt": now_iso}},
+        ],
+    }
+    products = await db.products.find(query, {"_id": 0}).to_list(500)
+    total_count = len(products)
+    earliest_until: Optional[str] = None
+    for p in products:
+        nu = p.get("new_until")
+        if nu and (earliest_until is None or str(nu) < str(earliest_until)):
+            earliest_until = nu
+
+    # Sort by created_at descending so newest first; fall back to no-key
+    def _created_at(p):
+        ca = p.get("created_at")
+        return str(ca) if ca else ""
+    products_sorted = sorted(products, key=_created_at, reverse=True)
+
+    featured = []
+    for p in products_sorted[:10]:
+        featured.append({
+            "id": p.get("id"),
+            "name": p.get("name"),
+            "image_url": p.get("image_url"),
+            "price": p.get("price"),
+            "manufacturer": p.get("manufacturer"),
+            "article": p.get("article"),
+            "stock": p.get("stock", 0),
+            "new_until": p.get("new_until"),
+        })
+    return {
+        "total_count": total_count,
+        "earliest_until": earliest_until,
+        "featured": featured,
+    }
+
+
 @router.get("/products/discount-summary")
 async def get_discount_summary():
     """Public endpoint: returns aggregate info about active discounts for the catalog promo banner.

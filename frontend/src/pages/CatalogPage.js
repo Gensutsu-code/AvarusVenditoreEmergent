@@ -19,6 +19,7 @@ import DiscountRequestModal from '../components/DiscountRequestModal';
 import ProductRequestModal from '../components/ProductRequestModal';
 import { computeDiscount, computeNewBadge, formatDiscountBadge, formatUntilDate, getDeliveryBadge } from '../utils/productHelpers';
 import DiscountPromoBanner from '../components/DiscountPromoBanner';
+import NewProductsBanner from '../components/NewProductsBanner';
 
 const API = `${process.env.REACT_APP_BACKEND_URL}/api`;
 
@@ -1007,6 +1008,8 @@ export default function CatalogPage() {
               <div className="mb-8">
                 {/* Promo banner — auto-appears when there are active discounts */}
                 <DiscountPromoBanner onOpenDiscounts={() => selectCategory('discounted')} />
+                {/* New products banner — auto-appears when there are products with is_new */}
+                <NewProductsBanner onOpenNew={() => selectCategory('new')} />
 
                 <h2 className="text-lg font-semibold mb-4 text-slate-800">Категории</h2>
                 <div
