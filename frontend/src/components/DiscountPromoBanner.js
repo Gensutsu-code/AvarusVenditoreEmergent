@@ -37,6 +37,7 @@ export default function DiscountPromoBanner({ onOpenDiscounts }) {
   const [loading, setLoading] = useState(true);
   const [centerIndex, setCenterIndex] = useState(1); // index of central card in featured[]
   const [isNarrow, setIsNarrow] = useState(false);
+  const [isPaused, setIsPaused] = useState(false);
 
   useEffect(() => {
     const check = () => setIsNarrow(typeof window !== 'undefined' && window.innerWidth < 640);
@@ -44,6 +45,21 @@ export default function DiscountPromoBanner({ onOpenDiscounts }) {
     window.addEventListener('resize', check);
     return () => window.removeEventListener('resize', check);
   }, []);
+
+  // Auto-scroll every 5s; pauses when user hovers the carousel
+  useEffect(() => {
+    const featured = summary?.featured || [];
+    if (featured.length <= 3 || isPaused) return undefined;
+    const minCenter = 1;
+    const maxCenter = featured.length - 2;
+    const interval = setInterval(() => {
+      setCenterIndex((prev) => {
+        const next = prev + 1;
+        return next > maxCenter ? minCenter : next;
+      });
+    }, 5000);
+    return () => clearInterval(interval);
+  }, [summary, isPaused]);
 
   useEffect(() => {
     let alive = true;
@@ -183,6 +199,10 @@ export default function DiscountPromoBanner({ onOpenDiscounts }) {
           <div
             className="relative border-t border-white/15 py-5"
             data-testid="discount-promo-featured"
+            onMouseEnter={() => setIsPaused(true)}
+            onMouseLeave={() => setIsPaused(false)}
+            onTouchStart={() => setIsPaused(true)}
+            onTouchEnd={() => setIsPaused(false)}
           >
             {/* Carousel viewport */}
             <div className="relative mx-auto h-[210px] sm:h-[240px] overflow-hidden">
@@ -243,6 +263,39 @@ export default function DiscountPromoBanner({ onOpenDiscounts }) {
                 </>
               )}
             </div>
+
+            {/* Dots indicator — one dot per group of 3 (page-based) */}
+            {featured.length > 3 && (() => {
+              const groupCount = Math.ceil(featured.length / 3);
+              // Map current safeCenter to a group: groupIdx = floor((safeCenter - 1) / 3) clamped
+              const currentGroup = Math.min(groupCount - 1, Math.max(0, Math.floor((safeCenter - minCenter) / 3)));
+              return (
+                <div
+                  className="mt-3 flex items-center justify-center gap-2"
+                  data-testid="discount-promo-dots"
+                >
+                  {Array.from({ length: groupCount }).map((_, gi) => {
+                    // Center of the group: middle of 3 items starting at gi*3
+                    const groupCenter = Math.min(maxCenter, Math.max(minCenter, gi * 3 + 1));
+                    const active = gi === currentGroup;
+                    return (
+                      <button
+                        key={gi}
+                        type="button"
+                        onClick={() => setCenterIndex(groupCenter)}
+                        data-testid={`discount-promo-dot-${gi}`}
+                        aria-label={`Группа ${gi + 1}`}
+                        className={`rounded-full transition-all ${
+                          active
+                            ? 'bg-white w-6 h-2 shadow'
+                            : 'bg-white/40 hover:bg-white/70 w-2 h-2'
+                        }`}
+                      />
+                    );
+                  })}
+                </div>
+              );
+            })()}
           </div>
         );
       })()}
