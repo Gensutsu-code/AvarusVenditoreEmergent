@@ -16,7 +16,7 @@ import requests
 import os
 import uuid
 
-BASE_URL = os.environ.get('REACT_APP_BACKEND_URL', 'https://spare-parts-admin-1.preview.emergentagent.com')
+BASE_URL = os.environ.get('REACT_APP_BACKEND_URL', 'https://order-merge-fulfill.preview.emergentagent.com')
 
 # Test data from requirements
 BONUS_PROGRAM_ID = "cd173bac-1752-405a-b0fd-d2c75a529af6"
