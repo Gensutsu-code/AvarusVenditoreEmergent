@@ -157,7 +157,10 @@ async def get_cart(user=Depends(get_current_user)):
                 "promo_until": product.get("discount_until") if promo_active else None,
                 "base_price_before_promo": base_price,
                 "quantity": item["quantity"],
-                "image_url": product.get("image_url")
+                "image_url": product.get("image_url"),
+                "discount_active": product.get("discount_active", False),
+                "discount_until": product.get("discount_until"),
+                "discount_tiers": product.get("discount_tiers") or [],
             })
     
     return {"items": items_with_details}

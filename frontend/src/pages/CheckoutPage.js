@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import axios from 'axios';
-import { ArrowLeft, CheckCircle, Banknote, MessageSquare, CreditCard, Wallet, Loader2, FileText, Sparkles, ShoppingBag } from 'lucide-react';
+import { ArrowLeft, CheckCircle, Banknote, MessageSquare, CreditCard, Wallet, Loader2, FileText, Sparkles, ShoppingBag, TrendingUp } from 'lucide-react';
 import { Button } from '../components/ui/button';
 import { Input } from '../components/ui/input';
 import { Label } from '../components/ui/label';
@@ -14,6 +14,7 @@ import { toast } from 'sonner';
 import { motion, AnimatePresence } from 'framer-motion';
 import CryptoPaymentModal from '../components/CryptoPaymentModal';
 import { trackClick } from '../utils/tracker';
+import { getNextBetterTier } from '../utils/productHelpers';
 
 const API = `${process.env.REACT_APP_BACKEND_URL}/api`;
 const SITE_URL = process.env.REACT_APP_BACKEND_URL;
@@ -614,6 +615,26 @@ export default function CheckoutPage() {
                     ) : (
                       <p className="text-slate-500 text-xs mt-1">{item.quantity} шт. × {formatPrice(item.price)} ₽</p>
                     )}
+                    {(() => {
+                      const nextTier = getNextBetterTier({
+                        price: item.original_price,
+                        discount_active: item.discount_active,
+                        discount_until: item.discount_until,
+                        discount_tiers: item.discount_tiers,
+                      }, item.quantity);
+                      if (!nextTier) return null;
+                      const need = nextTier.minQty - item.quantity;
+                      return (
+                        <Link
+                          to="/cart"
+                          className="mt-1.5 inline-flex items-center gap-1 text-[11px] font-medium text-rose-600 hover:text-rose-700"
+                          data-testid={`checkout-upsell-${item.product_id}`}
+                        >
+                          <TrendingUp className="w-3.5 h-3.5" />
+                          +{need} шт. → скидка {nextTier.type === 'percent' ? `−${Math.round(nextTier.percent)}%` : `−${formatPrice(nextTier.amount)} ₽`}
+                        </Link>
+                      );
+                    })()}
                   </div>
                   <span className={`font-bold whitespace-nowrap ${item.individual_price != null ? 'text-emerald-600' : item.promo_active ? 'text-rose-600' : 'text-slate-800'}`}>{formatPrice(item.price * item.quantity)} ₽</span>
                 </motion.div>

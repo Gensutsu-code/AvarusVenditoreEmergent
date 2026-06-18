@@ -1,0 +1,49 @@
+{
+  "summary": "Frontend test of cart/checkout upsell-hint feature for product 8cd5b1c5. CRITICAL FAILURE: the hint logic does not honor the user's actual current per-unit price (individual_price + promo). It compares against the raw product.price (100₽) instead of the effective price (60₽), so it suggests tier@5 (−30% → 70₽) — which is WORSE per unit than what the user already pays. Per spec, that tier must be skipped and tier@10 (−50% → 50₽) must be shown with 'Добавьте ещё 8 шт.'. Apply-button also only steps to the next tier (qty 2→5), not directly to the genuinely better one (qty 10). No-tier product correctly shows no upsell hint.",
+  "backend_issues": {"critical": [], "minor": []},
+  "frontend_issues": {
+    "ui_bugs": [
+      {
+        "component": "CartPage upsell-hint (and CheckoutPage checkout-upsell)",
+        "issue": "Upsell hint suggests a tier that is more expensive per unit than the discount currently applied. Observed at qty=2 for product 8cd5b1c5: per-unit effective price is 60₽ (individual_price 75 − promo Распродажа 15), but hint shows '−30% / Добавить 3 шт.' which leads to tier@5 at 70₽/шт — a regression for the user. Per spec the hint must skip tier@5 and show tier@10 (−50%, 50₽/шт, +8 шт.).",
+        "selector": "[data-testid='upsell-hint-8cd5b1c5-7980-4765-9db9-8e309614f8c5']",
+        "priority": "CRITICAL"
+      },
+      {
+        "component": "CartPage upsell-apply",
+        "issue": "After clicking 'Добавить N шт.' at qty=2, quantity becomes 5 (not the spec'd 10). The apply currently advances to the nearest tier the helper computed (tier@5), not to the genuinely best cheaper tier. Combined with bug #1, the user is pushed into a tier that is worse than the price they already had.",
+        "selector": "[data-testid='upsell-apply-8cd5b1c5-7980-4765-9db9-8e309614f8c5']",
+        "priority": "CRITICAL"
+      }
+    ],
+    "integration_issues": [
+      {
+        "flow": "getNextBetterTier comparison baseline",
+        "issue": "CartPage.js and CheckoutPage.js call getNextBetterTier passing only { price: item.original_price, discount_active, discount_until, discount_tiers }. discount_type and discount_value are NOT passed, AND the user's individual_price + promo_amount are not factored in. As a result computeDiscount() inside getNextBetterTier returns null at qty<minTier and currentFinal falls back to product.price (=original_price=100₽), instead of the real 60₽ the user pays. Any tier cheaper than 100₽ (e.g. tier@5 → 70₽) is therefore wrongly classified as 'better'.",
+        "affected_selectors": ["[data-testid='upsell-hint-...']", "[data-testid='checkout-upsell-...']"]
+      }
+    ],
+    "design_issues": []
+  },
+  "test_report_links": [],
+  "action_items": [
+    "Fix the per-unit baseline used inside getNextBetterTier (or its callers) so it equals the user's actually paid per-unit price. Baseline should be: (individual_price ?? computeDiscount(product, qty).finalPrice ?? product.price) and then subtract any active promo amount (item.promo_active ? item.promo_amount : 0). Only tiers with finalPrice < baseline − 0.01 should be returned.",
+    "When the product has an individual_price, tier final prices typically should not apply on top of original price either — verify business rule with main agent. If tier discounts don't stack with individual_price, the upsell should likely be hidden entirely for products with individual_price.",
+    "Re-evaluate the 'apply' behavior: per spec, clicking apply at qty=2 must jump to the FINAL best-better tier (qty 10), not the immediate next tier (qty 5). Currently it jumps to nextTier.minQty=5 because getNextBetterTier returns tier@5 first. Once baseline is fixed (60₽), the function will naturally return tier@10 because tier@5 (70₽) is no longer cheaper than baseline.",
+    "Pass discount_type and discount_value from backend get_cart() (orders.py) into the cart item payload, so getNextBetterTier can reason about the base/tier discount correctly.",
+    "Fix React warning on /checkout: 'Cannot update a component (BrowserRouter) while rendering a different component (CheckoutPage)'. Line 201-202 calls navigate('/login'/'/cart') directly inside the render body. Move those into a useEffect."
+  ],
+  "critical_code_review_comments": [
+    "productHelpers.js getNextBetterTier() uses product.price as the fallback baseline. For cart items that have individual_price or active promos, this overstates the baseline. The function or its caller must accept an explicit currentPerUnitPrice argument and use it.",
+    "CartPage.js (line 250) and CheckoutPage.js (line 618) duplicate the exact same upsell calculation block — extract into a reusable hook/component to avoid divergence.",
+    "CheckoutPage.js performs navigate() during render (lines 201-202) which triggers a React warning. Wrap in useEffect."
+  ],
+  "updated_files": [],
+  "success_rate": {"backend": "n/a (skipped per request)", "frontend": "25% (1/4 spec test cases pass: no-tier-product case; other 3 fail)"},
+  "test_credentials": "user@demo.com / demo123 (from /app/memory/test_credentials.md)",
+  "seed_data_creation": "None. Used existing product 8cd5b1c5-7980-4765-9db9-8e309614f8c5 (has individual_price + Распродажа promo + tiers) and aa56c8f3-b458-4b51-b192-5156e11f64fd (no tiers).",
+  "retest_needed": true,
+  "main_agent_can_self_test": false,
+  "context_for_next_testing_agent": "Repro: login user@demo.com/demo123, set cart to product 8cd5b1c5 qty=2 via POST /api/cart/add then POST /api/cart/update. Visit /cart. Observed hint text: 'Добавьте ещё 3 шт. и получите скидку −30%' + apply button 'Добавить 3 шт.'. Expected: 'Добавьте ещё 8 шт. и получите скидку −50% (50 ₽/шт)' + 'Добавить 8 шт.'. The product shows per-unit 60₽ at qty=2 (line shows: 100 × 2 strikethrough, 75 × 2 individual, −15 ₽ Распродажа, 60 × 2). Cart endpoints are POST /api/cart/add, POST /api/cart/update, DELETE /api/cart/{pid}, DELETE /api/cart (not RESTful POST/PUT to /api/cart).",
+  "rca of the issue": "In productHelpers.js getNextBetterTier(productLike, quantity), `currentFinal` is computed via computeDiscount(productLike, quantity). The caller passes only { price: item.original_price, discount_active, discount_until, discount_tiers } — discount_type/discount_value are missing AND the cart item's individual_price / promo are ignored. So at qty<min(tier), computeDiscount returns null (no tier match + no base discount supplied) → currentFinal = original_price = 100. Any tier whose finalPrice < 100 (e.g. tier@5 → 70) is then wrongly returned. The spec requires the baseline to be the user's actually paid per-unit (60₽ in this case), which would correctly skip tier@5 and surface tier@10."
+}

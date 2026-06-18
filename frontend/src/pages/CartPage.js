@@ -1,11 +1,12 @@
 import { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { Trash2, ArrowLeft, ShoppingCart, Minus, Plus, Package, ArrowRight } from 'lucide-react';
+import { Trash2, ArrowLeft, ShoppingCart, Minus, Plus, Package, ArrowRight, TrendingUp } from 'lucide-react';
 import { Button } from '../components/ui/button';
 import { useCart } from '../context/CartContext';
 import { useAuth } from '../context/AuthContext';
 import { motion, AnimatePresence } from 'framer-motion';
 import { trackClick } from '../utils/tracker';
+import { getNextBetterTier } from '../utils/productHelpers';
 
 export default function CartPage() {
   const { cart, updateQuantity, removeFromCart } = useCart();
@@ -244,6 +245,44 @@ export default function CartPage() {
                       <Trash2 className="w-5 h-5" />
                     </motion.button>
                   </div>
+
+                  {/* Upsell hint: add more to unlock the next quantity discount */}
+                  {(() => {
+                    const nextTier = getNextBetterTier({
+                      price: item.original_price,
+                      discount_active: item.discount_active,
+                      discount_until: item.discount_until,
+                      discount_tiers: item.discount_tiers,
+                    }, item.quantity);
+                    if (!nextTier) return null;
+                    const need = nextTier.minQty - item.quantity;
+                    return (
+                      <motion.div
+                        initial={{ opacity: 0, height: 0 }}
+                        animate={{ opacity: 1, height: 'auto' }}
+                        className="mt-3 flex items-center justify-between gap-3 flex-wrap rounded-xl border border-rose-200 bg-gradient-to-r from-rose-50 to-pink-50 px-3 py-2"
+                        data-testid={`upsell-hint-${item.product_id}`}
+                      >
+                        <p className="text-xs text-slate-700 flex items-center gap-1.5">
+                          <TrendingUp className="w-4 h-4 text-rose-500 flex-shrink-0" />
+                          Добавьте ещё <span className="font-bold text-rose-600">{need} шт.</span> и получите скидку{' '}
+                          <span className="font-bold text-rose-600">
+                            {nextTier.type === 'percent' ? `−${Math.round(nextTier.percent)}%` : `−${formatPrice(nextTier.amount)} ₽`}
+                          </span>
+                          {item.individual_price == null && (
+                            <span className="text-slate-500"> ({formatPrice(nextTier.finalPrice)} ₽/шт)</span>
+                          )}
+                        </p>
+                        <button
+                          onClick={() => updateQuantity(item.product_id, nextTier.minQty)}
+                          className="text-xs font-semibold text-rose-600 hover:text-rose-700 underline underline-offset-2 whitespace-nowrap"
+                          data-testid={`upsell-apply-${item.product_id}`}
+                        >
+                          Добавить {need} шт.
+                        </button>
+                      </motion.div>
+                    );
+                  })()}
                 </motion.div>
               ))}
             </AnimatePresence>

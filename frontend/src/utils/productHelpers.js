@@ -120,6 +120,23 @@ export function getActiveTier(tiers, quantity) {
 }
 
 /**
+ * Return the nearest not-yet-reached tier that is strictly CHEAPER per unit than
+ * the discount currently applied at `quantity`. Prevents suggesting a tier that
+ * would actually be worse than the active base/tier discount. Returns null if none.
+ * Useful for "add X more units to unlock −Y%" upsell hints.
+ */
+export function getNextBetterTier(productLike, quantity) {
+  const tiers = getQuantityTiers(productLike);
+  if (!tiers.length) return null;
+  const current = computeDiscount(productLike, quantity);
+  const currentFinal = current ? current.finalPrice : (Number(productLike.price) || 0);
+  for (const t of tiers) {
+    if (t.minQty > quantity && t.finalPrice < currentFinal - 0.01) return t;
+  }
+  return null;
+}
+
+/**
  * Compute whether the "Новинки" badge should be shown.
  * Returns { active, until } or null.
  */
