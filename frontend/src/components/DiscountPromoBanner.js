@@ -148,13 +148,13 @@ export default function DiscountPromoBanner({ onOpenDiscounts }) {
         </button>
       </div>
 
-      {/* Featured products strip — appears only when there's >=1 featured */}
+      {/* Featured products strip — vertical glass cards matching "Популярные товары" shape */}
       {Array.isArray(summary.featured) && summary.featured.length > 0 && (
         <div
-          className="relative border-t border-white/15 px-5 py-3 sm:px-6 sm:py-3.5"
+          className="relative border-t border-white/15 px-4 py-4 sm:px-6 sm:py-5"
           data-testid="discount-promo-featured"
         >
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2.5">
+          <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 sm:gap-4">
             {summary.featured.map((p) => {
               const oldPrice = Number(p.price) || 0;
               const percent = Number(p.percent) || 0;
@@ -164,33 +164,52 @@ export default function DiscountPromoBanner({ onOpenDiscounts }) {
                   key={p.id}
                   to={`/product/${p.id}`}
                   data-testid={`discount-promo-featured-${p.id}`}
-                  className="group flex items-center gap-3 p-2 rounded-xl bg-white/12 backdrop-blur-sm border border-white/20 hover:bg-white/20 hover:border-white/40 transition-all"
+                  className="group block bg-white/95 rounded-2xl overflow-hidden border border-white/40 shadow-md hover:shadow-xl hover:-translate-y-1 transition-all duration-300"
                 >
-                  <div className="flex-shrink-0 w-12 h-12 rounded-lg bg-white/90 overflow-hidden flex items-center justify-center">
+                  {/* Image */}
+                  <div className="aspect-square bg-slate-100 overflow-hidden relative">
                     {p.image_url ? (
-                      <img src={p.image_url} alt="" className="w-full h-full object-cover" />
+                      <img
+                        src={p.image_url}
+                        alt=""
+                        className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
+                      />
                     ) : (
-                      <Package className="w-6 h-6 text-rose-400" />
+                      <div className="w-full h-full flex items-center justify-center text-slate-400">
+                        <Package className="w-10 h-10" />
+                      </div>
+                    )}
+                    {/* Percent badge */}
+                    {percent > 0 && (
+                      <span className="absolute top-2 left-2 inline-flex items-center px-2 py-0.5 rounded-md bg-rose-600 text-white text-[11px] font-bold shadow-md">
+                        −{Math.round(percent)}%
+                      </span>
                     )}
                   </div>
-                  <div className="flex-1 min-w-0">
-                    <p className="text-white text-xs font-medium leading-tight line-clamp-2 group-hover:text-white">
+
+                  {/* Info */}
+                  <div className="p-3">
+                    {p.manufacturer && (
+                      <p className="text-[11px] font-bold text-teal-600 mb-0.5">{p.manufacturer}</p>
+                    )}
+                    {p.article && (
+                      <p className="text-[10px] font-mono font-semibold text-slate-500 mb-1">
+                        Арт: {p.article}
+                      </p>
+                    )}
+                    <h3 className="text-sm font-medium text-slate-800 line-clamp-2 mb-2 min-h-[40px] group-hover:text-rose-600 transition-colors">
                       {p.name}
-                    </p>
-                    <div className="flex items-baseline gap-2 mt-1">
+                    </h3>
+                    <div className="flex items-baseline gap-2 flex-wrap">
                       {percent > 0 && oldPrice > 0 && (
-                        <span className="text-[10px] line-through text-white/60">
+                        <span className="text-[11px] line-through text-slate-400">
                           {Math.round(oldPrice).toLocaleString('ru-RU')} ₽
                         </span>
                       )}
-                      <span className="text-sm font-bold text-white">
-                        {Math.round(newPrice).toLocaleString('ru-RU')} ₽
+                      <span className="font-bold text-rose-600">
+                        {Math.round(newPrice).toLocaleString('ru-RU')}{' '}
+                        <span className="text-xs text-slate-400">₽</span>
                       </span>
-                      {percent > 0 && (
-                        <span className="ml-auto inline-flex items-center px-1.5 py-0.5 rounded-md bg-white text-rose-600 text-[10px] font-bold">
-                          −{Math.round(percent)}%
-                        </span>
-                      )}
                     </div>
                   </div>
                 </Link>

@@ -247,6 +247,9 @@ async def get_discount_summary():
             "image_url": p.get("image_url"),
             "price": p.get("price"),
             "percent": _percent_of(p),
+            "manufacturer": p.get("manufacturer"),
+            "article": p.get("article"),
+            "stock": p.get("stock", 0),
         })
     return {
         "total_count": total_count,
