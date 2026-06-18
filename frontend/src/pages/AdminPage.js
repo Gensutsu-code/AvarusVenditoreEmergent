@@ -377,6 +377,10 @@ export default function AdminPage() {
 
     // Validate discount fields if active
     if (editingProduct.discount_active) {
+      // Normalize missing discount_type (legacy records may have null)
+      if (!editingProduct.discount_type) {
+        editingProduct.discount_type = 'percent';
+      }
       if (!editingProduct.discount_until) {
         toast.error('Укажите дату окончания акции');
         return;
@@ -3794,7 +3798,14 @@ export default function AdminPage() {
                     <input
                       type="checkbox"
                       checked={editingProduct.discount_active === true}
-                      onChange={(e) => setEditingProduct({ ...editingProduct, discount_active: e.target.checked })}
+                      onChange={(e) => {
+                        const next = { ...editingProduct, discount_active: e.target.checked };
+                        // When enabling discount, ensure discount_type has a sensible default
+                        if (e.target.checked && !next.discount_type) {
+                          next.discount_type = 'percent';
+                        }
+                        setEditingProduct(next);
+                      }}
                       className="w-4 h-4 accent-rose-500 rounded"
                     />
                     <span className="text-sm font-medium text-zinc-700">Включена</span>

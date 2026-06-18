@@ -400,6 +400,10 @@ async def create_product(data: ProductCreate, user=Depends(get_current_user)):
     if payload.get("new_until") is None:
         payload["new_until"] = (now + timedelta(days=NEW_BADGE_DAYS)).isoformat()
 
+    # If discount is being activated without a type, default to 'percent'
+    if payload.get("discount_active") is True and payload.get("discount_type") in (None, ""):
+        payload["discount_type"] = "percent"
+
     product = {
         "id": product_id,
         "created_at": now.isoformat(),
@@ -425,6 +429,10 @@ async def update_product(product_id: str, data: ProductUpdate, user=Depends(get_
     # If is_new=False, clear new_until
     if update_data.get("is_new") is False:
         update_data["new_until"] = None
+
+    # If discount is being activated without a type, default to 'percent' (server-side safety net)
+    if update_data.get("discount_active") is True and update_data.get("discount_type") in (None, ""):
+        update_data["discount_type"] = "percent"
 
     result = await db.products.update_one({"id": product_id}, {"$set": update_data})
     if result.matched_count == 0:
