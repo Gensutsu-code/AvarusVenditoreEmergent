@@ -1,0 +1,32 @@
+{
+  "summary": "Frontend test of cart/checkout upsell-hint feature for product 8cd5b1c5 (user@demo.com). All 6 spec test cases PASS: (1) At qty=2 the hint correctly surfaces tier@5 (Добавьте ещё 3 шт., −30%, 53 ₽/шт), skipping no longer wrongly to a worse tier and using the user's real per-unit baseline. (2) Apply button steps qty to 5. (3) At qty=5 hint correctly updates to tier@10 (Добавьте ещё 5 шт., −50%, 38 ₽/шт). (4) At qty=10 the hint correctly disappears. (5) On /checkout the checkout-upsell link is rendered with text '+5 шт. → скидка −50%' and links to /cart. (6) No-tier product aa56c8f3 renders no upsell hint in cart or checkout. No 'Cannot update a component (BrowserRouter) while rendering CheckoutPage' warnings detected — the render-time navigate is now correctly inside useEffect. Bug RCA from iteration_63 (wrong baseline using catalog price) is fully resolved by getCartUpsell using base = individual_price ?? original_price and comparing projected tier prices against item.price.",
+  "backend_issues": {"critical": [], "minor": []},
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [],
+    "design_issues": [
+      {
+        "screen": "CartPage upsell-hint unit price",
+        "issues": [
+          "Cosmetic only: formatPrice() in CartPage.js uses Math.round so the per-unit number rendered in the hint is rounded to an integer (52.5→53 and 37.5→38). The spec example text shows '52.5 ₽/шт' / '37.5 ₽/шт' verbatim. Internally getCartUpsell returns the precise unitPrice (52.5, 37.5), so the logic is correct; only the display is rounded. Consider using toLocaleString('ru-RU', { maximumFractionDigits: 1 }) for the upsell unit price (or rounding to 1 decimal) if the half-rouble precision must be visible."
+        ]
+      }
+    ]
+  },
+  "test_report_links": [],
+  "action_items": [
+    "OPTIONAL/COSMETIC: in CartPage.js (upsell-hint block) and/or the formatter, render up.unitPrice with 1 decimal when it has a fractional part (e.g. '52.5 ₽/шт' / '37.5 ₽/шт') to exactly match the spec wording. Current Math.round display shows 53 / 38, which is functionally fine but loses the half-rouble precision."
+  ],
+  "critical_code_review_comments": [
+    "CartPage.js and CheckoutPage.js still duplicate the inline IIFE that calls getCartUpsell(item) and renders the badge. Low priority, but extracting a small <UpsellHint item variant='cart|checkout' /> component would prevent future divergence.",
+    "getCartUpsell loops tiers sorted by min_qty and returns the FIRST tier whose projected unit < current. With ascending sort, that is the nearest tier. If two future tiers both qualify and the later one is cheaper, the function still returns the nearest one — that matches the spec ('NEAREST tier that is cheaper'), so OK; just worth a comment to make the intent explicit."
+  ],
+  "updated_files": [],
+  "success_rate": {"backend": "n/a (skipped per request)", "frontend": "100% (6/6 spec cases pass)"},
+  "test_credentials": "user@demo.com / demo123",
+  "seed_data_creation": "Used existing products 8cd5b1c5-7980-4765-9db9-8e309614f8c5 (individual_price 75 + Распродажа −20% promo + tiers 5@−30%, 10@−50%) and aa56c8f3-b458-4b51-b192-5156e11f64fd (no tiers). Cart state during test: 8cd5b1c5 cycled through qty 2→5→10→5; aa56c8f3 qty=1 throughout.",
+  "retest_needed": false,
+  "main_agent_can_self_test": true,
+  "context_for_next_testing_agent": "All 6 spec cases now pass. Cart and checkout endpoints used: POST /api/cart/add, POST /api/cart/update, DELETE /api/cart (full clear), GET /api/cart. Initial direct navigation to /checkout via page.goto sometimes redirects back to /cart on a cold load (cart context still hydrating, useEffect fires with cart.items.length===0). The supported user-flow path is to click the data-testid='checkout-button' from /cart — that works deterministically. If you need to deep-link /checkout, wait for cart hydration first (e.g. fetch /api/cart on the page or wait ~5s after navigation).",
+  "rca of the issue": "Iteration_63 RCA was correct (caller did not supply the real per-unit baseline, so any tier cheaper than catalog price was wrongly classified as 'better'). The new getCartUpsell(item) helper fixes this by (a) using base = item.individual_price ?? item.original_price for tier projection — matching backend pricing where tiers stack on top of the user's base price, not the raw catalog price — and (b) comparing each projected unit against item.price (the authoritative current per-unit returned by the cart API) with a small epsilon. Verified end-to-end against backend GET /api/cart values."
+}

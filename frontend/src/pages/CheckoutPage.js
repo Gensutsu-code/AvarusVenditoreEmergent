@@ -14,7 +14,7 @@ import { toast } from 'sonner';
 import { motion, AnimatePresence } from 'framer-motion';
 import CryptoPaymentModal from '../components/CryptoPaymentModal';
 import { trackClick } from '../utils/tracker';
-import { getNextBetterTier } from '../utils/productHelpers';
+import { getCartUpsell } from '../utils/productHelpers';
 
 const API = `${process.env.REACT_APP_BACKEND_URL}/api`;
 const SITE_URL = process.env.REACT_APP_BACKEND_URL;
@@ -197,9 +197,15 @@ export default function CheckoutPage() {
 
   const copyToClipboard = (text) => { navigator.clipboard.writeText(text); toast.success('Скопировано!'); };
 
+  useEffect(() => {
+    if (authLoading || cartLoading) return;
+    if (!user) { navigate('/login'); return; }
+    if (cart.items.length === 0 && !success && !showCryptoModal && !loading) navigate('/cart');
+  }, [authLoading, cartLoading, user, cart.items.length, success, showCryptoModal, loading, navigate]);
+
   if (authLoading || cartLoading) return null;
-  if (!user) { navigate('/login'); return null; }
-  if (cart.items.length === 0 && !success && !showCryptoModal && !loading) { navigate('/cart'); return null; }
+  if (!user) return null;
+  if (cart.items.length === 0 && !success && !showCryptoModal && !loading) return null;
 
   if (success) {
     return (
@@ -616,14 +622,8 @@ export default function CheckoutPage() {
                       <p className="text-slate-500 text-xs mt-1">{item.quantity} шт. × {formatPrice(item.price)} ₽</p>
                     )}
                     {(() => {
-                      const nextTier = getNextBetterTier({
-                        price: item.original_price,
-                        discount_active: item.discount_active,
-                        discount_until: item.discount_until,
-                        discount_tiers: item.discount_tiers,
-                      }, item.quantity);
-                      if (!nextTier) return null;
-                      const need = nextTier.minQty - item.quantity;
+                      const up = getCartUpsell(item);
+                      if (!up) return null;
                       return (
                         <Link
                           to="/cart"
@@ -631,7 +631,7 @@ export default function CheckoutPage() {
                           data-testid={`checkout-upsell-${item.product_id}`}
                         >
                           <TrendingUp className="w-3.5 h-3.5" />
-                          +{need} шт. → скидка {nextTier.type === 'percent' ? `−${Math.round(nextTier.percent)}%` : `−${formatPrice(nextTier.amount)} ₽`}
+                          +{up.need} шт. → скидка {up.type === 'percent' ? `−${up.percent}%` : `−${formatPrice(up.value)} ₽`}
                         </Link>
                       );
                     })()}

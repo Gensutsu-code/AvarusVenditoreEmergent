@@ -120,18 +120,53 @@ export function getActiveTier(tiers, quantity) {
 }
 
 /**
- * Return the nearest not-yet-reached tier that is strictly CHEAPER per unit than
- * the discount currently applied at `quantity`. Prevents suggesting a tier that
- * would actually be worse than the active base/tier discount. Returns null if none.
- * Useful for "add X more units to unlock −Y%" upsell hints.
+ * Cart/checkout upsell: given a cart item (from GET /api/cart), find the nearest
+ * not-yet-reached quantity tier whose projected per-unit price is strictly CHEAPER
+ * than what the user currently pays (item.price). Projection uses the user's real
+ * base price (individual_price ?? original_price) so it matches backend pricing
+ * (tiers stack on top of the individual/base price, never the raw catalog price).
+ * Returns { minQty, need, type, value, percent, unitPrice } or null.
  */
-export function getNextBetterTier(productLike, quantity) {
-  const tiers = getQuantityTiers(productLike);
+export function getCartUpsell(item) {
+  if (!item || !item.discount_active) return null;
+  if (item.discount_until) {
+    const until = new Date(item.discount_until);
+    if (isNaN(until.getTime()) || until.getTime() <= Date.now()) return null;
+  }
+  const tiers = (Array.isArray(item.discount_tiers) ? item.discount_tiers : [])
+    .filter(t => t && t.min_qty != null && Number(t.value) > 0)
+    .sort((a, b) => Number(a.min_qty) - Number(b.min_qty));
   if (!tiers.length) return null;
-  const current = computeDiscount(productLike, quantity);
-  const currentFinal = current ? current.finalPrice : (Number(productLike.price) || 0);
+
+  const base = item.individual_price != null ? Number(item.individual_price) : Number(item.original_price) || 0;
+  const qty = Number(item.quantity) || 0;
+  const current = Number(item.price) || 0;
+
+  const apply = (b, type, val) => {
+    val = Number(val) || 0;
+    if (val <= 0) return b;
+    if (type === 'percent') return Math.max(0, b * (1 - Math.min(99, val) / 100));
+    if (type === 'amount') return Math.max(0, b - val);
+    return b;
+  };
+
   for (const t of tiers) {
-    if (t.minQty > quantity && t.finalPrice < currentFinal - 0.01) return t;
+    if (Number(t.min_qty) <= qty) continue;
+    const unit = apply(base, t.type, t.value);
+    if (unit < current - 0.01) {
+      const minQty = Number(t.min_qty);
+      const percent = t.type === 'percent'
+        ? Math.round(Number(t.value))
+        : (base > 0 ? Math.round(((base - unit) / base) * 100) : 0);
+      return {
+        minQty,
+        need: minQty - qty,
+        type: t.type,
+        value: Number(t.value),
+        percent,
+        unitPrice: Math.round(unit * 100) / 100,
+      };
+    }
   }
   return null;
 }

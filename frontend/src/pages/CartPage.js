@@ -6,7 +6,7 @@ import { useCart } from '../context/CartContext';
 import { useAuth } from '../context/AuthContext';
 import { motion, AnimatePresence } from 'framer-motion';
 import { trackClick } from '../utils/tracker';
-import { getNextBetterTier } from '../utils/productHelpers';
+import { getCartUpsell } from '../utils/productHelpers';
 
 export default function CartPage() {
   const { cart, updateQuantity, removeFromCart } = useCart();
@@ -248,14 +248,8 @@ export default function CartPage() {
 
                   {/* Upsell hint: add more to unlock the next quantity discount */}
                   {(() => {
-                    const nextTier = getNextBetterTier({
-                      price: item.original_price,
-                      discount_active: item.discount_active,
-                      discount_until: item.discount_until,
-                      discount_tiers: item.discount_tiers,
-                    }, item.quantity);
-                    if (!nextTier) return null;
-                    const need = nextTier.minQty - item.quantity;
+                    const up = getCartUpsell(item);
+                    if (!up) return null;
                     return (
                       <motion.div
                         initial={{ opacity: 0, height: 0 }}
@@ -265,20 +259,18 @@ export default function CartPage() {
                       >
                         <p className="text-xs text-slate-700 flex items-center gap-1.5">
                           <TrendingUp className="w-4 h-4 text-rose-500 flex-shrink-0" />
-                          Добавьте ещё <span className="font-bold text-rose-600">{need} шт.</span> и получите скидку{' '}
+                          Добавьте ещё <span className="font-bold text-rose-600">{up.need} шт.</span> и получите скидку{' '}
                           <span className="font-bold text-rose-600">
-                            {nextTier.type === 'percent' ? `−${Math.round(nextTier.percent)}%` : `−${formatPrice(nextTier.amount)} ₽`}
+                            {up.type === 'percent' ? `−${up.percent}%` : `−${formatPrice(up.value)} ₽`}
                           </span>
-                          {item.individual_price == null && (
-                            <span className="text-slate-500"> ({formatPrice(nextTier.finalPrice)} ₽/шт)</span>
-                          )}
+                          <span className="text-slate-500"> ({formatPrice(up.unitPrice)} ₽/шт)</span>
                         </p>
                         <button
-                          onClick={() => updateQuantity(item.product_id, nextTier.minQty)}
+                          onClick={() => updateQuantity(item.product_id, up.minQty)}
                           className="text-xs font-semibold text-rose-600 hover:text-rose-700 underline underline-offset-2 whitespace-nowrap"
                           data-testid={`upsell-apply-${item.product_id}`}
                         >
-                          Добавить {need} шт.
+                          Добавить {up.need} шт.
                         </button>
                       </motion.div>
                     );
