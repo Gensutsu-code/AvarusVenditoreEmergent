@@ -4,7 +4,7 @@ import axios from 'axios';
 import { Button } from '../components/ui/button';
 import { Input } from '../components/ui/input';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '../components/ui/dialog';
-import { Search, X, ShoppingCart, Package, Truck, Minus, Plus, ArrowRight, Heart, ChevronLeft, ChevronRight, Percent, Eye, Filter, MapPin, ArrowUpDown, Tag, Gift, Sparkles, Layers, Flame } from 'lucide-react';
+import { Search, X, ShoppingCart, Package, Truck, Minus, Plus, ArrowRight, Heart, ChevronLeft, ChevronRight, Percent, Eye, Filter, MapPin, ArrowUpDown, Tag, Gift, Sparkles, Layers, Flame, LayoutGrid } from 'lucide-react';
 import { useCart } from '../context/CartContext';
 import { useAuth } from '../context/AuthContext';
 import { toast } from 'sonner';
@@ -1016,7 +1016,14 @@ export default function CatalogPage() {
                   {/* New products banner — auto-appears when there are products with is_new */}
                   <NewProductsBanner onOpenNew={() => selectCategory('new')} />
 
-                  <h2 className="text-3xl sm:text-4xl font-bold text-center mb-6 text-slate-800">Категории</h2>
+                  <div className="flex items-center gap-3 mb-4">
+                    <div className="w-10 h-10 rounded-xl bg-teal-500/10 flex items-center justify-center">
+                      <LayoutGrid className="w-5 h-5 text-teal-600" />
+                    </div>
+                    <h2 className="text-xl md:text-2xl font-bold tracking-tight uppercase text-slate-800">
+                      Категории
+                    </h2>
+                  </div>
                   <div
                     className="grid gap-3"
                     style={{ gridTemplateColumns: `repeat(${columnsCount}, minmax(0, 1fr))` }}
