@@ -1,8 +1,8 @@
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import axios from 'axios';
-import { Flame, ArrowRight, Clock, Package, ChevronLeft, ChevronRight } from 'lucide-react';
-import { motion } from 'framer-motion';
+import { Flame, ArrowRight, Clock, Package, ChevronLeft, ChevronRight, ChevronDown } from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
 
 const API = `${process.env.REACT_APP_BACKEND_URL}/api`;
 
@@ -38,6 +38,17 @@ export default function DiscountPromoBanner({ onOpenDiscounts }) {
   const [centerIndex, setCenterIndex] = useState(1); // index of central card in featured[]
   const [isNarrow, setIsNarrow] = useState(false);
   const [isPaused, setIsPaused] = useState(false);
+  const [isExpanded, setIsExpanded] = useState(() => {
+    if (typeof window === 'undefined') return true;
+    const saved = window.localStorage.getItem('discountBannerExpanded');
+    return saved === null ? true : saved === 'true';
+  });
+
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      window.localStorage.setItem('discountBannerExpanded', String(isExpanded));
+    }
+  }, [isExpanded]);
 
   useEffect(() => {
     const check = () => setIsNarrow(typeof window !== 'undefined' && window.innerWidth < 640);
@@ -46,15 +57,15 @@ export default function DiscountPromoBanner({ onOpenDiscounts }) {
     return () => window.removeEventListener('resize', check);
   }, []);
 
-  // Auto-scroll every 5s; pauses when user hovers the carousel. Infinite loop — no clamp.
+  // Auto-scroll every 5s; pauses when user hovers the carousel or when collapsed. Infinite loop — no clamp.
   useEffect(() => {
     const featured = summary?.featured || [];
-    if (featured.length <= 3 || isPaused) return undefined;
+    if (featured.length <= 3 || isPaused || !isExpanded) return undefined;
     const interval = setInterval(() => {
       setCenterIndex((prev) => prev + 1);
     }, 5000);
     return () => clearInterval(interval);
-  }, [summary, isPaused]);
+  }, [summary, isPaused, isExpanded]);
 
   useEffect(() => {
     let alive = true;
@@ -159,21 +170,52 @@ export default function DiscountPromoBanner({ onOpenDiscounts }) {
           </div>
         )}
 
-        {/* Right: CTA */}
-        <button
-          onClick={onOpenDiscounts}
-          data-testid="discount-promo-cta"
-          className="group inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-white text-rose-600 font-semibold text-sm shadow-md hover:shadow-xl hover:bg-rose-50 transition-all whitespace-nowrap"
-        >
-          Смотреть все
-          <ArrowRight className="w-4 h-4 transition-transform group-hover:translate-x-0.5" />
-        </button>
+        {/* Right: CTA + collapse toggle */}
+        <div className="flex items-center gap-2">
+          <button
+            onClick={onOpenDiscounts}
+            data-testid="discount-promo-cta"
+            className="group inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-white text-rose-600 font-semibold text-sm shadow-md hover:shadow-xl hover:bg-rose-50 transition-all whitespace-nowrap"
+          >
+            Смотреть все
+            <ArrowRight className="w-4 h-4 transition-transform group-hover:translate-x-0.5" />
+          </button>
+          {Array.isArray(summary.featured) && summary.featured.length > 0 && (
+            <button
+              type="button"
+              onClick={() => setIsExpanded((v) => !v)}
+              data-testid="discount-promo-collapse-toggle"
+              aria-label={isExpanded ? 'Свернуть' : 'Развернуть'}
+              aria-expanded={isExpanded}
+              className="inline-flex items-center justify-center w-10 h-10 rounded-xl bg-white/20 hover:bg-white/30 backdrop-blur-sm border border-white/30 text-white transition-all"
+            >
+              <motion.span
+                animate={{ rotate: isExpanded ? 0 : 180 }}
+                transition={{ duration: 0.3 }}
+                className="flex"
+              >
+                <ChevronDown className="w-5 h-5" />
+              </motion.span>
+            </button>
+          )}
+        </div>
       </div>
 
       {/* Featured products carousel — бесконечный цикл, центр чуть больше, по бокам уходят за ширму */}
-      {Array.isArray(summary.featured) && summary.featured.length > 0 && (() => {
-        const featured = summary.featured;
-        const N = featured.length;
+      <AnimatePresence initial={false}>
+        {isExpanded && Array.isArray(summary.featured) && summary.featured.length > 0 && (
+          <motion.div
+            key="discount-promo-content"
+            initial={{ height: 0, opacity: 0 }}
+            animate={{ height: 'auto', opacity: 1 }}
+            exit={{ height: 0, opacity: 0 }}
+            transition={{ duration: 0.4, ease: [0.32, 0.72, 0, 1] }}
+            style={{ overflow: 'hidden' }}
+            data-testid="discount-promo-carousel-wrap"
+          >
+            {(() => {
+              const featured = summary.featured;
+              const N = featured.length;
 
         // Card sizing & shifts (percent of strip container width). Уменьшено на 20% от прежнего размера.
         const cardW = isNarrow ? 29 : 13;        // 36 → 29; 16 → 13
@@ -291,6 +333,9 @@ export default function DiscountPromoBanner({ onOpenDiscounts }) {
           </div>
         );
       })()}
+          </motion.div>
+        )}
+      </AnimatePresence>
     </motion.div>
   );
 }
