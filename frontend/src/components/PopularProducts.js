@@ -161,7 +161,7 @@ export const PopularProducts = () => {
 
           return (
             <div className="relative" data-testid="popular-carousel">
-              <div ref={viewportRef} className="overflow-hidden">
+              <div ref={viewportRef} className="overflow-hidden py-3">
                 <motion.div
                   className="flex"
                   animate={{ x: translateX }}
