@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
+import { Link } from 'react-router-dom';
 import axios from 'axios';
-import { Flame, ArrowRight, Clock } from 'lucide-react';
+import { Flame, ArrowRight, Clock, Package } from 'lucide-react';
 import { motion } from 'framer-motion';
 
 const API = `${process.env.REACT_APP_BACKEND_URL}/api`;
@@ -146,6 +147,58 @@ export default function DiscountPromoBanner({ onOpenDiscounts }) {
           <ArrowRight className="w-4 h-4 transition-transform group-hover:translate-x-0.5" />
         </button>
       </div>
+
+      {/* Featured products strip — appears only when there's >=1 featured */}
+      {Array.isArray(summary.featured) && summary.featured.length > 0 && (
+        <div
+          className="relative border-t border-white/15 px-5 py-3 sm:px-6 sm:py-3.5"
+          data-testid="discount-promo-featured"
+        >
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2.5">
+            {summary.featured.map((p) => {
+              const oldPrice = Number(p.price) || 0;
+              const percent = Number(p.percent) || 0;
+              const newPrice = percent > 0 ? oldPrice * (1 - percent / 100) : oldPrice;
+              return (
+                <Link
+                  key={p.id}
+                  to={`/product/${p.id}`}
+                  data-testid={`discount-promo-featured-${p.id}`}
+                  className="group flex items-center gap-3 p-2 rounded-xl bg-white/12 backdrop-blur-sm border border-white/20 hover:bg-white/20 hover:border-white/40 transition-all"
+                >
+                  <div className="flex-shrink-0 w-12 h-12 rounded-lg bg-white/90 overflow-hidden flex items-center justify-center">
+                    {p.image_url ? (
+                      <img src={p.image_url} alt="" className="w-full h-full object-cover" />
+                    ) : (
+                      <Package className="w-6 h-6 text-rose-400" />
+                    )}
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-white text-xs font-medium leading-tight line-clamp-2 group-hover:text-white">
+                      {p.name}
+                    </p>
+                    <div className="flex items-baseline gap-2 mt-1">
+                      {percent > 0 && oldPrice > 0 && (
+                        <span className="text-[10px] line-through text-white/60">
+                          {Math.round(oldPrice).toLocaleString('ru-RU')} ₽
+                        </span>
+                      )}
+                      <span className="text-sm font-bold text-white">
+                        {Math.round(newPrice).toLocaleString('ru-RU')} ₽
+                      </span>
+                      {percent > 0 && (
+                        <span className="ml-auto inline-flex items-center px-1.5 py-0.5 rounded-md bg-white text-rose-600 text-[10px] font-bold">
+                          −{Math.round(percent)}%
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                </Link>
+              );
+            })}
+          </div>
+        </div>
+      )}
     </motion.div>
   );
 }
