@@ -17,7 +17,7 @@ import { SearchDropdown } from '../components/SearchDropdown';
 import { trackClick } from '../utils/tracker';
 import DiscountRequestModal from '../components/DiscountRequestModal';
 import ProductRequestModal from '../components/ProductRequestModal';
-import { computeDiscount, computeNewBadge, formatDiscountBadge, formatUntilDate, getDeliveryBadge } from '../utils/productHelpers';
+import { computeDiscount, computeNewBadge, formatDiscountBadge, formatUntilDate, getDeliveryBadge, getQuantityTiers } from '../utils/productHelpers';
 import DiscountPromoBanner from '../components/DiscountPromoBanner';
 import NewProductsBanner from '../components/NewProductsBanner';
 
@@ -54,6 +54,8 @@ const ProductCard = ({
   const isNewProduct = computeNewBadge(product);
   const deliveryBadge = getDeliveryBadge(product.delivery_days);
   const untilFormatted = formatUntilDate(discount?.until);
+  const quantityTiers = getQuantityTiers(product);
+  const minTierQty = quantityTiers.length ? quantityTiers[0].minQty : null;
   return (
   <div 
     className={`relative bg-white rounded-xl border transition-all duration-300 hover:shadow-lg hover:border-teal-300/60 min-h-[110px] ${isAlternative ? 'border-teal-200/50 bg-teal-50/20' : 'border-slate-200/80'} ${product.stock <= 0 ? 'group/oos' : ''}`}
@@ -187,6 +189,11 @@ const ProductCard = ({
           <span className={`inline-flex items-center h-[22px] text-[11px] font-semibold px-2.5 rounded-full border whitespace-nowrap ${deliveryBadge.classes}`} data-testid={`delivery-badge-${product.id}`}>
             <Truck className="w-3 h-3 mr-0.5" />{deliveryBadge.label}
           </span>
+          {minTierQty != null && (
+            <span className="inline-flex items-center h-[22px] text-[11px] font-semibold px-2.5 rounded-full border whitespace-nowrap bg-rose-50 text-rose-600 border-rose-200" data-testid={`tier-badge-${product.id}`}>
+              <Layers className="w-3 h-3 mr-0.5" />Опт. скидка от {minTierQty} шт.
+            </span>
+          )}
           {isAlternative && product.cross_articles && (
             <span className="text-[11px] text-slate-400" style={{display:'none'}}>Кросс: {product.cross_articles}</span>
           )}

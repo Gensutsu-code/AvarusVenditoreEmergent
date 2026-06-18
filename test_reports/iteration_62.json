@@ -1,0 +1,35 @@
+{
+  "summary": "Retest of catalog tier-badge fix on /catalog?category=assortment. Both positive and negative scenarios PASS. The inline ProductCard inside CatalogPage.js now correctly renders the tier-badge for products with discount_tiers and omits it for products without.",
+  "backend_issues": {"critical": [], "minor": []},
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [],
+    "design_issues": []
+  },
+  "test_report_links": [],
+  "action_items": [],
+  "critical_code_review_comments": [
+    "CatalogPage.js is 1281 lines — consider extracting the inline ProductCard into a shared component to avoid the kind of divergence that caused this bug (dead code in components/ProductCard.js was edited instead of the inline version)."
+  ],
+  "updated_files": [],
+  "success_rate": {"backend": "n/a (skipped per request)", "frontend": "100%"},
+  "test_credentials": "Tested as logged-out client (no individual price), per request.",
+  "seed_data_creation": "None",
+  "retest_needed": false,
+  "main_agent_can_self_test": true,
+  "context_for_next_testing_agent": "Catalog tier-badge fix verified on https://order-merge-fulfill.preview.emergentagent.com/catalog?category=assortment. Positive product 8cd5b1c5-7980-4765-9db9-8e309614f8c5 shows badge [data-testid=tier-badge-...] with text 'Опт. скидка от 5 шт.' immediately after delivery-badge. Negative product aa56c8f3-b458-4b51-b192-5156e11f64fd does not render any tier-badge. ProductPage preview was already verified in iteration_61 and was NOT re-tested in this iteration per main-agent instruction.",
+  "test_results": {
+    "positive_case": {
+      "product_id": "8cd5b1c5-7980-4765-9db9-8e309614f8c5",
+      "expected_badge_testid": "tier-badge-8cd5b1c5-7980-4765-9db9-8e309614f8c5",
+      "expected_text_contains": "Опт. скидка от 5 шт.",
+      "actual_text": "Опт. скидка от 5 шт.",
+      "result": "PASS"
+    },
+    "negative_case": {
+      "product_id": "aa56c8f3-b458-4b51-b192-5156e11f64fd",
+      "expectation": "tier-badge must NOT be rendered",
+      "result": "PASS (no tier-badge element found for this product id)"
+    }
+  }
+}
