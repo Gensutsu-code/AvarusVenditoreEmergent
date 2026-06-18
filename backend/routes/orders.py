@@ -13,9 +13,14 @@ from routes.telegram import send_telegram_order_notification
 router = APIRouter(tags=["orders"])
 
 
-def compute_promo_discount(product: dict, base_price: float) -> tuple:
-    """Compute promo discount for a product.
+def compute_promo_discount(product: dict, base_price: float, quantity: int = 1) -> tuple:
+    """Compute promo discount for a product, considering quantity tiers.
     Returns (discounted_price, discount_amount, is_active).
+    
+    Tier logic:
+    - If product.discount_tiers exists and matches quantity → use that tier's value/type
+    - Else → fall back to product.discount_type/discount_value (base discount)
+    
     Promo applies on top of any base_price (which may already be individual_price or payment-adjusted).
     """
     if not product or not product.get("discount_active"):
@@ -25,14 +30,34 @@ def compute_promo_discount(product: dict, base_price: float) -> tuple:
     until = product.get("discount_until")
     if until:
         try:
-            until_dt = datetime.fromisoformat(until.replace("Z", "+00:00")) if "T" in str(until) else datetime.fromisoformat(f"{until}T23:59:59+00:00")
+            until_dt = datetime.fromisoformat(str(until).replace("Z", "+00:00")) if "T" in str(until) else datetime.fromisoformat(f"{until}T23:59:59+00:00")
             if until_dt <= datetime.now(timezone.utc):
                 return base_price, 0.0, False
         except Exception:
             pass
 
+    # Determine effective tier
     dtype = product.get("discount_type")
     dval = float(product.get("discount_value") or 0)
+
+    tiers = product.get("discount_tiers") or []
+    if tiers:
+        # Sort tiers ascending by min_qty, pick the highest matching
+        try:
+            sorted_tiers = sorted(
+                [t for t in tiers if isinstance(t, dict) and t.get("min_qty") is not None],
+                key=lambda t: int(t.get("min_qty", 0))
+            )
+            best = None
+            for t in sorted_tiers:
+                if int(t.get("min_qty", 0)) <= quantity:
+                    best = t
+            if best is not None:
+                dtype = best.get("type") or dtype
+                dval = float(best.get("value") or 0)
+        except Exception:
+            pass
+
     if dval <= 0:
         return base_price, 0.0, False
 
@@ -113,8 +138,8 @@ async def get_cart(user=Depends(get_current_user)):
         if product:
             ind_price = ind_prices_map.get(item["product_id"])
             base_price = ind_price if ind_price is not None else product["price"]
-            # Apply promo discount on top of base price
-            promo_final, promo_amount, promo_active = compute_promo_discount(product, base_price)
+            # Apply promo discount on top of base price (with tier-aware quantity)
+            promo_final, promo_amount, promo_active = compute_promo_discount(product, base_price, item["quantity"])
             final_unit_price = promo_final if promo_active else base_price
             items_with_details.append({
                 "product_id": item["product_id"],
@@ -230,8 +255,8 @@ async def create_order(data: OrderCreate, user=Depends(get_current_user)):
                 # Apply payment discount to unit price
                 base_price = round(original_price * price_multiplier, 2)
 
-            # Apply product promo discount on top of base price
-            promo_final, promo_amount, promo_active = compute_promo_discount(product, base_price)
+            # Apply product promo discount on top of base price (tier-aware)
+            promo_final, promo_amount, promo_active = compute_promo_discount(product, base_price, cart_item["quantity"])
             final_price = promo_final if promo_active else base_price
             
             item_data = {

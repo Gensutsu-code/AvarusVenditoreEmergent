@@ -88,8 +88,9 @@ export const PopularProducts = () => {
             </h2>
           </div>
           <Link 
-            to="/catalog"
+            to="/catalog?category=assortment"
             className="text-teal-600 hover:text-teal-700 font-semibold text-sm flex items-center gap-1 transition-colors"
+            data-testid="all-products-link"
           >
             Все товары
             <ArrowRight className="w-4 h-4" />

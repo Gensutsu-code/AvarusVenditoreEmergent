@@ -1,18 +1,35 @@
 // Discount and delivery helpers for products
 
 /**
- * Compute the active discount for a product.
- * Returns { active, percent, amount, finalPrice, label, description, until } or null.
+ * Compute the active discount for a product, considering quantity tiers.
+ * Returns { active, percent, amount, finalPrice, label, description, until, type } or null.
  */
-export function computeDiscount(product) {
+export function computeDiscount(product, quantity = 1) {
   if (!product || !product.discount_active) return null;
   // Check expiry
   if (product.discount_until) {
     const until = new Date(product.discount_until);
     if (isNaN(until.getTime()) || until.getTime() <= Date.now()) return null;
   }
-  const dtype = product.discount_type;
-  const dval = Number(product.discount_value) || 0;
+
+  let dtype = product.discount_type;
+  let dval = Number(product.discount_value) || 0;
+
+  // Tier lookup
+  if (Array.isArray(product.discount_tiers) && product.discount_tiers.length) {
+    const sorted = [...product.discount_tiers]
+      .filter(t => t && t.min_qty != null)
+      .sort((a, b) => Number(a.min_qty) - Number(b.min_qty));
+    let best = null;
+    for (const t of sorted) {
+      if (Number(t.min_qty) <= quantity) best = t;
+    }
+    if (best) {
+      dtype = best.type || dtype;
+      dval = Number(best.value) || 0;
+    }
+  }
+
   if (dval <= 0) return null;
 
   const price = Number(product.price) || 0;
@@ -41,7 +58,22 @@ export function computeDiscount(product) {
     label: product.discount_label || '',
     description: product.discount_description || '',
     until: product.discount_until || null,
+    has_tiers: Array.isArray(product.discount_tiers) && product.discount_tiers.length > 0,
   };
+}
+
+/**
+ * Compute whether the "Новинки" badge should be shown.
+ * Returns { active, until } or null.
+ */
+export function computeNewBadge(product) {
+  if (!product || product.is_new !== true) return null;
+  if (product.new_until) {
+    const until = new Date(product.new_until);
+    if (isNaN(until.getTime()) || until.getTime() <= Date.now()) return null;
+    return { active: true, until: product.new_until };
+  }
+  return { active: true, until: null };
 }
 
 /**

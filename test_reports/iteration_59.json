@@ -1,0 +1,47 @@
+{
+  "summary": "Iteration 59 - Virtual catalog tabs (assortment/new/discounted), tiered quantity discounts in cart and orders, auto 'Новинки' badge with 14-day expiry, and admin category reorder + columns_count settings. Backend pytest 18/18 passed (after fixing 2 incorrect endpoint paths in tests). Frontend smoke verified: /catalog tabs flip URL ?category=... and product list changes, green 'Новинки' ribbon renders alongside discount ribbon, admin Categories tab exposes categories-columns-select and cat-up/cat-down per category.",
+  "backend_issues": {
+    "critical": [],
+    "minor": [
+      {"endpoint": "GET /api/cart vs POST /api/orders", "issue": "Cart preview applies promo+tier but does NOT apply payment_method adjustment, while order POST does. For tier_product qty=12 cart shows price=800 but order with payment_method='cash' (cash_adjustment=-10) records item price=720. Pre-existing payment adjustment inconsistency, not introduced by iteration 59; flag for UX consistency."},
+      {"endpoint": "GET /api/products?virtual_category=discounted", "issue": "Spec said it should also include products with non-empty discount_tiers even when discount_active=false. Current impl requires discount_active=true. If a product has only tiered pricing without discount_active=true, it will NOT appear in 'Скидки' tab. Confirm whether this is intended."}
+    ]
+  },
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [],
+    "design_issues": [
+      {"screen": "/catalog", "issues": ["When a virtual category is selected, the inline tab strip (category-assortment/new/discounted testids) is replaced by a single chip ('Новинки X' / 'Скидки и Акции X'). To switch from 'new' to 'discounted' user must first remove the chip; tabs are not always visible. Consider keeping tabs persistent for one-click switching."]}
+    ]
+  },
+  "test_report_links": [
+    "/app/backend/tests/test_iteration59_virtual_categories.py",
+    "/app/test_reports/pytest/pytest_iteration59.xml"
+  ],
+  "action_items": [
+    "Clarify spec for virtual_category=discounted: should it OR with non-empty discount_tiers (per problem statement) or only discount_active=true (current impl)?",
+    "Cart preview shows different unit price than order endpoint for same product (cart misses payment_method adjustment). Consider applying payment_adjustment in /api/cart GET for consistency, OR document UI expectation.",
+    "Frontend testids for category reorder are 'cat-up-{id}' / 'cat-down-{id}' instead of 'category-move-up-{id}' mentioned in spec — confirm intended naming.",
+    "Endpoint names differ slightly from problem statement: actual is POST /api/categories/reorder and GET/PUT /api/categories/display-settings (problem stated PUT /api/categories/order and /api/settings/category-display). Working but doc/spec drift."
+  ],
+  "critical_code_review_comments": [
+    "products.py:222 virtual_category='new' builds query with is_new=True but _ensure_new_status runs in Python after the DB query — products with expired new_until that still have is_new=true in DB will be RETURNED here (passing the filter) and then flipped to is_new=false in Python before response. Net effect: client receives them with is_new=false, confusing for the 'Новинки' tab. Consider also adding 'new_until' filter to mark them out, or run a background job to flip the flag.",
+    "orders.py:33 fallback parser does 'datetime.fromisoformat(f\"{until}T23:59:59+00:00\")' for date-only strings, but discount_until is stored either as ISO datetime or empty string. The 'if \"T\" in str(until)' branch is fine; empty string skips. OK.",
+    "orders.py:259 promo applied AFTER payment adjustment for non-individual_price products. Stacking: original_price * (1 + payment_adj/100) → then promo tier %. Tier discount stacks on already-discounted-by-payment base. Verify whether this stacking direction is desired (tests show 1000→900 cash→720 with 20% tier).",
+    "products.py:53 display-settings returns 4 as default. Good. PUT clamps to 2..6 — verified.",
+    "products.py:243 _ensure_new_status only mutates in Python; the DB document is NOT updated. So is_new=true persists in Mongo forever past new_until — clean-up job recommended."
+  ],
+  "updated_files": [
+    "/app/backend/tests/test_iteration59_virtual_categories.py"
+  ],
+  "success_rate": {
+    "backend": "100% (18/18 passed)",
+    "frontend": "Smoke OK — virtual category tabs change URL and product list, 'Новинки' green ribbon visible, admin Categories tab has columns_count selector and cat-up/cat-down arrows"
+  },
+  "test_credentials": "admin@avarus.ru / admin; user@demo.com / demo123; 0x0errorr@gmail.com / admin123",
+  "seed_data_creation": "All temporary products created during tests (TEST_AUTO_NEW_*, TEST_TOGGLE_NEW_*, TEST_EXPIRED_NEW_*, TEST_TIER_*) are deleted in finally/yield blocks. categories_display columns_count restored to original after PUT/clamp tests. Categories display_order restored after reorder test.",
+  "retest_needed": false,
+  "should_main_agent_self_test": true,
+  "context_for_next_testing_agent": "Backend test file /app/backend/tests/test_iteration59_virtual_categories.py covers 18 cases: virtual category assortment/new/discounted filters, auto is_new on create, PUT toggle is_new behaviour, _ensure_new_status auto-expiry on GET, tier discounts at qty 3/7/12 in cart and order, columns_count GET/PUT/clamp, category reorder + admin-only auth, and regression smoke (returns, telegram diagnostics at /api/admin/telegram/diagnostics, user balance). NOTE: actual Telegram diagnostics endpoint is /api/admin/telegram/diagnostics (not /api/telegram/diagnostics as problem statement said). Actual reorder endpoint is POST /api/categories/reorder (not PUT /api/categories/order). Display settings endpoint is GET/PUT /api/categories/display-settings (not /api/settings/category-display). Frontend reorder testids are cat-up-{id}/cat-down-{id}. Columns control testid: categories-columns-select.",
+  "rca_of_the_issue": "N/A - all iteration 59 features verified working end-to-end. Minor spec/impl drift items noted under action_items."
+}

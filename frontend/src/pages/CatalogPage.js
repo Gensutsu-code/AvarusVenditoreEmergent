@@ -4,7 +4,7 @@ import axios from 'axios';
 import { Button } from '../components/ui/button';
 import { Input } from '../components/ui/input';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '../components/ui/dialog';
-import { Search, X, ShoppingCart, Package, Truck, Minus, Plus, ArrowRight, Heart, ChevronLeft, ChevronRight, Percent, Eye, Filter, MapPin, ArrowUpDown, Tag, Gift } from 'lucide-react';
+import { Search, X, ShoppingCart, Package, Truck, Minus, Plus, ArrowRight, Heart, ChevronLeft, ChevronRight, Percent, Eye, Filter, MapPin, ArrowUpDown, Tag, Gift, Sparkles, Layers, Flame } from 'lucide-react';
 import { useCart } from '../context/CartContext';
 import { useAuth } from '../context/AuthContext';
 import { toast } from 'sonner';
@@ -17,7 +17,7 @@ import { SearchDropdown } from '../components/SearchDropdown';
 import { trackClick } from '../utils/tracker';
 import DiscountRequestModal from '../components/DiscountRequestModal';
 import ProductRequestModal from '../components/ProductRequestModal';
-import { computeDiscount, formatDiscountBadge, formatUntilDate, getDeliveryBadge } from '../utils/productHelpers';
+import { computeDiscount, computeNewBadge, formatDiscountBadge, formatUntilDate, getDeliveryBadge } from '../utils/productHelpers';
 
 const API = `${process.env.REACT_APP_BACKEND_URL}/api`;
 
@@ -49,6 +49,7 @@ const ProductCard = ({
   isAlternative = false
 }) => {
   const discount = computeDiscount(product);
+  const isNewProduct = computeNewBadge(product);
   const deliveryBadge = getDeliveryBadge(product.delivery_days);
   const untilFormatted = formatUntilDate(discount?.until);
   return (
@@ -82,6 +83,20 @@ const ProductCard = ({
           {untilFormatted && (
             <p className="text-[10px] text-slate-400 mt-1">До {untilFormatted}</p>
           )}
+        </div>
+      </div>
+    )}
+    {/* New ribbon — same shape, green, positioned below discount (or at top if no discount) */}
+    {isNewProduct && (
+      <div className={`absolute left-full z-30 group/new ${discount ? 'top-12' : 'top-3'}`} data-testid={`badge-new-${product.id}`}>
+        <div
+          className="relative h-7 bg-gradient-to-r from-emerald-500 to-green-500 shadow-md shadow-emerald-500/40 flex items-center pl-2 pr-4 cursor-default"
+          style={{ clipPath: 'polygon(0 0, 100% 0, 88% 50%, 100% 100%, 0 100%)' }}
+        >
+          <span className="overflow-hidden transition-all duration-500 ease-out max-w-0 group-hover/new:max-w-[100px] flex-shrink-0">
+            <span className="text-white text-[10px] font-bold uppercase tracking-[0.18em] whitespace-nowrap mr-1.5 inline-block">Новинка</span>
+          </span>
+          <Sparkles className="w-3 h-3 text-white" />
         </div>
       </div>
     )}
@@ -459,6 +474,8 @@ export default function CatalogPage() {
 
   const searchQuery = searchParams.get('search');
   const categoryId = searchParams.get('category');
+  const virtualCategory = (categoryId && ['assortment', 'new', 'discounted'].includes(categoryId)) ? categoryId : null;
+  const [columnsCount, setColumnsCount] = useState(4);
 
   useEffect(() => {
     fetchCategories();
@@ -489,6 +506,8 @@ export default function CatalogPage() {
     try {
       const res = await axios.get(`${API}/categories`);
       setCategories(res.data);
+      const settings = await axios.get(`${API}/categories/display-settings`);
+      setColumnsCount(settings.data?.columns_count || 4);
     } catch (err) {
       console.error('Failed to fetch categories', err);
     }
@@ -549,7 +568,11 @@ export default function CatalogPage() {
         // Regular search for category browsing — use server-side filters
         const params = new URLSearchParams();
         if (searchQuery) params.append('search', searchQuery);
-        if (categoryId) params.append('category_id', categoryId);
+        if (virtualCategory) {
+          params.append('virtual_category', virtualCategory);
+        } else if (categoryId) {
+          params.append('category_id', categoryId);
+        }
         if (fStr) {
           filterParams.forEach((val, key) => params.append(key, val));
         }
@@ -653,6 +676,8 @@ export default function CatalogPage() {
   };
 
   const currentCategory = categories.find(c => c.id === categoryId);
+  const virtualCategoryLabels = { assortment: 'Ассортимент', new: 'Новинки', discounted: 'Скидки и Акции' };
+  const currentCategoryName = virtualCategory ? virtualCategoryLabels[virtualCategory] : currentCategory?.name;
 
   const sortOptions = [
     { value: '', label: 'По умолчанию' },
@@ -710,9 +735,9 @@ export default function CatalogPage() {
                   </button>
                 </span>
               )}
-              {categoryId && currentCategory && (
+              {categoryId && currentCategoryName && (
                 <span className="inline-flex items-center gap-2 rounded-xl px-3 py-2 text-sm bg-white/60 border border-cyan-200/50 text-slate-600">
-                  {currentCategory.name}
+                  {currentCategoryName}
                   <button onClick={clearFilters} className="hover:text-red-400">
                     <X className="w-4 h-4" />
                   </button>
@@ -952,10 +977,62 @@ export default function CatalogPage() {
           {/* Right content — Products */}
           <div className="flex-1 min-w-0">
             {/* Categories - show when no search/category selected */}
-            {!searchQuery && !categoryId && categories.length > 0 && (
+            {!searchQuery && !categoryId && (
               <div className="mb-8">
                 <h2 className="text-lg font-semibold mb-4 text-slate-800">Категории</h2>
-                <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
+                <div
+                  className="grid gap-3"
+                  style={{ gridTemplateColumns: `repeat(${columnsCount}, minmax(0, 1fr))` }}
+                >
+                  {/* Virtual categories: Ассортимент, Новинки, Скидки */}
+                  <motion.button
+                    onClick={() => selectCategory('assortment')}
+                    className="group glass-card transition-all duration-300 p-3 text-left hover:border-teal-400/50 bg-gradient-to-br from-slate-50 to-teal-50/30"
+                    data-testid="category-assortment"
+                    whileHover={{ scale: 1.02 }}
+                    whileTap={{ scale: 0.98 }}
+                  >
+                    <div className="aspect-square mb-2 rounded-lg bg-gradient-to-br from-teal-400 to-cyan-500 flex items-center justify-center">
+                      <Layers className="w-12 h-12 text-white" />
+                    </div>
+                    <h3 className="font-medium text-sm transition-colors flex items-center justify-between text-slate-800 group-hover:text-teal-600">
+                      Ассортимент
+                      <ArrowRight className="w-3 h-3 opacity-0 group-hover:opacity-100 transition-opacity" />
+                    </h3>
+                  </motion.button>
+
+                  <motion.button
+                    onClick={() => selectCategory('new')}
+                    className="group glass-card transition-all duration-300 p-3 text-left hover:border-emerald-400/50 bg-gradient-to-br from-emerald-50 to-green-50/40"
+                    data-testid="category-new"
+                    whileHover={{ scale: 1.02 }}
+                    whileTap={{ scale: 0.98 }}
+                  >
+                    <div className="aspect-square mb-2 rounded-lg bg-gradient-to-br from-emerald-400 to-green-500 flex items-center justify-center">
+                      <Sparkles className="w-12 h-12 text-white" />
+                    </div>
+                    <h3 className="font-medium text-sm transition-colors flex items-center justify-between text-slate-800 group-hover:text-emerald-600">
+                      Новинки
+                      <ArrowRight className="w-3 h-3 opacity-0 group-hover:opacity-100 transition-opacity" />
+                    </h3>
+                  </motion.button>
+
+                  <motion.button
+                    onClick={() => selectCategory('discounted')}
+                    className="group glass-card transition-all duration-300 p-3 text-left hover:border-rose-400/50 bg-gradient-to-br from-rose-50 to-pink-50/40"
+                    data-testid="category-discounted"
+                    whileHover={{ scale: 1.02 }}
+                    whileTap={{ scale: 0.98 }}
+                  >
+                    <div className="aspect-square mb-2 rounded-lg bg-gradient-to-br from-rose-500 to-pink-500 flex items-center justify-center">
+                      <Flame className="w-12 h-12 text-white" />
+                    </div>
+                    <h3 className="font-medium text-sm transition-colors flex items-center justify-between text-slate-800 group-hover:text-rose-600">
+                      Скидки и Акции
+                      <ArrowRight className="w-3 h-3 opacity-0 group-hover:opacity-100 transition-opacity" />
+                    </h3>
+                  </motion.button>
+
                   {categories.map((category) => (
                     <motion.button
                       key={category.id}

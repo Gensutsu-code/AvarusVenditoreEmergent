@@ -2,24 +2,86 @@
 from fastapi import APIRouter, HTTPException, Depends, UploadFile, File
 from fastapi.responses import StreamingResponse
 from typing import List, Optional
+from datetime import datetime, timedelta, timezone
 import uuid
 
 from database import db, get_current_user
 from routes.action_logs import log_action
 from models import (
     ProductCreate, ProductUpdate, ProductResponse,
-    CategoryCreate, CategoryUpdate, CategoryResponse
+    CategoryCreate, CategoryUpdate, CategoryResponse, CategoryReorder
 )
 
 router = APIRouter(tags=["products"])
+
+
+NEW_BADGE_DAYS = 14
+
+
+def _ensure_new_status(product: dict) -> dict:
+    """Auto-expire 'is_new' if new_until passed. Mutates and returns dict."""
+    if not product:
+        return product
+    if product.get("is_new"):
+        new_until = product.get("new_until")
+        if new_until:
+            try:
+                until_dt = datetime.fromisoformat(str(new_until).replace("Z", "+00:00"))
+                if until_dt.tzinfo is None:
+                    until_dt = until_dt.replace(tzinfo=timezone.utc)
+                if until_dt <= datetime.now(timezone.utc):
+                    product["is_new"] = False
+            except Exception:
+                pass
+    return product
 
 
 # ==================== CATEGORIES ====================
 
 @router.get("/categories", response_model=List[CategoryResponse])
 async def get_categories():
-    categories = await db.categories.find({}, {"_id": 0}).to_list(100)
+    categories = await db.categories.find({}, {"_id": 0}).to_list(200)
+    # Sort by display_order, fallback to name for those without
+    categories.sort(key=lambda c: (c.get("display_order", 9999), c.get("name", "")))
     return categories
+
+
+@router.get("/categories/display-settings")
+async def get_categories_display_settings():
+    """Public endpoint: returns columns_count for the catalog page categories grid."""
+    s = await db.settings.find_one({"key": "categories_display"}, {"_id": 0})
+    return {"columns_count": (s or {}).get("value", {}).get("columns_count", 4)}
+
+
+@router.put("/categories/display-settings")
+async def update_categories_display_settings(data: dict, user=Depends(get_current_user)):
+    if user.get("role") != "admin":
+        raise HTTPException(status_code=403, detail="Admin access required")
+    columns = int(data.get("columns_count", 4))
+    columns = max(2, min(6, columns))
+    await db.settings.update_one(
+        {"key": "categories_display"},
+        {"$set": {"value": {"columns_count": columns}}},
+        upsert=True,
+    )
+    return {"columns_count": columns}
+
+
+@router.post("/categories/reorder")
+async def reorder_categories(data: CategoryReorder, user=Depends(get_current_user)):
+    """Bulk reorder: ordered_ids = full list of category IDs in the desired order."""
+    if user.get("role") != "admin":
+        raise HTTPException(status_code=403, detail="Admin access required")
+    for idx, cat_id in enumerate(data.ordered_ids):
+        await db.categories.update_one({"id": cat_id}, {"$set": {"display_order": idx}})
+    if data.columns_count is not None:
+        columns = max(2, min(6, int(data.columns_count)))
+        await db.settings.update_one(
+            {"key": "categories_display"},
+            {"$set": {"value": {"columns_count": columns}}},
+            upsert=True,
+        )
+    return {"success": True, "count": len(data.ordered_ids)}
 
 
 @router.post("/categories", response_model=CategoryResponse)
@@ -128,6 +190,7 @@ async def get_products(
     in_stock: Optional[bool] = None,
     price_min: Optional[float] = None,
     price_max: Optional[float] = None,
+    virtual_category: Optional[str] = None,  # "assortment" | "new" | "discounted"
     limit: int = 100,
     skip: int = 0
 ):
@@ -153,9 +216,31 @@ async def get_products(
         if price_max is not None:
             price_q["$lte"] = price_max
         query["price"] = price_q
-    
+
+    # Virtual category filters
+    if virtual_category == "new":
+        now_iso = datetime.now(timezone.utc).isoformat()
+        query["is_new"] = True
+        query["$and"] = query.get("$and", []) + [{
+            "$or": [
+                {"new_until": None},
+                {"new_until": {"$gt": now_iso}}
+            ]
+        }]
+    elif virtual_category == "discounted":
+        now_iso = datetime.now(timezone.utc).isoformat()
+        query["discount_active"] = True
+        query["$and"] = query.get("$and", []) + [{
+            "$or": [
+                {"discount_until": None},
+                {"discount_until": ""},
+                {"discount_until": {"$gt": now_iso}}
+            ]
+        }]
+    # "assortment" or no virtual category — no filter
+
     products = await db.products.find(query, {"_id": 0}).skip(skip).limit(min(limit, 100)).to_list(100)
-    return products
+    return [_ensure_new_status(p) for p in products]
 
 
 @router.get("/products/search")
@@ -215,7 +300,7 @@ async def get_product(product_id: str):
     product = await db.products.find_one({"id": product_id}, {"_id": 0})
     if not product:
         raise HTTPException(status_code=404, detail="Product not found")
-    return product
+    return _ensure_new_status(product)
 
 
 @router.post("/products", response_model=ProductResponse)
@@ -224,12 +309,21 @@ async def create_product(data: ProductCreate, user=Depends(get_current_user)):
         raise HTTPException(status_code=403, detail="Admin access required")
     
     product_id = str(uuid.uuid4())
+    now = datetime.now(timezone.utc)
+    payload = data.model_dump()
+    # Auto-set is_new / new_until on creation if not explicitly provided
+    if payload.get("is_new") is None:
+        payload["is_new"] = True
+    if payload.get("new_until") is None:
+        payload["new_until"] = (now + timedelta(days=NEW_BADGE_DAYS)).isoformat()
+
     product = {
         "id": product_id,
-        **data.model_dump()
+        "created_at": now.isoformat(),
+        **payload
     }
     await db.products.insert_one(product)
-    return product
+    return _ensure_new_status(product)
 
 
 @router.put("/products/{product_id}", response_model=ProductResponse)
@@ -240,13 +334,21 @@ async def update_product(product_id: str, data: ProductUpdate, user=Depends(get_
     update_data = {k: v for k, v in data.model_dump().items() if v is not None}
     if not update_data:
         raise HTTPException(status_code=400, detail="No data to update")
-    
+
+    # If is_new is explicitly toggled to True and no new_until was provided,
+    # extend it for another 14 days from now (manual "renew newness")
+    if update_data.get("is_new") is True and "new_until" not in update_data:
+        update_data["new_until"] = (datetime.now(timezone.utc) + timedelta(days=NEW_BADGE_DAYS)).isoformat()
+    # If is_new=False, clear new_until
+    if update_data.get("is_new") is False:
+        update_data["new_until"] = None
+
     result = await db.products.update_one({"id": product_id}, {"$set": update_data})
     if result.matched_count == 0:
         raise HTTPException(status_code=404, detail="Product not found")
     
     product = await db.products.find_one({"id": product_id}, {"_id": 0})
-    return product
+    return _ensure_new_status(product)
 
 
 @router.delete("/products/{product_id}")

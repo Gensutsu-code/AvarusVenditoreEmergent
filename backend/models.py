@@ -1,6 +1,6 @@
 """Pydantic models for the API"""
 from pydantic import BaseModel
-from typing import List, Optional
+from typing import List, Optional, Dict, Any
 
 # ==================== USER MODELS ====================
 
@@ -99,6 +99,10 @@ class ProductCreate(BaseModel):
     discount_label: Optional[str] = ""
     discount_description: Optional[str] = ""
     discount_until: Optional[str] = None  # ISO date string
+    discount_tiers: Optional[List[Dict[str, Any]]] = None  # [{min_qty, type, value}]
+    # "New" badge
+    is_new: Optional[bool] = True  # auto-true on creation
+    new_until: Optional[str] = None  # ISO date, defaults to created_at + 14d
 
 class ProductUpdate(BaseModel):
     name: Optional[str] = None
@@ -122,6 +126,9 @@ class ProductUpdate(BaseModel):
     discount_label: Optional[str] = None
     discount_description: Optional[str] = None
     discount_until: Optional[str] = None
+    discount_tiers: Optional[List[Dict[str, Any]]] = None
+    is_new: Optional[bool] = None
+    new_until: Optional[str] = None
 
 class ProductResponse(BaseModel):
     id: str
@@ -146,21 +153,35 @@ class ProductResponse(BaseModel):
     discount_label: Optional[str] = ""
     discount_description: Optional[str] = ""
     discount_until: Optional[str] = None
+    discount_tiers: Optional[List[Dict[str, Any]]] = None
+    is_new: Optional[bool] = False
+    new_until: Optional[str] = None
+    created_at: Optional[str] = None
 
 # ==================== CATEGORY MODELS ====================
 
 class CategoryCreate(BaseModel):
     name: str
     image_url: Optional[str] = None
+    display_order: Optional[int] = 0
+    display_size: Optional[str] = "M"  # "S" | "M" | "L"
 
 class CategoryUpdate(BaseModel):
     name: Optional[str] = None
     image_url: Optional[str] = None
+    display_order: Optional[int] = None
+    display_size: Optional[str] = None
 
 class CategoryResponse(BaseModel):
     id: str
     name: str
     image_url: Optional[str] = None
+    display_order: Optional[int] = 0
+    display_size: Optional[str] = "M"
+
+class CategoryReorder(BaseModel):
+    ordered_ids: List[str]
+    columns_count: Optional[int] = None
 
 # ==================== CART MODELS ====================
 

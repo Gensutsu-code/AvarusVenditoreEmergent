@@ -127,6 +127,7 @@ export default function AdminPage() {
   const [stats, setStats] = useState(null);
   const [products, setProducts] = useState([]);
   const [categories, setCategories] = useState([]);
+  const [categoriesColumns, setCategoriesColumns] = useState(4);
   const [selectedCategoryId, setSelectedCategoryId] = useState(null); // For filtering products by category
   const [users, setUsers] = useState([]);
   const [orders, setOrders] = useState([]);
@@ -345,6 +346,8 @@ export default function AdminPage() {
       setNewsList(newsRes.data || []);
       // Fetch crypto wallets separately
       try { const cw = await axios.get(`${API}/admin/crypto-wallets`); setCryptoWallets(cw.data); } catch(e) {}
+      // Fetch categories display columns_count
+      try { const cd = await axios.get(`${API}/categories/display-settings`); setCategoriesColumns(cd.data?.columns_count || 4); } catch(e) {}
       // Fetch terms of service
       try { const termsRes = await axios.get(`${API}/admin/terms`); setTermsSections(termsRes.data.sections || []); } catch(e) {}
       // Fetch notification settings
@@ -730,6 +733,34 @@ export default function AdminPage() {
     } catch (err) {
       toast.error('Ошибка удаления');
     }
+  };
+
+  const persistCategoriesOrder = async (orderedIds, columnsCount = null) => {
+    try {
+      await axios.post(`${API}/categories/reorder`, {
+        ordered_ids: orderedIds,
+        columns_count: columnsCount,
+      });
+    } catch (err) {
+      toast.error('Не удалось сохранить порядок');
+    }
+  };
+
+  const moveCategory = (categoryId, direction) => {
+    const list = [...categories];
+    const idx = list.findIndex((c) => c.id === categoryId);
+    if (idx < 0) return;
+    const swap = direction === 'up' ? idx - 1 : idx + 1;
+    if (swap < 0 || swap >= list.length) return;
+    [list[idx], list[swap]] = [list[swap], list[idx]];
+    list.forEach((c, i) => (c.display_order = i));
+    setCategories(list);
+    persistCategoriesOrder(list.map((c) => c.id));
+  };
+
+  const updateCategoriesColumns = (cols) => {
+    setCategoriesColumns(cols);
+    persistCategoriesOrder(categories.map((c) => c.id), cols);
   };
 
   const openNewCategory = () => {
@@ -1333,8 +1364,22 @@ export default function AdminPage() {
                   </Button>
                 </div>
 
+                <div className="flex items-center justify-between mb-4 gap-3 flex-wrap" data-testid="categories-display-settings">
+                  <div className="flex items-center gap-2 text-sm">
+                    <span className="text-slate-500 font-medium">Колонок на странице поиска:</span>
+                    <select
+                      value={categoriesColumns}
+                      onChange={(e) => updateCategoriesColumns(parseInt(e.target.value))}
+                      className="border border-slate-200 rounded-lg px-2 py-1 text-sm bg-white focus:border-teal-400"
+                      data-testid="categories-columns-select"
+                    >
+                      {[2,3,4,5,6].map(n => <option key={n} value={n}>{n}</option>)}
+                    </select>
+                  </div>
+                  <p className="text-xs text-slate-400">Стрелки ↑↓ на карточках меняют порядок</p>
+                </div>
+
                 <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6 gap-4">
-                  {/* "All" category option */}
                   <div 
                     onClick={() => setSelectedCategoryId(null)}
                     className={`group relative cursor-pointer rounded-xl p-4 border transition-all duration-300 ${
@@ -1387,6 +1432,30 @@ export default function AdminPage() {
                           </p>
                         </div>
                         <div className={`flex gap-1 transition-opacity ${selectedCategoryId === category.id ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'}`}>
+                          <button
+                            className={`p-1.5 rounded-lg transition-colors ${
+                              selectedCategoryId === category.id 
+                                ? 'bg-white/20 hover:bg-white/30 text-white' 
+                                : 'bg-slate-100 hover:bg-teal-100 text-slate-500 hover:text-teal-600'
+                            }`}
+                            onClick={(e) => { e.stopPropagation(); moveCategory(category.id, 'up'); }}
+                            title="Выше"
+                            data-testid={`cat-up-${category.id}`}
+                          >
+                            <ChevronUp className="w-3.5 h-3.5" />
+                          </button>
+                          <button
+                            className={`p-1.5 rounded-lg transition-colors ${
+                              selectedCategoryId === category.id 
+                                ? 'bg-white/20 hover:bg-white/30 text-white' 
+                                : 'bg-slate-100 hover:bg-teal-100 text-slate-500 hover:text-teal-600'
+                            }`}
+                            onClick={(e) => { e.stopPropagation(); moveCategory(category.id, 'down'); }}
+                            title="Ниже"
+                            data-testid={`cat-down-${category.id}`}
+                          >
+                            <ChevronDown className="w-3.5 h-3.5" />
+                          </button>
                           <button 
                             className={`p-1.5 rounded-lg transition-colors ${
                               selectedCategoryId === category.id 
@@ -1516,7 +1585,10 @@ export default function AdminPage() {
                           </div>
                           <div className="flex items-start justify-between gap-2">
                             <div className="min-w-0 flex-1">
-                              <h3 className="font-semibold text-sm text-slate-800 truncate">{product.name}</h3>
+                              <p className="font-mono text-[11px] font-bold text-pink-600 break-all leading-tight mb-0.5" title={product.article} data-testid={`admin-product-article-${product.id}`}>
+                                {product.article}
+                              </p>
+                              <h3 className="font-semibold text-sm text-slate-800 line-clamp-2 leading-tight">{product.name}</h3>
                               <p className="text-xs text-teal-600 font-bold mt-0.5">
                                 {formatPrice(product.price)} ₽
                               </p>
@@ -3698,6 +3770,15 @@ export default function AdminPage() {
                   />
                   <span className="text-sm font-medium text-zinc-700">Участвует в бонусной программе</span>
                 </label>
+                <label className="flex items-center gap-2 cursor-pointer" data-testid="product-isnew-toggle">
+                  <input
+                    type="checkbox"
+                    checked={editingProduct.is_new === true}
+                    onChange={(e) => setEditingProduct({ ...editingProduct, is_new: e.target.checked })}
+                    className="w-4 h-4 accent-emerald-500 rounded"
+                  />
+                  <span className="text-sm font-medium text-zinc-700">Новинка (14 дней)</span>
+                </label>
               </div>
 
               {/* Discount/Promo Section */}
@@ -3791,7 +3872,7 @@ export default function AdminPage() {
                     {/* Preview */}
                     {editingProduct.price > 0 && editingProduct.discount_value > 0 && (
                       <div className="p-3 bg-white rounded-lg border border-rose-200">
-                        <p className="text-xs text-slate-400 mb-1">Предпросмотр</p>
+                        <p className="text-xs text-slate-400 mb-1">Предпросмотр (базовая)</p>
                         {(() => {
                           const p = parseFloat(editingProduct.price) || 0;
                           const v = parseFloat(editingProduct.discount_value) || 0;
@@ -3810,6 +3891,87 @@ export default function AdminPage() {
                         })()}
                       </div>
                     )}
+
+                    {/* Tiered discounts */}
+                    <div className="pt-3 border-t border-rose-200 space-y-2">
+                      <div className="flex items-center justify-between">
+                        <Label className="text-xs font-semibold uppercase text-rose-600">Скидки по количеству</Label>
+                        <Button
+                          type="button"
+                          size="sm"
+                          variant="outline"
+                          onClick={() => {
+                            const tiers = Array.isArray(editingProduct.discount_tiers) ? [...editingProduct.discount_tiers] : [];
+                            tiers.push({ min_qty: 1, type: editingProduct.discount_type || 'percent', value: 0 });
+                            setEditingProduct({ ...editingProduct, discount_tiers: tiers });
+                          }}
+                          className="border-rose-200 text-rose-600 hover:bg-rose-50 h-7 text-xs rounded-lg"
+                          data-testid="add-tier-btn"
+                        >
+                          + Добавить порог
+                        </Button>
+                      </div>
+                      <p className="text-[11px] text-slate-400">
+                        При заказе от N шт. применяется скидка тира вместо базовой. Если ни один порог не совпадает — действует базовая выше.
+                      </p>
+                      {Array.isArray(editingProduct.discount_tiers) && editingProduct.discount_tiers.length > 0 && (
+                        <div className="space-y-2">
+                          {editingProduct.discount_tiers.map((tier, idx) => (
+                            <div key={idx} className="flex items-center gap-2 p-2 bg-white rounded-lg border border-rose-100" data-testid={`tier-row-${idx}`}>
+                              <span className="text-xs text-slate-500 whitespace-nowrap">От</span>
+                              <Input
+                                type="number"
+                                min="1"
+                                value={tier.min_qty}
+                                onChange={(e) => {
+                                  const tiers = [...editingProduct.discount_tiers];
+                                  tiers[idx] = { ...tier, min_qty: parseInt(e.target.value) || 1 };
+                                  setEditingProduct({ ...editingProduct, discount_tiers: tiers });
+                                }}
+                                className="w-16 h-8 text-xs"
+                              />
+                              <span className="text-xs text-slate-500">шт.</span>
+                              <select
+                                value={tier.type || 'percent'}
+                                onChange={(e) => {
+                                  const tiers = [...editingProduct.discount_tiers];
+                                  tiers[idx] = { ...tier, type: e.target.value };
+                                  setEditingProduct({ ...editingProduct, discount_tiers: tiers });
+                                }}
+                                className="h-8 rounded border border-slate-200 text-xs px-1"
+                              >
+                                <option value="percent">%</option>
+                                <option value="amount">₽</option>
+                              </select>
+                              <Input
+                                type="number"
+                                min="0"
+                                step="0.01"
+                                value={tier.value}
+                                onChange={(e) => {
+                                  const tiers = [...editingProduct.discount_tiers];
+                                  tiers[idx] = { ...tier, value: parseFloat(e.target.value) || 0 };
+                                  setEditingProduct({ ...editingProduct, discount_tiers: tiers });
+                                }}
+                                placeholder={tier.type === 'amount' ? '500' : '15'}
+                                className="flex-1 h-8 text-xs"
+                              />
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  const tiers = editingProduct.discount_tiers.filter((_, i) => i !== idx);
+                                  setEditingProduct({ ...editingProduct, discount_tiers: tiers });
+                                }}
+                                className="w-7 h-7 rounded-lg bg-rose-50 hover:bg-rose-100 text-rose-500 flex items-center justify-center"
+                                data-testid={`remove-tier-${idx}`}
+                              >
+                                <X className="w-3.5 h-3.5" />
+                              </button>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </div>
                   </div>
                 )}
               </div>
