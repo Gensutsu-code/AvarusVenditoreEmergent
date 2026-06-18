@@ -92,6 +92,13 @@ E-commerce platform for truck spare parts with a comprehensive admin panel. Russ
 - Verified: iteration_61 (ProductPage) + iteration_62 (catalog badge, 100% pass).
 - NOTE: `/app/frontend/src/components/ProductCard.js` is DEAD CODE (not imported); catalog uses the inline ProductCard in `CatalogPage.js`.
 
+### Cart/Checkout Upsell Hint (P1 enhancement, 2026-06-18 — iter 63/64)
+- New helper `getCartUpsell(item)` in `productHelpers.js`: projects each quantity tier off the user's REAL base price (`individual_price ?? original_price`, matching backend stacking) and returns the nearest tier whose projected per-unit is strictly cheaper than `item.price` (authoritative current per-unit). Avoids suggesting a tier worse than the discount already applied.
+- `GET /api/cart` now also returns `discount_active`, `discount_until`, `discount_tiers` per item.
+- **CartPage**: per-item hint `upsell-hint-{id}` "Добавьте ещё X шт. и получите скидку −Y% (Z ₽/шт)" + one-click `upsell-apply-{id}` bumps qty to the tier; hint disappears at the best tier.
+- **CheckoutPage**: compact `checkout-upsell-{id}` link back to /cart; render-time navigate moved into `useEffect` (fixed React warning).
+- Verified iteration_64: 6/6 pass (incl. individual_price + promo + tiers stacking, correct per-unit projection).
+
 ## Prioritized Backlog
 
 ### P1 (Important)

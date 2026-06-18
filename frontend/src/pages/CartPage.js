@@ -263,7 +263,7 @@ export default function CartPage() {
                           <span className="font-bold text-rose-600">
                             {up.type === 'percent' ? `−${up.percent}%` : `−${formatPrice(up.value)} ₽`}
                           </span>
-                          <span className="text-slate-500"> ({formatPrice(up.unitPrice)} ₽/шт)</span>
+                          <span className="text-slate-500"> ({up.unitPrice.toLocaleString('ru-RU', { maximumFractionDigits: 1 })} ₽/шт)</span>
                         </p>
                         <button
                           onClick={() => updateQuantity(item.product_id, up.minQty)}
