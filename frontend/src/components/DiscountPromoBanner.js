@@ -92,7 +92,7 @@ export default function DiscountPromoBanner({ onOpenDiscounts }) {
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.4 }}
       data-testid="discount-promo-banner"
-      className="relative overflow-hidden rounded-2xl mb-6 border border-rose-200/60 shadow-lg shadow-rose-500/10"
+      className="relative overflow-hidden rounded-2xl mb-4 border border-rose-200/60 shadow-lg shadow-rose-500/10"
     >
       {/* Background gradient */}
       <div className="absolute inset-0 bg-gradient-to-r from-rose-500 via-pink-500 to-fuchsia-500" />
@@ -107,7 +107,7 @@ export default function DiscountPromoBanner({ onOpenDiscounts }) {
         transition={{ duration: 3, repeat: Infinity }}
       />
 
-      <div className="relative px-5 py-4 sm:px-6 sm:py-5 flex flex-col sm:flex-row items-start sm:items-center gap-4 sm:gap-6">
+      <div className="relative px-5 py-3 sm:px-6 sm:py-3 flex flex-col sm:flex-row items-start sm:items-center gap-3 sm:gap-6">
         {/* Left: icon + headline */}
         <div className="flex items-center gap-3 flex-1 min-w-0">
           <div className="flex-shrink-0 w-12 h-12 rounded-xl bg-white/20 backdrop-blur-sm border border-white/30 flex items-center justify-center">
@@ -188,15 +188,15 @@ export default function DiscountPromoBanner({ onOpenDiscounts }) {
 
         return (
           <div
-            className="relative border-t border-white/15 py-6"
+            className="relative border-t border-white/15 py-2"
             data-testid="discount-promo-featured"
             onMouseEnter={() => setIsPaused(true)}
             onMouseLeave={() => setIsPaused(false)}
             onTouchStart={() => setIsPaused(true)}
             onTouchEnd={() => setIsPaused(false)}
           >
-            {/* Carousel viewport — увеличена высота, чтобы карточки не обрезались, и центр (scale 1.05) не выходил за края */}
-            <div className="relative mx-auto h-[260px] sm:h-[300px] overflow-hidden">
+            {/* Carousel viewport — высота строго под карточку (фото + инфо) c минимальным запасом для scale 1.05 */}
+            <div className="relative mx-auto h-[200px] sm:h-[230px] overflow-hidden">
               {featured.map((p, i) => {
                 const dist = wrapDist(i, centerIndex);
                 const absD = Math.abs(dist);
@@ -264,7 +264,7 @@ export default function DiscountPromoBanner({ onOpenDiscounts }) {
               const currentGroup = Math.min(groupCount - 1, Math.floor(currentMod / 3));
               return (
                 <div
-                  className="mt-3 flex items-center justify-center gap-2"
+                  className="mt-2 flex items-center justify-center gap-2"
                   data-testid="discount-promo-dots"
                 >
                   {Array.from({ length: groupCount }).map((_, gi) => {
