@@ -5,7 +5,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { 
   Users, Package, ShoppingBag, TrendingUp, User,
   Plus, Pencil, Trash2, Save, Eye, FolderOpen, Megaphone, Upload, Image,
-  MessageCircle, Send, BarChart3, Download, FileSpreadsheet, Pin, Tag, X, Copy, Gift, Award, ChevronDown, ChevronUp, Paperclip, Play, ZoomIn, ZoomOut, Settings, ChevronLeft, ChevronRight, CreditCard, FileText, Mail, Bell, Wallet, Clock, ScrollText, Code, Minus, RotateCcw
+  MessageCircle, Send, BarChart3, Download, FileSpreadsheet, Pin, Tag, X, Copy, Gift, Award, ChevronDown, ChevronUp, Paperclip, Play, ZoomIn, ZoomOut, Settings, ChevronLeft, ChevronRight, CreditCard, FileText, Mail, Bell, Wallet, Clock, ScrollText, Code, Minus, RotateCcw, Merge, Truck
 } from 'lucide-react';
 import { Button } from '../components/ui/button';
 import { Input } from '../components/ui/input';
@@ -193,6 +193,9 @@ export default function AdminPage() {
   
   // Order management states  
   const [editingOrder, setEditingOrder] = useState(null);
+  const [selectedOrderIds, setSelectedOrderIds] = useState([]);
+  const [fulfillingOrder, setFulfillingOrder] = useState(null);
+  const [fulfillDraft, setFulfillDraft] = useState({});
   
   // Bonus program states - Multiple programs
   const [bonusPrograms, setBonusPrograms] = useState([]);
@@ -669,8 +672,7 @@ export default function AdminPage() {
         created_at: editingOrder.created_at,
         items: editingOrder.items
       });
-      setOrders(orders.map(o => o.id === editingOrder.id ? res.data : o));
-      setEditingOrder(null);
+      setOrders(orders.map(o => o.id === editingOrder.id ? res.data : o));      setEditingOrder(null);
       toast.success('Заказ обновлён');
     } catch (err) {
       toast.error('Ошибка сохранения');
@@ -696,6 +698,60 @@ export default function AdminPage() {
       toast.success('Заказ удалён');
     } catch (err) {
       toast.error('Ошибка удаления');
+    }
+  };
+
+  const toggleOrderSelection = (id) => {
+    setSelectedOrderIds(prev => prev.includes(id) ? prev.filter(x => x !== id) : [...prev, id]);
+  };
+
+  const handleMergeOrders = async () => {
+    if (selectedOrderIds.length < 2) {
+      toast.error('Выберите минимум 2 заказа');
+      return;
+    }
+    const selected = orders.filter(o => selectedOrderIds.includes(o.id));
+    const userIds = new Set(selected.map(o => o.user_id));
+    if (userIds.size !== 1) {
+      toast.error('Заказы должны принадлежать одному клиенту');
+      return;
+    }
+    const completed = selected.find(o => ['completed', 'выполнен', 'delivered'].includes((o.status || '').toLowerCase()));
+    if (completed) {
+      toast.error('Нельзя объединить выполненный заказ');
+      return;
+    }
+    if (!window.confirm(`Объединить ${selectedOrderIds.length} заказов в один? Исходные будут удалены.`)) return;
+    try {
+      const res = await axios.post(`${API}/admin/orders/merge`, { order_ids: selectedOrderIds });
+      toast.success(`Заказы объединены → #${res.data.order.id.slice(0, 8)}`);
+      setSelectedOrderIds([]);
+      fetchData();
+    } catch (err) {
+      toast.error(err.response?.data?.detail || 'Ошибка объединения');
+    }
+  };
+
+  const openFulfillModal = (order) => {
+    setFulfillingOrder(order);
+    const draft = {};
+    (order.items || []).forEach(it => {
+      draft[it.product_id] = Number(it.quantity_fulfilled || 0);
+    });
+    setFulfillDraft(draft);
+  };
+
+  const handleSaveFulfill = async () => {
+    if (!fulfillingOrder) return;
+    const items = Object.entries(fulfillDraft).map(([pid, qf]) => ({ product_id: pid, quantity_fulfilled: Number(qf) || 0 }));
+    try {
+      const res = await axios.patch(`${API}/admin/orders/${fulfillingOrder.id}/fulfill`, { items });
+      toast.success(`Сохранено. Статус: ${res.data.status}`);
+      setFulfillingOrder(null);
+      setFulfillDraft({});
+      fetchData();
+    } catch (err) {
+      toast.error(err.response?.data?.detail || 'Ошибка сохранения');
     }
   };
 
@@ -1646,12 +1702,25 @@ export default function AdminPage() {
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.3, ease: "easeOut" }}
             >
-            <h2 className="text-lg font-semibold mb-4">Заказы</h2>
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-lg font-semibold">Заказы</h2>
+              {selectedOrderIds.length >= 2 && (
+                <Button
+                  onClick={handleMergeOrders}
+                  className="bg-indigo-500 hover:bg-indigo-600 text-white"
+                  data-testid="merge-orders-btn"
+                >
+                  <Merge className="w-4 h-4 mr-2" />
+                  Объединить ({selectedOrderIds.length})
+                </Button>
+              )}
+            </div>
             
             <div className="overflow-x-auto">
               <table className="w-full text-sm">
                 <thead>
                   <tr className="border-b border-zinc-200">
+                    <th className="text-center py-3 px-2 w-8"></th>
                     <th className="text-left py-3 px-2">№ Заказа</th>
                     <th className="text-left py-3 px-2">Дата</th>
                     <th className="text-left py-3 px-2">Клиент</th>
@@ -1663,6 +1732,15 @@ export default function AdminPage() {
                 <tbody>
                   {orders.map((order) => (
                     <tr key={order.id} className="border-b border-zinc-100 hover:bg-zinc-50">
+                      <td className="py-2 px-2 text-center">
+                        <input
+                          type="checkbox"
+                          checked={selectedOrderIds.includes(order.id)}
+                          onChange={() => toggleOrderSelection(order.id)}
+                          className="w-4 h-4 accent-indigo-500"
+                          data-testid={`select-order-${order.id}`}
+                        />
+                      </td>
                       <td className="py-2 px-2 font-mono">{order.id.slice(0, 8)}</td>
                       <td className="py-2 px-2 text-zinc-500">{formatDate(order.created_at)}</td>
                       <td className="py-2 px-2">{order.full_name}</td>
@@ -1696,6 +1774,9 @@ export default function AdminPage() {
                           </Button>
                           <Button variant="ghost" size="sm" onClick={() => openEditOrder(order)} data-testid={`edit-order-${order.id}`}>
                             <Pencil className="w-4 h-4" />
+                          </Button>
+                          <Button variant="ghost" size="sm" onClick={() => openFulfillModal(order)} title="Частичная отгрузка" data-testid={`fulfill-order-${order.id}`}>
+                            <Truck className="w-4 h-4 text-emerald-600" />
                           </Button>
                           <Button 
                             variant="ghost" 
@@ -4793,6 +4874,67 @@ export default function AdminPage() {
         open={!!analyticsUser}
         onClose={() => setAnalyticsUser(null)}
       />
+
+      {/* Partial fulfillment modal */}
+      <Dialog open={!!fulfillingOrder} onOpenChange={(o) => { if (!o) { setFulfillingOrder(null); setFulfillDraft({}); } }}>
+        <DialogContent className="max-w-2xl" data-testid="fulfill-modal">
+          <DialogHeader>
+            <DialogTitle>Частичная отгрузка заказа #{fulfillingOrder?.id?.slice(0, 8)}</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-3 max-h-[60vh] overflow-y-auto">
+            {(fulfillingOrder?.items || []).map((it) => {
+              const qty = Number(it.quantity || 0);
+              const qf = Number(fulfillDraft[it.product_id] ?? it.quantity_fulfilled ?? 0);
+              return (
+                <div key={it.product_id} className="flex items-center gap-3 p-3 rounded-xl border border-zinc-200 bg-zinc-50">
+                  <div className="flex-1 min-w-0">
+                    <p className="font-medium text-sm text-slate-800 truncate">{it.name}</p>
+                    <p className="text-xs text-slate-500">Арт: {it.article} • {Math.round(Number(it.price))} ₽ за шт</p>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <Label className="text-xs text-slate-500">Отгружено</Label>
+                    <Input
+                      type="number"
+                      min={0}
+                      max={qty}
+                      value={qf}
+                      onChange={(e) => {
+                        const v = Math.max(0, Math.min(qty, Number(e.target.value) || 0));
+                        setFulfillDraft({ ...fulfillDraft, [it.product_id]: v });
+                      }}
+                      className="w-20 h-9 text-center"
+                      data-testid={`fulfill-qty-${it.product_id}`}
+                    />
+                    <span className="text-sm text-slate-500 whitespace-nowrap">из {qty}</span>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+          <div className="flex items-center justify-between mt-4 pt-4 border-t border-zinc-200">
+            <p className="text-sm text-slate-600">
+              К списанию:{' '}
+              <span className="font-bold text-emerald-600">
+                {Math.round(
+                  (fulfillingOrder?.items || []).reduce((sum, it) => {
+                    const qf = Number(fulfillDraft[it.product_id] ?? it.quantity_fulfilled ?? 0);
+                    return sum + Number(it.price || 0) * qf;
+                  }, 0)
+                )}{' '}
+                ₽
+              </span>
+            </p>
+            <div className="flex gap-2">
+              <Button variant="outline" onClick={() => { setFulfillingOrder(null); setFulfillDraft({}); }}>
+                Отмена
+              </Button>
+              <Button onClick={handleSaveFulfill} className="bg-emerald-500 hover:bg-emerald-600 text-white" data-testid="save-fulfill-btn">
+                Сохранить отгрузку
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
     </>
   );

@@ -196,6 +196,7 @@ class CartItemResponse(BaseModel):
     manufacturer: Optional[str] = None
     price: float
     quantity: int
+    quantity_fulfilled: Optional[int] = 0
     image_url: Optional[str] = None
     warehouse: Optional[str] = None
     delivery_days: Optional[int] = None

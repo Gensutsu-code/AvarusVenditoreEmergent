@@ -19,6 +19,7 @@ const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
 const STATUS_LABELS = {
   pending: 'Ожидает',
   processing: 'Обработка',
+  partially_fulfilled: 'Частично выполнен',
   completed: 'Выполнен',
   cancelled: 'Отменён'
 };
@@ -26,6 +27,7 @@ const STATUS_LABELS = {
 const STATUS_COLORS = {
   pending: 'bg-amber-100 text-amber-700',
   processing: 'bg-blue-100 text-blue-700',
+  partially_fulfilled: 'bg-orange-100 text-orange-700',
   completed: 'bg-emerald-100 text-emerald-700',
   cancelled: 'bg-red-100 text-red-700'
 };
@@ -534,6 +536,16 @@ export default function OrdersPage() {
                                           </div>
                                         ) : (
                                           <span className="text-slate-400 text-sm">×{item.quantity}</span>
+                                        )}
+                                        {Number(item.quantity_fulfilled || 0) > 0 && Number(item.quantity_fulfilled || 0) < Number(item.quantity || 0) && (
+                                          <p className="text-[10px] font-semibold text-amber-600 mt-0.5" data-testid={`fulfilled-${item.product_id}`}>
+                                            отгружено {item.quantity_fulfilled} из {item.quantity}
+                                          </p>
+                                        )}
+                                        {Number(item.quantity_fulfilled || 0) === Number(item.quantity || 0) && Number(item.quantity || 0) > 0 && (
+                                          <p className="text-[10px] font-semibold text-emerald-600 mt-0.5" data-testid={`fulfilled-${item.product_id}`}>
+                                            ✓ отгружено
+                                          </p>
                                         )}
                                       </div>
                                       <div className="text-right min-w-[70px]">

@@ -855,3 +855,173 @@ async def return_order_to_cart(order_id: str, user=Depends(get_current_user)):
     )
     
     return {"success": True, "message": "Items returned to cart. Order is still active."}
+
+
+# ==================== ADMIN: MERGE & PARTIAL FULFILLMENT ====================
+
+@router.post("/admin/orders/merge")
+async def merge_orders(payload: dict, user: dict = Depends(get_current_user)):
+    """Admin merges multiple orders of the SAME user into one new order.
+
+    Body: {"order_ids": ["...", "..."]}
+    Rules:
+      - All orders must belong to the same user
+      - All statuses must be != 'completed' / 'выполнен' (any pre-completion status allowed)
+      - Items with same product_id are aggregated (quantities summed)
+      - Originals are DELETED
+      - New order takes address/phone/full_name/payment_method from the most recent order
+    """
+    if user.get("role") != "admin":
+        raise HTTPException(status_code=403, detail="Admin only")
+
+    order_ids = payload.get("order_ids") or []
+    if not isinstance(order_ids, list) or len(order_ids) < 2:
+        raise HTTPException(status_code=400, detail="Need at least 2 order_ids")
+
+    orders = await db.orders.find({"id": {"$in": order_ids}}, {"_id": 0}).to_list(len(order_ids))
+    if len(orders) != len(order_ids):
+        raise HTTPException(status_code=404, detail="Some orders not found")
+
+    user_ids = {o.get("user_id") for o in orders}
+    if len(user_ids) != 1:
+        raise HTTPException(status_code=400, detail="Orders belong to different users")
+
+    completed_statuses = {"completed", "выполнен", "delivered"}
+    for o in orders:
+        if (o.get("status") or "").lower() in completed_statuses:
+            raise HTTPException(status_code=400, detail=f"Order {o['id']} is already completed")
+
+    # Sort by created_at desc → newest first
+    def _ts(o):
+        try:
+            return str(o.get("created_at") or "")
+        except Exception:
+            return ""
+    orders_sorted = sorted(orders, key=_ts, reverse=True)
+    newest = orders_sorted[0]
+
+    # Aggregate items
+    merged: dict = {}
+    for o in orders_sorted:
+        for it in (o.get("items") or []):
+            pid = it.get("product_id")
+            if not pid:
+                continue
+            if pid in merged:
+                merged[pid]["quantity"] = int(merged[pid].get("quantity", 0)) + int(it.get("quantity", 0))
+            else:
+                merged[pid] = {**it, "quantity_fulfilled": 0}
+
+    merged_items = list(merged.values())
+    new_total = sum(float(it.get("price", 0)) * int(it.get("quantity", 0)) for it in merged_items)
+
+    new_order = {
+        "id": str(uuid.uuid4()),
+        "user_id": newest["user_id"],
+        "items": merged_items,
+        "total": new_total,
+        "original_total": new_total,
+        "order_discount_percent": 0,
+        "status": "pending",
+        "full_name": newest.get("full_name"),
+        "address": newest.get("address"),
+        "phone": newest.get("phone"),
+        "comment": (newest.get("comment") or "") + f"\n\n[Объединено из {len(orders)} заказов администратором]",
+        "payment_method": newest.get("payment_method"),
+        "paid": False,
+        "created_at": datetime.now(timezone.utc).isoformat(),
+        "merged_from": [o["id"] for o in orders_sorted],
+    }
+    await db.orders.insert_one(new_order)
+    await db.orders.delete_many({"id": {"$in": order_ids}})
+
+    # Notify the user
+    await notify_user(
+        newest["user_id"],
+        "order",
+        "Заказы объединены",
+        f"Администратор объединил {len(orders)} ваших заказов в один (#{new_order['id'][:8]}). Итого: {int(new_total)} ₽",
+        f"/orders/{new_order['id']}",
+    )
+
+    new_order.pop("_id", None)
+    return {"success": True, "order": new_order}
+
+
+@router.patch("/admin/orders/{order_id}/fulfill")
+async def fulfill_order_partial(order_id: str, payload: dict, user: dict = Depends(get_current_user)):
+    """Admin sets per-item quantity_fulfilled. Recalculates fulfilled total.
+    If all items fully fulfilled → order.status = 'completed'; else 'partially_fulfilled'.
+
+    Body: {"items": [{"product_id": "...", "quantity_fulfilled": N}, ...]}
+    """
+    if user.get("role") != "admin":
+        raise HTTPException(status_code=403, detail="Admin only")
+
+    items_payload = payload.get("items") or []
+    if not isinstance(items_payload, list) or not items_payload:
+        raise HTTPException(status_code=400, detail="items required")
+
+    order = await db.orders.find_one({"id": order_id}, {"_id": 0})
+    if not order:
+        raise HTTPException(status_code=404, detail="Order not found")
+
+    fulfill_map = {it.get("product_id"): int(it.get("quantity_fulfilled", 0)) for it in items_payload}
+    updated_items = []
+    all_fulfilled = True
+    any_fulfilled = False
+    fulfilled_total = 0.0
+
+    for it in order.get("items", []):
+        pid = it.get("product_id")
+        qty = int(it.get("quantity", 0))
+        qf = fulfill_map.get(pid, int(it.get("quantity_fulfilled", 0)))
+        qf = max(0, min(qty, qf))
+        new_it = {**it, "quantity_fulfilled": qf}
+        updated_items.append(new_it)
+        if qf < qty:
+            all_fulfilled = False
+        if qf > 0:
+            any_fulfilled = True
+        fulfilled_total += float(it.get("price", 0)) * qf
+
+    if all_fulfilled:
+        new_status = "completed"
+    elif any_fulfilled:
+        new_status = "partially_fulfilled"
+    else:
+        new_status = order.get("status", "pending")
+
+    await db.orders.update_one(
+        {"id": order_id},
+        {"$set": {
+            "items": updated_items,
+            "status": new_status,
+            "fulfilled_total": fulfilled_total,
+        }},
+    )
+
+    # Notify user
+    user_id = order.get("user_id")
+    if user_id:
+        if all_fulfilled:
+            title = "Заказ выполнен"
+            msg = f"Заказ #{order_id[:8]} полностью выполнен. К списанию: {int(fulfilled_total)} ₽"
+        else:
+            title = "Частичная отгрузка"
+            fulfilled_count = sum(int(it.get("quantity_fulfilled", 0)) for it in updated_items)
+            total_count = sum(int(it.get("quantity", 0)) for it in updated_items)
+            msg = f"По заказу #{order_id[:8]} отгружено {fulfilled_count} из {total_count} позиций. Сумма к оплате: {int(fulfilled_total)} ₽"
+        await notify_user(user_id, "order", title, msg, f"/orders/{order_id}")
+
+        # Try to push to user's linked Telegram chat (if exists)
+        try:
+            chat = await db.chats.find_one({"user_id": user_id, "telegram_chat_id": {"$exists": True, "$ne": None}})
+            if chat and chat.get("telegram_chat_id"):
+                from routes.telegram import _get_bot_token  # type: ignore
+                pass  # bot will pick up via existing notification mechanism if integrated
+        except Exception:
+            pass
+
+    return {"success": True, "status": new_status, "fulfilled_total": fulfilled_total, "items": updated_items}
+
