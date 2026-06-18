@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { Trash2, ArrowLeft, ShoppingCart, Minus, Plus, Package, ArrowRight, TrendingUp } from 'lucide-react';
+import axios from 'axios';
+import { Trash2, ArrowLeft, ShoppingCart, Minus, Plus, Package, ArrowRight, TrendingUp, Truck, CheckCircle } from 'lucide-react';
 import { Button } from '../components/ui/button';
 import { useCart } from '../context/CartContext';
 import { useAuth } from '../context/AuthContext';
@@ -8,10 +9,17 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { trackClick } from '../utils/tracker';
 import { getCartUpsell } from '../utils/productHelpers';
 
+const API = `${process.env.REACT_APP_BACKEND_URL}/api`;
+
 export default function CartPage() {
   const { cart, updateQuantity, removeFromCart } = useCart();
   const { user } = useAuth();
   const navigate = useNavigate();
+
+  const [delivery, setDelivery] = useState({ min_free_delivery: 5000, delivery_price: 500, delivery_enabled: true });
+  useEffect(() => {
+    axios.get(`${API}/delivery-settings`).then(r => setDelivery(r.data)).catch(() => {});
+  }, []);
 
   const formatPrice = (price) => new Intl.NumberFormat('ru-RU').format(Math.round(price));
 
@@ -131,6 +139,52 @@ export default function CartPage() {
             <p className="text-sm text-slate-500">{cart.items.length} товаров</p>
           </div>
         </motion.div>
+
+        {/* Free-delivery progress bar */}
+        {delivery.delivery_enabled && delivery.min_free_delivery > 0 && (() => {
+          const remaining = Math.max(0, delivery.min_free_delivery - cartTotal);
+          const reached = remaining <= 0;
+          const pct = Math.min(100, (cartTotal / delivery.min_free_delivery) * 100);
+          return (
+            <motion.div
+              className="glass-card p-4 mb-6"
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.1 }}
+              data-testid="free-delivery-bar"
+            >
+              <div className="flex items-center justify-between gap-3 mb-2 flex-wrap">
+                <span className="text-sm font-semibold text-slate-700 flex items-center gap-2">
+                  {reached ? (
+                    <>
+                      <CheckCircle className="w-4 h-4 text-emerald-500" />
+                      <span data-testid="free-delivery-reached">Бесплатная доставка активирована!</span>
+                    </>
+                  ) : (
+                    <>
+                      <Truck className="w-4 h-4 text-rose-500" />
+                      <span>
+                        До бесплатной доставки осталось{' '}
+                        <span className="font-bold text-rose-600" data-testid="free-delivery-remaining">{formatPrice(remaining)} ₽</span>
+                      </span>
+                    </>
+                  )}
+                </span>
+                <span className="text-xs text-slate-400 whitespace-nowrap">
+                  {formatPrice(cartTotal)} / {formatPrice(delivery.min_free_delivery)} ₽
+                </span>
+              </div>
+              <div className="h-2.5 w-full rounded-full bg-slate-100 overflow-hidden">
+                <motion.div
+                  className={`h-full rounded-full ${reached ? 'bg-gradient-to-r from-emerald-400 to-teal-500' : 'bg-gradient-to-r from-rose-400 to-pink-500'}`}
+                  initial={{ width: 0 }}
+                  animate={{ width: `${pct}%` }}
+                  transition={{ duration: 0.6, ease: 'easeOut' }}
+                />
+              </div>
+            </motion.div>
+          );
+        })()}
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
           {/* Cart Items */}

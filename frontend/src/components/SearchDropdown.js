@@ -203,9 +203,11 @@ export const SearchDropdown = ({
                         whileHover={{ scale: 1.15, rotate: 90 }}
                         whileTap={{ scale: 0.9 }}
                         transition={{ duration: 0.2 }}
-                        className="absolute right-3 top-1/2 -translate-y-1/2 z-10 w-7 h-7 rounded-full bg-rose-100 hover:bg-rose-200 text-rose-600 flex items-center justify-center"
+                        aria-label="Очистить"
+                        className={`absolute right-3 inset-y-0 my-auto z-10 rounded-full bg-rose-100 hover:bg-rose-200 text-rose-600 flex items-center justify-center ${compact ? 'w-6 h-6' : 'w-7 h-7'}`}
+                        data-testid="search-clear-btn"
                       >
-                        <X className="w-4 h-4" />
+                        <X className={compact ? 'w-3.5 h-3.5' : 'w-4 h-4'} />
                       </motion.button>
                     )}
                   </AnimatePresence>
@@ -238,19 +240,9 @@ export const SearchDropdown = ({
               )}
             </>
           )}
-        </div>
-        {showSearchButton && (
-          <button
-            onClick={handleSearchSubmit}
-            className="h-12 px-16 bg-gradient-to-r from-teal-500 to-emerald-500 hover:from-teal-600 hover:to-emerald-600 text-white font-semibold rounded-xl shadow-lg shadow-teal-500/30 transition-all flex-shrink-0"
-            data-testid="search-submit-btn"
-          >
-            Найти
-          </button>
-        )}
-      </div>
 
-      {/* Dropdown Results */}
+          {/* Dropdown Results — rendered inside the input wrapper so its width
+              matches the field exactly (never spans the "Найти" button). */}
       <AnimatePresence>
         {isOpen && results.length > 0 && (
           <motion.div
@@ -348,6 +340,17 @@ export const SearchDropdown = ({
           </motion.div>
         )}
       </AnimatePresence>
+        </div>
+        {showSearchButton && (
+          <button
+            onClick={handleSearchSubmit}
+            className="h-12 px-16 bg-gradient-to-r from-teal-500 to-emerald-500 hover:from-teal-600 hover:to-emerald-600 text-white font-semibold rounded-xl shadow-lg shadow-teal-500/30 transition-all flex-shrink-0"
+            data-testid="search-submit-btn"
+          >
+            Найти
+          </button>
+        )}
+      </div>
     </div>
   );
 };
