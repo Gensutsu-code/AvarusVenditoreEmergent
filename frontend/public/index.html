@@ -2,6 +2,77 @@
 <html lang="en">
     <head>
         <meta charset="utf-8" />
+        <script>
+            // ─────────────────────────────────────────────────────────────────
+            // Early extension-error guard (must run before any other script).
+            // Chrome extensions like Grammarly/Monica/LinguaLeo inject content
+            // scripts that walk the DOM/React fiber tree with proxied
+            // getOwnPropertyDescriptor and recurse to "Maximum call stack size
+            // exceeded" on SPA navigation. Frames come from `<anonymous>` source
+            // (the extension), not our bundle, so we suppress them — they don't
+            // affect app behaviour and would otherwise blank the CRA dev-overlay.
+            // ─────────────────────────────────────────────────────────────────
+            (function () {
+                var isExtErr = function (err, stack) {
+                    var msg = (err && (err.message || err)) || '';
+                    var s = stack || (err && err.stack) || '';
+                    if (typeof msg !== 'string') return false;
+                    if (msg.indexOf('Maximum call stack size exceeded') === -1) return false;
+                    return typeof s === 'string' && s.indexOf('<anonymous>') !== -1;
+                };
+                window.addEventListener('error', function (event) {
+                    var err = event.error || event.message;
+                    var stack = (event.error && event.error.stack) || '';
+                    if (isExtErr(err, stack)) {
+                        event.stopImmediatePropagation();
+                        event.preventDefault();
+                        return false;
+                    }
+                }, true);
+                window.addEventListener('unhandledrejection', function (event) {
+                    var r = event.reason;
+                    if (isExtErr(r, r && r.stack)) {
+                        event.stopImmediatePropagation();
+                        event.preventDefault();
+                    }
+                }, true);
+                // Also nuke CRA's react-error-overlay iframe if it appears with
+                // an extension-origin error (defensive — runs after page paints).
+                var hideOverlay = function () {
+                    try {
+                        var iframes = document.body && document.body.querySelectorAll('iframe');
+                        if (!iframes) return;
+                        for (var i = 0; i < iframes.length; i++) {
+                            var f = iframes[i];
+                            var src = (f.getAttribute('src') || '') + (f.id || '');
+                            // CRA's overlay iframe has no src and id-less; identify by zIndex+position
+                            var st = f.style;
+                            if (st && (st.position === 'fixed' || st.position === 'absolute') && st.zIndex && Number(st.zIndex) >= 10) {
+                                // Probe content for our suppressed message
+                                try {
+                                    var doc = f.contentDocument;
+                                    var txt = doc && doc.body && doc.body.innerText;
+                                    if (txt && txt.indexOf('Maximum call stack size exceeded') !== -1 && txt.indexOf('<anonymous>') !== -1) {
+                                        f.style.display = 'none';
+                                    }
+                                } catch (e) { /* cross-origin */ }
+                            }
+                        }
+                    } catch (e) { /* noop */ }
+                };
+                var mo = null;
+                var startObserver = function () {
+                    if (mo || !document.body) return;
+                    mo = new MutationObserver(hideOverlay);
+                    mo.observe(document.body, { childList: true, subtree: false });
+                };
+                if (document.readyState === 'loading') {
+                    document.addEventListener('DOMContentLoaded', startObserver);
+                } else {
+                    startObserver();
+                }
+            })();
+        </script>
         <link rel="icon" href="%PUBLIC_URL%/favicon.jpg" type="image/jpeg" />
         <meta name="viewport" content="width=device-width, initial-scale=1" />
         <meta name="theme-color" content="#f97316" />
