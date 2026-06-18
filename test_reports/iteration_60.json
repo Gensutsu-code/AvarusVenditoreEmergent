@@ -1,0 +1,53 @@
+{
+  "summary": "Iteration 60 - Backend merge/partial-fulfillment endpoints + frontend carousels & redesigned search. Backend pytest 9/9 PASSED (merge same-user aggregation/deletion, reject different users, reject completed, reject non-admin/<2 ids; fulfill partial→completed, clamp >qty, clamp <0, 403 for non-admin). Frontend: Home/Catalog/Admin pages all render cleanly with 0 pageerror and 0 console errors — 'Maximum call stack size exceeded' no longer reproducible. All three carousels (discount-promo-banner, new-promo-banner, popular-carousel) render. search-input rose variant shows pink glow on focus.",
+  "backend_issues": {
+    "critical": [],
+    "minor": []
+  },
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [
+      {
+        "flow": "Admin merge/fulfill UI location",
+        "issue": "Spec said /admin/orders should contain checkboxes + 'Объединить' + fulfill modal, but the actual implementation lives on /admin (Panel page) inside an 'Заказы' tab (AdminPage.js lines 1700-1790 with data-testid merge-orders-btn, select-order-{id}, fulfill-order-{id}, fulfill-modal). The route /admin/orders → AdminOrdersPage.js is a separate simpler list with NO merge/fulfill controls. Furthermore, the Orders tab is currently NOT visible in the admin Panel — only Каталог/Бонусы/Платежи/CRM/Маркетинг/Логи/Настройки appear. Admin uses 'Настроить вкладки' to toggle visible tabs and Orders tab appears hidden by default. So the merge/fulfill UI is unreachable without first enabling the Orders tab via 'Настроить вкладки' — this should be auto-enabled or surfaced on /admin/orders as well.",
+        "affected_selectors": ["merge-orders-btn", "select-order-{id}", "fulfill-order-{id}", "fulfill-modal"]
+      },
+      {
+        "flow": "Search dropdown testid",
+        "issue": "search-input present and rose variant pink glow on focus confirmed visually, but the dropdown with results uses a different testid than search-dropdown (when typing 'масло' the empty-state panel renders inline at full width but [data-testid='search-dropdown'] selector returns null). Confirm intended testid name."
+      }
+    ],
+    "design_issues": []
+  },
+  "test_report_links": [
+    "/app/backend/tests/test_iteration60_merge_fulfill.py",
+    "/app/test_reports/pytest/pytest_iteration60.xml"
+  ],
+  "action_items": [
+    "Either (a) auto-enable the 'Заказы' tab in admin Panel for fresh admins, or (b) port the merge/fulfill UI to /admin/orders (AdminOrdersPage.js) so it's reachable from the navbar 'Заказы' link.",
+    "Verify the dropdown rendered by SearchDropdown.js carries data-testid='search-dropdown' (spec requirement) — currently selector returns null even though results panel renders.",
+    "Consider adding data-testid='search-dropdown' on the results popover wrapper if missing."
+  ],
+  "critical_code_review_comments": [
+    "orders.py:881 merge - find_one query uses {'id': {'$in': order_ids}} and compares lengths to validate existence; OK but doesn't account for duplicates in payload (e.g. ['x','x'] passes len==1 if unique, but if 2 same ids and DB returns 1, len mismatch → 404). Better: dedupe order_ids first then check.",
+    "orders.py:935 insert_one + delete_many is NOT atomic; if server crashes between them, both the merged order and originals exist. Wrap in a Mongo transaction if replica set available, or at minimum delete first then insert.",
+    "orders.py:916 new_total computed from price*quantity but ignores original delivery_fee/payment_adjustment/order_discount_percent — the merged order resets discounts and delivery to 0. If customer originally had free delivery threshold met, merged order may now incur delivery_fee surprise. Document or compute consistently.",
+    "orders.py:993 if no items have qf>0 (e.g. all set to 0 explicitly), status falls back to order.get('status','pending') — meaning calling fulfill with all zeros after a partial state will NOT revert to pending. Behaviour OK but worth documenting.",
+    "orders.py:1000 fulfilled_total uses it.get('price') from the OLD items list (not updated_items), so price is still per-unit base; behaviour matches spec but reviewer should verify whether promo/discount-adjusted price is what should be billed.",
+    "AdminPage.js orders/merge UI is gated behind a tab visibility setting; consider exposing 'Объединить' on /admin/orders AdminOrdersPage.js as well so users have a single canonical location.",
+    "Carousels: discount-promo-banner, new-promo-banner, popular-carousel all rendered with no infinite-loop / Maximum call stack errors. Code review shows DiscountPromoBanner uses wrapDist and PopularProducts uses VISIBLE=6 extended array - regression confirmed fixed."
+  ],
+  "updated_files": [
+    "/app/backend/tests/test_iteration60_merge_fulfill.py"
+  ],
+  "success_rate": {
+    "backend": "100% (9/9 passed)",
+    "frontend": "Smoke OK - 0 page errors, 0 console errors, all carousels render, search rose variant works; merge/fulfill UI exists in code with correct testids but tab is hidden by default"
+  },
+  "test_credentials": "admin@avarus.ru / admin; user@demo.com / demo123; 0x0errorr@gmail.com / admin123",
+  "seed_data_creation": "Test creates ephemeral orders via /api/orders and cancels them via /api/orders/{id}/cancel at end of each test. One order is marked completed via PUT /api/admin/orders/{id}/status?status=completed to test merge rejection. No persistent test data leaks.",
+  "retest_needed": false,
+  "should_main_agent_self_test": true,
+  "context_for_next_testing_agent": "Backend test file at /app/backend/tests/test_iteration60_merge_fulfill.py uses fixture two_products that picks 2 in-stock products from /api/products?limit=50 (threshold 5, fallback 1). Login endpoint returns 'token' (not 'access_token'). Admin order status update is PUT /api/admin/orders/{id}/status with status as QUERY PARAM (not body). The merge/fulfill UI lives in /app/frontend/src/pages/AdminPage.js (lines 1700-1790, 4878-4942), not AdminOrdersPage.js. Tab visibility may need to be configured via 'Настроить вкладки' button to expose Orders tab on /admin.",
+  "rca_of_the_issue": "Previously reported 'Maximum call stack size exceeded' confirmed NO LONGER REPRODUCIBLE: Catalog, /admin, /admin/orders pages all load with zero pageerror/console errors. Carousels (DiscountPromoBanner, NewProductsBanner, PopularProducts) use extended-array technique with proper wrap distance and don't recurse. Search redesign with motion.div rose ring renders correctly on focus."
+}
