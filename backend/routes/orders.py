@@ -1014,14 +1014,5 @@ async def fulfill_order_partial(order_id: str, payload: dict, user: dict = Depen
             msg = f"По заказу #{order_id[:8]} отгружено {fulfilled_count} из {total_count} позиций. Сумма к оплате: {int(fulfilled_total)} ₽"
         await notify_user(user_id, "order", title, msg, f"/orders/{order_id}")
 
-        # Try to push to user's linked Telegram chat (if exists)
-        try:
-            chat = await db.chats.find_one({"user_id": user_id, "telegram_chat_id": {"$exists": True, "$ne": None}})
-            if chat and chat.get("telegram_chat_id"):
-                from routes.telegram import _get_bot_token  # type: ignore
-                pass  # bot will pick up via existing notification mechanism if integrated
-        except Exception:
-            pass
-
     return {"success": True, "status": new_status, "fulfilled_total": fulfilled_total, "items": updated_items}
 
