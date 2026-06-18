@@ -1,36 +1,10 @@
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import axios from 'axios';
-import { Sparkles, ArrowRight, Clock, Package, ChevronLeft, ChevronRight, ChevronDown } from 'lucide-react';
+import { Sparkles, ArrowRight, Package, ChevronLeft, ChevronRight, ChevronDown } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 
 const API = `${process.env.REACT_APP_BACKEND_URL}/api`;
-
-const pad = (n) => String(n).padStart(2, '0');
-
-function useCountdown(targetIso) {
-  const [now, setNow] = useState(Date.now());
-  useEffect(() => {
-    if (!targetIso) return undefined;
-    const t = setInterval(() => setNow(Date.now()), 1000);
-    return () => clearInterval(t);
-  }, [targetIso]);
-  if (!targetIso) return null;
-  let target;
-  try {
-    const iso = String(targetIso).includes('T') ? targetIso : `${targetIso}T23:59:59+00:00`;
-    target = new Date(iso).getTime();
-  } catch (_) {
-    return null;
-  }
-  const diff = target - now;
-  if (Number.isNaN(diff) || diff <= 0) return null;
-  const days = Math.floor(diff / (1000 * 60 * 60 * 24));
-  const hours = Math.floor((diff / (1000 * 60 * 60)) % 24);
-  const minutes = Math.floor((diff / (1000 * 60)) % 60);
-  const seconds = Math.floor((diff / 1000) % 60);
-  return { days, hours, minutes, seconds };
-}
 
 export default function NewProductsBanner({ onOpenNew }) {
   const [summary, setSummary] = useState(null);
@@ -85,8 +59,6 @@ export default function NewProductsBanner({ onOpenNew }) {
     };
   }, []);
 
-  const countdown = useCountdown(summary?.earliest_until);
-
   if (loading || !summary || !summary.total_count || summary.total_count <= 0) return null;
 
   const productWord = (n) => {
@@ -127,12 +99,6 @@ export default function NewProductsBanner({ onOpenNew }) {
               <span className="text-white font-extrabold text-lg sm:text-xl tracking-tight">
                 Новинки
               </span>
-              <span
-                data-testid="new-promo-fresh-badge"
-                className="inline-flex items-center px-2 py-0.5 rounded-full bg-white text-emerald-600 text-xs font-bold"
-              >
-                свежие 14 дней
-              </span>
             </div>
             <p className="text-white/90 text-sm mt-0.5 truncate">
               <span data-testid="new-promo-count" className="font-semibold">
@@ -142,29 +108,6 @@ export default function NewProductsBanner({ onOpenNew }) {
             </p>
           </div>
         </div>
-
-        {/* Middle: countdown until earliest expiration */}
-        {countdown && (
-          <div
-            data-testid="new-promo-countdown"
-            className="flex items-center gap-2 px-3 py-2 rounded-xl bg-white/15 backdrop-blur-sm border border-white/25"
-          >
-            <Clock className="w-4 h-4 text-white/90" />
-            <div className="flex items-center gap-1 font-mono text-white text-sm">
-              {countdown.days > 0 && (
-                <>
-                  <span className="font-bold">{countdown.days}</span>
-                  <span className="text-white/70 text-xs">д</span>
-                </>
-              )}
-              <span className="font-bold ml-1">{pad(countdown.hours)}</span>
-              <span className="text-white/70">:</span>
-              <span className="font-bold">{pad(countdown.minutes)}</span>
-              <span className="text-white/70">:</span>
-              <span className="font-bold">{pad(countdown.seconds)}</span>
-            </div>
-          </div>
-        )}
 
         {/* Right: CTA + collapse toggle */}
         <div className="flex items-center gap-2">
