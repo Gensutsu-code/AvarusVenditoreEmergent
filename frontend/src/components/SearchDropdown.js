@@ -20,9 +20,11 @@ export const SearchDropdown = ({
   const [results, setResults] = useState([]);
   const [loading, setLoading] = useState(false);
   const [isOpen, setIsOpen] = useState(false);
+  const [isFocused, setIsFocused] = useState(false);
   const navigate = useNavigate();
   const containerRef = useRef(null);
   const debounceRef = useRef(null);
+  const isRose = variant === 'rose';
 
   // Close dropdown when clicking outside
   useEffect(() => {
@@ -116,31 +118,129 @@ export const SearchDropdown = ({
       {/* Search Input */}
       <div className={`relative ${showSearchButton ? 'flex gap-2' : ''}`}>
         <div className="relative flex-1">
-          <Search className={`absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 ${compact ? 'w-4 h-4' : 'w-5 h-5'}`} />
-          <Input
-            type="text"
-            value={query}
-            onChange={handleInputChange}
-            onKeyDown={handleKeyDown}
-            onFocus={() => query.length >= 2 && results.length > 0 && setIsOpen(true)}
-            placeholder={placeholder}
-            className={`${compact ? 'pl-9 pr-8 h-9 text-sm' : 'pl-11 pr-10 h-12'} rounded-xl backdrop-blur-sm ${
-              variant === 'rose'
-                ? 'border-rose-200 focus:border-rose-400 focus:ring-rose-200 bg-rose-50/60'
-                : 'border-slate-200 focus:border-teal-400 focus:ring-teal-200 bg-white/80'
-            }`}
-            data-testid="search-input"
-          />
-          {loading && (
-            <Loader2 className={`absolute right-3 top-1/2 -translate-y-1/2 text-teal-500 animate-spin ${compact ? 'w-4 h-4' : 'w-5 h-5'}`} />
-          )}
-          {!loading && query && (
-            <button
-              onClick={clearSearch}
-              className={`absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 transition-colors ${compact ? 'w-4 h-4' : 'w-5 h-5'}`}
-            >
-              <X className="w-full h-full" />
-            </button>
+          {isRose ? (
+            <>
+              {/* Animated glow ring — only on rose variant */}
+              <motion.div
+                aria-hidden
+                className="absolute -inset-[2px] rounded-2xl pointer-events-none"
+                style={{
+                  background:
+                    'linear-gradient(120deg, rgba(244,114,182,0.55), rgba(236,72,153,0.35), rgba(217,70,239,0.55))',
+                  filter: 'blur(8px)',
+                }}
+                animate={{
+                  opacity: isFocused ? 0.9 : 0.25,
+                  scale: isFocused ? 1.01 : 1,
+                }}
+                transition={{ duration: 0.4, ease: [0.32, 0.72, 0, 1] }}
+              />
+              {/* Inner card with backdrop & subtle gradient */}
+              <motion.div
+                className="relative rounded-2xl bg-gradient-to-br from-white via-rose-50/60 to-pink-50/40 backdrop-blur-md border border-rose-200/70 overflow-hidden"
+                animate={{
+                  boxShadow: isFocused
+                    ? '0 12px 32px -8px rgba(244,114,182,0.35), 0 0 0 4px rgba(244,114,182,0.12)'
+                    : '0 4px 14px -6px rgba(244,114,182,0.18)',
+                }}
+                transition={{ duration: 0.35, ease: [0.32, 0.72, 0, 1] }}
+              >
+                {/* Decorative shimmer */}
+                <motion.div
+                  aria-hidden
+                  className="pointer-events-none absolute inset-0"
+                  style={{
+                    background:
+                      'linear-gradient(110deg, transparent 30%, rgba(255,255,255,0.45) 50%, transparent 70%)',
+                  }}
+                  animate={{ x: isFocused ? ['-100%', '120%'] : '-100%' }}
+                  transition={{ duration: 1.6, repeat: isFocused ? Infinity : 0, repeatDelay: 2.2 }}
+                />
+                <motion.div
+                  className="relative flex items-center"
+                  animate={{ scale: isFocused ? 1.005 : 1 }}
+                  transition={{ duration: 0.3 }}
+                >
+                  <motion.div
+                    className="absolute left-4 top-1/2 -translate-y-1/2 z-10"
+                    animate={{
+                      color: isFocused ? '#e11d48' : '#fb7185',
+                      scale: isFocused ? 1.1 : 1,
+                      rotate: isFocused ? -8 : 0,
+                    }}
+                    transition={{ duration: 0.35, ease: [0.32, 0.72, 0, 1] }}
+                  >
+                    <Search className={`${compact ? 'w-4 h-4' : 'w-5 h-5'}`} strokeWidth={2.4} />
+                  </motion.div>
+                  <Input
+                    type="text"
+                    value={query}
+                    onChange={handleInputChange}
+                    onKeyDown={handleKeyDown}
+                    onFocus={() => { setIsFocused(true); if (query.length >= 2 && results.length > 0) setIsOpen(true); }}
+                    onBlur={() => setIsFocused(false)}
+                    placeholder={placeholder}
+                    className={`${compact ? 'pl-11 pr-9 h-9 text-sm' : 'pl-12 pr-12 h-12 text-base'} rounded-2xl bg-transparent border-0 focus:ring-0 focus-visible:ring-0 focus:outline-none placeholder:text-rose-300/80 text-slate-700 font-medium`}
+                    data-testid="search-input"
+                  />
+                  <AnimatePresence>
+                    {loading && (
+                      <motion.div
+                        key="loader"
+                        initial={{ opacity: 0, scale: 0.6 }}
+                        animate={{ opacity: 1, scale: 1 }}
+                        exit={{ opacity: 0, scale: 0.6 }}
+                        transition={{ duration: 0.2 }}
+                        className="absolute right-4 top-1/2 -translate-y-1/2 z-10"
+                      >
+                        <Loader2 className={`text-rose-500 animate-spin ${compact ? 'w-4 h-4' : 'w-5 h-5'}`} />
+                      </motion.div>
+                    )}
+                    {!loading && query && (
+                      <motion.button
+                        key="clear"
+                        type="button"
+                        onClick={clearSearch}
+                        initial={{ opacity: 0, scale: 0.6, rotate: -90 }}
+                        animate={{ opacity: 1, scale: 1, rotate: 0 }}
+                        exit={{ opacity: 0, scale: 0.6, rotate: 90 }}
+                        whileHover={{ scale: 1.15, rotate: 90 }}
+                        whileTap={{ scale: 0.9 }}
+                        transition={{ duration: 0.2 }}
+                        className="absolute right-3 top-1/2 -translate-y-1/2 z-10 w-7 h-7 rounded-full bg-rose-100 hover:bg-rose-200 text-rose-600 flex items-center justify-center"
+                      >
+                        <X className="w-4 h-4" />
+                      </motion.button>
+                    )}
+                  </AnimatePresence>
+                </motion.div>
+              </motion.div>
+            </>
+          ) : (
+            <>
+              <Search className={`absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 ${compact ? 'w-4 h-4' : 'w-5 h-5'}`} />
+              <Input
+                type="text"
+                value={query}
+                onChange={handleInputChange}
+                onKeyDown={handleKeyDown}
+                onFocus={() => query.length >= 2 && results.length > 0 && setIsOpen(true)}
+                placeholder={placeholder}
+                className={`${compact ? 'pl-9 pr-8 h-9 text-sm' : 'pl-11 pr-10 h-12'} rounded-xl backdrop-blur-sm border-slate-200 focus:border-teal-400 focus:ring-teal-200 bg-white/80`}
+                data-testid="search-input"
+              />
+              {loading && (
+                <Loader2 className={`absolute right-3 top-1/2 -translate-y-1/2 text-teal-500 animate-spin ${compact ? 'w-4 h-4' : 'w-5 h-5'}`} />
+              )}
+              {!loading && query && (
+                <button
+                  onClick={clearSearch}
+                  className={`absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 transition-colors ${compact ? 'w-4 h-4' : 'w-5 h-5'}`}
+                >
+                  <X className="w-full h-full" />
+                </button>
+              )}
+            </>
           )}
         </div>
         {showSearchButton && (
