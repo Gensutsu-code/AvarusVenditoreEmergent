@@ -1003,109 +1003,109 @@ export default function CatalogPage() {
 
           {/* Right content — Products */}
           <div className="flex-1 min-w-0">
-            {/* Categories - show when no search/category selected */}
-            {!searchQuery && !categoryId && (
-              <div className="mb-8">
-                {/* Promo banner — auto-appears when there are active discounts */}
-                <DiscountPromoBanner onOpenDiscounts={() => selectCategory('discounted')} />
-                {/* New products banner — auto-appears when there are products with is_new */}
-                <NewProductsBanner onOpenNew={() => selectCategory('new')} />
+            {/* Content */}
+            {!searchQuery && !categoryId ? (
+              <>
+                <div data-testid="search-prompt">
+                  <div className="text-center py-8 mb-8">
+                    <Search className="w-16 h-16 mx-auto mb-4 text-slate-300" />
+                    <p className="text-slate-500">
+                      Введите название или артикул, либо выберите категорию
+                    </p>
+                  </div>
 
-                <h2 className="text-lg font-semibold mb-4 text-slate-800">Категории</h2>
-                <div
-                  className="grid gap-3"
-                  style={{ gridTemplateColumns: `repeat(${columnsCount}, minmax(0, 1fr))` }}
-                >
-                  {/* Virtual categories: Ассортимент, Новинки, Скидки */}
-                  <motion.button
-                    onClick={() => selectCategory('assortment')}
-                    className="group glass-card transition-all duration-300 p-3 text-left hover:border-teal-400/50 bg-gradient-to-br from-slate-50 to-teal-50/30"
-                    data-testid="category-assortment"
-                    whileHover={{ scale: 1.02 }}
-                    whileTap={{ scale: 0.98 }}
+                  {/* Popular Products — теперь первыми */}
+                  <PopularProducts />
+                </div>
+
+                {/* Banners + Categories — отображаются ПОД блоком "Популярные товары" */}
+                <div className="mb-8">
+                  {/* Promo banner — auto-appears when there are active discounts */}
+                  <DiscountPromoBanner onOpenDiscounts={() => selectCategory('discounted')} />
+                  {/* New products banner — auto-appears when there are products with is_new */}
+                  <NewProductsBanner onOpenNew={() => selectCategory('new')} />
+
+                  <h2 className="text-lg font-semibold mb-4 text-slate-800">Категории</h2>
+                  <div
+                    className="grid gap-3"
+                    style={{ gridTemplateColumns: `repeat(${columnsCount}, minmax(0, 1fr))` }}
                   >
-                    <div className="aspect-square mb-2 rounded-lg bg-gradient-to-br from-teal-400 to-cyan-500 flex items-center justify-center">
-                      <Layers className="w-12 h-12 text-white" />
-                    </div>
-                    <h3 className="font-medium text-sm transition-colors flex items-center justify-between text-slate-800 group-hover:text-teal-600">
-                      Ассортимент
-                      <ArrowRight className="w-3 h-3 opacity-0 group-hover:opacity-100 transition-opacity" />
-                    </h3>
-                  </motion.button>
-
-                  <motion.button
-                    onClick={() => selectCategory('new')}
-                    className="group glass-card transition-all duration-300 p-3 text-left hover:border-emerald-400/50 bg-gradient-to-br from-emerald-50 to-green-50/40"
-                    data-testid="category-new"
-                    whileHover={{ scale: 1.02 }}
-                    whileTap={{ scale: 0.98 }}
-                  >
-                    <div className="aspect-square mb-2 rounded-lg bg-gradient-to-br from-emerald-400 to-green-500 flex items-center justify-center">
-                      <Sparkles className="w-12 h-12 text-white" />
-                    </div>
-                    <h3 className="font-medium text-sm transition-colors flex items-center justify-between text-slate-800 group-hover:text-emerald-600">
-                      Новинки
-                      <ArrowRight className="w-3 h-3 opacity-0 group-hover:opacity-100 transition-opacity" />
-                    </h3>
-                  </motion.button>
-
-                  <motion.button
-                    onClick={() => selectCategory('discounted')}
-                    className="group glass-card transition-all duration-300 p-3 text-left hover:border-rose-400/50 bg-gradient-to-br from-rose-50 to-pink-50/40"
-                    data-testid="category-discounted"
-                    whileHover={{ scale: 1.02 }}
-                    whileTap={{ scale: 0.98 }}
-                  >
-                    <div className="aspect-square mb-2 rounded-lg bg-gradient-to-br from-rose-500 to-pink-500 flex items-center justify-center">
-                      <Flame className="w-12 h-12 text-white" />
-                    </div>
-                    <h3 className="font-medium text-sm transition-colors flex items-center justify-between text-slate-800 group-hover:text-rose-600">
-                      Скидки и Акции
-                      <ArrowRight className="w-3 h-3 opacity-0 group-hover:opacity-100 transition-opacity" />
-                    </h3>
-                  </motion.button>
-
-                  {categories.map((category) => (
+                    {/* Virtual categories: Ассортимент, Новинки, Скидки */}
                     <motion.button
-                      key={category.id}
-                      onClick={() => selectCategory(category.id)}
-                      className="group glass-card transition-all duration-300 p-3 text-left hover:border-teal-400/50"
-                      data-testid={`category-${category.id}`}
+                      onClick={() => selectCategory('assortment')}
+                      className="group glass-card transition-all duration-300 p-3 text-left hover:border-teal-400/50 bg-gradient-to-br from-slate-50 to-teal-50/30"
+                      data-testid="category-assortment"
                       whileHover={{ scale: 1.02 }}
                       whileTap={{ scale: 0.98 }}
                     >
-                      {category.image_url && (
-                        <div className="aspect-square mb-2 overflow-hidden rounded-lg bg-slate-100">
-                          <img 
-                            src={category.image_url} 
-                            alt={category.name}
-                            className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
-                          />
-                        </div>
-                      )}
+                      <div className="aspect-square mb-2 rounded-lg bg-gradient-to-br from-teal-400 to-cyan-500 flex items-center justify-center">
+                        <Layers className="w-12 h-12 text-white" />
+                      </div>
                       <h3 className="font-medium text-sm transition-colors flex items-center justify-between text-slate-800 group-hover:text-teal-600">
-                        {category.name}
+                        Ассортимент
                         <ArrowRight className="w-3 h-3 opacity-0 group-hover:opacity-100 transition-opacity" />
                       </h3>
                     </motion.button>
-                  ))}
-                </div>
-              </div>
-            )}
 
-            {/* Content */}
-            {!searchQuery && !categoryId ? (
-              <div data-testid="search-prompt">
-                <div className="text-center py-8 mb-8">
-                  <Search className="w-16 h-16 mx-auto mb-4 text-slate-300" />
-                  <p className="text-slate-500">
-                    Введите название или артикул, либо выберите категорию
-                  </p>
+                    <motion.button
+                      onClick={() => selectCategory('new')}
+                      className="group glass-card transition-all duration-300 p-3 text-left hover:border-emerald-400/50 bg-gradient-to-br from-emerald-50 to-green-50/40"
+                      data-testid="category-new"
+                      whileHover={{ scale: 1.02 }}
+                      whileTap={{ scale: 0.98 }}
+                    >
+                      <div className="aspect-square mb-2 rounded-lg bg-gradient-to-br from-emerald-400 to-green-500 flex items-center justify-center">
+                        <Sparkles className="w-12 h-12 text-white" />
+                      </div>
+                      <h3 className="font-medium text-sm transition-colors flex items-center justify-between text-slate-800 group-hover:text-emerald-600">
+                        Новинки
+                        <ArrowRight className="w-3 h-3 opacity-0 group-hover:opacity-100 transition-opacity" />
+                      </h3>
+                    </motion.button>
+
+                    <motion.button
+                      onClick={() => selectCategory('discounted')}
+                      className="group glass-card transition-all duration-300 p-3 text-left hover:border-rose-400/50 bg-gradient-to-br from-rose-50 to-pink-50/40"
+                      data-testid="category-discounted"
+                      whileHover={{ scale: 1.02 }}
+                      whileTap={{ scale: 0.98 }}
+                    >
+                      <div className="aspect-square mb-2 rounded-lg bg-gradient-to-br from-rose-500 to-pink-500 flex items-center justify-center">
+                        <Flame className="w-12 h-12 text-white" />
+                      </div>
+                      <h3 className="font-medium text-sm transition-colors flex items-center justify-between text-slate-800 group-hover:text-rose-600">
+                        Скидки и Акции
+                        <ArrowRight className="w-3 h-3 opacity-0 group-hover:opacity-100 transition-opacity" />
+                      </h3>
+                    </motion.button>
+
+                    {categories.map((category) => (
+                      <motion.button
+                        key={category.id}
+                        onClick={() => selectCategory(category.id)}
+                        className="group glass-card transition-all duration-300 p-3 text-left hover:border-teal-400/50"
+                        data-testid={`category-${category.id}`}
+                        whileHover={{ scale: 1.02 }}
+                        whileTap={{ scale: 0.98 }}
+                      >
+                        {category.image_url && (
+                          <div className="aspect-square mb-2 overflow-hidden rounded-lg bg-slate-100">
+                            <img 
+                              src={category.image_url} 
+                              alt={category.name}
+                              className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                            />
+                          </div>
+                        )}
+                        <h3 className="font-medium text-sm transition-colors flex items-center justify-between text-slate-800 group-hover:text-teal-600">
+                          {category.name}
+                          <ArrowRight className="w-3 h-3 opacity-0 group-hover:opacity-100 transition-opacity" />
+                        </h3>
+                      </motion.button>
+                    ))}
+                  </div>
                 </div>
-                
-                {/* Popular Products */}
-                <PopularProducts />
-              </div>
+              </>
             ) : loading ? (
               <div className="text-center py-12 text-slate-500" data-testid="loading">
                 <div className="w-8 h-8 border-2 rounded-full animate-spin mx-auto mb-4 border-teal-500/30 border-t-teal-500"></div>
