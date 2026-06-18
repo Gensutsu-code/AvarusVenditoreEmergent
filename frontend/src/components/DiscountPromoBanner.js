@@ -177,8 +177,8 @@ export default function DiscountPromoBanner({ onOpenDiscounts }) {
 
         // Card sizing & shifts (percent of strip container width). Уменьшено на 20% от прежнего размера.
         const cardW = isNarrow ? 29 : 13;        // 36 → 29; 16 → 13
-        const adjShift = isNarrow ? 30 : 14;     // step for the 3 visible center cards
-        const farShift = isNarrow ? 60 : 26;     // step for "behind curtain" peek cards
+        const adjShift = isNarrow ? 33 : 17;     // расстояние между центрами 3 видимых карточек — увеличены отступы
+        const farShift = isNarrow ? 68 : 32;     // расстояние до пиков "за ширмой"
 
         // Compute signed shortest distance with wrap-around for infinite loop
         const wrapDist = (i, center) => {
@@ -195,8 +195,8 @@ export default function DiscountPromoBanner({ onOpenDiscounts }) {
             onTouchStart={() => setIsPaused(true)}
             onTouchEnd={() => setIsPaused(false)}
           >
-            {/* Carousel viewport — высота строго под карточку (фото + инфо) c минимальным запасом для scale 1.05 */}
-            <div className="relative mx-auto h-[200px] sm:h-[230px] overflow-hidden">
+            {/* Carousel viewport — высота вмещает карточку (фото + инфо) c запасом для центрального scale 1.05 */}
+            <div className="relative mx-auto h-[200px] sm:h-[250px] overflow-hidden">
               {featured.map((p, i) => {
                 const dist = wrapDist(i, centerIndex);
                 const absD = Math.abs(dist);
