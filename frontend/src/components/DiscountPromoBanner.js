@@ -106,10 +106,10 @@ export default function DiscountPromoBanner({ onOpenDiscounts }) {
       className="relative overflow-hidden rounded-2xl mb-4 border border-rose-200/60 shadow-lg shadow-rose-500/10"
     >
       {/* Background gradient */}
-      <div className="absolute inset-0 bg-gradient-to-r from-rose-500 via-pink-500 to-fuchsia-500" />
+      <div className="absolute inset-0 bg-gradient-to-r from-rose-400 via-pink-400 to-fuchsia-400" />
       {/* Decorative blurred blobs */}
-      <div className="absolute -top-12 -left-10 w-48 h-48 rounded-full bg-amber-300/40 blur-3xl pointer-events-none" />
-      <div className="absolute -bottom-16 right-10 w-56 h-56 rounded-full bg-fuchsia-300/30 blur-3xl pointer-events-none" />
+      <div className="absolute -top-12 -left-10 w-48 h-48 rounded-full bg-amber-200/30 blur-3xl pointer-events-none" />
+      <div className="absolute -bottom-16 right-10 w-56 h-56 rounded-full bg-fuchsia-200/25 blur-3xl pointer-events-none" />
       {/* Animated subtle pulse */}
       <motion.div
         aria-hidden
@@ -271,8 +271,8 @@ export default function DiscountPromoBanner({ onOpenDiscounts }) {
               })}
 
               {/* Curtain gradient overlays — left + right edges */}
-              <div className="pointer-events-none absolute inset-y-0 left-0 w-16 sm:w-24 bg-gradient-to-r from-rose-500 via-rose-500/70 to-transparent z-[15]" />
-              <div className="pointer-events-none absolute inset-y-0 right-0 w-16 sm:w-24 bg-gradient-to-l from-fuchsia-500 via-fuchsia-500/70 to-transparent z-[15]" />
+              <div className="pointer-events-none absolute inset-y-0 left-0 w-16 sm:w-24 bg-gradient-to-r from-rose-400 via-rose-400/70 to-transparent z-[15]" />
+              <div className="pointer-events-none absolute inset-y-0 right-0 w-16 sm:w-24 bg-gradient-to-l from-fuchsia-400 via-fuchsia-400/70 to-transparent z-[15]" />
 
               {/* Arrows — бесконечный цикл, поэтому никогда не disabled */}
               {N > 3 && (

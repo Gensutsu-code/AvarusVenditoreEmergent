@@ -106,9 +106,9 @@ export default function NewProductsBanner({ onOpenNew }) {
       className="relative overflow-hidden rounded-2xl mb-4 border border-emerald-200/60 shadow-lg shadow-emerald-500/10"
     >
       {/* Background gradient — emerald/teal palette */}
-      <div className="absolute inset-0 bg-gradient-to-r from-emerald-500 via-green-500 to-teal-500" />
-      <div className="absolute -top-12 -left-10 w-48 h-48 rounded-full bg-lime-300/40 blur-3xl pointer-events-none" />
-      <div className="absolute -bottom-16 right-10 w-56 h-56 rounded-full bg-teal-300/30 blur-3xl pointer-events-none" />
+      <div className="absolute inset-0 bg-gradient-to-r from-emerald-400 via-green-400 to-teal-400" />
+      <div className="absolute -top-12 -left-10 w-48 h-48 rounded-full bg-lime-200/30 blur-3xl pointer-events-none" />
+      <div className="absolute -bottom-16 right-10 w-56 h-56 rounded-full bg-teal-200/25 blur-3xl pointer-events-none" />
       <motion.div
         aria-hidden
         className="absolute inset-0 bg-white/5"
@@ -264,8 +264,8 @@ export default function NewProductsBanner({ onOpenNew }) {
                     })}
 
                     {/* Curtain gradient overlays */}
-                    <div className="pointer-events-none absolute inset-y-0 left-0 w-16 sm:w-24 bg-gradient-to-r from-emerald-500 via-emerald-500/70 to-transparent z-[15]" />
-                    <div className="pointer-events-none absolute inset-y-0 right-0 w-16 sm:w-24 bg-gradient-to-l from-teal-500 via-teal-500/70 to-transparent z-[15]" />
+                    <div className="pointer-events-none absolute inset-y-0 left-0 w-16 sm:w-24 bg-gradient-to-r from-emerald-400 via-emerald-400/70 to-transparent z-[15]" />
+                    <div className="pointer-events-none absolute inset-y-0 right-0 w-16 sm:w-24 bg-gradient-to-l from-teal-400 via-teal-400/70 to-transparent z-[15]" />
 
                     {N > 3 && (
                       <>
