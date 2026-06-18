@@ -15,7 +15,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { trackClick } from '../utils/tracker';
 import DiscountRequestModal from '../components/DiscountRequestModal';
 import ProductRequestModal from '../components/ProductRequestModal';
-import { computeDiscount, formatDiscountBadge, formatUntilDate } from '../utils/productHelpers';
+import { computeDiscount, formatDiscountBadge, formatUntilDate, getQuantityTiers, getActiveTier } from '../utils/productHelpers';
 
 const API = `${process.env.REACT_APP_BACKEND_URL}/api`;
 
@@ -357,7 +357,7 @@ export default function ProductPage() {
                       <p className="text-xs text-emerald-600 font-semibold mt-1">Ваша индивидуальная цена</p>
                     </div>
                   ) : (() => {
-                    const discount = computeDiscount(product);
+                    const discount = computeDiscount(product, quantity);
                     if (discount) {
                       const until = formatUntilDate(discount.until);
                       return (
@@ -410,6 +410,67 @@ export default function ProductPage() {
                 </div>
               </div>
             </motion.div>
+
+            {/* Quantity discount tiers preview */}
+            {individualPrice == null && (() => {
+              const tiers = getQuantityTiers(product);
+              if (!tiers.length) return null;
+              const active = getActiveTier(tiers, quantity);
+              return (
+                <motion.div
+                  className="glass-card p-5 relative overflow-hidden"
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: 0.38 }}
+                  data-testid="quantity-tiers-card"
+                >
+                  <div className="flex items-center gap-2 mb-3">
+                    <div className="w-8 h-8 rounded-lg flex items-center justify-center bg-rose-500/10">
+                      <Layers className="w-4 h-4 text-rose-600" />
+                    </div>
+                    <div>
+                      <h3 className="text-sm font-bold text-slate-800">Чем больше — тем дешевле</h3>
+                      <p className="text-[11px] text-slate-500">Оптовые скидки за количество</p>
+                    </div>
+                  </div>
+                  <div className="space-y-2">
+                    {tiers.map((t, i) => {
+                      const isActive = active && active.minQty === t.minQty;
+                      return (
+                        <button
+                          key={i}
+                          type="button"
+                          onClick={() => setQuantity(t.minQty)}
+                          className={`w-full flex items-center justify-between gap-3 px-3 py-2 rounded-xl border transition-all duration-200 text-left ${
+                            isActive
+                              ? 'bg-gradient-to-r from-rose-50 to-pink-50 border-rose-300 shadow-sm shadow-rose-500/10'
+                              : 'bg-white/50 border-slate-200 hover:border-rose-200 hover:bg-rose-50/40'
+                          }`}
+                          data-testid={`tier-row-${t.minQty}`}
+                        >
+                          <span className={`text-sm font-semibold ${isActive ? 'text-rose-700' : 'text-slate-700'}`}>
+                            от {t.minQty} шт.
+                          </span>
+                          <div className="flex items-center gap-2">
+                            <span className="inline-flex items-center bg-gradient-to-r from-rose-500 to-pink-500 text-white text-[11px] font-extrabold px-2 py-0.5 rounded-md">
+                              {t.type === 'percent' ? `−${Math.round(t.percent)}%` : `−${formatPrice(t.amount)} ₽`}
+                            </span>
+                            <span className={`text-sm font-bold ${isActive ? 'text-rose-600' : 'text-slate-600'}`}>
+                              {formatPrice(t.finalPrice)} ₽<span className="text-[10px] text-slate-400 font-normal">/шт</span>
+                            </span>
+                          </div>
+                        </button>
+                      );
+                    })}
+                  </div>
+                  {active && (
+                    <p className="text-[11px] text-rose-600 font-medium mt-3" data-testid="tier-active-hint">
+                      При {quantity} шт. действует цена {formatPrice(active.finalPrice)} ₽/шт. — экономия {formatPrice(active.amount * quantity)} ₽
+                    </p>
+                  )}
+                </motion.div>
+              );
+            })()}
 
             {/* Features */}
             <motion.div 

@@ -63,6 +63,63 @@ export function computeDiscount(product, quantity = 1) {
 }
 
 /**
+ * Return normalized, sorted quantity-discount tiers for client preview.
+ * Each tier: { minQty, type, value, percent, amount, finalPrice }.
+ * Returns [] when no active tiers (respects discount_active + expiry).
+ */
+export function getQuantityTiers(product) {
+  if (!product || !product.discount_active) return [];
+  if (product.discount_until) {
+    const until = new Date(product.discount_until);
+    if (isNaN(until.getTime()) || until.getTime() <= Date.now()) return [];
+  }
+  const tiers = Array.isArray(product.discount_tiers) ? product.discount_tiers : [];
+  if (!tiers.length) return [];
+
+  const price = Number(product.price) || 0;
+  return tiers
+    .filter(t => t && t.min_qty != null && Number(t.value) > 0)
+    .map(t => {
+      const minQty = Number(t.min_qty);
+      const type = t.type || 'percent';
+      const val = Number(t.value) || 0;
+      let percent = 0;
+      let amount = 0;
+      let finalPrice = price;
+      if (type === 'percent') {
+        percent = Math.min(99, Math.max(0, val));
+        amount = (price * percent) / 100;
+        finalPrice = Math.max(0, price - amount);
+      } else {
+        amount = Math.max(0, val);
+        finalPrice = Math.max(0, price - amount);
+        percent = price > 0 ? (amount / price) * 100 : 0;
+      }
+      return {
+        minQty,
+        type,
+        value: val,
+        percent: Math.round(percent * 10) / 10,
+        amount: Math.round(amount * 100) / 100,
+        finalPrice: Math.round(finalPrice * 100) / 100,
+      };
+    })
+    .sort((a, b) => a.minQty - b.minQty);
+}
+
+/**
+ * Given sorted tiers and a quantity, return the active tier (or null).
+ */
+export function getActiveTier(tiers, quantity) {
+  if (!Array.isArray(tiers) || !tiers.length) return null;
+  let best = null;
+  for (const t of tiers) {
+    if (t.minQty <= quantity) best = t;
+  }
+  return best;
+}
+
+/**
  * Compute whether the "Новинки" badge should be shown.
  * Returns { active, until } or null.
  */

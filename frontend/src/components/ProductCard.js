@@ -1,12 +1,12 @@
 import { Link } from 'react-router-dom';
-import { ShoppingCart, Package, ShieldCheck, BadgeCheck, Gift, Tag, Truck } from 'lucide-react';
+import { ShoppingCart, Package, ShieldCheck, BadgeCheck, Gift, Tag, Truck, Layers } from 'lucide-react';
 import { Button } from './ui/button';
 import { useCart } from '../context/CartContext';
 import { useAuth } from '../context/AuthContext';
 import { toast } from 'sonner';
 import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { computeDiscount, formatDiscountBadge, formatUntilDate, getDeliveryBadge } from '../utils/productHelpers';
+import { computeDiscount, formatDiscountBadge, formatUntilDate, getDeliveryBadge, getQuantityTiers } from '../utils/productHelpers';
 
 export const ProductCard = ({ product, index = 0 }) => {
   const { addToCart } = useCart();
@@ -38,6 +38,8 @@ export const ProductCard = ({ product, index = 0 }) => {
   const discount = computeDiscount(product);
   const deliveryBadge = getDeliveryBadge(product.delivery_days);
   const untilFormatted = formatUntilDate(discount?.until);
+  const quantityTiers = getQuantityTiers(product);
+  const minTierQty = quantityTiers.length ? quantityTiers[0].minQty : null;
 
   return (
     <motion.div
@@ -193,6 +195,15 @@ export const ProductCard = ({ product, index = 0 }) => {
               <Truck className="w-3 h-3" />
               {deliveryBadge.label}
             </span>
+            {minTierQty != null && (
+              <span
+                className="inline-flex items-center gap-1 text-[11px] font-semibold px-2 py-0.5 rounded-md border bg-rose-50 text-rose-600 border-rose-200 ml-2"
+                data-testid={`tier-badge-${product.id}`}
+              >
+                <Layers className="w-3 h-3" />
+                Опт. скидка от {minTierQty} шт.
+              </span>
+            )}
           </div>
           </div>
         </motion.div>

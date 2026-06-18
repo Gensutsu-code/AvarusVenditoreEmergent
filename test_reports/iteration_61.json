@@ -1,0 +1,39 @@
+{
+  "summary": "Frontend-only testing of tiered quantity discounts preview. ProductPage tier preview (quantity-tiers-card, tier-row-{minQty}, tier-active-hint, qty-plus → price refresh) all work correctly for product 8cd5b1c5-7980-4765-9db9-8e309614f8c5 as logged-out client. Product without tiers correctly omits the card. However, catalog/listing tier-badge (data-testid='tier-badge-{productId}') is MISSING because the CatalogPage uses an inline ProductCard component that never imports or renders the tier badge.",
+  "backend_issues": {"critical": [], "minor": []},
+  "frontend_issues": {
+    "ui_bugs": [
+      {
+        "component": "CatalogPage inline ProductCard (/app/frontend/src/pages/CatalogPage.js, starts line 40)",
+        "issue": "tier-badge-{productId} ('Опт. скидка от N шт.') is not rendered on /catalog product cards. The standalone /app/frontend/src/components/ProductCard.js contains the tier-badge logic (lines 198-206) but is dead code — it is not imported anywhere. CatalogPage defines its own ProductCard which does not call getQuantityTiers() nor render a tier-badge. Verified on /catalog?category=assortment: product 8cd5b1c5-7980-4765-9db9-8e309614f8c5 card is present but no tier-badge element exists.",
+        "selector": "[data-testid=\"tier-badge-8cd5b1c5-7980-4765-9db9-8e309614f8c5\"]",
+        "priority": "HIGH"
+      }
+    ],
+    "integration_issues": [],
+    "design_issues": []
+  },
+  "test_report_links": [
+    "/app/test_reports/tiers_product_page.png",
+    "/app/test_reports/catalog_all.png"
+  ],
+  "action_items": [
+    "Add tier-badge rendering to the inline ProductCard inside /app/frontend/src/pages/CatalogPage.js (around the delivery badge block, ~line 198 area) using getQuantityTiers(product) — mirror the pattern from /app/frontend/src/components/ProductCard.js lines 198-206. data-testid='tier-badge-{product.id}', label 'Опт. скидка от {minQty} шт.'. Required for both main list and the alternatives list (both use the same ProductCard).",
+    "Also consider removing /app/frontend/src/components/ProductCard.js (dead code, not imported anywhere) or consolidating to a single shared component to prevent future drift."
+  ],
+  "critical_code_review_comments": [
+    "Duplicate ProductCard components: /app/frontend/src/components/ProductCard.js (unused, ~213 lines) duplicates the responsibility of the inline ProductCard inside /app/frontend/src/pages/CatalogPage.js (~1274 lines). The standalone file is dead code and has caused the tier-badge feature to silently regress on the catalog because only the unused component was updated.",
+    "/app/frontend/src/pages/CatalogPage.js exceeds 700 lines (1274 lines) — should be split into smaller modules (ProductCard, filters, sorting, list).",
+    "ProductPage.js: tier preview correctly gated on individualPrice == null and respects discount_active + discount_until expiry (via getQuantityTiers). Good.",
+    "computeDiscount + getQuantityTiers share normalization logic — consider extracting one helper to compute final price from a (type, value, basePrice) triple to DRY up.",
+    "Stock=0 product still shows tiers card as expected — good (informational even when OOS)."
+  ],
+  "updated_files": [],
+  "success_rate": {"backend": "n/a (skipped)", "frontend": "83% (5/6 acceptance criteria)"},
+  "test_credentials": "n/a — tested as logged-out client as per request",
+  "seed_data_creation": "none — used existing product 8cd5b1c5-7980-4765-9db9-8e309614f8c5 (tiers) and aa56c8f3-b458-4b51-b192-5156e11f64fd (no tiers)",
+  "retest_needed": true,
+  "main_agent_can_self_test": true,
+  "context_for_next_testing_agent": "ProductPage tier preview is fully verified on logged-out session: data-testid='quantity-tiers-card', tier-row-5 ('от 5 шт. -30% 70 ₽/шт'), tier-row-10 ('от 10 шт. -50% 50 ₽/шт'), clicking a row sets qty-value to minQty and product-price updates (10 → 50 ₽, 5 → 70 ₽), qty-plus to 5 activates the first tier and adds border-rose-300 visual highlight, tier-active-hint shows correct savings. The bug is ONLY in the catalog listing: CatalogPage uses its OWN inline ProductCard (lines 40-? of /app/frontend/src/pages/CatalogPage.js) which is missing the tier-badge logic. The standalone /app/frontend/src/components/ProductCard.js HAS the logic but is not imported anywhere — adding tier-badge rendering to the inline component is the fix. After fix, retest on /catalog?category=assortment for product 8cd5b1c5-7980-4765-9db9-8e309614f8c5 → tier-badge with text 'Опт. скидка от 5 шт.' should appear; for products with empty discount_tiers (e.g. aa56c8f3-...) the badge must remain absent.",
+  "rca of the issue": "Root cause: /app/frontend/src/pages/CatalogPage.js defines its own inline ProductCard (line 40+) and does NOT import the standalone /app/frontend/src/components/ProductCard.js. The PRD work to add tier-badge was only applied to the standalone file (which is dead code), so the catalog never renders the badge. Reproduction: 1) Navigate to /catalog → click 'Все товары' → search for the card with data-testid='product-card-8cd5b1c5-7980-4765-9db9-8e309614f8c5'. 2) Query for data-testid='tier-badge-8cd5b1c5-7980-4765-9db9-8e309614f8c5' → returns null. Mitigation: replicate the tier-badge JSX (lines 198-206 of components/ProductCard.js) into the inline ProductCard in CatalogPage.js right after the delivery-badge span (or convert CatalogPage to import the shared component)."
+}
