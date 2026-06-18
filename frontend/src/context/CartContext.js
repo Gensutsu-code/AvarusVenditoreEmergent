@@ -1,4 +1,4 @@
-import { createContext, useContext, useState, useEffect, useCallback, useRef } from 'react';
+import { createContext, useContext, useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import axios from 'axios';
 import { useAuth } from './AuthContext';
 
@@ -20,6 +20,18 @@ export const CartProvider = ({ children }) => {
       setCart({ items: [] });
     }
   }, [user, token]);
+
+  // Cleanup all pending timers on unmount to prevent ref leaks that confuse
+  // third-party DOM walkers (e.g., PostHog session recorder) during navigation
+  useEffect(() => {
+    const timers = debounceTimers.current;
+    const pending = pendingUpdates.current;
+    return () => {
+      Object.values(timers).forEach((timer) => clearTimeout(timer));
+      Object.keys(timers).forEach((k) => delete timers[k]);
+      Object.keys(pending).forEach((k) => delete pending[k]);
+    };
+  }, []);
 
   const fetchCart = async () => {
     if (!token) return;
@@ -136,21 +148,25 @@ export const CartProvider = ({ children }) => {
   const cartTotal = cart.items.reduce((sum, item) => sum + item.price * item.quantity, 0);
   const cartCount = cart.items.reduce((sum, item) => sum + item.quantity, 0);
 
-  return (
-    <CartContext.Provider value={{ 
-      cart, 
-      loading, 
-      addToCart, 
-      updateQuantity, 
-      removeFromCart, 
-      clearCart, 
+  // Memoize context value so the provider does not emit a fresh object every
+  // render — otherwise downstream observers (PostHog rrweb, devtools, etc.)
+  // re-walk closures containing refs and may stack-overflow on navigation.
+  const value = useMemo(
+    () => ({
+      cart,
+      loading,
+      addToCart,
+      updateQuantity,
+      removeFromCart,
+      clearCart,
       fetchCart,
       cartTotal,
-      cartCount 
-    }}>
-      {children}
-    </CartContext.Provider>
+      cartCount,
+    }),
+    [cart, loading, updateQuantity, cartTotal, cartCount]
   );
+
+  return <CartContext.Provider value={value}>{children}</CartContext.Provider>;
 };
 
 export const useCart = () => useContext(CartContext);

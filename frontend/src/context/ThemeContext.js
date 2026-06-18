@@ -1,4 +1,4 @@
-import { createContext, useContext, useEffect } from 'react';
+import { createContext, useContext, useEffect, useMemo } from 'react';
 
 const ThemeContext = createContext();
 
@@ -27,9 +27,11 @@ export const ThemeProvider = ({ children }) => {
   const toggleTheme = () => {};
   const setTheme = () => {};
 
-  return (
-    <ThemeContext.Provider value={{ theme, setTheme, toggleTheme, isDark, isLight }}>
-      {children}
-    </ThemeContext.Provider>
+  // Memoize — value is effectively constant; no need to recreate every render.
+  const value = useMemo(
+    () => ({ theme, setTheme, toggleTheme, isDark, isLight }),
+    []
   );
+
+  return <ThemeContext.Provider value={value}>{children}</ThemeContext.Provider>;
 };

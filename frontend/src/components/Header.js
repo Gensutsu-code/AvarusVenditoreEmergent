@@ -30,6 +30,17 @@ const ExpandableProfileMenu = ({ onLogout, unreadCount = 0 }) => {
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
+  // Cleanup auto-collapse timer on unmount — otherwise the ref-closure can
+  // outlive the component during route changes and trip third-party walkers.
+  useEffect(() => {
+    return () => {
+      if (timeoutRef.current) {
+        clearTimeout(timeoutRef.current);
+        timeoutRef.current = null;
+      }
+    };
+  }, []);
+
   const handleProfileClick = () => {
     if (!isExpanded) {
       setIsExpanded(true);

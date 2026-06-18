@@ -1,4 +1,4 @@
-import { createContext, useContext, useState, useEffect } from 'react';
+import { createContext, useContext, useState, useEffect, useMemo } from 'react';
 import axios from 'axios';
 
 const AuthContext = createContext(null);
@@ -75,11 +75,14 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
-  return (
-    <AuthContext.Provider value={{ user, token, loading, login, register, logout, refreshUser }}>
-      {children}
-    </AuthContext.Provider>
+  // Memoize so context value identity is stable across renders — prevents
+  // third-party DOM/fiber walkers from re-traversing closures every render.
+  const value = useMemo(
+    () => ({ user, token, loading, login, register, logout, refreshUser }),
+    [user, token, loading]
   );
+
+  return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 };
 
 export const useAuth = () => useContext(AuthContext);
