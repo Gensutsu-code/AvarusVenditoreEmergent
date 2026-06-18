@@ -258,7 +258,7 @@ export const SearchDropdown = ({
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: -10, scale: 0.98 }}
             transition={{ duration: 0.2 }}
-            className={`absolute left-0 top-full mt-2 bg-white/95 backdrop-blur-xl border border-slate-200 rounded-2xl shadow-xl z-50 overflow-hidden ${compact ? 'w-80 max-h-80' : 'w-[450px] max-h-96'}`}
+            className={`absolute left-0 right-0 top-full mt-2 bg-white/95 backdrop-blur-xl border border-slate-200 rounded-2xl shadow-xl z-50 overflow-hidden ${compact ? 'max-h-80' : 'max-h-96'}`}
             data-testid="search-dropdown"
           >
             <div className="p-2 border-b border-slate-100">
