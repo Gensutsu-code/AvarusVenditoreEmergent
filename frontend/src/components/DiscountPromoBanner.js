@@ -195,8 +195,8 @@ export default function DiscountPromoBanner({ onOpenDiscounts }) {
             onTouchStart={() => setIsPaused(true)}
             onTouchEnd={() => setIsPaused(false)}
           >
-            {/* Carousel viewport — высота вмещает карточку (фото + инфо) c запасом для центрального scale 1.05 */}
-            <div className="relative mx-auto h-[200px] sm:h-[250px] overflow-hidden">
+            {/* Carousel viewport — высота с запасом, чтобы центр со scale 1.05 не обрезался */}
+            <div className="relative mx-auto h-[230px] sm:h-[295px] overflow-hidden">
               {featured.map((p, i) => {
                 const dist = wrapDist(i, centerIndex);
                 const absD = Math.abs(dist);
