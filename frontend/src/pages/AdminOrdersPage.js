@@ -5,7 +5,7 @@ import {
   Package, Search, Eye, Pencil, Trash2, Save, X, 
   Clock, CheckCircle, Truck, XCircle, ChevronDown,
   User, Phone, MapPin, Calendar, CreditCard, RefreshCw,
-  AlertTriangle, Check, RotateCcw, Plus
+  AlertTriangle, Check, RotateCcw, Plus, GitMerge, PackageCheck, CircleDashed
 } from 'lucide-react';
 import { Button } from '../components/ui/button';
 import { Input } from '../components/ui/input';
@@ -18,9 +18,12 @@ const API = `${process.env.REACT_APP_BACKEND_URL}/api`;
 const ORDER_STATUSES = [
   { value: 'pending', label: 'Ожидает', color: 'bg-amber-100 text-amber-700 border-amber-200', icon: Clock },
   { value: 'processing', label: 'Обработка', color: 'bg-blue-100 text-blue-700 border-blue-200', icon: Package },
+  { value: 'partially_fulfilled', label: 'Частично выполнен', color: 'bg-violet-100 text-violet-700 border-violet-200', icon: CircleDashed },
   { value: 'completed', label: 'Выполнен', color: 'bg-emerald-100 text-emerald-700 border-emerald-200', icon: CheckCircle },
   { value: 'cancelled', label: 'Отменён', color: 'bg-rose-100 text-rose-700 border-rose-200', icon: XCircle }
 ];
+
+const MERGEABLE_STATUSES = new Set(['pending', 'processing', 'partially_fulfilled']);
 
 export default function AdminOrdersPage() {
   const { user, loading: authLoading } = useAuth();
@@ -35,6 +38,12 @@ export default function AdminOrdersPage() {
   const [productSearch, setProductSearch] = useState('');
   const [productResults, setProductResults] = useState([]);
   const [searchingProducts, setSearchingProducts] = useState(false);
+  // Selection + merge state
+  const [selectedIds, setSelectedIds] = useState(() => new Set());
+  const [merging, setMerging] = useState(false);
+  // Partial fulfillment state
+  const [fulfillModal, setFulfillModal] = useState(null); // { order, draft: [{product_id, name, quantity, quantity_fulfilled, price}] }
+  const [fulfilling, setFulfilling] = useState(false);
 
   useEffect(() => {
     if (authLoading) return;
@@ -187,6 +196,110 @@ export default function AdminOrdersPage() {
 
   const calculateTotal = (items) => items.reduce((sum, item) => sum + (item.price * item.quantity), 0);
 
+  // ─── Selection + Merge ────────────────────────────────────────────────────
+  const toggleSelect = (orderId, e) => {
+    if (e) e.stopPropagation();
+    setSelectedIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(orderId)) next.delete(orderId);
+      else next.add(orderId);
+      return next;
+    });
+  };
+
+  const clearSelection = () => setSelectedIds(new Set());
+
+  // Selected orders that are mergeable + share the same user
+  const selectedOrders = orders.filter((o) => selectedIds.has(o.id));
+  const selectedUserIds = new Set(selectedOrders.map((o) => o.user_id));
+  const allMergeable = selectedOrders.every((o) => MERGEABLE_STATUSES.has(o.status));
+  const sameUser = selectedUserIds.size === 1;
+  const canMerge = selectedOrders.length >= 2 && sameUser && allMergeable;
+
+  const handleMerge = async () => {
+    if (!canMerge || merging) return;
+    if (!window.confirm(`Объединить ${selectedOrders.length} заказов в один? Исходные заказы будут удалены.`)) return;
+    setMerging(true);
+    try {
+      const res = await axios.post(`${API}/admin/orders/merge`, {
+        order_ids: Array.from(selectedIds),
+      });
+      toast.success(`Заказы объединены → #${res.data.order.id.slice(0, 8)}`);
+      clearSelection();
+      await fetchOrders();
+    } catch (err) {
+      toast.error(err.response?.data?.detail || 'Не удалось объединить заказы');
+    } finally {
+      setMerging(false);
+    }
+  };
+
+  // ─── Partial Fulfillment ──────────────────────────────────────────────────
+  const openFulfillModal = (order) => {
+    const draft = (order.items || []).map((it) => ({
+      product_id: it.product_id,
+      name: it.name,
+      article: it.article,
+      image_url: it.image_url,
+      price: Number(it.price) || 0,
+      quantity: Number(it.quantity) || 0,
+      quantity_fulfilled: Number(it.quantity_fulfilled) || 0,
+    }));
+    setFulfillModal({ order, draft });
+  };
+
+  const updateFulfillQty = (idx, value) => {
+    const v = Math.max(0, Math.min(Number(value) || 0, fulfillModal.draft[idx].quantity));
+    setFulfillModal((prev) => {
+      if (!prev) return prev;
+      const next = prev.draft.slice();
+      next[idx] = { ...next[idx], quantity_fulfilled: v };
+      return { ...prev, draft: next };
+    });
+  };
+
+  const fulfillAllItems = () => {
+    setFulfillModal((prev) => {
+      if (!prev) return prev;
+      return { ...prev, draft: prev.draft.map((it) => ({ ...it, quantity_fulfilled: it.quantity })) };
+    });
+  };
+
+  const fulfilledTotal = fulfillModal
+    ? fulfillModal.draft.reduce((s, it) => s + it.price * it.quantity_fulfilled, 0)
+    : 0;
+  const orderTotal = fulfillModal
+    ? fulfillModal.draft.reduce((s, it) => s + it.price * it.quantity, 0)
+    : 0;
+
+  const handleFulfill = async () => {
+    if (!fulfillModal || fulfilling) return;
+    setFulfilling(true);
+    try {
+      const payload = {
+        items: fulfillModal.draft.map((it) => ({
+          product_id: it.product_id,
+          quantity_fulfilled: it.quantity_fulfilled,
+        })),
+      };
+      const res = await axios.patch(
+        `${API}/admin/orders/${fulfillModal.order.id}/fulfill`,
+        payload
+      );
+      toast.success(
+        res.data.status === 'completed'
+          ? 'Заказ полностью выполнен'
+          : `Частичная отгрузка сохранена (${formatPrice(res.data.fulfilled_total)} ₽)`
+      );
+      setFulfillModal(null);
+      await fetchOrders();
+    } catch (err) {
+      toast.error(err.response?.data?.detail || 'Не удалось сохранить отгрузку');
+    } finally {
+      setFulfilling(false);
+    }
+  };
+
   const toggleExpand = (orderId) => {
     if (editingOrderId === orderId) return;
     setExpandedOrders(prev => ({ ...prev, [orderId]: !prev[orderId] }));
@@ -334,7 +447,7 @@ export default function AdminOrdersPage() {
                 return (
                   <motion.div 
                     key={order.id} 
-                    className={`bg-white/80 backdrop-blur-sm rounded-2xl border shadow-sm overflow-hidden transition-shadow ${isEditing ? 'border-teal-400 shadow-lg shadow-teal-500/10' : 'border-slate-200/50 hover:shadow-md'}`}
+                    className={`bg-white/80 backdrop-blur-sm rounded-2xl border shadow-sm overflow-hidden transition-shadow ${isEditing ? 'border-teal-400 shadow-lg shadow-teal-500/10' : selectedIds.has(order.id) ? 'border-teal-500 ring-2 ring-teal-300/60 shadow-md' : 'border-slate-200/50 hover:shadow-md'}`}
                     initial={{ opacity: 0, y: 20 }}
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ duration: 0.3, delay: index * 0.05 }}
@@ -343,6 +456,19 @@ export default function AdminOrdersPage() {
                     <div className={`p-4 cursor-pointer transition-colors ${isEditing ? 'bg-teal-50/50' : 'hover:bg-slate-50/50'}`} onClick={() => toggleExpand(order.id)}>
                       <div className="flex items-center justify-between">
                         <div className="flex items-center gap-4">
+                          {/* Selection checkbox — only for mergeable statuses */}
+                          {MERGEABLE_STATUSES.has(order.status) && !isEditing && (
+                            <button
+                              type="button"
+                              onClick={(e) => toggleSelect(order.id, e)}
+                              className={`w-5 h-5 rounded border-2 flex items-center justify-center transition-all flex-shrink-0 ${selectedIds.has(order.id) ? 'bg-teal-500 border-teal-500' : 'bg-white border-slate-300 hover:border-teal-400'}`}
+                              data-testid={`select-order-${order.id}`}
+                              aria-label="Выбрать для объединения"
+                              title="Выбрать для объединения"
+                            >
+                              {selectedIds.has(order.id) && <Check className="w-3.5 h-3.5 text-white" strokeWidth={3} />}
+                            </button>
+                          )}
                           <div className={`w-11 h-11 rounded-xl flex items-center justify-center border ${statusInfo.color}`}>
                             <StatusIcon className="w-5 h-5" />
                           </div>
@@ -558,7 +684,19 @@ export default function AdminOrdersPage() {
                                   )}
                                 </div>
                                 <div className="flex items-center gap-2">
-                                  {['completed', 'processing', 'cancelled'].includes(order.status) && (
+                                  {MERGEABLE_STATUSES.has(order.status) && (
+                                    <Button
+                                      variant="outline"
+                                      size="sm"
+                                      onClick={(e) => { e.stopPropagation(); openFulfillModal(order); }}
+                                      className="rounded-xl border-violet-200 text-violet-600 hover:bg-violet-50"
+                                      data-testid={`fulfill-order-${order.id}`}
+                                      title="Отгрузить (полностью или частично)"
+                                    >
+                                      <PackageCheck className="w-4 h-4 mr-1" /> Отгрузить
+                                    </Button>
+                                  )}
+                                  {['completed', 'processing', 'cancelled', 'partially_fulfilled'].includes(order.status) && (
                                     <Button variant="outline" size="sm" onClick={() => handleRollbackStatus(order.id)} className="rounded-xl text-amber-500 border-amber-200 hover:bg-amber-50" data-testid={`rollback-order-${order.id}`} title="Откатить статус">
                                       <RotateCcw className="w-4 h-4 mr-1" /> Откатить
                                     </Button>
@@ -585,6 +723,200 @@ export default function AdminOrdersPage() {
           </AnimatePresence>
         </div>
       </div>
+
+      {/* ───── Sticky bar: Merge selected orders ───── */}
+      <AnimatePresence>
+        {selectedIds.size > 0 && (
+          <motion.div
+            key="merge-bar"
+            initial={{ y: 80, opacity: 0 }}
+            animate={{ y: 0, opacity: 1 }}
+            exit={{ y: 80, opacity: 0 }}
+            transition={{ type: 'spring', stiffness: 320, damping: 28 }}
+            className="fixed bottom-6 left-1/2 -translate-x-1/2 z-40 w-[min(640px,calc(100vw-2rem))]"
+            data-testid="merge-bar"
+          >
+            <div className="bg-white border border-teal-200 rounded-2xl shadow-2xl shadow-teal-500/20 px-5 py-3 flex items-center gap-4">
+              <div className="flex items-center gap-2 flex-1 min-w-0">
+                <div className="w-9 h-9 rounded-xl bg-teal-500/10 flex items-center justify-center flex-shrink-0">
+                  <GitMerge className="w-5 h-5 text-teal-600" />
+                </div>
+                <div className="min-w-0">
+                  <p className="text-sm font-semibold text-slate-800 truncate">
+                    Выбрано: {selectedIds.size}
+                  </p>
+                  <p className="text-xs truncate">
+                    {!sameUser ? (
+                      <span className="text-rose-500">Заказы разных клиентов — объединение недоступно</span>
+                    ) : !allMergeable ? (
+                      <span className="text-rose-500">Есть завершённые/отменённые — объединение недоступно</span>
+                    ) : selectedIds.size < 2 ? (
+                      <span className="text-slate-400">Выберите минимум 2 заказа одного клиента</span>
+                    ) : (
+                      <span className="text-slate-500">
+                        Клиент: {selectedOrders[0]?.customer_name || selectedOrders[0]?.full_name || '—'}
+                      </span>
+                    )}
+                  </p>
+                </div>
+              </div>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={clearSelection}
+                className="rounded-xl border-slate-200 flex-shrink-0"
+                data-testid="merge-clear-btn"
+              >
+                Сбросить
+              </Button>
+              <Button
+                size="sm"
+                onClick={handleMerge}
+                disabled={!canMerge || merging}
+                className="rounded-xl bg-gradient-to-r from-teal-500 to-emerald-500 hover:from-teal-600 hover:to-emerald-600 disabled:opacity-50 disabled:cursor-not-allowed flex-shrink-0"
+                data-testid="merge-orders-btn"
+              >
+                <GitMerge className="w-4 h-4 mr-1.5" />
+                {merging ? 'Объединение…' : 'Объединить'}
+              </Button>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* ───── Fulfill Modal ───── */}
+      <AnimatePresence>
+        {fulfillModal && (
+          <motion.div
+            key="fulfill-overlay"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-50 bg-slate-900/50 backdrop-blur-sm flex items-center justify-center p-4"
+            onClick={() => !fulfilling && setFulfillModal(null)}
+            data-testid="fulfill-modal"
+          >
+            <motion.div
+              initial={{ y: 30, opacity: 0, scale: 0.96 }}
+              animate={{ y: 0, opacity: 1, scale: 1 }}
+              exit={{ y: 30, opacity: 0, scale: 0.96 }}
+              transition={{ type: 'spring', stiffness: 280, damping: 26 }}
+              onClick={(e) => e.stopPropagation()}
+              className="bg-white rounded-2xl shadow-2xl w-full max-w-2xl max-h-[88vh] flex flex-col overflow-hidden border border-slate-200"
+            >
+              {/* Header */}
+              <div className="px-5 py-4 border-b border-slate-200 bg-gradient-to-r from-violet-50 to-fuchsia-50 flex items-center justify-between flex-shrink-0">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-xl bg-violet-500/10 flex items-center justify-center">
+                    <PackageCheck className="w-5 h-5 text-violet-600" />
+                  </div>
+                  <div>
+                    <h3 className="font-bold text-slate-800">Отгрузка заказа</h3>
+                    <p className="text-xs text-slate-500">
+                      #{fulfillModal.order.id.slice(0, 8)} • {fulfillModal.order.full_name}
+                    </p>
+                  </div>
+                </div>
+                <button
+                  onClick={() => !fulfilling && setFulfillModal(null)}
+                  className="p-2 rounded-lg hover:bg-white/60 text-slate-400 hover:text-slate-700 transition-colors"
+                  data-testid="fulfill-close-btn"
+                >
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+
+              {/* Items */}
+              <div className="flex-1 overflow-y-auto p-5 space-y-3">
+                <p className="text-xs text-slate-500 mb-2">
+                  Укажите количество фактически отгруженных позиций. Если все позиции отгружены полностью — заказ автоматически перейдёт в статус «Выполнен», иначе «Частично выполнен».
+                </p>
+                {fulfillModal.draft.map((it, idx) => {
+                  const full = it.quantity_fulfilled === it.quantity;
+                  return (
+                    <div
+                      key={`${it.product_id}-${idx}`}
+                      className={`flex items-center gap-3 p-3 rounded-xl border transition-colors ${full ? 'border-emerald-200 bg-emerald-50/40' : it.quantity_fulfilled > 0 ? 'border-violet-200 bg-violet-50/40' : 'border-slate-200 bg-slate-50/60'}`}
+                      data-testid={`fulfill-item-${idx}`}
+                    >
+                      {it.image_url ? (
+                        <img src={it.image_url} alt="" className="w-12 h-12 rounded-lg object-cover border border-slate-200 flex-shrink-0" />
+                      ) : (
+                        <div className="w-12 h-12 rounded-lg bg-white border border-slate-200 flex items-center justify-center flex-shrink-0">
+                          <Package className="w-5 h-5 text-slate-400" />
+                        </div>
+                      )}
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-medium text-slate-800 truncate">{it.name}</p>
+                        <p className="text-xs text-slate-400 font-mono">{it.article}</p>
+                      </div>
+                      <div className="flex items-center gap-2 flex-shrink-0">
+                        <Input
+                          type="number"
+                          min={0}
+                          max={it.quantity}
+                          value={it.quantity_fulfilled}
+                          onChange={(e) => updateFulfillQty(idx, e.target.value)}
+                          className="w-20 h-9 text-center rounded-lg border-slate-200"
+                          data-testid={`fulfill-input-${idx}`}
+                        />
+                        <span className="text-sm text-slate-400 font-medium whitespace-nowrap">/ {it.quantity}</span>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+
+              {/* Footer */}
+              <div className="px-5 py-4 border-t border-slate-200 bg-slate-50 flex-shrink-0">
+                <div className="flex items-center justify-between mb-3">
+                  <div>
+                    <p className="text-xs text-slate-500">К оплате (отгружено)</p>
+                    <p className="text-xl font-bold text-violet-600" data-testid="fulfill-total">
+                      {formatPrice(fulfilledTotal)} ₽
+                    </p>
+                  </div>
+                  <div className="text-right">
+                    <p className="text-xs text-slate-400">из {formatPrice(orderTotal)} ₽</p>
+                    <p className="text-xs text-slate-400">
+                      {Math.round((fulfilledTotal / Math.max(orderTotal, 1)) * 100)}%
+                    </p>
+                  </div>
+                </div>
+                <div className="flex items-center gap-2">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={fulfillAllItems}
+                    className="rounded-xl border-emerald-200 text-emerald-600 hover:bg-emerald-50 flex-1"
+                    data-testid="fulfill-all-btn"
+                  >
+                    <CheckCircle className="w-4 h-4 mr-1.5" /> Отгрузить всё
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => !fulfilling && setFulfillModal(null)}
+                    className="rounded-xl border-slate-200"
+                  >
+                    Отмена
+                  </Button>
+                  <Button
+                    size="sm"
+                    onClick={handleFulfill}
+                    disabled={fulfilling}
+                    className="rounded-xl bg-gradient-to-r from-violet-500 to-fuchsia-500 hover:from-violet-600 hover:to-fuchsia-600 disabled:opacity-50"
+                    data-testid="fulfill-save-btn"
+                  >
+                    <Save className="w-4 h-4 mr-1.5" />
+                    {fulfilling ? 'Сохранение…' : 'Сохранить'}
+                  </Button>
+                </div>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }
