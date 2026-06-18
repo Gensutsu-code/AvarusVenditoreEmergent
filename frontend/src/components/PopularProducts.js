@@ -18,6 +18,7 @@ export const PopularProducts = () => {
   const [rawIndex, setRawIndex] = useState(0);
   const [animated, setAnimated] = useState(true);
   const [viewportW, setViewportW] = useState(0);
+  const [isPaused, setIsPaused] = useState(false);
   const viewportRef = useRef(null);
   const { addToCart } = useCart();
   const { user } = useAuth();
@@ -56,17 +57,16 @@ export const PopularProducts = () => {
     return new Intl.NumberFormat('ru-RU').format(price);
   };
 
-  // Measure viewport width for pixel-accurate carousel translation
+  // Measure viewport width for pixel-accurate carousel translation (re-measures when DOM size changes)
   useEffect(() => {
-    const measure = () => {
-      if (viewportRef.current) {
-        setViewportW(viewportRef.current.clientWidth);
-      }
-    };
-    measure();
-    window.addEventListener('resize', measure);
-    return () => window.removeEventListener('resize', measure);
-  }, []);
+    if (!viewportRef.current) return undefined;
+    const ro = new ResizeObserver((entries) => {
+      const w = entries[0]?.contentRect?.width;
+      if (typeof w === 'number') setViewportW(w);
+    });
+    ro.observe(viewportRef.current);
+    return () => ro.disconnect();
+  }, [loading]);
 
   // Infinite loop: when rawIndex crosses [0, N) bounds, after the animation completes,
   // instantly jump (no animation) to the equivalent position inside [0, N).
@@ -100,6 +100,16 @@ export const PopularProducts = () => {
     setAnimated(true);
     setRawIndex((r) => r + 1);
   }, []);
+
+  // Auto-scroll every 5s; pauses on hover/touch
+  useEffect(() => {
+    if (N <= VISIBLE || isPaused) return undefined;
+    const t = setInterval(() => {
+      setAnimated(true);
+      setRawIndex((r) => r + 1);
+    }, 5000);
+    return () => clearInterval(t);
+  }, [N, isPaused]);
 
   if (loading) {
     return (
@@ -160,7 +170,14 @@ export const PopularProducts = () => {
           const translateX = -(rawIndex + VISIBLE) * cardPx;
 
           return (
-            <div className="relative" data-testid="popular-carousel">
+            <div
+              className="relative"
+              data-testid="popular-carousel"
+              onMouseEnter={() => setIsPaused(true)}
+              onMouseLeave={() => setIsPaused(false)}
+              onTouchStart={() => setIsPaused(true)}
+              onTouchEnd={() => setIsPaused(false)}
+            >
               <div ref={viewportRef} className="overflow-hidden py-3">
                 <motion.div
                   className="flex"
