@@ -1016,7 +1016,7 @@ export default function CatalogPage() {
                   {/* New products banner — auto-appears when there are products with is_new */}
                   <NewProductsBanner onOpenNew={() => selectCategory('new')} />
 
-                  <h2 className="text-lg font-semibold mb-4 text-slate-800">Категории</h2>
+                  <h2 className="text-3xl sm:text-4xl font-bold text-center mb-6 text-slate-800">Категории</h2>
                   <div
                     className="grid gap-3"
                     style={{ gridTemplateColumns: `repeat(${columnsCount}, minmax(0, 1fr))` }}
