@@ -13,7 +13,8 @@ export const SearchDropdown = ({
   compact = false,
   onSelect,
   showSearchButton = false,
-  className = ""
+  className = "",
+  variant = "default"
 }) => {
   const [query, setQuery] = useState('');
   const [results, setResults] = useState([]);
@@ -123,7 +124,11 @@ export const SearchDropdown = ({
             onKeyDown={handleKeyDown}
             onFocus={() => query.length >= 2 && results.length > 0 && setIsOpen(true)}
             placeholder={placeholder}
-            className={`${compact ? 'pl-9 pr-8 h-9 text-sm' : 'pl-11 pr-10 h-12'} rounded-xl border-slate-200 focus:border-teal-400 focus:ring-teal-200 bg-white/80 backdrop-blur-sm`}
+            className={`${compact ? 'pl-9 pr-8 h-9 text-sm' : 'pl-11 pr-10 h-12'} rounded-xl backdrop-blur-sm ${
+              variant === 'rose'
+                ? 'border-rose-200 focus:border-rose-400 focus:ring-rose-200 bg-rose-50/60'
+                : 'border-slate-200 focus:border-teal-400 focus:ring-teal-200 bg-white/80'
+            }`}
             data-testid="search-input"
           />
           {loading && (

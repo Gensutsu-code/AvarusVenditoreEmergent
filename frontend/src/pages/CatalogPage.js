@@ -708,9 +708,20 @@ export default function CatalogPage() {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Header */}
         <div className="mb-6">
-          <h1 className="text-2xl md:text-3xl font-bold tracking-tight uppercase mb-6 text-slate-800">
-            {currentCategory ? currentCategory.name : 'Поиск запчастей'}
-          </h1>
+          {currentCategory ? (
+            <h1 className="text-2xl md:text-3xl font-bold tracking-tight uppercase mb-6 text-slate-800">
+              {currentCategory.name}
+            </h1>
+          ) : (
+            <div className="flex items-center gap-3 mb-6">
+              <div className="w-12 h-12 rounded-xl bg-teal-500/10 flex items-center justify-center">
+                <Search className="w-6 h-6 text-teal-600" />
+              </div>
+              <h1 className="text-2xl md:text-3xl font-bold tracking-tight uppercase text-slate-800">
+                Поиск и подбор запчастей
+              </h1>
+            </div>
+          )}
           
           {/* Search form — full width to match banner width */}
           <div className="w-full">
@@ -718,6 +729,7 @@ export default function CatalogPage() {
               placeholder="Введите название или артикул..."
               onSelect={(product) => navigate(`/product/${product.id}`)}
               showSearchButton
+              variant="rose"
             />
           </div>
 
