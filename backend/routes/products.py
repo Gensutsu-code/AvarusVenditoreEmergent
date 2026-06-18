@@ -149,23 +149,39 @@ async def delete_category(category_id: str, user=Depends(get_current_user)):
 
 @router.get("/products/popular", response_model=List[ProductResponse])
 async def get_popular_products(limit: int = 6):
-    """Get popular products based on order count"""
+    """Get popular products based on order count.
+
+    Pulls top product IDs by total ordered quantity, then filters by those
+    that still exist in the catalog. Oversamples (×5) so that deleted
+    products don't reduce the result set below `limit`.
+    """
+    oversample = max(limit * 5, 30)
     pipeline = [
         {"$unwind": "$items"},
         {"$group": {"_id": "$items.product_id", "order_count": {"$sum": "$items.quantity"}}},
         {"$sort": {"order_count": -1}},
-        {"$limit": limit}
+        {"$limit": oversample},
     ]
-    popular_ids = await db.orders.aggregate(pipeline).to_list(limit)
-    
+    popular_ids = await db.orders.aggregate(pipeline).to_list(oversample)
+
+    products: List[dict] = []
     if popular_ids:
         product_ids = [p["_id"] for p in popular_ids]
-        products = await db.products.find({"id": {"$in": product_ids}}, {"_id": 0}).to_list(limit)
+        existing = await db.products.find({"id": {"$in": product_ids}}, {"_id": 0}).to_list(len(product_ids))
         id_to_count = {p["_id"]: p["order_count"] for p in popular_ids}
-        products.sort(key=lambda x: id_to_count.get(x["id"], 0), reverse=True)
-    else:
-        products = await db.products.find({}, {"_id": 0}).limit(limit).to_list(limit)
-    
+        existing.sort(key=lambda x: id_to_count.get(x["id"], 0), reverse=True)
+        products = existing[:limit]
+
+    # Top up with newest products if we still don't have enough (e.g. brand-new store, few orders)
+    if len(products) < limit:
+        already = {p["id"] for p in products}
+        extra_needed = limit - len(products)
+        # Prefer newer products as a fallback
+        extras = await db.products.find(
+            {"id": {"$nin": list(already)}}, {"_id": 0}
+        ).sort("created_at", -1).limit(extra_needed).to_list(extra_needed)
+        products.extend(extras)
+
     return products
 
 
