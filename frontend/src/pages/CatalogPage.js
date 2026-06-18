@@ -712,8 +712,8 @@ export default function CatalogPage() {
             {currentCategory ? currentCategory.name : 'Поиск запчастей'}
           </h1>
           
-          {/* Search form */}
-          <div className="max-w-2xl">
+          {/* Search form — full width to match banner width */}
+          <div className="w-full">
             <SearchDropdown 
               placeholder="Введите название или артикул..."
               onSelect={(product) => navigate(`/product/${product.id}`)}

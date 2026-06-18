@@ -141,7 +141,7 @@ export const SearchDropdown = ({
         {showSearchButton && (
           <button
             onClick={handleSearchSubmit}
-            className="h-12 px-6 bg-gradient-to-r from-teal-500 to-emerald-500 hover:from-teal-600 hover:to-emerald-600 text-white font-semibold rounded-xl shadow-lg shadow-teal-500/30 transition-all flex-shrink-0"
+            className="h-12 px-16 bg-gradient-to-r from-teal-500 to-emerald-500 hover:from-teal-600 hover:to-emerald-600 text-white font-semibold rounded-xl shadow-lg shadow-teal-500/30 transition-all flex-shrink-0"
             data-testid="search-submit-btn"
           >
             Найти
