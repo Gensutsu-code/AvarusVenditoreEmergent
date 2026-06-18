@@ -48,15 +48,46 @@ E-commerce platform for truck spare parts with a comprehensive admin panel. Russ
   - >7: rose (red)
 - Applied on ProductCard, CatalogPage inline card
 
+## Completed (Session 2026-06-18 — iter 59)
+
+### Virtual Catalog Categories (P0)
+- New virtual category tabs on `/catalog`: **Ассортимент**, **Новинки**, **Скидки и Акции**
+- Backend: `GET /api/products?virtual_category=assortment|new|discounted`
+- `_ensure_new_status()` auto-expires `is_new` based on `new_until` on each GET
+- Products auto-receive `is_new=true` + `new_until = created_at + 14d` on creation
+- Persistent virtual category tabs (`tab-assortment`, `tab-new`, `tab-discounted`) — one-click switching even when a virtual category is active
+- `virtual_category=discounted` includes products with either active promo OR non-empty `discount_tiers`
+
+### Tiered Quantity Discounts (P0)
+- Product field `discount_tiers: [{min_qty, type, value}]`
+- `compute_effective_price()` in orders.py picks highest matching tier
+- Stacks on top of base price (or `individual_price`), applied in both cart preview and order checkout
+- Admin product modal has tier editor (add/remove rows)
+
+### Auto "Новинки" Ribbon (P0)
+- Green unfurling ribbon on `ProductCard` (`badge-new-{id}`) positioned below discount ribbon when both present
+- 14-day default expiry; admin toggle controls `is_new` and resets `new_until`
+
+### Admin Category Grid Customization (P0)
+- `display_order` on `categories` (reorderable via up/down arrows: `cat-up-{id}`, `cat-down-{id}`)
+- `columns_count` (2..6) in settings `type='category_display'`, applied via `gridTemplateColumns`
+- Endpoints: `POST /api/categories/reorder`, `GET/PUT /api/categories/display-settings`
+
+### Telegram Diagnostics (P0)
+- New "Telegram" tab in Admin panel with `GET /api/admin/telegram/diagnostics`
+- Webhook auto-detects host header (fixes prod/preview mismatch)
+
 ## Prioritized Backlog
 
 ### P1 (Important)
 - Real Payment Gateway Integration (replace MOCKED YuKassa)
 
 ### P2 (Enhancement)
-- Refactor AdminPage.js (4600+ lines), CatalogPage.js, Header.js
+- Refactor AdminPage.js (4800+ lines), CatalogPage.js (1200+ lines), Header.js
 - Unify save validation toasts (currently stacking when multiple fail)
 - Auto-cleanup expired discounts (cron) or admin filter "Active discounts only"
+- Persist `_ensure_new_status` flips to DB (currently mutation is Python-only)
+- Apply payment_method adjustment in `GET /api/cart` for consistency with `POST /api/orders`
 
 ### P3 (Nice to have)
 - Bulk discount editor (apply % to category)

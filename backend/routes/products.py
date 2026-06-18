@@ -229,12 +229,20 @@ async def get_products(
         }]
     elif virtual_category == "discounted":
         now_iso = datetime.now(timezone.utc).isoformat()
-        query["discount_active"] = True
+        # Include products with either an active promo discount OR non-empty tiered discounts
         query["$and"] = query.get("$and", []) + [{
             "$or": [
-                {"discount_until": None},
-                {"discount_until": ""},
-                {"discount_until": {"$gt": now_iso}}
+                {
+                    "$and": [
+                        {"discount_active": True},
+                        {"$or": [
+                            {"discount_until": None},
+                            {"discount_until": ""},
+                            {"discount_until": {"$gt": now_iso}}
+                        ]}
+                    ]
+                },
+                {"discount_tiers": {"$exists": True, "$type": "array", "$ne": []}}
             ]
         }]
     # "assortment" or no virtual category — no filter

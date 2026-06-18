@@ -745,6 +745,31 @@ export default function CatalogPage() {
               )}
             </div>
           )}
+
+          {/* Persistent virtual category tabs — visible whenever a virtual category is active so user can switch in one click */}
+          {virtualCategory && (
+            <div className="flex items-center gap-2 mt-3 flex-wrap" data-testid="virtual-category-tabs">
+              {[
+                { id: 'assortment', label: 'Ассортимент', active: 'bg-teal-500 text-white border-teal-500' },
+                { id: 'new', label: 'Новинки', active: 'bg-emerald-500 text-white border-emerald-500' },
+                { id: 'discounted', label: 'Скидки и Акции', active: 'bg-rose-500 text-white border-rose-500' },
+              ].map(tab => {
+                const isActive = virtualCategory === tab.id;
+                return (
+                  <button
+                    key={tab.id}
+                    onClick={() => selectCategory(tab.id)}
+                    data-testid={`tab-${tab.id}`}
+                    className={`inline-flex items-center px-3.5 py-1.5 rounded-full text-sm font-medium border transition-all ${
+                      isActive ? tab.active + ' shadow-md' : 'bg-white/70 text-slate-600 border-slate-200 hover:border-teal-300 hover:text-teal-600'
+                    }`}
+                  >
+                    {tab.label}
+                  </button>
+                );
+              })}
+            </div>
+          )}
         </div>
 
         {/* Two-column layout: Sidebar + Content */}
