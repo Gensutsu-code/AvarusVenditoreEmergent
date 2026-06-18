@@ -62,7 +62,7 @@ export const FloatingPromoBanner = () => {
             transition={{ duration: 0.3 }}
           >
             <motion.div 
-              className="flex items-center gap-2 pl-3 pr-2 py-2 rounded-full text-white text-sm font-medium whitespace-nowrap shadow-xl pointer-events-auto"
+              className="flex items-center gap-3 pl-5 pr-3 py-3 rounded-full text-white text-lg font-medium whitespace-nowrap shadow-xl pointer-events-auto"
               style={{ 
                 backgroundColor: bgColor,
                 boxShadow: `0 8px 25px ${bgColor}50`
@@ -110,7 +110,7 @@ export const FloatingPromoBanner = () => {
                 animate={{ rotate: [0, 15, -15, 0] }}
                 transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }}
               >
-                <Sparkles className="w-4 h-4" />
+                <Sparkles className="w-6 h-6" />
               </motion.div>
               
               {/* Banner text - clickable if link exists */}
@@ -136,7 +136,7 @@ export const FloatingPromoBanner = () => {
                 whileTap={{ scale: 0.9 }}
                 data-testid="promo-banner-close"
               >
-                <X className="w-3.5 h-3.5" />
+                <X className="w-5 h-5" />
               </motion.button>
             </motion.div>
           </motion.div>
@@ -154,7 +154,7 @@ export const FloatingPromoBanner = () => {
             transition={{ duration: 0.2 }}
           >
             <motion.button
-              className="flex items-center justify-center w-10 h-10 rounded-full text-white shadow-xl hover:shadow-2xl"
+              className="flex items-center justify-center w-[60px] h-[60px] rounded-full text-white shadow-xl hover:shadow-2xl"
               style={{ 
                 backgroundColor: bgColor,
                 boxShadow: `0 8px 25px ${bgColor}50`
@@ -205,7 +205,7 @@ export const FloatingPromoBanner = () => {
                 animate={{ rotate: [0, 360] }}
                 transition={{ duration: 4, repeat: Infinity, ease: "linear" }}
               >
-                <Sparkles className="w-4 h-4" />
+                <Sparkles className="w-6 h-6" />
               </motion.div>
             </motion.button>
           </motion.div>
@@ -288,7 +288,7 @@ export const HeaderPromoBanner = () => {
             className="overflow-hidden"
           >
             <motion.div 
-              className="flex items-center gap-2 pl-3 pr-2 py-1.5 rounded-full text-white text-sm font-medium whitespace-nowrap shadow-lg"
+              className="flex items-center gap-3 pl-5 pr-3 py-3 rounded-full text-white text-lg font-medium whitespace-nowrap shadow-lg"
               style={{ 
                 backgroundColor: bgColor,
                 boxShadow: `0 4px 15px ${bgColor}40`
@@ -303,7 +303,7 @@ export const HeaderPromoBanner = () => {
                 animate={{ rotate: [0, 15, -15, 0] }}
                 transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }}
               >
-                <Sparkles className="w-4 h-4" />
+                <Sparkles className="w-6 h-6" />
               </motion.div>
               
               {/* Banner text - clickable if link exists */}
@@ -329,7 +329,7 @@ export const HeaderPromoBanner = () => {
                 whileTap={{ scale: 0.9 }}
                 data-testid="promo-banner-close"
               >
-                <X className="w-3.5 h-3.5" />
+                <X className="w-5 h-5" />
               </motion.button>
             </motion.div>
           </motion.div>
@@ -354,7 +354,7 @@ export const HeaderPromoBanner = () => {
               transition: { duration: 0.2 }
             }}
             onClick={handleExpand}
-            className="flex items-center justify-center w-9 h-9 rounded-full text-white shadow-lg hover:shadow-xl transition-shadow"
+            className="flex items-center justify-center w-14 h-14 rounded-full text-white shadow-lg hover:shadow-xl transition-shadow"
             style={{ 
               backgroundColor: bgColor,
               boxShadow: `0 4px 15px ${bgColor}40`
@@ -367,7 +367,7 @@ export const HeaderPromoBanner = () => {
               animate={{ rotate: [0, 360] }}
               transition={{ duration: 3, repeat: Infinity, ease: "linear" }}
             >
-              <Sparkles className="w-4 h-4" />
+              <Sparkles className="w-6 h-6" />
             </motion.div>
           </motion.button>
         )}
