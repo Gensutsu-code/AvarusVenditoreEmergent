@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import axios from 'axios';
-import { Flame, ArrowRight, Clock, Package } from 'lucide-react';
+import { Flame, ArrowRight, Clock, Package, ChevronLeft, ChevronRight } from 'lucide-react';
 import { motion } from 'framer-motion';
 
 const API = `${process.env.REACT_APP_BACKEND_URL}/api`;
@@ -35,13 +35,29 @@ function useCountdown(targetIso) {
 export default function DiscountPromoBanner({ onOpenDiscounts }) {
   const [summary, setSummary] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [centerIndex, setCenterIndex] = useState(1); // index of central card in featured[]
+  const [isNarrow, setIsNarrow] = useState(false);
+
+  useEffect(() => {
+    const check = () => setIsNarrow(typeof window !== 'undefined' && window.innerWidth < 640);
+    check();
+    window.addEventListener('resize', check);
+    return () => window.removeEventListener('resize', check);
+  }, []);
 
   useEffect(() => {
     let alive = true;
     axios
       .get(`${API}/products/discount-summary`)
       .then((res) => {
-        if (alive) setSummary(res.data);
+        if (alive) {
+          setSummary(res.data);
+          const len = (res.data?.featured || []).length;
+          if (len > 2) {
+            // Start at a balanced position so both side peeks are visible when possible
+            setCenterIndex(Math.min(Math.floor(len / 2), len - 2));
+          }
+        }
       })
       .catch(() => {})
       .finally(() => {
@@ -148,76 +164,158 @@ export default function DiscountPromoBanner({ onOpenDiscounts }) {
         </button>
       </div>
 
-      {/* Featured products strip — vertical glass cards matching "Популярные товары" shape */}
-      {Array.isArray(summary.featured) && summary.featured.length > 0 && (
-        <div
-          className="relative border-t border-white/15 px-4 py-4 sm:px-6 sm:py-5"
-          data-testid="discount-promo-featured"
-        >
-          <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 sm:gap-4">
-            {summary.featured.map((p) => {
-              const oldPrice = Number(p.price) || 0;
-              const percent = Number(p.percent) || 0;
-              const newPrice = percent > 0 ? oldPrice * (1 - percent / 100) : oldPrice;
-              return (
-                <Link
-                  key={p.id}
-                  to={`/product/${p.id}`}
-                  data-testid={`discount-promo-featured-${p.id}`}
-                  className="group block bg-white/95 rounded-2xl overflow-hidden border border-white/40 shadow-md hover:shadow-xl hover:-translate-y-1 transition-all duration-300"
-                >
-                  {/* Image */}
-                  <div className="aspect-square bg-slate-100 overflow-hidden relative">
-                    {p.image_url ? (
-                      <img
-                        src={p.image_url}
-                        alt=""
-                        className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
-                      />
-                    ) : (
-                      <div className="w-full h-full flex items-center justify-center text-slate-400">
-                        <Package className="w-10 h-10" />
-                      </div>
-                    )}
-                    {/* Percent badge */}
-                    {percent > 0 && (
-                      <span className="absolute top-2 left-2 inline-flex items-center px-2 py-0.5 rounded-md bg-rose-600 text-white text-[11px] font-bold shadow-md">
-                        −{Math.round(percent)}%
-                      </span>
-                    )}
-                  </div>
+      {/* Featured products carousel — 3 центральных кликабельных, по бокам "уходят за ширму" */}
+      {Array.isArray(summary.featured) && summary.featured.length > 0 && (() => {
+        const featured = summary.featured;
+        // Constraints so center always has at least 1 card on each side (when possible)
+        const minCenter = featured.length > 2 ? 1 : 0;
+        const maxCenter = featured.length > 2 ? featured.length - 2 : featured.length - 1;
+        const safeCenter = Math.max(minCenter, Math.min(centerIndex, maxCenter));
+        const canPrev = safeCenter > minCenter;
+        const canNext = safeCenter < maxCenter;
 
-                  {/* Info */}
-                  <div className="p-3">
-                    {p.manufacturer && (
-                      <p className="text-[11px] font-bold text-teal-600 mb-0.5">{p.manufacturer}</p>
-                    )}
-                    {p.article && (
-                      <p className="text-[10px] font-mono font-semibold text-slate-500 mb-1">
-                        Арт: {p.article}
-                      </p>
-                    )}
-                    <h3 className="text-sm font-medium text-slate-800 line-clamp-2 mb-2 min-h-[40px] group-hover:text-rose-600 transition-colors">
-                      {p.name}
-                    </h3>
-                    <div className="flex items-baseline gap-2 flex-wrap">
-                      {percent > 0 && oldPrice > 0 && (
-                        <span className="text-[11px] line-through text-slate-400">
-                          {Math.round(oldPrice).toLocaleString('ru-RU')} ₽
-                        </span>
-                      )}
-                      <span className="font-bold text-rose-600">
-                        {Math.round(newPrice).toLocaleString('ru-RU')}{' '}
-                        <span className="text-xs text-slate-400">₽</span>
-                      </span>
-                    </div>
-                  </div>
-                </Link>
-              );
-            })}
+        // Card sizing & shifts (percent of strip container width)
+        const cardW = isNarrow ? 36 : 16;        // half of previous (~32)
+        const adjShift = isNarrow ? 38 : 17;     // step for the 3 visible center cards
+        const farShift = isNarrow ? 75 : 33;     // step for "behind curtain" peek cards
+
+        return (
+          <div
+            className="relative border-t border-white/15 py-5"
+            data-testid="discount-promo-featured"
+          >
+            {/* Carousel viewport */}
+            <div className="relative mx-auto h-[210px] sm:h-[240px] overflow-hidden">
+              {featured.map((p, i) => {
+                const dist = i - safeCenter;
+                const absD = Math.abs(dist);
+                if (absD > 2) return null;
+                const clickable = absD <= 1;
+                const shift = absD <= 1 ? dist * adjShift : Math.sign(dist) * farShift;
+                const leftCenterPct = 50 + shift;
+                return (
+                  <motion.div
+                    key={p.id}
+                    className="absolute top-0"
+                    style={{ width: `${cardW}%` }}
+                    initial={false}
+                    animate={{
+                      left: `calc(${leftCenterPct}% - ${cardW / 2}%)`,
+                      opacity: clickable ? 1 : 0.3,
+                      scale: clickable ? 1 : 0.88,
+                      filter: clickable ? 'blur(0px)' : 'blur(1px)',
+                      zIndex: 10 - absD,
+                    }}
+                    transition={{ duration: 0.5, ease: [0.32, 0.72, 0, 1] }}
+                  >
+                    <FeaturedCard p={p} clickable={clickable} />
+                  </motion.div>
+                );
+              })}
+
+              {/* Curtain gradient overlays — left + right edges */}
+              <div className="pointer-events-none absolute inset-y-0 left-0 w-16 sm:w-24 bg-gradient-to-r from-rose-500 via-rose-500/70 to-transparent z-[15]" />
+              <div className="pointer-events-none absolute inset-y-0 right-0 w-16 sm:w-24 bg-gradient-to-l from-fuchsia-500 via-fuchsia-500/70 to-transparent z-[15]" />
+
+              {/* Arrows */}
+              {featured.length > 3 && (
+                <>
+                  <button
+                    type="button"
+                    onClick={() => canPrev && setCenterIndex(safeCenter - 1)}
+                    disabled={!canPrev}
+                    data-testid="discount-promo-prev"
+                    aria-label="Предыдущие товары"
+                    className="absolute left-2 sm:left-3 top-1/2 -translate-y-1/2 z-[20] w-9 h-9 rounded-full bg-white text-rose-600 flex items-center justify-center shadow-lg hover:bg-rose-50 hover:scale-105 disabled:opacity-30 disabled:cursor-not-allowed transition-all"
+                  >
+                    <ChevronLeft className="w-5 h-5" />
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => canNext && setCenterIndex(safeCenter + 1)}
+                    disabled={!canNext}
+                    data-testid="discount-promo-next"
+                    aria-label="Следующие товары"
+                    className="absolute right-2 sm:right-3 top-1/2 -translate-y-1/2 z-[20] w-9 h-9 rounded-full bg-white text-rose-600 flex items-center justify-center shadow-lg hover:bg-rose-50 hover:scale-105 disabled:opacity-30 disabled:cursor-not-allowed transition-all"
+                  >
+                    <ChevronRight className="w-5 h-5" />
+                  </button>
+                </>
+              )}
+            </div>
           </div>
-        </div>
-      )}
+        );
+      })()}
     </motion.div>
+  );
+}
+
+function FeaturedCard({ p, clickable }) {
+  const oldPrice = Number(p.price) || 0;
+  const percent = Number(p.percent) || 0;
+  const newPrice = percent > 0 ? oldPrice * (1 - percent / 100) : oldPrice;
+
+  const inner = (
+    <div className="bg-white/95 rounded-xl overflow-hidden border border-white/40 shadow-lg group h-full flex flex-col">
+      <div className="aspect-square bg-slate-100 overflow-hidden relative">
+        {p.image_url ? (
+          <img
+            src={p.image_url}
+            alt=""
+            className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
+          />
+        ) : (
+          <div className="w-full h-full flex items-center justify-center text-slate-400">
+            <Package className="w-8 h-8" />
+          </div>
+        )}
+        {percent > 0 && (
+          <span className="absolute top-1.5 left-1.5 inline-flex items-center px-1.5 py-0.5 rounded-md bg-rose-600 text-white text-[10px] font-bold shadow-md">
+            −{Math.round(percent)}%
+          </span>
+        )}
+      </div>
+      <div className="p-2 flex-1 flex flex-col">
+        {p.manufacturer && (
+          <p className="text-[10px] font-bold text-teal-600 leading-tight">{p.manufacturer}</p>
+        )}
+        <h3 className="text-[11px] font-medium text-slate-800 line-clamp-2 mt-0.5 mb-1 leading-snug group-hover:text-rose-600 transition-colors">
+          {p.name}
+        </h3>
+        <div className="mt-auto flex items-baseline gap-1.5 flex-wrap">
+          {percent > 0 && oldPrice > 0 && (
+            <span className="text-[10px] line-through text-slate-400">
+              {Math.round(oldPrice).toLocaleString('ru-RU')} ₽
+            </span>
+          )}
+          <span className="font-bold text-rose-600 text-sm">
+            {Math.round(newPrice).toLocaleString('ru-RU')}{' '}
+            <span className="text-[10px] text-slate-400 font-normal">₽</span>
+          </span>
+        </div>
+      </div>
+    </div>
+  );
+
+  if (clickable) {
+    return (
+      <Link
+        to={`/product/${p.id}`}
+        data-testid={`discount-promo-featured-${p.id}`}
+        className="block h-full hover:-translate-y-1 transition-transform duration-300"
+      >
+        {inner}
+      </Link>
+    );
+  }
+  return (
+    <div
+      data-testid={`discount-promo-featured-${p.id}`}
+      aria-hidden="true"
+      tabIndex={-1}
+      className="block h-full pointer-events-none select-none"
+    >
+      {inner}
+    </div>
   );
 }
