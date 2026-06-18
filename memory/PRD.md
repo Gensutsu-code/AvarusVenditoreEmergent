@@ -99,6 +99,11 @@ E-commerce platform for truck spare parts with a comprehensive admin panel. Russ
 - **CheckoutPage**: compact `checkout-upsell-{id}` link back to /cart; render-time navigate moved into `useEffect` (fixed React warning).
 - Verified iteration_64: 6/6 pass (incl. individual_price + promo + tiers stacking, correct per-unit projection).
 
+### Search UX fixes + Free-delivery progress bar (2026-06-18 — iter 65)
+- **SearchDropdown**: results dropdown moved inside the input wrapper so its width equals the search field (no longer spans the "Найти" button). Rose `search-clear-btn` (×) re-centered vertically (`inset-y-0 my-auto`).
+- **CartPage**: free-delivery progress bar in header (`free-delivery-bar`) — "До бесплатной доставки осталось N ₽" with animated fill, or "Бесплатная доставка активирована!" once threshold reached. Reads `GET /api/delivery-settings`; renders ONLY when delivery is enabled in admin (currently disabled in this env).
+- Verified iteration_65: 3/3 PASS (bounding-box checks for width + centering, bar states).
+
 ## Prioritized Backlog
 
 ### P1 (Important)
