@@ -98,7 +98,7 @@ export default function DiscountPromoBanner({ onOpenDiscounts }) {
   };
 
   return (
-    <div data-testid="discount-promo-section">
+    <div data-testid="discount-promo-section" className="mb-12">
       {/* Section heading — same style as "Популярные товары" */}
       <div className="flex items-center gap-3 mb-4">
         <div className="w-10 h-10 rounded-xl bg-rose-500/10 flex items-center justify-center">
@@ -114,7 +114,7 @@ export default function DiscountPromoBanner({ onOpenDiscounts }) {
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.4 }}
         data-testid="discount-promo-banner"
-        className="relative overflow-hidden rounded-2xl mb-4 border border-rose-200/60 shadow-lg shadow-rose-500/10"
+        className="relative overflow-hidden rounded-2xl border border-rose-200/60 shadow-lg shadow-rose-500/10"
       >
       {/* Background gradient */}
       <div className="absolute inset-0 bg-gradient-to-r from-rose-400 via-pink-400 to-fuchsia-400" />

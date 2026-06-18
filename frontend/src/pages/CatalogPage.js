@@ -1010,13 +1010,13 @@ export default function CatalogPage() {
                 <PopularProducts />
 
                 {/* Banners + Categories — отображаются ПОД блоком "Популярные товары" */}
-                <div className="mb-8">
+                <div className="mb-8 mt-4">
                   {/* Promo banner — auto-appears when there are active discounts */}
                   <DiscountPromoBanner onOpenDiscounts={() => selectCategory('discounted')} />
                   {/* New products banner — auto-appears when there are products with is_new */}
                   <NewProductsBanner onOpenNew={() => selectCategory('new')} />
 
-                  <div className="flex items-center gap-3 mb-4">
+                  <div className="flex items-center gap-3 mb-4 mt-4">
                     <div className="w-10 h-10 rounded-xl bg-teal-500/10 flex items-center justify-center">
                       <LayoutGrid className="w-5 h-5 text-teal-600" />
                     </div>

@@ -70,7 +70,7 @@ export default function NewProductsBanner({ onOpenNew }) {
   };
 
   return (
-    <div data-testid="new-promo-section">
+    <div data-testid="new-promo-section" className="mb-12">
       {/* Section heading — same style as "Популярные товары" / "Скидки и акции" */}
       <div className="flex items-center gap-3 mb-4">
         <div className="w-10 h-10 rounded-xl bg-emerald-500/10 flex items-center justify-center">
@@ -86,7 +86,7 @@ export default function NewProductsBanner({ onOpenNew }) {
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.4 }}
         data-testid="new-promo-banner"
-        className="relative overflow-hidden rounded-2xl mb-4 border border-emerald-200/60 shadow-lg shadow-emerald-500/10"
+        className="relative overflow-hidden rounded-2xl border border-emerald-200/60 shadow-lg shadow-emerald-500/10"
       >
       {/* Background gradient — emerald/teal palette */}
       <div className="absolute inset-0 bg-gradient-to-r from-emerald-400 via-green-400 to-teal-400" />
