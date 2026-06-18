@@ -135,9 +135,9 @@ export const SearchDropdown = ({
                 }}
                 transition={{ duration: 0.4, ease: [0.32, 0.72, 0, 1] }}
               />
-              {/* Inner card with backdrop & subtle gradient */}
+              {/* Inner card with white background */}
               <motion.div
-                className="relative rounded-2xl bg-gradient-to-br from-white via-rose-50/60 to-pink-50/40 backdrop-blur-md border border-rose-200/70 overflow-hidden"
+                className="relative rounded-2xl bg-white backdrop-blur-md border border-rose-200/70 overflow-hidden"
                 animate={{
                   boxShadow: isFocused
                     ? '0 12px 32px -8px rgba(244,114,182,0.35), 0 0 0 4px rgba(244,114,182,0.12)'
@@ -151,18 +151,14 @@ export const SearchDropdown = ({
                   className="pointer-events-none absolute inset-0"
                   style={{
                     background:
-                      'linear-gradient(110deg, transparent 30%, rgba(255,255,255,0.45) 50%, transparent 70%)',
+                      'linear-gradient(110deg, transparent 30%, rgba(244,114,182,0.12) 50%, transparent 70%)',
                   }}
                   animate={{ x: isFocused ? ['-100%', '120%'] : '-100%' }}
                   transition={{ duration: 1.6, repeat: isFocused ? Infinity : 0, repeatDelay: 2.2 }}
                 />
-                <motion.div
-                  className="relative flex items-center"
-                  animate={{ scale: isFocused ? 1.005 : 1 }}
-                  transition={{ duration: 0.3 }}
-                >
+                <div className="relative">
                   <motion.div
-                    className="absolute left-4 top-1/2 -translate-y-1/2 z-10"
+                    className="absolute left-4 inset-y-0 flex items-center z-10 pointer-events-none"
                     animate={{
                       color: isFocused ? '#e11d48' : '#fb7185',
                       scale: isFocused ? 1.1 : 1,
@@ -180,7 +176,7 @@ export const SearchDropdown = ({
                     onFocus={() => { setIsFocused(true); if (query.length >= 2 && results.length > 0) setIsOpen(true); }}
                     onBlur={() => setIsFocused(false)}
                     placeholder={placeholder}
-                    className={`${compact ? 'pl-11 pr-9 h-9 text-sm' : 'pl-12 pr-12 h-12 text-base'} rounded-2xl bg-transparent border-0 focus:ring-0 focus-visible:ring-0 focus:outline-none placeholder:text-rose-300/80 text-slate-700 font-medium`}
+                    className={`${compact ? 'pl-11 pr-9 h-9 text-sm' : 'pl-12 pr-12 h-12 text-base'} w-full rounded-2xl bg-white border-0 focus:ring-0 focus-visible:ring-0 focus:outline-none placeholder:text-rose-300/80 text-slate-700 font-medium`}
                     data-testid="search-input"
                   />
                   <AnimatePresence>
@@ -191,7 +187,7 @@ export const SearchDropdown = ({
                         animate={{ opacity: 1, scale: 1 }}
                         exit={{ opacity: 0, scale: 0.6 }}
                         transition={{ duration: 0.2 }}
-                        className="absolute right-4 top-1/2 -translate-y-1/2 z-10"
+                        className="absolute right-4 inset-y-0 flex items-center z-10"
                       >
                         <Loader2 className={`text-rose-500 animate-spin ${compact ? 'w-4 h-4' : 'w-5 h-5'}`} />
                       </motion.div>
@@ -213,7 +209,7 @@ export const SearchDropdown = ({
                       </motion.button>
                     )}
                   </AnimatePresence>
-                </motion.div>
+                </div>
               </motion.div>
             </>
           ) : (
