@@ -101,7 +101,7 @@ E-commerce platform for truck spare parts with a comprehensive admin panel. Russ
 
 ### Search UX fixes + Free-delivery progress bar (2026-06-18 — iter 65)
 - **SearchDropdown**: results dropdown moved inside the input wrapper so its width equals the search field (no longer spans the "Найти" button). Rose `search-clear-btn` (×) re-centered vertically (`inset-y-0 my-auto`).
-- **CartPage**: free-delivery progress bar in header (`free-delivery-bar`) — "До бесплатной доставки осталось N ₽" with animated fill, or "Бесплатная доставка активирована!" once threshold reached. Reads `GET /api/delivery-settings`; renders ONLY when delivery is enabled in admin (currently disabled in this env).
+- **CartPage**: free-delivery progress bar in header (`free-delivery-bar`) — "До бесплатной доставки осталось N ₽" with animated fill, or "Бесплатная доставка активирована!" once threshold reached. On reaching threshold: confetti burst (20 pieces) + emerald ring glow + PartyPopper icon (iter 66). Reads `GET /api/delivery-settings`; renders ONLY when delivery is enabled in admin (currently disabled in this env).
 - Verified iteration_65: 3/3 PASS (bounding-box checks for width + centering, bar states).
 
 ## Prioritized Backlog
