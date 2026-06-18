@@ -240,7 +240,7 @@ async def get_discount_summary():
                 candidates.append(float(t.get("value") or 0))
         return max(candidates)
     products_sorted = sorted(products, key=_percent_of, reverse=True)
-    for p in products_sorted[:12]:
+    for p in products_sorted[:10]:
         featured.append({
             "id": p.get("id"),
             "name": p.get("name"),

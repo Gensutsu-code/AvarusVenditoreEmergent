@@ -46,17 +46,12 @@ export default function DiscountPromoBanner({ onOpenDiscounts }) {
     return () => window.removeEventListener('resize', check);
   }, []);
 
-  // Auto-scroll every 5s; pauses when user hovers the carousel
+  // Auto-scroll every 5s; pauses when user hovers the carousel. Infinite loop — no clamp.
   useEffect(() => {
     const featured = summary?.featured || [];
     if (featured.length <= 3 || isPaused) return undefined;
-    const minCenter = 1;
-    const maxCenter = featured.length - 2;
     const interval = setInterval(() => {
-      setCenterIndex((prev) => {
-        const next = prev + 1;
-        return next > maxCenter ? minCenter : next;
-      });
+      setCenterIndex((prev) => prev + 1);
     }, 5000);
     return () => clearInterval(interval);
   }, [summary, isPaused]);
@@ -68,11 +63,6 @@ export default function DiscountPromoBanner({ onOpenDiscounts }) {
       .then((res) => {
         if (alive) {
           setSummary(res.data);
-          const len = (res.data?.featured || []).length;
-          if (len > 2) {
-            // Start at a balanced position so both side peeks are visible when possible
-            setCenterIndex(Math.min(Math.floor(len / 2), len - 2));
-          }
         }
       })
       .catch(() => {})
@@ -180,53 +170,58 @@ export default function DiscountPromoBanner({ onOpenDiscounts }) {
         </button>
       </div>
 
-      {/* Featured products carousel — 3 центральных кликабельных, по бокам "уходят за ширму" */}
+      {/* Featured products carousel — бесконечный цикл, центр чуть больше, по бокам уходят за ширму */}
       {Array.isArray(summary.featured) && summary.featured.length > 0 && (() => {
         const featured = summary.featured;
-        // Constraints so center always has at least 1 card on each side (when possible)
-        const minCenter = featured.length > 2 ? 1 : 0;
-        const maxCenter = featured.length > 2 ? featured.length - 2 : featured.length - 1;
-        const safeCenter = Math.max(minCenter, Math.min(centerIndex, maxCenter));
-        const canPrev = safeCenter > minCenter;
-        const canNext = safeCenter < maxCenter;
+        const N = featured.length;
 
-        // Card sizing & shifts (percent of strip container width)
-        const cardW = isNarrow ? 36 : 16;        // half of previous (~32)
-        const adjShift = isNarrow ? 38 : 17;     // step for the 3 visible center cards
-        const farShift = isNarrow ? 75 : 33;     // step for "behind curtain" peek cards
+        // Card sizing & shifts (percent of strip container width). Уменьшено на 20% от прежнего размера.
+        const cardW = isNarrow ? 29 : 13;        // 36 → 29; 16 → 13
+        const adjShift = isNarrow ? 30 : 14;     // step for the 3 visible center cards
+        const farShift = isNarrow ? 60 : 26;     // step for "behind curtain" peek cards
+
+        // Compute signed shortest distance with wrap-around for infinite loop
+        const wrapDist = (i, center) => {
+          const raw = ((i - center) % N + N) % N; // 0..N-1
+          return raw > N / 2 ? raw - N : raw;     // (-N/2 .. N/2]
+        };
 
         return (
           <div
-            className="relative border-t border-white/15 py-5"
+            className="relative border-t border-white/15 py-6"
             data-testid="discount-promo-featured"
             onMouseEnter={() => setIsPaused(true)}
             onMouseLeave={() => setIsPaused(false)}
             onTouchStart={() => setIsPaused(true)}
             onTouchEnd={() => setIsPaused(false)}
           >
-            {/* Carousel viewport */}
-            <div className="relative mx-auto h-[210px] sm:h-[240px] overflow-hidden">
+            {/* Carousel viewport — увеличена высота, чтобы карточки не обрезались, и центр (scale 1.05) не выходил за края */}
+            <div className="relative mx-auto h-[260px] sm:h-[300px] overflow-hidden">
               {featured.map((p, i) => {
-                const dist = i - safeCenter;
+                const dist = wrapDist(i, centerIndex);
                 const absD = Math.abs(dist);
                 if (absD > 2) return null;
+                const isCenter = absD === 0;
+                const isSide = absD === 1;
                 const clickable = absD <= 1;
-                const shift = absD <= 1 ? dist * adjShift : Math.sign(dist) * farShift;
+                const shift = clickable ? dist * adjShift : Math.sign(dist) * farShift;
                 const leftCenterPct = 50 + shift;
+                const scaleVal = isCenter ? 1.05 : isSide ? 1 : 0.85;
                 return (
                   <motion.div
                     key={p.id}
-                    className="absolute top-0"
-                    style={{ width: `${cardW}%` }}
+                    className="absolute"
+                    style={{ width: `${cardW}%`, top: '50%' }}
                     initial={false}
                     animate={{
                       left: `calc(${leftCenterPct}% - ${cardW / 2}%)`,
+                      y: '-50%',
                       opacity: clickable ? 1 : 0.3,
-                      scale: clickable ? 1 : 0.88,
+                      scale: scaleVal,
                       filter: clickable ? 'blur(0px)' : 'blur(1px)',
-                      zIndex: 10 - absD,
+                      zIndex: isCenter ? 12 : 10 - absD,
                     }}
-                    transition={{ duration: 0.5, ease: [0.32, 0.72, 0, 1] }}
+                    transition={{ duration: 0.55, ease: [0.32, 0.72, 0, 1] }}
                   >
                     <FeaturedCard p={p} clickable={clickable} />
                   </motion.div>
@@ -237,26 +232,24 @@ export default function DiscountPromoBanner({ onOpenDiscounts }) {
               <div className="pointer-events-none absolute inset-y-0 left-0 w-16 sm:w-24 bg-gradient-to-r from-rose-500 via-rose-500/70 to-transparent z-[15]" />
               <div className="pointer-events-none absolute inset-y-0 right-0 w-16 sm:w-24 bg-gradient-to-l from-fuchsia-500 via-fuchsia-500/70 to-transparent z-[15]" />
 
-              {/* Arrows */}
-              {featured.length > 3 && (
+              {/* Arrows — бесконечный цикл, поэтому никогда не disabled */}
+              {N > 3 && (
                 <>
                   <button
                     type="button"
-                    onClick={() => canPrev && setCenterIndex(safeCenter - 1)}
-                    disabled={!canPrev}
+                    onClick={() => setCenterIndex((c) => c - 1)}
                     data-testid="discount-promo-prev"
                     aria-label="Предыдущие товары"
-                    className="absolute left-2 sm:left-3 top-1/2 -translate-y-1/2 z-[20] w-9 h-9 rounded-full bg-white text-rose-600 flex items-center justify-center shadow-lg hover:bg-rose-50 hover:scale-105 disabled:opacity-30 disabled:cursor-not-allowed transition-all"
+                    className="absolute left-2 sm:left-3 top-1/2 -translate-y-1/2 z-[20] w-9 h-9 rounded-full bg-white text-rose-600 flex items-center justify-center shadow-lg hover:bg-rose-50 hover:scale-105 transition-all"
                   >
                     <ChevronLeft className="w-5 h-5" />
                   </button>
                   <button
                     type="button"
-                    onClick={() => canNext && setCenterIndex(safeCenter + 1)}
-                    disabled={!canNext}
+                    onClick={() => setCenterIndex((c) => c + 1)}
                     data-testid="discount-promo-next"
                     aria-label="Следующие товары"
-                    className="absolute right-2 sm:right-3 top-1/2 -translate-y-1/2 z-[20] w-9 h-9 rounded-full bg-white text-rose-600 flex items-center justify-center shadow-lg hover:bg-rose-50 hover:scale-105 disabled:opacity-30 disabled:cursor-not-allowed transition-all"
+                    className="absolute right-2 sm:right-3 top-1/2 -translate-y-1/2 z-[20] w-9 h-9 rounded-full bg-white text-rose-600 flex items-center justify-center shadow-lg hover:bg-rose-50 hover:scale-105 transition-all"
                   >
                     <ChevronRight className="w-5 h-5" />
                   </button>
@@ -265,24 +258,23 @@ export default function DiscountPromoBanner({ onOpenDiscounts }) {
             </div>
 
             {/* Dots indicator — one dot per group of 3 (page-based) */}
-            {featured.length > 3 && (() => {
-              const groupCount = Math.ceil(featured.length / 3);
-              // Map current safeCenter to a group: groupIdx = floor((safeCenter - 1) / 3) clamped
-              const currentGroup = Math.min(groupCount - 1, Math.max(0, Math.floor((safeCenter - minCenter) / 3)));
+            {N > 3 && (() => {
+              const groupCount = Math.ceil(N / 3);
+              const currentMod = ((centerIndex % N) + N) % N;
+              const currentGroup = Math.min(groupCount - 1, Math.floor(currentMod / 3));
               return (
                 <div
                   className="mt-3 flex items-center justify-center gap-2"
                   data-testid="discount-promo-dots"
                 >
                   {Array.from({ length: groupCount }).map((_, gi) => {
-                    // Center of the group: middle of 3 items starting at gi*3
-                    const groupCenter = Math.min(maxCenter, Math.max(minCenter, gi * 3 + 1));
+                    const groupCenterIdx = gi * 3 + 1;
                     const active = gi === currentGroup;
                     return (
                       <button
                         key={gi}
                         type="button"
-                        onClick={() => setCenterIndex(groupCenter)}
+                        onClick={() => setCenterIndex(groupCenterIdx)}
                         data-testid={`discount-promo-dot-${gi}`}
                         aria-label={`Группа ${gi + 1}`}
                         className={`rounded-full transition-all ${
