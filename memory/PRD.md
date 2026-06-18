@@ -83,6 +83,15 @@ E-commerce platform for truck spare parts with a comprehensive admin panel. Russ
 - New "Telegram" tab in Admin panel with `GET /api/admin/telegram/diagnostics`
 - Webhook auto-detects host header (fixes prod/preview mismatch)
 
+## Completed (Session 2026-06-18 — iter 61/62)
+
+### Client-facing Quantity Discount Tier Preview (P0)
+- New helpers in `productHelpers.js`: `getQuantityTiers(product)` (normalized+sorted tiers with per-unit final price, respects `discount_active`+expiry) and `getActiveTier(tiers, quantity)`
+- **ProductPage**: new `quantity-tiers-card` ("Чем больше — тем дешевле") listing each tier (`tier-row-{minQty}`) with «от N шт.», percent/amount badge, and per-unit price. Clicking a row sets quantity to that tier's minQty; price card (`product-price`) now recomputes via `computeDiscount(product, quantity)`; `tier-active-hint` shows current per-unit price + total savings. Only shown when `individualPrice == null`.
+- **CatalogPage inline ProductCard**: small `tier-badge-{id}` ("Опт. скидка от N шт.") next to delivery badge for products with active tiers.
+- Verified: iteration_61 (ProductPage) + iteration_62 (catalog badge, 100% pass).
+- NOTE: `/app/frontend/src/components/ProductCard.js` is DEAD CODE (not imported); catalog uses the inline ProductCard in `CatalogPage.js`.
+
 ## Prioritized Backlog
 
 ### P1 (Important)
