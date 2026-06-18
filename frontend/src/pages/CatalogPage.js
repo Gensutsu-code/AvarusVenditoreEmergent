@@ -1006,17 +1006,8 @@ export default function CatalogPage() {
             {/* Content */}
             {!searchQuery && !categoryId ? (
               <>
-                <div data-testid="search-prompt">
-                  <div className="text-center py-8 mb-8">
-                    <Search className="w-16 h-16 mx-auto mb-4 text-slate-300" />
-                    <p className="text-slate-500">
-                      Введите название или артикул, либо выберите категорию
-                    </p>
-                  </div>
-
-                  {/* Popular Products — теперь первыми */}
-                  <PopularProducts />
-                </div>
+                {/* Popular Products — теперь первыми */}
+                <PopularProducts />
 
                 {/* Banners + Categories — отображаются ПОД блоком "Популярные товары" */}
                 <div className="mb-8">
