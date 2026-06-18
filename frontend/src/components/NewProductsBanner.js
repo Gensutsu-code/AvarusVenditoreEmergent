@@ -70,13 +70,24 @@ export default function NewProductsBanner({ onOpenNew }) {
   };
 
   return (
-    <motion.div
-      initial={{ opacity: 0, y: -10 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.4 }}
-      data-testid="new-promo-banner"
-      className="relative overflow-hidden rounded-2xl mb-4 border border-emerald-200/60 shadow-lg shadow-emerald-500/10"
-    >
+    <div data-testid="new-promo-section">
+      {/* Section heading — same style as "Популярные товары" / "Скидки и акции" */}
+      <div className="flex items-center gap-3 mb-4">
+        <div className="w-10 h-10 rounded-xl bg-emerald-500/10 flex items-center justify-center">
+          <Sparkles className="w-5 h-5 text-emerald-600" />
+        </div>
+        <h2 className="text-xl md:text-2xl font-bold tracking-tight uppercase text-slate-800">
+          Новинки
+        </h2>
+      </div>
+
+      <motion.div
+        initial={{ opacity: 0, y: -10 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.4 }}
+        data-testid="new-promo-banner"
+        className="relative overflow-hidden rounded-2xl mb-4 border border-emerald-200/60 shadow-lg shadow-emerald-500/10"
+      >
       {/* Background gradient — emerald/teal palette */}
       <div className="absolute inset-0 bg-gradient-to-r from-emerald-400 via-green-400 to-teal-400" />
       <div className="absolute -top-12 -left-10 w-48 h-48 rounded-full bg-lime-200/30 blur-3xl pointer-events-none" />
@@ -271,6 +282,7 @@ export default function NewProductsBanner({ onOpenNew }) {
         )}
       </AnimatePresence>
     </motion.div>
+    </div>
   );
 }
 
