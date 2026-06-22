@@ -6,6 +6,7 @@ import { Button } from './ui/button';
 import { AdminNotifications } from './AdminNotifications';
 import { HeaderPromoBanner } from './HeaderPromoBanner';
 import { SearchDropdown } from './SearchDropdown';
+import { MiniCart } from './MiniCart';
 import { useState, useRef, useEffect, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { toast } from 'sonner';
@@ -496,51 +497,7 @@ export const Header = () => {
                       </Link>
                       
                       {/* Корзина */}
-                      <Link to="/cart" data-testid="cart-link">
-                        <motion.div 
-                          className="flex items-center gap-2 px-3 py-2 rounded-xl cursor-pointer relative"
-                          initial="rest"
-                          whileHover="hover"
-                          whileTap={{ scale: 0.95 }}
-                          variants={{
-                            rest: { scale: 1, backgroundColor: "rgba(249, 115, 22, 0)" },
-                            hover: { scale: 1.08, backgroundColor: "rgba(249, 115, 22, 0.1)" }
-                          }}
-                          transition={{ type: "spring", stiffness: 400, damping: 17 }}
-                        >
-                          <motion.div
-                            variants={{
-                              rest: { x: 0, color: "#475569" },
-                              hover: { x: [0, -3, 3, -3, 0], color: "#f97316" }
-                            }}
-                            transition={{ duration: 0.4 }}
-                          >
-                            <ShoppingCart className="w-5 h-5" />
-                          </motion.div>
-                          <motion.span 
-                            className="hidden lg:inline text-sm font-medium"
-                            variants={{
-                              rest: { color: "#475569" },
-                              hover: { color: "#f97316" }
-                            }}
-                          >
-                            Корзина
-                          </motion.span>
-                          {cartCount > 0 && (
-                            <motion.span 
-                              initial={{ scale: 0 }}
-                              animate={{ scale: 1 }}
-                              variants={{
-                                rest: { scale: 1 },
-                                hover: { scale: 1.2 }
-                              }}
-                              className="absolute -top-1 -right-1 lg:relative lg:top-0 lg:right-0 lg:ml-1 bg-gradient-to-r from-orange-500 to-red-500 text-white text-xs w-5 h-5 flex items-center justify-center font-bold rounded-full shadow-lg"
-                            >
-                              {cartCount}
-                            </motion.span>
-                          )}
-                        </motion.div>
-                      </Link>
+                      <MiniCart />
                     </div>
                     {/* Balance indicator */}
                     {userBalance !== null && (
