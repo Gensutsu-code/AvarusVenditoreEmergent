@@ -5,7 +5,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { 
   Users, Package, ShoppingBag, TrendingUp, User,
   Plus, Pencil, Trash2, Save, Eye, FolderOpen, Megaphone, Upload, Image,
-  MessageCircle, Send, BarChart3, Download, FileSpreadsheet, Pin, Tag, X, Copy, Gift, Award, ChevronDown, ChevronUp, Paperclip, Play, ZoomIn, ZoomOut, Settings, ChevronLeft, ChevronRight, CreditCard, FileText, Mail, Bell, Wallet, Clock, ScrollText, Code, Minus, RotateCcw, Merge, Truck
+  MessageCircle, Send, BarChart3, Download, FileSpreadsheet, Pin, Tag, X, Copy, Gift, Award, ChevronDown, ChevronUp, Paperclip, Play, ZoomIn, ZoomOut, Settings, ChevronLeft, ChevronRight, CreditCard, FileText, Mail, Bell, Wallet, Clock, ScrollText, Code, Minus, RotateCcw, Merge, Truck, ListChecks
 } from 'lucide-react';
 import { Button } from '../components/ui/button';
 import { Input } from '../components/ui/input';
@@ -1585,6 +1585,15 @@ export default function AdminPage() {
                         Сбросить фильтр
                       </Button>
                     )}
+                    <Button
+                      variant="outline"
+                      onClick={() => navigate('/admin/products')}
+                      className="border-teal-300 text-teal-600 hover:bg-teal-50"
+                      data-testid="mass-edit-btn"
+                    >
+                      <ListChecks className="w-4 h-4 mr-2" />
+                      Массовое редактирование
+                    </Button>
                     <Button onClick={openNewProduct} className="bg-gradient-to-r from-teal-500 to-emerald-500 hover:from-teal-600 hover:to-emerald-600 text-white shadow-lg shadow-teal-500/20" data-testid="add-product-btn">
                       <Plus className="w-4 h-4 mr-2" />
                       Добавить товар

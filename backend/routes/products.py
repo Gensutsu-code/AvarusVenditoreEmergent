@@ -344,7 +344,9 @@ async def get_products(
         query["$or"] = [
             {"name": {"$regex": search, "$options": "i"}},
             {"article": {"$regex": search, "$options": "i"}},
-            {"cross_articles": {"$regex": search, "$options": "i"}}
+            {"cross_articles": {"$regex": search, "$options": "i"}},
+            {"manufacturer": {"$regex": search, "$options": "i"}},
+            {"description": {"$regex": search, "$options": "i"}}
         ]
     if category_id:
         query["category_id"] = category_id
@@ -521,6 +523,169 @@ async def delete_product(product_id: str, user=Depends(get_current_user)):
     if result.deleted_count == 0:
         raise HTTPException(status_code=404, detail="Product not found")
     return {"message": "Product deleted"}
+
+
+# ==================== ADMIN: catalog listing (search/sort/paginate) ====================
+
+SORT_FIELDS = {"name", "price", "stock", "created_at", "manufacturer", "article"}
+
+
+def _build_admin_query(search, category_id, manufacturer, in_stock, discounted):
+    query = {}
+    if search:
+        query["$or"] = [
+            {"name": {"$regex": search, "$options": "i"}},
+            {"article": {"$regex": search, "$options": "i"}},
+            {"cross_articles": {"$regex": search, "$options": "i"}},
+            {"manufacturer": {"$regex": search, "$options": "i"}},
+            {"description": {"$regex": search, "$options": "i"}},
+        ]
+    if category_id:
+        query["category_id"] = category_id
+    if manufacturer:
+        query["manufacturer"] = manufacturer
+    if in_stock is True:
+        query["stock"] = {"$gt": 0}
+    elif in_stock is False:
+        query["stock"] = {"$lte": 0}
+    if discounted is True:
+        query["discount_active"] = True
+    return query
+
+
+@router.get("/admin/products")
+async def admin_list_products(
+    search: Optional[str] = None,
+    category_id: Optional[str] = None,
+    manufacturer: Optional[str] = None,
+    in_stock: Optional[bool] = None,
+    discounted: Optional[bool] = None,
+    sort_by: str = "created_at",
+    sort_order: str = "desc",
+    page: int = 1,
+    page_size: int = 50,
+    user=Depends(get_current_user),
+):
+    """Admin product listing: search by article/manufacturer/description/name, sort & paginate."""
+    if user.get("role") != "admin":
+        raise HTTPException(status_code=403, detail="Admin access required")
+
+    query = _build_admin_query(search, category_id, manufacturer, in_stock, discounted)
+    sort_field = sort_by if sort_by in SORT_FIELDS else "created_at"
+    direction = -1 if sort_order == "desc" else 1
+    page = max(1, page)
+    page_size = min(max(1, page_size), 200)
+
+    total = await db.products.count_documents(query)
+    cursor = db.products.find(query, {"_id": 0}).sort(sort_field, direction).skip((page - 1) * page_size).limit(page_size)
+    items = await cursor.to_list(page_size)
+    return {
+        "items": [_ensure_new_status(p) for p in items],
+        "total": total,
+        "page": page,
+        "page_size": page_size,
+    }
+
+
+@router.get("/admin/products/ids")
+async def admin_product_ids(
+    search: Optional[str] = None,
+    category_id: Optional[str] = None,
+    manufacturer: Optional[str] = None,
+    in_stock: Optional[bool] = None,
+    discounted: Optional[bool] = None,
+    user=Depends(get_current_user),
+):
+    """Return all product IDs matching the current filter (for 'select all matching')."""
+    if user.get("role") != "admin":
+        raise HTTPException(status_code=403, detail="Admin access required")
+    query = _build_admin_query(search, category_id, manufacturer, in_stock, discounted)
+    docs = await db.products.find(query, {"_id": 0, "id": 1}).to_list(100000)
+    return {"ids": [d["id"] for d in docs], "total": len(docs)}
+
+
+ALLOWED_BULK_FIELDS = {
+    "is_original", "has_guarantee", "is_new", "bonus_eligible",
+    "discount_active", "discount_type", "discount_value", "discount_label", "discount_until",
+    "stock", "delivery_days", "category_id", "manufacturer", "warehouse",
+}
+
+
+@router.post("/admin/products/bulk")
+async def admin_bulk_products(payload: dict, user=Depends(get_current_user)):
+    """Bulk operations on products.
+
+    Body: {
+      product_ids?: [...],            # explicit selection
+      apply_all?: bool,               # apply to ALL products matching the filter below
+      search?, category_id?, manufacturer?, in_stock?, discounted?,   # filter (when apply_all)
+      action: "set_fields"|"clear_discount"|"extend_discount"|"adjust_price"|"delete",
+      payload: {...}
+    }
+    """
+    if user.get("role") != "admin":
+        raise HTTPException(status_code=403, detail="Admin access required")
+
+    action = payload.get("action")
+    data = payload.get("payload") or {}
+
+    if payload.get("apply_all"):
+        match = _build_admin_query(
+            payload.get("search"), payload.get("category_id"), payload.get("manufacturer"),
+            payload.get("in_stock"), payload.get("discounted"),
+        )
+    else:
+        ids = payload.get("product_ids") or []
+        if not isinstance(ids, list) or not ids:
+            raise HTTPException(status_code=400, detail="product_ids required")
+        match = {"id": {"$in": ids}}
+
+    if action == "delete":
+        res = await db.products.delete_many(match)
+        return {"success": True, "modified_count": res.deleted_count}
+
+    if action == "set_fields":
+        set_data = {k: v for k, v in data.items() if k in ALLOWED_BULK_FIELDS}
+        if not set_data:
+            raise HTTPException(status_code=400, detail="No valid fields")
+        # New-badge handling
+        if set_data.get("is_new") is True and "new_until" not in set_data:
+            set_data["new_until"] = (datetime.now(timezone.utc) + timedelta(days=NEW_BADGE_DAYS)).isoformat()
+        if set_data.get("is_new") is False:
+            set_data["new_until"] = None
+        if set_data.get("discount_active") is True and set_data.get("discount_type") in (None, ""):
+            set_data["discount_type"] = "percent"
+        res = await db.products.update_many(match, {"$set": set_data})
+        return {"success": True, "modified_count": res.modified_count}
+
+    if action == "clear_discount":
+        res = await db.products.update_many(match, {"$set": {
+            "discount_active": False, "discount_value": 0, "discount_until": None,
+            "discount_label": "", "discount_type": None, "discount_tiers": [],
+        }})
+        return {"success": True, "modified_count": res.modified_count}
+
+    if action == "extend_discount":
+        until = data.get("discount_until")
+        if not until:
+            raise HTTPException(status_code=400, detail="discount_until required")
+        res = await db.products.update_many(match, {"$set": {"discount_until": until, "discount_active": True}})
+        return {"success": True, "modified_count": res.modified_count}
+
+    if action == "adjust_price":
+        mode = data.get("mode", "percent")
+        value = float(data.get("value", 0) or 0)
+        direction = data.get("direction", "inc")
+        sign = 1 if direction == "inc" else -1
+        if mode == "percent":
+            factor = 1 + sign * (value / 100)
+            expr = {"$round": [{"$max": [0, {"$multiply": ["$price", factor]}]}, 2]}
+        else:
+            expr = {"$round": [{"$max": [0, {"$add": ["$price", sign * value]}]}, 2]}
+        res = await db.products.update_many(match, [{"$set": {"price": expr}}])
+        return {"success": True, "modified_count": res.modified_count}
+
+    raise HTTPException(status_code=400, detail="Unknown action")
 
 
 @router.get("/products/{product_id}/related", response_model=List[ProductResponse])
