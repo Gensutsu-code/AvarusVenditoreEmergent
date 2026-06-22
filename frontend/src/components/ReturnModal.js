@@ -72,7 +72,7 @@ export default function ReturnModal({ order, onClose, onSuccess }) {
       list.push({ ...item, quantity: q, subtotal: sub });
     }
     return { itemsTotal, refund, deduction, list };
-  }, [selectedItems, returnType, order]);
+  }, [selectedItems, returnType, order, settings.fee_percent]);
 
   const hasSelection = Object.keys(selectedItems).length > 0;
 

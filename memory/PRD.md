@@ -108,6 +108,12 @@ E-commerce platform for truck spare parts with a comprehensive admin panel. Russ
 - New `MiniCart.js`: hover-triggered dropdown on the desktop header cart icon showing line items (up to 4 + "ещё N"), per-item remove, total, and the same free-delivery progress bar ("До бесплатной осталось N ₽" / "Бесплатная доставка!"). Footer buttons: "В корзину" → /cart, "Оформить" → /checkout.
 - Reads `GET /api/delivery-settings`; bar only when delivery enabled. Dropdown only when cart non-empty. Verified iteration_67 (6/6 PASS).
 
+### Admin-editable Return Rules & Policy (2026-06-18 — iter 68)
+- New `return_settings` (db.settings): fee_percent, min_photos, max_photos, return_window_days, warranty_enabled, desc_return, desc_warranty, warning_text, policy_text. Endpoints: public `GET /api/return-settings`, admin `GET/PUT /api/admin/return-settings`.
+- `create_return` now honors settings: configurable fee % (drives refund math, stored on return), min photos, return window (days since `completed_at`), warranty on/off. Orders now stamp `completed_at` on completion (admin status update / full update / fulfill).
+- **Admin** (`ReturnSettingsPanel` on /admin/returns): collapsible editor for all rules + texts. **Client** (/returns): collapsible "Условия и правила возврата" section. **ReturnModal**: texts/fee/photo limits/warranty visibility all driven by settings.
+- Verified iteration_68: backend 8/8 pytest + frontend 100%. Test file: `/app/backend/tests/test_return_settings.py`.
+
 ## Prioritized Backlog
 
 ### P1 (Important)
