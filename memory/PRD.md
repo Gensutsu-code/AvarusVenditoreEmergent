@@ -120,6 +120,13 @@ E-commerce platform for truck spare parts with a comprehensive admin panel. Russ
 - **Return-window button**: `OrdersPage` reads `/api/return-settings`; `getReturnWindow(order)` gates the return CTA. In-window → `header-return-btn-{id}` + expanded `create-return-btn-{id}`; expired → `return-expired-badge-{id}` + `return-expired-{id}` ("Срок возврата истёк"). Uses order `completed_at` (fallback created_at).
 - Verified iteration_69: backend 6/6 pytest + frontend 3/3 PASS.
 
+### PHASE 1 — Cart & Orders improvements (2026-06-18 — iter 70) ✅
+- Cart summary: "Скидка на корзину" line (`cart-discount-line`), bonus-points preview (`cart-bonus-preview`, backend `GET /bonus/cart-preview` mirrors accrual), "Очистить корзину" button (`clear-cart-btn`).
+- Ozon certificate progress bar (`OzonCertificateBar`, +500₽ per full 10 000₽) in cart + compact in MiniCart. On order placement: `create_order` stores `ozon_certificate` + notifies admin; admin badge `ozon-cert-badge-{id}` on /admin/orders toggles issued (`PATCH /admin/orders/{id}/ozon-certificate`).
+- Client order stats restricted to current calendar month (`/orders/stats`, admins unchanged); client orders sorted newest-first.
+- Verified iteration_70: backend 5/5 + frontend 100%. Test: `test_iter70_cart_ozon.py`.
+- Backlog notes (non-blocking): extract shared bonus calc helper; add `order-card-{id}` testids; admin Ozon toggle could set state from PATCH response to avoid initial-load race.
+
 ## Prioritized Backlog
 
 ### P1 (Important)
