@@ -131,6 +131,7 @@ export default function AdminProductsPage() {
       const body = { action, payload };
       if (selectAllMatching) {
         Object.assign(body, { apply_all: true, ...buildParams() });
+        if (action === 'delete') body.payload = { ...payload, confirm_all: true };
       } else {
         body.product_ids = [...selected];
       }

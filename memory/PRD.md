@@ -127,6 +127,11 @@ E-commerce platform for truck spare parts with a comprehensive admin panel. Russ
 - Verified iteration_70: backend 5/5 + frontend 100%. Test: `test_iter70_cart_ozon.py`.
 - Backlog notes (non-blocking): extract shared bonus calc helper; add `order-card-{id}` testids; admin Ozon toggle could set state from PATCH response to avoid initial-load race.
 
+### PHASE 2 — Admin product management (2026-06-18 — iter 71) ✅
+- New `GET /admin/products` (search by article/manufacturer/description/name, sort, paginate), `GET /admin/products/ids` (select-all-matching), `POST /admin/products/bulk` (set_fields / clear_discount / extend_discount / adjust_price / delete; apply to selected IDs or all-matching). Public `/products` search extended to manufacturer+description.
+- New page `/admin/products` (`AdminProductsPage`): search, sort, category/stock/discounted filters, pagination, row selection + select-page + select-all-matching, sticky bulk toolbar (badges original/guarantee/new/bonus on-off; availability set/clear; discount apply/extend/remove; price ± %/₽; bulk delete) + per-product edit modal. Linked from /admin Каталог via `mass-edit-btn`.
+- Safety: delete+apply_all requires `confirm_all`. Verified iteration_71: backend 12/12 pytest + frontend 14/14 flows.
+
 ## Prioritized Backlog
 
 ### P1 (Important)

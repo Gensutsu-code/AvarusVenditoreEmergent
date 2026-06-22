@@ -641,6 +641,8 @@ async def admin_bulk_products(payload: dict, user=Depends(get_current_user)):
         match = {"id": {"$in": ids}}
 
     if action == "delete":
+        if payload.get("apply_all") and not data.get("confirm_all"):
+            raise HTTPException(status_code=400, detail="confirm_all required for delete-all")
         res = await db.products.delete_many(match)
         return {"success": True, "modified_count": res.deleted_count}
 
