@@ -995,13 +995,17 @@ async def fulfill_order_partial(order_id: str, payload: dict, user: dict = Depen
     else:
         new_status = order.get("status", "pending")
 
+    set_data = {
+        "items": updated_items,
+        "status": new_status,
+        "fulfilled_total": fulfilled_total,
+    }
+    if new_status == "completed" and order.get("status") != "completed":
+        set_data["completed_at"] = datetime.now(timezone.utc).isoformat()
+
     await db.orders.update_one(
         {"id": order_id},
-        {"$set": {
-            "items": updated_items,
-            "status": new_status,
-            "fulfilled_total": fulfilled_total,
-        }},
+        {"$set": set_data},
     )
 
     # Notify user

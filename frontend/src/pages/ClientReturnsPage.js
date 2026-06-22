@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import { motion, AnimatePresence } from 'framer-motion';
-import { RefreshCw, ShieldCheck, Package, Clock, CheckCircle, XCircle, ArrowLeft } from 'lucide-react';
+import { RefreshCw, ShieldCheck, Package, Clock, CheckCircle, XCircle, ArrowLeft, FileText, ChevronDown } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 
 const API = `${process.env.REACT_APP_BACKEND_URL}/api`;
@@ -20,6 +20,8 @@ export default function ClientReturnsPage() {
   const [returns, setReturns] = useState([]);
   const [loading, setLoading] = useState(true);
   const [expanded, setExpanded] = useState({});
+  const [settings, setSettings] = useState(null);
+  const [policyOpen, setPolicyOpen] = useState(false);
 
   useEffect(() => {
     if (authLoading) return;
@@ -28,6 +30,7 @@ export default function ClientReturnsPage() {
       return;
     }
     fetchReturns();
+    axios.get(`${API}/return-settings`).then((r) => setSettings(r.data)).catch(() => {});
   }, [user, authLoading, navigate]);
 
   const fetchReturns = async () => {
@@ -80,7 +83,57 @@ export default function ClientReturnsPage() {
           </div>
         </motion.div>
 
-        {loading ? (
+        {/* Условия возврата (editable by admin) */}
+        {settings && (settings.policy_text || settings.fee_percent != null) && (
+          <motion.div
+            className="glass-card mb-6 overflow-hidden"
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            data-testid="return-policy-section"
+          >
+            <button
+              onClick={() => setPolicyOpen((o) => !o)}
+              className="w-full flex items-center justify-between gap-3 px-5 py-4 hover:bg-slate-50/60 transition"
+              data-testid="return-policy-toggle"
+            >
+              <span className="flex items-center gap-3">
+                <span className="w-9 h-9 rounded-xl bg-teal-100 flex items-center justify-center">
+                  <FileText className="w-4 h-4 text-teal-600" />
+                </span>
+                <span className="text-sm font-bold text-slate-800">Условия и правила возврата</span>
+              </span>
+              <ChevronDown className={`w-5 h-5 text-slate-400 transition-transform ${policyOpen ? 'rotate-180' : ''}`} />
+            </button>
+            <AnimatePresence initial={false}>
+              {policyOpen && (
+                <motion.div
+                  initial={{ height: 0, opacity: 0 }}
+                  animate={{ height: 'auto', opacity: 1 }}
+                  exit={{ height: 0, opacity: 0 }}
+                  className="overflow-hidden border-t border-slate-100"
+                >
+                  <div className="px-5 py-4 space-y-3" data-testid="return-policy-body">
+                    <div className="flex flex-wrap gap-2 text-xs">
+                      <span className="px-2.5 py-1 rounded-lg bg-rose-50 text-rose-600 font-medium">Удержание: {settings.fee_percent}%</span>
+                      {settings.min_photos > 0 && (
+                        <span className="px-2.5 py-1 rounded-lg bg-slate-100 text-slate-600 font-medium">Фото: {settings.min_photos}–{settings.max_photos}</span>
+                      )}
+                      <span className="px-2.5 py-1 rounded-lg bg-slate-100 text-slate-600 font-medium">
+                        Срок: {settings.return_window_days > 0 ? `${settings.return_window_days} дн.` : 'без ограничения'}
+                      </span>
+                      <span className={`px-2.5 py-1 rounded-lg font-medium ${settings.warranty_enabled ? 'bg-blue-50 text-blue-600' : 'bg-slate-100 text-slate-400'}`}>
+                        Гарантийный возврат: {settings.warranty_enabled ? 'доступен' : 'недоступен'}
+                      </span>
+                    </div>
+                    {settings.policy_text && (
+                      <p className="text-sm text-slate-600 whitespace-pre-line leading-relaxed">{settings.policy_text}</p>
+                    )}
+                  </div>
+                </motion.div>
+              )}
+            </AnimatePresence>
+          </motion.div>
+        )}
           <div className="text-center py-12">
             <div className="w-10 h-10 border-3 border-teal-500/30 border-t-teal-500 rounded-full animate-spin mx-auto mb-4" />
             <p className="text-slate-500">Загрузка...</p>
@@ -253,7 +306,7 @@ export default function ClientReturnsPage() {
                             {ret.type === 'return' && (
                               <div className="p-3 bg-slate-50 rounded-xl border border-slate-200 text-sm space-y-1">
                                 <div className="flex justify-between">
-                                  <span className="text-rose-500">Удержание 10%:</span>
+                                  <span className="text-rose-500">Удержание {ret.fee_percent ?? 10}%:</span>
                                   <span className="font-medium text-rose-500">
                                     −{formatPrice(ret.total_deduction)} ₽
                                   </span>

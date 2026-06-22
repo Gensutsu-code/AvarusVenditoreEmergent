@@ -1,4 +1,4 @@
-import { useState, useMemo, useRef } from 'react';
+import { useState, useMemo, useRef, useEffect } from 'react';
 import axios from 'axios';
 import { motion, AnimatePresence } from 'framer-motion';
 import { X, AlertTriangle, RefreshCw, ShieldCheck, Package, Camera, Upload, Trash2 } from 'lucide-react';
@@ -8,7 +8,15 @@ import { toast } from 'sonner';
 const API = `${process.env.REACT_APP_BACKEND_URL}/api`;
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
 
-const MAX_PHOTOS = 5;
+const DEFAULT_SETTINGS = {
+  fee_percent: 10,
+  min_photos: 1,
+  max_photos: 5,
+  warranty_enabled: true,
+  desc_return: 'Вернуть деньги на внутренний баланс. Удерживается комиссия и списываются начисленные бонусные баллы.',
+  desc_warranty: 'Замена товара на новый 1:1 без удержаний и списания бонусов.',
+  warning_text: 'При стандартном возврате удерживается комиссия от стоимости товара. Также будут списаны бонусные баллы, начисленные за возвращаемые позиции.',
+};
 
 export default function ReturnModal({ order, onClose, onSuccess }) {
   const [returnType, setReturnType] = useState(null); // "return" | "warranty"
@@ -17,7 +25,15 @@ export default function ReturnModal({ order, onClose, onSuccess }) {
   const [photos, setPhotos] = useState([]); // [{url, filename}]
   const [uploadingPhotos, setUploadingPhotos] = useState(false);
   const [submitting, setSubmitting] = useState(false);
+  const [settings, setSettings] = useState(DEFAULT_SETTINGS);
   const fileInputRef = useRef(null);
+
+  useEffect(() => {
+    axios.get(`${API}/return-settings`).then((r) => setSettings((s) => ({ ...s, ...r.data }))).catch(() => {});
+  }, []);
+
+  const MAX_PHOTOS = settings.max_photos;
+  const MIN_PHOTOS = settings.min_photos;
 
   const formatPrice = (p) => new Intl.NumberFormat('ru-RU').format(p);
 
@@ -49,7 +65,7 @@ export default function ReturnModal({ order, onClose, onSuccess }) {
       const sub = (item.price || 0) * q;
       itemsTotal += sub;
       if (returnType === 'return') {
-        const d = Math.round(sub * 0.10 * 100) / 100;
+        const d = Math.round(sub * (settings.fee_percent / 100) * 100) / 100;
         deduction += d;
         refund += Math.round((sub - d) * 100) / 100;
       }
@@ -66,8 +82,8 @@ export default function ReturnModal({ order, onClose, onSuccess }) {
       toast.error('Укажите причину возврата');
       return;
     }
-    if (photos.length < 1) {
-      toast.error('Приложите хотя бы одно фото товара');
+    if (photos.length < MIN_PHOTOS) {
+      toast.error(MIN_PHOTOS === 1 ? 'Приложите хотя бы одно фото товара' : `Приложите минимум ${MIN_PHOTOS} фото товара`);
       return;
     }
     setSubmitting(true);
@@ -182,12 +198,12 @@ export default function ReturnModal({ order, onClose, onSuccess }) {
                     <div>
                       <p className="font-semibold text-slate-800">Возврат</p>
                       <p className="text-sm text-slate-500 mt-0.5">
-                        Вернуть деньги на внутренний баланс. Удерживается 10% от стоимости и
-                        списываются начисленные бонусные баллы.
+                        {settings.desc_return}
                       </p>
                     </div>
                   </button>
 
+                  {settings.warranty_enabled && (
                   <button
                     onClick={() => setReturnType('warranty')}
                     className="flex items-start gap-4 p-4 rounded-xl border-2 border-slate-200 hover:border-blue-400 hover:bg-blue-50/50 transition text-left"
@@ -199,10 +215,11 @@ export default function ReturnModal({ order, onClose, onSuccess }) {
                     <div>
                       <p className="font-semibold text-slate-800">Возврат по гарантии</p>
                       <p className="text-sm text-slate-500 mt-0.5">
-                        Замена товара на новый 1:1 без удержаний и списания бонусов.
+                        {settings.desc_warranty}
                       </p>
                     </div>
                   </button>
+                  )}
                 </div>
               </div>
             )}
@@ -216,12 +233,7 @@ export default function ReturnModal({ order, onClose, onSuccess }) {
                     <AlertTriangle className="w-5 h-5 text-amber-600 flex-shrink-0 mt-0.5" />
                     <div className="text-sm text-amber-800">
                       <p className="font-semibold mb-1">Внимание!</p>
-                      <p>
-                        При стандартном возврате удерживается <strong>10% от стоимости товара</strong>.
-                        Также будут <strong>списаны бонусные баллы</strong>, начисленные за возвращаемые
-                        позиции. Деньги будут зачислены на ваш внутренний баланс после одобрения
-                        администратором.
-                      </p>
+                      <p>{settings.warning_text}</p>
                     </div>
                   </div>
                 )}
@@ -327,8 +339,8 @@ export default function ReturnModal({ order, onClose, onSuccess }) {
                 {/* Photos — required */}
                 <div className="mb-4">
                   <label className="block text-sm font-medium text-slate-600 mb-2">
-                    Фото товара / дефекта <span className="text-rose-500">*</span>
-                    <span className="text-xs text-slate-400 ml-2">(минимум 1, максимум {MAX_PHOTOS})</span>
+                    Фото товара / дефекта {MIN_PHOTOS > 0 && <span className="text-rose-500">*</span>}
+                    <span className="text-xs text-slate-400 ml-2">({MIN_PHOTOS > 0 ? `минимум ${MIN_PHOTOS}, ` : ''}максимум {MAX_PHOTOS})</span>
                   </label>
                   <div className="grid grid-cols-3 sm:grid-cols-5 gap-2">
                     {photos.map((ph, idx) => (
@@ -394,7 +406,7 @@ export default function ReturnModal({ order, onClose, onSuccess }) {
                     {returnType === 'return' && (
                       <>
                         <div className="flex justify-between text-sm">
-                          <span className="text-rose-500">Удержание 10%:</span>
+                          <span className="text-rose-500">Удержание {settings.fee_percent}%:</span>
                           <span className="font-medium text-rose-500">
                             −{formatPrice(calc.deduction)} ₽
                           </span>
@@ -444,7 +456,7 @@ export default function ReturnModal({ order, onClose, onSuccess }) {
             {returnType && (
               <Button
                 onClick={submit}
-                disabled={!hasSelection || !reason.trim() || photos.length < 1 || submitting || uploadingPhotos}
+                disabled={!hasSelection || !reason.trim() || photos.length < MIN_PHOTOS || submitting || uploadingPhotos}
                 className="bg-gradient-to-r from-teal-500 to-emerald-500 hover:from-teal-600 hover:to-emerald-600 text-white rounded-xl shadow-lg shadow-teal-500/30 disabled:opacity-50"
                 data-testid="return-submit-btn"
               >

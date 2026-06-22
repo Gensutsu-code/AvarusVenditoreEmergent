@@ -21,14 +21,44 @@ async def create_return(data: dict, user=Depends(get_current_user)):
         raise HTTPException(status_code=400, detail="Invalid return type")
     if not order_id or not items:
         raise HTTPException(status_code=400, detail="Order and items required")
-    if not isinstance(photos, list) or len(photos) < 1:
-        raise HTTPException(status_code=400, detail="Необходимо приложить минимум 1 фото")
+
+    # Load admin-configured return rules
+    rs_doc = await db.settings.find_one({"key": "return_settings"})
+    rs = rs_doc.get("value", {}) if rs_doc else {}
+    fee_percent = float(rs.get("fee_percent", 10))
+    min_photos = int(rs.get("min_photos", 1))
+    return_window_days = int(rs.get("return_window_days", 0))
+    warranty_enabled = bool(rs.get("warranty_enabled", True))
+
+    if return_type == "warranty" and not warranty_enabled:
+        raise HTTPException(status_code=400, detail="Гарантийный возврат сейчас недоступен")
+    if min_photos > 0 and (not isinstance(photos, list) or len(photos) < min_photos):
+        raise HTTPException(status_code=400, detail=f"Необходимо приложить минимум {min_photos} фото")
 
     order = await db.orders.find_one({"id": order_id, "user_id": user["id"]}, {"_id": 0})
     if not order:
         raise HTTPException(status_code=404, detail="Order not found")
     if order.get("status") != "completed":
         raise HTTPException(status_code=400, detail="Only completed orders can be returned")
+
+    # Enforce return window (days since completion) when configured
+    if return_window_days > 0:
+        ref_str = order.get("completed_at") or order.get("created_at")
+        if ref_str:
+            try:
+                ref_dt = datetime.fromisoformat(ref_str.replace("Z", "+00:00"))
+                if ref_dt.tzinfo is None:
+                    ref_dt = ref_dt.replace(tzinfo=timezone.utc)
+                days_passed = (datetime.now(timezone.utc) - ref_dt).days
+                if days_passed > return_window_days:
+                    raise HTTPException(
+                        status_code=400,
+                        detail=f"Срок возврата истёк (возврат возможен в течение {return_window_days} дн. после выполнения заказа)"
+                    )
+            except HTTPException:
+                raise
+            except (ValueError, TypeError):
+                pass
 
     # Validate items belong to the order
     order_item_ids = {item.get("product_id") for item in order.get("items", [])}
@@ -116,7 +146,7 @@ async def create_return(data: dict, user=Depends(get_current_user)):
         item_total = order_item.get("price", 0) * qty
 
         if return_type == "return":
-            deduction = round(item_total * 0.10, 2)
+            deduction = round(item_total * (fee_percent / 100), 2)
             refund = round(item_total - deduction, 2)
             total_deduction += deduction
             total_refund += refund
@@ -166,6 +196,7 @@ async def create_return(data: dict, user=Depends(get_current_user)):
         "reason": reason,
         "photos": photos,
         "status": "pending",
+        "fee_percent": fee_percent,
         "total_refund": total_refund,
         "total_deduction": total_deduction,
         "total_bonus_deduction": total_bonus_deduction,
@@ -226,6 +257,8 @@ async def approve_return(return_id: str, data: dict = None, user=Depends(get_cur
         raise HTTPException(status_code=400, detail="Return already processed")
 
     comment = (data or {}).get("comment", "")
+    fee_pct = ret.get("fee_percent", 10)
+    fee_label = f"{fee_pct:g}%"
 
     await db.returns.update_one(
         {"id": return_id},
@@ -246,7 +279,7 @@ async def approve_return(return_id: str, data: dict = None, user=Depends(get_cur
                 "user_id": ret["user_id"],
                 "amount": refund_amount,
                 "type": "refund",
-                "description": f"Возврат по заказу #{ret['order_id'][:8]} (удержание 10%)",
+                "description": f"Возврат по заказу #{ret['order_id'][:8]} (удержание {fee_label})",
                 "created_at": datetime.now(timezone.utc).isoformat()
             })
 
@@ -289,7 +322,7 @@ async def approve_return(return_id: str, data: dict = None, user=Depends(get_cur
         await notify_user(
             ret["user_id"], "return",
             "Возврат одобрен",
-            f"Ваш возврат по заказу #{ret['order_id'][:8]} одобрен. {refund_amount:.0f} ₽ зачислено на баланс (удержание 10%). Списано {bonus_deduction:.0f} бонусных баллов.",
+            f"Ваш возврат по заказу #{ret['order_id'][:8]} одобрен. {refund_amount:.0f} ₽ зачислено на баланс (удержание {fee_label}). Списано {bonus_deduction:.0f} бонусных баллов.",
             "/returns"
         )
 

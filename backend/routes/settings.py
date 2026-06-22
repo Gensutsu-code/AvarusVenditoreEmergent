@@ -138,6 +138,81 @@ async def update_delivery_settings(data: dict, user=Depends(get_current_user)):
     return {"success": True}
 
 
+# ==================== RETURN SETTINGS ====================
+
+RETURN_DEFAULTS = {
+    "fee_percent": 10,
+    "min_photos": 1,
+    "max_photos": 5,
+    "return_window_days": 0,  # 0 = без ограничения по сроку
+    "warranty_enabled": True,
+    "desc_return": "Вернуть деньги на внутренний баланс. Удерживается комиссия и списываются начисленные бонусные баллы.",
+    "desc_warranty": "Замена товара на новый 1:1 без удержаний и списания бонусов.",
+    "warning_text": "При стандартном возврате удерживается комиссия от стоимости товара. Также будут списаны бонусные баллы, начисленные за возвращаемые позиции. Деньги будут зачислены на ваш внутренний баланс после одобрения администратором.",
+    "policy_text": "Возврат возможен только для выполненных заказов. К заявке необходимо приложить фото товара (минимум одно). После одобрения администратором деньги зачисляются на внутренний баланс с удержанием комиссии. Гарантийная замена производится 1:1 без удержаний.",
+}
+
+
+async def _get_return_settings():
+    settings = await db.settings.find_one({"key": "return_settings"})
+    if settings:
+        return {**RETURN_DEFAULTS, **settings.get("value", {})}
+    return dict(RETURN_DEFAULTS)
+
+
+@router.get("/return-settings")
+async def get_return_settings():
+    """Get return rules & policy (public)"""
+    return await _get_return_settings()
+
+
+@router.get("/admin/return-settings")
+async def get_admin_return_settings(user=Depends(get_current_user)):
+    if user.get("role") != "admin":
+        raise HTTPException(status_code=403, detail="Admin access required")
+    return await _get_return_settings()
+
+
+@router.put("/admin/return-settings")
+async def update_return_settings(data: dict, user=Depends(get_current_user)):
+    if user.get("role") != "admin":
+        raise HTTPException(status_code=403, detail="Admin access required")
+
+    def num(v, default, lo=None, hi=None):
+        try:
+            n = float(v)
+        except (TypeError, ValueError):
+            n = float(default)
+        if lo is not None:
+            n = max(lo, n)
+        if hi is not None:
+            n = min(hi, n)
+        return n
+
+    min_p = int(num(data.get("min_photos", 1), 1, 0, 20))
+    max_p = int(num(data.get("max_photos", 5), 5, 1, 20))
+    if max_p < max(1, min_p):
+        max_p = max(1, min_p)
+
+    settings_data = {
+        "fee_percent": round(num(data.get("fee_percent", 10), 10, 0, 100), 2),
+        "min_photos": min_p,
+        "max_photos": max_p,
+        "return_window_days": int(num(data.get("return_window_days", 0), 0, 0, 3650)),
+        "warranty_enabled": bool(data.get("warranty_enabled", True)),
+        "desc_return": str(data.get("desc_return", RETURN_DEFAULTS["desc_return"]))[:2000],
+        "desc_warranty": str(data.get("desc_warranty", RETURN_DEFAULTS["desc_warranty"]))[:2000],
+        "warning_text": str(data.get("warning_text", RETURN_DEFAULTS["warning_text"]))[:3000],
+        "policy_text": str(data.get("policy_text", RETURN_DEFAULTS["policy_text"]))[:5000],
+    }
+    await db.settings.update_one(
+        {"key": "return_settings"},
+        {"$set": {"value": settings_data}},
+        upsert=True
+    )
+    return {"success": True}
+
+
 
 # ==================== CRYPTO WALLETS ====================
 

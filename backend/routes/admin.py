@@ -401,7 +401,10 @@ async def update_admin_order(order_id: str, data: AdminOrderUpdate, user=Depends
     
     if not update_data:
         raise HTTPException(status_code=400, detail="No data to update")
-    
+
+    if update_data.get("status") == "completed" and original_order.get("status") != "completed":
+        update_data["completed_at"] = datetime.now(timezone.utc).isoformat()
+
     result = await db.orders.update_one({"id": order_id}, {"$set": update_data})
     if result.matched_count == 0:
         raise HTTPException(status_code=404, detail="Order not found")
@@ -484,7 +487,7 @@ async def update_order_status(order_id: str, status: str, user=Depends(get_curre
                 {"$inc": {"stock": item.get("quantity", 0)}}
             )
     
-    await db.orders.update_one({"id": order_id}, {"$set": {"status": status, "previous_status": old_status}})
+    await db.orders.update_one({"id": order_id}, {"$set": {"status": status, "previous_status": old_status, **({"completed_at": datetime.now(timezone.utc).isoformat()} if status == "completed" and old_status != "completed" else {})}})
     
     # Deactivate individual prices when order is completed
     if status == "completed":

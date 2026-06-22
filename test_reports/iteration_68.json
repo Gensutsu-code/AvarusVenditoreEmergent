@@ -1,0 +1,26 @@
+{
+  "summary": "Validated admin-editable return rules & policy end-to-end. Backend: 8/8 pytest passing for GET /api/return-settings (public), admin PUT auth, settings persistence, return fee math (10%), min_photos validation, warranty toggle, and final defaults reset. Frontend: admin panel (/admin/returns) shows ReturnSettingsPanel with all required test-ids and persists changes (fee 10→12→reload→12→reset 10). Client policy section (/returns) renders fee/photos/window/warranty + policy_text. ReturnModal reflects current settings: desc_return, warning_text, 'Удержание 10%', photo label 'минимум 1, максимум 5', and warranty button visible when warranty_enabled=true. Settings reset back to defaults after testing.",
+  "backend_issues": {"critical": [], "minor": []},
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [],
+    "design_issues": []
+  },
+  "test_report_links": [
+    "/app/backend/tests/test_return_settings.py",
+    "/app/test_reports/pytest/pytest_return_settings.xml"
+  ],
+  "action_items": [],
+  "critical_code_review_comments": [
+    "ReturnModal.js line 75: useMemo missing dependency 'settings.fee_percent' — fee in summary may not recalc if settings update after items selection (eslint warning). Low impact since settings fetched on mount.",
+    "ClientReturnsPage.js renders fine but JSX between policy section close and loading branch is unusual; consider verifying readability."
+  ],
+  "updated_files": ["/app/backend/tests/test_return_settings.py"],
+  "success_rate": {"backend": "100%", "frontend": "100%"},
+  "test_credentials": "Admin admin@avarus.ru/admin, Client user@demo.com/demo123",
+  "seed_data_creation": "Created one TEST_fee_math return on order f6617f0a (item PL270x qty=1) during fee-math validation. Settings restored to defaults (fee=10, min=1, max=5, window=0, warranty=true).",
+  "retest_needed": false,
+  "main_agent_can_self_test": true,
+  "context_for_next_testing_agent": "test_return_settings.py covers: public GET defaults, 401/403 on PUT without admin token, admin PUT roundtrip, fee math @10%, min_photos=2 -> HTTP 400 with 'минимум N фото', warranty_enabled=false -> HTTP 400 'Гарантийный возврат сейчас недоступен', final reset. Login response key is 'token' not 'access_token'. Demo user demo123 owns order f6617f0a-e70d-4efb-8f83-366cd6137bd9 with item PL270x — quantity may already be partially consumed by previous tests; tests skip gracefully if fully returned.",
+  "rca of the issue": "N/A — all tests passed."
+}

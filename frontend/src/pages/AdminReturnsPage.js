@@ -6,6 +6,7 @@ import { RefreshCw, ShieldCheck, Package, Check, X, Clock, CheckCircle, XCircle 
 import { Button } from '../components/ui/button';
 import { useAuth } from '../context/AuthContext';
 import { toast } from 'sonner';
+import ReturnSettingsPanel from '../components/admin/ReturnSettingsPanel';
 
 const API = `${process.env.REACT_APP_BACKEND_URL}/api`;
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
@@ -102,6 +103,9 @@ export default function AdminReturnsPage() {
             <p className="text-sm text-slate-500">Заявки клиентов на возврат и гарантийную замену</p>
           </div>
         </div>
+
+        {/* Return rules & policy editor */}
+        <ReturnSettingsPanel />
 
         {/* Filter tabs */}
         <div className="flex flex-wrap gap-2 mb-6">
@@ -239,7 +243,7 @@ export default function AdminReturnsPage() {
                                 {formatPrice(item.item_total)} ₽
                               </p>
                               <p className="text-rose-500">
-                                −{formatPrice(item.deduction)} ₽ (10%)
+                                −{formatPrice(item.deduction)} ₽ ({ret.fee_percent ?? 10}%)
                               </p>
                               <p className="font-bold text-emerald-600">
                                 {formatPrice(item.refund)} ₽
@@ -253,7 +257,7 @@ export default function AdminReturnsPage() {
                     {ret.type === 'return' && (
                       <div className="p-3 bg-emerald-50 rounded-xl border border-emerald-100 text-sm space-y-1 mb-4">
                         <div className="flex justify-between">
-                          <span className="text-slate-600">Итого удержание 10%:</span>
+                          <span className="text-slate-600">Итого удержание {ret.fee_percent ?? 10}%:</span>
                           <span className="font-medium text-rose-500">
                             −{formatPrice(ret.total_deduction)} ₽
                           </span>
