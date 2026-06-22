@@ -647,8 +647,8 @@ export default function CheckoutPage() {
                     <span>Подытог:</span>
                     <span>{formatPrice(subtotal)} ₽</span>
                   </div>
-                  <div className={`flex justify-between text-sm font-medium ${currentPaymentAdjustment < 0 ? 'text-emerald-600' : 'text-rose-600'}`}>
-                    <span>{currentPaymentAdjustment < 0 ? 'Скидка' : 'Наценка'} ({Math.abs(currentPaymentAdjustment)}%):</span>
+                  <div className={`flex justify-between text-sm font-medium ${currentPaymentAdjustment < 0 ? 'text-emerald-600' : 'text-rose-600'}`} data-testid="checkout-cart-discount-line">
+                    <span>{currentPaymentAdjustment < 0 ? 'Скидка на корзину' : 'Наценка'} ({Math.abs(currentPaymentAdjustment)}%):</span>
                     <span>{currentPaymentAdjustment < 0 ? '-' : '+'}{formatPrice(Math.abs(adjustedSubtotal - subtotal))} ₽</span>
                   </div>
                 </>

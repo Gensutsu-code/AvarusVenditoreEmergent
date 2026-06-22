@@ -36,8 +36,6 @@ export default function CartPage() {
   const formatPrice = (price) => new Intl.NumberFormat('ru-RU').format(Math.round(price));
 
   const cartTotal = cart.items.reduce((sum, item) => sum + item.price * item.quantity, 0);
-  const cartOriginalTotal = cart.items.reduce((sum, item) => sum + (item.original_price ?? item.price) * item.quantity, 0);
-  const cartSavings = Math.max(0, cartOriginalTotal - cartTotal);
 
   // Bonus points preview for the current cart (debounced refetch on total change)
   const [bonusPreview, setBonusPreview] = useState({ total_points: 0, programs: [] });
@@ -429,14 +427,8 @@ export default function CartPage() {
               <div className="space-y-3 mb-6">
                 <div className="flex justify-between text-sm">
                   <span className="text-slate-500">Товары ({cart.items.length})</span>
-                  <span className="text-slate-800">{formatPrice(cartOriginalTotal)} ₽</span>
+                  <span className="text-slate-800">{formatPrice(cartTotal)} ₽</span>
                 </div>
-                {cartSavings > 0 && (
-                  <div className="flex justify-between text-sm" data-testid="cart-discount-line">
-                    <span className="text-rose-500">Скидка на корзину</span>
-                    <span className="font-semibold text-rose-500">−{formatPrice(cartSavings)} ₽</span>
-                  </div>
-                )}
                 {bonusPreview.total_points > 0 && (
                   <div className="flex justify-between text-sm" data-testid="cart-bonus-preview">
                     <span className="text-amber-600 flex items-center gap-1.5">
