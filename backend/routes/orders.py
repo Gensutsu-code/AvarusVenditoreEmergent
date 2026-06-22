@@ -113,6 +113,10 @@ async def create_notification(user_id: str, notif_type: str, title: str, message
 
 @router.get("/cart")
 async def get_cart(user=Depends(get_current_user)):
+    return await _build_cart(user)
+
+
+async def _build_cart(user):
     cart = await db.carts.find_one({"user_id": user["id"]}, {"_id": 0})
     if not cart:
         cart = {"user_id": user["id"], "items": []}
@@ -193,7 +197,7 @@ async def update_cart_item(item: CartItem, user=Depends(get_current_user)):
                 i["quantity"] = item.quantity
                 break
         await db.carts.update_one({"user_id": user["id"]}, {"$set": {"items": items}})
-    return {"message": "Cart updated"}
+    return await _build_cart(user)
 
 
 @router.delete("/cart/{product_id}")

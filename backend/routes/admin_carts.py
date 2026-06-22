@@ -6,6 +6,7 @@ from datetime import datetime, timezone
 import uuid
 
 from database import db, get_current_user
+from routes.orders import compute_promo_discount
 
 router = APIRouter(prefix="/admin", tags=["admin-carts"])
 
@@ -50,7 +51,8 @@ async def get_all_carts(user=Depends(get_current_user)):
     # Batch fetch products
     products_list = await db.products.find(
         {"id": {"$in": list(all_product_ids)}},
-        {"_id": 0, "id": 1, "name": 1, "article": 1, "price": 1, "image_url": 1, "manufacturer": 1, "stock": 1}
+        {"_id": 0, "id": 1, "name": 1, "article": 1, "price": 1, "image_url": 1, "manufacturer": 1, "stock": 1,
+         "discount_active": 1, "discount_type": 1, "discount_value": 1, "discount_tiers": 1, "discount_until": 1, "discount_label": 1}
     ).to_list(10000)
     products_map = {p["id"]: p for p in products_list}
 
@@ -77,8 +79,10 @@ async def get_all_carts(user=Depends(get_current_user)):
             if not product:
                 continue
             ind_price = ind_prices_map.get((uid, item["product_id"]))
-            effective_price = ind_price if ind_price is not None else product["price"]
             qty = item.get("quantity", 1)
+            base_price = ind_price if ind_price is not None else product["price"]
+            promo_final, promo_amount, promo_active = compute_promo_discount(product, base_price, qty)
+            effective_price = promo_final if promo_active else base_price
             items_detailed.append({
                 "product_id": item["product_id"],
                 "name": product["name"],
@@ -87,6 +91,10 @@ async def get_all_carts(user=Depends(get_current_user)):
                 "price": effective_price,
                 "original_price": product["price"],
                 "individual_price": ind_price,
+                "base_price_before_promo": base_price,
+                "promo_active": promo_active,
+                "promo_amount": promo_amount,
+                "promo_label": product.get("discount_label") if promo_active else None,
                 "quantity": qty,
                 "image_url": product.get("image_url"),
                 "stock": product.get("stock", 0),
@@ -138,8 +146,10 @@ async def get_user_cart(user_id: str, user=Depends(get_current_user)):
         if not product:
             continue
         ind_price = ind_prices_map.get(item["product_id"])
-        effective_price = ind_price if ind_price is not None else product["price"]
         qty = item.get("quantity", 1)
+        base_price = ind_price if ind_price is not None else product["price"]
+        promo_final, promo_amount, promo_active = compute_promo_discount(product, base_price, qty)
+        effective_price = promo_final if promo_active else base_price
         items.append({
             "product_id": item["product_id"],
             "name": product["name"],
@@ -148,6 +158,10 @@ async def get_user_cart(user_id: str, user=Depends(get_current_user)):
             "price": effective_price,
             "original_price": product["price"],
             "individual_price": ind_price,
+            "base_price_before_promo": base_price,
+            "promo_active": promo_active,
+            "promo_amount": promo_amount,
+            "promo_label": product.get("discount_label") if promo_active else None,
             "quantity": qty,
             "image_url": product.get("image_url"),
             "stock": product.get("stock", 0),

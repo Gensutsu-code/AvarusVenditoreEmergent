@@ -71,6 +71,8 @@ export default function AdminCartsPage() {
           total: c.items.reduce((s, i) => s + (i.product_id === productId ? newQty : i.quantity) * i.price, 0),
         };
       }));
+      // Re-sync server-recomputed prices (quantity/tier discounts) for this view
+      fetchCarts();
     } catch (err) {
       toast.error('Ошибка обновления количества');
     }
@@ -310,9 +312,14 @@ export default function AdminCartsPage() {
                                 <span className="text-sm font-semibold text-slate-800">
                                   {item.price.toLocaleString('ru-RU')} &#8381;
                                 </span>
-                                {item.individual_price !== null && item.individual_price !== undefined && (
+                                {item.price < item.original_price && (
                                   <span className="text-xs line-through text-slate-400 ml-1">
                                     {item.original_price.toLocaleString('ru-RU')}
+                                  </span>
+                                )}
+                                {item.promo_active && (
+                                  <span className="ml-1 inline-flex items-center text-[10px] font-bold px-1.5 py-0.5 rounded bg-rose-100 text-rose-600" data-testid={`promo-badge-${item.product_id}`}>
+                                    {item.promo_label || 'Акция'}
                                   </span>
                                 )}
                                 <Edit3 className="w-3 h-3 text-slate-300 opacity-0 group-hover/price:opacity-100 transition-opacity" />

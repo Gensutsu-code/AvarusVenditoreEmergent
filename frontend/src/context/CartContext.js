@@ -93,7 +93,12 @@ export const CartProvider = ({ children }) => {
         if (finalQuantity === 0) {
           await axios.delete(`${API}/cart/${productId}`);
         } else {
-          await axios.post(`${API}/cart/update`, { product_id: productId, quantity: finalQuantity });
+          const res = await axios.post(`${API}/cart/update`, { product_id: productId, quantity: finalQuantity });
+          // Apply server-recomputed prices (tier/quantity discounts) instantly,
+          // but only if the user hasn't queued another change in the meantime.
+          if (res?.data?.items && !(productId in pendingUpdates.current)) {
+            setCart(res.data);
+          }
         }
       } catch (err) {
         console.error('Failed to update cart', err);

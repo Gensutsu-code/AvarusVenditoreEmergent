@@ -1,0 +1,27 @@
+{
+  "summary": "Validated 3 fixes end-to-end: (1) Real-time cart tier discount, (2) Admin /admin/carts promo badges + discounted prices, (3) Return window button vs expired badge on /orders. Backend pytest 6/6 PASS for tier pricing (qty5→52.5, qty10→37.5, qty2→60), admin carts promo_active+price<original, and return-settings PUT 1↔0 roundtrip. Frontend: cart +/- controls update displayed unit price within ~1-2s without page refresh (qty=10 shows '38 ₽' rounded from 37.5; qty=2 shows '60 ₽' with strikethrough '75'); admin /admin/carts renders promo-badge-{TIER_ID} (1 found); /orders with return_window_days=1 shows 9 return-expired-badge-{id} elements plus 'Срок возврата истёк' text and 0 header-return-btn, then reset to 0 shows 9 header-return-btn-{id} and 0 expired badges. Settings reset to defaults (return_window_days=0, fee_percent=10, min_photos=1, max_photos=5, warranty_enabled=true).",
+  "backend_issues": {"critical": [], "minor": []},
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [],
+    "design_issues": []
+  },
+  "test_report_links": [
+    "/app/backend/tests/test_iter69_realtime_cart_returns.py",
+    "/app/test_reports/pytest/pytest_iter69.xml"
+  ],
+  "action_items": [],
+  "critical_code_review_comments": [
+    "CartContext.updateQuantity: the optimistic UI sets `quantity` immediately but leaves `price` stale until the debounced /cart/update returns 300ms+ later. That's intentional (instant qty feedback, then tier-priced totals follow). Works fine in practice (~500ms-1.5s to settle). If desired, could also do a client-side tier lookup for zero-latency price preview.",
+    "AdminCartsPage.handleUpdateQuantity does an optimistic update then immediately fetchCarts() — could cause a brief flash of stale price (admin-set price * old qty) before refetch. Minor UX; acceptable.",
+    "OrdersPage getReturnWindow falls back to created_at if completed_at missing — correct; reads /api/return-settings on mount but doesn't poll, so if admin changes settings mid-session the client won't update until reload (acceptable for admin-only setting)."
+  ],
+  "updated_files": ["/app/backend/tests/test_iter69_realtime_cart_returns.py"],
+  "success_rate": {"backend": "100% (6/6)", "frontend": "100% (3/3 features verified)"},
+  "test_credentials": "Admin admin@avarus.ru/admin, Client user@demo.com/demo123",
+  "seed_data_creation": "Temporarily added/removed TIER product 8cd5b1c5-7980-4765-9db9-8e309614f8c5 to demo-user cart during testing (cleaned up). Temporarily set return_window_days=1 then reset to 0. All settings restored: fee_percent=10, min_photos=1, max_photos=5, warranty_enabled=true, return_window_days=0.",
+  "retest_needed": false,
+  "main_agent_can_self_test": true,
+  "context_for_next_testing_agent": "Cart page uses data-testid `increase-qty-{productId}` / `decrease-qty-{productId}` / `qty-input-{productId}` (NOT qty-plus/qty-minus — those are AdminCartsPage). Display rounds unit price to integer (37.5 → '38 ₽', 52.5 → '53 ₽') but the upsell hint shows the exact value 'XX,X ₽/шт'. Line total uses unit×qty syntax visible like '60 × 2'. Demo user has 9 completed orders → expect 9 header-return-btn-{id} when window=0 and 9 return-expired-badge-{id} when window=1.",
+  "rca of the issue": "N/A — all features pass"
+}

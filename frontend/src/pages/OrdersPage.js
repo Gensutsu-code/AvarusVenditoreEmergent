@@ -3,7 +3,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import { 
   Package, ChevronDown, ChevronUp, TrendingUp, ShoppingBag, 
-  Wallet, BarChart3, Star, CalendarDays, AlertTriangle, Check, XCircle, CreditCard, X, RefreshCw
+  Wallet, BarChart3, Star, CalendarDays, AlertTriangle, Check, XCircle, CreditCard, X, RefreshCw, Clock
 } from 'lucide-react';
 import { Button } from '../components/ui/button';
 import { useAuth } from '../context/AuthContext';
@@ -51,6 +51,7 @@ export default function OrdersPage() {
   const [cryptoPaymentAmount, setCryptoPaymentAmount] = useState(0);
   const [surchargeModal, setSurchargeModal] = useState(null); // { orderId, amount, userBalance }
   const [returnOrder, setReturnOrder] = useState(null);
+  const [returnSettings, setReturnSettings] = useState(null);
 
   useEffect(() => {
     if (authLoading) return;
@@ -59,9 +60,23 @@ export default function OrdersPage() {
       return;
     }
     fetchData();
+    axios.get(`${API}/return-settings`).then((r) => setReturnSettings(r.data)).catch(() => {});
     // Request notification permission
     requestNotificationPermission();
   }, [user, authLoading, navigate]);
+
+  // Compute return-window eligibility for a completed order
+  const getReturnWindow = (order) => {
+    if (order.status !== 'completed') return null;
+    const windowDays = returnSettings?.return_window_days ?? 0;
+    if (!windowDays || windowDays <= 0) return { allowed: true, expired: false, windowDays: 0, daysLeft: null };
+    const refStr = order.completed_at || order.created_at;
+    const ref = refStr ? new Date(refStr) : null;
+    if (!ref || isNaN(ref.getTime())) return { allowed: true, expired: false, windowDays, daysLeft: null };
+    const daysPassed = Math.floor((Date.now() - ref.getTime()) / 86400000);
+    const daysLeft = windowDays - daysPassed;
+    return { allowed: daysLeft >= 0, expired: daysLeft < 0, windowDays, daysLeft };
+  };
 
   // Poll for order updates
   useEffect(() => {
@@ -461,6 +476,29 @@ export default function OrdersPage() {
                             Требуется подтверждение
                           </span>
                         )}
+                        {order.status === 'completed' && (() => {
+                          const rw = getReturnWindow(order);
+                          if (rw && rw.expired) {
+                            return (
+                              <span className="hidden sm:inline-flex items-center gap-1 px-3 py-1.5 text-xs font-medium rounded-lg bg-slate-100 text-slate-400" data-testid={`return-expired-badge-${order.id}`}>
+                                <Clock className="w-3.5 h-3.5" />
+                                Срок возврата истёк
+                              </span>
+                            );
+                          }
+                          return (
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              onClick={(e) => { e.stopPropagation(); setReturnOrder(order); }}
+                              className="border-teal-300 text-teal-600 hover:bg-teal-50 rounded-xl"
+                              data-testid={`header-return-btn-${order.id}`}
+                            >
+                              <RefreshCw className="w-4 h-4 mr-1.5" />
+                              Возврат
+                            </Button>
+                          );
+                        })()}
                         <motion.div
                           animate={{ rotate: expandedOrders[order.id] ? 180 : 0 }}
                           transition={{ duration: 0.3 }}
@@ -669,32 +707,47 @@ export default function OrdersPage() {
                             )}
 
                             {/* Return button for completed orders */}
-                            {order.status === 'completed' && (
-                              <div className="mt-4 p-4 bg-teal-50 border border-teal-200 rounded-xl">
-                                <div className="flex items-center justify-between gap-3 flex-wrap">
-                                  <div>
-                                    <p className="text-sm font-medium text-teal-800">
-                                      Нужен возврат или замена по гарантии?
-                                    </p>
-                                    <p className="text-xs text-teal-600 mt-0.5">
-                                      Вы можете оформить заявку на возврат средств или замену товара.
+                            {order.status === 'completed' && (() => {
+                              const rw = getReturnWindow(order);
+                              if (rw && rw.expired) {
+                                return (
+                                  <div className="mt-4 p-4 bg-slate-50 border border-slate-200 rounded-xl" data-testid={`return-expired-${order.id}`}>
+                                    <p className="text-sm font-medium text-slate-500 flex items-center gap-2">
+                                      <Clock className="w-4 h-4" />
+                                      Срок возврата истёк (возврат был доступен в течение {rw.windowDays} дн. после выполнения заказа)
                                     </p>
                                   </div>
-                                  <Button
-                                    size="sm"
-                                    onClick={(e) => {
-                                      e.stopPropagation();
-                                      setReturnOrder(order);
-                                    }}
-                                    className="bg-gradient-to-r from-teal-500 to-emerald-500 hover:from-teal-600 hover:to-emerald-600 text-white rounded-xl shadow"
-                                    data-testid={`create-return-btn-${order.id}`}
-                                  >
-                                    <RefreshCw className="w-4 h-4 mr-2" />
-                                    Оформить возврат
-                                  </Button>
+                                );
+                              }
+                              return (
+                                <div className="mt-4 p-4 bg-teal-50 border border-teal-200 rounded-xl">
+                                  <div className="flex items-center justify-between gap-3 flex-wrap">
+                                    <div>
+                                      <p className="text-sm font-medium text-teal-800">
+                                        Нужен возврат или замена по гарантии?
+                                      </p>
+                                      <p className="text-xs text-teal-600 mt-0.5">
+                                        {rw && rw.windowDays > 0 && rw.daysLeft != null
+                                          ? `Возврат доступен ещё ${rw.daysLeft} дн.`
+                                          : 'Вы можете оформить заявку на возврат средств или замену товара.'}
+                                      </p>
+                                    </div>
+                                    <Button
+                                      size="sm"
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        setReturnOrder(order);
+                                      }}
+                                      className="bg-gradient-to-r from-teal-500 to-emerald-500 hover:from-teal-600 hover:to-emerald-600 text-white rounded-xl shadow"
+                                      data-testid={`create-return-btn-${order.id}`}
+                                    >
+                                      <RefreshCw className="w-4 h-4 mr-2" />
+                                      Оформить возврат
+                                    </Button>
+                                  </div>
                                 </div>
-                              </div>
-                            )}
+                              );
+                            })()}
                           </div>
                         </motion.div>
                       )}
