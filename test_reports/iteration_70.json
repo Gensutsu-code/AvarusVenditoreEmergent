@@ -1,0 +1,28 @@
+{
+  "summary": "Validated Phase 1 cart/orders improvements end-to-end. Backend pytest 5/5 PASS: /bonus/cart-preview returns total_points, target order ea0331f7 has ozon_certificate=500, PATCH /admin/orders/{id}/ozon-certificate toggles + persists, /orders/stats restricted to current month, /orders sorted newest-first. Frontend: /cart shows 'Скидка на корзину' line (−120 ₽ for qty 3), bonus preview '+1 800' matching /api/bonus/cart-preview total_points=1800, Ozon certificate bar (+500 ₽ через 9 820 ₽ at 540₽ subtotal), and 'Очистить корзину' button. Clear cart button (with confirm dialog) empties cart correctly. Ozon scaling verified: qty 280 (subtotal 10500₽) → accrued '500 ₽'; qty 600 (subtotal 22500₽) → accrued '1 000 ₽'. Mini-cart hover dropdown (data-testid='mini-cart-dropdown') contains compact OzonCertificateBar with text 'Сертификат Ozon за заказ +500 ₽ ещё через 7 900 ₽'. Admin badge ozon-cert-badge-ea0331f7-… toggles between 'Выдать серт. Ozon: 500 ₽' ↔ 'Серт. Ozon выдан: 500 ₽' and persists across reload (backend confirmed). Client /orders renders stats for current calendar month only (Динамика по месяцам shows single bar 'июнь 26 г.') and orders are sorted descending by date (#ea0331f7 22.06 → #34c25cb4 18.06 …). No JS console errors on /cart, /orders, /admin/orders.",
+  "backend_issues": {"critical": [], "minor": []},
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [],
+    "design_issues": []
+  },
+  "test_report_links": [
+    "/app/backend/tests/test_iter70_cart_ozon.py",
+    "/app/test_reports/pytest/pytest_iter70.xml"
+  ],
+  "action_items": [],
+  "critical_code_review_comments": [
+    "Admin /admin/orders Ozon badge: first click after page load sometimes appeared to need a second click before the local badge label flipped (the backend PATCH did fire — verified via direct API), suggesting the AdminOrdersPage toggleOzonCertificate handler may set local state from the PATCH response rather than re-fetching, and could race with the initial fetchOrders() if clicked too soon after load. Adding a guard (button disabled until orders loaded) or always setting from response would make the toggle visually deterministic.",
+    "OzonCertificateBar inside MiniCart dropdown reads `+500 ₽ ещё через 7 900 ₽` text — text label is identical between full and compact variants; if you want a more compact mini view consider hiding the secondary line.",
+    "OrdersPage card elements do not expose a data-testid like `order-card-{id}` (testing relied on innerText match for sort verification). Adding `data-testid=\"order-card-{order.id}\"` and `data-created-at` would make sorting/regression tests more reliable.",
+    "bonus.py cart_bonus_preview duplicates a large chunk of update_bonus_on_order_delivered (yearly-total + level resolution + base_amount calc). Worth extracting a shared helper to avoid drift if the accrual formula changes."
+  ],
+  "updated_files": ["/app/backend/tests/test_iter70_cart_ozon.py"],
+  "success_rate": {"backend": "100% (5/5)", "frontend": "100% (all 8 features verified)"},
+  "test_credentials": "Admin admin@avarus.ru/admin, Client user@demo.com/demo123",
+  "seed_data_creation": "During testing cart for user@demo.com was temporarily filled with product 8cd5b1c5… at qty 3/56/280/600 then cleared. Target order ea0331f7 ozon_certificate_issued was toggled true→false (final state: false, as required by request). No other persistent changes.",
+  "retest_needed": false,
+  "main_agent_can_self_test": true,
+  "context_for_next_testing_agent": "data-testids confirmed: cart-discount-line, cart-bonus-preview, ozon-certificate-bar, ozon-cert-amount, clear-cart-btn, mini-cart, mini-cart-dropdown, ozon-cert-badge-{orderId}. Note tier discount for PRODUCT_ID 8cd5b1c5… kicks in heavily (qty≥20 → 37.5/шт), so to push subtotal ≥10000 needs ~qty 280+. Bonus program is configured at 100% so /api/bonus/cart-preview returns total_points equal to the discounted cart total (e.g., subtotal 1800 → 1800 points). Order cards on /orders do NOT carry a `data-testid='order-card-{id}'` attribute — use visible text for assertions.",
+  "rca of the issue": "N/A — all features pass"
+}

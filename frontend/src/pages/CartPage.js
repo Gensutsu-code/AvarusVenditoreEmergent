@@ -1,13 +1,14 @@
 import { useState, useEffect, useRef } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import axios from 'axios';
-import { Trash2, ArrowLeft, ShoppingCart, Minus, Plus, Package, ArrowRight, TrendingUp, Truck, PartyPopper } from 'lucide-react';
+import { Trash2, ArrowLeft, ShoppingCart, Minus, Plus, Package, ArrowRight, TrendingUp, Truck, PartyPopper, Award } from 'lucide-react';
 import { Button } from '../components/ui/button';
 import { useCart } from '../context/CartContext';
 import { useAuth } from '../context/AuthContext';
 import { motion, AnimatePresence } from 'framer-motion';
 import { trackClick } from '../utils/tracker';
 import { getCartUpsell } from '../utils/productHelpers';
+import { OzonCertificateBar } from '../components/OzonCertificateBar';
 
 const API = `${process.env.REACT_APP_BACKEND_URL}/api`;
 
@@ -23,7 +24,7 @@ const CONFETTI = Array.from({ length: 20 }, (_, i) => ({
 }));
 
 export default function CartPage() {
-  const { cart, updateQuantity, removeFromCart } = useCart();
+  const { cart, updateQuantity, removeFromCart, clearCart } = useCart();
   const { user } = useAuth();
   const navigate = useNavigate();
 
@@ -35,6 +36,24 @@ export default function CartPage() {
   const formatPrice = (price) => new Intl.NumberFormat('ru-RU').format(Math.round(price));
 
   const cartTotal = cart.items.reduce((sum, item) => sum + item.price * item.quantity, 0);
+  const cartOriginalTotal = cart.items.reduce((sum, item) => sum + (item.original_price ?? item.price) * item.quantity, 0);
+  const cartSavings = Math.max(0, cartOriginalTotal - cartTotal);
+
+  // Bonus points preview for the current cart (debounced refetch on total change)
+  const [bonusPreview, setBonusPreview] = useState({ total_points: 0, programs: [] });
+  useEffect(() => {
+    if (!cart.items.length) { setBonusPreview({ total_points: 0, programs: [] }); return; }
+    const t = setTimeout(() => {
+      axios.get(`${API}/bonus/cart-preview`).then(r => setBonusPreview(r.data)).catch(() => {});
+    }, 400);
+    return () => clearTimeout(t);
+  }, [cartTotal, cart.items.length]);
+
+  const handleClearCart = () => {
+    if (window.confirm('Очистить корзину? Все товары будут удалены.')) {
+      clearCart();
+    }
+  };
 
   // Free-delivery celebration: fire confetti when the threshold is first reached
   const freeDeliveryReached = delivery.delivery_enabled && delivery.min_free_delivery > 0 && cartTotal >= delivery.min_free_delivery;
@@ -163,6 +182,14 @@ export default function CartPage() {
             </h1>
             <p className="text-sm text-slate-500">{cart.items.length} товаров</p>
           </div>
+          <button
+            onClick={handleClearCart}
+            className="ml-auto inline-flex items-center gap-1.5 px-3 py-2 rounded-xl text-sm font-medium text-slate-500 hover:text-red-500 hover:bg-red-50 transition-colors"
+            data-testid="clear-cart-btn"
+          >
+            <Trash2 className="w-4 h-4" />
+            <span className="hidden sm:inline">Очистить корзину</span>
+          </button>
         </motion.div>
 
         {/* Free-delivery progress bar */}
@@ -237,6 +264,9 @@ export default function CartPage() {
             </motion.div>
           );
         })()}
+
+        {/* Ozon certificate progress (+500₽ per 10 000₽) */}
+        <OzonCertificateBar total={cartTotal} />
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
           {/* Cart Items */}
@@ -399,8 +429,22 @@ export default function CartPage() {
               <div className="space-y-3 mb-6">
                 <div className="flex justify-between text-sm">
                   <span className="text-slate-500">Товары ({cart.items.length})</span>
-                  <span className="text-slate-800">{formatPrice(cartTotal)} ₽</span>
+                  <span className="text-slate-800">{formatPrice(cartOriginalTotal)} ₽</span>
                 </div>
+                {cartSavings > 0 && (
+                  <div className="flex justify-between text-sm" data-testid="cart-discount-line">
+                    <span className="text-rose-500">Скидка на корзину</span>
+                    <span className="font-semibold text-rose-500">−{formatPrice(cartSavings)} ₽</span>
+                  </div>
+                )}
+                {bonusPreview.total_points > 0 && (
+                  <div className="flex justify-between text-sm" data-testid="cart-bonus-preview">
+                    <span className="text-amber-600 flex items-center gap-1.5">
+                      <Award className="w-4 h-4" /> Бонусы за заказ
+                    </span>
+                    <span className="font-semibold text-amber-600">+{formatPrice(bonusPreview.total_points)}</span>
+                  </div>
+                )}
                 <div className="border-t border-slate-200/50 pt-3">
                   <div className="flex justify-between items-center">
                     <span className="font-semibold text-slate-800">К оплате:</span>

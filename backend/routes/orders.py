@@ -303,6 +303,9 @@ async def create_order(data: OrderCreate, user=Depends(get_current_user)):
         total += delivery_fee
     
     total = round(total, 2)
+
+    # Ozon certificate: +500₽ per full 10 000₽ of goods (informational; admin issues manually)
+    ozon_certificate = int(subtotal // 10000) * 500
     
     # Check if paying with balance
     pay_with_balance = getattr(data, 'pay_with_balance', False) if hasattr(data, 'pay_with_balance') else False
@@ -352,6 +355,8 @@ async def create_order(data: OrderCreate, user=Depends(get_current_user)):
         "comment": data.comment,
         "payment_method": "balance" if pay_with_balance else payment_method,
         "paid_from_balance": paid_from_balance,
+        "ozon_certificate": ozon_certificate,
+        "ozon_certificate_issued": False,
         "created_at": datetime.now(timezone.utc).isoformat()
     }
     
@@ -367,6 +372,8 @@ async def create_order(data: OrderCreate, user=Depends(get_current_user)):
     await create_admin_activity(user["id"], user.get("name", ""), "order", f"Новый заказ #{order_id[:8]} на {total} ₽")
     await create_notification(user["id"], "order", "Заказ оформлен", f"Ваш заказ #{order_id[:8]} принят в обработку", "/orders")
     await notify_admin("new_order", "Новый заказ", f"Заказ #{order_id[:8]} от {user.get('name', user.get('email', ''))} на {total:.2f} ₽", "/admin/orders")
+    if ozon_certificate > 0:
+        await notify_admin("ozon_certificate", "Выдать сертификат Ozon", f"По заказу #{order_id[:8]} нужно выдать сертификат Ozon на {ozon_certificate} ₽", "/admin/orders")
     
     # Send Telegram notification about new order
     await send_telegram_order_notification(order, user)
@@ -435,8 +442,14 @@ async def get_orders(user=Depends(get_current_user)):
 
 @router.get("/orders/stats")
 async def get_user_order_stats(user=Depends(get_current_user)):
-    """Get extended order statistics for current user"""
+    """Get extended order statistics for current user.
+    Clients see only the CURRENT calendar month; admins see all-time (unchanged)."""
     orders = await db.orders.find({"user_id": user["id"]}, {"_id": 0}).to_list(1000)
+
+    # Clients: restrict stats to the current calendar month
+    if user.get("role") != "admin":
+        current_month = datetime.now(timezone.utc).strftime("%Y-%m")
+        orders = [o for o in orders if (o.get("created_at") or "")[:7] == current_month]
     
     if not orders:
         return {
@@ -953,6 +966,18 @@ async def merge_orders(payload: dict, user: dict = Depends(get_current_user)):
 
     new_order.pop("_id", None)
     return {"success": True, "order": new_order}
+
+
+@router.patch("/admin/orders/{order_id}/ozon-certificate")
+async def toggle_ozon_certificate(order_id: str, payload: dict, user: dict = Depends(get_current_user)):
+    """Admin marks an order's Ozon certificate as issued / not issued."""
+    if user.get("role") != "admin":
+        raise HTTPException(status_code=403, detail="Admin only")
+    issued = bool(payload.get("issued", True))
+    result = await db.orders.update_one({"id": order_id}, {"$set": {"ozon_certificate_issued": issued}})
+    if result.matched_count == 0:
+        raise HTTPException(status_code=404, detail="Order not found")
+    return {"success": True, "ozon_certificate_issued": issued}
 
 
 @router.patch("/admin/orders/{order_id}/fulfill")

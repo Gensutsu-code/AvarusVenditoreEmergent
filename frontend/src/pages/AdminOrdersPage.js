@@ -5,7 +5,7 @@ import {
   Package, Search, Eye, Pencil, Trash2, Save, X, 
   Clock, CheckCircle, Truck, XCircle, ChevronDown,
   User, Phone, MapPin, Calendar, CreditCard, RefreshCw,
-  AlertTriangle, Check, RotateCcw, Plus, GitMerge, PackageCheck, CircleDashed
+  AlertTriangle, Check, RotateCcw, Plus, GitMerge, PackageCheck, CircleDashed, Gift
 } from 'lucide-react';
 import { Button } from '../components/ui/button';
 import { Input } from '../components/ui/input';
@@ -93,6 +93,17 @@ export default function AdminOrdersPage() {
       toast.success('Статус обновлён');
     } catch (err) {
       toast.error('Ошибка обновления статуса');
+    }
+  };
+
+  const toggleOzonCertificate = async (order) => {
+    const next = !order.ozon_certificate_issued;
+    try {
+      await axios.patch(`${API}/admin/orders/${order.id}/ozon-certificate`, { issued: next });
+      setOrders(prev => prev.map(o => o.id === order.id ? { ...o, ozon_certificate_issued: next } : o));
+      toast.success(next ? 'Сертификат Ozon отмечен как выданный' : 'Отметка о выдаче снята');
+    } catch (err) {
+      toast.error('Не удалось обновить статус сертификата');
     }
   };
 
@@ -480,6 +491,17 @@ export default function AdminOrdersPage() {
                                 <span className="px-2.5 py-1 rounded-lg text-xs font-medium bg-orange-100 text-orange-700 border border-orange-200 flex items-center gap-1">
                                   <AlertTriangle className="w-3 h-3" /> Ожидает подтверждения
                                 </span>
+                              )}
+                              {order.ozon_certificate > 0 && (
+                                <button
+                                  onClick={(e) => { e.stopPropagation(); toggleOzonCertificate(order); }}
+                                  className={`px-2.5 py-1 rounded-lg text-xs font-medium border flex items-center gap-1 transition-colors ${order.ozon_certificate_issued ? 'bg-emerald-50 text-emerald-600 border-emerald-200' : 'bg-indigo-100 text-indigo-700 border-indigo-200 hover:bg-indigo-200'}`}
+                                  data-testid={`ozon-cert-badge-${order.id}`}
+                                  title={order.ozon_certificate_issued ? 'Сертификат выдан (нажмите чтобы отменить)' : 'Нажмите, когда выдадите сертификат'}
+                                >
+                                  <Gift className="w-3 h-3" />
+                                  {order.ozon_certificate_issued ? `Серт. Ozon выдан: ${formatPrice(order.ozon_certificate)} ₽` : `Выдать серт. Ozon: ${formatPrice(order.ozon_certificate)} ₽`}
+                                </button>
                               )}
                             </div>
                             <div className="flex items-center gap-3 text-sm text-slate-500 mt-1">

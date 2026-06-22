@@ -109,7 +109,9 @@ export default function OrdersPage() {
         });
       }
       
-      setOrders(newOrders);
+      // Always display orders newest-first by order date
+      const sortedOrders = [...newOrders].sort((a, b) => new Date(b.created_at || 0) - new Date(a.created_at || 0));
+      setOrders(sortedOrders);
       setStats(statsRes.data);
     } catch (err) {
       console.error('Failed to fetch orders', err);

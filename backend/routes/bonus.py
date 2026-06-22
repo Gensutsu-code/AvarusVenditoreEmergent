@@ -150,6 +150,52 @@ async def update_bonus_on_order_delivered(user_id: str, order_total: float, orde
     return {"updated": True}
 
 
+@router.get("/bonus/cart-preview")
+async def cart_bonus_preview(user=Depends(get_current_user)):
+    """Preview bonus points the user would earn for their current cart."""
+    from routes.orders import _build_cart
+    cart = await _build_cart(user)
+    items = cart.get("items", [])
+    if not items:
+        return {"total_points": 0, "programs": []}
+
+    order_total = sum((i.get("price", 0) or 0) * (i.get("quantity", 0) or 0) for i in items)
+    eligible_total = await _calc_bonus_eligible_total(items, order_total)
+
+    programs = await get_all_bonus_programs()
+    current_year = datetime.now(timezone.utc).year
+    year_start = f"{current_year}-01-01T00:00:00"
+    year_end = f"{current_year}-12-31T23:59:59"
+    yearly_orders = await db.orders.find({
+        "user_id": user["id"], "status": "completed",
+        "created_at": {"$gte": year_start, "$lte": year_end}
+    }, {"_id": 0, "total": 1}).to_list(1000)
+    yearly_total = sum(o.get("total", 0) for o in yearly_orders)
+
+    result_programs = []
+    total_points = 0.0
+    for program in programs:
+        if not program.get("enabled"):
+            continue
+        contribution_type = program.get("contribution_type", "order_total")
+        contribution_percent = program.get("contribution_percent", 100)
+        base_amount = eligible_total * (contribution_percent / 100) if contribution_type == "percentage" else eligible_total
+        levels_sorted = sorted(program.get("levels", []), key=lambda x: x.get("min_points", 0))
+        current_level = None
+        for level in levels_sorted:
+            if yearly_total >= level.get("min_points", 0):
+                current_level = level
+        if current_level and current_level.get("cashback_percent", 0) > 0:
+            pts = base_amount * (current_level["cashback_percent"] / 100)
+        else:
+            pts = base_amount
+        pts = round(pts, 2)
+        if pts > 0:
+            result_programs.append({"program_id": program["id"], "title": program.get("title", "Бонусы"), "points": pts})
+            total_points += pts
+
+    return {"total_points": round(total_points, 2), "programs": result_programs}
+
 
 @router.post("/admin/bonus/recalculate")
 async def recalculate_all_bonuses(user=Depends(get_current_user)):
