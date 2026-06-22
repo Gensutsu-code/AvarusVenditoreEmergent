@@ -114,6 +114,12 @@ E-commerce platform for truck spare parts with a comprehensive admin panel. Russ
 - **Admin** (`ReturnSettingsPanel` on /admin/returns): collapsible editor for all rules + texts. **Client** (/returns): collapsible "Условия и правила возврата" section. **ReturnModal**: texts/fee/photo limits/warranty visibility all driven by settings.
 - Verified iteration_68: backend 8/8 pytest + frontend 100%. Test file: `/app/backend/tests/test_return_settings.py`.
 
+### Real-time cart discounts, Admin-cart discounts, Return-window button (2026-06-18 — iter 69)
+- **Real-time cart pricing**: `POST /api/cart/update` now returns the recomputed cart (`_build_cart` helper); `CartContext.updateQuantity` applies it → tier/quantity discounts update instantly (~300ms) without page refresh.
+- **Admin carts discounts**: `admin_carts.py` (get_all_carts + get_user_cart) now apply `compute_promo_discount` → discounted price, promo_active, promo_amount, promo_label. `AdminCartsPage` shows strikethrough original + `promo-badge-{id}` and re-syncs on qty change.
+- **Return-window button**: `OrdersPage` reads `/api/return-settings`; `getReturnWindow(order)` gates the return CTA. In-window → `header-return-btn-{id}` + expanded `create-return-btn-{id}`; expired → `return-expired-badge-{id}` + `return-expired-{id}` ("Срок возврата истёк"). Uses order `completed_at` (fallback created_at).
+- Verified iteration_69: backend 6/6 pytest + frontend 3/3 PASS.
+
 ## Prioritized Backlog
 
 ### P1 (Important)
