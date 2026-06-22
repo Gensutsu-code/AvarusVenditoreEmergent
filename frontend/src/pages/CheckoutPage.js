@@ -253,7 +253,7 @@ export default function CheckoutPage() {
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.3 }}
           >
-            Заказ оформлен!
+            {payWithDeferral ? 'Заказ оформлен в отсрочку!' : 'Заказ оформлен!'}
           </motion.h1>
           <motion.p 
             className={`mb-2 ${isDark ? 'text-zinc-400' : 'text-slate-600'}`}
@@ -270,6 +270,7 @@ export default function CheckoutPage() {
             transition={{ delay: 0.5 }}
           >
             Мы свяжемся с вами для подтверждения.
+            {payWithDeferral && creditInfo && <> Оплатите заказ в течение {creditInfo.term_days || 30} дн.</>}
           </motion.p>
           <motion.div 
             className="flex gap-4 justify-center"

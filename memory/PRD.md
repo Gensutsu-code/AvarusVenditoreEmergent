@@ -132,9 +132,19 @@ E-commerce platform for truck spare parts with a comprehensive admin panel. Russ
 - New page `/admin/products` (`AdminProductsPage`): search, sort, category/stock/discounted filters, pagination, row selection + select-page + select-all-matching, sticky bulk toolbar (badges original/guarantee/new/bonus on-off; availability set/clear; discount apply/extend/remove; price ± %/₽; bulk delete) + per-product edit modal. Linked from /admin Каталог via `mass-edit-btn`.
 - Safety: delete+apply_all requires `confirm_all`. Verified iteration_71: backend 12/12 pytest + frontend 14/14 flows.
 
+### PHASE 3 — Credit / Deferral payment "Отсрочка платежа" (2026-06-19 — iter 72) ✅
+- Backend `routes/credit.py`: client `GET /credit/my`, `POST /credit/request`; admin `GET /admin/credit-requests`, `GET /admin/credit-accounts`, `GET /admin/deferrals`, `PUT /admin/credit-requests/{id}/approve|reject`, `PUT /admin/credit/{user_id}/set-limit`, `PUT /admin/deferrals/{id}/mark-paid`. `orders.py` (lines ~310-406) validates approved limit + available on `payment_method=deferral`, creates `deferrals` row, sets order `payment_status=deferred`, notifies admin.
+- Frontend: `CreditPage.js` (`/credit`) client view (request form / approved summary + deferral list); `AdminCreditPage.js` (`/admin/credit`) tabs Запросы/Лимиты клиентов/Долги по отсрочке (approve/reject/set-limit/mark-paid); `CheckoutPage.js` new `payment-method-deferral` option (only if approved & available ≥ total). Header admin nav link `admin-credit-link`, client balance `header-credit-balance`.
+- DB: `users.credit_status/credit_limit/credit_term_days`, `credit_requests`, `deferrals` collections.
+- Verified iteration_72: backend 10/10 pytest + frontend 100%. Test: `test_phase3_credit_deferral.py`.
+- Backlog notes (non-blocking): expose is_deferral/deferral_due_date/payment_status in OrderResponse so /orders shows deferral context without extra fetch; allow client to cancel pending request; warn admin when new limit < current debt.
+
 ## Prioritized Backlog
 
 ### P1 (Important)
+- Phase 4: Склад и учёт (остатки, закупки, приход/списание, инвентаризация, закуп/продажная цена, расходы/доходы)
+- Phase 5: Единая страница связи с админом (запросы скидок, инд. условий, отсрочки, чат)
+- Переключатель синхронизации наличия со складом (P2)
 - Real Payment Gateway Integration (replace MOCKED YuKassa)
 
 ### P2 (Enhancement)
