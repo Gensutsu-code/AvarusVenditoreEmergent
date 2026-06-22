@@ -517,12 +517,12 @@ export const Header = () => {
                     {userBalance !== null && (
                       <Link to="/account" data-testid="header-balance">
                         <motion.div 
-                          className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-gradient-to-r from-teal-50 to-emerald-50 border border-teal-200/60 cursor-pointer"
+                          className="flex items-center gap-1.5 px-3 h-9 rounded-xl bg-gradient-to-r from-teal-50 to-emerald-50 border border-teal-200/60 cursor-pointer whitespace-nowrap"
                           whileHover={{ scale: 1.05, borderColor: 'rgba(20,184,166,0.5)' }}
                           whileTap={{ scale: 0.97 }}
                         >
-                          <Wallet className="w-4 h-4 text-teal-500" />
-                          <span className="text-sm font-bold text-teal-700">{new Intl.NumberFormat('ru-RU').format(userBalance)} ₽</span>
+                          <Wallet className="w-4 h-4 text-teal-500 shrink-0" />
+                          <span className="text-sm font-bold text-teal-700 leading-none">{new Intl.NumberFormat('ru-RU').format(Math.round(userBalance))} ₽</span>
                         </motion.div>
                       </Link>
                     )}
@@ -530,13 +530,13 @@ export const Header = () => {
                     {creditInfo && (
                       <Link to="/credit" data-testid="header-credit-balance">
                         <motion.div
-                          className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-gradient-to-r from-violet-50 to-indigo-50 border border-violet-200/60 cursor-pointer"
+                          className="flex items-center gap-1.5 px-3 h-9 rounded-xl bg-gradient-to-r from-violet-50 to-indigo-50 border border-violet-200/60 cursor-pointer whitespace-nowrap"
                           whileHover={{ scale: 1.05, borderColor: 'rgba(139,92,246,0.5)' }}
                           whileTap={{ scale: 0.97 }}
                           title="Доступный лимит отсрочки"
                         >
-                          <CreditCard className="w-4 h-4 text-violet-500" />
-                          <span className="text-sm font-bold text-violet-700">{new Intl.NumberFormat('ru-RU').format(creditInfo.available)} ₽</span>
+                          <CreditCard className="w-4 h-4 text-violet-500 shrink-0" />
+                          <span className="text-sm font-bold text-violet-700 leading-none">{new Intl.NumberFormat('ru-RU').format(Math.round(creditInfo.available))} ₽</span>
                         </motion.div>
                       </Link>
                     )}
@@ -641,9 +641,15 @@ export const Header = () => {
                       </Link>
                       {userBalance !== null && (
                         <div className="flex items-center gap-3 p-3 rounded-xl bg-gradient-to-r from-teal-50 to-emerald-50 border border-teal-200/50" data-testid="mobile-balance">
-                          <Wallet className="w-5 h-5 text-teal-500" />
-                          <span className="text-sm font-bold text-teal-700">Баланс: {new Intl.NumberFormat('ru-RU').format(userBalance)} ₽</span>
+                          <Wallet className="w-5 h-5 text-teal-500 shrink-0" />
+                          <span className="text-sm font-bold text-teal-700">Баланс: {new Intl.NumberFormat('ru-RU').format(Math.round(userBalance))} ₽</span>
                         </div>
+                      )}
+                      {creditInfo && (
+                        <Link to="/credit" onClick={() => setMobileMenuOpen(false)} className="flex items-center gap-3 p-3 rounded-xl bg-gradient-to-r from-violet-50 to-indigo-50 border border-violet-200/50" data-testid="mobile-credit-balance">
+                          <CreditCard className="w-5 h-5 text-violet-500 shrink-0" />
+                          <span className="text-sm font-bold text-violet-700">Отсрочка: {new Intl.NumberFormat('ru-RU').format(Math.round(creditInfo.available))} ₽</span>
+                        </Link>
                       )}
                     </>
                   )}
