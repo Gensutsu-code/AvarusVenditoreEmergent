@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import axios from 'axios';
-import { ArrowLeft, CheckCircle, Banknote, MessageSquare, CreditCard, Wallet, Loader2, FileText, Sparkles, ShoppingBag, TrendingUp } from 'lucide-react';
+import { ArrowLeft, CheckCircle, Banknote, MessageSquare, CreditCard, Wallet, Loader2, FileText, Sparkles, ShoppingBag, TrendingUp, Clock } from 'lucide-react';
 import { Button } from '../components/ui/button';
 import { Input } from '../components/ui/input';
 import { Label } from '../components/ui/label';
@@ -51,6 +51,8 @@ export default function CheckoutPage() {
   
   const [userBalance, setUserBalance] = useState(0);
   const [payWithBalance, setPayWithBalance] = useState(false);
+  const [creditInfo, setCreditInfo] = useState(null);
+  const [payWithDeferral, setPayWithDeferral] = useState(false);
   const [prepaymentSettings, setPrepaymentSettings] = useState({ prepayment_enabled: true });
   const [deliverySettings, setDeliverySettings] = useState({ min_free_delivery: 5000, delivery_price: 500, delivery_enabled: true });
 
@@ -60,6 +62,7 @@ export default function CheckoutPage() {
     if (user) {
       fetchLastShipping();
       fetchUserBalance();
+      axios.get(`${API}/credit/my`).then(res => setCreditInfo(res.data)).catch(() => {});
     }
     axios.get(`${API}/payment-settings`).then(res => {
       setPaymentSettings(res.data);
@@ -93,7 +96,7 @@ export default function CheckoutPage() {
 
   const formatPrice = (price) => new Intl.NumberFormat('ru-RU').format(Math.round(price));
   const getPaymentAdjustment = (method) => paymentSettings[`${method}_adjustment`] ?? 0;
-  const currentPaymentAdjustment = payWithBalance ? (paymentSettings.balance_adjustment ?? 0) : getPaymentAdjustment(paymentMethod);
+  const currentPaymentAdjustment = payWithDeferral ? 0 : (payWithBalance ? (paymentSettings.balance_adjustment ?? 0) : getPaymentAdjustment(paymentMethod));
 
   const subtotal = cart.items.reduce((sum, item) => sum + item.price * item.quantity, 0);
   const adjustedSubtotal = currentPaymentAdjustment !== 0 
@@ -105,6 +108,9 @@ export default function CheckoutPage() {
   const finalTotal = adjustedSubtotal + deliveryFee;
 
   const canPayWithBalance = prepaymentSettings.prepayment_enabled && userBalance >= finalTotal;
+  const creditApproved = creditInfo && creditInfo.status === 'approved';
+  const creditAvailable = creditInfo ? (creditInfo.available || 0) : 0;
+  const canPayWithDeferral = creditApproved && creditAvailable >= finalTotal;
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -116,7 +122,7 @@ export default function CheckoutPage() {
     
     try {
       // For crypto: show payment modal FIRST, order will be created after successful payment
-      if (paymentMethod === 'crypto') {
+      if (paymentMethod === 'crypto' && !payWithBalance && !payWithDeferral) {
         setCryptoPaymentAmount(orderAmount);
         setShowCryptoModal(true);
         setLoading(false);
@@ -126,11 +132,19 @@ export default function CheckoutPage() {
       // For other methods: create order immediately
       const res = await axios.post(`${API}/orders`, { 
         ...form, 
-        payment_method: payWithBalance ? 'balance' : paymentMethod,
+        payment_method: payWithDeferral ? 'deferral' : (payWithBalance ? 'balance' : paymentMethod),
         pay_with_balance: payWithBalance
       });
       const newOrderId = res.data.id;
       setOrderId(newOrderId);
+
+      if (payWithDeferral) {
+        await fetchCart();
+        setSuccess(true);
+        toast.success('Заказ оформлен в отсрочку!');
+        window.__lastToastTime = Date.now();
+        return;
+      }
       
       if (payWithBalance) {
         await fetchCart();
@@ -386,6 +400,7 @@ export default function CheckoutPage() {
                     onClick={() => {
                       if (canPayWithBalance) {
                         setPayWithBalance(true);
+                        setPayWithDeferral(false);
                       } else {
                         toast.error(`Недостаточно средств. Баланс: ${formatPrice(userBalance)}₽`);
                       }
@@ -432,7 +447,7 @@ export default function CheckoutPage() {
                 {PAYMENT_METHODS.map(method => {
                   const adjustment = getPaymentAdjustment(method.id);
                   const isEnabled = isPaymentMethodEnabled(method.id);
-                  const isSelected = !payWithBalance && paymentMethod === method.id;
+                  const isSelected = !payWithBalance && !payWithDeferral && paymentMethod === method.id;
                   const Icon = method.icon;
                   return (
                     <motion.button 
@@ -441,6 +456,7 @@ export default function CheckoutPage() {
                       onClick={() => {
                         if (isEnabled) {
                           setPayWithBalance(false);
+                          setPayWithDeferral(false);
                           setPaymentMethod(method.id);
                         }
                       }}
@@ -495,6 +511,53 @@ export default function CheckoutPage() {
                     </motion.button>
                   );
                 })}
+
+                {/* Deferred payment (отсрочка) option */}
+                {creditApproved && (
+                  <motion.button
+                    type="button"
+                    onClick={() => {
+                      if (canPayWithDeferral) {
+                        setPayWithDeferral(true);
+                        setPayWithBalance(false);
+                      } else {
+                        toast.error(`Недостаточно лимита. Доступно: ${formatPrice(creditAvailable)}₽`);
+                      }
+                    }}
+                    className={`w-full flex items-center gap-4 p-4 rounded-xl border-2 transition-all duration-300 text-left ${
+                      payWithDeferral
+                        ? 'bg-indigo-50 border-indigo-400 shadow-sm shadow-indigo-200'
+                        : canPayWithDeferral
+                          ? 'bg-white border-slate-200 hover:border-slate-300 hover:bg-slate-50'
+                          : 'bg-slate-100 border-slate-200 opacity-60'
+                    }`}
+                    whileHover={canPayWithDeferral ? { scale: 1.01 } : {}}
+                    whileTap={canPayWithDeferral ? { scale: 0.99 } : {}}
+                    data-testid="payment-method-deferral"
+                  >
+                    <div className={`w-12 h-12 rounded-xl flex items-center justify-center flex-shrink-0 ${payWithDeferral ? 'bg-indigo-100' : 'bg-slate-100'}`}>
+                      <Clock className={`w-6 h-6 ${payWithDeferral ? 'text-indigo-500' : 'text-slate-400'}`} />
+                    </div>
+                    <div className="flex-1">
+                      <p className={`font-semibold ${payWithDeferral ? 'text-indigo-700' : 'text-slate-700'}`}>
+                        Отсрочка платежа
+                      </p>
+                      <p className="text-xs text-slate-500">
+                        Доступно: <span className={canPayWithDeferral ? 'text-emerald-600 font-semibold' : 'text-rose-500'}>{formatPrice(creditAvailable)}₽</span>
+                        {' '}· оплата до {creditInfo?.term_days || 30} дн.
+                        {!canPayWithDeferral && <span className="text-rose-500"> (недостаточно)</span>}
+                      </p>
+                    </div>
+                    <div className={`w-6 h-6 rounded-full border-2 flex items-center justify-center ${payWithDeferral ? 'border-indigo-500' : 'border-slate-300'}`}>
+                      {payWithDeferral && <motion.div
+                        className="w-3 h-3 rounded-full bg-indigo-500"
+                        initial={{ scale: 0 }}
+                        animate={{ scale: 1 }}
+                        transition={{ duration: 0.2 }}
+                      />}
+                    </div>
+                  </motion.button>
+                )}
               </div>
             </motion.div>
 
@@ -561,7 +624,7 @@ export default function CheckoutPage() {
                     : 'bg-slate-200 text-slate-400 cursor-not-allowed'
                 }`} data-testid="place-order-btn">
                 {loading ? <Loader2 className="w-5 h-5 animate-spin mr-2" /> : null}
-                {loading ? 'Оформление...' : payWithBalance ? 'Оплатить с баланса' : paymentMethod === 'card' ? 'Оплатить картой' : paymentMethod === 'crypto' ? 'Перейти к оплате' : 'Подтвердить заказ'}
+                {loading ? 'Оформление...' : payWithDeferral ? 'Оформить в отсрочку' : payWithBalance ? 'Оплатить с баланса' : paymentMethod === 'card' ? 'Оплатить картой' : paymentMethod === 'crypto' ? 'Перейти к оплате' : 'Подтвердить заказ'}
               </Button>
             </motion.div>
             {!agreedToTerms && (

@@ -1,0 +1,36 @@
+{
+  "summary": "Phase 3 — Credit limit / deferral (Отсрочка платежа) verified end-to-end. Backend pytest 10/10 PASS covering: GET /api/credit/my, POST /api/credit/request (success + duplicate-pending 400 + negative-amount 400), GET /api/admin/credit-requests, PUT /api/admin/credit-requests/{id}/approve (sets user credit_status=approved, limit, term_days), GET /api/admin/credit-accounts (enriched with debt/available), order checkout with payment_method=deferral (overlimit returns 400 with Russian detail; success path creates deferral row), GET /api/admin/deferrals (enriched with user name/email), PUT /api/admin/deferrals/{id}/mark-paid (flips deferral status + order payment_status to paid), PUT /api/admin/credit/{user_id}/set-limit direct edit, and 403 guard for non-admin. Frontend Playwright: client (0x0errorr@gmail.com) /credit shows approved card with available 498 169 ₽, header-credit-balance link reads '498 169,4 ₽'; cart seeded with cheapest product (100 ₽), /cart → 'ОФОРМИТЬ ЗАКАЗ' button navigates to /checkout where data-testid=payment-method-deferral is visible+selectable, clicking place-order-btn produced 'Заказ оформлен!' success screen + sonner toast 'Заказ оформлен в отсрочку!' and order #b28902ee. Admin /admin/credit Долги-по-отсрочке tab listed 2 unpaid deferrals → clicked mark-paid-{id} (confirm dialog accepted) → list dropped to 1; Лимиты-клиентов tab shows 2 accounts with credit-edit-limit-{id} buttons + working credit-limit-modal; Запросы tab and credit-tab-* all functional.",
+  "backend_issues": {"critical": [], "minor": []},
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [],
+    "design_issues": [
+      {"screen": "Checkout success", "issues": ["Page heading says 'Заказ оформлен!' for deferral orders (same as cash). Only the transient sonner toast carries 'в отсрочку'; the spec text 'Заказ оформлен в отсрочку!' is shown only on the toast, not on the success screen heading. Consider differentiating the heading when is_deferral so users see the deferral context after the toast disappears."]}
+    ]
+  },
+  "test_report_links": [
+    "/app/backend/tests/test_phase3_credit_deferral.py",
+    "/app/test_reports/pytest/pytest_iter72.xml"
+  ],
+  "action_items": [
+    "Optional: surface deferral context on the post-checkout success screen heading (not only via toast).",
+    "Optional: expose deferral fields (is_deferral / deferral_due_date / payment_status='deferred') in OrderResponse so client/orders can display them without an extra fetch — they are persisted in DB but stripped by the response_model on POST /api/orders and GET /api/orders/{id}."
+  ],
+  "critical_code_review_comments": [
+    "OrderResponse in /app/backend/models.py omits is_deferral / deferral_due_date / payment_status, so callers of POST /api/orders & GET /api/orders/{id} cannot distinguish a deferral order from the response alone — they must hit /api/admin/deferrals (admin) or /api/credit/my (client). Add these as optional fields.",
+    "_credit_summary in routes/credit.py sums unpaid deferrals in Python after fetching all rows; for a heavy client this would be inefficient — switch to an aggregation pipeline with $group when scale grows.",
+    "PUT /admin/credit/{user_id}/set-limit accepts limit=0 to disable, but does NOT clear existing unpaid deferrals (correct behaviour) — however it allows reducing limit below current debt without warning. Consider returning the resulting `available` (could be negative) so admin sees the consequence; also surface confirmation in AdminCreditPage when newLimit < currentDebt.",
+    "credit/request endpoint blocks duplicate pending but does not prevent submitting a new pending request while the user is already credit_status=approved. Admin would just see a redundant pending row — not a bug, but consider auto-approving against current limit or rejecting with 400.",
+    "Frontend AdminCreditPage polls every 30s with axios.get — fine, but no AbortController so a slow request after unmount logs a console warning. Wrap with axios CancelToken or AbortSignal on cleanup.",
+    "CreditPage shows a 'Запрос на отсрочку на рассмотрении' card but no way for the client to cancel their pending request. Minor UX gap.",
+    "Mark-paid action in AdminCreditPage uses window.confirm — consistent with rest of app, but doesn't match the rest of the modal-based confirmations on the page (approve / set-limit use shadcn Dialog). Consider unifying."
+  ],
+  "updated_files": ["/app/backend/tests/test_phase3_credit_deferral.py"],
+  "success_rate": {"backend": "100% (10/10)", "frontend": "100% (all critical flows verified)"},
+  "test_credentials": "Admin admin@avarus.ru/admin and Client 0x0errorr@gmail.com/admin123 (from /app/memory/test_credentials.md)",
+  "seed_data_creation": "Used existing client 0x0errorr@gmail.com. Set credit limit via admin direct set-limit (low=100 to test overlimit, then high=1000000/500000 for success path). Created 2 deferral orders on cheapest product (100 ₽): one via pytest, one via Playwright (#b28902ee). One was mark-paid by pytest, one by Playwright. Final state: one paid deferral, one unpaid deferral remains in admin Долги tab (acceptable test residue — small amount). Client credit_limit ends at 500000, term 30 days.",
+  "retest_needed": false,
+  "main_agent_can_self_test": true,
+  "context_for_next_testing_agent": "Phase 3 credit/deferral data-testids: credit-page, credit-available-card, credit-debt, credit-request-block, credit-request-limit, credit-request-message, credit-request-submit, header-credit-balance (Link in Header.js around line 531; only renders when creditInfo is loaded — wait ~2s after navigation), admin-credit-page, credit-stat-pending/accounts/debt, credit-tab-requests/accounts/deferrals, credit-request-{id}, credit-approve-{id}, credit-reject-{id}, credit-approve-modal with approve-limit-input/approve-term-input/approve-message-input/approve-submit-btn, credit-account-{id}, credit-edit-limit-{id}, credit-limit-modal with setlimit-input/setlimit-term-input/setlimit-submit-btn, admin-deferral-{id}, mark-paid-{id}. Backend endpoints under /api/credit and /api/admin/credit-* — OrderResponse model strips is_deferral fields, so verify deferral state via /api/admin/deferrals or /api/credit/my, not via POST /api/orders response. Cart must be seeded via POST /api/cart/add before POST /api/orders (server reads cart, ignores items in payload). Login response key is 'token' (not 'access_token').",
+  "rca of the issue": "N/A — all features pass. Note that the OrderResponse model strips deferral metadata; not a defect that affects the user flow (admin & client dashboards read deferral state from /admin/deferrals and /credit/my respectively), but flagged as an enhancement under critical_code_review_comments."
+}
