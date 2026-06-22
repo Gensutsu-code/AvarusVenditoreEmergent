@@ -104,6 +104,10 @@ E-commerce platform for truck spare parts with a comprehensive admin panel. Russ
 - **CartPage**: free-delivery progress bar in header (`free-delivery-bar`) — "До бесплатной доставки осталось N ₽" with animated fill, or "Бесплатная доставка активирована!" once threshold reached. On reaching threshold: confetti burst (20 pieces) + emerald ring glow + PartyPopper icon (iter 66). Reads `GET /api/delivery-settings`; renders ONLY when delivery is enabled in admin (currently disabled in this env).
 - Verified iteration_65: 3/3 PASS (bounding-box checks for width + centering, bar states).
 
+### Header Mini-Cart Dropdown (2026-06-18 — iter 67)
+- New `MiniCart.js`: hover-triggered dropdown on the desktop header cart icon showing line items (up to 4 + "ещё N"), per-item remove, total, and the same free-delivery progress bar ("До бесплатной осталось N ₽" / "Бесплатная доставка!"). Footer buttons: "В корзину" → /cart, "Оформить" → /checkout.
+- Reads `GET /api/delivery-settings`; bar only when delivery enabled. Dropdown only when cart non-empty. Verified iteration_67 (6/6 PASS).
+
 ## Prioritized Backlog
 
 ### P1 (Important)
