@@ -1,5 +1,5 @@
 import { Link, useLocation, useNavigate } from 'react-router-dom';
-import { ShoppingCart, User, Search, LogOut, Settings, Heart, Package, ClipboardList, Gift, Newspaper, Menu, X, MessageCircle, Bell, Wallet, RefreshCw } from 'lucide-react';
+import { ShoppingCart, User, Search, LogOut, Settings, Heart, Package, ClipboardList, Gift, Newspaper, Menu, X, MessageCircle, Bell, Wallet, RefreshCw, CreditCard } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { useCart } from '../context/CartContext';
 import { Button } from './ui/button';
@@ -172,6 +172,7 @@ export const Header = () => {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [notificationCount, setNotificationCount] = useState(0);
   const [userBalance, setUserBalance] = useState(null);
+  const [creditInfo, setCreditInfo] = useState(null);
   const lastSeenCountRef = useRef(0);
   const hasInitRef = useRef(false);
   const lastToastTimeRef = useRef(0);
@@ -210,6 +211,13 @@ export const Header = () => {
       const balanceRes = await fetch(`${process.env.REACT_APP_BACKEND_URL}/api/user/balance`, { headers });
       const balanceData = await balanceRes.json();
       setUserBalance(balanceData.balance ?? 0);
+
+      // Credit (deferral) info
+      try {
+        const creditRes = await fetch(`${process.env.REACT_APP_BACKEND_URL}/api/credit/my`, { headers });
+        const creditData = await creditRes.json();
+        setCreditInfo(creditData && creditData.status === 'approved' ? creditData : null);
+      } catch (e) { /* ignore */ }
 
       // Skip notification polling if disabled by admin
       if (!clientNotifsEnabledRef.current) {
@@ -509,6 +517,20 @@ export const Header = () => {
                         >
                           <Wallet className="w-4 h-4 text-teal-500" />
                           <span className="text-sm font-bold text-teal-700">{new Intl.NumberFormat('ru-RU').format(userBalance)} ₽</span>
+                        </motion.div>
+                      </Link>
+                    )}
+                    {/* Credit (deferral) balance indicator */}
+                    {creditInfo && (
+                      <Link to="/credit" data-testid="header-credit-balance">
+                        <motion.div
+                          className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-gradient-to-r from-violet-50 to-indigo-50 border border-violet-200/60 cursor-pointer"
+                          whileHover={{ scale: 1.05, borderColor: 'rgba(139,92,246,0.5)' }}
+                          whileTap={{ scale: 0.97 }}
+                          title="Доступный лимит отсрочки"
+                        >
+                          <CreditCard className="w-4 h-4 text-violet-500" />
+                          <span className="text-sm font-bold text-violet-700">{new Intl.NumberFormat('ru-RU').format(creditInfo.available)} ₽</span>
                         </motion.div>
                       </Link>
                     )}

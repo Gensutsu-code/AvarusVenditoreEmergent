@@ -1,7 +1,7 @@
 """Cart, Orders, and Favorites routes"""
 from fastapi import APIRouter, HTTPException, Depends
 from typing import List
-from datetime import datetime, timezone
+from datetime import datetime, timezone, timedelta
 from collections import defaultdict
 import uuid
 
@@ -306,9 +306,27 @@ async def create_order(data: OrderCreate, user=Depends(get_current_user)):
 
     # Ozon certificate: +500₽ per full 10 000₽ of goods (informational; admin issues manually)
     ozon_certificate = int(subtotal // 10000) * 500
-    
+
+    # Deferred payment (отсрочка): validate approved credit limit & availability
+    is_deferral = (payment_method == "deferral")
+    deferral_due_date = None
+    deferral_term = 0
+    if is_deferral:
+        ucred = await db.users.find_one({"id": user["id"]}, {"_id": 0, "credit_status": 1, "credit_limit": 1, "credit_term_days": 1})
+        if not ucred or ucred.get("credit_status") != "approved" or (ucred.get("credit_limit", 0) or 0) <= 0:
+            raise HTTPException(status_code=400, detail="Отсрочка недоступна. Запросите кредитный лимит у администрации.")
+        unpaid = await db.deferrals.find({"user_id": user["id"], "status": "unpaid"}, {"_id": 0, "amount": 1}).to_list(1000)
+        debt = sum(d.get("amount", 0) for d in unpaid)
+        available = (ucred.get("credit_limit", 0) or 0) - debt
+        if total > available:
+            raise HTTPException(status_code=400, detail=f"Превышен лимит отсрочки. Доступно: {available:.0f} ₽, сумма заказа: {total:.0f} ₽")
+        deferral_term = int(ucred.get("credit_term_days", 30) or 30)
+        deferral_due_date = (datetime.now(timezone.utc) + timedelta(days=deferral_term)).isoformat()
+
     # Check if paying with balance
     pay_with_balance = getattr(data, 'pay_with_balance', False) if hasattr(data, 'pay_with_balance') else False
+    if is_deferral:
+        pay_with_balance = False
     paid_from_balance = 0
     
     if pay_with_balance:
@@ -355,6 +373,9 @@ async def create_order(data: OrderCreate, user=Depends(get_current_user)):
         "comment": data.comment,
         "payment_method": "balance" if pay_with_balance else payment_method,
         "paid_from_balance": paid_from_balance,
+        "is_deferral": is_deferral,
+        "deferral_due_date": deferral_due_date,
+        "payment_status": "deferred" if is_deferral else ("paid" if paid_from_balance >= total and total > 0 else "unpaid"),
         "ozon_certificate": ozon_certificate,
         "ozon_certificate_issued": False,
         "created_at": datetime.now(timezone.utc).isoformat()
@@ -368,7 +389,22 @@ async def create_order(data: OrderCreate, user=Depends(get_current_user)):
         )
     
     await db.orders.insert_one(order)
-    
+
+    # Record deferral debt entry
+    if is_deferral:
+        await db.deferrals.insert_one({
+            "id": str(uuid.uuid4()),
+            "user_id": user["id"],
+            "order_id": order_id,
+            "amount": total,
+            "status": "unpaid",
+            "term_days": deferral_term,
+            "due_date": deferral_due_date,
+            "created_at": datetime.now(timezone.utc).isoformat(),
+            "paid_at": None,
+        })
+        await notify_admin("deferral", "Заказ в отсрочку", f"Заказ #{order_id[:8]} оформлен в отсрочку на {total:.0f} ₽ (оплата до {(deferral_due_date or '')[:10]})", "/admin/credit")
+
     await create_admin_activity(user["id"], user.get("name", ""), "order", f"Новый заказ #{order_id[:8]} на {total} ₽")
     await create_notification(user["id"], "order", "Заказ оформлен", f"Ваш заказ #{order_id[:8]} принят в обработку", "/orders")
     await notify_admin("new_order", "Новый заказ", f"Заказ #{order_id[:8]} от {user.get('name', user.get('email', ''))} на {total:.2f} ₽", "/admin/orders")
