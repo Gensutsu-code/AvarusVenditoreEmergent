@@ -157,10 +157,15 @@ E-commerce platform for truck spare parts with a comprehensive admin panel. Russ
 - Verified iteration_74: frontend 100% on critical flows (chat send+persist+admin-visible, all tabs render, deferral approved view, history badges, floating ChatWidget intact).
 - Backlog notes (non-blocking): consolidate /individual-prices/my with approved discount_requests carrying individual_price; chat/mark-read transient 403 noise on first load (returns 200 normally).
 
+### Stock-sync toggle "Синхронизация наличия со складом" (2026-06-19 — iter 75) ✅
+- Global setting (default ON) + per-product override `stock_sync_mode` ('inherit'|'on'|'off') + `manual_available` flag. Computed `in_stock` on ProductResponse.
+- Synced: in_stock=(stock>0), orders decrement stock + log 'sale'. Not synced: in_stock=manual_available, orders DO NOT touch stock ('под заказ').
+- Backend: GET /api/stock-sync-settings, PUT /api/admin/stock-sync-settings; products.py `_apply_availability` on all GET/create/update; orders.py decrement loop skips non-synced. Frontend: `isProductAvailable()` helper used in Catalog/Product/Favorites/SearchDropdown/RelatedProducts; global toggle on /admin/warehouse (global-sync-toggle); 3-state mode + manual toggle in AdminPage product form.
+- Verified iteration_75: backend 10/10 pytest + frontend 100%. Global restored to ON.
+
 ## Prioritized Backlog
 
 ### P1 (Important)
-- Переключатель синхронизации наличия со складом (P2)
 - Real Payment Gateway Integration (replace MOCKED YuKassa)
 
 ### P2 (Enhancement)
