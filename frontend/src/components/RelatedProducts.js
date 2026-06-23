@@ -5,6 +5,7 @@ import { Button } from './ui/button';
 import { useCart } from '../context/CartContext';
 import { useAuth } from '../context/AuthContext';
 import { toast } from 'sonner';
+import { isProductAvailable } from '../utils/productHelpers';
 
 const API = `${process.env.REACT_APP_BACKEND_URL}/api`;
 
@@ -108,7 +109,7 @@ export const RelatedProducts = ({ productId, onSelectProduct }) => {
                   <Button
                     size="sm"
                     onClick={(e) => handleAddToCart(e, product)}
-                    disabled={product.stock === 0}
+                    disabled={!isProductAvailable(product)}
                     className="bg-orange-500 hover:bg-orange-600 p-1 h-6 w-6"
                     data-testid={`add-related-${product.id}`}
                   >

@@ -7,6 +7,7 @@ import { useAuth } from '../context/AuthContext';
 import { useCart } from '../context/CartContext';
 import { toast } from 'sonner';
 import { motion, AnimatePresence } from 'framer-motion';
+import { isProductAvailable } from '../utils/productHelpers';
 
 const API = `${process.env.REACT_APP_BACKEND_URL}/api`;
 
@@ -192,8 +193,8 @@ export default function FavoritesPage() {
 
                     {/* Stock */}
                     <div className="hidden sm:block text-center min-w-[80px]">
-                      <p className={`text-sm font-semibold ${product.stock > 0 ? 'text-emerald-600' : 'text-red-500'}`}>
-                        {product.stock > 0 ? 'В наличии' : 'Нет в наличии'}
+                      <p className={`text-sm font-semibold ${isProductAvailable(product) ? 'text-emerald-600' : 'text-red-500'}`}>
+                        {isProductAvailable(product) ? 'В наличии' : 'Нет в наличии'}
                       </p>
                     </div>
 
@@ -232,7 +233,7 @@ export default function FavoritesPage() {
                       <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
                         <Button
                           onClick={() => handleAddToCart(product)}
-                          disabled={product.stock === 0}
+                          disabled={!isProductAvailable(product)}
                           className="bg-gradient-to-r from-teal-500 to-emerald-500 hover:from-teal-600 hover:to-emerald-600 text-white rounded-xl shadow-lg shadow-teal-500/30"
                           data-testid={`add-to-cart-${product.id}`}
                         >

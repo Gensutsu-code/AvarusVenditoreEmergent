@@ -93,6 +93,8 @@ class ProductCreate(BaseModel):
     has_guarantee: Optional[bool] = False
     bonus_eligible: Optional[bool] = True
     purchase_price: Optional[float] = 0
+    stock_sync_mode: Optional[str] = "inherit"
+    manual_available: Optional[bool] = True
     # Discount/promo fields
     discount_active: Optional[bool] = False
     discount_type: Optional[str] = None  # "percent" | "amount"
@@ -122,6 +124,8 @@ class ProductUpdate(BaseModel):
     has_guarantee: Optional[bool] = None
     bonus_eligible: Optional[bool] = None
     purchase_price: Optional[float] = None
+    stock_sync_mode: Optional[str] = None
+    manual_available: Optional[bool] = None
     discount_active: Optional[bool] = None
     discount_type: Optional[str] = None
     discount_value: Optional[float] = None
@@ -150,6 +154,9 @@ class ProductResponse(BaseModel):
     has_guarantee: Optional[bool] = False
     bonus_eligible: Optional[bool] = True
     purchase_price: Optional[float] = 0
+    stock_sync_mode: Optional[str] = "inherit"
+    manual_available: Optional[bool] = True
+    in_stock: Optional[bool] = None
     discount_active: Optional[bool] = False
     discount_type: Optional[str] = None
     discount_value: Optional[float] = 0

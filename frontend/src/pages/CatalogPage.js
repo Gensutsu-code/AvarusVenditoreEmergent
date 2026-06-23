@@ -17,7 +17,7 @@ import { SearchDropdown } from '../components/SearchDropdown';
 import { trackClick } from '../utils/tracker';
 import DiscountRequestModal from '../components/DiscountRequestModal';
 import ProductRequestModal from '../components/ProductRequestModal';
-import { computeDiscount, computeNewBadge, formatDiscountBadge, formatUntilDate, getDeliveryBadge, getQuantityTiers } from '../utils/productHelpers';
+import { computeDiscount, computeNewBadge, formatDiscountBadge, formatUntilDate, getDeliveryBadge, getQuantityTiers, isProductAvailable } from '../utils/productHelpers';
 import DiscountPromoBanner from '../components/DiscountPromoBanner';
 import NewProductsBanner from '../components/NewProductsBanner';
 
@@ -56,9 +56,10 @@ const ProductCard = ({
   const untilFormatted = formatUntilDate(discount?.until);
   const quantityTiers = getQuantityTiers(product);
   const minTierQty = quantityTiers.length ? quantityTiers[0].minQty : null;
+  const oos = !isProductAvailable(product);
   return (
   <div 
-    className={`relative bg-white rounded-xl border transition-all duration-300 hover:shadow-lg hover:border-teal-300/60 min-h-[110px] ${isAlternative ? 'border-teal-200/50 bg-teal-50/20' : 'border-slate-200/80'} ${product.stock <= 0 ? 'group/oos' : ''}`}
+    className={`relative bg-white rounded-xl border transition-all duration-300 hover:shadow-lg hover:border-teal-300/60 min-h-[110px] ${isAlternative ? 'border-teal-200/50 bg-teal-50/20' : 'border-slate-200/80'} ${oos ? 'group/oos' : ''}`}
     data-testid={`product-card-${product.id}`}
   >
     {/* Discount ribbon — attached to outer right edge of card, unfurls on hover */}
@@ -105,7 +106,7 @@ const ProductCard = ({
       </div>
     )}
     <div className="rounded-xl overflow-hidden">
-    {product.stock <= 0 && (
+    {oos && (
       <div
         className="absolute top-2 right-2 z-20 pointer-events-none"
         data-testid={`out-of-stock-overlay-${product.id}`}
@@ -122,7 +123,7 @@ const ProductCard = ({
         </div>
       </div>
     )}
-    <div className={`flex min-h-[110px] transition-opacity duration-300 ${product.stock <= 0 ? 'opacity-75 group-hover/oos:opacity-60' : ''}`}>
+    <div className={`flex min-h-[110px] transition-opacity duration-300 ${oos ? 'opacity-75 group-hover/oos:opacity-60' : ''}`}>
       {/* Image */}
       <div className="relative group flex-shrink-0 p-2 flex items-stretch">
         <Link
@@ -248,7 +249,7 @@ const ProductCard = ({
           </div>
           <Button
             onClick={() => handleAddToCart(product)}
-            disabled={product.stock === 0}
+            disabled={!isProductAvailable(product)}
             className="h-8 px-3 bg-gradient-to-r from-teal-500 to-emerald-500 hover:from-teal-600 hover:to-emerald-600 text-white rounded-lg shadow-md shadow-teal-500/20 text-xs"
             data-testid={`add-to-cart-${product.id}`}
           >
@@ -385,8 +386,8 @@ const ProductModalContent = ({
           <div className="space-y-2 text-sm">
             <div className="flex justify-between">
               <span className="text-slate-500">Наличие:</span>
-              <span className={product.stock > 0 ? 'text-emerald-600 font-semibold' : 'text-red-500'}>
-                {product.stock > 0 ? 'В наличии' : 'Нет в наличии'}
+              <span className={isProductAvailable(product) ? 'text-emerald-600 font-semibold' : 'text-red-500'}>
+                {isProductAvailable(product) ? 'В наличии' : 'Нет в наличии'}
               </span>
             </div>
             <div className="flex justify-between">
@@ -438,7 +439,7 @@ const ProductModalContent = ({
 
             <Button
               onClick={() => handleAddToCart(product)}
-              disabled={product.stock === 0}
+              disabled={!isProductAvailable(product)}
               className="flex-1 bg-gradient-to-r from-teal-500 to-emerald-500 hover:from-teal-600 hover:to-emerald-600 text-white font-bold uppercase h-12 rounded-xl shadow-lg shadow-teal-500/30 transition-all duration-300"
               data-testid="modal-add-to-cart"
             >
@@ -553,7 +554,7 @@ export default function CatalogPage() {
         const applyFilter = (list) => list.filter(p => {
           if (filters.manufacturer && p.manufacturer !== filters.manufacturer) return false;
           if (filters.warehouse && p.warehouse !== filters.warehouse) return false;
-          if (filters.inStock && p.stock <= 0) return false;
+          if (filters.inStock && !isProductAvailable(p)) return false;
           if (filters.priceMin && p.price < Number(filters.priceMin)) return false;
           if (filters.priceMax && p.price > Number(filters.priceMax)) return false;
           if (filters.deliveryDays && (p.delivery_days || 3) > Number(filters.deliveryDays)) return false;

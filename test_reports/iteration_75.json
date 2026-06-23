@@ -1,0 +1,37 @@
+{
+  "summary": "P2 'Тумблер синхронизации наличия со складом' tested end-to-end. Backend pytest /app/backend/tests/test_stock_sync.py — 10/10 PASSED. Frontend Playwright on /admin/warehouse + /admin product edit modal + client /product/:id — all data-testids present and behavior matches spec. Global state was restored to stock_sync_enabled=true at the end. Test product 8cd5b1c5-7980-4765-9db9-8e309614f8c5 was restored to stock_sync_mode=inherit, manual_available=true.",
+  "backend_issues": {
+    "critical": [],
+    "minor": []
+  },
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [],
+    "design_issues": []
+  },
+  "test_report_links": [
+    "/app/backend/tests/test_stock_sync.py",
+    "/app/test_reports/pytest/stock_sync.xml"
+  ],
+  "action_items": [],
+  "critical_code_review_comments": [
+    "products.py _apply_availability mutates the product dict in place — safe here because lists are fresh from Mongo per request, but if any caching is added later this becomes a hidden bug. Consider returning a shallow copy.",
+    "Order placement (routes/orders.py) decrements stock only when stock>=qty for synced products (pre-existing behavior). For a synced product with low stock and qty>stock, the order is still created with no decrement and NO stock-out error — this is intentional per agent note but worth surfacing as an order-level warning so admins know a sale wasn't deducted.",
+    "ProductUpdate must accept stock_sync_mode as a STRING and not a null-filtered Optional — confirmed by switching 'off' → 'inherit' and reading back ('inherit'). Good.",
+    "Frontend isProductAvailable correctly prefers backend in_stock and falls back to stock>0 (productHelpers.js:4-8). All five client surfaces (Catalog/ProductPage/Favorites/SearchDropdown/RelatedProducts) call it consistently.",
+    "AdminPage product edit modal: 'inherit' is the default selection but the manual_available toggle is only rendered when mode==='off' — UX is correct. Consider visually showing the resulting effective availability (e.g., 'Итог: товар будет показан как В наличии') under the controls so admins see the outcome before saving."
+  ],
+  "updated_files": [
+    "/app/backend/tests/test_stock_sync.py (new)"
+  ],
+  "success_rate": {
+    "backend": "100% (10/10 pytest cases)",
+    "frontend": "100% on critical flows (global toggle persist + 3-state mode + manual toggle visibility + client badge/add-to-cart driven by in_stock)"
+  },
+  "test_credentials": "Admin admin@avarus.ru/admin and Client 0x0errorr@gmail.com/admin123 from /app/memory/test_credentials.md",
+  "seed_data_creation": "None permanent. During tests product 8cd5b1c5-7980-4765-9db9-8e309614f8c5 was toggled through {mode=off/manual=true, manual=false, mode=on/stock=5, mode=inherit} and an order was placed for the synced variant (stock 10→9). All values restored to original at the end (stock_sync_mode=inherit, manual_available=true). Global stock_sync_enabled restored to true.",
+  "retest_needed": false,
+  "should_main_agent_self_test": true,
+  "context_for_next_testing_agent": "Stock sync data-testids that EXIST: global-sync-card and global-sync-toggle on /admin/warehouse → Остатки tab; product-sync-mode-inherit / product-sync-mode-on / product-sync-mode-off and product-manual-available-toggle in AdminPage product edit modal (data-testid='product-edit-modal'). Edit button selector pattern: data-testid='edit-{productId}'. Backend endpoints: GET /api/stock-sync-settings (public), PUT /api/admin/stock-sync-settings (admin), product PUT /api/products/{id} accepts stock_sync_mode (str 'inherit'|'on'|'off') and manual_available (bool). ProductResponse always returns computed boolean field 'in_stock'. Order placement skips stock decrement AND skips sale movement logging for non-synced products (mode=off or global=off+inherit). Cart MUST be cleared before placing test orders (DELETE /api/cart/clear) — otherwise leftover items skew decrement assertions. Order payload required fields: full_name, address, phone, delivery_method, payment_method.",
+  "rca of the issue": "N/A — feature works as specified."
+}

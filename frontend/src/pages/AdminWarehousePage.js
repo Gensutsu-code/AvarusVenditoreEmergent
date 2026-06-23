@@ -40,6 +40,7 @@ export default function AdminWarehousePage() {
   const [finance, setFinance] = useState(null);
   const [finStart, setFinStart] = useState(firstOfMonth());
   const [finEnd, setFinEnd] = useState(today());
+  const [globalSync, setGlobalSync] = useState(true);
 
   const [mvModal, setMvModal] = useState(null); // { product, type }
   const [mvQty, setMvQty] = useState('');
@@ -71,8 +72,19 @@ export default function AdminWarehousePage() {
     if (authLoading) return;
     if (!user || user.role !== 'admin') { navigate('/login'); return; }
     Promise.all([fetchStock(), fetchMovements(), fetchFinance()]).catch(() => toast.error('Ошибка загрузки')).finally(() => setLoading(false));
+    axios.get(`${API}/stock-sync-settings`).then(r => setGlobalSync(r.data.stock_sync_enabled)).catch(() => {});
     // eslint-disable-next-line
   }, [user, authLoading, navigate]);
+
+  const toggleGlobalSync = async () => {
+    const next = !globalSync;
+    setGlobalSync(next);
+    try {
+      await axios.put(`${API}/admin/stock-sync-settings`, { stock_sync_enabled: next });
+      toast.success(next ? 'Синхронизация включена' : 'Синхронизация выключена');
+      fetchStock();
+    } catch { toast.error('Ошибка'); setGlobalSync(!next); }
+  };
 
   const openMv = (product, type) => {
     setMvModal({ product, type });
@@ -144,6 +156,20 @@ export default function AdminWarehousePage() {
             {/* STOCK TAB */}
             {tab === 'stock' && (
               <>
+                <div className="bg-white rounded-2xl p-4 shadow-sm mb-4 flex items-center justify-between gap-3 flex-wrap" data-testid="global-sync-card">
+                  <div>
+                    <p className="font-semibold text-slate-800 text-sm">Синхронизация наличия со складом</p>
+                    <p className="text-xs text-slate-500">{globalSync ? 'Наличие товаров определяется остатком; заказы уменьшают остаток' : 'Наличие задаётся вручную; остаток не влияет на заказы (можно переопределить на товаре)'}</p>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={toggleGlobalSync}
+                    className={`relative inline-flex h-8 w-16 items-center rounded-full transition-colors duration-200 ${globalSync ? 'bg-emerald-500' : 'bg-slate-300'}`}
+                    data-testid="global-sync-toggle"
+                  >
+                    <span className={`inline-block h-6 w-6 transform rounded-full bg-white shadow-md transition-transform duration-200 ${globalSync ? 'translate-x-9' : 'translate-x-1'}`} />
+                  </button>
+                </div>
                 <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3 mb-6">
                   <div className="bg-white rounded-2xl p-4 shadow-sm" data-testid="wh-stat-units"><div className="flex items-center gap-2 mb-1"><Package className="w-4 h-4 text-slate-400" /><p className="text-xs text-slate-500">Единиц на складе</p></div><p className="text-xl font-bold text-slate-800">{fmt(s.total_units)}</p></div>
                   <div className="bg-white rounded-2xl p-4 shadow-sm"><div className="flex items-center gap-2 mb-1"><Coins className="w-4 h-4 text-slate-400" /><p className="text-xs text-slate-500">Стоимость (закупка)</p></div><p className="text-xl font-bold text-slate-800">{fmt(s.total_cost_value)} ₽</p></div>

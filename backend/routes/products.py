@@ -36,6 +36,29 @@ def _ensure_new_status(product: dict) -> dict:
     return product
 
 
+async def _global_stock_sync() -> bool:
+    s = await db.settings.find_one({"key": "stock_sync_settings"})
+    return (s.get("value", {}) if s else {}).get("stock_sync_enabled", True)
+
+
+def _apply_availability(product: dict, global_sync: bool) -> dict:
+    """Compute effective in_stock based on per-product mode or global setting."""
+    if not product:
+        return product
+    mode = product.get("stock_sync_mode") or "inherit"
+    if mode == "on":
+        synced = True
+    elif mode == "off":
+        synced = False
+    else:
+        synced = global_sync
+    if synced:
+        product["in_stock"] = (product.get("stock", 0) or 0) > 0
+    else:
+        product["in_stock"] = bool(product.get("manual_available", True))
+    return product
+
+
 # ==================== CATEGORIES ====================
 
 @router.get("/categories", response_model=List[CategoryResponse])
@@ -182,7 +205,8 @@ async def get_popular_products(limit: int = 6):
         ).sort("created_at", -1).limit(extra_needed).to_list(extra_needed)
         products.extend(extras)
 
-    return products
+    gsync = await _global_stock_sync()
+    return [_apply_availability(p, gsync) for p in products]
 
 
 
@@ -395,7 +419,8 @@ async def get_products(
     # "assortment" or no virtual category — no filter
 
     products = await db.products.find(query, {"_id": 0}).skip(skip).limit(min(limit, 100)).to_list(100)
-    return [_ensure_new_status(p) for p in products]
+    gsync = await _global_stock_sync()
+    return [_apply_availability(_ensure_new_status(p), gsync) for p in products]
 
 
 @router.get("/products/search")
@@ -413,7 +438,8 @@ async def search_products_autocomplete(q: str, limit: int = 8):
     }
     
     products = await db.products.find(query, {"_id": 0}).limit(min(limit, 20)).to_list(20)
-    return {"products": products}
+    gsync = await _global_stock_sync()
+    return {"products": [_apply_availability(p, gsync) for p in products]}
 
 
 @router.get("/products/search-with-alternatives")
@@ -443,10 +469,12 @@ async def search_products_with_alternatives(search: str, limit: int = 50):
     if not exact_match:
         name_query = {"name": {"$regex": search, "$options": "i"}}
         name_matches = await db.products.find(name_query, {"_id": 0}).limit(limit).to_list(limit)
-    
+
+    gsync = await _global_stock_sync()
+    exact_out = [exact_match] if exact_match else name_matches
     return {
-        "exact": [exact_match] if exact_match else name_matches,
-        "alternatives": alternatives
+        "exact": [_apply_availability(p, gsync) for p in exact_out],
+        "alternatives": [_apply_availability(p, gsync) for p in alternatives]
     }
 
 
@@ -455,7 +483,8 @@ async def get_product(product_id: str):
     product = await db.products.find_one({"id": product_id}, {"_id": 0})
     if not product:
         raise HTTPException(status_code=404, detail="Product not found")
-    return _ensure_new_status(product)
+    gsync = await _global_stock_sync()
+    return _apply_availability(_ensure_new_status(product), gsync)
 
 
 @router.post("/products", response_model=ProductResponse)
@@ -482,7 +511,8 @@ async def create_product(data: ProductCreate, user=Depends(get_current_user)):
         **payload
     }
     await db.products.insert_one(product)
-    return _ensure_new_status(product)
+    gsync = await _global_stock_sync()
+    return _apply_availability(_ensure_new_status(product), gsync)
 
 
 @router.put("/products/{product_id}", response_model=ProductResponse)
@@ -511,7 +541,8 @@ async def update_product(product_id: str, data: ProductUpdate, user=Depends(get_
         raise HTTPException(status_code=404, detail="Product not found")
     
     product = await db.products.find_one({"id": product_id}, {"_id": 0})
-    return _ensure_new_status(product)
+    gsync = await _global_stock_sync()
+    return _apply_availability(_ensure_new_status(product), gsync)
 
 
 @router.delete("/products/{product_id}")

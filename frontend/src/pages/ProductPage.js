@@ -15,7 +15,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { trackClick } from '../utils/tracker';
 import DiscountRequestModal from '../components/DiscountRequestModal';
 import ProductRequestModal from '../components/ProductRequestModal';
-import { computeDiscount, formatDiscountBadge, formatUntilDate, getQuantityTiers, getActiveTier } from '../utils/productHelpers';
+import { computeDiscount, formatDiscountBadge, formatUntilDate, getQuantityTiers, getActiveTier, isProductAvailable } from '../utils/productHelpers';
 
 const API = `${process.env.REACT_APP_BACKEND_URL}/api`;
 
@@ -392,11 +392,11 @@ export default function ProductPage() {
                 </div>
                 
                 <div className={`flex items-center gap-2 px-4 py-2 rounded-xl ${
-                  product.stock > 0 
+                  isProductAvailable(product)
                     ? 'bg-emerald-50 text-emerald-600 border border-emerald-200'
                     : 'bg-red-50 text-red-600 border border-red-200'
                 }`}>
-                  {product.stock > 0 ? (
+                  {isProductAvailable(product) ? (
                     <>
                       <Check className="w-5 h-5" />
                       <span className="font-semibold">В наличии</span>
@@ -559,7 +559,7 @@ export default function ProductPage() {
                 </div>
 
                 <motion.div className="flex-1" whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}>
-                  {product.stock > 0 ? (
+                  {isProductAvailable(product) ? (
                     <Button
                       onClick={handleAddToCart}
                       disabled={addingToCart}

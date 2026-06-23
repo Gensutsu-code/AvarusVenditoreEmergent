@@ -138,6 +138,29 @@ async def update_delivery_settings(data: dict, user=Depends(get_current_user)):
     return {"success": True}
 
 
+# ==================== STOCK SYNC SETTINGS ====================
+
+@router.get("/stock-sync-settings")
+async def get_stock_sync_settings():
+    """Get global stock-sync setting (public)."""
+    settings = await db.settings.find_one({"key": "stock_sync_settings"})
+    enabled = (settings.get("value", {}) if settings else {}).get("stock_sync_enabled", True)
+    return {"stock_sync_enabled": enabled}
+
+
+@router.put("/admin/stock-sync-settings")
+async def update_stock_sync_settings(data: dict, user=Depends(get_current_user)):
+    if user.get("role") != "admin":
+        raise HTTPException(status_code=403, detail="Admin access required")
+    await db.settings.update_one(
+        {"key": "stock_sync_settings"},
+        {"$set": {"value": {"stock_sync_enabled": bool(data.get("stock_sync_enabled", True))}}},
+        upsert=True
+    )
+    return {"success": True}
+
+
+
 # ==================== RETURN SETTINGS ====================
 
 RETURN_DEFAULTS = {

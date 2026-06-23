@@ -1,5 +1,13 @@
 // Discount and delivery helpers for products
 
+// Effective availability: prefer backend-computed in_stock, fallback to stock>0
+export function isProductAvailable(p) {
+  if (!p) return false;
+  if (p.in_stock !== undefined && p.in_stock !== null) return p.in_stock;
+  return (p.stock || 0) > 0;
+}
+
+
 /**
  * Compute the active discount for a product, considering quantity tiers.
  * Returns { active, percent, amount, finalPrice, label, description, until, type } or null.
