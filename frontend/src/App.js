@@ -41,6 +41,7 @@ import AdminProductsPage from "./pages/AdminProductsPage";
 import CreditPage from "./pages/CreditPage";
 import AdminCreditPage from "./pages/AdminCreditPage";
 import AdminWarehousePage from "./pages/AdminWarehousePage";
+import ContactPage from "./pages/ContactPage";
 
 const API = `${process.env.REACT_APP_BACKEND_URL}/api`;
 
@@ -145,6 +146,7 @@ function AppContent() {
           <Route path="/admin/credit" element={<AdminCreditPage />} />
           <Route path="/admin/warehouse" element={<AdminWarehousePage />} />
           <Route path="/credit" element={<CreditPage />} />
+          <Route path="/contact" element={<ContactPage />} />
           <Route path="/returns" element={<ClientReturnsPage />} />
           <Route path="/favorites" element={<FavoritesPage />} />
           <Route path="/orders" element={<OrdersPage />} />

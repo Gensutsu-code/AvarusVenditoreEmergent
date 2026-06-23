@@ -516,6 +516,37 @@ export const Header = () => {
                         </motion.div>
                       </Link>
                       
+                      {/* Связь с админом */}
+                      <Link to="/contact" data-testid="contact-link">
+                        <motion.div 
+                          className="flex items-center gap-2 px-3 py-2 rounded-xl cursor-pointer"
+                          initial="rest"
+                          whileHover="hover"
+                          whileTap={{ scale: 0.95 }}
+                          variants={{
+                            rest: { scale: 1, backgroundColor: "rgba(20, 184, 166, 0)" },
+                            hover: { scale: 1.08, backgroundColor: "rgba(20, 184, 166, 0.1)" }
+                          }}
+                          transition={{ type: "spring", stiffness: 400, damping: 17 }}
+                        >
+                          <motion.div
+                            variants={{
+                              rest: { rotate: 0, color: "#475569" },
+                              hover: { rotate: [0, -10, 10, 0], color: "#0d9488" }
+                            }}
+                            transition={{ duration: 0.5 }}
+                          >
+                            <MessageCircle className="w-5 h-5" />
+                          </motion.div>
+                          <motion.span 
+                            className="hidden lg:inline text-sm font-medium"
+                            variants={{ rest: { color: "#475569" }, hover: { color: "#0d9488" } }}
+                          >
+                            Связь
+                          </motion.span>
+                        </motion.div>
+                      </Link>
+
                       {/* Корзина */}
                       <MiniCart />
                     </div>
@@ -644,6 +675,10 @@ export const Header = () => {
                       <Link to="/favorites" onClick={() => setMobileMenuOpen(false)} className="flex items-center gap-3 p-3 rounded-xl text-slate-600 hover:bg-slate-50">
                         <Heart className="w-5 h-5" />
                         Избранное
+                      </Link>
+                      <Link to="/contact" onClick={() => setMobileMenuOpen(false)} className="flex items-center gap-3 p-3 rounded-xl text-slate-600 hover:bg-slate-50">
+                        <MessageCircle className="w-5 h-5" />
+                        Связь с админом
                       </Link>
                       <Link to="/account" onClick={() => setMobileMenuOpen(false)} className="flex items-center gap-3 p-3 rounded-xl text-slate-600 hover:bg-slate-50">
                         <User className="w-5 h-5" />
