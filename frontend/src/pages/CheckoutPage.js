@@ -21,7 +21,7 @@ const SITE_URL = process.env.REACT_APP_BACKEND_URL;
 
 const PAYMENT_METHODS = [
   { id: 'cash', label: 'Наличные', desc: 'Оплата при получении', icon: Banknote, color: 'green' },
-  { id: 'card', label: 'Банковская карта', desc: 'Онлайн оплата картой (ЮKassa)', icon: CreditCard, color: 'blue' },
+  { id: 'card', label: 'Банковская карта', desc: 'Перевод по реквизитам, чек + подтверждение', icon: CreditCard, color: 'blue' },
   { id: 'crypto', label: 'Криптовалюта', desc: 'USDT/USDC через MetaMask', icon: Wallet, color: 'amber' },
 ];
 
@@ -53,6 +53,10 @@ export default function CheckoutPage() {
   const [payWithBalance, setPayWithBalance] = useState(false);
   const [creditInfo, setCreditInfo] = useState(null);
   const [payWithDeferral, setPayWithDeferral] = useState(false);
+  const [mixedMode, setMixedMode] = useState(false);
+  const [mix1Method, setMix1Method] = useState('balance');
+  const [mix1Amount, setMix1Amount] = useState('');
+  const [mix2Method, setMix2Method] = useState('card');
   const [prepaymentSettings, setPrepaymentSettings] = useState({ prepayment_enabled: true });
   const [deliverySettings, setDeliverySettings] = useState({ min_free_delivery: 5000, delivery_price: 500, delivery_enabled: true });
 
@@ -96,7 +100,7 @@ export default function CheckoutPage() {
 
   const formatPrice = (price) => new Intl.NumberFormat('ru-RU').format(Math.round(price));
   const getPaymentAdjustment = (method) => paymentSettings[`${method}_adjustment`] ?? 0;
-  const currentPaymentAdjustment = payWithDeferral ? 0 : (payWithBalance ? (paymentSettings.balance_adjustment ?? 0) : getPaymentAdjustment(paymentMethod));
+  const currentPaymentAdjustment = mixedMode ? 0 : (payWithDeferral ? 0 : (payWithBalance ? (paymentSettings.balance_adjustment ?? 0) : getPaymentAdjustment(paymentMethod)));
 
   const subtotal = cart.items.reduce((sum, item) => sum + item.price * item.quantity, 0);
   const adjustedSubtotal = currentPaymentAdjustment !== 0 
@@ -121,6 +125,29 @@ export default function CheckoutPage() {
     const orderAmount = finalTotal;
     
     try {
+      // MIXED payment (up to 2 methods, no deferral)
+      if (mixedMode) {
+        const a1 = Math.round(Number(mix1Amount) * 100) / 100;
+        if (mix1Method === mix2Method) { toast.error('Выберите два разных способа'); setLoading(false); return; }
+        if (!a1 || a1 <= 0 || a1 >= finalTotal) { toast.error(`Сумма первого способа должна быть от 1 до ${formatPrice(finalTotal - 1)} ₽`); setLoading(false); return; }
+        const a2 = Math.round((finalTotal - a1) * 100) / 100;
+        const res = await axios.post(`${API}/orders`, {
+          ...form,
+          payment_parts: [{ method: mix1Method, amount: a1 }, { method: mix2Method, amount: a2 }],
+        });
+        setOrderId(res.data.id);
+        await fetchCart();
+        if (mix1Method === 'card' || mix2Method === 'card') {
+          toast.success('Заказ создан! Завершите оплату картой в «Мои заказы»');
+          navigate('/orders');
+          return;
+        }
+        setSuccess(true);
+        toast.success('Заказ оформлен!');
+        window.__lastToastTime = Date.now();
+        return;
+      }
+
       // For crypto: show payment modal FIRST, order will be created after successful payment
       if (paymentMethod === 'crypto' && !payWithBalance && !payWithDeferral) {
         setCryptoPaymentAmount(orderAmount);
@@ -156,18 +183,9 @@ export default function CheckoutPage() {
 
       if (paymentMethod === 'card') {
         await fetchCart();
-        try {
-          const payRes = await axios.post(`${API}/payments/yookassa/create`, {
-            order_id: newOrderId, amount: orderAmount, return_url: `${SITE_URL}/orders`
-          });
-          if (payRes.data.confirmation_url) {
-            window.location.href = payRes.data.confirmation_url;
-            return;
-          }
-        } catch (err) {
-          toast.error(err.response?.data?.detail || 'ЮKassa недоступна. Заказ создан, оплатите позже.');
-        }
-        setSuccess(true);
+        toast.success('Заказ создан! Реквизиты для оплаты в «Мои заказы»');
+        navigate('/orders');
+        return;
       } else {
         // cash
         await fetchCart();
@@ -560,6 +578,49 @@ export default function CheckoutPage() {
                   </motion.button>
                 )}
               </div>
+
+              {/* Mixed payment */}
+              <div className="mt-4 border-t border-slate-100 pt-4" data-testid="mixed-payment-section">
+                <button
+                  type="button"
+                  onClick={() => { const v = !mixedMode; setMixedMode(v); if (v) { setPayWithBalance(false); setPayWithDeferral(false); } }}
+                  className={`w-full flex items-center justify-between p-3 rounded-xl border-2 transition-all ${mixedMode ? 'bg-amber-50 border-amber-400' : 'bg-white border-slate-200 hover:border-slate-300'}`}
+                  data-testid="mixed-payment-toggle"
+                >
+                  <span className="flex items-center gap-2 text-sm font-semibold text-slate-700">
+                    <Wallet className="w-4 h-4 text-amber-500" /> Смешанная оплата (2 способа)
+                  </span>
+                  <span className={`w-10 h-5 rounded-full relative transition-colors ${mixedMode ? 'bg-amber-500' : 'bg-slate-300'}`}>
+                    <span className={`absolute top-0.5 w-4 h-4 rounded-full bg-white transition-transform ${mixedMode ? 'translate-x-5' : 'translate-x-0.5'}`} />
+                  </span>
+                </button>
+
+                {mixedMode && (
+                  <div className="mt-3 space-y-3 bg-amber-50/50 rounded-xl p-3">
+                    <p className="text-xs text-slate-500">Без наценки за способ оплаты. Сумма к оплате: <b>{formatPrice(finalTotal)} ₽</b></p>
+                    <div className="flex flex-col sm:flex-row gap-2 items-start sm:items-center">
+                      <select value={mix1Method} onChange={(e) => setMix1Method(e.target.value)} className="border border-slate-200 rounded-lg px-3 py-2 text-sm bg-white" data-testid="mix-method-1">
+                        <option value="balance">Баланс</option>
+                        <option value="card">Карта</option>
+                        <option value="cash">Наличные</option>
+                      </select>
+                      <Input type="number" min="1" value={mix1Amount} onChange={(e) => setMix1Amount(e.target.value)} placeholder="Сумма, ₽" className="rounded-lg sm:w-40" data-testid="mix-amount-1" />
+                    </div>
+                    <div className="flex flex-col sm:flex-row gap-2 items-start sm:items-center">
+                      <select value={mix2Method} onChange={(e) => setMix2Method(e.target.value)} className="border border-slate-200 rounded-lg px-3 py-2 text-sm bg-white" data-testid="mix-method-2">
+                        <option value="card">Карта</option>
+                        <option value="balance">Баланс</option>
+                        <option value="cash">Наличные</option>
+                      </select>
+                      <div className="text-sm text-slate-600 px-3 py-2" data-testid="mix-amount-2">
+                        Остаток: <b>{formatPrice(Math.max(0, finalTotal - (Number(mix1Amount) || 0)))} ₽</b>
+                      </div>
+                    </div>
+                    <p className="text-[11px] text-slate-400">Отсрочка недоступна в смешанной оплате. Если выбрана карта — после оформления загрузите чек в «Мои заказы».</p>
+                  </div>
+                )}
+              </div>
+
             </motion.div>
 
             {/* Terms agreement */}
@@ -625,7 +686,7 @@ export default function CheckoutPage() {
                     : 'bg-slate-200 text-slate-400 cursor-not-allowed'
                 }`} data-testid="place-order-btn">
                 {loading ? <Loader2 className="w-5 h-5 animate-spin mr-2" /> : null}
-                {loading ? 'Оформление...' : payWithDeferral ? 'Оформить в отсрочку' : payWithBalance ? 'Оплатить с баланса' : paymentMethod === 'card' ? 'Оплатить картой' : paymentMethod === 'crypto' ? 'Перейти к оплате' : 'Подтвердить заказ'}
+                {loading ? 'Оформление...' : mixedMode ? 'Оформить заказ' : payWithDeferral ? 'Оформить в отсрочку' : payWithBalance ? 'Оплатить с баланса' : paymentMethod === 'card' ? 'Оформить заказ' : paymentMethod === 'crypto' ? 'Перейти к оплате' : 'Подтвердить заказ'}
               </Button>
             </motion.div>
             {!agreedToTerms && (

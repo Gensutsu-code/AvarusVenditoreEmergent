@@ -42,7 +42,8 @@ export default function AdminWarehousePage() {
   const [finEnd, setFinEnd] = useState(today());
   const [globalSync, setGlobalSync] = useState(true);
 
-  const [mvModal, setMvModal] = useState(null); // { product, type }
+  const [mvModal, setMvModal] = useState(null); // { product, type } | { bulk:true, type }
+  const [selected, setSelected] = useState([]);
   const [mvQty, setMvQty] = useState('');
   const [mvPrice, setMvPrice] = useState('');
   const [mvSupplier, setMvSupplier] = useState('');
@@ -91,11 +92,32 @@ export default function AdminWarehousePage() {
     setMvQty(''); setMvPrice(String(product.purchase_price || '')); setMvSupplier(''); setMvReason('');
   };
 
+  const openBulkMv = (type) => {
+    if (selected.length === 0) { toast.error('Выберите товары'); return; }
+    setMvModal({ bulk: true, type });
+    setMvQty(''); setMvPrice(''); setMvSupplier(''); setMvReason('');
+  };
+
+  const toggleSelect = (id) => setSelected((s) => s.includes(id) ? s.filter(x => x !== id) : [...s, id]);
+  const allVisibleSelected = stockData.items.length > 0 && stockData.items.every(it => selected.includes(it.id));
+  const toggleSelectAll = () => setSelected(allVisibleSelected ? [] : stockData.items.map(it => it.id));
+
   const submitMv = async () => {
     const qty = parseInt(mvQty, 10);
     if (!qty || qty <= 0) { toast.error('Укажите количество'); return; }
     setSubmitting(true);
     try {
+      if (mvModal.bulk) {
+        const payload = { product_ids: selected, type: mvModal.type, quantity: qty, comment: '' };
+        if (mvModal.type === 'receipt') { payload.purchase_price = mvPrice === '' ? undefined : Number(mvPrice); payload.supplier = mvSupplier; }
+        else { payload.reason = mvReason; }
+        const res = await axios.post(`${API}/admin/warehouse/movements/bulk`, payload);
+        const sk = res.data.skipped || [];
+        toast.success(`Обработано: ${res.data.processed}${sk.length ? `, пропущено: ${sk.length}` : ''}`);
+        setMvModal(null); setSelected([]);
+        await Promise.all([fetchStock(), fetchMovements(), fetchFinance()]);
+        return;
+      }
       const payload = { product_id: mvModal.product.id, type: mvModal.type, quantity: qty, comment: '' };
       if (mvModal.type === 'receipt') { payload.purchase_price = mvPrice === '' ? undefined : Number(mvPrice); payload.supplier = mvSupplier; }
       else { payload.reason = mvReason; }
@@ -178,9 +200,17 @@ export default function AdminWarehousePage() {
                   <div className="bg-white rounded-2xl p-4 shadow-sm"><div className="flex items-center gap-2 mb-1"><AlertTriangle className="w-4 h-4 text-rose-400" /><p className="text-xs text-slate-500">Мало на складе (≤{s.low_stock_threshold})</p></div><p className="text-xl font-bold text-rose-600">{fmt(s.low_stock_count)}</p></div>
                 </div>
 
-                <div className="flex gap-2 mb-4">
+                <div className="flex gap-2 mb-4 flex-wrap items-center">
                   <Input value={search} onChange={(e) => setSearch(e.target.value)} onKeyDown={(e) => e.key === 'Enter' && fetchStock()} placeholder="Поиск по названию, артикулу, бренду..." className="rounded-xl max-w-md" data-testid="wh-search-input" />
                   <Button onClick={() => fetchStock()} className="bg-amber-500 hover:bg-amber-600 text-white rounded-xl" data-testid="wh-search-btn">Найти</Button>
+                  {selected.length > 0 && (
+                    <div className="flex items-center gap-2 ml-auto bg-amber-50 border border-amber-200 rounded-xl px-3 py-1.5" data-testid="bulk-action-bar">
+                      <span className="text-sm font-medium text-amber-700">Выбрано: {selected.length}</span>
+                      <Button size="sm" onClick={() => openBulkMv('receipt')} className="bg-emerald-500 hover:bg-emerald-600 text-white rounded-lg" data-testid="bulk-receipt-btn"><Plus className="w-4 h-4 mr-1" />Приёмка</Button>
+                      <Button size="sm" onClick={() => openBulkMv('writeoff')} className="bg-rose-500 hover:bg-rose-600 text-white rounded-lg" data-testid="bulk-writeoff-btn"><Minus className="w-4 h-4 mr-1" />Списание</Button>
+                      <button onClick={() => setSelected([])} className="text-slate-400 hover:text-slate-600 text-xs" data-testid="bulk-clear">Сбросить</button>
+                    </div>
+                  )}
                 </div>
 
                 <div className="bg-white rounded-2xl shadow-sm overflow-hidden">
@@ -188,6 +218,7 @@ export default function AdminWarehousePage() {
                     <table className="w-full text-sm">
                       <thead className="bg-slate-50 text-slate-500 text-xs uppercase">
                         <tr>
+                          <th className="px-3 py-3 w-8"><input type="checkbox" checked={allVisibleSelected} onChange={toggleSelectAll} className="accent-amber-500" data-testid="wh-select-all" /></th>
                           <th className="text-left px-4 py-3 font-medium">Товар</th>
                           <th className="text-right px-4 py-3 font-medium">Остаток</th>
                           <th className="text-right px-4 py-3 font-medium">Закуп.</th>
@@ -199,9 +230,10 @@ export default function AdminWarehousePage() {
                       </thead>
                       <tbody>
                         {stockData.items.length === 0 ? (
-                          <tr><td colSpan={7} className="text-center py-10 text-slate-400">Нет товаров</td></tr>
+                          <tr><td colSpan={8} className="text-center py-10 text-slate-400">Нет товаров</td></tr>
                         ) : stockData.items.map(it => (
                           <tr key={it.id} className="border-t border-slate-100 hover:bg-slate-50" data-testid={`wh-row-${it.id}`}>
+                            <td className="px-3 py-3"><input type="checkbox" checked={selected.includes(it.id)} onChange={() => toggleSelect(it.id)} className="accent-amber-500" data-testid={`wh-select-${it.id}`} /></td>
                             <td className="px-4 py-3">
                               <p className="font-medium text-slate-800">{it.name}</p>
                               <p className="text-xs text-slate-400">{it.manufacturer ? it.manufacturer + ' · ' : ''}{it.article}</p>
@@ -306,8 +338,8 @@ export default function AdminWarehousePage() {
       {/* Movement modal */}
       <Dialog open={!!mvModal} onOpenChange={(o) => !o && setMvModal(null)}>
         <DialogContent className="rounded-2xl" data-testid="movement-modal">
-          <DialogTitle>{mvModal?.type === 'receipt' ? 'Приход товара' : 'Списание товара'}</DialogTitle>
-          <DialogDescription>{mvModal?.product?.name} · остаток {mvModal?.product?.stock}</DialogDescription>
+          <DialogTitle>{mvModal?.type === 'receipt' ? 'Приход товара' : 'Списание товара'}{mvModal?.bulk ? ' (массово)' : ''}</DialogTitle>
+          <DialogDescription>{mvModal?.bulk ? `Будет применено к ${selected.length} товарам` : `${mvModal?.product?.name} · остаток ${mvModal?.product?.stock}`}</DialogDescription>
           <div className="space-y-3 mt-2">
             <div>
               <label className="block text-xs font-medium text-slate-500 mb-1">Количество</label>

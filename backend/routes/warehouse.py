@@ -152,6 +152,69 @@ async def create_movement(data: MovementCreate, user=Depends(get_current_user)):
     return movement
 
 
+class BulkMovementCreate(BaseModel):
+    product_ids: list
+    type: str  # 'receipt' | 'writeoff'
+    quantity: int
+    purchase_price: Optional[float] = None
+    supplier: Optional[str] = ""
+    reason: Optional[str] = ""
+    comment: Optional[str] = ""
+
+
+@router.post("/admin/warehouse/movements/bulk")
+async def create_bulk_movement(data: BulkMovementCreate, user=Depends(get_current_user)):
+    await _ensure_admin(user)
+    if data.type not in ("receipt", "writeoff"):
+        raise HTTPException(status_code=400, detail="Тип операции должен быть receipt или writeoff")
+    if data.quantity <= 0:
+        raise HTTPException(status_code=400, detail="Количество должно быть больше 0")
+    if not data.product_ids:
+        raise HTTPException(status_code=400, detail="Не выбраны товары")
+
+    now = datetime.now(timezone.utc).isoformat()
+    processed = 0
+    skipped = []
+    for pid in data.product_ids:
+        product = await db.products.find_one({"id": pid}, {"_id": 0, "id": 1, "name": 1, "article": 1, "stock": 1, "purchase_price": 1})
+        if not product:
+            skipped.append({"id": pid, "reason": "не найден"})
+            continue
+        stock_before = product.get("stock", 0) or 0
+        if data.type == "writeoff" and data.quantity > stock_before:
+            skipped.append({"id": pid, "name": product.get("name", ""), "reason": f"остаток {stock_before}"})
+            continue
+        delta = data.quantity if data.type == "receipt" else -data.quantity
+        unit_cost = product.get("purchase_price", 0) or 0
+        set_fields = {}
+        if data.type == "receipt" and data.purchase_price is not None and data.purchase_price >= 0:
+            unit_cost = data.purchase_price
+            set_fields["purchase_price"] = data.purchase_price
+        update = {"$inc": {"stock": delta}}
+        if set_fields:
+            update["$set"] = set_fields
+        await db.products.update_one({"id": pid}, update)
+        await db.stock_movements.insert_one({
+            "id": str(uuid.uuid4()),
+            "product_id": pid,
+            "product_name": product.get("name", ""),
+            "product_article": product.get("article", ""),
+            "type": data.type,
+            "quantity": data.quantity,
+            "unit_cost": unit_cost,
+            "total_cost": round(data.quantity * unit_cost, 2),
+            "supplier": data.supplier or "",
+            "reason": data.reason or "",
+            "comment": (data.comment or "") + " (массовая операция)",
+            "stock_before": stock_before,
+            "stock_after": stock_before + delta,
+            "created_at": now,
+            "created_by": user.get("name", user.get("email", "")),
+        })
+        processed += 1
+    return {"processed": processed, "skipped": skipped}
+
+
 @router.get("/admin/warehouse/movements")
 async def list_movements(type: Optional[str] = None, product_id: Optional[str] = None, limit: int = 200, user=Depends(get_current_user)):
     await _ensure_admin(user)

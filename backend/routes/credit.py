@@ -11,6 +11,17 @@ from notify import notify_user, notify_admin
 router = APIRouter(tags=["credit"])
 
 
+async def has_overdue_deferral(user_id: str) -> bool:
+    """True if user has any unpaid deferral past its due date."""
+    now = datetime.now(timezone.utc).isoformat()
+    doc = await db.deferrals.find_one({
+        "user_id": user_id,
+        "status": "unpaid",
+        "due_date": {"$ne": None, "$lt": now},
+    }, {"_id": 0, "id": 1})
+    return doc is not None
+
+
 class CreditRequestCreate(BaseModel):
     requested_limit: float
     message: str = ""

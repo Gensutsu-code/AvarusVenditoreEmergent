@@ -217,6 +217,7 @@ class OrderCreate(BaseModel):
     comment: Optional[str] = None
     payment_method: Optional[str] = "cash"
     pay_with_balance: Optional[bool] = False
+    payment_parts: Optional[List[dict]] = None  # mixed payment: [{method, amount}], max 2, no deferral
 
 class OrderItemUpdate(BaseModel):
     product_id: str
@@ -282,6 +283,11 @@ class OrderResponse(BaseModel):
     is_deferral: Optional[bool] = None
     deferral_due_date: Optional[str] = None
     payment_status: Optional[str] = None
+    card_status: Optional[str] = None
+    card_requisites: Optional[dict] = None
+    card_receipt_url: Optional[str] = None
+    card_amount: Optional[float] = None
+    payment_parts: Optional[List[dict]] = None
     ozon_certificate: Optional[float] = None
     ozon_certificate_issued: Optional[bool] = None
 

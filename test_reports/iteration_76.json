@@ -1,0 +1,47 @@
+{
+  "summary": "Iteration 76 — tested 4 new features: (1) overdue-deferral order block, (2) overdue-deferral prize block, (3) manual card payment (global + per_order, full upload→confirm flow), (4) bulk warehouse receipt/writeoff. Backend pytest 10 PASSED / 2 SKIPPED (no failures). Frontend: bulk warehouse UI fully working with all expected data-testids. CRITICAL: Admin CardPaymentSettings UI (data-testid 'card-payment-settings') is NOT reachable — the AdminPage TabsList exposes Каталог/Бонусы/Платежи/CRM/Маркетинг/Логи/Настройки, but DiscountsTab (which holds CardPaymentSettings) is rendered under TabsContent value='discounts' for which NO TabsTrigger is rendered. The visible 'Платежи' tab shows the OLD PaymentSettings component (ЮKassa/Наличные/Крипто/Баланс toggles with markup %), not the new Ручная оплата на карту block.",
+  "backend_issues": {
+    "critical": [],
+    "minor": [
+      {"endpoint": "/api/admin/users/{id}/balance/adjust", "issue": "Used in test for mixed-payment top-up — endpoint may not exist; mixed_balance_cash test SKIPPED (could not pre-fund client). Backend mixed validation (rejects same method) PASSES."}
+    ]
+  },
+  "frontend_issues": {
+    "ui_bugs": [
+      {"component": "AdminPage TabsList / DiscountsTab", "issue": "No TabsTrigger renders the 'discounts' tab — the CardPaymentSettings section (data-testid card-payment-settings) is unreachable. Either (a) add a TabsTrigger with value='discounts' (e.g. label 'Скидки/Оплата картой'), or (b) move <CardPaymentSettings /> into the existing Платежи tab (TabsContent value='payments').", "selector": "[data-testid=\"card-payment-settings\"]", "priority": "HIGH"}
+    ],
+    "integration_issues": [
+      {"flow": "Client checkout — manual card + mixed payment UI", "issue": "Could not exercise mixed-payment-toggle / Банковская карта radio on /checkout because POST /cart/add followed by /checkout showed empty cart in browser context after fresh login (likely cart belongs to a different session or auth header missing for axios on home page 'В корзину' click). Backend API flow works (verified via pytest). Recommend manual re-verification of CheckoutPage mixed-payment-toggle, mix-method-1/2, mix-amount-1/2.", "affected_selectors": ["[data-testid=\"mixed-payment-toggle\"]", "[data-testid=\"mix-method-1\"]", "[data-testid=\"mix-amount-1\"]", "[data-testid=\"card-payment-block-{id}\"]", "[data-testid=\"upload-receipt-{id}\"]"]}
+    ],
+    "design_issues": []
+  },
+  "test_report_links": [
+    "/app/backend/tests/test_iter76_features.py",
+    "/app/test_reports/pytest/iter76_results.xml"
+  ],
+  "action_items": [
+    "HIGH: Expose CardPaymentSettings in admin UI — add a TabsTrigger for value='discounts' OR relocate <CardPaymentSettings /> into the existing 'Платежи' (value='payments') tab so admins can edit card number/recipient/bank/QR and toggle mode global vs per_order.",
+    "Verify cart persistence across login/page navigation so client can reach /checkout with items; current attempt from product list 'В корзину' button followed by /checkout showed 'Корзина пуста'.",
+    "Optionally add /api/admin/users/{id}/balance/adjust (or equivalent) to allow seeding test balance for mixed-payment regression tests."
+  ],
+  "critical_code_review_comments": [
+    "routes/orders.py:556-600 — manual card endpoints have correct guards (admin-only for issue & confirm; owner check for upload) and emit notifications. Good.",
+    "routes/orders.py:229 — overdue check uses has_overdue_deferral() helper consistently; bonus.py has its own inline duplicate of the same query. Consider importing has_overdue_deferral in bonus.py for DRY.",
+    "routes/warehouse.py:165-215 — bulk movement correctly skips writeoff when stock < qty, logs every accepted movement with stock_before/after, and tags comment with '(массовая операция)'. Good.",
+    "DiscountsTab.js:11-83 (CardPaymentSettings) is well written but the parent AdminPage.js does NOT expose a TabsTrigger for value='discounts'. Either delete the dead TabsContent or add the trigger — currently the new feature is unreachable from UI.",
+    "routes/orders.py:727-732 — GET /orders/{id} only matches user_id=current_user; admin cannot fetch arbitrary order by id via this route (must use /admin/orders list). Consider relaxing for admins."
+  ],
+  "updated_files": [
+    "/app/backend/tests/test_iter76_features.py (new)"
+  ],
+  "success_rate": {
+    "backend": "100% (10/10 passed, 2 skipped for environmental reasons; no failures)",
+    "frontend": "50% (bulk warehouse UI fully works; admin CardPaymentSettings UI unreachable; mixed-payment / CardPaymentBlock UI not verified end-to-end)"
+  },
+  "test_credentials": "Admin admin@avarus.ru/admin and Client 0x0errorr@gmail.com/admin123 from /app/memory/test_credentials.md",
+  "seed_data_creation": "During tests: bulk receipt added +3 stock to 2 products, then writeoff -3 to restore; overdue deferral (id starts with 'TEST_OVERDUE_') was inserted into db.deferrals and removed in fixture teardown; per_order test created a card-paid order and confirmed it (left in DB as completed/paid — does not affect future flows). Card settings restored to mode=global with original requisites at end. Verified GET /api/card-payment-settings returns mode=global at completion.",
+  "retest_needed": true,
+  "should_main_agent_self_test": false,
+  "context_for_next_testing_agent": "Backend data-testids confirmed via pytest: card-payment-settings GET/PUT, /admin/warehouse/movements/bulk, /orders/{id}/card/issue-requisites|upload-receipt|confirm, overdue block at POST /orders and /bonus/redeem-prize (both return 403 with 'просроченный' text). Frontend data-testids confirmed on /admin/warehouse → Остатки: wh-select-all, wh-select-{id}, bulk-action-bar, bulk-receipt-btn, bulk-writeoff-btn (all present and functional with Выбрано: N counter). Frontend data-testids NOT found: card-payment-settings, card-mode-global, card-mode-per_order, card-number-input, card-recipient-input, card-qr-upload, save-card-payment-settings-btn — because AdminPage has no TabsTrigger for value='discounts'. Mixed payment + CardPaymentBlock + AdminCardPayment selectors were not validated in browser due to cart-state issue. Test file: /app/backend/tests/test_iter76_features.py — re-runnable.",
+  "rca of the issue": "Admin CardPaymentSettings invisible — RCA: in /app/frontend/src/pages/AdminPage.js the Tabs component lists triggers for products/bonuses/payments/crm/marketing/logs/settings but the TabsContent value='discounts' (which contains <DiscountsTab .../> with the new <CardPaymentSettings />) has no matching TabsTrigger, so the panel never mounts. Fix options: (1) add <TabsTrigger value='discounts'>Скидки/Оплата картой</TabsTrigger> to the TabsList; (2) move CardPaymentSettings into the existing 'payments' TabsContent. Reproduction: login as admin@avarus.ru → /admin → no tab labeled Скидки/Discounts is shown; clicking Платежи shows the legacy PaymentSettings component, not the new card requisites editor."
+}

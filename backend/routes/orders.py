@@ -1,6 +1,7 @@
 """Cart, Orders, and Favorites routes"""
 from fastapi import APIRouter, HTTPException, Depends
-from typing import List
+from typing import List, Optional
+from pydantic import BaseModel
 from datetime import datetime, timezone, timedelta
 from collections import defaultdict
 import uuid
@@ -9,6 +10,7 @@ from database import db, get_current_user
 from models import CartItem, OrderCreate, OrderResponse, FavoriteItem
 from notify import notify_user, notify_admin
 from routes.telegram import send_telegram_order_notification
+from routes.credit import has_overdue_deferral
 
 router = APIRouter(tags=["orders"])
 
@@ -222,13 +224,20 @@ async def create_order(data: OrderCreate, user=Depends(get_current_user)):
     cart = await db.carts.find_one({"user_id": user["id"]})
     if not cart or not cart.get("items"):
         raise HTTPException(status_code=400, detail="Cart is empty")
+
+    # Block new orders if user has overdue deferral debt
+    if await has_overdue_deferral(user["id"]):
+        raise HTTPException(status_code=403, detail="Есть просроченный долг по отсрочке. Погасите задолженность, чтобы оформлять новые заказы.")
     
     # Only payment method discounts are used
     payment_settings = await db.settings.find_one({"key": "payment_settings"})
     payment_adjustments = payment_settings.get("value", {}) if payment_settings else {}
     payment_method = data.payment_method or "cash"
     # Get payment adjustment (can be negative for discount or positive for surcharge)
-    payment_adjustment = payment_adjustments.get(f"{payment_method}_adjustment", 0)
+    if getattr(data, 'payment_parts', None):
+        payment_adjustment = 0  # mixed payment: no method surcharge/discount
+    else:
+        payment_adjustment = payment_adjustments.get(f"{payment_method}_adjustment", 0)
     
     product_ids = [item["product_id"] for item in cart["items"]]
     products = await db.products.find({"id": {"$in": product_ids}}, {"_id": 0}).to_list(100)
@@ -323,40 +332,113 @@ async def create_order(data: OrderCreate, user=Depends(get_current_user)):
         deferral_term = int(ucred.get("credit_term_days", 30) or 30)
         deferral_due_date = (datetime.now(timezone.utc) + timedelta(days=deferral_term)).isoformat()
 
-    # Check if paying with balance
+    # Check if paying with balance (legacy single) or mixed payment parts
     pay_with_balance = getattr(data, 'pay_with_balance', False) if hasattr(data, 'pay_with_balance') else False
     if is_deferral:
         pay_with_balance = False
     paid_from_balance = 0
-    
-    if pay_with_balance:
-        # Get user balance
+
+    # Parse mixed payment parts
+    parts = getattr(data, 'payment_parts', None)
+    card_part = 0.0
+    cash_part = 0.0
+    is_mixed = False
+    payment_parts_out = None
+    balance_to_deduct = 0.0
+
+    if parts:
+        if is_deferral:
+            raise HTTPException(status_code=400, detail="Отсрочка не поддерживает смешанную оплату")
+        valid_methods = {"balance", "card", "cash"}
+        norm = []
+        for p in parts:
+            m = p.get("method")
+            try:
+                a = round(float(p.get("amount", 0)), 2)
+            except (TypeError, ValueError):
+                a = 0
+            if m in valid_methods and a > 0:
+                norm.append((m, a))
+        if len(norm) < 1 or len(norm) > 2:
+            raise HTTPException(status_code=400, detail="Смешанная оплата: выберите 1–2 способа")
+        if len({m for m, _ in norm}) != len(norm):
+            raise HTTPException(status_code=400, detail="Способы оплаты не должны повторяться")
+        s = round(sum(a for _, a in norm), 2)
+        if abs(s - total) > 1:
+            raise HTTPException(status_code=400, detail=f"Сумма частей ({s:.0f} ₽) не равна сумме заказа ({total:.0f} ₽)")
+        is_mixed = len(norm) == 2
+        amounts = {m: a for m, a in norm}
+        balance_to_deduct = amounts.get("balance", 0)
+        card_part = amounts.get("card", 0)
+        cash_part = amounts.get("cash", 0)
+        payment_parts_out = [{"method": m, "amount": a} for m, a in norm]
+        pay_with_balance = False
+    elif pay_with_balance:
+        balance_to_deduct = total
+    elif payment_method == "card":
+        card_part = total
+    elif payment_method == "cash":
+        cash_part = total
+
+    # Deduct balance if needed (full or partial)
+    if balance_to_deduct > 0:
         user_data = await db.users.find_one({"id": user["id"]}, {"_id": 0, "balance": 1})
         user_balance = user_data.get("balance", 0) if user_data else 0
-        
-        if user_balance < total:
-            raise HTTPException(status_code=400, detail=f"Недостаточно средств на балансе. Баланс: {user_balance}₽, Сумма: {total}₽")
-        
-        # Deduct from balance
-        await db.users.update_one(
-            {"id": user["id"]},
-            {"$inc": {"balance": -total}}
-        )
-        paid_from_balance = total
-        
-        # Create balance transaction
+        if user_balance < balance_to_deduct:
+            raise HTTPException(status_code=400, detail=f"Недостаточно средств на балансе. Баланс: {user_balance}₽, требуется: {balance_to_deduct}₽")
+        await db.users.update_one({"id": user["id"]}, {"$inc": {"balance": -balance_to_deduct}})
+        paid_from_balance = balance_to_deduct
         balance_transaction = {
             "id": str(uuid.uuid4()),
             "user_id": user["id"],
             "type": "payment",
-            "amount": -total,
+            "amount": -balance_to_deduct,
             "method": "balance",
             "status": "completed",
             "created_at": datetime.now(timezone.utc).isoformat(),
             "description": "Оплата заказа"
         }
         await db.balance_transactions.insert_one(balance_transaction)
-    
+
+    # Card payment flow init
+    has_card = card_part > 0
+    card_status = None
+    card_requisites = None
+    if has_card:
+        cp_settings = await db.settings.find_one({"key": "card_payment_settings"})
+        cp = (cp_settings or {}).get("value", {})
+        if cp.get("mode") == "per_order":
+            card_status = "awaiting_requisites"
+        else:
+            card_status = "awaiting_payment"
+            card_requisites = {
+                "card_number": cp.get("card_number", ""),
+                "recipient_name": cp.get("recipient_name", ""),
+                "bank": cp.get("bank", ""),
+                "comment": cp.get("comment", ""),
+                "qr_url": cp.get("qr_url", ""),
+            }
+
+    # Effective order payment_method label
+    if is_mixed:
+        order_payment_method = "mixed"
+    elif pay_with_balance or (balance_to_deduct >= total and total > 0):
+        order_payment_method = "balance"
+    else:
+        order_payment_method = payment_method
+
+    # Compute payment_status
+    if is_deferral:
+        order_payment_status = "deferred"
+    elif has_card:
+        order_payment_status = "awaiting_confirmation"
+    elif cash_part > 0:
+        order_payment_status = "unpaid"
+    elif paid_from_balance >= total and total > 0:
+        order_payment_status = "paid"
+    else:
+        order_payment_status = "unpaid"
+
     order_id = str(uuid.uuid4())
     order = {
         "id": order_id,
@@ -371,18 +453,23 @@ async def create_order(data: OrderCreate, user=Depends(get_current_user)):
         "address": data.address,
         "phone": data.phone,
         "comment": data.comment,
-        "payment_method": "balance" if pay_with_balance else payment_method,
+        "payment_method": order_payment_method,
         "paid_from_balance": paid_from_balance,
         "is_deferral": is_deferral,
         "deferral_due_date": deferral_due_date,
-        "payment_status": "deferred" if is_deferral else ("paid" if paid_from_balance >= total and total > 0 else "unpaid"),
+        "payment_status": order_payment_status,
+        "card_status": card_status,
+        "card_requisites": card_requisites,
+        "card_receipt_url": None,
+        "card_amount": round(card_part, 2) if has_card else None,
+        "payment_parts": payment_parts_out,
         "ozon_certificate": ozon_certificate,
         "ozon_certificate_issued": False,
         "created_at": datetime.now(timezone.utc).isoformat()
     }
     
     # Link balance transaction to order
-    if pay_with_balance:
+    if paid_from_balance > 0:
         await db.balance_transactions.update_one(
             {"id": balance_transaction["id"]},
             {"$set": {"order_id": order_id}}
@@ -450,6 +537,68 @@ async def create_order(data: OrderCreate, user=Depends(get_current_user)):
     await db.carts.update_one({"user_id": user["id"]}, {"$set": {"items": []}})
     
     return order
+
+
+# ==================== MANUAL CARD PAYMENT FLOW ====================
+
+class CardRequisitesIn(BaseModel):
+    card_number: Optional[str] = ""
+    recipient_name: Optional[str] = ""
+    bank: Optional[str] = ""
+    comment: Optional[str] = ""
+    qr_url: Optional[str] = ""
+
+
+class CardReceiptIn(BaseModel):
+    receipt_url: str
+
+
+@router.post("/orders/{order_id}/card/issue-requisites")
+async def issue_card_requisites(order_id: str, data: CardRequisitesIn, user=Depends(get_current_user)):
+    if user.get("role") != "admin":
+        raise HTTPException(status_code=403, detail="Admin access required")
+    order = await db.orders.find_one({"id": order_id}, {"_id": 0, "card_status": 1, "user_id": 1})
+    if not order:
+        raise HTTPException(status_code=404, detail="Заказ не найден")
+    if not order.get("card_status"):
+        raise HTTPException(status_code=400, detail="Заказ не оплачивается картой")
+    requisites = {
+        "card_number": data.card_number or "",
+        "recipient_name": data.recipient_name or "",
+        "bank": data.bank or "",
+        "comment": data.comment or "",
+        "qr_url": data.qr_url or "",
+    }
+    await db.orders.update_one({"id": order_id}, {"$set": {"card_requisites": requisites, "card_status": "awaiting_payment"}})
+    await create_notification(order["user_id"], "order", "Реквизиты для оплаты выданы", f"По заказу #{order_id[:8]} выданы реквизиты для оплаты картой", "/orders")
+    return {"success": True}
+
+
+@router.post("/orders/{order_id}/card/upload-receipt")
+async def upload_card_receipt(order_id: str, data: CardReceiptIn, user=Depends(get_current_user)):
+    order = await db.orders.find_one({"id": order_id}, {"_id": 0, "user_id": 1, "card_status": 1})
+    if not order or order.get("user_id") != user["id"]:
+        raise HTTPException(status_code=404, detail="Заказ не найден")
+    if order.get("card_status") not in ("awaiting_payment", "receipt_uploaded"):
+        raise HTTPException(status_code=400, detail="Сейчас нельзя загрузить чек по этому заказу")
+    await db.orders.update_one({"id": order_id}, {"$set": {"card_receipt_url": data.receipt_url, "card_status": "receipt_uploaded"}})
+    await notify_admin("card_payment", "Чек об оплате загружен", f"По заказу #{order_id[:8]} клиент загрузил чек — подтвердите оплату", "/admin/orders")
+    return {"success": True}
+
+
+@router.post("/orders/{order_id}/card/confirm")
+async def confirm_card_payment(order_id: str, user=Depends(get_current_user)):
+    if user.get("role") != "admin":
+        raise HTTPException(status_code=403, detail="Admin access required")
+    order = await db.orders.find_one({"id": order_id}, {"_id": 0, "card_status": 1, "user_id": 1})
+    if not order:
+        raise HTTPException(status_code=404, detail="Заказ не найден")
+    if not order.get("card_status"):
+        raise HTTPException(status_code=400, detail="Заказ не оплачивается картой")
+    await db.orders.update_one({"id": order_id}, {"$set": {"card_status": "confirmed", "payment_status": "paid"}})
+    await create_notification(order["user_id"], "order", "Оплата подтверждена", f"Оплата по заказу #{order_id[:8]} подтверждена администрацией", "/orders")
+    return {"success": True}
+
 
 
 @router.get("/orders/check-expired")

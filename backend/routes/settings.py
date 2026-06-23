@@ -138,7 +138,49 @@ async def update_delivery_settings(data: dict, user=Depends(get_current_user)):
     return {"success": True}
 
 
-# ==================== STOCK SYNC SETTINGS ====================
+# ==================== CARD PAYMENT SETTINGS ====================
+
+CARD_PAY_DEFAULTS = {
+    "mode": "global",  # 'global' | 'per_order'
+    "card_number": "",
+    "recipient_name": "",
+    "bank": "",
+    "comment": "",
+    "qr_url": "",
+}
+
+
+@router.get("/card-payment-settings")
+async def get_card_payment_settings():
+    """Client-facing: payment mode + global requisites (if global mode)."""
+    s = await db.settings.find_one({"key": "card_payment_settings"})
+    val = {**CARD_PAY_DEFAULTS, **((s or {}).get("value", {}))}
+    return val
+
+
+@router.put("/admin/card-payment-settings")
+async def update_card_payment_settings(data: dict, user=Depends(get_current_user)):
+    if user.get("role") != "admin":
+        raise HTTPException(status_code=403, detail="Admin access required")
+    mode = data.get("mode", "global")
+    if mode not in ("global", "per_order"):
+        mode = "global"
+    val = {
+        "mode": mode,
+        "card_number": str(data.get("card_number", ""))[:64],
+        "recipient_name": str(data.get("recipient_name", ""))[:128],
+        "bank": str(data.get("bank", ""))[:128],
+        "comment": str(data.get("comment", ""))[:512],
+        "qr_url": str(data.get("qr_url", ""))[:1024],
+    }
+    await db.settings.update_one(
+        {"key": "card_payment_settings"},
+        {"$set": {"value": val}},
+        upsert=True
+    )
+    return {"success": True}
+
+
 
 @router.get("/stock-sync-settings")
 async def get_stock_sync_settings():

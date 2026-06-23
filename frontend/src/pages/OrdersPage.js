@@ -12,6 +12,7 @@ import { toast } from 'sonner';
 import { sendNotification, requestNotificationPermission } from '../utils/notifications';
 import CryptoPaymentModal from '../components/CryptoPaymentModal';
 import ReturnModal from '../components/ReturnModal';
+import CardPaymentBlock from '../components/CardPaymentBlock';
 
 const API = `${process.env.REACT_APP_BACKEND_URL}/api`;
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
@@ -618,6 +619,8 @@ export default function OrdersPage() {
                                 )}
                               </div>
                             </div>
+
+                            <CardPaymentBlock order={order} onUpdate={fetchData} />
 
                             {/* Action buttons for changes */}
                             {order.awaiting_confirmation && (

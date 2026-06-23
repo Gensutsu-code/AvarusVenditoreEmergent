@@ -11,6 +11,7 @@ import { Button } from '../components/ui/button';
 import { Input } from '../components/ui/input';
 import { useAuth } from '../context/AuthContext';
 import { toast } from 'sonner';
+import AdminCardPayment from '../components/AdminCardPayment';
 import { motion, AnimatePresence } from 'framer-motion';
 
 const API = `${process.env.REACT_APP_BACKEND_URL}/api`;
@@ -687,9 +688,10 @@ export default function AdminOrdersPage() {
                                 </Button>
                               </div>
                             ) : (
+                              <>
+                              <AdminCardPayment order={order} onUpdate={fetchOrders} />
                               <div className="flex items-center justify-between">
-                                <div className="flex items-center gap-2" data-testid={`order-status-actions-${order.id}`}>
-                                  {order.status === 'pending' && (
+                                <div className="flex items-center gap-2" data-testid={`order-status-actions-${order.id}`}>                                  {order.status === 'pending' && (
                                     <Button size="sm" onClick={() => handleStatusChange(order.id, 'processing')} className="rounded-xl bg-blue-500 hover:bg-blue-600 text-white" data-testid={`accept-order-${order.id}`}>
                                       <Check className="w-4 h-4 mr-1" /> Принять
                                     </Button>
@@ -733,6 +735,7 @@ export default function AdminOrdersPage() {
                                   </Button>
                                 </div>
                               </div>
+                              </>
                             )}
                           </div>
                         </motion.div>

@@ -334,6 +334,12 @@ async def redeem_prize(data: dict, user=Depends(get_current_user)):
     
     if not program_id or not prize_id:
         raise HTTPException(status_code=400, detail="Требуется program_id и prize_id")
+
+    # Block prize redemption if user has overdue deferral debt
+    _now = datetime.now(timezone.utc).isoformat()
+    _overdue = await db.deferrals.find_one({"user_id": user["id"], "status": "unpaid", "due_date": {"$ne": None, "$lt": _now}}, {"_id": 0, "id": 1})
+    if _overdue:
+        raise HTTPException(status_code=403, detail="Есть просроченный долг по отсрочке. Погасите задолженность, чтобы получать призы.")
     
     program = await get_bonus_program(program_id)
     if not program:
