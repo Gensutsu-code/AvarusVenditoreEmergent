@@ -281,6 +281,12 @@ class OrderResponse(BaseModel):
     # Additional payment tracking
     awaiting_additional_payment: Optional[bool] = None
     additional_payment_amount: Optional[float] = None
+    # Deferral (отсрочка) fields
+    is_deferral: Optional[bool] = None
+    deferral_due_date: Optional[str] = None
+    payment_status: Optional[str] = None
+    ozon_certificate: Optional[float] = None
+    ozon_certificate_issued: Optional[bool] = None
 
 # ==================== FAVORITES ====================
 

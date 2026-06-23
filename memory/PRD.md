@@ -163,6 +163,12 @@ E-commerce platform for truck spare parts with a comprehensive admin panel. Russ
 - Backend: GET /api/stock-sync-settings, PUT /api/admin/stock-sync-settings; products.py `_apply_availability` on all GET/create/update; orders.py decrement loop skips non-synced. Frontend: `isProductAvailable()` helper used in Catalog/Product/Favorites/SearchDropdown/RelatedProducts; global toggle on /admin/warehouse (global-sync-toggle); 3-state mode + manual toggle in AdminPage product form.
 - Verified iteration_75: backend 10/10 pytest + frontend 100%. Global restored to ON.
 
+### Cosmetic polish (2026-06-19) ✅
+- Unread chat badge on Header «Связь» link (data-testid contact-unread-badge), fed by /api/chat/unread-count; clears after visiting /contact (mark-read).
+- Cancel buttons in warehouse modals: mv-cancel-btn (movement) + fin-cancel-btn (finance entry).
+- OrderResponse now exposes is_deferral, deferral_due_date, payment_status, ozon_certificate(_issued) — /orders can show deferral context without extra fetch.
+- Decision: kept native date inputs on finance tab (admin uses native type="date" everywhere — shadcn DatePicker would reduce consistency). Skipped fin testid rename (test-internal, no UX impact).
+
 ## Prioritized Backlog
 
 ### P1 (Important)

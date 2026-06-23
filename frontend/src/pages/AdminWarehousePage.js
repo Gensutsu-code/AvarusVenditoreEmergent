@@ -333,6 +333,7 @@ export default function AdminWarehousePage() {
             <Button onClick={submitMv} disabled={submitting} className={`w-full text-white rounded-xl ${mvModal?.type === 'receipt' ? 'bg-emerald-500 hover:bg-emerald-600' : 'bg-rose-500 hover:bg-rose-600'}`} data-testid="mv-submit-btn">
               {submitting ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : null}{mvModal?.type === 'receipt' ? 'Оформить приход' : 'Списать'}
             </Button>
+            <Button variant="outline" onClick={() => setMvModal(null)} className="w-full rounded-xl" data-testid="mv-cancel-btn">Отмена</Button>
           </div>
         </DialogContent>
       </Dialog>
@@ -362,6 +363,7 @@ export default function AdminWarehousePage() {
             <Button onClick={submitFin} disabled={submitting} className="w-full bg-amber-500 hover:bg-amber-600 text-white rounded-xl" data-testid="fin-submit-btn">
               {submitting ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : null}Сохранить
             </Button>
+            <Button variant="outline" onClick={() => setFinModal(false)} className="w-full rounded-xl" data-testid="fin-cancel-btn">Отмена</Button>
           </div>
         </DialogContent>
       </Dialog>

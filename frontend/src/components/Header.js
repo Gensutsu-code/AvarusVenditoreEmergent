@@ -173,6 +173,7 @@ export const Header = () => {
   const [notificationCount, setNotificationCount] = useState(0);
   const [userBalance, setUserBalance] = useState(null);
   const [creditInfo, setCreditInfo] = useState(null);
+  const [chatUnread, setChatUnread] = useState(0);
   const lastSeenCountRef = useRef(0);
   const hasInitRef = useRef(false);
   const lastToastTimeRef = useRef(0);
@@ -217,6 +218,13 @@ export const Header = () => {
         const creditRes = await fetch(`${process.env.REACT_APP_BACKEND_URL}/api/credit/my`, { headers });
         const creditData = await creditRes.json();
         setCreditInfo(creditData && creditData.status === 'approved' ? creditData : null);
+      } catch (e) { /* ignore */ }
+
+      // Chat unread count (for "Связь" badge)
+      try {
+        const chatRes = await fetch(`${process.env.REACT_APP_BACKEND_URL}/api/chat/unread-count`, { headers });
+        const chatData = await chatRes.json();
+        setChatUnread(chatData.count || 0);
       } catch (e) { /* ignore */ }
 
       // Skip notification polling if disabled by admin
@@ -519,7 +527,7 @@ export const Header = () => {
                       {/* Связь с админом */}
                       <Link to="/contact" data-testid="contact-link">
                         <motion.div 
-                          className="flex items-center gap-2 px-3 py-2 rounded-xl cursor-pointer"
+                          className="relative flex items-center gap-2 px-3 py-2 rounded-xl cursor-pointer"
                           initial="rest"
                           whileHover="hover"
                           whileTap={{ scale: 0.95 }}
@@ -530,6 +538,7 @@ export const Header = () => {
                           transition={{ type: "spring", stiffness: 400, damping: 17 }}
                         >
                           <motion.div
+                            className="relative"
                             variants={{
                               rest: { rotate: 0, color: "#475569" },
                               hover: { rotate: [0, -10, 10, 0], color: "#0d9488" }
@@ -537,6 +546,11 @@ export const Header = () => {
                             transition={{ duration: 0.5 }}
                           >
                             <MessageCircle className="w-5 h-5" />
+                            {chatUnread > 0 && (
+                              <span className="absolute -top-2 -right-2 min-w-[16px] h-4 px-1 flex items-center justify-center bg-rose-500 text-white text-[10px] font-bold rounded-full" data-testid="contact-unread-badge">
+                                {chatUnread > 9 ? '9+' : chatUnread}
+                              </span>
+                            )}
                           </motion.div>
                           <motion.span 
                             className="hidden lg:inline text-sm font-medium"
