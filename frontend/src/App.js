@@ -160,7 +160,7 @@ function AppContent() {
         )}
       </main>
       {!isAdmin && <Footer />}
-      {!isAdmin && <FloatingPromoBanner />}
+      {!isAdmin && location.pathname !== '/contact' && <FloatingPromoBanner />}
       {!isAdmin && <ChatWidget />}
       <Toaster position="top-center" />
     </div>

@@ -150,10 +150,16 @@ E-commerce platform for truck spare parts with a comprehensive admin panel. Russ
 - Verified iteration_73: backend 12/12 pytest + frontend 100%. Test: `test_warehouse_finance.py`.
 - Backlog notes (non-blocking): finance modal testids use *-input suffix; add mv-cancel-btn; swap native date inputs for shadcn DatePicker.
 
+### PHASE 5 — Unified communication hub "Связь с администрацией" (2026-06-19 — iter 74) ✅
+- New client page `ContactPage.js` (`/contact`) with 4 tabs reusing existing APIs: **Чат** (embedded text chat via /chat/send, /chat/messages, /chat/mark-read, polls 5s), **Скидки и условия** (current status + individual_discount display; /request-individual-discount; /request-status-upgrade wholesale/partner; /my-requests pending state), **Отсрочка** (/credit/my summary or /credit/request form), **Мои обращения** (history: /discount-requests/my [product_id ones], /product-requests/my, /individual-prices/my with status badges).
+- Header client nav 'Связь' link (`contact-link`) desktop + mobile. No new backend routes.
+- Fix: hid global FloatingPromoBanner on /contact (it could overlap the tab strip / page heading).
+- Verified iteration_74: frontend 100% on critical flows (chat send+persist+admin-visible, all tabs render, deferral approved view, history badges, floating ChatWidget intact).
+- Backlog notes (non-blocking): consolidate /individual-prices/my with approved discount_requests carrying individual_price; chat/mark-read transient 403 noise on first load (returns 200 normally).
+
 ## Prioritized Backlog
 
 ### P1 (Important)
-- Phase 5: Единая страница связи с админом (запросы скидок, инд. условий, отсрочки, чат)
 - Переключатель синхронизации наличия со складом (P2)
 - Real Payment Gateway Integration (replace MOCKED YuKassa)
 
