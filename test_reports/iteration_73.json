@@ -1,0 +1,36 @@
+{
+  "summary": "Phase 4 — Warehouse & Accounting (Склад и учёт) verified end-to-end. Backend pytest 12/12 PASS in /app/backend/tests/test_warehouse_finance.py (admin guards, GET /admin/warehouse/stock shape, POST /admin/warehouse/movement receipt+purchase_price update, writeoff stock decrement, writeoff overflow → 400 with stock unchanged, invalid type/qty → 400, GET /admin/warehouse/movements with type+product_id filter, order placement decrements stock AND inserts a 'sale' movement with stock_before/stock_after + order_id comment, GET /admin/finance shape + auto_expense reflects prior receipts, POST/DELETE /admin/finance/entry round-trip + reflected in summary totals, PUT /api/products/{id} purchase_price persists and is reflected in /admin/warehouse/stock). Frontend Playwright on /admin/warehouse: admin-warehouse-link nav present, all three tabs (warehouse-tab-stock/movements/finance) clickable, summary cards (Единиц, Стоимость, Потенц. выручка, Потенц. прибыль, Мало на складе) rendered (22 units / 2 100₽ cost / 16 520₽ revenue / 14 420₽ profit / 5 low-stock). 7 products show wh-receipt-{id} (+) and wh-writeoff-{id} (-) action buttons; clicking + opens movement-modal with mv-qty-input/mv-price-input/mv-supplier-input/mv-submit-btn and submitting qty=3 price=199 supplier=TEST persisted (cards refreshed). Writeoff overflow returns Russian error 'Нельзя списать … на складе …' and stock stays unchanged. Finance tab shows Доходы/Расходы/Прибыль cards (2 275₽ / 4 847₽ / -2 572₽, '3 оплач. заказов'), fin-apply + fin-add-btn present, finance-modal opens with fin-type-expense/fin-type-income toggle + fin-submit-btn. Order → sale-movement integration verified via backend test (placing order on test product decremented stock by 1 and inserted 'sale' row tagged with order_id).",
+  "backend_issues": {"critical": [], "minor": []},
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [],
+    "design_issues": [
+      {"screen": "/admin/warehouse → Финансы", "issues": ["Date range uses native browser <input type='date'> for fin-start / fin-end instead of the shadcn Calendar/DatePicker used elsewhere in admin — inconsistent UX (per repo style guidelines)."]},
+      {"screen": "Movement modal (Приход / Списание)", "issues": ["No explicit cancel/close button with a stable data-testid (e.g. mv-cancel-btn). Closing relies on the Dialog's default X / outside-click, which complicates automated negative-path tests."]}
+    ]
+  },
+  "test_report_links": [
+    "/app/backend/tests/test_warehouse_finance.py",
+    "/app/test_reports/pytest/pytest_warehouse_finance.xml"
+  ],
+  "action_items": [
+    "Spec/impl naming drift in finance modal: spec called for data-testid fin-amount / fin-category / fin-comment but AdminWarehousePage.js uses fin-amount-input / fin-category-input / fin-comment-input. Either rename in component or update spec — functionally fine, only affects test selectors.",
+    "Optional: add data-testid mv-cancel-btn to the movement modal's cancel/close button for cleaner negative-path tests.",
+    "Optional: replace native HTML date inputs on the Финансы tab with the shadcn Calendar/DatePicker to stay consistent with the rest of admin."
+  ],
+  "critical_code_review_comments": [
+    "routes/warehouse.py uses (stock + delta) computed in-process instead of refetching after $inc — fine for the common path but susceptible to a race if two admins post movements concurrently (the stored stock_after may not match the actual product.stock if another mutation lands between the read and the insert). For an ecommerce warehouse this is unlikely to matter, but worth a transaction or post-update re-read for correctness.",
+    "Finance auto_income compares ISO strings ($gte/$lte) — works because all created_at values are written as datetime.now(timezone.utc).isoformat() with the same zone, but mixing naïve/aware strings (e.g. from imports) would silently drop rows. Consider storing real BSON datetimes and indexing them.",
+    "routes/orders.py logs the 'sale' movement only when result.modified_count>0 — so an out-of-stock product (stock<qty) silently leaves the order placed but does NOT decrement and does NOT log a sale. The order still completes successfully and the client gets a confirmation. Recommend either pre-validating stock before order creation or flagging un-fulfillable items on the order.",
+    "Movement insert uses stock_before+delta for stock_after rather than re-reading the product — see point 1; same race concern.",
+    "AdminWarehousePage.js renders Финансы/Движения/Остатки in a single 700+ line component — consider splitting into 3 sub-components per tab for maintainability (file is on the edge of the 700-line guideline)."
+  ],
+  "updated_files": ["/app/backend/tests/test_warehouse_finance.py"],
+  "success_rate": {"backend": "100% (12/12)", "frontend": "100% on critical flows; modal cancel-testid + finance-input naming are minor"},
+  "test_credentials": "Admin admin@avarus.ru/admin and Client 0x0errorr@gmail.com/admin123 from /app/memory/test_credentials.md",
+  "seed_data_creation": "Backend test creates a disposable TEST_WH_Product via POST /api/products and deletes it in teardown; client cart is cleared & re-seeded with 1 unit before the order test. UI test made one extra receipt (+3 @ 199₽ from TEST_supplier_ui) against an existing real product — small residue in stock_movements for that product, not destructive.",
+  "retest_needed": false,
+  "should_main_agent_self_test": true,
+  "context_for_next_testing_agent": "Phase 4 warehouse data-testids that EXIST in AdminWarehousePage.js: admin-warehouse-page, warehouse-tab-stock|movements|finance, wh-stat-units|profit, wh-search-input/btn, wh-row-{id}, wh-receipt-{id}, wh-writeoff-{id}, movement-modal, mv-qty-input, mv-price-input, mv-supplier-input, mv-reason-input, mv-submit-btn, mv-filter-all|receipt|writeoff|sale, movement-{id}, fin-start, fin-end, fin-apply, fin-add-btn, fin-income, fin-expense, fin-profit, fin-entry-{id}, fin-delete-{id}, finance-modal, fin-type-expense, fin-type-income, fin-amount-input (NOT fin-amount), fin-category-input (NOT fin-category), fin-comment-input (NOT fin-comment), fin-submit-btn. Nav link: admin-warehouse-link. Product create/update endpoint is POST/PUT /api/products (NOT /api/admin/products). Order POST /api/orders auto-logs a 'sale' movement only when stock>=qty; otherwise silent.",
+  "rca of the issue": "N/A — feature works end-to-end. Two testid-naming items + one UX (native date) are documented under action_items for the main agent's discretion. The order→stock decrement is conditional on stock availability — flagged in critical_code_review_comments as a behaviour that may surprise."
+}

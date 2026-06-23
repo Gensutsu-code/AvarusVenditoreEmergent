@@ -499,6 +499,7 @@ export default function AdminPage() {
       manufacturer: '',
       category_id: '',
       price: 0,
+      purchase_price: 0,
       stock: 0,
       delivery_days: 3,
       warehouse: '',
@@ -3777,6 +3778,14 @@ export default function AdminPage() {
                     onChange={(e) => setEditingProduct({ ...editingProduct, price: parseFloat(e.target.value) || 0 })}
                     className="mt-1.5 border-slate-200 focus:border-teal-500 focus:ring-teal-500"
                     data-testid="product-price-input"
+                  />
+                  <Label className="text-xs font-semibold uppercase text-amber-600 mt-2 block">Закупочная цена</Label>
+                  <Input
+                    type="number"
+                    value={editingProduct.purchase_price ?? 0}
+                    onChange={(e) => setEditingProduct({ ...editingProduct, purchase_price: parseFloat(e.target.value) || 0 })}
+                    className="mt-1.5 border-slate-200 focus:border-amber-500 focus:ring-amber-500"
+                    data-testid="product-purchase-price-input"
                   />
                 </div>
                 <div>

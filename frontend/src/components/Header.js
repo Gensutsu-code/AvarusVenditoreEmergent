@@ -1,5 +1,5 @@
 import { Link, useLocation, useNavigate } from 'react-router-dom';
-import { ShoppingCart, User, Search, LogOut, Settings, Heart, Package, ClipboardList, Gift, Newspaper, Menu, X, MessageCircle, Bell, Wallet, RefreshCw, CreditCard } from 'lucide-react';
+import { ShoppingCart, User, Search, LogOut, Settings, Heart, Package, ClipboardList, Gift, Newspaper, Menu, X, MessageCircle, Bell, Wallet, RefreshCw, CreditCard, Warehouse } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { useCart } from '../context/CartContext';
 import { Button } from './ui/button';
@@ -387,6 +387,12 @@ export const Header = () => {
                         Отсрочка
                       </span>
                     </NavLink>
+                    <NavLink to="/admin/warehouse" data-testid="admin-warehouse-link">
+                      <span className="flex items-center gap-2">
+                        <Warehouse className="w-4 h-4" />
+                        Склад
+                      </span>
+                    </NavLink>
                     <NavLink to="/admin/profile" data-testid="admin-profile-link">
                       <User className="w-4 h-4" />
                     </NavLink>
@@ -615,6 +621,10 @@ export const Header = () => {
                       <Link to="/admin/credit" onClick={() => setMobileMenuOpen(false)} className="flex items-center gap-3 p-3 rounded-xl text-slate-600 hover:bg-slate-50">
                         <CreditCard className="w-5 h-5" />
                         Отсрочка
+                      </Link>
+                      <Link to="/admin/warehouse" onClick={() => setMobileMenuOpen(false)} className="flex items-center gap-3 p-3 rounded-xl text-slate-600 hover:bg-slate-50">
+                        <Warehouse className="w-5 h-5" />
+                        Склад
                       </Link>
                     </>
                   ) : (

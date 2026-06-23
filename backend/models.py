@@ -92,6 +92,7 @@ class ProductCreate(BaseModel):
     is_original: Optional[bool] = False
     has_guarantee: Optional[bool] = False
     bonus_eligible: Optional[bool] = True
+    purchase_price: Optional[float] = 0
     # Discount/promo fields
     discount_active: Optional[bool] = False
     discount_type: Optional[str] = None  # "percent" | "amount"
@@ -120,6 +121,7 @@ class ProductUpdate(BaseModel):
     is_original: Optional[bool] = None
     has_guarantee: Optional[bool] = None
     bonus_eligible: Optional[bool] = None
+    purchase_price: Optional[float] = None
     discount_active: Optional[bool] = None
     discount_type: Optional[str] = None
     discount_value: Optional[float] = None
@@ -147,6 +149,7 @@ class ProductResponse(BaseModel):
     is_original: Optional[bool] = False
     has_guarantee: Optional[bool] = False
     bonus_eligible: Optional[bool] = True
+    purchase_price: Optional[float] = 0
     discount_active: Optional[bool] = False
     discount_type: Optional[str] = None
     discount_value: Optional[float] = 0

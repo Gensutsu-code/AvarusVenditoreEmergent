@@ -28,6 +28,7 @@ from .action_logs import router as action_logs_router
 from .admin_carts import router as admin_carts_router
 from .returns import router as returns_router
 from .credit import router as credit_router
+from .warehouse import router as warehouse_router
 
 # Create main API router
 api_router = APIRouter(prefix="/api")
@@ -59,5 +60,6 @@ api_router.include_router(action_logs_router)
 api_router.include_router(admin_carts_router)
 api_router.include_router(returns_router)
 api_router.include_router(credit_router)
+api_router.include_router(warehouse_router)
 
 __all__ = ["api_router"]

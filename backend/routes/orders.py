@@ -415,10 +415,33 @@ async def create_order(data: OrderCreate, user=Depends(get_current_user)):
     await send_telegram_order_notification(order, user)
     
     for cart_item in cart["items"]:
-        await db.products.update_one(
+        result = await db.products.update_one(
             {"id": cart_item["product_id"], "stock": {"$gte": cart_item["quantity"]}},
             {"$inc": {"stock": -cart_item["quantity"]}}
         )
+        if result.modified_count:
+            prod = await db.products.find_one({"id": cart_item["product_id"]}, {"_id": 0, "name": 1, "article": 1, "stock": 1, "purchase_price": 1})
+            if prod:
+                unit_cost = prod.get("purchase_price", 0) or 0
+                stock_after = prod.get("stock", 0) or 0
+                await db.stock_movements.insert_one({
+                    "id": str(uuid.uuid4()),
+                    "product_id": cart_item["product_id"],
+                    "product_name": prod.get("name", ""),
+                    "product_article": prod.get("article", ""),
+                    "type": "sale",
+                    "quantity": cart_item["quantity"],
+                    "unit_cost": unit_cost,
+                    "total_cost": round(cart_item["quantity"] * unit_cost, 2),
+                    "supplier": "",
+                    "reason": "",
+                    "comment": f"Заказ #{order_id[:8]}",
+                    "order_id": order_id,
+                    "stock_before": stock_after + cart_item["quantity"],
+                    "stock_after": stock_after,
+                    "created_at": datetime.now(timezone.utc).isoformat(),
+                    "created_by": user.get("name", user.get("email", "")),
+                })
     
     await db.carts.update_one({"user_id": user["id"]}, {"$set": {"items": []}})
     
