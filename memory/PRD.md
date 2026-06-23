@@ -139,10 +139,20 @@ E-commerce platform for truck spare parts with a comprehensive admin panel. Russ
 - Verified iteration_72: backend 10/10 pytest + frontend 100%. Test: `test_phase3_credit_deferral.py`.
 - Backlog notes (non-blocking): expose is_deferral/deferral_due_date/payment_status in OrderResponse so /orders shows deferral context without extra fetch; allow client to cancel pending request; warn admin when new limit < current debt.
 
+### UI fix — Header balance pills (2026-06-19) ✅
+- Fixed misaligned balance/credit pills in Header: rounded values (Math.round) + whitespace-nowrap + fixed h-9 so number and «₽» stay on one line; added mobile credit-balance row.
+
+### PHASE 4 — Warehouse & Accounting "Склад и учёт" (2026-06-19 — iter 73) ✅
+- Scope: single `purchase_price` per product; movements limited to Приход (receipt) + Списание (writeoff) [no inventory count]; orders auto-decrement stock + log a 'sale' movement; finance = auto income (paid orders) + auto expense (receipts) + manual income/expense entries + period profit.
+- Backend `routes/warehouse.py`: `GET /admin/warehouse/stock` (items + summary: units/cost/revenue/profit/low-stock), `POST /admin/warehouse/movement` (receipt updates purchase_price + supplier; writeoff with reason, blocks overflow), `GET /admin/warehouse/movements` (filter type/product), `GET /admin/finance` (period summary + manual entries), `POST/DELETE /admin/finance/entry`. `orders.py` logs 'sale' movement on stock decrement. `purchase_price` added to Product models.
+- Frontend `AdminWarehousePage.js` (`/admin/warehouse`) tabs Остатки|Движения|Финансы + movement & finance-entry modals; `product-purchase-price-input` in AdminPage product form; Header admin nav `admin-warehouse-link` ('Склад').
+- DB: `stock_movements` (types receipt/writeoff/sale), `finance_entries` (manual). 
+- Verified iteration_73: backend 12/12 pytest + frontend 100%. Test: `test_warehouse_finance.py`.
+- Backlog notes (non-blocking): finance modal testids use *-input suffix; add mv-cancel-btn; swap native date inputs for shadcn DatePicker.
+
 ## Prioritized Backlog
 
 ### P1 (Important)
-- Phase 4: Склад и учёт (остатки, закупки, приход/списание, инвентаризация, закуп/продажная цена, расходы/доходы)
 - Phase 5: Единая страница связи с админом (запросы скидок, инд. условий, отсрочки, чат)
 - Переключатель синхронизации наличия со складом (P2)
 - Real Payment Gateway Integration (replace MOCKED YuKassa)
