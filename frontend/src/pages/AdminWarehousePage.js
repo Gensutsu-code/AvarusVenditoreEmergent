@@ -159,7 +159,7 @@ export default function AdminWarehousePage() {
                 <div className="bg-white rounded-2xl p-4 shadow-sm mb-4 flex items-center justify-between gap-3 flex-wrap" data-testid="global-sync-card">
                   <div>
                     <p className="font-semibold text-slate-800 text-sm">Синхронизация наличия со складом</p>
-                    <p className="text-xs text-slate-500">{globalSync ? 'Наличие товаров определяется остатком; заказы уменьшают остаток' : 'Наличие задаётся вручную; остаток не влияет на заказы (можно переопределить на товаре)'}</p>
+                    <p className="text-xs text-slate-500">{globalSync ? 'Метка «В наличии / Нет в наличии» берётся из остатков склада (игнорируя ручную настройку «Наличие» в карточке товара)' : 'Метка наличия берётся из ручной настройки «Наличие» в карточке товара. Остатки списываются при заказах в любом случае.'}</p>
                   </div>
                   <button
                     type="button"

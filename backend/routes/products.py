@@ -42,17 +42,11 @@ async def _global_stock_sync() -> bool:
 
 
 def _apply_availability(product: dict, global_sync: bool) -> dict:
-    """Compute effective in_stock based on per-product mode or global setting."""
+    """Effective in_stock: global sync ON -> by warehouse stock (bypasses manual flag);
+    OFF -> by manual_available flag set on the product card."""
     if not product:
         return product
-    mode = product.get("stock_sync_mode") or "inherit"
-    if mode == "on":
-        synced = True
-    elif mode == "off":
-        synced = False
-    else:
-        synced = global_sync
-    if synced:
+    if global_sync:
         product["in_stock"] = (product.get("stock", 0) or 0) > 0
     else:
         product["in_stock"] = bool(product.get("manual_available", True))

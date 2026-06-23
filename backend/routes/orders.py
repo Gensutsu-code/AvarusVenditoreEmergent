@@ -414,19 +414,13 @@ async def create_order(data: OrderCreate, user=Depends(get_current_user)):
     # Send Telegram notification about new order
     await send_telegram_order_notification(order, user)
     
-    gsync_setting = await db.settings.find_one({"key": "stock_sync_settings"})
-    global_sync = (gsync_setting.get("value", {}) if gsync_setting else {}).get("stock_sync_enabled", True)
     for cart_item in cart["items"]:
         prod = await db.products.find_one(
             {"id": cart_item["product_id"]},
-            {"_id": 0, "name": 1, "article": 1, "stock": 1, "purchase_price": 1, "stock_sync_mode": 1, "manual_available": 1}
+            {"_id": 0, "name": 1, "article": 1, "stock": 1, "purchase_price": 1}
         )
         if not prod:
             continue
-        mode = prod.get("stock_sync_mode") or "inherit"
-        synced = True if mode == "on" else (False if mode == "off" else global_sync)
-        if not synced:
-            continue  # availability is managed manually; do not touch stock
         result = await db.products.update_one(
             {"id": cart_item["product_id"], "stock": {"$gte": cart_item["quantity"]}},
             {"$inc": {"stock": -cart_item["quantity"]}}

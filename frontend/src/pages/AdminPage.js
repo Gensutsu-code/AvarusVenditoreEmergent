@@ -500,7 +500,6 @@ export default function AdminPage() {
       category_id: '',
       price: 0,
       purchase_price: 0,
-      stock_sync_mode: 'inherit',
       manual_available: true,
       stock: 0,
       delivery_days: 3,
@@ -3795,22 +3794,23 @@ export default function AdminPage() {
                   <div className="mt-1.5 flex items-center gap-3">
                     <button
                       type="button"
-                      onClick={() => setEditingProduct({ ...editingProduct, stock: editingProduct.stock > 0 ? 0 : 1 })}
+                      onClick={() => setEditingProduct({ ...editingProduct, manual_available: !(editingProduct.manual_available ?? true) })}
                       className={`relative inline-flex h-8 w-16 items-center rounded-full transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-teal-500 focus:ring-offset-2 ${
-                        editingProduct.stock > 0 ? 'bg-emerald-500' : 'bg-slate-300'
+                        (editingProduct.manual_available ?? true) ? 'bg-emerald-500' : 'bg-slate-300'
                       }`}
                       data-testid="product-stock-toggle"
                     >
                       <span
                         className={`inline-block h-6 w-6 transform rounded-full bg-white shadow-md transition-transform duration-200 ${
-                          editingProduct.stock > 0 ? 'translate-x-9' : 'translate-x-1'
+                          (editingProduct.manual_available ?? true) ? 'translate-x-9' : 'translate-x-1'
                         }`}
                       />
                     </button>
-                    <span className={`text-sm font-medium ${editingProduct.stock > 0 ? 'text-emerald-600' : 'text-slate-500'}`}>
-                      {editingProduct.stock > 0 ? 'В наличии' : 'Нет в наличии'}
+                    <span className={`text-sm font-medium ${(editingProduct.manual_available ?? true) ? 'text-emerald-600' : 'text-slate-500'}`}>
+                      {(editingProduct.manual_available ?? true) ? 'В наличии' : 'Нет в наличии'}
                     </span>
                   </div>
+                  <p className="text-[11px] text-slate-400 mt-1">Работает, когда глобальная синхронизация со складом выключена</p>
                 </div>
                 <div>
                   <Label className="text-xs font-semibold uppercase text-teal-600">Доставка (дней)</Label>
@@ -3844,49 +3844,6 @@ export default function AdminPage() {
                   <option value="Москва">Москва</option>
                   <option value="Новосибирск">Новосибирск</option>
                 </select>
-              </div>
-
-              {/* Stock sync mode */}
-              <div className="p-4 bg-amber-50/60 rounded-xl border border-amber-100">
-                <Label className="text-xs font-semibold uppercase text-amber-700">Синхронизация наличия со складом</Label>
-                <div className="mt-2 flex gap-2 flex-wrap">
-                  {[
-                    { id: 'inherit', label: 'Как в магазине' },
-                    { id: 'on', label: 'Синхронизировать' },
-                    { id: 'off', label: 'Вручную' },
-                  ].map(opt => {
-                    const active = (editingProduct.stock_sync_mode || 'inherit') === opt.id;
-                    return (
-                      <button
-                        key={opt.id}
-                        type="button"
-                        onClick={() => setEditingProduct({ ...editingProduct, stock_sync_mode: opt.id })}
-                        className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-all ${active ? 'bg-amber-500 text-white' : 'bg-white text-slate-600 border border-slate-200 hover:bg-slate-50'}`}
-                        data-testid={`product-sync-mode-${opt.id}`}
-                      >
-                        {opt.label}
-                      </button>
-                    );
-                  })}
-                </div>
-                <p className="text-[11px] text-slate-500 mt-2">
-                  «Синхронизировать» — наличие по остатку (заказ уменьшает остаток). «Вручную» — наличие задаётся ниже, остаток не учитывается. «Как в магазине» — по глобальной настройке.
-                </p>
-                {(editingProduct.stock_sync_mode === 'off') && (
-                  <div className="mt-3 flex items-center gap-3">
-                    <button
-                      type="button"
-                      onClick={() => setEditingProduct({ ...editingProduct, manual_available: !(editingProduct.manual_available ?? true) })}
-                      className={`relative inline-flex h-8 w-16 items-center rounded-full transition-colors duration-200 ${(editingProduct.manual_available ?? true) ? 'bg-emerald-500' : 'bg-slate-300'}`}
-                      data-testid="product-manual-available-toggle"
-                    >
-                      <span className={`inline-block h-6 w-6 transform rounded-full bg-white shadow-md transition-transform duration-200 ${(editingProduct.manual_available ?? true) ? 'translate-x-9' : 'translate-x-1'}`} />
-                    </button>
-                    <span className={`text-sm font-medium ${(editingProduct.manual_available ?? true) ? 'text-emerald-600' : 'text-slate-500'}`}>
-                      {(editingProduct.manual_available ?? true) ? 'В наличии (под заказ)' : 'Нет в наличии'}
-                    </span>
-                  </div>
-                )}
               </div>
 
               {/* Badges */}
