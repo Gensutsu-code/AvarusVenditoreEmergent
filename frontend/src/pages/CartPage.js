@@ -33,6 +33,7 @@ const PAYMENT_METHODS = [
   { id: 'card', label: 'Банковская карта', desc: 'Перевод по реквизитам, чек + подтверждение', icon: CreditCard },
   { id: 'crypto', label: 'Криптовалюта', desc: 'USDT/USDC через MetaMask', icon: Wallet },
 ];
+const METHOD_NAME = { balance: 'Баланс', card: 'Карта', cash: 'Наличные' };
 
 export default function CartPage() {
   const { cart, updateQuantity, removeFromCart, clearCart, fetchCart, loading: cartLoading } = useCart();
@@ -60,9 +61,8 @@ export default function CartPage() {
   const [payWithDeferral, setPayWithDeferral] = useState(false);
   const [payLater, setPayLater] = useState(false);
   const [mixedMode, setMixedMode] = useState(false);
-  const [mix1Method, setMix1Method] = useState('balance');
+  const [mixedMethods, setMixedMethods] = useState([]); // up to 2 of: balance, card, cash
   const [mix1Amount, setMix1Amount] = useState('');
-  const [mix2Method, setMix2Method] = useState('card');
   const [form, setForm] = useState({ full_name: '', address: '', phone: '', comment: '' });
   const [agreedToTerms, setAgreedToTerms] = useState(true);
   const [showTermsModal, setShowTermsModal] = useState(false);
@@ -106,12 +106,24 @@ export default function CartPage() {
 
   const a1 = Math.max(0, Math.min(Number(mix1Amount) || 0, cartTotal));
   const a2 = Math.round((cartTotal - a1) * 100) / 100;
-  const mixCharged1 = Math.round(a1 * (1 + getAdj(mix1Method) / 100));
-  const mixCharged2 = Math.round(a2 * (1 + getAdj(mix2Method) / 100));
+  const mixM1 = mixedMethods[0];
+  const mixM2 = mixedMethods[1];
+  const mixReady = mixedMode && mixedMethods.length === 2;
+  const mixCharged1 = mixReady ? Math.round(a1 * (1 + getAdj(mixM1) / 100)) : 0;
+  const mixCharged2 = mixReady ? Math.round(a2 * (1 + getAdj(mixM2) / 100)) : 0;
 
-  const goodsTotal = mixedMode
+  const goodsTotal = mixReady
     ? (mixCharged1 + mixCharged2)
-    : (singleAdj !== 0 ? Math.round(cartTotal * (1 + singleAdj / 100)) : cartTotal);
+    : (mixedMode ? cartTotal : (singleAdj !== 0 ? Math.round(cartTotal * (1 + singleAdj / 100)) : cartTotal));
+
+  const toggleMixedMethod = (m) => {
+    if (!['balance', 'card', 'cash'].includes(m)) { toast.error('В смешанной оплате доступны: баланс, карта, наличные'); return; }
+    setMixedMethods((prev) => {
+      if (prev.includes(m)) return prev.filter((x) => x !== m);
+      if (prev.length >= 2) { toast.error('Можно выбрать только 2 способа'); return prev; }
+      return [...prev, m];
+    });
+  };
 
   const isFreeDelivery = !delivery.delivery_enabled || goodsTotal >= delivery.min_free_delivery;
   const deliveryFee = isFreeDelivery ? 0 : delivery.delivery_price;
@@ -164,15 +176,15 @@ export default function CartPage() {
     try {
       // MIXED payment: base amounts, backend applies per-part adjustment
       if (mixedMode) {
-        if (mix1Method === mix2Method) { toast.error('Выберите два разных способа'); setLoading(false); return; }
+        if (mixedMethods.length !== 2) { toast.error('Выберите два способа оплаты'); setLoading(false); return; }
         if (!a1 || a1 <= 0 || a1 >= cartTotal) { toast.error(`Сумма первого способа: от 1 до ${formatPrice(cartTotal - 1)} ₽`); setLoading(false); return; }
         const res = await axios.post(`${API}/orders`, {
           ...form,
-          payment_parts: [{ method: mix1Method, amount: a1 }, { method: mix2Method, amount: a2 }],
+          payment_parts: [{ method: mixM1, amount: a1 }, { method: mixM2, amount: a2 }],
         });
         setOrderId(res.data.id);
         await fetchCart();
-        if (mix1Method === 'card' || mix2Method === 'card') {
+        if (mixM1 === 'card' || mixM2 === 'card') {
           toast.success('Заказ создан! Завершите оплату картой в «Мои заказы»');
         } else {
           toast.success('Заказ оформлен!');
@@ -383,37 +395,51 @@ export default function CartPage() {
             {/* Payment method */}
             <div className="glass-card p-6">
               <Label className="text-sm font-bold uppercase tracking-widest text-teal-600 mb-4 block flex items-center gap-2"><CreditCard className="w-4 h-4" />Способ оплаты</Label>
-              <div className={`space-y-3 ${mixedMode ? 'opacity-40 pointer-events-none' : ''}`}>
+              {mixedMode && (
+                <p className="text-xs text-amber-600 mb-3 bg-amber-50 rounded-lg px-3 py-2" data-testid="mixed-hint">Смешанная оплата включена. Выберите <b>2 способа</b> (баланс, карта или наличные). Суммы укажите в блоке «Итого». Выбрано: {mixedMethods.length}/2</p>
+              )}
+              <div className="space-y-3">
                 {prepaymentSettings.prepayment_enabled && userBalance > 0 && (
-                  <button type="button" onClick={() => { if (canPayWithBalance) { setPayWithBalance(true); setPayWithDeferral(false); setPayLater(false); } else toast.error(`Недостаточно средств. Баланс: ${formatPrice(userBalance)}₽`); }}
-                    className={`w-full flex items-center gap-4 p-4 rounded-xl border-2 text-left transition-all ${payWithBalance ? 'bg-violet-50 border-violet-400' : canPayWithBalance ? 'bg-white border-slate-200 hover:border-slate-300' : 'bg-slate-100 border-slate-200 opacity-60'}`} data-testid="payment-method-balance">
-                    <div className={`w-11 h-11 rounded-xl flex items-center justify-center ${payWithBalance ? 'bg-violet-100' : 'bg-slate-100'}`}><Sparkles className={`w-5 h-5 ${payWithBalance ? 'text-violet-500' : 'text-slate-400'}`} /></div>
+                  <button type="button" onClick={() => {
+                      if (mixedMode) { toggleMixedMethod('balance'); return; }
+                      if (canPayWithBalance) { setPayWithBalance(true); setPayWithDeferral(false); setPayLater(false); } else toast.error(`Недостаточно средств. Баланс: ${formatPrice(userBalance)}₽`);
+                    }}
+                    className={`w-full flex items-center gap-4 p-4 rounded-xl border-2 text-left transition-all ${(mixedMode ? mixedMethods.includes('balance') : payWithBalance) ? 'bg-violet-50 border-violet-400' : 'bg-white border-slate-200 hover:border-slate-300'}`} data-testid="payment-method-balance">
+                    <div className={`w-11 h-11 rounded-xl flex items-center justify-center ${(mixedMode ? mixedMethods.includes('balance') : payWithBalance) ? 'bg-violet-100' : 'bg-slate-100'}`}><Sparkles className={`w-5 h-5 ${(mixedMode ? mixedMethods.includes('balance') : payWithBalance) ? 'text-violet-500' : 'text-slate-400'}`} /></div>
                     <div className="flex-1">
-                      <p className={`font-semibold ${payWithBalance ? 'text-violet-700' : 'text-slate-700'}`}>Оплата с баланса</p>
-                      <p className="text-xs text-slate-500">Баланс: <span className={canPayWithBalance ? 'text-emerald-600 font-semibold' : 'text-rose-500'}>{formatPrice(userBalance)}₽</span>{!canPayWithBalance && <span className="text-rose-500"> (недостаточно)</span>}</p>
+                      <p className={`font-semibold ${(mixedMode ? mixedMethods.includes('balance') : payWithBalance) ? 'text-violet-700' : 'text-slate-700'}`}>Оплата с баланса</p>
+                      <p className="text-xs text-slate-500">Баланс: <span className="text-emerald-600 font-semibold">{formatPrice(userBalance)}₽</span></p>
                     </div>
+                    {mixedMode && mixedMethods.includes('balance') && <span className="text-xs font-bold text-violet-600">№{mixedMethods.indexOf('balance') + 1}</span>}
                   </button>
                 )}
                 {PAYMENT_METHODS.map(method => {
                   const adjustment = getAdj(method.id);
                   const enabled = isMethodEnabled(method.id);
-                  const selected = !payWithBalance && !payWithDeferral && paymentMethod === method.id;
+                  const mixable = ['balance', 'card', 'cash'].includes(method.id);
+                  const selected = mixedMode ? mixedMethods.includes(method.id) : (!payWithBalance && !payWithDeferral && paymentMethod === method.id);
                   const Icon = method.icon;
+                  const disabled = !enabled || (mixedMode && !mixable);
                   return (
-                    <button key={method.id} type="button" disabled={!enabled} onClick={() => { if (enabled) { setPayWithBalance(false); setPayWithDeferral(false); setPaymentMethod(method.id); setPayLater(false); } }}
-                      className={`w-full flex items-center gap-4 p-4 rounded-xl border-2 text-left transition-all ${!enabled ? 'bg-slate-100 border-slate-200 cursor-not-allowed' : selected ? 'bg-teal-50 border-teal-400' : 'bg-white border-slate-200 hover:border-slate-300'}`} data-testid={`payment-method-${method.id}`}>
-                      <div className={`w-11 h-11 rounded-xl flex items-center justify-center ${!enabled ? 'bg-slate-200' : selected ? 'bg-teal-100' : 'bg-slate-100'}`}><Icon className={`w-5 h-5 ${!enabled ? 'text-slate-400' : selected ? 'text-teal-600' : 'text-slate-500'}`} /></div>
+                    <button key={method.id} type="button" disabled={disabled} onClick={() => {
+                        if (mixedMode) { toggleMixedMethod(method.id); return; }
+                        if (enabled) { setPayWithBalance(false); setPayWithDeferral(false); setPaymentMethod(method.id); setPayLater(false); }
+                      }}
+                      className={`w-full flex items-center gap-4 p-4 rounded-xl border-2 text-left transition-all ${disabled ? 'bg-slate-100 border-slate-200 cursor-not-allowed opacity-70' : selected ? 'bg-teal-50 border-teal-400' : 'bg-white border-slate-200 hover:border-slate-300'}`} data-testid={`payment-method-${method.id}`}>
+                      <div className={`w-11 h-11 rounded-xl flex items-center justify-center ${disabled ? 'bg-slate-200' : selected ? 'bg-teal-100' : 'bg-slate-100'}`}><Icon className={`w-5 h-5 ${disabled ? 'text-slate-400' : selected ? 'text-teal-600' : 'text-slate-500'}`} /></div>
                       <div className="flex-1">
-                        <p className={`font-semibold ${!enabled ? 'text-slate-400' : selected ? 'text-teal-700' : 'text-slate-700'}`}>{method.label}</p>
-                        <p className={`text-xs ${!enabled ? 'text-rose-400 font-medium' : 'text-slate-500'}`}>{!enabled ? 'Временно недоступно' : method.desc}</p>
+                        <p className={`font-semibold ${disabled ? 'text-slate-400' : selected ? 'text-teal-700' : 'text-slate-700'}`}>{method.label}</p>
+                        <p className={`text-xs ${!enabled ? 'text-rose-400 font-medium' : 'text-slate-500'}`}>{!enabled ? 'Временно недоступно' : (mixedMode && !mixable) ? 'Недоступно в смешанной оплате' : method.desc}</p>
                       </div>
-                      {enabled && adjustment !== 0 && (
+                      {mixedMode && selected ? (
+                        <span className="text-xs font-bold text-teal-600">№{mixedMethods.indexOf(method.id) + 1}</span>
+                      ) : (!mixedMode && enabled && adjustment !== 0 && (
                         <span className={`text-xs font-bold px-3 py-1.5 rounded-full ${adjustment < 0 ? 'bg-emerald-100 text-emerald-600' : 'bg-rose-100 text-rose-600'}`}>{adjustment < 0 ? `-${Math.abs(adjustment)}%` : `+${adjustment}%`}</span>
-                      )}
+                      ))}
                     </button>
                   );
                 })}
-                {creditApproved && (
+                {creditApproved && !mixedMode && (
                   <button type="button" onClick={() => { if (canPayWithDeferral) { setPayWithDeferral(true); setPayWithBalance(false); setPayLater(false); } else toast.error(`Недостаточно лимита. Доступно: ${formatPrice(creditAvailable)}₽`); }}
                     className={`w-full flex items-center gap-4 p-4 rounded-xl border-2 text-left transition-all ${payWithDeferral ? 'bg-indigo-50 border-indigo-400' : canPayWithDeferral ? 'bg-white border-slate-200 hover:border-slate-300' : 'bg-slate-100 border-slate-200 opacity-60'}`} data-testid="payment-method-deferral">
                     <div className={`w-11 h-11 rounded-xl flex items-center justify-center ${payWithDeferral ? 'bg-indigo-100' : 'bg-slate-100'}`}><Clock className={`w-5 h-5 ${payWithDeferral ? 'text-indigo-500' : 'text-slate-400'}`} /></div>
@@ -433,32 +459,13 @@ export default function CartPage() {
                 </button>
               )}
 
-              {/* Mixed payment */}
+              {/* Mixed payment toggle */}
               <div className="mt-4 border-t border-slate-100 pt-4" data-testid="mixed-payment-section">
-                <button type="button" onClick={() => { const v = !mixedMode; setMixedMode(v); if (v) { setPayWithBalance(false); setPayWithDeferral(false); setPayLater(false); } }}
+                <button type="button" onClick={() => { const v = !mixedMode; setMixedMode(v); setMixedMethods([]); setMix1Amount(''); if (v) { setPayWithBalance(false); setPayWithDeferral(false); setPayLater(false); } }}
                   className={`w-full flex items-center justify-between p-3 rounded-xl border-2 transition-all ${mixedMode ? 'bg-amber-50 border-amber-400' : 'bg-white border-slate-200 hover:border-slate-300'}`} data-testid="mixed-payment-toggle">
                   <span className="flex items-center gap-2 text-sm font-semibold text-slate-700"><Wallet className="w-4 h-4 text-amber-500" />Смешанная оплата (2 способа)</span>
                   <span className={`w-10 h-5 rounded-full relative transition-colors ${mixedMode ? 'bg-amber-500' : 'bg-slate-300'}`}><span className={`absolute top-0.5 w-4 h-4 rounded-full bg-white transition-transform ${mixedMode ? 'translate-x-5' : 'translate-x-0.5'}`} /></span>
                 </button>
-                {mixedMode && (
-                  <div className="mt-3 space-y-3 bg-amber-50/50 rounded-xl p-3">
-                    <p className="text-xs text-slate-500">Распределите сумму товаров (<b>{formatPrice(cartTotal)} ₽</b>) между двумя способами. Наценка/скидка применяется к каждой части.</p>
-                    <div className="flex flex-col sm:flex-row gap-2 items-start sm:items-center">
-                      <select value={mix1Method} onChange={(e) => setMix1Method(e.target.value)} className="border border-slate-200 rounded-lg px-3 py-2 text-sm bg-white" data-testid="mix-method-1">
-                        <option value="balance">Баланс</option><option value="card">Карта</option><option value="cash">Наличные</option>
-                      </select>
-                      <Input type="number" min="1" value={mix1Amount} onChange={(e) => setMix1Amount(e.target.value)} placeholder="Сумма товаров, ₽" className="rounded-lg sm:w-40" data-testid="mix-amount-1" />
-                      <span className="text-xs text-slate-500">→ к оплате <b>{formatPrice(mixCharged1)} ₽</b>{getAdj(mix1Method) !== 0 && <span className={getAdj(mix1Method) < 0 ? 'text-emerald-600' : 'text-rose-600'}> ({getAdj(mix1Method) > 0 ? '+' : ''}{getAdj(mix1Method)}%)</span>}</span>
-                    </div>
-                    <div className="flex flex-col sm:flex-row gap-2 items-start sm:items-center">
-                      <select value={mix2Method} onChange={(e) => setMix2Method(e.target.value)} className="border border-slate-200 rounded-lg px-3 py-2 text-sm bg-white" data-testid="mix-method-2">
-                        <option value="card">Карта</option><option value="balance">Баланс</option><option value="cash">Наличные</option>
-                      </select>
-                      <div className="text-sm text-slate-600 px-1 py-2" data-testid="mix-amount-2">Остаток товаров: <b>{formatPrice(a2)} ₽</b> → к оплате <b>{formatPrice(mixCharged2)} ₽</b>{getAdj(mix2Method) !== 0 && <span className={getAdj(mix2Method) < 0 ? 'text-emerald-600' : 'text-rose-600'}> ({getAdj(mix2Method) > 0 ? '+' : ''}{getAdj(mix2Method)}%)</span>}</div>
-                    </div>
-                    <p className="text-[11px] text-slate-400">Отсрочка недоступна в смешанной оплате. Если выбрана карта — после оформления загрузите чек в «Мои заказы».</p>
-                  </div>
-                )}
               </div>
             </div>
           </div>
@@ -472,6 +479,27 @@ export default function CartPage() {
                   <span className="text-slate-500">Товары ({cart.items.length})</span>
                   <span className="text-slate-800">{formatPrice(cartTotal)} ₽</span>
                 </div>
+                {mixedMode && (
+                  <div className="rounded-xl bg-amber-50/70 border border-amber-200 p-3 space-y-2" data-testid="mixed-amounts-block">
+                    {mixedMethods.length < 2 ? (
+                      <p className="text-xs text-amber-700 font-medium">Выберите 2 способа оплаты слева ({mixedMethods.length}/2)</p>
+                    ) : (
+                      <>
+                        <p className="text-[11px] text-slate-500">Распределите сумму товаров (<b>{formatPrice(cartTotal)} ₽</b>). Наценка/скидка — на каждую часть.</p>
+                        <div className="flex items-center justify-between gap-2">
+                          <span className="text-xs font-semibold text-slate-700">{METHOD_NAME[mixM1]}{getAdj(mixM1) !== 0 && <span className={getAdj(mixM1) < 0 ? 'text-emerald-600' : 'text-rose-600'}> ({getAdj(mixM1) > 0 ? '+' : ''}{getAdj(mixM1)}%)</span>}</span>
+                          <span className="flex items-center gap-1"><Input type="number" min="1" value={mix1Amount} onChange={(e) => setMix1Amount(e.target.value)} placeholder="0" className="w-24 h-9 rounded-lg text-right" data-testid="mix-amount-1" /><span className="text-xs text-slate-400">₽</span></span>
+                        </div>
+                        <p className="text-[11px] text-slate-500 text-right">к оплате: <b>{formatPrice(mixCharged1)} ₽</b></p>
+                        <div className="flex items-center justify-between gap-2">
+                          <span className="text-xs font-semibold text-slate-700">{METHOD_NAME[mixM2]}{getAdj(mixM2) !== 0 && <span className={getAdj(mixM2) < 0 ? 'text-emerald-600' : 'text-rose-600'}> ({getAdj(mixM2) > 0 ? '+' : ''}{getAdj(mixM2)}%)</span>} <span className="text-slate-400 font-normal">(остаток)</span></span>
+                          <span className="flex items-center gap-1"><Input type="number" value={a2} readOnly disabled className="w-24 h-9 rounded-lg text-right bg-slate-100" data-testid="mix-amount-2" /><span className="text-xs text-slate-400">₽</span></span>
+                        </div>
+                        <p className="text-[11px] text-slate-500 text-right">к оплате: <b>{formatPrice(mixCharged2)} ₽</b></p>
+                      </>
+                    )}
+                  </div>
+                )}
                 {!mixedMode && singleAdj !== 0 && (
                   <div className={`flex justify-between text-sm font-medium ${singleAdj < 0 ? 'text-emerald-600' : 'text-rose-600'}`} data-testid="checkout-cart-discount-line">
                     <span>{singleAdj < 0 ? 'Скидка' : 'Наценка'} за оплату ({Math.abs(singleAdj)}%):</span>
@@ -512,7 +540,7 @@ export default function CartPage() {
                 </label>
               </div>
 
-              <Button type="submit" disabled={loading || !agreedToTerms} className={`w-full font-bold uppercase tracking-wide h-14 rounded-xl text-base ${agreedToTerms ? 'bg-gradient-to-r from-teal-500 to-emerald-500 hover:from-teal-600 hover:to-emerald-600 text-white shadow-lg shadow-teal-500/20' : 'bg-slate-200 text-slate-400 cursor-not-allowed'}`} data-testid="place-order-btn">
+              <Button type="submit" disabled={loading || !agreedToTerms || (mixedMode && mixedMethods.length !== 2)} className={`w-full font-bold uppercase tracking-wide h-14 rounded-xl text-base ${(agreedToTerms && !(mixedMode && mixedMethods.length !== 2)) ? 'bg-gradient-to-r from-teal-500 to-emerald-500 hover:from-teal-600 hover:to-emerald-600 text-white shadow-lg shadow-teal-500/20' : 'bg-slate-200 text-slate-400 cursor-not-allowed'}`} data-testid="place-order-btn">
                 {loading && <Loader2 className="w-5 h-5 animate-spin mr-2 inline" />}
                 {loading ? 'Оформление...' : mixedMode ? 'Оформить заказ' : payWithDeferral ? 'Оформить в отсрочку' : payWithBalance ? 'Оплатить с баланса' : (paymentMethod === 'crypto' && !payLater) ? 'Перейти к оплате' : 'Оформить заказ'}
               </Button>

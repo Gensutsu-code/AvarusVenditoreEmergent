@@ -50,6 +50,7 @@ export default function OrdersPage() {
   const [showCryptoModal, setShowCryptoModal] = useState(false);
   const [cryptoPaymentOrderId, setCryptoPaymentOrderId] = useState(null);
   const [cryptoPaymentAmount, setCryptoPaymentAmount] = useState(0);
+  const [nowTs, setNowTs] = useState(Date.now());
   const [surchargeModal, setSurchargeModal] = useState(null); // { orderId, amount, userBalance }
   const [returnOrder, setReturnOrder] = useState(null);
   const [returnSettings, setReturnSettings] = useState(null);
@@ -176,14 +177,36 @@ export default function OrdersPage() {
     setShowCryptoModal(false);
     setCryptoPaymentOrderId(null);
     setCryptoPaymentAmount(0);
-    toast.success('Доплата произведена успешно');
+    toast.success('Оплата прошла успешно');
     window.__lastToastTime = Date.now();
     fetchData();
   };
 
   const handleCryptoPaymentClose = () => {
     setShowCryptoModal(false);
-    toast.info('Оплата не завершена. Изменения ожидают подтверждения.');
+    toast.info('Оплата не завершена.');
+  };
+
+  // Live ticker for payment-due countdowns
+  useEffect(() => {
+    const t = setInterval(() => setNowTs(Date.now()), 1000);
+    return () => clearInterval(t);
+  }, []);
+
+  const formatCountdown = (dueIso) => {
+    const diff = new Date(dueIso).getTime() - nowTs;
+    if (diff <= 0) return null;
+    const h = Math.floor(diff / 3600000);
+    const m = Math.floor((diff % 3600000) / 60000);
+    const s = Math.floor((diff % 60000) / 1000);
+    return `${h}ч ${String(m).padStart(2, '0')}м ${String(s).padStart(2, '0')}с`;
+  };
+
+  const handlePayNowCrypto = (order, e) => {
+    if (e) e.stopPropagation();
+    setCryptoPaymentOrderId(order.id);
+    setCryptoPaymentAmount(order.total);
+    setShowCryptoModal(true);
   };
 
   const handleCancelOrder = async (orderId) => {
@@ -619,6 +642,36 @@ export default function OrdersPage() {
                                 )}
                               </div>
                             </div>
+
+                            {/* Payment due countdown (deferred card/crypto) */}
+                            {order.payment_due_date && order.payment_status !== 'paid' && !['cancelled', 'completed', 'delivered'].includes(order.status) && !order.card_receipt_url && (() => {
+                              const cd = formatCountdown(order.payment_due_date);
+                              const isCrypto = order.payment_method === 'crypto';
+                              return (
+                                <div className={`mt-3 rounded-xl border p-4 ${cd ? 'bg-amber-50 border-amber-200' : 'bg-rose-50 border-rose-200'}`} data-testid={`payment-due-block-${order.id}`}>
+                                  <div className="flex items-center justify-between gap-3 flex-wrap">
+                                    <div className="flex items-start gap-3">
+                                      <div className={`w-9 h-9 rounded-lg flex items-center justify-center flex-shrink-0 ${cd ? 'bg-amber-100' : 'bg-rose-100'}`}>
+                                        <Clock className={`w-4 h-4 ${cd ? 'text-amber-600' : 'text-rose-600'}`} />
+                                      </div>
+                                      <div>
+                                        <p className={`font-semibold ${cd ? 'text-amber-800' : 'text-rose-800'}`}>{cd ? 'Ожидает оплаты' : 'Срок оплаты истёк'}</p>
+                                        {cd ? (
+                                          <p className="text-sm text-amber-700 mt-0.5">Оплатите в течение <span className="font-bold tabular-nums" data-testid={`payment-countdown-${order.id}`}>{cd}</span>, иначе заказ будет автоматически отменён.</p>
+                                        ) : (
+                                          <p className="text-sm text-rose-700 mt-0.5">Заказ будет отменён автоматически. {isCrypto ? 'Вы ещё можете оплатить.' : 'Загрузите чек ниже.'}</p>
+                                        )}
+                                      </div>
+                                    </div>
+                                    {isCrypto && (
+                                      <Button onClick={(e) => handlePayNowCrypto(order, e)} className="bg-gradient-to-r from-teal-500 to-emerald-500 hover:from-teal-600 hover:to-emerald-600 text-white rounded-xl" data-testid={`pay-now-btn-${order.id}`}>
+                                        <Wallet className="w-4 h-4 mr-2" />Оплатить сейчас
+                                      </Button>
+                                    )}
+                                  </div>
+                                </div>
+                              );
+                            })()}
 
                             <CardPaymentBlock order={order} onUpdate={fetchData} />
 

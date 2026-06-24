@@ -12,3 +12,8 @@
 7. **Mixed payment** simplified: toggle + pick 2 methods + allocate base-goods amounts; each method's %adjustment applies to its own part; delivery fee allocated to a non-balance part; parts sum to total. Backend `create_order` reworked.
 
 Tested: iteration_77 — backend 7/7 pass, frontend all testids verified, no critical issues.
+
+## 2026-06-24 — Follow-up: payment countdown + mixed payment redesign
+- **Orders page (/orders)**: added live countdown to payment deadline for deferred card/crypto orders (`payment-due-block`, `payment-countdown`). Card shows receipt-upload below; crypto shows "Оплатить сейчас" button (`pay-now-btn`) opening the crypto payment modal for the full order total. Banner switches to "Срок оплаты истёк" when expired. File: `OrdersPage.js`.
+- **Mixed payment redesign (/cart)**: replaced the dropdown UI. Now an on/off toggle; when ON the visible payment-method cards become multi-select (pick exactly 2 of balance/card/cash; crypto/deferral disabled, shown with №1/№2 badges). Amount input fields appear in the "Итого" (place-order) block — first method editable, second is the auto remainder; per-part %adjustment shown and applied. Verified via screenshot. File: `CartPage.js`.
+
