@@ -142,6 +142,7 @@ function AppContent() {
           <Route path="/admin/returns" element={<AdminReturnsPage />} />
           <Route path="/admin/products" element={<AdminProductsPage />} />
           <Route path="/admin/credit" element={<AdminCreditPage />} />
+          <Route path="/admin/warehouse" element={<Navigate to="/admin" replace />} />
           <Route path="/credit" element={<CreditPage />} />
           <Route path="/contact" element={<ContactPage />} />
           <Route path="/returns" element={<ClientReturnsPage />} />
