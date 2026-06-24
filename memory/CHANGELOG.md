@@ -17,3 +17,9 @@ Tested: iteration_77 — backend 7/7 pass, frontend all testids verified, no cri
 - **Orders page (/orders)**: added live countdown to payment deadline for deferred card/crypto orders (`payment-due-block`, `payment-countdown`). Card shows receipt-upload below; crypto shows "Оплатить сейчас" button (`pay-now-btn`) opening the crypto payment modal for the full order total. Banner switches to "Срок оплаты истёк" when expired. File: `OrdersPage.js`.
 - **Mixed payment redesign (/cart)**: replaced the dropdown UI. Now an on/off toggle; when ON the visible payment-method cards become multi-select (pick exactly 2 of balance/card/cash; crypto/deferral disabled, shown with №1/№2 badges). Amount input fields appear in the "Итого" (place-order) block — first method editable, second is the auto remainder; per-part %adjustment shown and applied. Verified via screenshot. File: `CartPage.js`.
 
+## 2026-06-24 — Mixed payment UI polish + bugfix
+- Fixed runtime error "Maximum update depth exceeded" caused by a Radix `Switch` used as a controlled toggle on /cart. Replaced both mixed/pay-later toggles with smooth custom CSS switches.
+- Redesigned the mixed-payment amount fields: clean white sub-cards per method, editable amount input with native number spinners hidden, read-only styled remainder, adjustment chips, and per-method "к оплате" line. Polished the place-order button (rounded-2xl gradient, hover shadow, active scale).
+- Verified by testing_agent iteration_78: 100% pass, no runtime errors, math consistent, button enable/disable correct.
+
+
