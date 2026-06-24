@@ -487,6 +487,13 @@ export default function CatalogPage() {
   const categoryId = searchParams.get('category');
   const virtualCategory = (categoryId && ['assortment', 'new', 'discounted'].includes(categoryId)) ? categoryId : null;
   const [columnsCount, setColumnsCount] = useState(4);
+  const [isMobileView, setIsMobileView] = useState(typeof window !== 'undefined' && window.innerWidth < 640);
+  useEffect(() => {
+    const onResize = () => setIsMobileView(window.innerWidth < 640);
+    window.addEventListener('resize', onResize);
+    return () => window.removeEventListener('resize', onResize);
+  }, []);
+  const effectiveColumns = isMobileView ? 2 : columnsCount;
 
   useEffect(() => {
     fetchCategories();
@@ -1047,7 +1054,7 @@ export default function CatalogPage() {
                   </div>
                   <div
                     className="grid gap-3"
-                    style={{ gridTemplateColumns: `repeat(${columnsCount}, minmax(0, 1fr))` }}
+                    style={{ gridTemplateColumns: `repeat(${effectiveColumns}, minmax(0, 1fr))` }}
                   >
                     {/* Virtual categories: Ассортимент, Новинки, Скидки */}
                     <motion.button
@@ -1126,8 +1133,8 @@ export default function CatalogPage() {
                 </div>
               </>
             ) : loading ? (
-              <div className="grid gap-3" style={{ gridTemplateColumns: `repeat(${columnsCount}, minmax(0, 1fr))` }} data-testid="loading">
-                {Array.from({ length: columnsCount * 2 }).map((_, i) => (
+              <div className="grid gap-3" style={{ gridTemplateColumns: `repeat(${effectiveColumns}, minmax(0, 1fr))` }} data-testid="loading">
+                {Array.from({ length: effectiveColumns * 2 }).map((_, i) => (
                   <div key={i} className="rounded-2xl border border-slate-100 bg-white p-3 shadow-sm">
                     <Skeleton className="w-full aspect-square rounded-xl mb-3" />
                     <Skeleton className="h-3 w-1/3 mb-2" />

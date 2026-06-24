@@ -1,0 +1,142 @@
+{
+  "summary": "Mobile audit at 390x844 viewport across client + admin pages of avopt.store. Performed live measurements (docScrollWidth vs viewportWidth, per-element bounding rects, tap-target size, overflowing tables). Catalog 2-column grid fix is confirmed working (gridTemplateColumns='173px 173px'). Identified ONE source of true horizontal page scroll on the admin dashboard, several content overflows that are visually clipped by ancestor overflow:hidden (cosmetic), tap targets under 36px, and the AdminPage header layout that breaks on mobile. Tables in admin orders/products/warehouse are already wrapped in overflow-x-auto and behave correctly.",
+  "backend_issues": {"critical": [], "minor": []},
+  "frontend_issues": {
+    "ui_bugs": [
+      {
+        "component": "AdminPage header row (/admin and all admin tabs)",
+        "issue": "Whole page scrolls horizontally at 390px. The header row uses `flex items-center justify-between mb-6` containing the H1 'Панель администратора' AND a `whitespace-nowrap` Button 'Настроить вкладки' (~163px wide, Settings icon + Russian label). The button cannot shrink and overflows past viewport (measured right=406 in winW=390). docScrollWidth=406 > 390 -> entire admin page scrolls sideways. Present on dashboard, warehouse, and every admin tab because header is shared.",
+        "selector": "AdminPage.js line 1329 div.flex.items-center.justify-between -> Button 'Настроить вкладки' (line 1335-1343)",
+        "priority": "HIGH"
+      },
+      {
+        "component": "AdminPage TabsList icon strip",
+        "issue": "TabsList scrollWidth=427 vs container width=356. Parent has overflow-x-auto so tabs DO swipe horizontally (works), BUT the strip computed style is overflowX:visible on the TabsList itself, and at 390px it shows ~5.5 icons with the right edge cut. Tabs have no visible scroll affordance (no arrow/shadow) so users may not know more tabs exist. 9 children total. Suggest adding fade/gradient on right edge or chevron indicator.",
+        "selector": "AdminPage.js line 1390-1391: div.overflow-x-auto > TabsList",
+        "priority": "MEDIUM"
+      },
+      {
+        "component": "HeaderPromoBanner / promo-banner (data-testid='promo-banner')",
+        "issue": "The pill/rounded-full promo banner has intrinsic width 458px in a 390px viewport (right=424). Not clipped by parent overflow-hidden so the close-button (data-testid='promo-banner-close') sits at right=412, partially under the viewport edge. Appears on Home, Cart, Orders, Product, Contact. Visually the right-side rounded curve is cut. Close X tap-target is also small (28x28).",
+        "selector": "[data-testid='promo-banner'] (HeaderPromoBanner.js)",
+        "priority": "MEDIUM"
+      },
+      {
+        "component": "Header / mobile hamburger menu (Header.js)",
+        "issue": "Mobile hamburger button is 40x32 (height < 36) — borderline non-tappable. Hamburger menu when opened (unauthenticated) shows ONLY the 'Войти' button — no categories/contact/cart link in the drawer. Mobile users have no navigation to Catalog/Contact/News from a logged-out state through the menu.",
+        "selector": "header button (≡), Header.js mobile menu",
+        "priority": "MEDIUM"
+      },
+      {
+        "component": "PopularProducts add-to-cart buttons in horizontal rail",
+        "issue": "data-testid='add-popular-{id}' buttons are 32x32 — below 36px tap target minimum. There are ~10 of these on the home/catalog popular-products rail.",
+        "selector": "[data-testid^='add-popular-']",
+        "priority": "LOW"
+      },
+      {
+        "component": "Logo link (data-testid='logo-link')",
+        "issue": "Anchor is only 116x28 in height — under 36px minimum.",
+        "selector": "[data-testid='logo-link']",
+        "priority": "LOW"
+      },
+      {
+        "component": "Footer email link (data-testid='footer-email')",
+        "issue": "Tap area is only 104x16. Underline only, very small target.",
+        "selector": "[data-testid='footer-email']",
+        "priority": "LOW"
+      },
+      {
+        "component": "PopularProducts cards in horizontal rail (home + catalog)",
+        "issue": "Card content is too narrow (~140px each) and price/'Нет в наличии' badge wraps awkwardly. Text 'PACCAR'/'SAF'/'BPW' partner cards in 'Партнёры' row also extend off-screen but inside overflow-x-auto so it's intentional. Brand label inside cards is truncated heavily (visible '1 6' instead of price '1 600 ₽').",
+        "selector": "PopularProducts.js card layout",
+        "priority": "MEDIUM"
+      }
+    ],
+    "integration_issues": [],
+    "design_issues": [
+      {
+        "screen": "Admin /admin",
+        "issues": [
+          "Title 'Панель администратора' wraps to 2 lines and competes with Button on the same row, causing horizontal page overflow. Should stack vertically on <sm.",
+          "Tab strip lacks scroll affordance (no chevrons/fade).",
+          "KPI cards reflow to 2-column nicely but 'Выручка сегодня' card label wraps awkwardly under values."
+        ]
+      },
+      {
+        "screen": "Cart /cart",
+        "issues": [
+          "Promo banner cut on right.",
+          "'Корзина и оформление' title wraps to 2 lines (acceptable).",
+          "Quantity input + trash icon row good, but trash icon is small (~24x24 actual tap area)."
+        ]
+      },
+      {
+        "screen": "Contact /contact",
+        "issues": [
+          "ChatWidget bubble button sits over scroll content on mobile, but doesn't block tap targets significantly.",
+          "Tabs 'Чат / Скидки и условия / Отсрочка / Мои обращения' wrap to 2 lines — acceptable."
+        ]
+      },
+      {
+        "screen": "Home /",
+        "issues": [
+          "Hero CTA 'К покупкам' is tappable size, looks fine.",
+          "Партнёры strip overflows intentionally (horizontal rail) — OK.",
+          "Popular products card text is cut: prices appear as '1 6' / '700' truncated; should reduce padding or increase card width."
+        ]
+      },
+      {
+        "screen": "Product page",
+        "issues": [
+          "Layout is OK and stacks vertically. Image, title, MAN tag, price.",
+          "Promo banner cut on right (same global issue)."
+        ]
+      }
+    ],
+    "tables_audit": [
+      {"location": "/admin warehouse tab", "table_width_px": 723, "viewport_px": 390, "parent_overflow_x": "auto", "status": "OK - has scroller"},
+      {"location": "/admin/orders", "status": "No horizontal page scroll — uses card list, not table"},
+      {"location": "/admin/products", "status": "No horizontal page scroll — uses card list, not table"}
+    ],
+    "catalog_grid_verification": {
+      "viewport": "390x844",
+      "computed_gridTemplateColumns": "173px 173px",
+      "result": "PASS — catalog is 2 columns on mobile as intended"
+    }
+  },
+  "test_report_links": [
+    "/app/test_reports/screenshots/m_home.png",
+    "/app/test_reports/screenshots/m_catalog.png",
+    "/app/test_reports/screenshots/m_product.png",
+    "/app/test_reports/screenshots/m_cart.png",
+    "/app/test_reports/screenshots/m_orders.png",
+    "/app/test_reports/screenshots/m_contact_loggedin.png",
+    "/app/test_reports/screenshots/m_admin_dashboard.png",
+    "/app/test_reports/screenshots/m_admin_orders.png",
+    "/app/test_reports/screenshots/m_admin_products.png",
+    "/app/test_reports/screenshots/m_admin_warehouse.png",
+    "/app/test_reports/screenshots/m_mobile_menu.png"
+  ],
+  "action_items": [
+    "PRIORITY 1 (true horizontal page scroll on admin): In AdminPage.js around line 1329 change `<div className='flex items-center justify-between mb-6'>` to `<div className='flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-6'>` and add `flex-shrink-0` + maybe icon-only label on mobile to the 'Настроить вкладки' Button.",
+    "PRIORITY 2: Constrain promo banner to viewport. In HeaderPromoBanner, wrap with `max-w-full overflow-hidden` on parent OR change the pill to have `w-fit max-w-[calc(100vw-2rem)] mx-auto` and replace rounded-full with rounded-2xl on <sm.",
+    "PRIORITY 2: Add scroll affordance to admin TabsList — gradient/fade on right edge of `div.overflow-x-auto` or a small chevron-right indicator hidden on `sm:hidden`.",
+    "PRIORITY 3: Increase tap-target heights to ≥36px for: logo-link, hamburger button, footer-email, promo-banner-close, add-popular-* buttons (use min-h-9 / p-2).",
+    "PRIORITY 3: Mobile hamburger menu should expose Catalog, Contact, News, Login/Register navigation when logged out (currently only 'Войти').",
+    "PRIORITY 3: PopularProducts cards on mobile rail are too narrow (~140px) — price truncates. Either widen cards (snap-width 70%) or stack price under title without truncating."
+  ],
+  "critical_code_review_comments": [
+    "AdminPage.js is 5041 lines — well over the 700-line guideline. Split into per-tab subcomponents (DashboardTab, WarehouseTab, etc.).",
+    "Promo banner uses rounded-full + fixed inner widths that don't shrink; needs responsive width.",
+    "Hamburger menu drawer content missing nav links for anonymous users — likely a routing/conditional rendering miss in Header.js.",
+    "Several whitespace-nowrap buttons in admin headers risk overflow on narrow screens; consider icon-only at <sm."
+  ],
+  "updated_files": [],
+  "success_rate": {"backend": "n/a (frontend-only audit)", "frontend": "Audit complete: 1 critical layout bug, 4 medium, 4 low"},
+  "test_credentials": "Admin: admin@avarus.ru / admin; Client: user@demo.com / demo123 — both worked.",
+  "seed_data_creation": "Added 1 item to client cart via POST /api/cart/add (product_id 8cd5b1c5-...) to be able to render /cart with content.",
+  "retest_needed": true,
+  "main_agent_can_self_test": false,
+  "context_for_next_testing_agent": "Audit was viewport-emulated at 390x844 only. Desktop was not retested — when main agent fixes the admin header (PRIORITY 1), please verify both 390px (mobile) and 1280+ (desktop) so the desktop layout is preserved. Specific source-of-truth measurements: docScrollWidth on /admin = 406 (over by 16px) due to 'Настроить вкладки' button. Catalog 2-col grid is confirmed via gridTemplateColumns='173px 173px'. Admin tables already have overflow-x-auto wrappers. Crypto MetaMask flow not tested per request. /api/track 403 noise in console is non-blocking.",
+  "rca of the issue": "Root cause of horizontal scroll on /admin: AdminPage.js line 1329 uses a single horizontal flex row with a long Russian H1 and a `whitespace-nowrap` 163px Button. At width 390px after px-4 padding, the available content width is ~358px. The H1 wraps to 2 lines and the Button is forced to not wrap, so it pushes the row to ~390+16px wide -> creates 16px horizontal scroll. Fix: stack to column on <sm OR icon-only button on <sm. Reproduction: open https://order-merge-fulfill.preview.emergentagent.com/admin at viewport 390x844 -> page can scroll left/right by ~16px and the trailing edge of the 'Настроить вкладки' button is clipped."
+}
