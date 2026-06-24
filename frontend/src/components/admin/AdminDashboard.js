@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import { motion } from 'framer-motion';
 import { TrendingUp, ShoppingBag, Clock, PackageX, AlertTriangle, CreditCard, Wallet, ArrowRight, BarChart3 } from 'lucide-react';
@@ -31,6 +32,7 @@ const KPI = ({ icon: Icon, label, value, accent, onClick, testid }) => (
 export default function AdminDashboard({ onNavigate }) {
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
+  const navigate = useNavigate();
 
   useEffect(() => {
     let mounted = true;
@@ -80,9 +82,9 @@ export default function AdminDashboard({ onNavigate }) {
       {/* KPI cards */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
         <KPI icon={TrendingUp} label="Выручка сегодня" value={`${fmt(data.today.revenue)} ₽`} accent={accents.teal} testid="kpi-today-revenue" />
-        <KPI icon={ShoppingBag} label="Всего заказов" value={fmt(data.totals.orders_total)} accent={accents.emerald} onClick={() => onNavigate && onNavigate('orders')} testid="kpi-total-orders" />
-        <KPI icon={Clock} label="Ожидают оплаты" value={fmt(data.totals.awaiting_payment)} accent={accents.amber} onClick={() => onNavigate && onNavigate('orders')} testid="kpi-awaiting-payment" />
-        <KPI icon={PackageX} label="В обработке" value={fmt(data.totals.pending_processing)} accent={accents.indigo} onClick={() => onNavigate && onNavigate('orders')} testid="kpi-pending" />
+        <KPI icon={ShoppingBag} label="Всего заказов" value={fmt(data.totals.orders_total)} accent={accents.emerald} onClick={() => navigate('/admin/orders')} testid="kpi-total-orders" />
+        <KPI icon={Clock} label="Ожидают оплаты" value={fmt(data.totals.awaiting_payment)} accent={accents.amber} onClick={() => navigate('/admin/orders')} testid="kpi-awaiting-payment" />
+        <KPI icon={PackageX} label="В обработке" value={fmt(data.totals.pending_processing)} accent={accents.indigo} onClick={() => navigate('/admin/orders')} testid="kpi-pending" />
       </div>
 
       {/* Revenue chart */}
@@ -169,7 +171,7 @@ export default function AdminDashboard({ onNavigate }) {
         ) : (
           <div className="space-y-2">
             {data.awaiting_payment_orders.map((o) => (
-              <div key={o.id} className="flex items-center gap-3 p-3 rounded-xl bg-amber-50/50 border border-amber-100" data-testid={`awaiting-order-${o.id}`}>
+              <div key={o.id} onClick={() => navigate('/admin/orders')} className="flex items-center gap-3 p-3 rounded-xl bg-amber-50/50 border border-amber-100 cursor-pointer hover:bg-amber-50 transition-colors" data-testid={`awaiting-order-${o.id}`}>
                 <div className="w-9 h-9 rounded-lg bg-white flex items-center justify-center flex-shrink-0">
                   {o.payment_method === 'crypto' ? <Wallet className="w-4 h-4 text-amber-500" /> : <CreditCard className="w-4 h-4 text-amber-500" />}
                 </div>

@@ -30,5 +30,12 @@ Tested: iteration_77 — backend 7/7 pass, frontend all testids verified, no cri
 
 Verified by testing_agent iteration_79: backend 12/12, frontend 100% (Ozon/Warehouse/Orders), no critical issues.
 
+## 2026-06-24 — Admin dashboard + skeletons + page transitions
+1. **Admin overview dashboard** (new first tab «Обзор» in /admin): KPI cards (today revenue, total orders, awaiting payment, processing), 14-day revenue bar chart, top products (30d), low-stock list, and awaiting-payment orders list. KPI/list clicks navigate to /admin/orders; low-stock links to the Warehouse tab. Backend `GET /api/admin/dashboard` aggregates metrics (admin-only). Files: `orders.py`, `components/admin/AdminDashboard.js`, `AdminPage.js` (tab order/config/migration, default tab=overview).
+2. **Skeleton loaders** replace empty/spinner states on Catalog (`loading` grid), Orders (`orders-loading`), and the dashboard itself. File: `CatalogPage.js`, `OrdersPage.js`, `AdminDashboard.js`.
+3. **Page transitions**: global fade/slide between routes via `AnimatePresence` + `motion.div` keyed by pathname in `App.js`.
+Verified by testing_agent iteration_80: backend 100%, navigation intact, dashboard renders; fixed KPI navigation (orders is a route /admin/orders, not a tab) and re-verified.
+
+
 
 
