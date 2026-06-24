@@ -453,19 +453,23 @@ export default function CartPage() {
 
               {/* Pay-later toggle for card/crypto */}
               {showPayLater && (
-                <button type="button" onClick={() => setPayLater(v => !v)} className={`mt-3 w-full flex items-center justify-between p-3 rounded-xl border-2 transition-all ${payLater ? 'bg-indigo-50 border-indigo-400' : 'bg-white border-slate-200 hover:border-slate-300'}`} data-testid="pay-later-toggle">
+                <div onClick={() => setPayLater(v => !v)} className={`mt-3 w-full flex items-center justify-between gap-3 p-3.5 rounded-xl border-2 cursor-pointer transition-colors ${payLater ? 'bg-indigo-50 border-indigo-300' : 'bg-white border-slate-200 hover:border-slate-300'}`} data-testid="pay-later-toggle">
                   <span className="flex items-center gap-2 text-sm font-semibold text-slate-700"><Clock className="w-4 h-4 text-indigo-500" />Оплатить позже (в течение {paymentSettings.deferred_payment_hours} ч)</span>
-                  <span className={`w-10 h-5 rounded-full relative transition-colors ${payLater ? 'bg-indigo-500' : 'bg-slate-300'}`}><span className={`absolute top-0.5 w-4 h-4 rounded-full bg-white transition-transform ${payLater ? 'translate-x-5' : 'translate-x-0.5'}`} /></span>
-                </button>
+                  <span className={`relative inline-flex h-6 w-11 flex-shrink-0 items-center rounded-full transition-colors duration-300 ${payLater ? 'bg-indigo-500' : 'bg-slate-300'}`}>
+                    <span className={`inline-block h-5 w-5 transform rounded-full bg-white shadow-sm transition-transform duration-300 ${payLater ? 'translate-x-[22px]' : 'translate-x-0.5'}`} />
+                  </span>
+                </div>
               )}
 
               {/* Mixed payment toggle */}
               <div className="mt-4 border-t border-slate-100 pt-4" data-testid="mixed-payment-section">
-                <button type="button" onClick={() => { const v = !mixedMode; setMixedMode(v); setMixedMethods([]); setMix1Amount(''); if (v) { setPayWithBalance(false); setPayWithDeferral(false); setPayLater(false); } }}
-                  className={`w-full flex items-center justify-between p-3 rounded-xl border-2 transition-all ${mixedMode ? 'bg-amber-50 border-amber-400' : 'bg-white border-slate-200 hover:border-slate-300'}`} data-testid="mixed-payment-toggle">
+                <div onClick={() => { const v = !mixedMode; setMixedMode(v); setMixedMethods([]); setMix1Amount(''); if (v) { setPayWithBalance(false); setPayWithDeferral(false); setPayLater(false); } }}
+                  className={`w-full flex items-center justify-between gap-3 p-3.5 rounded-xl border-2 cursor-pointer transition-colors ${mixedMode ? 'bg-amber-50 border-amber-300' : 'bg-white border-slate-200 hover:border-slate-300'}`} data-testid="mixed-payment-toggle">
                   <span className="flex items-center gap-2 text-sm font-semibold text-slate-700"><Wallet className="w-4 h-4 text-amber-500" />Смешанная оплата (2 способа)</span>
-                  <span className={`w-10 h-5 rounded-full relative transition-colors ${mixedMode ? 'bg-amber-500' : 'bg-slate-300'}`}><span className={`absolute top-0.5 w-4 h-4 rounded-full bg-white transition-transform ${mixedMode ? 'translate-x-5' : 'translate-x-0.5'}`} /></span>
-                </button>
+                  <span className={`relative inline-flex h-6 w-11 flex-shrink-0 items-center rounded-full transition-colors duration-300 ${mixedMode ? 'bg-amber-500' : 'bg-slate-300'}`}>
+                    <span className={`inline-block h-5 w-5 transform rounded-full bg-white shadow-sm transition-transform duration-300 ${mixedMode ? 'translate-x-[22px]' : 'translate-x-0.5'}`} />
+                  </span>
+                </div>
               </div>
             </div>
           </div>
@@ -480,22 +484,48 @@ export default function CartPage() {
                   <span className="text-slate-800">{formatPrice(cartTotal)} ₽</span>
                 </div>
                 {mixedMode && (
-                  <div className="rounded-xl bg-amber-50/70 border border-amber-200 p-3 space-y-2" data-testid="mixed-amounts-block">
+                  <div className="rounded-2xl bg-gradient-to-br from-amber-50 to-orange-50/60 border border-amber-200/80 p-4 space-y-3" data-testid="mixed-amounts-block">
                     {mixedMethods.length < 2 ? (
-                      <p className="text-xs text-amber-700 font-medium">Выберите 2 способа оплаты слева ({mixedMethods.length}/2)</p>
+                      <div className="flex items-center gap-2 text-amber-700">
+                        <Wallet className="w-4 h-4 flex-shrink-0" />
+                        <p className="text-xs font-medium">Выберите 2 способа оплаты слева <span className="font-bold">({mixedMethods.length}/2)</span></p>
+                      </div>
                     ) : (
                       <>
-                        <p className="text-[11px] text-slate-500">Распределите сумму товаров (<b>{formatPrice(cartTotal)} ₽</b>). Наценка/скидка — на каждую часть.</p>
-                        <div className="flex items-center justify-between gap-2">
-                          <span className="text-xs font-semibold text-slate-700">{METHOD_NAME[mixM1]}{getAdj(mixM1) !== 0 && <span className={getAdj(mixM1) < 0 ? 'text-emerald-600' : 'text-rose-600'}> ({getAdj(mixM1) > 0 ? '+' : ''}{getAdj(mixM1)}%)</span>}</span>
-                          <span className="flex items-center gap-1"><Input type="number" min="1" value={mix1Amount} onChange={(e) => setMix1Amount(e.target.value)} placeholder="0" className="w-24 h-9 rounded-lg text-right" data-testid="mix-amount-1" /><span className="text-xs text-slate-400">₽</span></span>
+                        <p className="text-[11px] text-slate-500 leading-relaxed">Распределите сумму товаров <b className="text-slate-700">{formatPrice(cartTotal)} ₽</b> между способами.</p>
+                        {/* Editable part */}
+                        <div className="rounded-xl bg-white border border-amber-100 p-3 shadow-sm">
+                          <div className="flex items-center justify-between gap-3 mb-2">
+                            <span className="text-xs font-semibold text-slate-700 flex items-center gap-1.5">
+                              {METHOD_NAME[mixM1]}
+                              {getAdj(mixM1) !== 0 && <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded-md ${getAdj(mixM1) < 0 ? 'bg-emerald-100 text-emerald-600' : 'bg-rose-100 text-rose-600'}`}>{getAdj(mixM1) > 0 ? '+' : ''}{getAdj(mixM1)}%</span>}
+                            </span>
+                            <div className="relative w-28">
+                              <Input type="number" min="1" inputMode="numeric" value={mix1Amount} onChange={(e) => setMix1Amount(e.target.value)} placeholder="0"
+                                className="h-9 pr-7 rounded-lg text-right font-semibold border-slate-200 focus-visible:ring-amber-400 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none" data-testid="mix-amount-1" />
+                              <span className="absolute right-2.5 top-1/2 -translate-y-1/2 text-xs text-slate-400 pointer-events-none">₽</span>
+                            </div>
+                          </div>
+                          <div className="flex justify-between text-[11px] text-slate-400">
+                            <span>к оплате этим способом</span>
+                            <span className="font-bold text-slate-600">{formatPrice(mixCharged1)} ₽</span>
+                          </div>
                         </div>
-                        <p className="text-[11px] text-slate-500 text-right">к оплате: <b>{formatPrice(mixCharged1)} ₽</b></p>
-                        <div className="flex items-center justify-between gap-2">
-                          <span className="text-xs font-semibold text-slate-700">{METHOD_NAME[mixM2]}{getAdj(mixM2) !== 0 && <span className={getAdj(mixM2) < 0 ? 'text-emerald-600' : 'text-rose-600'}> ({getAdj(mixM2) > 0 ? '+' : ''}{getAdj(mixM2)}%)</span>} <span className="text-slate-400 font-normal">(остаток)</span></span>
-                          <span className="flex items-center gap-1"><Input type="number" value={a2} readOnly disabled className="w-24 h-9 rounded-lg text-right bg-slate-100" data-testid="mix-amount-2" /><span className="text-xs text-slate-400">₽</span></span>
+                        {/* Remainder part */}
+                        <div className="rounded-xl bg-white/70 border border-amber-100 p-3">
+                          <div className="flex items-center justify-between gap-3 mb-2">
+                            <span className="text-xs font-semibold text-slate-700 flex items-center gap-1.5">
+                              {METHOD_NAME[mixM2]}
+                              {getAdj(mixM2) !== 0 && <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded-md ${getAdj(mixM2) < 0 ? 'bg-emerald-100 text-emerald-600' : 'bg-rose-100 text-rose-600'}`}>{getAdj(mixM2) > 0 ? '+' : ''}{getAdj(mixM2)}%</span>}
+                              <span className="text-[10px] text-slate-400 font-normal">остаток</span>
+                            </span>
+                            <div className="w-28 h-9 rounded-lg bg-slate-50 border border-slate-200 flex items-center justify-end pr-2.5 text-sm font-semibold text-slate-500" data-testid="mix-amount-2">{formatPrice(a2)}<span className="text-xs text-slate-400 ml-0.5">₽</span></div>
+                          </div>
+                          <div className="flex justify-between text-[11px] text-slate-400">
+                            <span>к оплате этим способом</span>
+                            <span className="font-bold text-slate-600">{formatPrice(mixCharged2)} ₽</span>
+                          </div>
                         </div>
-                        <p className="text-[11px] text-slate-500 text-right">к оплате: <b>{formatPrice(mixCharged2)} ₽</b></p>
                       </>
                     )}
                   </div>
@@ -540,7 +570,7 @@ export default function CartPage() {
                 </label>
               </div>
 
-              <Button type="submit" disabled={loading || !agreedToTerms || (mixedMode && mixedMethods.length !== 2)} className={`w-full font-bold uppercase tracking-wide h-14 rounded-xl text-base ${(agreedToTerms && !(mixedMode && mixedMethods.length !== 2)) ? 'bg-gradient-to-r from-teal-500 to-emerald-500 hover:from-teal-600 hover:to-emerald-600 text-white shadow-lg shadow-teal-500/20' : 'bg-slate-200 text-slate-400 cursor-not-allowed'}`} data-testid="place-order-btn">
+              <Button type="submit" disabled={loading || !agreedToTerms || (mixedMode && mixedMethods.length !== 2)} className={`w-full font-bold uppercase tracking-wide h-14 rounded-2xl text-base transition-all duration-200 active:scale-[0.98] ${(agreedToTerms && !(mixedMode && mixedMethods.length !== 2)) ? 'bg-gradient-to-r from-teal-500 to-emerald-500 hover:from-teal-600 hover:to-emerald-600 text-white shadow-lg shadow-teal-500/25 hover:shadow-xl hover:shadow-teal-500/30' : 'bg-slate-200 text-slate-400 cursor-not-allowed'}`} data-testid="place-order-btn">
                 {loading && <Loader2 className="w-5 h-5 animate-spin mr-2 inline" />}
                 {loading ? 'Оформление...' : mixedMode ? 'Оформить заказ' : payWithDeferral ? 'Оформить в отсрочку' : payWithBalance ? 'Оплатить с баланса' : (paymentMethod === 'crypto' && !payLater) ? 'Перейти к оплате' : 'Оформить заказ'}
               </Button>

@@ -1,0 +1,35 @@
+{
+  "summary": "Iteration 78 — verified the redesigned mixed-payment UI on /cart after the 'Maximum update depth exceeded' (Radix Switch) regression was patched. Custom <span>/<button> toggles, mix-amount inputs without spinner arrows, and the new place-order button gradient all render correctly with NO runtime errors at any stage (initial load, toggle on/off, method selection, 3rd-method rejection toast, amount typing, terms toggle). Math is consistent (cart 1275 → balance 0% +500 → cash -10% +775→698 → goods 1198 + delivery 500 = total 1698; also verified at cartTotal 1425: 500+925→833, goods 1333 +500 = 1833). place-order-btn is full-width, gradient teal/emerald when enabled, grey/disabled when prerequisites not met. Single-method flow on /cart unchanged. Order POST itself was not end-to-end navigated due to playwright flakiness with the custom-<button> terms checkbox (stale handle / re-render race) — visual screenshot from a prior run shows the button becoming enabled+gradient correctly after terms toggle, so this is a test-interaction artifact, not a product regression.",
+  "backend_issues": {
+    "critical": [],
+    "minor": []
+  },
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [],
+    "design_issues": []
+  },
+  "test_report_links": [],
+  "action_items": [
+    "Optional: terms-checkbox is a <button type=\"button\"> instead of a native <input type=\"checkbox\">. Consider wrapping with a hidden checkbox for better accessibility AND more reliable automation (some playwright clicks on the custom button do not toggle state when called immediately after another DOM change). Not a user-facing bug — clicking it as a real user works fine. Mentioning it because the same pattern is used in three places (mixed-payment-toggle, pay-later-toggle, terms-checkbox) and could be unified.",
+    "Optional: CartPage.js is now 611 lines. Consider extracting <MixedPaymentSection /> and <PaymentMethodsList /> sub-components for readability. Also flagged in iter77."
+  ],
+  "critical_code_review_comments": [
+    "Mixed-payment redesign correctly removed Radix Switch: lines 458-460, 469-471 use plain <span> wrappers controlled by parent onClick → no controlled/uncontrolled state collision, no setState-inside-render loop. 'Maximum update depth exceeded' overlay confirmed absent across all flows.",
+    "mix-amount-1 Input uses [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none — spinner arrows hidden. Verified visually.",
+    "Math in CartPage.js lines 104-117 is sound: a2 = round((cartTotal - a1)*100)/100 cannot go negative because a1 is clamped via Math.max(0, Math.min(...,cartTotal)). mixCharged = round(part * (1 + adj/100)). goodsTotal correctly sums the two charged parts in mixed mode.",
+    "toggleMixedMethod (lines 119-126) correctly enforces ≤2 selections and whitelists balance/card/cash; 3rd method triggers toast.error('Можно выбрать только 2 способа') — verified in browser (toast observed).",
+    "place-order-btn disabled binding: disabled={loading || !agreedToTerms || (mixedMode && mixedMethods.length !== 2)} matches spec. Gradient/grey class branches verified visually."
+  ],
+  "updated_files": [],
+  "success_rate": {
+    "backend": "n/a (frontend-only iteration)",
+    "frontend": "100% on targeted UI redesign verification (no runtime errors, all data-testids present, all interactions work, math consistent)"
+  },
+  "test_credentials": "user@demo.com / demo123 (from /app/memory/test_credentials.md)",
+  "seed_data_creation": "Cleared client cart and re-added 1 product via /api/cart/clear + /api/cart/add. No persistent test orders created in this run.",
+  "retest_needed": false,
+  "should_main_agent_self_test": true,
+  "context_for_next_testing_agent": "Mixed-payment UI on /cart is fixed and stable. Custom switches: mixed-payment-toggle, pay-later-toggle. Custom checkbox: terms-checkbox (<button>). When automating, click the toggles AFTER the page is fully settled and prefer page.locator(...).click() over a previously-captured ElementHandle to avoid stale references after re-render. Place-order works for real users (visually verified in iter77). To create a mixed order in test: enable mixed, select balance+cash, type amount in mix-amount-1, check terms, fill checkout-fullname/address/phone (phone mask: type digits, mask renders +7 prefix), then click place-order-btn. /api/orders POST with payment_method='mixed' and payment_parts=[{method,amount},...].",
+  "rca of the issue": "The original 'Maximum update depth exceeded' was caused by using @radix-ui Switch with a checked prop bound to React state that was also being mutated inside the same render via a child onCheckedChange that triggered parent updates of the toggling state without proper isolation. The fix swapped the Radix Switch for a plain <span> animated pill driven by a parent <div onClick> handler that flips local state once. The new switch has no React controlled/uncontrolled discrepancy and no re-entrant setState. Confirmed: no pageerror, no console error 'Maximum update depth', no error overlay on /cart in any of the tested states."
+}
