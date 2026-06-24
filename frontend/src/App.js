@@ -1,6 +1,7 @@
 import "@/App.css";
 import { useEffect, useState } from "react";
 import { BrowserRouter, Routes, Route, useLocation, Navigate } from "react-router-dom";
+import { motion, AnimatePresence } from "framer-motion";
 import { Toaster } from "./components/ui/sonner";
 import { AuthProvider, useAuth } from "./context/AuthContext";
 import { CartProvider } from "./context/CartContext";
@@ -124,7 +125,15 @@ function AppContent() {
         {isPageDown ? (
           <PageMaintenanceBanner message={pageMaint.message} />
         ) : (
-        <Routes>
+        <AnimatePresence mode="wait">
+          <motion.div
+            key={location.pathname}
+            initial={{ opacity: 0, y: 8 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -8 }}
+            transition={{ duration: 0.22, ease: 'easeOut' }}
+          >
+          <Routes location={location}>
           <Route path="/" element={<HomePage />} />
           <Route path="/catalog" element={<CatalogPage />} />
           <Route path="/cart" element={<CartPage />} />
@@ -155,6 +164,8 @@ function AppContent() {
           <Route path="/admin/notifications" element={<AdminNotificationsPage />} />
           <Route path="/product/:id" element={<ProductPage />} />
         </Routes>
+          </motion.div>
+        </AnimatePresence>
         )}
       </main>
       {!isAdmin && <Footer />}

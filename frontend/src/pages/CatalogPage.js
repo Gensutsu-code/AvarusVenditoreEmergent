@@ -6,6 +6,7 @@ import { Input } from '../components/ui/input';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '../components/ui/dialog';
 import { Search, X, ShoppingCart, Package, Truck, Minus, Plus, ArrowRight, Heart, ChevronLeft, ChevronRight, Percent, Eye, Filter, MapPin, ArrowUpDown, Tag, Gift, Sparkles, Layers, Flame, LayoutGrid } from 'lucide-react';
 import { useCart } from '../context/CartContext';
+import { Skeleton } from '../components/ui/skeleton';
 import { useAuth } from '../context/AuthContext';
 import { toast } from 'sonner';
 import { useNavigate } from 'react-router-dom';
@@ -1125,9 +1126,19 @@ export default function CatalogPage() {
                 </div>
               </>
             ) : loading ? (
-              <div className="text-center py-12 text-slate-500" data-testid="loading">
-                <div className="w-8 h-8 border-2 rounded-full animate-spin mx-auto mb-4 border-teal-500/30 border-t-teal-500"></div>
-                Загрузка...
+              <div className="grid gap-3" style={{ gridTemplateColumns: `repeat(${columnsCount}, minmax(0, 1fr))` }} data-testid="loading">
+                {Array.from({ length: columnsCount * 2 }).map((_, i) => (
+                  <div key={i} className="rounded-2xl border border-slate-100 bg-white p-3 shadow-sm">
+                    <Skeleton className="w-full aspect-square rounded-xl mb-3" />
+                    <Skeleton className="h-3 w-1/3 mb-2" />
+                    <Skeleton className="h-4 w-full mb-1.5" />
+                    <Skeleton className="h-4 w-2/3 mb-3" />
+                    <div className="flex items-center justify-between">
+                      <Skeleton className="h-6 w-20" />
+                      <Skeleton className="h-8 w-8 rounded-lg" />
+                    </div>
+                  </div>
+                ))}
               </div>
             ) : products.length === 0 && alternatives.length === 0 ? (
               <div className="text-center py-12" data-testid="no-products">

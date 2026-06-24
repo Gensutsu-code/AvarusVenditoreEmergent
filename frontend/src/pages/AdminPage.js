@@ -5,7 +5,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { 
   Users, Package, ShoppingBag, TrendingUp, User,
   Plus, Pencil, Trash2, Save, Eye, FolderOpen, Megaphone, Upload, Image,
-  MessageCircle, Send, BarChart3, Download, FileSpreadsheet, Pin, Tag, X, Copy, Gift, Award, ChevronDown, ChevronUp, Paperclip, Play, ZoomIn, ZoomOut, Settings, ChevronLeft, ChevronRight, CreditCard, FileText, Mail, Bell, Wallet, Clock, ScrollText, Code, Minus, RotateCcw, Merge, Truck, ListChecks, Warehouse
+  MessageCircle, Send, BarChart3, Download, FileSpreadsheet, Pin, Tag, X, Copy, Gift, Award, ChevronDown, ChevronUp, Paperclip, Play, ZoomIn, ZoomOut, Settings, ChevronLeft, ChevronRight, CreditCard, FileText, Mail, Bell, Wallet, Clock, ScrollText, Code, Minus, RotateCcw, Merge, Truck, ListChecks, Warehouse, LayoutDashboard
 } from 'lucide-react';
 import { Button } from '../components/ui/button';
 import { Input } from '../components/ui/input';
@@ -39,6 +39,7 @@ import {
 import CryptoSettingsTab from '../components/admin/CryptoSettingsTab';
 import CardPaymentSettings from '../components/admin/CardPaymentSettings';
 import AdminWarehousePage from './AdminWarehousePage';
+import AdminDashboard from '../components/admin/AdminDashboard';
 
 const API = `${process.env.REACT_APP_BACKEND_URL}/api`;
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
@@ -151,7 +152,7 @@ export default function AdminPage() {
   const { isDark } = useTheme();
   
   // Tab order state - New restructured order
-  const defaultTabOrder = ['products', 'warehouse', 'bonus', 'payments', 'crm', 'marketing', 'logs', 'settings'];
+  const defaultTabOrder = ['overview', 'products', 'warehouse', 'bonus', 'payments', 'crm', 'marketing', 'logs', 'settings'];
   const [tabOrder, setTabOrder] = useState(() => {
     const saved = localStorage.getItem('adminTabOrder');
     if (saved) {
@@ -174,11 +175,15 @@ export default function AdminPage() {
         if (prodIdx >= 0) filtered.splice(prodIdx + 1, 0, 'warehouse');
         else filtered.unshift('warehouse');
       }
+      // Add overview (dashboard) tab if missing (migration) — at the very front
+      if (!filtered.includes('overview')) {
+        filtered.unshift('overview');
+      }
       return filtered;
     }
     return defaultTabOrder;
   });
-  const [activeTab, setActiveTab] = useState('products');
+  const [activeTab, setActiveTab] = useState('overview');
   const [editingTabOrder, setEditingTabOrder] = useState(false);
   
   // New states
@@ -1282,6 +1287,7 @@ export default function AdminPage() {
 
   // Tab configuration - New restructured tabs
   const tabConfig = {
+    overview: { icon: LayoutDashboard, label: 'Обзор' },
     products: { icon: Package, label: 'Каталог', count: products.length },
     warehouse: { icon: Warehouse, label: 'Склад' },
     bonus: { icon: Gift, label: 'Бонусы', badge: bonusPrograms.reduce((sum, p) => sum + (p.pending_requests || 0), 0) },
@@ -1422,6 +1428,11 @@ export default function AdminPage() {
               })}
             </TabsList>
           </div>
+
+          {/* Overview / Dashboard Tab */}
+          <TabsContent value="overview" className="p-6">
+            <AdminDashboard onNavigate={setActiveTab} />
+          </TabsContent>
 
           {/* Products & Categories Tab (Каталог) - Modern Design */}
           <TabsContent value="products" className="p-6">

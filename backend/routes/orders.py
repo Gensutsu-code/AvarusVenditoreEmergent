@@ -759,6 +759,93 @@ async def get_user_order_stats(user=Depends(get_current_user)):
     }
 
 
+@router.get("/admin/dashboard")
+async def get_admin_dashboard(user=Depends(get_current_user)):
+    """Aggregated key metrics for the admin overview dashboard."""
+    if user.get("role") != "admin":
+        raise HTTPException(status_code=403, detail="Admin access required")
+
+    now = datetime.now(timezone.utc)
+    today_str = now.strftime("%Y-%m-%d")
+
+    # Pull recent orders (last 60 days) for charts/top products
+    cutoff_60 = (now - timedelta(days=60)).isoformat()
+    recent = await db.orders.find(
+        {"created_at": {"$gte": cutoff_60}}, {"_id": 0}
+    ).to_list(5000)
+
+    def is_revenue(o):
+        return o.get("status") not in ("cancelled",)
+
+    # Revenue per day, last 14 days
+    days = [(now - timedelta(days=i)).strftime("%Y-%m-%d") for i in range(13, -1, -1)]
+    rev_map = {d: {"date": d, "revenue": 0, "orders": 0} for d in days}
+    for o in recent:
+        d = (o.get("created_at") or "")[:10]
+        if d in rev_map and is_revenue(o):
+            rev_map[d]["revenue"] += o.get("total", 0)
+            rev_map[d]["orders"] += 1
+    revenue_by_day = [rev_map[d] for d in days]
+
+    today = {"revenue": round(rev_map.get(today_str, {}).get("revenue", 0), 2),
+             "orders": rev_map.get(today_str, {}).get("orders", 0)}
+
+    # Top products (last 30 days by quantity)
+    cutoff_30 = (now - timedelta(days=30)).isoformat()
+    prod = {}
+    for o in recent:
+        if (o.get("created_at") or "") < cutoff_30 or not is_revenue(o):
+            continue
+        for item in o.get("items", []):
+            pid = item.get("product_id") or item.get("article", "")
+            if pid not in prod:
+                prod[pid] = {"name": item.get("name", ""), "article": item.get("article", ""), "qty": 0, "revenue": 0}
+            prod[pid]["qty"] += item.get("quantity", 1)
+            prod[pid]["revenue"] += item.get("price", 0) * item.get("quantity", 1)
+    top_products = sorted(prod.values(), key=lambda x: x["qty"], reverse=True)[:6]
+    for p in top_products:
+        p["revenue"] = round(p["revenue"], 2)
+
+    # Low stock products (<= threshold)
+    threshold = 5
+    low_docs = await db.products.find(
+        {"stock": {"$lte": threshold}}, {"_id": 0, "id": 1, "name": 1, "article": 1, "stock": 1}
+    ).sort("stock", 1).limit(12).to_list(12)
+    low_stock = [{"id": d.get("id"), "name": d.get("name", ""), "article": d.get("article", ""), "stock": d.get("stock", 0)} for d in low_docs]
+
+    # Orders awaiting payment (card/crypto pending)
+    awaiting_docs = await db.orders.find(
+        {"payment_status": {"$in": ["awaiting_payment", "awaiting_confirmation"]},
+         "status": {"$nin": ["cancelled", "completed", "delivered"]}},
+        {"_id": 0, "id": 1, "total": 1, "payment_method": 1, "payment_status": 1,
+         "created_at": 1, "full_name": 1, "payment_due_date": 1, "card_receipt_url": 1}
+    ).sort("created_at", -1).limit(15).to_list(15)
+
+    # Totals
+    total_orders = await db.orders.count_documents({})
+    pending_processing = await db.orders.count_documents({"status": {"$in": ["pending", "processing"]}})
+    awaiting_count = await db.orders.count_documents(
+        {"payment_status": {"$in": ["awaiting_payment", "awaiting_confirmation"]},
+         "status": {"$nin": ["cancelled", "completed", "delivered"]}})
+    revenue_30 = sum(o.get("total", 0) for o in recent if is_revenue(o) and (o.get("created_at") or "") >= cutoff_30)
+
+    return {
+        "today": today,
+        "revenue_by_day": revenue_by_day,
+        "totals": {
+            "orders_total": total_orders,
+            "revenue_30d": round(revenue_30, 2),
+            "pending_processing": pending_processing,
+            "awaiting_payment": awaiting_count,
+        },
+        "top_products": top_products,
+        "low_stock": low_stock,
+        "awaiting_payment_orders": awaiting_docs,
+        "low_stock_threshold": threshold,
+    }
+
+
+
 @router.get("/orders/{order_id}", response_model=OrderResponse)
 async def get_order(order_id: str, user=Depends(get_current_user)):
     order = await db.orders.find_one({"id": order_id, "user_id": user["id"]}, {"_id": 0})
