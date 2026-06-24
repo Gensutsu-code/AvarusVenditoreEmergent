@@ -55,14 +55,14 @@ export const FloatingPromoBanner = () => {
       <AnimatePresence mode="wait">
         {isExpanded && (
           <motion.div 
-            className="fixed top-20 left-0 right-0 z-40 flex justify-center pointer-events-none"
+            className="fixed top-20 left-0 right-0 z-40 flex justify-center pointer-events-none px-3"
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             transition={{ duration: 0.3 }}
           >
             <motion.div 
-              className="flex items-center gap-3 pl-5 pr-3 py-3 rounded-full text-white text-lg font-medium whitespace-nowrap shadow-xl pointer-events-auto"
+              className="flex items-center gap-2 sm:gap-3 pl-4 pr-2.5 sm:pl-5 sm:pr-3 py-2.5 sm:py-3 rounded-full text-white text-sm sm:text-lg font-medium whitespace-normal sm:whitespace-nowrap shadow-xl pointer-events-auto max-w-[calc(100vw-1.5rem)]"
               style={{ 
                 backgroundColor: bgColor,
                 boxShadow: `0 8px 25px ${bgColor}50`

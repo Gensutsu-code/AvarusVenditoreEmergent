@@ -615,14 +615,14 @@ export const Header = () => {
                 )}
               </Link>
             )}
-            <Button 
-              variant="ghost" 
-              size="sm"
+            <button 
               onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-              className="text-slate-500 hover:text-slate-800"
+              className="w-11 h-11 flex items-center justify-center rounded-xl text-slate-500 hover:text-slate-800 hover:bg-slate-100 transition-colors"
+              aria-label="Меню"
+              data-testid="mobile-menu-btn"
             >
-              {mobileMenuOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
-            </Button>
+              {mobileMenuOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
+            </button>
           </div>
         </div>
       </div>
@@ -711,11 +711,25 @@ export const Header = () => {
                   </button>
                 </>
               ) : (
-                <Link to="/login" onClick={() => setMobileMenuOpen(false)}>
-                  <Button className="w-full font-bold uppercase bg-gradient-to-r from-teal-500 to-emerald-500 text-white rounded-xl">
-                    Войти
-                  </Button>
-                </Link>
+                <>
+                  <Link to="/catalog" onClick={() => setMobileMenuOpen(false)} className="flex items-center gap-3 p-3 rounded-xl text-slate-600 hover:bg-slate-50">
+                    <Search className="w-5 h-5" />
+                    Каталог
+                  </Link>
+                  <Link to="/news" onClick={() => setMobileMenuOpen(false)} className="flex items-center gap-3 p-3 rounded-xl text-slate-600 hover:bg-slate-50">
+                    <Newspaper className="w-5 h-5" />
+                    Новости
+                  </Link>
+                  <Link to="/contact" onClick={() => setMobileMenuOpen(false)} className="flex items-center gap-3 p-3 rounded-xl text-slate-600 hover:bg-slate-50">
+                    <MessageCircle className="w-5 h-5" />
+                    Связь с админом
+                  </Link>
+                  <Link to="/login" onClick={() => setMobileMenuOpen(false)}>
+                    <Button className="w-full font-bold uppercase bg-gradient-to-r from-teal-500 to-emerald-500 text-white rounded-xl mt-1">
+                      Войти
+                    </Button>
+                  </Link>
+                </>
               )}
             </div>
           </motion.div>

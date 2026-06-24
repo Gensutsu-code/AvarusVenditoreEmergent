@@ -1326,8 +1326,8 @@ export default function AdminPage() {
       
     <div className={`min-h-screen ${isDark ? 'bg-zinc-950' : 'bg-zinc-50'}`} data-testid="admin-page">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <div className="flex items-center justify-between mb-6">
-          <h1 className={`text-2xl md:text-3xl font-bold tracking-tight uppercase ${isDark ? 'text-white' : 'text-zinc-900'}`}>
+        <div className="flex items-center justify-between gap-3 mb-6">
+          <h1 className={`text-xl sm:text-2xl md:text-3xl font-bold tracking-tight uppercase min-w-0 truncate ${isDark ? 'text-white' : 'text-zinc-900'}`}>
             <span className={`bg-gradient-to-r ${isDark ? 'from-orange-400 to-orange-600' : 'from-teal-500 to-emerald-500'} bg-clip-text text-transparent`}>
               Панель администратора
             </span>
@@ -1336,10 +1336,10 @@ export default function AdminPage() {
             variant="outline"
             size="sm"
             onClick={() => setEditingTabOrder(!editingTabOrder)}
-            className={`${editingTabOrder ? 'bg-teal-100 border-teal-500' : ''} ${isDark ? 'border-zinc-700 text-zinc-300 hover:bg-zinc-800' : ''}`}
+            className={`flex-shrink-0 ${editingTabOrder ? 'bg-teal-100 border-teal-500' : ''} ${isDark ? 'border-zinc-700 text-zinc-300 hover:bg-zinc-800' : ''}`}
           >
-            <Settings className="w-4 h-4 mr-1" />
-            {editingTabOrder ? 'Готово' : 'Настроить вкладки'}
+            <Settings className="w-4 h-4 sm:mr-1" />
+            <span className="hidden sm:inline">{editingTabOrder ? 'Готово' : 'Настроить вкладки'}</span>
           </Button>
         </div>
 
