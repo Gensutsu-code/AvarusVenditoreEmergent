@@ -345,44 +345,76 @@ export default function OrdersPage() {
                 data-testid="orders-stats"
               >
                 {/* Stats Header */}
-                <div className="bg-gradient-to-r from-teal-500 to-emerald-500 px-6 py-4">
+                <div className="bg-gradient-to-r from-teal-500 to-emerald-500 px-6 py-4 flex items-center justify-between gap-3 flex-wrap">
                   <h2 className="text-white font-bold flex items-center gap-2">
                     <BarChart3 className="w-5 h-5" />
                     Статистика заказов
                   </h2>
+                  <div className="flex items-center gap-1.5 bg-white/15 rounded-xl p-1" data-testid="stats-period-filter">
+                    {[{ id: 'week', label: 'Неделя' }, { id: 'month', label: 'Месяц' }, { id: 'year', label: 'Год' }, { id: 'all', label: 'Всё время' }].map((p) => (
+                      <button
+                        key={p.id}
+                        onClick={() => setPeriodFilter(p.id)}
+                        className={`px-3 py-1 rounded-lg text-xs font-semibold transition-all ${periodFilter === p.id ? 'bg-white text-teal-600 shadow-sm' : 'text-white/80 hover:bg-white/15'}`}
+                        data-testid={`stats-period-${p.id}`}
+                      >
+                        {p.label}
+                      </button>
+                    ))}
+                  </div>
                 </div>
                 
                 <div className="p-6">
+                  {(() => {
+                    const days = { week: 7, month: 30, year: 365, all: null }[periodFilter];
+                    const cutoff = days != null ? Date.now() - days * 86400000 : null;
+                    const periodOrders = cutoff == null ? orders : orders.filter((o) => {
+                      const t = new Date(o.created_at || 0).getTime();
+                      return !isNaN(t) && t >= cutoff;
+                    });
+                    const ps = {
+                      total_orders: periodOrders.length,
+                      total_spent: periodOrders.reduce((s, o) => s + (o.total || 0), 0),
+                      total_items: periodOrders.reduce((s, o) => s + (o.items || []).reduce((a, i) => a + (i.quantity || 0), 0), 0),
+                      by_status: periodOrders.reduce((acc, o) => { acc[o.status] = (acc[o.status] || 0) + 1; return acc; }, {}),
+                    };
+                    ps.avg_order_value = ps.total_orders ? Math.round(ps.total_spent / ps.total_orders) : 0;
+                    return (
+                  <>
                   {/* Main Stats Cards */}
-                  <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+                  <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6" data-testid="stats-cards">
                     <div className="bg-gradient-to-br from-teal-50 to-teal-100 p-4 rounded-xl border border-teal-200/50">
                       <ShoppingBag className="w-5 h-5 text-teal-600 mb-2" />
-                      <p className="text-2xl font-bold text-slate-800">{stats.total_orders}</p>
+                      <p className="text-2xl font-bold text-slate-800" data-testid="stat-total-orders">{ps.total_orders}</p>
                       <p className="text-xs text-slate-500">Всего заказов</p>
                     </div>
                     <div className="bg-gradient-to-br from-emerald-50 to-emerald-100 p-4 rounded-xl border border-emerald-200/50">
                       <Wallet className="w-5 h-5 text-emerald-600 mb-2" />
-                      <p className="text-2xl font-bold text-slate-800">{formatPrice(stats.total_spent)} ₽</p>
+                      <p className="text-2xl font-bold text-slate-800" data-testid="stat-total-spent">{formatPrice(ps.total_spent)} ₽</p>
                       <p className="text-xs text-slate-500">Общая сумма</p>
                     </div>
                     <div className="bg-gradient-to-br from-blue-50 to-blue-100 p-4 rounded-xl border border-blue-200/50">
                       <TrendingUp className="w-5 h-5 text-blue-600 mb-2" />
-                      <p className="text-2xl font-bold text-slate-800">{formatPrice(stats.avg_order_value)} ₽</p>
+                      <p className="text-2xl font-bold text-slate-800">{formatPrice(ps.avg_order_value)} ₽</p>
                       <p className="text-xs text-slate-500">Средний чек</p>
                     </div>
                     <div className="bg-gradient-to-br from-purple-50 to-purple-100 p-4 rounded-xl border border-purple-200/50">
                       <Package className="w-5 h-5 text-purple-600 mb-2" />
-                      <p className="text-2xl font-bold text-slate-800">{stats.total_items}</p>
+                      <p className="text-2xl font-bold text-slate-800">{ps.total_items}</p>
                       <p className="text-xs text-slate-500">Товаров куплено</p>
                     </div>
                   </div>
-                  
+
+                  {ps.total_orders === 0 && (
+                    <p className="text-sm text-slate-400 text-center mb-6" data-testid="stats-period-empty">За выбранный период заказов нет</p>
+                  )}
+
                   {/* Status breakdown */}
-                  {Object.keys(stats.by_status || {}).length > 0 && (
+                  {Object.keys(ps.by_status || {}).length > 0 && (
                     <div className="mb-6">
                       <p className="text-xs font-bold uppercase text-slate-400 mb-2">По статусу</p>
                       <div className="flex flex-wrap gap-2">
-                        {Object.entries(stats.by_status).map(([status, count]) => (
+                        {Object.entries(ps.by_status).map(([status, count]) => (
                           <span 
                             key={status} 
                             className={`px-3 py-1.5 text-xs font-bold rounded-lg ${STATUS_COLORS[status] || 'bg-slate-100 text-slate-700'}`}
@@ -393,6 +425,9 @@ export default function OrdersPage() {
                       </div>
                     </div>
                   )}
+                  </>
+                    );
+                  })()}
                   
                   {/* Favorite Products */}
                   {stats.favorite_products && stats.favorite_products.length > 0 && (
@@ -451,48 +486,8 @@ export default function OrdersPage() {
 
             {/* Orders List */}
             <div className="space-y-4" data-testid="orders-list">
-              {/* Period filter */}
-              {orders.length > 0 && (() => {
-                const PERIODS = [
-                  { id: 'week', label: 'Неделя', days: 7 },
-                  { id: 'month', label: 'Месяц', days: 30 },
-                  { id: 'year', label: 'Год', days: 365 },
-                  { id: 'all', label: 'Всё время', days: null },
-                ];
-                return (
-                  <div className="glass-card p-3 flex items-center gap-2 flex-wrap" data-testid="orders-period-filter">
-                    <span className="text-xs font-bold uppercase tracking-widest text-slate-400 mr-1 flex items-center gap-1.5"><CalendarDays className="w-3.5 h-3.5" />Период:</span>
-                    {PERIODS.map((p) => (
-                      <button
-                        key={p.id}
-                        onClick={() => setPeriodFilter(p.id)}
-                        className={`px-4 py-1.5 rounded-lg text-sm font-semibold transition-all ${periodFilter === p.id ? 'bg-gradient-to-r from-teal-500 to-emerald-500 text-white shadow-sm shadow-teal-500/20' : 'bg-white text-slate-500 hover:bg-slate-100 border border-slate-200'}`}
-                        data-testid={`period-${p.id}`}
-                      >
-                        {p.label}
-                      </button>
-                    ))}
-                  </div>
-                );
-              })()}
-              {(() => {
-                const days = { week: 7, month: 30, year: 365, all: null }[periodFilter];
-                const cutoff = days != null ? Date.now() - days * 86400000 : null;
-                const filteredOrders = cutoff == null ? orders : orders.filter((o) => {
-                  const t = new Date(o.created_at || 0).getTime();
-                  return !isNaN(t) && t >= cutoff;
-                });
-                if (filteredOrders.length === 0) {
-                  return (
-                    <div className="glass-card text-center py-12" data-testid="orders-period-empty">
-                      <CalendarDays className="w-12 h-12 mx-auto text-slate-300 mb-3" />
-                      <p className="text-slate-500">За выбранный период заказов нет</p>
-                    </div>
-                  );
-                }
-                return (
               <AnimatePresence>
-                {filteredOrders.map((order, index) => (
+                {orders.map((order, index) => (
                   <motion.div 
                     key={order.id} 
                     className="glass-card overflow-hidden"
@@ -854,8 +849,6 @@ export default function OrdersPage() {
                   </motion.div>
                 ))}
               </AnimatePresence>
-                );
-              })()}
             </div>
           </div>
         )}

@@ -24,7 +24,7 @@ Tested: iteration_77 — backend 7/7 pass, frontend all testids verified, no cri
 
 ## 2026-06-24 — Ozon settings, orders filter, warehouse polish, chat scroll
 1. **Ozon certificate admin settings** (Bonuses tab): new card to configure reward amount and order-sum step/threshold (`ozon-settings-card`, step/reward/enable). Backend `GET /ozon-settings` + `PUT /admin/ozon-settings`; `create_order` computes `floor(goods/step)*reward` (0 if disabled). `OzonCertificateBar` reads the settings. Files: `settings.py`, `orders.py`, `AdminPage.js`, `OzonCertificateBar.js`.
-2. **Orders time filter** (/orders): period bar (week/month/year/all), default last month, client-side filter by `created_at`, empty-state per period. File: `OrdersPage.js`.
+2. **Orders time filter** (/orders): period bar (week/month/year/all), default last month — applies to the **statistics block** (totals, avg, items, by-status recomputed from period-filtered orders), NOT the orders list. The orders list always shows all orders. File: `OrdersPage.js`.
 3. **Warehouse polish**: bulk receipt/write-off already existed — improved bulk-operations bar (own row, clearer labels) and fixed embedded-tab padding (TabsContent p-6). File: `AdminWarehousePage.js`, `AdminPage.js`.
 4. **Contact chat auto-scroll removed**: deleted the messages-change autoscroll effect; chat now scrolls to bottom only on opening the chat tab and right after sending; scrolls the inner container only (never the page). File: `ContactPage.js`.
 
