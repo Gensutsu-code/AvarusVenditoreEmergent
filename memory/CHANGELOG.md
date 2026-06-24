@@ -22,4 +22,13 @@ Tested: iteration_77 — backend 7/7 pass, frontend all testids verified, no cri
 - Redesigned the mixed-payment amount fields: clean white sub-cards per method, editable amount input with native number spinners hidden, read-only styled remainder, adjustment chips, and per-method "к оплате" line. Polished the place-order button (rounded-2xl gradient, hover shadow, active scale).
 - Verified by testing_agent iteration_78: 100% pass, no runtime errors, math consistent, button enable/disable correct.
 
+## 2026-06-24 — Ozon settings, orders filter, warehouse polish, chat scroll
+1. **Ozon certificate admin settings** (Bonuses tab): new card to configure reward amount and order-sum step/threshold (`ozon-settings-card`, step/reward/enable). Backend `GET /ozon-settings` + `PUT /admin/ozon-settings`; `create_order` computes `floor(goods/step)*reward` (0 if disabled). `OzonCertificateBar` reads the settings. Files: `settings.py`, `orders.py`, `AdminPage.js`, `OzonCertificateBar.js`.
+2. **Orders time filter** (/orders): period bar (week/month/year/all), default last month, client-side filter by `created_at`, empty-state per period. File: `OrdersPage.js`.
+3. **Warehouse polish**: bulk receipt/write-off already existed — improved bulk-operations bar (own row, clearer labels) and fixed embedded-tab padding (TabsContent p-6). File: `AdminWarehousePage.js`, `AdminPage.js`.
+4. **Contact chat auto-scroll removed**: deleted the messages-change autoscroll effect; chat now scrolls to bottom only on opening the chat tab and right after sending; scrolls the inner container only (never the page). File: `ContactPage.js`.
+
+Verified by testing_agent iteration_79: backend 12/12, frontend 100% (Ozon/Warehouse/Orders), no critical issues.
+
+
 
