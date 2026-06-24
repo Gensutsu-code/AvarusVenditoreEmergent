@@ -88,7 +88,47 @@ async def check_expired_orders_task():
             
             if cancelled_count > 0:
                 logger.info(f"Auto-cancelled {cancelled_count} expired orders")
-                
+
+            # Cancel unpaid card/crypto orders past their payment due date (deferred card/crypto)
+            due_expired = await db.orders.find({
+                "payment_due_date": {"$ne": None, "$lt": now},
+                "status": {"$nin": ["cancelled", "completed", "delivered"]},
+                "card_receipt_url": {"$in": [None, ""]},
+                "payment_status": {"$in": ["awaiting_payment", "awaiting_confirmation", "unpaid"]}
+            }).to_list(200)
+
+            import uuid as _uuid
+            pay_cancelled = 0
+            for order in due_expired:
+                for item in order.get("items", []):
+                    await db.products.update_one(
+                        {"id": item.get("product_id")},
+                        {"$inc": {"stock": item.get("quantity", 0)}}
+                    )
+                await db.orders.update_one(
+                    {"id": order["id"]},
+                    {"$set": {
+                        "status": "cancelled",
+                        "cancelled_by": "system",
+                        "cancelled_reason": "Оплата не поступила в установленный срок",
+                        "cancelled_at": now,
+                        "payment_due_date": None,
+                    }}
+                )
+                await db.notifications.insert_one({
+                    "id": str(_uuid.uuid4()),
+                    "user_id": order["user_id"],
+                    "type": "order",
+                    "title": f"Заказ #{order['id'][:8]} отменён",
+                    "message": "Заказ отменён автоматически: оплата не поступила в установленный срок",
+                    "link": "/orders",
+                    "read": False,
+                    "created_at": now
+                })
+                pay_cancelled += 1
+            if pay_cancelled > 0:
+                logger.info(f"Auto-cancelled {pay_cancelled} unpaid card/crypto orders past due")
+
         except Exception as e:
             logger.error(f"Error in check_expired_orders_task: {e}")
             await asyncio.sleep(60)  # Wait 1 minute on error before retrying

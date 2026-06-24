@@ -1,6 +1,6 @@
 import "@/App.css";
 import { useEffect, useState } from "react";
-import { BrowserRouter, Routes, Route, useLocation } from "react-router-dom";
+import { BrowserRouter, Routes, Route, useLocation, Navigate } from "react-router-dom";
 import { Toaster } from "./components/ui/sonner";
 import { AuthProvider, useAuth } from "./context/AuthContext";
 import { CartProvider } from "./context/CartContext";
@@ -15,7 +15,6 @@ import axios from "axios";
 import HomePage from "./pages/HomePage";
 import CatalogPage from "./pages/CatalogPage";
 import CartPage from "./pages/CartPage";
-import CheckoutPage from "./pages/CheckoutPage";
 import LoginPage from "./pages/LoginPage";
 import RegisterPage from "./pages/RegisterPage";
 import AccountPage from "./pages/AccountPage";
@@ -40,7 +39,6 @@ import AdminReturnsPage from "./pages/AdminReturnsPage";
 import AdminProductsPage from "./pages/AdminProductsPage";
 import CreditPage from "./pages/CreditPage";
 import AdminCreditPage from "./pages/AdminCreditPage";
-import AdminWarehousePage from "./pages/AdminWarehousePage";
 import ContactPage from "./pages/ContactPage";
 
 const API = `${process.env.REACT_APP_BACKEND_URL}/api`;
@@ -130,7 +128,7 @@ function AppContent() {
           <Route path="/" element={<HomePage />} />
           <Route path="/catalog" element={<CatalogPage />} />
           <Route path="/cart" element={<CartPage />} />
-          <Route path="/checkout" element={<CheckoutPage />} />
+          <Route path="/checkout" element={<Navigate to="/cart" replace />} />
           <Route path="/login" element={<LoginPage />} />
           <Route path="/register" element={<RegisterPage />} />
           <Route path="/forgot-password" element={<ForgotPasswordPage />} />
@@ -144,7 +142,6 @@ function AppContent() {
           <Route path="/admin/returns" element={<AdminReturnsPage />} />
           <Route path="/admin/products" element={<AdminProductsPage />} />
           <Route path="/admin/credit" element={<AdminCreditPage />} />
-          <Route path="/admin/warehouse" element={<AdminWarehousePage />} />
           <Route path="/credit" element={<CreditPage />} />
           <Route path="/contact" element={<ContactPage />} />
           <Route path="/returns" element={<ClientReturnsPage />} />

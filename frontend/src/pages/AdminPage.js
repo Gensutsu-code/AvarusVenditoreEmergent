@@ -5,7 +5,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { 
   Users, Package, ShoppingBag, TrendingUp, User,
   Plus, Pencil, Trash2, Save, Eye, FolderOpen, Megaphone, Upload, Image,
-  MessageCircle, Send, BarChart3, Download, FileSpreadsheet, Pin, Tag, X, Copy, Gift, Award, ChevronDown, ChevronUp, Paperclip, Play, ZoomIn, ZoomOut, Settings, ChevronLeft, ChevronRight, CreditCard, FileText, Mail, Bell, Wallet, Clock, ScrollText, Code, Minus, RotateCcw, Merge, Truck, ListChecks
+  MessageCircle, Send, BarChart3, Download, FileSpreadsheet, Pin, Tag, X, Copy, Gift, Award, ChevronDown, ChevronUp, Paperclip, Play, ZoomIn, ZoomOut, Settings, ChevronLeft, ChevronRight, CreditCard, FileText, Mail, Bell, Wallet, Clock, ScrollText, Code, Minus, RotateCcw, Merge, Truck, ListChecks, Warehouse
 } from 'lucide-react';
 import { Button } from '../components/ui/button';
 import { Input } from '../components/ui/input';
@@ -38,6 +38,7 @@ import {
 } from '../components/admin';
 import CryptoSettingsTab from '../components/admin/CryptoSettingsTab';
 import CardPaymentSettings from '../components/admin/CardPaymentSettings';
+import AdminWarehousePage from './AdminWarehousePage';
 
 const API = `${process.env.REACT_APP_BACKEND_URL}/api`;
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
@@ -150,7 +151,7 @@ export default function AdminPage() {
   const { isDark } = useTheme();
   
   // Tab order state - New restructured order
-  const defaultTabOrder = ['products', 'bonus', 'payments', 'crm', 'marketing', 'logs', 'settings'];
+  const defaultTabOrder = ['products', 'warehouse', 'bonus', 'payments', 'crm', 'marketing', 'logs', 'settings'];
   const [tabOrder, setTabOrder] = useState(() => {
     const saved = localStorage.getItem('adminTabOrder');
     if (saved) {
@@ -166,6 +167,12 @@ export default function AdminPage() {
         const settingsIdx = filtered.indexOf('settings');
         if (settingsIdx >= 0) filtered.splice(settingsIdx, 0, 'logs');
         else filtered.push('logs');
+      }
+      // Add warehouse tab if missing (migration) — right after products
+      if (!filtered.includes('warehouse')) {
+        const prodIdx = filtered.indexOf('products');
+        if (prodIdx >= 0) filtered.splice(prodIdx + 1, 0, 'warehouse');
+        else filtered.unshift('warehouse');
       }
       return filtered;
     }
@@ -1262,6 +1269,7 @@ export default function AdminPage() {
   // Tab configuration - New restructured tabs
   const tabConfig = {
     products: { icon: Package, label: 'Каталог', count: products.length },
+    warehouse: { icon: Warehouse, label: 'Склад' },
     bonus: { icon: Gift, label: 'Бонусы', badge: bonusPrograms.reduce((sum, p) => sum + (p.pending_requests || 0), 0) },
     payments: { icon: CreditCard, label: 'Платежи' },
     crm: { icon: Users, label: 'CRM', count: users.length },
@@ -1627,12 +1635,12 @@ export default function AdminPage() {
                                 <Package className="w-10 h-10 text-slate-300" />
                               </div>
                             )}
-                            {/* Stock Badge */}
+                            {/* Stock Badge — reflects effective availability (manual flag when sync OFF) */}
                             <div className={`absolute top-2 right-2 w-3 h-3 rounded-full shadow-sm ${
-                              product.stock > 0 
+                              (product.in_stock !== undefined ? product.in_stock : product.stock > 0)
                                 ? 'bg-emerald-500' 
                                 : 'bg-red-500'
-                            }`} title={product.stock > 0 ? 'В наличии' : 'Нет в наличии'} />
+                            }`} title={(product.in_stock !== undefined ? product.in_stock : product.stock > 0) ? 'В наличии' : 'Нет в наличии'} />
                             {/* Badges top-left — only Bonus (full label) */}
                             {product.bonus_eligible !== false && (
                               <div className="absolute top-1.5 left-1.5">
@@ -1705,6 +1713,11 @@ export default function AdminPage() {
                 </div>
               </div>
             </motion.div>
+          </TabsContent>
+
+          {/* Warehouse Tab */}
+          <TabsContent value="warehouse" className="p-0">
+            <AdminWarehousePage embedded />
           </TabsContent>
 
           {/* Orders Tab */}

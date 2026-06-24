@@ -27,7 +27,7 @@ const MV = {
 const firstOfMonth = () => { const d = new Date(); return new Date(d.getFullYear(), d.getMonth(), 1).toISOString().slice(0, 10); };
 const today = () => new Date().toISOString().slice(0, 10);
 
-export default function AdminWarehousePage() {
+export default function AdminWarehousePage({ embedded = false }) {
   const { user, loading: authLoading } = useAuth();
   const navigate = useNavigate();
   const [tab, setTab] = useState('stock');
@@ -71,7 +71,7 @@ export default function AdminWarehousePage() {
 
   useEffect(() => {
     if (authLoading) return;
-    if (!user || user.role !== 'admin') { navigate('/login'); return; }
+    if (!user || user.role !== 'admin') { if (!embedded) navigate('/login'); return; }
     Promise.all([fetchStock(), fetchMovements(), fetchFinance()]).catch(() => toast.error('Ошибка загрузки')).finally(() => setLoading(false));
     axios.get(`${API}/stock-sync-settings`).then(r => setGlobalSync(r.data.stock_sync_enabled)).catch(() => {});
     // eslint-disable-next-line
@@ -150,8 +150,8 @@ export default function AdminWarehousePage() {
   const s = stockData.summary || {};
 
   return (
-    <div className="min-h-screen bg-slate-50" data-testid="admin-warehouse-page">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+    <div className={embedded ? '' : 'min-h-screen bg-slate-50'} data-testid="admin-warehouse-page">
+      <div className={embedded ? '' : 'max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8'}>
         <div className="flex items-center gap-4 mb-8">
           <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-amber-400 to-orange-500 flex items-center justify-center shadow-lg shadow-amber-500/30">
             <Warehouse className="w-6 h-6 text-white" />

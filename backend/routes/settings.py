@@ -47,7 +47,8 @@ async def get_payment_settings():
     """Get payment method settings (public)"""
     defaults = {
         "card_adjustment": 0, "crypto_adjustment": 0, "cash_adjustment": 0, "balance_adjustment": 0,
-        "card_enabled": True, "crypto_enabled": True, "cash_enabled": True, "balance_enabled": True
+        "card_enabled": True, "crypto_enabled": True, "cash_enabled": True, "balance_enabled": True,
+        "deferred_payment_enabled": False, "deferred_payment_hours": 24
     }
     settings = await db.settings.find_one({"key": "payment_settings"})
     if settings:
@@ -62,7 +63,8 @@ async def get_admin_payment_settings(user=Depends(get_current_user)):
         raise HTTPException(status_code=403, detail="Admin access required")
     defaults = {
         "card_adjustment": 0, "crypto_adjustment": 0, "cash_adjustment": 0, "balance_adjustment": 0,
-        "card_enabled": True, "crypto_enabled": True, "cash_enabled": True, "balance_enabled": True
+        "card_enabled": True, "crypto_enabled": True, "cash_enabled": True, "balance_enabled": True,
+        "deferred_payment_enabled": False, "deferred_payment_hours": 24
     }
     settings = await db.settings.find_one({"key": "payment_settings"})
     if settings:
@@ -83,7 +85,9 @@ async def update_payment_settings(data: dict, user=Depends(get_current_user)):
         "card_enabled": data.get("card_enabled", True),
         "crypto_enabled": data.get("crypto_enabled", True),
         "cash_enabled": data.get("cash_enabled", True),
-        "balance_enabled": data.get("balance_enabled", True)
+        "balance_enabled": data.get("balance_enabled", True),
+        "deferred_payment_enabled": bool(data.get("deferred_payment_enabled", False)),
+        "deferred_payment_hours": int(data.get("deferred_payment_hours", 24) or 24),
     }
     await db.settings.update_one(
         {"key": "payment_settings"},

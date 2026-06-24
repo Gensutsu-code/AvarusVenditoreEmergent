@@ -395,12 +395,6 @@ export const Header = () => {
                         Отсрочка
                       </span>
                     </NavLink>
-                    <NavLink to="/admin/warehouse" data-testid="admin-warehouse-link">
-                      <span className="flex items-center gap-2">
-                        <Warehouse className="w-4 h-4" />
-                        Склад
-                      </span>
-                    </NavLink>
                     <NavLink to="/admin/profile" data-testid="admin-profile-link">
                       <User className="w-4 h-4" />
                     </NavLink>
@@ -666,10 +660,6 @@ export const Header = () => {
                       <Link to="/admin/credit" onClick={() => setMobileMenuOpen(false)} className="flex items-center gap-3 p-3 rounded-xl text-slate-600 hover:bg-slate-50">
                         <CreditCard className="w-5 h-5" />
                         Отсрочка
-                      </Link>
-                      <Link to="/admin/warehouse" onClick={() => setMobileMenuOpen(false)} className="flex items-center gap-3 p-3 rounded-xl text-slate-600 hover:bg-slate-50">
-                        <Warehouse className="w-5 h-5" />
-                        Склад
                       </Link>
                     </>
                   ) : (

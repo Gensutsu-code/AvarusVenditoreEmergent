@@ -302,7 +302,9 @@ export default function AdminProductsPage() {
                     </div>
                     <div className="text-right hidden sm:block">
                       <p className="text-sm font-bold text-slate-800">{fmt(p.price)} ₽</p>
-                      <p className={`text-xs ${p.stock > 0 ? 'text-emerald-600' : 'text-red-400'}`}>{p.stock > 0 ? `${p.stock} шт` : 'нет в наличии'}</p>
+                      {(() => { const avail = p.in_stock !== undefined ? p.in_stock : p.stock > 0; return (
+                        <p className={`text-xs ${avail ? 'text-emerald-600' : 'text-red-400'}`}>{avail ? `${p.stock} шт` : 'нет в наличии'}</p>
+                      ); })()}
                     </div>
                     <div className="flex items-center gap-1">
                       <button onClick={() => setEditing(p)} className="p-2 text-slate-400 hover:text-teal-600 hover:bg-teal-50 rounded-lg" data-testid={`edit-product-${p.id}`}><Edit3 className="w-4 h-4" /></button>

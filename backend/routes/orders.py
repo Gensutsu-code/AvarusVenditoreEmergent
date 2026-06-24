@@ -297,27 +297,101 @@ async def create_order(data: OrderCreate, user=Depends(get_current_user)):
             items.append(item_data)
             subtotal += final_price * cart_item["quantity"]
     
-    # Total is now subtotal (already includes payment adjustment per item)
-    total = subtotal
-    
-    # Apply delivery fee
+    # Base goods subtotal. For a single method this already includes the per-item
+    # payment adjustment (price_multiplier); for mixed payment the multiplier is 1
+    # (base prices) and the adjustment is applied per payment part below.
+    base_subtotal = round(subtotal, 2)
+
+    # Delivery settings
     delivery_settings = await db.settings.find_one({"key": "delivery_settings"})
     delivery_vals = delivery_settings.get("value", {}) if delivery_settings else {}
     delivery_enabled = delivery_vals.get("delivery_enabled", True)
     min_free = delivery_vals.get("min_free_delivery", 5000)
     delivery_price = delivery_vals.get("delivery_price", 500)
-    delivery_fee = 0
-    if delivery_enabled and total < min_free:
-        delivery_fee = delivery_price
-        total += delivery_fee
-    
-    total = round(total, 2)
 
-    # Ozon certificate: +500₽ per full 10 000₽ of goods (informational; admin issues manually)
-    ozon_certificate = int(subtotal // 10000) * 500
+    # ---- Payment intent ----
+    is_deferral = (payment_method == "deferral")
+    pay_with_balance = getattr(data, 'pay_with_balance', False) if hasattr(data, 'pay_with_balance') else False
+    if is_deferral:
+        pay_with_balance = False
+    pay_later = bool(getattr(data, 'pay_later', False))
+    paid_from_balance = 0
+
+    parts = getattr(data, 'payment_parts', None)
+    card_part = 0.0
+    cash_part = 0.0
+    is_mixed = False
+    payment_parts_out = None
+    balance_to_deduct = 0.0
+
+    if parts:
+        # MIXED PAYMENT: amounts are in base-goods terms; each method's adjustment
+        # (discount/surcharge) is applied to its own part.
+        if is_deferral:
+            raise HTTPException(status_code=400, detail="Отсрочка не поддерживает смешанную оплату")
+        valid_methods = {"balance", "card", "cash"}
+        norm = []
+        for p in parts:
+            m = p.get("method")
+            try:
+                a = round(float(p.get("amount", 0)), 2)
+            except (TypeError, ValueError):
+                a = 0
+            if m in valid_methods and a > 0:
+                norm.append([m, a])
+        if len(norm) < 1 or len(norm) > 2:
+            raise HTTPException(status_code=400, detail="Смешанная оплата: выберите 1–2 способа")
+        if len({m for m, _ in norm}) != len(norm):
+            raise HTTPException(status_code=400, detail="Способы оплаты не должны повторяться")
+        base_sum = round(sum(a for _, a in norm), 2)
+        if abs(base_sum - base_subtotal) > 1:
+            raise HTTPException(status_code=400, detail=f"Сумма частей ({base_sum:.0f} ₽) должна равняться сумме товаров ({base_subtotal:.0f} ₽)")
+        # Apply each method's adjustment to its part
+        charged = []
+        for m, a in norm:
+            adj = payment_adjustments.get(f"{m}_adjustment", 0) or 0
+            charged.append([m, round(a * (1 + adj / 100), 2)])
+        goods_total = round(sum(c for _, c in charged), 2)
+        delivery_fee = delivery_price if (delivery_enabled and goods_total < min_free) else 0
+        total = round(goods_total + delivery_fee, 2)
+        # Allocate delivery fee to a non-balance part (so the balance deduction stays exact)
+        if delivery_fee:
+            idx = next((i for i in range(len(charged) - 1, -1, -1) if charged[i][0] != "balance"), len(charged) - 1)
+            charged[idx][1] = round(charged[idx][1] + delivery_fee, 2)
+        amounts = {m: a for m, a in charged}
+        balance_to_deduct = amounts.get("balance", 0)
+        card_part = amounts.get("card", 0)
+        cash_part = amounts.get("cash", 0)
+        payment_parts_out = [{"method": m, "amount": a} for m, a in charged]
+        is_mixed = len(charged) == 2
+        pay_with_balance = False
+        ozon_base = goods_total
+    else:
+        # SINGLE METHOD: base_subtotal already includes this method's adjustment
+        goods_total = base_subtotal
+        delivery_fee = delivery_price if (delivery_enabled and goods_total < min_free) else 0
+        total = round(goods_total + delivery_fee, 2)
+        ozon_base = goods_total
+        if pay_with_balance:
+            balance_to_deduct = total
+        elif payment_method == "card":
+            card_part = total
+        elif payment_method == "cash":
+            cash_part = total
+
+    # Ozon certificate: +500₽ per full 10 000₽ of (adjusted) goods
+    ozon_certificate = int(ozon_base // 10000) * 500
+
+    # Deferred card/crypto: order is placed now, payment due within an admin-defined window
+    payment_due_date = None
+    if pay_later and not is_deferral and not pay_with_balance and not is_mixed and payment_method in ("card", "crypto"):
+        try:
+            window_hours = int(payment_adjustments.get("deferred_payment_hours", 24) or 24)
+        except (TypeError, ValueError):
+            window_hours = 24
+        payment_due_date = (datetime.now(timezone.utc) + timedelta(hours=window_hours)).isoformat()
 
     # Deferred payment (отсрочка): validate approved credit limit & availability
-    is_deferral = (payment_method == "deferral")
     deferral_due_date = None
     deferral_term = 0
     if is_deferral:
@@ -331,54 +405,6 @@ async def create_order(data: OrderCreate, user=Depends(get_current_user)):
             raise HTTPException(status_code=400, detail=f"Превышен лимит отсрочки. Доступно: {available:.0f} ₽, сумма заказа: {total:.0f} ₽")
         deferral_term = int(ucred.get("credit_term_days", 30) or 30)
         deferral_due_date = (datetime.now(timezone.utc) + timedelta(days=deferral_term)).isoformat()
-
-    # Check if paying with balance (legacy single) or mixed payment parts
-    pay_with_balance = getattr(data, 'pay_with_balance', False) if hasattr(data, 'pay_with_balance') else False
-    if is_deferral:
-        pay_with_balance = False
-    paid_from_balance = 0
-
-    # Parse mixed payment parts
-    parts = getattr(data, 'payment_parts', None)
-    card_part = 0.0
-    cash_part = 0.0
-    is_mixed = False
-    payment_parts_out = None
-    balance_to_deduct = 0.0
-
-    if parts:
-        if is_deferral:
-            raise HTTPException(status_code=400, detail="Отсрочка не поддерживает смешанную оплату")
-        valid_methods = {"balance", "card", "cash"}
-        norm = []
-        for p in parts:
-            m = p.get("method")
-            try:
-                a = round(float(p.get("amount", 0)), 2)
-            except (TypeError, ValueError):
-                a = 0
-            if m in valid_methods and a > 0:
-                norm.append((m, a))
-        if len(norm) < 1 or len(norm) > 2:
-            raise HTTPException(status_code=400, detail="Смешанная оплата: выберите 1–2 способа")
-        if len({m for m, _ in norm}) != len(norm):
-            raise HTTPException(status_code=400, detail="Способы оплаты не должны повторяться")
-        s = round(sum(a for _, a in norm), 2)
-        if abs(s - total) > 1:
-            raise HTTPException(status_code=400, detail=f"Сумма частей ({s:.0f} ₽) не равна сумме заказа ({total:.0f} ₽)")
-        is_mixed = len(norm) == 2
-        amounts = {m: a for m, a in norm}
-        balance_to_deduct = amounts.get("balance", 0)
-        card_part = amounts.get("card", 0)
-        cash_part = amounts.get("cash", 0)
-        payment_parts_out = [{"method": m, "amount": a} for m, a in norm]
-        pay_with_balance = False
-    elif pay_with_balance:
-        balance_to_deduct = total
-    elif payment_method == "card":
-        card_part = total
-    elif payment_method == "cash":
-        cash_part = total
 
     # Deduct balance if needed (full or partial)
     if balance_to_deduct > 0:
@@ -432,6 +458,8 @@ async def create_order(data: OrderCreate, user=Depends(get_current_user)):
         order_payment_status = "deferred"
     elif has_card:
         order_payment_status = "awaiting_confirmation"
+    elif payment_method == "crypto" and payment_due_date and paid_from_balance < total:
+        order_payment_status = "awaiting_payment"
     elif cash_part > 0:
         order_payment_status = "unpaid"
     elif paid_from_balance >= total and total > 0:
@@ -457,6 +485,7 @@ async def create_order(data: OrderCreate, user=Depends(get_current_user)):
         "paid_from_balance": paid_from_balance,
         "is_deferral": is_deferral,
         "deferral_due_date": deferral_due_date,
+        "payment_due_date": payment_due_date,
         "payment_status": order_payment_status,
         "card_status": card_status,
         "card_requisites": card_requisites,
@@ -581,7 +610,7 @@ async def upload_card_receipt(order_id: str, data: CardReceiptIn, user=Depends(g
         raise HTTPException(status_code=404, detail="Заказ не найден")
     if order.get("card_status") not in ("awaiting_payment", "receipt_uploaded"):
         raise HTTPException(status_code=400, detail="Сейчас нельзя загрузить чек по этому заказу")
-    await db.orders.update_one({"id": order_id}, {"$set": {"card_receipt_url": data.receipt_url, "card_status": "receipt_uploaded"}})
+    await db.orders.update_one({"id": order_id}, {"$set": {"card_receipt_url": data.receipt_url, "card_status": "receipt_uploaded", "payment_due_date": None}})
     await notify_admin("card_payment", "Чек об оплате загружен", f"По заказу #{order_id[:8]} клиент загрузил чек — подтвердите оплату", "/admin/orders")
     return {"success": True}
 

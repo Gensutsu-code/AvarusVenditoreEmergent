@@ -217,6 +217,7 @@ class OrderCreate(BaseModel):
     comment: Optional[str] = None
     payment_method: Optional[str] = "cash"
     pay_with_balance: Optional[bool] = False
+    pay_later: Optional[bool] = False  # deferred card/crypto: place order now, pay within admin window
     payment_parts: Optional[List[dict]] = None  # mixed payment: [{method, amount}], max 2, no deferral
 
 class OrderItemUpdate(BaseModel):
@@ -282,6 +283,7 @@ class OrderResponse(BaseModel):
     # Deferral (отсрочка) fields
     is_deferral: Optional[bool] = None
     deferral_due_date: Optional[str] = None
+    payment_due_date: Optional[str] = None
     payment_status: Optional[str] = None
     card_status: Optional[str] = None
     card_requisites: Optional[dict] = None

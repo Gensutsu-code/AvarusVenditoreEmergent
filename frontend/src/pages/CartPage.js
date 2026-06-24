@@ -1,18 +1,23 @@
 import { useState, useEffect, useRef } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import axios from 'axios';
-import { Trash2, ArrowLeft, ShoppingCart, Minus, Plus, Package, ArrowRight, TrendingUp, Truck, PartyPopper, Award } from 'lucide-react';
+import { Trash2, ArrowLeft, ShoppingCart, Minus, Plus, Package, TrendingUp, Truck, PartyPopper, Award, Banknote, CreditCard, Wallet, Sparkles, Clock, Loader2, FileText, ShoppingBag, MessageSquare } from 'lucide-react';
 import { Button } from '../components/ui/button';
+import { Input } from '../components/ui/input';
+import { Label } from '../components/ui/label';
+import { Textarea } from '../components/ui/textarea';
+import { Dialog, DialogContent, DialogTitle, DialogDescription } from '../components/ui/dialog';
 import { useCart } from '../context/CartContext';
 import { useAuth } from '../context/AuthContext';
 import { motion, AnimatePresence } from 'framer-motion';
+import { toast } from 'sonner';
 import { trackClick } from '../utils/tracker';
 import { getCartUpsell } from '../utils/productHelpers';
 import { OzonCertificateBar } from '../components/OzonCertificateBar';
+import CryptoPaymentModal from '../components/CryptoPaymentModal';
 
 const API = `${process.env.REACT_APP_BACKEND_URL}/api`;
 
-// Pre-generated confetti pieces (deterministic per session) for the free-delivery celebration
 const CONFETTI = Array.from({ length: 20 }, (_, i) => ({
   id: i,
   x: (Math.random() * 2 - 1) * 220,
@@ -23,22 +28,70 @@ const CONFETTI = Array.from({ length: 20 }, (_, i) => ({
   left: 10 + Math.random() * 80,
 }));
 
-export default function CartPage() {
-  const { cart, updateQuantity, removeFromCart, clearCart } = useCart();
-  const { user } = useAuth();
-  const navigate = useNavigate();
+const PAYMENT_METHODS = [
+  { id: 'cash', label: 'Наличные', desc: 'Оплата при получении', icon: Banknote },
+  { id: 'card', label: 'Банковская карта', desc: 'Перевод по реквизитам, чек + подтверждение', icon: CreditCard },
+  { id: 'crypto', label: 'Криптовалюта', desc: 'USDT/USDC через MetaMask', icon: Wallet },
+];
 
-  const [delivery, setDelivery] = useState({ min_free_delivery: 5000, delivery_price: 500, delivery_enabled: true });
-  useEffect(() => {
-    axios.get(`${API}/delivery-settings`).then(r => setDelivery(r.data)).catch(() => {});
-  }, []);
+export default function CartPage() {
+  const { cart, updateQuantity, removeFromCart, clearCart, fetchCart, loading: cartLoading } = useCart();
+  const { user, loading: authLoading } = useAuth();
+  const navigate = useNavigate();
 
   const formatPrice = (price) => new Intl.NumberFormat('ru-RU').format(Math.round(price));
 
+  // Settings
+  const [delivery, setDelivery] = useState({ min_free_delivery: 5000, delivery_price: 500, delivery_enabled: true });
+  const [paymentSettings, setPaymentSettings] = useState({
+    card_adjustment: 0, crypto_adjustment: 0, cash_adjustment: 0, balance_adjustment: 0,
+    card_enabled: true, crypto_enabled: true, cash_enabled: true, balance_enabled: true,
+    deferred_payment_enabled: false, deferred_payment_hours: 24,
+  });
+  const [prepaymentSettings, setPrepaymentSettings] = useState({ prepayment_enabled: true });
+  const [termsSections, setTermsSections] = useState([]);
+  const [userBalance, setUserBalance] = useState(0);
+  const [creditInfo, setCreditInfo] = useState(null);
+  const [bonusPreview, setBonusPreview] = useState({ total_points: 0, programs: [] });
+
+  // Checkout state
+  const [paymentMethod, setPaymentMethod] = useState('cash');
+  const [payWithBalance, setPayWithBalance] = useState(false);
+  const [payWithDeferral, setPayWithDeferral] = useState(false);
+  const [payLater, setPayLater] = useState(false);
+  const [mixedMode, setMixedMode] = useState(false);
+  const [mix1Method, setMix1Method] = useState('balance');
+  const [mix1Amount, setMix1Amount] = useState('');
+  const [mix2Method, setMix2Method] = useState('card');
+  const [form, setForm] = useState({ full_name: '', address: '', phone: '', comment: '' });
+  const [agreedToTerms, setAgreedToTerms] = useState(true);
+  const [showTermsModal, setShowTermsModal] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [showCryptoModal, setShowCryptoModal] = useState(false);
+  const [cryptoPaymentAmount, setCryptoPaymentAmount] = useState(0);
+  const [orderId, setOrderId] = useState(null);
+
   const cartTotal = cart.items.reduce((sum, item) => sum + item.price * item.quantity, 0);
 
-  // Bonus points preview for the current cart (debounced refetch on total change)
-  const [bonusPreview, setBonusPreview] = useState({ total_points: 0, programs: [] });
+  useEffect(() => {
+    axios.get(`${API}/delivery-settings`).then(r => setDelivery(r.data)).catch(() => {});
+    axios.get(`${API}/payment-settings`).then(r => {
+      setPaymentSettings(r.data);
+      if (r.data.cash_enabled !== false) setPaymentMethod('cash');
+      else if (r.data.card_enabled !== false) setPaymentMethod('card');
+      else if (r.data.crypto_enabled !== false) setPaymentMethod('crypto');
+    }).catch(() => {});
+    axios.get(`${API}/prepayment-settings`).then(r => setPrepaymentSettings(r.data)).catch(() => {});
+    axios.get(`${API}/terms`).then(r => setTermsSections(r.data.sections || [])).catch(() => {});
+  }, []);
+
+  useEffect(() => {
+    if (!user) return;
+    axios.get(`${API}/user/balance`).then(r => setUserBalance(r.data.balance || 0)).catch(() => {});
+    axios.get(`${API}/credit/my`).then(r => setCreditInfo(r.data)).catch(() => {});
+    axios.get(`${API}/user/last-shipping`).then(r => setForm({ full_name: r.data.full_name || '', address: r.data.address || '', phone: r.data.phone || '', comment: '' })).catch(() => {});
+  }, [user]);
+
   useEffect(() => {
     if (!cart.items.length) { setBonusPreview({ total_points: 0, programs: [] }); return; }
     const t = setTimeout(() => {
@@ -47,14 +100,33 @@ export default function CartPage() {
     return () => clearTimeout(t);
   }, [cartTotal, cart.items.length]);
 
-  const handleClearCart = () => {
-    if (window.confirm('Очистить корзину? Все товары будут удалены.')) {
-      clearCart();
-    }
-  };
+  // ----- Totals -----
+  const getAdj = (m) => paymentSettings[`${m}_adjustment`] ?? 0;
+  const singleAdj = mixedMode ? 0 : (payWithDeferral ? 0 : (payWithBalance ? (paymentSettings.balance_adjustment ?? 0) : getAdj(paymentMethod)));
 
-  // Free-delivery celebration: fire confetti when the threshold is first reached
-  const freeDeliveryReached = delivery.delivery_enabled && delivery.min_free_delivery > 0 && cartTotal >= delivery.min_free_delivery;
+  const a1 = Math.max(0, Math.min(Number(mix1Amount) || 0, cartTotal));
+  const a2 = Math.round((cartTotal - a1) * 100) / 100;
+  const mixCharged1 = Math.round(a1 * (1 + getAdj(mix1Method) / 100));
+  const mixCharged2 = Math.round(a2 * (1 + getAdj(mix2Method) / 100));
+
+  const goodsTotal = mixedMode
+    ? (mixCharged1 + mixCharged2)
+    : (singleAdj !== 0 ? Math.round(cartTotal * (1 + singleAdj / 100)) : cartTotal);
+
+  const isFreeDelivery = !delivery.delivery_enabled || goodsTotal >= delivery.min_free_delivery;
+  const deliveryFee = isFreeDelivery ? 0 : delivery.delivery_price;
+  const finalTotal = goodsTotal + deliveryFee;
+
+  const isMethodEnabled = (m) => paymentSettings[`${m}_enabled`] !== false;
+  const canPayWithBalance = prepaymentSettings.prepayment_enabled && userBalance >= finalTotal;
+  const creditApproved = creditInfo && creditInfo.status === 'approved';
+  const creditAvailable = creditInfo ? (creditInfo.available || 0) : 0;
+  const canPayWithDeferral = creditApproved && creditAvailable >= finalTotal;
+  const deferredEnabled = paymentSettings.deferred_payment_enabled;
+  const showPayLater = deferredEnabled && !mixedMode && !payWithBalance && !payWithDeferral && (paymentMethod === 'card' || paymentMethod === 'crypto');
+
+  // ----- Free-delivery celebration -----
+  const freeDeliveryReached = delivery.delivery_enabled && delivery.min_free_delivery > 0 && goodsTotal >= delivery.min_free_delivery;
   const [celebrate, setCelebrate] = useState(false);
   const prevReachedRef = useRef(false);
   useEffect(() => {
@@ -67,31 +139,88 @@ export default function CartPage() {
     if (!freeDeliveryReached) prevReachedRef.current = false;
   }, [freeDeliveryReached]);
 
+  const handleClearCart = () => {
+    if (window.confirm('Очистить корзину? Все товары будут удалены.')) clearCart();
+  };
+
+  const handleCryptoSuccess = async (txHash) => {
+    setShowCryptoModal(false);
+    try {
+      const res = await axios.post(`${API}/orders`, { ...form, payment_method: 'crypto', crypto_tx_hash: txHash });
+      setOrderId(res.data.id);
+      await fetchCart();
+      toast.success('Заказ оплачен криптовалютой!');
+      navigate('/orders');
+    } catch (err) {
+      toast.error(err.response?.data?.detail || 'Оплата прошла, но ошибка создания заказа. Свяжитесь с поддержкой.');
+    }
+  };
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    if (!form.full_name.trim() || !form.address.trim() || !form.phone.trim()) { toast.error('Заполните все обязательные поля'); return; }
+    trackClick('place_order', '/cart');
+    setLoading(true);
+    try {
+      // MIXED payment: base amounts, backend applies per-part adjustment
+      if (mixedMode) {
+        if (mix1Method === mix2Method) { toast.error('Выберите два разных способа'); setLoading(false); return; }
+        if (!a1 || a1 <= 0 || a1 >= cartTotal) { toast.error(`Сумма первого способа: от 1 до ${formatPrice(cartTotal - 1)} ₽`); setLoading(false); return; }
+        const res = await axios.post(`${API}/orders`, {
+          ...form,
+          payment_parts: [{ method: mix1Method, amount: a1 }, { method: mix2Method, amount: a2 }],
+        });
+        setOrderId(res.data.id);
+        await fetchCart();
+        if (mix1Method === 'card' || mix2Method === 'card') {
+          toast.success('Заказ создан! Завершите оплату картой в «Мои заказы»');
+        } else {
+          toast.success('Заказ оформлен!');
+        }
+        navigate('/orders');
+        return;
+      }
+
+      // Crypto with immediate payment (no pay-later): open modal first
+      if (paymentMethod === 'crypto' && !payWithBalance && !payWithDeferral && !payLater) {
+        setCryptoPaymentAmount(finalTotal);
+        setShowCryptoModal(true);
+        setLoading(false);
+        return;
+      }
+
+      const res = await axios.post(`${API}/orders`, {
+        ...form,
+        payment_method: payWithDeferral ? 'deferral' : (payWithBalance ? 'balance' : paymentMethod),
+        pay_with_balance: payWithBalance,
+        pay_later: showPayLater ? payLater : false,
+      });
+      setOrderId(res.data.id);
+      await fetchCart();
+
+      if (payWithDeferral) toast.success('Заказ оформлен в отсрочку!');
+      else if (payWithBalance) toast.success('Заказ оплачен с баланса!');
+      else if (paymentMethod === 'card') toast.success('Заказ создан! Реквизиты для оплаты в «Мои заказы»');
+      else if (paymentMethod === 'crypto' && payLater) toast.success('Заказ создан! Оплатите криптовалютой в «Мои заказы»');
+      else toast.success('Заказ оформлен!');
+      navigate('/orders');
+    } catch (err) {
+      toast.error(err.response?.data?.detail || 'Ошибка оформления заказа');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  if (authLoading || cartLoading) return null;
+
   if (!user) {
     return (
       <div className="min-h-screen relative" data-testid="cart-login-required">
-        {/* Background effects */}
-        <div className="fixed inset-0 overflow-hidden pointer-events-none">
-          <motion.div 
-            className="absolute top-20 right-20 w-96 h-96 rounded-full bg-teal-400/20 blur-3xl"
-            animate={{ scale: [1, 1.2, 1], opacity: [0.2, 0.4, 0.2] }}
-            transition={{ duration: 8, repeat: Infinity }}
-          />
-        </div>
-
         <div className="relative flex items-center justify-center min-h-screen">
-          <motion.div 
-            className="text-center glass-card p-12"
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-          >
+          <motion.div className="text-center glass-card p-12" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}>
             <ShoppingCart className="w-20 h-20 mx-auto text-slate-300 mb-4" />
             <p className="text-slate-500 text-lg mb-6">Для просмотра корзины необходимо войти</p>
-            <Link to="/login">
-              <Button className="bg-gradient-to-r from-teal-500 to-emerald-500 hover:from-teal-600 hover:to-emerald-600 text-white rounded-xl shadow-lg shadow-teal-500/30">
-                Войти
-              </Button>
-            </Link>
+            <Link to="/login"><Button className="bg-gradient-to-r from-teal-500 to-emerald-500 text-white rounded-xl">Войти</Button></Link>
           </motion.div>
         </div>
       </div>
@@ -101,44 +230,14 @@ export default function CartPage() {
   if (cart.items.length === 0) {
     return (
       <div className="min-h-screen relative" data-testid="cart-empty">
-        {/* Background effects */}
-        <div className="fixed inset-0 overflow-hidden pointer-events-none">
-          <motion.div 
-            className="absolute top-20 right-20 w-96 h-96 rounded-full bg-cyan-400/20 blur-3xl"
-            animate={{ scale: [1, 1.2, 1], opacity: [0.2, 0.4, 0.2] }}
-            transition={{ duration: 8, repeat: Infinity }}
-          />
-        </div>
-
         <div className="relative max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
           <Link to="/catalog" className="inline-flex items-center gap-2 text-slate-500 hover:text-teal-600 transition-colors mb-4">
             <ArrowLeft className="w-4 h-4" /> Продолжить покупки
           </Link>
-          
-          <motion.div 
-            className="flex items-center gap-4 mb-8"
-            initial={{ opacity: 0, y: -20 }}
-            animate={{ opacity: 1, y: 0 }}
-          >
-            <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-teal-400 to-emerald-500 flex items-center justify-center shadow-lg shadow-teal-500/30">
-              <ShoppingCart className="w-6 h-6 text-white" />
-            </div>
-            <h1 className="text-2xl md:text-3xl font-bold tracking-tight text-slate-800">Корзина</h1>
-          </motion.div>
-
-          <motion.div 
-            className="glass-card text-center py-16"
-            initial={{ opacity: 0, scale: 0.95 }}
-            animate={{ opacity: 1, scale: 1 }}
-          >
+          <motion.div className="glass-card text-center py-16" initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }}>
             <ShoppingCart className="w-20 h-20 mx-auto text-slate-300 mb-4" />
             <p className="text-slate-500 text-lg mb-4">Корзина пуста</p>
-            <p className="text-slate-400 text-sm mb-6">Добавьте товары из каталога</p>
-            <Link to="/catalog">
-              <Button className="bg-gradient-to-r from-teal-500 to-emerald-500 hover:from-teal-600 hover:to-emerald-600 text-white rounded-xl shadow-lg shadow-teal-500/30">
-                Перейти в каталог
-              </Button>
-            </Link>
+            <Link to="/catalog"><Button className="bg-gradient-to-r from-teal-500 to-emerald-500 text-white rounded-xl">Перейти в каталог</Button></Link>
           </motion.div>
         </div>
       </div>
@@ -146,323 +245,308 @@ export default function CartPage() {
   }
 
   return (
+    <>
     <div className="min-h-screen relative" data-testid="cart-page">
-      {/* Background effects */}
       <div className="fixed inset-0 overflow-hidden pointer-events-none">
-        <motion.div 
-          className="absolute top-20 right-20 w-96 h-96 rounded-full bg-teal-400/20 blur-3xl"
-          animate={{ scale: [1, 1.2, 1], opacity: [0.2, 0.4, 0.2] }}
-          transition={{ duration: 8, repeat: Infinity }}
-        />
-        <motion.div 
-          className="absolute bottom-20 left-20 w-80 h-80 rounded-full bg-cyan-400/20 blur-3xl"
-          animate={{ scale: [1.2, 1, 1.2], opacity: [0.2, 0.4, 0.2] }}
-          transition={{ duration: 10, repeat: Infinity }}
-        />
+        <motion.div className="absolute top-20 right-20 w-96 h-96 rounded-full bg-teal-400/20 blur-3xl" animate={{ scale: [1, 1.2, 1], opacity: [0.2, 0.4, 0.2] }} transition={{ duration: 8, repeat: Infinity }} />
       </div>
 
-      <div className="relative max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      <div className="relative max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <Link to="/catalog" className="inline-flex items-center gap-2 text-slate-500 hover:text-teal-600 transition-colors mb-4">
           <ArrowLeft className="w-4 h-4" /> Продолжить покупки
         </Link>
-        
-        <motion.div 
-          className="flex items-center gap-4 mb-8"
-          initial={{ opacity: 0, x: -20 }}
-          animate={{ opacity: 1, x: 0 }}
-        >
+
+        <motion.div className="flex items-center gap-4 mb-8" initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }}>
           <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-teal-400 to-emerald-500 flex items-center justify-center shadow-lg shadow-teal-500/30">
             <ShoppingCart className="w-6 h-6 text-white" />
           </div>
           <div>
-            <h1 className="text-2xl md:text-3xl font-bold tracking-tight text-slate-800">
-              Корзина
-            </h1>
+            <h1 className="text-2xl md:text-3xl font-bold tracking-tight text-slate-800">Корзина и оформление</h1>
             <p className="text-sm text-slate-500">{cart.items.length} товаров</p>
           </div>
-          <button
-            onClick={handleClearCart}
-            className="ml-auto inline-flex items-center gap-1.5 px-3 py-2 rounded-xl text-sm font-medium text-slate-500 hover:text-red-500 hover:bg-red-50 transition-colors"
-            data-testid="clear-cart-btn"
-          >
-            <Trash2 className="w-4 h-4" />
-            <span className="hidden sm:inline">Очистить корзину</span>
+          <button onClick={handleClearCart} className="ml-auto inline-flex items-center gap-1.5 px-3 py-2 rounded-xl text-sm font-medium text-slate-500 hover:text-red-500 hover:bg-red-50 transition-colors" data-testid="clear-cart-btn">
+            <Trash2 className="w-4 h-4" /><span className="hidden sm:inline">Очистить</span>
           </button>
         </motion.div>
 
-        {/* Free-delivery progress bar */}
+        {/* Free-delivery progress bar (based on adjusted goods total) */}
         {delivery.delivery_enabled && delivery.min_free_delivery > 0 && (() => {
-          const remaining = Math.max(0, delivery.min_free_delivery - cartTotal);
+          const remaining = Math.max(0, delivery.min_free_delivery - goodsTotal);
           const reached = remaining <= 0;
-          const pct = Math.min(100, (cartTotal / delivery.min_free_delivery) * 100);
+          const pct = Math.min(100, (goodsTotal / delivery.min_free_delivery) * 100);
           return (
-            <motion.div
-              className={`glass-card p-4 mb-6 relative ${reached ? 'ring-2 ring-emerald-300/70' : ''}`}
-              initial={{ opacity: 0, y: 10 }}
-              animate={reached
-                ? { opacity: 1, y: 0, boxShadow: celebrate ? ['0 0 0 0 rgba(16,185,129,0)', '0 10px 40px -6px rgba(16,185,129,0.45)', '0 0 0 0 rgba(16,185,129,0)'] : '0 0 0 0 rgba(16,185,129,0)' }
-                : { opacity: 1, y: 0 }}
-              transition={celebrate ? { duration: 1.2, repeat: 1 } : { delay: 0.1 }}
-              data-testid="free-delivery-bar"
-            >
-              {/* Confetti burst on reaching the threshold */}
+            <motion.div className={`glass-card p-4 mb-6 relative ${reached ? 'ring-2 ring-emerald-300/70' : ''}`} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} data-testid="free-delivery-bar">
               <AnimatePresence>
                 {celebrate && (
                   <div className="absolute inset-x-0 -top-2 h-0 pointer-events-none z-20" aria-hidden>
                     {CONFETTI.map((c) => (
-                      <motion.span
-                        key={c.id}
-                        className="absolute block rounded-[2px]"
-                        style={{ left: `${c.left}%`, width: 8, height: 12, backgroundColor: c.color }}
+                      <motion.span key={c.id} className="absolute block rounded-[2px]" style={{ left: `${c.left}%`, width: 8, height: 12, backgroundColor: c.color }}
                         initial={{ opacity: 0, y: 0, x: 0, rotate: 0, scale: 1 }}
                         animate={{ opacity: [0, 1, 1, 0], y: [-4, -c.rise, 30], x: c.x, rotate: c.rot, scale: [1, 1, 0.6] }}
-                        exit={{ opacity: 0 }}
-                        transition={{ duration: 1.8, delay: c.delay, ease: 'easeOut' }}
-                      />
+                        transition={{ duration: 1.8, delay: c.delay, ease: 'easeOut' }} />
                     ))}
                   </div>
                 )}
               </AnimatePresence>
-
               <div className="flex items-center justify-between gap-3 mb-2 flex-wrap">
                 <span className="text-sm font-semibold text-slate-700 flex items-center gap-2">
                   {reached ? (
-                    <>
-                      <motion.span
-                        animate={celebrate ? { rotate: [0, -15, 15, -10, 0], scale: [1, 1.25, 1] } : {}}
-                        transition={{ duration: 0.8 }}
-                        className="text-emerald-500 flex"
-                      >
-                        <PartyPopper className="w-4 h-4" />
-                      </motion.span>
-                      <span data-testid="free-delivery-reached">Бесплатная доставка активирована!</span>
-                    </>
+                    <><PartyPopper className="w-4 h-4 text-emerald-500" /><span data-testid="free-delivery-reached">Бесплатная доставка активирована!</span></>
                   ) : (
-                    <>
-                      <Truck className="w-4 h-4 text-rose-500" />
-                      <span>
-                        До бесплатной доставки осталось{' '}
-                        <span className="font-bold text-rose-600" data-testid="free-delivery-remaining">{formatPrice(remaining)} ₽</span>
-                      </span>
-                    </>
+                    <><Truck className="w-4 h-4 text-rose-500" /><span>До бесплатной доставки осталось <span className="font-bold text-rose-600" data-testid="free-delivery-remaining">{formatPrice(remaining)} ₽</span></span></>
                   )}
                 </span>
-                <span className="text-xs text-slate-400 whitespace-nowrap">
-                  {formatPrice(cartTotal)} / {formatPrice(delivery.min_free_delivery)} ₽
-                </span>
+                <span className="text-xs text-slate-400 whitespace-nowrap">{formatPrice(goodsTotal)} / {formatPrice(delivery.min_free_delivery)} ₽</span>
               </div>
               <div className="h-2.5 w-full rounded-full bg-slate-100 overflow-hidden">
-                <motion.div
-                  className={`h-full rounded-full ${reached ? 'bg-gradient-to-r from-emerald-400 to-teal-500' : 'bg-gradient-to-r from-rose-400 to-pink-500'}`}
-                  initial={{ width: 0 }}
-                  animate={{ width: `${pct}%` }}
-                  transition={{ duration: 0.6, ease: 'easeOut' }}
-                />
+                <motion.div className={`h-full rounded-full ${reached ? 'bg-gradient-to-r from-emerald-400 to-teal-500' : 'bg-gradient-to-r from-rose-400 to-pink-500'}`} initial={{ width: 0 }} animate={{ width: `${pct}%` }} transition={{ duration: 0.6, ease: 'easeOut' }} />
               </div>
             </motion.div>
           );
         })()}
 
-        {/* Ozon certificate progress (+500₽ per 10 000₽) */}
-        <OzonCertificateBar total={cartTotal} />
+        {/* Ozon certificate progress (based on adjusted goods total) */}
+        <OzonCertificateBar total={goodsTotal} />
 
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-          {/* Cart Items */}
-          <div className="lg:col-span-2 space-y-4">
-            <AnimatePresence mode="popLayout">
-              {cart.items.map((item, index) => (
-                <motion.div
-                  key={item.product_id}
-                  layout
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  exit={{ opacity: 0, x: -100 }}
-                  transition={{ duration: 0.3, delay: index * 0.05 }}
-                  className="glass-card p-4 group"
-                  data-testid={`cart-item-${item.product_id}`}
-                >
-                  <div className="flex items-center gap-4">
-                    {/* Image */}
-                    <Link to={`/product/${item.product_id}`} className="flex-shrink-0">
-                      <div className="w-24 h-24 bg-slate-100 rounded-xl overflow-hidden group-hover:shadow-lg transition-shadow">
-                        {item.image_url ? (
-                          <img src={item.image_url} alt={item.name} className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110" />
-                        ) : (
-                          <div className="w-full h-full flex items-center justify-center text-slate-300">
-                            <Package className="w-8 h-8" />
-                          </div>
-                        )}
-                      </div>
-                    </Link>
-
-                    {/* Info */}
-                    <div className="flex-1 min-w-0">
-                      <Link to={`/product/${item.product_id}`} className="hover:text-teal-600 transition-colors">
-                        <h3 className="font-semibold text-slate-800 line-clamp-2 mb-1">{item.name}</h3>
+        <form onSubmit={handleSubmit} className="grid grid-cols-1 lg:grid-cols-3 gap-8 mt-2">
+          {/* LEFT: Cart items + shipping + payment */}
+          <div className="lg:col-span-2 space-y-6">
+            {/* Cart items */}
+            <div className="space-y-4">
+              <AnimatePresence mode="popLayout">
+                {cart.items.map((item, index) => (
+                  <motion.div key={item.product_id} layout initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, x: -100 }} transition={{ duration: 0.3, delay: index * 0.04 }} className="glass-card p-4 group" data-testid={`cart-item-${item.product_id}`}>
+                    <div className="flex items-center gap-4">
+                      <Link to={`/product/${item.product_id}`} className="flex-shrink-0">
+                        <div className="w-20 h-20 bg-slate-100 rounded-xl overflow-hidden">
+                          {item.image_url ? <img src={item.image_url} alt={item.name} className="w-full h-full object-cover" /> : <div className="w-full h-full flex items-center justify-center text-slate-300"><Package className="w-8 h-8" /></div>}
+                        </div>
                       </Link>
-                      <p className="text-xs font-mono text-slate-500">{item.article}</p>
+                      <div className="flex-1 min-w-0">
+                        <Link to={`/product/${item.product_id}`} className="hover:text-teal-600 transition-colors">
+                          <h3 className="font-semibold text-slate-800 line-clamp-2 mb-1">{item.name}</h3>
+                        </Link>
+                        <p className="text-xs font-mono text-slate-500">{item.article}</p>
+                      </div>
+                      <div className="text-right">
+                        <p className={`font-bold text-lg ${item.individual_price != null ? 'text-emerald-600' : item.promo_active ? 'text-rose-600' : 'text-teal-600'}`}>{formatPrice(item.price * item.quantity)} <span className="text-sm text-slate-400">₽</span></p>
+                        <p className="text-xs text-slate-400">{formatPrice(item.price)} × {item.quantity}</p>
+                      </div>
                     </div>
+                    <div className="flex items-center justify-between mt-3 pt-3 border-t border-slate-200/50">
+                      <div className="flex items-center bg-white/50 rounded-xl overflow-hidden border border-slate-200">
+                        <motion.button type="button" whileTap={{ scale: 0.9 }} onClick={() => updateQuantity(item.product_id, item.quantity - 1)} className="p-2 hover:bg-slate-100 text-slate-500" data-testid={`decrease-qty-${item.product_id}`}><Minus className="w-4 h-4" /></motion.button>
+                        <input type="number" min="1" value={item.quantity} onChange={(e) => updateQuantity(item.product_id, parseInt(e.target.value) || 1)} className="w-12 text-center font-bold text-slate-800 bg-transparent border-0 focus:outline-none focus:ring-0 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none" data-testid={`qty-input-${item.product_id}`} />
+                        <motion.button type="button" whileTap={{ scale: 0.9 }} onClick={() => updateQuantity(item.product_id, item.quantity + 1)} className="p-2 hover:bg-slate-100 text-slate-500" data-testid={`increase-qty-${item.product_id}`}><Plus className="w-4 h-4" /></motion.button>
+                      </div>
+                      <motion.button type="button" whileHover={{ scale: 1.1 }} whileTap={{ scale: 0.9 }} onClick={() => removeFromCart(item.product_id)} className="p-2 text-slate-400 hover:text-red-500 hover:bg-red-50 rounded-xl transition-all" data-testid={`remove-item-${item.product_id}`}><Trash2 className="w-5 h-5" /></motion.button>
+                    </div>
+                    {(() => {
+                      const up = getCartUpsell(item);
+                      if (!up) return null;
+                      return (
+                        <div className="mt-3 flex items-center justify-between gap-3 flex-wrap rounded-xl border border-rose-200 bg-gradient-to-r from-rose-50 to-pink-50 px-3 py-2" data-testid={`upsell-hint-${item.product_id}`}>
+                          <p className="text-xs text-slate-700 flex items-center gap-1.5">
+                            <TrendingUp className="w-4 h-4 text-rose-500 flex-shrink-0" />
+                            Добавьте ещё <span className="font-bold text-rose-600">{up.need} шт.</span> → скидка <span className="font-bold text-rose-600">{up.type === 'percent' ? `−${up.percent}%` : `−${formatPrice(up.value)} ₽`}</span>
+                          </p>
+                          <button type="button" onClick={() => updateQuantity(item.product_id, up.minQty)} className="text-xs font-semibold text-rose-600 hover:text-rose-700 underline underline-offset-2 whitespace-nowrap" data-testid={`upsell-apply-${item.product_id}`}>Добавить {up.need} шт.</button>
+                        </div>
+                      );
+                    })()}
+                  </motion.div>
+                ))}
+              </AnimatePresence>
+            </div>
 
-                    {/* Price */}
-                    <div className="text-right">
-                      {item.individual_price != null ? (
-                        <>
-                          <p className="font-bold text-xl text-emerald-600">{formatPrice(item.price * item.quantity)} <span className="text-sm text-slate-400">₽</span></p>
-                          <p className="text-[10px] line-through text-slate-400">{formatPrice(item.original_price)} ₽ × {item.quantity}</p>
-                          {item.promo_active ? (
-                            <>
-                              <p className="text-[10px] text-slate-400">{formatPrice(item.base_price_before_promo)} × {item.quantity}</p>
-                              <p className="text-xs text-rose-500 font-semibold">−{formatPrice(item.promo_amount)} ₽ {item.promo_label && `(${item.promo_label})`}</p>
-                              <p className="text-xs text-emerald-600">{formatPrice(item.price)} × {item.quantity}</p>
-                            </>
-                          ) : (
-                            <p className="text-xs text-emerald-600">{formatPrice(item.individual_price)} × {item.quantity}</p>
-                          )}
-                        </>
-                      ) : item.promo_active ? (
-                        <>
-                          <p className="font-bold text-xl text-rose-600">{formatPrice(item.price * item.quantity)} <span className="text-sm text-rose-400">₽</span></p>
-                          <p className="text-[10px] line-through text-slate-400">{formatPrice(item.original_price)} ₽ × {item.quantity}</p>
-                          <p className="text-xs text-rose-500 font-semibold">−{formatPrice(item.promo_amount)} ₽ {item.promo_label && `(${item.promo_label})`}</p>
-                          <p className="text-xs text-rose-600">{formatPrice(item.price)} × {item.quantity}</p>
-                        </>
-                      ) : (
-                        <>
-                          <p className="font-bold text-xl text-teal-600">{formatPrice(item.price * item.quantity)} <span className="text-sm text-slate-400">₽</span></p>
-                          <p className="text-xs text-slate-400">{formatPrice(item.price)} × {item.quantity}</p>
-                        </>
+            {/* Shipping info */}
+            <div className="glass-card p-6 space-y-5">
+              <h2 className="text-sm font-bold uppercase tracking-widest text-teal-600 flex items-center gap-2"><ShoppingBag className="w-4 h-4" />Данные доставки</h2>
+              <div>
+                <Label className="text-xs font-bold uppercase tracking-widest text-slate-500 mb-2 block">ФИО получателя *</Label>
+                <Input value={form.full_name} onChange={(e) => setForm({ ...form, full_name: e.target.value })} placeholder="Иванов Иван Иванович" className="h-12 rounded-xl" required data-testid="checkout-fullname" />
+              </div>
+              <div>
+                <Label className="text-xs font-bold uppercase tracking-widest text-slate-500 mb-2 block">Адрес доставки *</Label>
+                <Input value={form.address} onChange={(e) => setForm({ ...form, address: e.target.value })} placeholder="Город, улица, дом, квартира" className="h-12 rounded-xl" required data-testid="checkout-address" />
+              </div>
+              <div>
+                <Label className="text-xs font-bold uppercase tracking-widest text-slate-500 mb-2 block">Телефон *</Label>
+                <Input type="tel" value={form.phone} onChange={(e) => setForm({ ...form, phone: e.target.value })} placeholder="+7 (___) ___-__-__" className="h-12 rounded-xl" required data-testid="checkout-phone" />
+              </div>
+              <div>
+                <Label className="text-xs font-bold uppercase tracking-widest text-slate-500 flex items-center gap-2 mb-2"><MessageSquare className="w-4 h-4" />Комментарий</Label>
+                <Textarea value={form.comment} onChange={(e) => setForm({ ...form, comment: e.target.value })} placeholder="Пожелания к доставке..." className="min-h-[70px] rounded-xl" data-testid="checkout-comment" />
+              </div>
+            </div>
+
+            {/* Payment method */}
+            <div className="glass-card p-6">
+              <Label className="text-sm font-bold uppercase tracking-widest text-teal-600 mb-4 block flex items-center gap-2"><CreditCard className="w-4 h-4" />Способ оплаты</Label>
+              <div className={`space-y-3 ${mixedMode ? 'opacity-40 pointer-events-none' : ''}`}>
+                {prepaymentSettings.prepayment_enabled && userBalance > 0 && (
+                  <button type="button" onClick={() => { if (canPayWithBalance) { setPayWithBalance(true); setPayWithDeferral(false); setPayLater(false); } else toast.error(`Недостаточно средств. Баланс: ${formatPrice(userBalance)}₽`); }}
+                    className={`w-full flex items-center gap-4 p-4 rounded-xl border-2 text-left transition-all ${payWithBalance ? 'bg-violet-50 border-violet-400' : canPayWithBalance ? 'bg-white border-slate-200 hover:border-slate-300' : 'bg-slate-100 border-slate-200 opacity-60'}`} data-testid="payment-method-balance">
+                    <div className={`w-11 h-11 rounded-xl flex items-center justify-center ${payWithBalance ? 'bg-violet-100' : 'bg-slate-100'}`}><Sparkles className={`w-5 h-5 ${payWithBalance ? 'text-violet-500' : 'text-slate-400'}`} /></div>
+                    <div className="flex-1">
+                      <p className={`font-semibold ${payWithBalance ? 'text-violet-700' : 'text-slate-700'}`}>Оплата с баланса</p>
+                      <p className="text-xs text-slate-500">Баланс: <span className={canPayWithBalance ? 'text-emerald-600 font-semibold' : 'text-rose-500'}>{formatPrice(userBalance)}₽</span>{!canPayWithBalance && <span className="text-rose-500"> (недостаточно)</span>}</p>
+                    </div>
+                  </button>
+                )}
+                {PAYMENT_METHODS.map(method => {
+                  const adjustment = getAdj(method.id);
+                  const enabled = isMethodEnabled(method.id);
+                  const selected = !payWithBalance && !payWithDeferral && paymentMethod === method.id;
+                  const Icon = method.icon;
+                  return (
+                    <button key={method.id} type="button" disabled={!enabled} onClick={() => { if (enabled) { setPayWithBalance(false); setPayWithDeferral(false); setPaymentMethod(method.id); setPayLater(false); } }}
+                      className={`w-full flex items-center gap-4 p-4 rounded-xl border-2 text-left transition-all ${!enabled ? 'bg-slate-100 border-slate-200 cursor-not-allowed' : selected ? 'bg-teal-50 border-teal-400' : 'bg-white border-slate-200 hover:border-slate-300'}`} data-testid={`payment-method-${method.id}`}>
+                      <div className={`w-11 h-11 rounded-xl flex items-center justify-center ${!enabled ? 'bg-slate-200' : selected ? 'bg-teal-100' : 'bg-slate-100'}`}><Icon className={`w-5 h-5 ${!enabled ? 'text-slate-400' : selected ? 'text-teal-600' : 'text-slate-500'}`} /></div>
+                      <div className="flex-1">
+                        <p className={`font-semibold ${!enabled ? 'text-slate-400' : selected ? 'text-teal-700' : 'text-slate-700'}`}>{method.label}</p>
+                        <p className={`text-xs ${!enabled ? 'text-rose-400 font-medium' : 'text-slate-500'}`}>{!enabled ? 'Временно недоступно' : method.desc}</p>
+                      </div>
+                      {enabled && adjustment !== 0 && (
+                        <span className={`text-xs font-bold px-3 py-1.5 rounded-full ${adjustment < 0 ? 'bg-emerald-100 text-emerald-600' : 'bg-rose-100 text-rose-600'}`}>{adjustment < 0 ? `-${Math.abs(adjustment)}%` : `+${adjustment}%`}</span>
                       )}
+                    </button>
+                  );
+                })}
+                {creditApproved && (
+                  <button type="button" onClick={() => { if (canPayWithDeferral) { setPayWithDeferral(true); setPayWithBalance(false); setPayLater(false); } else toast.error(`Недостаточно лимита. Доступно: ${formatPrice(creditAvailable)}₽`); }}
+                    className={`w-full flex items-center gap-4 p-4 rounded-xl border-2 text-left transition-all ${payWithDeferral ? 'bg-indigo-50 border-indigo-400' : canPayWithDeferral ? 'bg-white border-slate-200 hover:border-slate-300' : 'bg-slate-100 border-slate-200 opacity-60'}`} data-testid="payment-method-deferral">
+                    <div className={`w-11 h-11 rounded-xl flex items-center justify-center ${payWithDeferral ? 'bg-indigo-100' : 'bg-slate-100'}`}><Clock className={`w-5 h-5 ${payWithDeferral ? 'text-indigo-500' : 'text-slate-400'}`} /></div>
+                    <div className="flex-1">
+                      <p className={`font-semibold ${payWithDeferral ? 'text-indigo-700' : 'text-slate-700'}`}>Отсрочка платежа</p>
+                      <p className="text-xs text-slate-500">Доступно: <span className={canPayWithDeferral ? 'text-emerald-600 font-semibold' : 'text-rose-500'}>{formatPrice(creditAvailable)}₽</span> · до {creditInfo?.term_days || 30} дн.</p>
                     </div>
-                  </div>
+                  </button>
+                )}
+              </div>
 
-                  {/* Controls */}
-                  <div className="flex items-center justify-between mt-4 pt-4 border-t border-slate-200/50">
-                    {/* Quantity */}
-                    <div className="flex items-center bg-white/50 rounded-xl overflow-hidden border border-slate-200">
-                      <motion.button
-                        whileTap={{ scale: 0.9 }}
-                        onClick={() => updateQuantity(item.product_id, item.quantity - 1)}
-                        className="p-2.5 hover:bg-slate-100 transition-colors text-slate-500"
-                        data-testid={`decrease-qty-${item.product_id}`}
-                      >
-                        <Minus className="w-4 h-4" />
-                      </motion.button>
-                      <input
-                        type="number"
-                        min="1"
-                        value={item.quantity}
-                        onChange={(e) => {
-                          const val = parseInt(e.target.value) || 1;
-                          updateQuantity(item.product_id, val);
-                        }}
-                        className="w-14 text-center font-bold text-slate-800 bg-transparent border-0 focus:outline-none focus:ring-0 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
-                        data-testid={`qty-input-${item.product_id}`}
-                      />
-                      <motion.button
-                        whileTap={{ scale: 0.9 }}
-                        onClick={() => updateQuantity(item.product_id, item.quantity + 1)}
-                        className="p-2.5 hover:bg-slate-100 transition-colors text-slate-500"
-                        data-testid={`increase-qty-${item.product_id}`}
-                      >
-                        <Plus className="w-4 h-4" />
-                      </motion.button>
+              {/* Pay-later toggle for card/crypto */}
+              {showPayLater && (
+                <button type="button" onClick={() => setPayLater(v => !v)} className={`mt-3 w-full flex items-center justify-between p-3 rounded-xl border-2 transition-all ${payLater ? 'bg-indigo-50 border-indigo-400' : 'bg-white border-slate-200 hover:border-slate-300'}`} data-testid="pay-later-toggle">
+                  <span className="flex items-center gap-2 text-sm font-semibold text-slate-700"><Clock className="w-4 h-4 text-indigo-500" />Оплатить позже (в течение {paymentSettings.deferred_payment_hours} ч)</span>
+                  <span className={`w-10 h-5 rounded-full relative transition-colors ${payLater ? 'bg-indigo-500' : 'bg-slate-300'}`}><span className={`absolute top-0.5 w-4 h-4 rounded-full bg-white transition-transform ${payLater ? 'translate-x-5' : 'translate-x-0.5'}`} /></span>
+                </button>
+              )}
+
+              {/* Mixed payment */}
+              <div className="mt-4 border-t border-slate-100 pt-4" data-testid="mixed-payment-section">
+                <button type="button" onClick={() => { const v = !mixedMode; setMixedMode(v); if (v) { setPayWithBalance(false); setPayWithDeferral(false); setPayLater(false); } }}
+                  className={`w-full flex items-center justify-between p-3 rounded-xl border-2 transition-all ${mixedMode ? 'bg-amber-50 border-amber-400' : 'bg-white border-slate-200 hover:border-slate-300'}`} data-testid="mixed-payment-toggle">
+                  <span className="flex items-center gap-2 text-sm font-semibold text-slate-700"><Wallet className="w-4 h-4 text-amber-500" />Смешанная оплата (2 способа)</span>
+                  <span className={`w-10 h-5 rounded-full relative transition-colors ${mixedMode ? 'bg-amber-500' : 'bg-slate-300'}`}><span className={`absolute top-0.5 w-4 h-4 rounded-full bg-white transition-transform ${mixedMode ? 'translate-x-5' : 'translate-x-0.5'}`} /></span>
+                </button>
+                {mixedMode && (
+                  <div className="mt-3 space-y-3 bg-amber-50/50 rounded-xl p-3">
+                    <p className="text-xs text-slate-500">Распределите сумму товаров (<b>{formatPrice(cartTotal)} ₽</b>) между двумя способами. Наценка/скидка применяется к каждой части.</p>
+                    <div className="flex flex-col sm:flex-row gap-2 items-start sm:items-center">
+                      <select value={mix1Method} onChange={(e) => setMix1Method(e.target.value)} className="border border-slate-200 rounded-lg px-3 py-2 text-sm bg-white" data-testid="mix-method-1">
+                        <option value="balance">Баланс</option><option value="card">Карта</option><option value="cash">Наличные</option>
+                      </select>
+                      <Input type="number" min="1" value={mix1Amount} onChange={(e) => setMix1Amount(e.target.value)} placeholder="Сумма товаров, ₽" className="rounded-lg sm:w-40" data-testid="mix-amount-1" />
+                      <span className="text-xs text-slate-500">→ к оплате <b>{formatPrice(mixCharged1)} ₽</b>{getAdj(mix1Method) !== 0 && <span className={getAdj(mix1Method) < 0 ? 'text-emerald-600' : 'text-rose-600'}> ({getAdj(mix1Method) > 0 ? '+' : ''}{getAdj(mix1Method)}%)</span>}</span>
                     </div>
-
-                    {/* Remove */}
-                    <motion.button
-                      whileHover={{ scale: 1.1 }}
-                      whileTap={{ scale: 0.9 }}
-                      onClick={() => removeFromCart(item.product_id)}
-                      className="p-2.5 text-slate-400 hover:text-red-500 hover:bg-red-50 rounded-xl transition-all"
-                      data-testid={`remove-item-${item.product_id}`}
-                    >
-                      <Trash2 className="w-5 h-5" />
-                    </motion.button>
+                    <div className="flex flex-col sm:flex-row gap-2 items-start sm:items-center">
+                      <select value={mix2Method} onChange={(e) => setMix2Method(e.target.value)} className="border border-slate-200 rounded-lg px-3 py-2 text-sm bg-white" data-testid="mix-method-2">
+                        <option value="card">Карта</option><option value="balance">Баланс</option><option value="cash">Наличные</option>
+                      </select>
+                      <div className="text-sm text-slate-600 px-1 py-2" data-testid="mix-amount-2">Остаток товаров: <b>{formatPrice(a2)} ₽</b> → к оплате <b>{formatPrice(mixCharged2)} ₽</b>{getAdj(mix2Method) !== 0 && <span className={getAdj(mix2Method) < 0 ? 'text-emerald-600' : 'text-rose-600'}> ({getAdj(mix2Method) > 0 ? '+' : ''}{getAdj(mix2Method)}%)</span>}</div>
+                    </div>
+                    <p className="text-[11px] text-slate-400">Отсрочка недоступна в смешанной оплате. Если выбрана карта — после оформления загрузите чек в «Мои заказы».</p>
                   </div>
-
-                  {/* Upsell hint: add more to unlock the next quantity discount */}
-                  {(() => {
-                    const up = getCartUpsell(item);
-                    if (!up) return null;
-                    return (
-                      <motion.div
-                        initial={{ opacity: 0, height: 0 }}
-                        animate={{ opacity: 1, height: 'auto' }}
-                        className="mt-3 flex items-center justify-between gap-3 flex-wrap rounded-xl border border-rose-200 bg-gradient-to-r from-rose-50 to-pink-50 px-3 py-2"
-                        data-testid={`upsell-hint-${item.product_id}`}
-                      >
-                        <p className="text-xs text-slate-700 flex items-center gap-1.5">
-                          <TrendingUp className="w-4 h-4 text-rose-500 flex-shrink-0" />
-                          Добавьте ещё <span className="font-bold text-rose-600">{up.need} шт.</span> и получите скидку{' '}
-                          <span className="font-bold text-rose-600">
-                            {up.type === 'percent' ? `−${up.percent}%` : `−${formatPrice(up.value)} ₽`}
-                          </span>
-                          <span className="text-slate-500"> ({up.unitPrice.toLocaleString('ru-RU', { maximumFractionDigits: 1 })} ₽/шт)</span>
-                        </p>
-                        <button
-                          onClick={() => updateQuantity(item.product_id, up.minQty)}
-                          className="text-xs font-semibold text-rose-600 hover:text-rose-700 underline underline-offset-2 whitespace-nowrap"
-                          data-testid={`upsell-apply-${item.product_id}`}
-                        >
-                          Добавить {up.need} шт.
-                        </button>
-                      </motion.div>
-                    );
-                  })()}
-                </motion.div>
-              ))}
-            </AnimatePresence>
+                )}
+              </div>
+            </div>
           </div>
 
-          {/* Summary */}
+          {/* RIGHT: Order summary + submit */}
           <div className="lg:col-span-1">
-            <motion.div 
-              className="glass-card p-6 sticky top-24"
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.2 }}
-            >
+            <div className="glass-card p-6 sticky top-24">
               <h2 className="text-lg font-bold text-slate-800 mb-4">Итого</h2>
-              
-              <div className="space-y-3 mb-6">
+              <div className="space-y-3 mb-5">
                 <div className="flex justify-between text-sm">
                   <span className="text-slate-500">Товары ({cart.items.length})</span>
                   <span className="text-slate-800">{formatPrice(cartTotal)} ₽</span>
                 </div>
+                {!mixedMode && singleAdj !== 0 && (
+                  <div className={`flex justify-between text-sm font-medium ${singleAdj < 0 ? 'text-emerald-600' : 'text-rose-600'}`} data-testid="checkout-cart-discount-line">
+                    <span>{singleAdj < 0 ? 'Скидка' : 'Наценка'} за оплату ({Math.abs(singleAdj)}%):</span>
+                    <span>{singleAdj < 0 ? '-' : '+'}{formatPrice(Math.abs(goodsTotal - cartTotal))} ₽</span>
+                  </div>
+                )}
+                {mixedMode && (goodsTotal - cartTotal) !== 0 && (
+                  <div className={`flex justify-between text-sm font-medium ${goodsTotal - cartTotal < 0 ? 'text-emerald-600' : 'text-rose-600'}`}>
+                    <span>Наценка/скидка за оплату:</span>
+                    <span>{goodsTotal - cartTotal < 0 ? '-' : '+'}{formatPrice(Math.abs(goodsTotal - cartTotal))} ₽</span>
+                  </div>
+                )}
+                {delivery.delivery_enabled && (
+                  <div className="flex justify-between text-sm" data-testid="delivery-fee-row">
+                    <span className="text-slate-600">Доставка:</span>
+                    {isFreeDelivery ? <span className="text-emerald-600 font-medium">Бесплатно</span> : <span className="text-slate-700 font-medium">{formatPrice(deliveryFee)} ₽</span>}
+                  </div>
+                )}
                 {bonusPreview.total_points > 0 && (
                   <div className="flex justify-between text-sm" data-testid="cart-bonus-preview">
-                    <span className="text-amber-600 flex items-center gap-1.5">
-                      <Award className="w-4 h-4" /> Бонусы за заказ
-                    </span>
+                    <span className="text-amber-600 flex items-center gap-1.5"><Award className="w-4 h-4" />Бонусы за заказ</span>
                     <span className="font-semibold text-amber-600">+{formatPrice(bonusPreview.total_points)}</span>
                   </div>
                 )}
-                <div className="border-t border-slate-200/50 pt-3">
-                  <div className="flex justify-between items-center">
-                    <span className="font-semibold text-slate-800">К оплате:</span>
-                    <span className="text-2xl font-bold text-teal-600">{formatPrice(cartTotal)} <span className="text-sm text-slate-400">₽</span></span>
-                  </div>
+                <div className="border-t border-slate-200/50 pt-3 flex justify-between items-center">
+                  <span className="font-semibold text-slate-800">К оплате:</span>
+                  <span className="text-2xl font-bold text-teal-600" data-testid="checkout-total">{formatPrice(finalTotal)} <span className="text-sm text-slate-400">₽</span></span>
                 </div>
               </div>
 
-              <motion.div whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}>
-                <Button
-                  onClick={() => { trackClick('checkout_from_cart', '/cart'); navigate('/checkout'); }}
-                  className="w-full bg-gradient-to-r from-teal-500 to-emerald-500 hover:from-teal-600 hover:to-emerald-600 text-white font-bold uppercase h-14 rounded-xl shadow-lg shadow-teal-500/30 transition-all duration-300"
-                  data-testid="checkout-button"
-                >
-                  Оформить заказ
-                  <ArrowRight className="w-5 h-5 ml-2" />
-                </Button>
-              </motion.div>
+              {/* Terms */}
+              <div className="flex items-start gap-3 mb-4">
+                <button type="button" onClick={() => setAgreedToTerms(!agreedToTerms)} className={`w-5 h-5 rounded-md border-2 flex items-center justify-center flex-shrink-0 mt-0.5 transition-all ${agreedToTerms ? 'bg-teal-500 border-teal-500' : 'border-slate-300'}`} data-testid="terms-checkbox">
+                  {agreedToTerms && <svg className="w-3.5 h-3.5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" /></svg>}
+                </button>
+                <label className="text-xs text-slate-600 cursor-pointer" onClick={() => setAgreedToTerms(!agreedToTerms)}>
+                  Я согласен с <button type="button" onClick={(e) => { e.stopPropagation(); setShowTermsModal(true); }} className="text-teal-600 hover:text-teal-500 underline font-medium" data-testid="terms-link">правилами предоставления услуг</button>
+                </label>
+              </div>
 
-              <p className="text-xs text-slate-400 text-center mt-4">
-                Скидки за способ оплаты будут применены на следующем шаге
-              </p>
-            </motion.div>
+              <Button type="submit" disabled={loading || !agreedToTerms} className={`w-full font-bold uppercase tracking-wide h-14 rounded-xl text-base ${agreedToTerms ? 'bg-gradient-to-r from-teal-500 to-emerald-500 hover:from-teal-600 hover:to-emerald-600 text-white shadow-lg shadow-teal-500/20' : 'bg-slate-200 text-slate-400 cursor-not-allowed'}`} data-testid="place-order-btn">
+                {loading && <Loader2 className="w-5 h-5 animate-spin mr-2 inline" />}
+                {loading ? 'Оформление...' : mixedMode ? 'Оформить заказ' : payWithDeferral ? 'Оформить в отсрочку' : payWithBalance ? 'Оплатить с баланса' : (paymentMethod === 'crypto' && !payLater) ? 'Перейти к оплате' : 'Оформить заказ'}
+              </Button>
+            </div>
           </div>
-        </div>
+        </form>
       </div>
+
+      {/* Terms Modal */}
+      <Dialog open={showTermsModal} onOpenChange={setShowTermsModal}>
+        <DialogContent className="max-w-2xl max-h-[80vh] overflow-hidden flex flex-col bg-white rounded-2xl" data-testid="terms-modal">
+          <div className="flex items-center gap-3 pb-4 border-b border-slate-200">
+            <div className="w-11 h-11 rounded-xl bg-teal-100 flex items-center justify-center"><FileText className="w-5 h-5 text-teal-600" /></div>
+            <div>
+              <DialogTitle className="text-xl font-bold text-slate-800">Правила предоставления услуг</DialogTitle>
+              <DialogDescription className="sr-only">Правила предоставления услуг магазина</DialogDescription>
+            </div>
+          </div>
+          <div className="flex-1 overflow-y-auto py-4 space-y-6 text-sm text-slate-600">
+            {termsSections.length > 0 ? termsSections.map((section) => (
+              <section key={section.id}>
+                <h3 className="font-bold text-slate-800 mb-2">{section.title}</h3>
+                {section.content.split('\n\n').map((p, idx) => <p key={idx} className="mb-2 whitespace-pre-line">{p}</p>)}
+              </section>
+            )) : <div className="text-center text-slate-500 py-8"><Loader2 className="w-6 h-6 animate-spin mx-auto mb-2" />Загрузка...</div>}
+          </div>
+          <div className="pt-4 border-t border-slate-200">
+            <button onClick={() => { setAgreedToTerms(true); setShowTermsModal(false); }} className="w-full h-12 bg-gradient-to-r from-teal-500 to-emerald-500 text-white font-bold rounded-xl" data-testid="accept-terms-btn">Принять и согласиться</button>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
+
+    <CryptoPaymentModal open={showCryptoModal} onClose={() => setShowCryptoModal(false)} orderId={orderId} amountRub={cryptoPaymentAmount} onSuccess={handleCryptoSuccess} />
+    </>
   );
 }

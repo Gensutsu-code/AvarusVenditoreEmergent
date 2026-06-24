@@ -194,6 +194,34 @@ export const PaymentsTab = ({
             </div>
           </div>
 
+          {/* Deferred card/crypto payment */}
+          <div className={`p-5 rounded-xl ${isDark ? 'bg-zinc-800/50 border border-zinc-700/50 backdrop-blur-sm' : 'border border-zinc-200 bg-white'}`}>
+            <div className="flex items-center justify-between mb-3">
+              <div>
+                <h3 className={`font-semibold ${isDark ? 'text-zinc-100' : ''}`}>Отложенная оплата (карта/крипта)</h3>
+                <p className={`text-xs ${isDark ? 'text-zinc-500' : 'text-zinc-500'}`}>Разрешить оформлять заказ с оплатой позже; неоплаченный заказ отменяется по истечении срока</p>
+              </div>
+              <Switch
+                checked={!!paymentSettings.deferred_payment_enabled}
+                onCheckedChange={(checked) => setPaymentSettings({ ...paymentSettings, deferred_payment_enabled: checked })}
+                data-testid="deferred-payment-switch"
+              />
+            </div>
+            {paymentSettings.deferred_payment_enabled && (
+              <div>
+                <Label className={`text-xs ${isDark ? 'text-zinc-500' : 'text-zinc-500'}`}>Срок оплаты (часов)</Label>
+                <Input
+                  type="number"
+                  min="1"
+                  value={paymentSettings.deferred_payment_hours || 24}
+                  onChange={(e) => setPaymentSettings({ ...paymentSettings, deferred_payment_hours: parseInt(e.target.value) || 24 })}
+                  className={`w-32 mt-1 ${isDark ? 'bg-zinc-900/50 border-zinc-700 text-zinc-100' : ''}`}
+                  data-testid="deferred-payment-hours"
+                />
+              </div>
+            )}
+          </div>
+
           <Button onClick={handleSavePaymentSettings} className={`${isDark ? 'bg-teal-500/90 hover:bg-teal-500' : 'bg-teal-500 hover:bg-teal-600'} text-white`}>
             Сохранить настройки оплаты
           </Button>

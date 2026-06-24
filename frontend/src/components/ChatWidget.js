@@ -160,6 +160,8 @@ export const ChatWidget = () => {
   const [lightboxImage, setLightboxImage] = useState(null);
   const [lightboxVideo, setLightboxVideo] = useState(null);
   const messagesEndRef = useRef(null);
+  const messagesContainerRef = useRef(null);
+  const shouldAutoScrollRef = useRef(true);
   const fileInputRef = useRef(null);
 
   useEffect(() => {
@@ -181,11 +183,25 @@ export const ChatWidget = () => {
   }, [user, isOpen]);
 
   useEffect(() => {
-    scrollToBottom();
+    if (shouldAutoScrollRef.current) scrollToBottom();
   }, [messages]);
 
-  const scrollToBottom = () => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+  // When the chat opens, jump to the latest message
+  useEffect(() => {
+    if (isOpen) {
+      shouldAutoScrollRef.current = true;
+      setTimeout(() => scrollToBottom('auto'), 50);
+    }
+  }, [isOpen]);
+
+  const handleMessagesScroll = () => {
+    const el = messagesContainerRef.current;
+    if (!el) return;
+    shouldAutoScrollRef.current = el.scrollHeight - el.scrollTop - el.clientHeight < 80;
+  };
+
+  const scrollToBottom = (behavior = 'smooth') => {
+    messagesEndRef.current?.scrollIntoView({ behavior });
   };
 
   const fetchMessages = async () => {
@@ -224,6 +240,7 @@ export const ChatWidget = () => {
       await axios.post(`${API}/chat/send`, { text: newMessage });
       setNewMessage('');
       setShowEmoji(false);
+      shouldAutoScrollRef.current = true;
       fetchMessages();
     } catch (err) {
       console.error('Failed to send message', err);
@@ -258,6 +275,7 @@ export const ChatWidget = () => {
         }
       });
 
+      shouldAutoScrollRef.current = true;
       fetchMessages();
       toast.success('Файл отправлен');
     } catch (err) {
@@ -356,7 +374,11 @@ export const ChatWidget = () => {
           </div>
 
           {/* Messages */}
-          <div className="flex-1 overflow-y-auto p-4 space-y-4 bg-gradient-to-b from-slate-50 to-white">
+          <div
+            ref={messagesContainerRef}
+            onScroll={handleMessagesScroll}
+            className="flex-1 overflow-y-auto p-4 space-y-4 bg-gradient-to-b from-slate-50 to-white"
+          >
             {messages.length === 0 ? (
               <div className="text-center text-slate-400 text-sm py-8">
                 <div className="w-16 h-16 mx-auto mb-3 bg-teal-100 rounded-full flex items-center justify-center">

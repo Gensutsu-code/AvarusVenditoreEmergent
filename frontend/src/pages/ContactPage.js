@@ -2,7 +2,7 @@ import { useState, useEffect, useRef, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import { motion } from 'framer-motion';
-import { MessageCircle, Percent, Clock, ClipboardList, Send, Loader2, TrendingUp, CheckCircle, XCircle, Hourglass, ArrowUpCircle, Package, Tag } from 'lucide-react';
+import { MessageCircle, Percent, Clock, ClipboardList, Send, Loader2, TrendingUp, CheckCircle, XCircle, Hourglass, Package, Tag, Paperclip, Smile, FileText, Download, X } from 'lucide-react';
 import { Button } from '../components/ui/button';
 import { Input } from '../components/ui/input';
 import { useAuth } from '../context/AuthContext';
@@ -12,7 +12,8 @@ const API = `${process.env.REACT_APP_BACKEND_URL}/api`;
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
 const fmt = (p) => new Intl.NumberFormat('ru-RU').format(Math.round(p || 0));
 
-const STATUS_LABEL = { retail: 'Розница', wholesale: 'Опт', partner: 'Партнёр' };
+const EMOJI_LIST = ['😀', '😃', '😄', '😁', '😅', '😂', '🤣', '😊', '🙂', '😉', '😍', '🥰', '😘', '😋', '😎', '🤔', '😐', '🙄', '😴', '🤗', '👍', '👎', '👌', '✌️', '🙏', '❤️', '🔥', '🎉', '✅', '❌', '💰', '📦', '🚚', '⏰', '💯'];
+
 const REQ_STATUS = {
   pending: { label: 'На рассмотрении', cls: 'bg-amber-100 text-amber-700', Icon: Hourglass },
   approved: { label: 'Одобрено', cls: 'bg-emerald-100 text-emerald-700', Icon: CheckCircle },
@@ -49,14 +50,19 @@ export default function ContactPage() {
   const [messages, setMessages] = useState([]);
   const [chatText, setChatText] = useState('');
   const [sending, setSending] = useState(false);
+  const [uploading, setUploading] = useState(false);
+  const [showEmoji, setShowEmoji] = useState(false);
+  const [lightboxImage, setLightboxImage] = useState(null);
   const msgEndRef = useRef(null);
+  const msgContainerRef = useRef(null);
+  const shouldAutoScrollRef = useRef(true);
+  const fileInputRef = useRef(null);
 
   // discounts/conditions
   const [discPercent, setDiscPercent] = useState('');
   const [discReason, setDiscReason] = useState('');
-  const [myReqs, setMyReqs] = useState({ status_request: null, discount_request: null });
+  const [myReqs, setMyReqs] = useState({ discount_request: null });
   const [submittingDisc, setSubmittingDisc] = useState(false);
-  const [submittingStatus, setSubmittingStatus] = useState(false);
 
   // deferral
   const [credit, setCredit] = useState(null);
@@ -109,19 +115,60 @@ export default function ContactPage() {
   }, [tab, user, fetchChat]);
 
   useEffect(() => {
-    if (tab === 'chat') msgEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+    if (tab === 'chat' && shouldAutoScrollRef.current) msgEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages, tab]);
+
+  // Jump to latest when opening the chat tab
+  useEffect(() => {
+    if (tab === 'chat') { shouldAutoScrollRef.current = true; setTimeout(() => msgEndRef.current?.scrollIntoView({ behavior: 'auto' }), 50); }
+  }, [tab]);
+
+  const handleMsgScroll = () => {
+    const el = msgContainerRef.current;
+    if (!el) return;
+    shouldAutoScrollRef.current = el.scrollHeight - el.scrollTop - el.clientHeight < 80;
+  };
 
   const sendChat = async () => {
     const text = chatText.trim();
     if (!text) return;
     setSending(true);
     setChatText('');
+    setShowEmoji(false);
+    shouldAutoScrollRef.current = true;
     try {
       await axios.post(`${API}/chat/send`, { text });
       await fetchChat();
     } catch { toast.error('Не удалось отправить'); setChatText(text); } finally { setSending(false); }
   };
+
+  const handleFileUpload = async (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setUploading(true);
+    try {
+      const formData = new FormData();
+      formData.append('file', file);
+      const uploadRes = await axios.post(`${API}/chat/upload`, formData, { headers: { 'Content-Type': 'multipart/form-data' } });
+      await axios.post(`${API}/chat/send-media`, null, {
+        params: {
+          file_url: uploadRes.data.url,
+          filename: uploadRes.data.filename,
+          is_image: uploadRes.data.is_image,
+          is_video: uploadRes.data.is_video,
+          caption: ''
+        }
+      });
+      shouldAutoScrollRef.current = true;
+      await fetchChat();
+      toast.success('Файл отправлен');
+    } catch { toast.error('Ошибка загрузки файла'); } finally {
+      setUploading(false);
+      if (fileInputRef.current) fileInputRef.current.value = '';
+    }
+  };
+
+  const insertEmoji = (emoji) => setChatText((prev) => prev + emoji);
 
   const submitDiscount = async () => {
     const val = Number(discPercent);
@@ -134,15 +181,6 @@ export default function ContactPage() {
       setDiscPercent(''); setDiscReason('');
       fetchRequests();
     } catch (e) { toast.error(e.response?.data?.detail || 'Ошибка'); } finally { setSubmittingDisc(false); }
-  };
-
-  const submitStatus = async (requested_status) => {
-    setSubmittingStatus(true);
-    try {
-      const res = await axios.post(`${API}/request-status-upgrade`, { requested_status });
-      toast.success(res.data?.message || 'Запрос отправлен');
-      fetchRequests();
-    } catch (e) { toast.error(e.response?.data?.detail || 'Ошибка'); } finally { setSubmittingStatus(false); }
   };
 
   const submitCredit = async () => {
@@ -161,7 +199,6 @@ export default function ContactPage() {
     return <div className="min-h-screen flex items-center justify-center"><Loader2 className="w-7 h-7 animate-spin text-teal-500" /></div>;
   }
 
-  const curStatus = user.customer_status || 'retail';
   const indDiscount = user.individual_discount || 0;
   const creditApproved = credit && credit.status === 'approved';
 
@@ -193,7 +230,7 @@ export default function ContactPage() {
           {/* CHAT */}
           {tab === 'chat' && (
             <div className="bg-white rounded-2xl shadow-sm overflow-hidden flex flex-col" style={{ height: '60vh' }} data-testid="contact-chat">
-              <div className="flex-1 overflow-y-auto p-4 space-y-3">
+              <div ref={msgContainerRef} onScroll={handleMsgScroll} className="flex-1 overflow-y-auto p-4 space-y-3">
                 {messages.length === 0 ? (
                   <div className="h-full flex flex-col items-center justify-center text-slate-400">
                     <MessageCircle className="w-10 h-10 mb-2 opacity-50" />
@@ -201,11 +238,24 @@ export default function ContactPage() {
                   </div>
                 ) : messages.map((m) => {
                   const mine = m.sender_type === 'user';
+                  const fileUrl = m.image_url || m.file_url;
+                  const isImage = fileUrl && (m.message_type === 'image' || m.image_url);
+                  const isFile = fileUrl && !isImage && m.message_type !== 'video';
                   return (
                     <div key={m.id} className={`flex ${mine ? 'justify-end' : 'justify-start'}`}>
                       <div className={`max-w-[75%] rounded-2xl px-4 py-2 ${mine ? 'bg-teal-500 text-white rounded-br-sm' : 'bg-slate-100 text-slate-800 rounded-bl-sm'}`}>
-                        {(m.image_url || m.file_url) && (m.message_type === 'image' || m.image_url) && (
-                          <img src={normalizeUrl(m.image_url || m.file_url)} alt="" className="rounded-lg mb-1 max-h-48 object-cover" />
+                        {isImage && (
+                          <img src={normalizeUrl(fileUrl)} alt="" onClick={() => setLightboxImage(normalizeUrl(fileUrl))} className="rounded-lg mb-1 max-h-48 object-cover cursor-pointer" data-testid="contact-chat-image" />
+                        )}
+                        {m.message_type === 'video' && fileUrl && (
+                          <video src={normalizeUrl(fileUrl)} controls className="rounded-lg mb-1 max-h-48" />
+                        )}
+                        {isFile && (
+                          <a href={normalizeUrl(fileUrl)} target="_blank" rel="noopener noreferrer" className={`flex items-center gap-2 p-2 rounded-lg mb-1 ${mine ? 'bg-white/20' : 'bg-white'}`}>
+                            <FileText className="w-4 h-4" />
+                            <span className="text-xs truncate max-w-[140px]">{m.filename || 'Файл'}</span>
+                            <Download className="w-3.5 h-3.5 ml-auto" />
+                          </a>
                         )}
                         {m.text && <p className="text-sm whitespace-pre-wrap break-words">{m.text}</p>}
                         <p className={`text-[10px] mt-1 ${mine ? 'text-teal-100' : 'text-slate-400'}`}>{String(m.created_at).slice(11, 16)}</p>
@@ -215,29 +265,40 @@ export default function ContactPage() {
                 })}
                 <div ref={msgEndRef} />
               </div>
-              <div className="border-t border-slate-100 p-3 flex gap-2">
+              {showEmoji && (
+                <div className="border-t border-slate-100 bg-white p-2 max-h-28 overflow-y-auto">
+                  <div className="flex flex-wrap gap-1">
+                    {EMOJI_LIST.map((emoji, idx) => (
+                      <button key={idx} type="button" onClick={() => insertEmoji(emoji)} className="hover:bg-slate-100 p-1 rounded text-lg transition-transform hover:scale-125">{emoji}</button>
+                    ))}
+                  </div>
+                </div>
+              )}
+              <div className="border-t border-slate-100 p-3 flex items-center gap-2">
+                <input ref={fileInputRef} type="file" onChange={handleFileUpload} accept="image/*,video/*,.pdf,.doc,.docx,.xls,.xlsx,.txt,.csv,.zip,.rar" className="hidden" />
+                <button type="button" onClick={() => fileInputRef.current?.click()} disabled={uploading} className="p-2 hover:bg-teal-50 rounded-full text-slate-400 hover:text-teal-500 transition-colors" title="Прикрепить файл" data-testid="contact-chat-attach">
+                  <Paperclip className="w-5 h-5" />
+                </button>
+                <button type="button" onClick={() => setShowEmoji(!showEmoji)} className={`p-2 rounded-full transition-colors ${showEmoji ? 'bg-teal-100 text-teal-500' : 'hover:bg-teal-50 text-slate-400 hover:text-teal-500'}`} title="Эмодзи" data-testid="contact-chat-emoji">
+                  <Smile className="w-5 h-5" />
+                </button>
                 <Input value={chatText} onChange={(e) => setChatText(e.target.value)}
                   onKeyDown={(e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendChat(); } }}
-                  placeholder="Введите сообщение..." className="rounded-xl" data-testid="contact-chat-input" />
-                <Button onClick={sendChat} disabled={sending || !chatText.trim()} className="bg-teal-500 hover:bg-teal-600 text-white rounded-xl px-4" data-testid="contact-chat-send">
+                  placeholder="Введите сообщение..." className="rounded-xl flex-1" disabled={uploading} data-testid="contact-chat-input" />
+                <Button onClick={sendChat} disabled={sending || uploading || !chatText.trim()} className="bg-teal-500 hover:bg-teal-600 text-white rounded-xl px-4" data-testid="contact-chat-send">
                   {sending ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
                 </Button>
               </div>
+              {uploading && <p className="text-xs text-slate-400 px-3 pb-2 text-center">Загрузка файла...</p>}
             </div>
           )}
 
           {/* DISCOUNTS & CONDITIONS */}
           {tab === 'discounts' && (
             <div className="space-y-4">
-              <div className="grid grid-cols-2 gap-3">
-                <div className="bg-white rounded-2xl p-4 shadow-sm" data-testid="contact-current-status">
-                  <p className="text-xs text-slate-500">Текущий статус</p>
-                  <p className="text-lg font-bold text-slate-800">{STATUS_LABEL[curStatus] || curStatus}</p>
-                </div>
-                <div className="bg-white rounded-2xl p-4 shadow-sm">
-                  <p className="text-xs text-slate-500">Индивидуальная скидка</p>
-                  <p className="text-lg font-bold text-emerald-600">{indDiscount}%</p>
-                </div>
+              <div className="bg-white rounded-2xl p-4 shadow-sm">
+                <p className="text-xs text-slate-500">Индивидуальная скидка</p>
+                <p className="text-lg font-bold text-emerald-600">{indDiscount}%</p>
               </div>
 
               {/* Individual discount request */}
@@ -256,29 +317,6 @@ export default function ContactPage() {
                       <Button onClick={submitDiscount} disabled={submittingDisc} className="bg-teal-500 hover:bg-teal-600 text-white rounded-xl" data-testid="contact-discount-submit">
                         {submittingDisc ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Отправить'}
                       </Button>
-                    </div>
-                  </>
-                )}
-              </div>
-
-              {/* Status upgrade */}
-              <div className="bg-white rounded-2xl p-5 shadow-sm" data-testid="contact-status-block">
-                <h2 className="font-bold text-slate-800 mb-1 flex items-center gap-2"><ArrowUpCircle className="w-4 h-4 text-indigo-500" />Повышение статуса</h2>
-                {myReqs.status_request ? (
-                  <div className="mt-2 flex items-center gap-2 text-sm text-slate-600">
-                    <Hourglass className="w-4 h-4 text-amber-400" /> Запрос на статус «{STATUS_LABEL[myReqs.status_request.requested_status]}» на рассмотрении
-                  </div>
-                ) : (
-                  <>
-                    <p className="text-sm text-slate-500 mb-3">Оптовый и партнёрский статусы дают увеличенные скидки. Доступно при достижении суммы заказов.</p>
-                    <div className="flex gap-3">
-                      {curStatus === 'retail' && (
-                        <Button onClick={() => submitStatus('wholesale')} disabled={submittingStatus} variant="outline" className="rounded-xl" data-testid="contact-status-wholesale">Запросить «Опт»</Button>
-                      )}
-                      {curStatus !== 'partner' && (
-                        <Button onClick={() => submitStatus('partner')} disabled={submittingStatus} variant="outline" className="rounded-xl" data-testid="contact-status-partner">Запросить «Партнёр»</Button>
-                      )}
-                      {curStatus === 'partner' && <p className="text-sm text-emerald-600">У вас максимальный статус 🎉</p>}
                     </div>
                   </>
                 )}
@@ -394,6 +432,15 @@ export default function ContactPage() {
           )}
         </motion.div>
       </div>
+
+      {lightboxImage && (
+        <div className="fixed inset-0 bg-black/90 z-[100] flex items-center justify-center p-4" onClick={() => setLightboxImage(null)} data-testid="contact-chat-lightbox">
+          <button onClick={() => setLightboxImage(null)} className="absolute top-4 right-4 text-white hover:bg-white/20 p-2 rounded-full transition-colors">
+            <X className="w-7 h-7" />
+          </button>
+          <img src={lightboxImage} alt="" className="max-w-[90vw] max-h-[85vh] object-contain" onClick={(e) => e.stopPropagation()} />
+        </div>
+      )}
     </div>
   );
 }

@@ -604,8 +604,9 @@ async def admin_list_products(
     total = await db.products.count_documents(query)
     cursor = db.products.find(query, {"_id": 0}).sort(sort_field, direction).skip((page - 1) * page_size).limit(page_size)
     items = await cursor.to_list(page_size)
+    gsync = await _global_stock_sync()
     return {
-        "items": [_ensure_new_status(p) for p in items],
+        "items": [_apply_availability(_ensure_new_status(p), gsync) for p in items],
         "total": total,
         "page": page,
         "page_size": page_size,
