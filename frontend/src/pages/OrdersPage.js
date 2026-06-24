@@ -54,6 +54,7 @@ export default function OrdersPage() {
   const [surchargeModal, setSurchargeModal] = useState(null); // { orderId, amount, userBalance }
   const [returnOrder, setReturnOrder] = useState(null);
   const [returnSettings, setReturnSettings] = useState(null);
+  const [periodFilter, setPeriodFilter] = useState('month'); // week | month | year | all (default last month)
 
   useEffect(() => {
     if (authLoading) return;
@@ -450,8 +451,48 @@ export default function OrdersPage() {
 
             {/* Orders List */}
             <div className="space-y-4" data-testid="orders-list">
+              {/* Period filter */}
+              {orders.length > 0 && (() => {
+                const PERIODS = [
+                  { id: 'week', label: 'Неделя', days: 7 },
+                  { id: 'month', label: 'Месяц', days: 30 },
+                  { id: 'year', label: 'Год', days: 365 },
+                  { id: 'all', label: 'Всё время', days: null },
+                ];
+                return (
+                  <div className="glass-card p-3 flex items-center gap-2 flex-wrap" data-testid="orders-period-filter">
+                    <span className="text-xs font-bold uppercase tracking-widest text-slate-400 mr-1 flex items-center gap-1.5"><CalendarDays className="w-3.5 h-3.5" />Период:</span>
+                    {PERIODS.map((p) => (
+                      <button
+                        key={p.id}
+                        onClick={() => setPeriodFilter(p.id)}
+                        className={`px-4 py-1.5 rounded-lg text-sm font-semibold transition-all ${periodFilter === p.id ? 'bg-gradient-to-r from-teal-500 to-emerald-500 text-white shadow-sm shadow-teal-500/20' : 'bg-white text-slate-500 hover:bg-slate-100 border border-slate-200'}`}
+                        data-testid={`period-${p.id}`}
+                      >
+                        {p.label}
+                      </button>
+                    ))}
+                  </div>
+                );
+              })()}
+              {(() => {
+                const days = { week: 7, month: 30, year: 365, all: null }[periodFilter];
+                const cutoff = days != null ? Date.now() - days * 86400000 : null;
+                const filteredOrders = cutoff == null ? orders : orders.filter((o) => {
+                  const t = new Date(o.created_at || 0).getTime();
+                  return !isNaN(t) && t >= cutoff;
+                });
+                if (filteredOrders.length === 0) {
+                  return (
+                    <div className="glass-card text-center py-12" data-testid="orders-period-empty">
+                      <CalendarDays className="w-12 h-12 mx-auto text-slate-300 mb-3" />
+                      <p className="text-slate-500">За выбранный период заказов нет</p>
+                    </div>
+                  );
+                }
+                return (
               <AnimatePresence>
-                {orders.map((order, index) => (
+                {filteredOrders.map((order, index) => (
                   <motion.div 
                     key={order.id} 
                     className="glass-card overflow-hidden"
@@ -813,6 +854,8 @@ export default function OrdersPage() {
                   </motion.div>
                 ))}
               </AnimatePresence>
+                );
+              })()}
             </div>
           </div>
         )}

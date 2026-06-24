@@ -1,20 +1,30 @@
+import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { Gift } from 'lucide-react';
+import axios from 'axios';
 
-const STEP = 10000; // ₽ per certificate tranche
-const REWARD = 500; // ₽ certificate per tranche
+const API = `${process.env.REACT_APP_BACKEND_URL}/api`;
 
 const formatPrice = (p) => new Intl.NumberFormat('ru-RU').format(Math.round(p));
 
 /**
- * Ozon certificate progress: +500₽ certificate for every 10 000₽ in the cart.
- * The bar fills 0→10 000 within the current tranche; the accrued certificate
- * total sums +500₽ per completed tranche. Purely informational preview.
+ * Ozon certificate progress: +REWARD₽ certificate for every STEP₽ of order goods.
+ * STEP/REWARD/enabled come from admin settings (/ozon-settings).
  */
 export const OzonCertificateBar = ({ total = 0, compact = false }) => {
+  const [cfg, setCfg] = useState({ ozon_enabled: true, ozon_step: 10000, ozon_reward: 500 });
+
+  useEffect(() => {
+    axios.get(`${API}/ozon-settings`).then((r) => setCfg(r.data)).catch(() => {});
+  }, []);
+
+  if (!cfg.ozon_enabled || !cfg.ozon_reward) return null;
+
+  const STEP = Math.max(1, cfg.ozon_step || 10000);
+  const REWARD = cfg.ozon_reward || 500;
   const tranches = Math.floor(total / STEP);
   const certificate = tranches * REWARD;
-  const within = total - tranches * STEP; // progress inside current tranche
+  const within = total - tranches * STEP;
   const pct = Math.min(100, (within / STEP) * 100);
   const toNext = STEP - within;
 

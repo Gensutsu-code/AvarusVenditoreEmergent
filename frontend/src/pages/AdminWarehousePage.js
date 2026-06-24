@@ -203,15 +203,19 @@ export default function AdminWarehousePage({ embedded = false }) {
                 <div className="flex gap-2 mb-4 flex-wrap items-center">
                   <Input value={search} onChange={(e) => setSearch(e.target.value)} onKeyDown={(e) => e.key === 'Enter' && fetchStock()} placeholder="Поиск по названию, артикулу, бренду..." className="rounded-xl max-w-md" data-testid="wh-search-input" />
                   <Button onClick={() => fetchStock()} className="bg-amber-500 hover:bg-amber-600 text-white rounded-xl" data-testid="wh-search-btn">Найти</Button>
-                  {selected.length > 0 && (
-                    <div className="flex items-center gap-2 ml-auto bg-amber-50 border border-amber-200 rounded-xl px-3 py-1.5" data-testid="bulk-action-bar">
-                      <span className="text-sm font-medium text-amber-700">Выбрано: {selected.length}</span>
-                      <Button size="sm" onClick={() => openBulkMv('receipt')} className="bg-emerald-500 hover:bg-emerald-600 text-white rounded-lg" data-testid="bulk-receipt-btn"><Plus className="w-4 h-4 mr-1" />Приёмка</Button>
-                      <Button size="sm" onClick={() => openBulkMv('writeoff')} className="bg-rose-500 hover:bg-rose-600 text-white rounded-lg" data-testid="bulk-writeoff-btn"><Minus className="w-4 h-4 mr-1" />Списание</Button>
-                      <button onClick={() => setSelected([])} className="text-slate-400 hover:text-slate-600 text-xs" data-testid="bulk-clear">Сбросить</button>
-                    </div>
-                  )}
                 </div>
+
+                {/* Bulk operations bar */}
+                {selected.length > 0 && (
+                  <motion.div initial={{ opacity: 0, y: -8 }} animate={{ opacity: 1, y: 0 }} className="flex items-center gap-3 mb-4 bg-amber-50 border border-amber-200 rounded-2xl px-4 py-3 flex-wrap" data-testid="bulk-action-bar">
+                    <span className="text-sm font-semibold text-amber-700">Выбрано товаров: {selected.length}</span>
+                    <div className="flex items-center gap-2 ml-auto flex-wrap">
+                      <Button size="sm" onClick={() => openBulkMv('receipt')} className="bg-emerald-500 hover:bg-emerald-600 text-white rounded-lg" data-testid="bulk-receipt-btn"><Plus className="w-4 h-4 mr-1.5" />Массовая приёмка</Button>
+                      <Button size="sm" onClick={() => openBulkMv('writeoff')} className="bg-rose-500 hover:bg-rose-600 text-white rounded-lg" data-testid="bulk-writeoff-btn"><Minus className="w-4 h-4 mr-1.5" />Массовое списание</Button>
+                      <button onClick={() => setSelected([])} className="text-slate-500 hover:text-slate-700 text-sm font-medium px-2" data-testid="bulk-clear">Сбросить</button>
+                    </div>
+                  </motion.div>
+                )}
 
                 <div className="bg-white rounded-2xl shadow-sm overflow-hidden">
                   <div className="overflow-x-auto">

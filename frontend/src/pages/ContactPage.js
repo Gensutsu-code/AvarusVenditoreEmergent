@@ -53,9 +53,7 @@ export default function ContactPage() {
   const [uploading, setUploading] = useState(false);
   const [showEmoji, setShowEmoji] = useState(false);
   const [lightboxImage, setLightboxImage] = useState(null);
-  const msgEndRef = useRef(null);
   const msgContainerRef = useRef(null);
-  const shouldAutoScrollRef = useRef(true);
   const fileInputRef = useRef(null);
 
   // discounts/conditions
@@ -114,20 +112,16 @@ export default function ContactPage() {
     return () => clearInterval(i);
   }, [tab, user, fetchChat]);
 
-  useEffect(() => {
-    if (tab === 'chat' && shouldAutoScrollRef.current) msgEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-  }, [messages, tab]);
-
-  // Jump to latest when opening the chat tab
-  useEffect(() => {
-    if (tab === 'chat') { shouldAutoScrollRef.current = true; setTimeout(() => msgEndRef.current?.scrollIntoView({ behavior: 'auto' }), 50); }
-  }, [tab]);
-
-  const handleMsgScroll = () => {
+  // Scroll only the chat container (never the page)
+  const scrollChatToBottom = () => {
     const el = msgContainerRef.current;
-    if (!el) return;
-    shouldAutoScrollRef.current = el.scrollHeight - el.scrollTop - el.clientHeight < 80;
+    if (el) el.scrollTop = el.scrollHeight;
   };
+
+  // Jump to latest only when opening the chat tab (no auto-scroll on incoming messages)
+  useEffect(() => {
+    if (tab === 'chat') setTimeout(scrollChatToBottom, 80);
+  }, [tab]);
 
   const sendChat = async () => {
     const text = chatText.trim();
@@ -135,10 +129,10 @@ export default function ContactPage() {
     setSending(true);
     setChatText('');
     setShowEmoji(false);
-    shouldAutoScrollRef.current = true;
     try {
       await axios.post(`${API}/chat/send`, { text });
       await fetchChat();
+      setTimeout(scrollChatToBottom, 60);
     } catch { toast.error('Не удалось отправить'); setChatText(text); } finally { setSending(false); }
   };
 
@@ -159,8 +153,8 @@ export default function ContactPage() {
           caption: ''
         }
       });
-      shouldAutoScrollRef.current = true;
       await fetchChat();
+      setTimeout(scrollChatToBottom, 60);
       toast.success('Файл отправлен');
     } catch { toast.error('Ошибка загрузки файла'); } finally {
       setUploading(false);
@@ -230,7 +224,7 @@ export default function ContactPage() {
           {/* CHAT */}
           {tab === 'chat' && (
             <div className="bg-white rounded-2xl shadow-sm overflow-hidden flex flex-col" style={{ height: '60vh' }} data-testid="contact-chat">
-              <div ref={msgContainerRef} onScroll={handleMsgScroll} className="flex-1 overflow-y-auto p-4 space-y-3">
+              <div ref={msgContainerRef} className="flex-1 overflow-y-auto p-4 space-y-3">
                 {messages.length === 0 ? (
                   <div className="h-full flex flex-col items-center justify-center text-slate-400">
                     <MessageCircle className="w-10 h-10 mb-2 opacity-50" />
@@ -263,7 +257,7 @@ export default function ContactPage() {
                     </div>
                   );
                 })}
-                <div ref={msgEndRef} />
+                <div />
               </div>
               {showEmoji && (
                 <div className="border-t border-slate-100 bg-white p-2 max-h-28 overflow-y-auto">

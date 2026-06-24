@@ -212,6 +212,20 @@ export default function AdminPage() {
   const [selectedProgramId, setSelectedProgramId] = useState(null);
   const [programUsers, setProgramUsers] = useState([]);
   const [bonusHistory, setBonusHistory] = useState([]);
+  const [ozonSettings, setOzonSettings] = useState({ ozon_enabled: true, ozon_step: 10000, ozon_reward: 500 });
+
+  useEffect(() => {
+    axios.get(`${API}/ozon-settings`).then(r => setOzonSettings(r.data)).catch(() => {});
+  }, []);
+
+  const handleSaveOzonSettings = async () => {
+    try {
+      await axios.put(`${API}/admin/ozon-settings`, ozonSettings);
+      toast.success('Настройки Ozon-сертификата сохранены');
+    } catch (e) {
+      toast.error(e.response?.data?.detail || 'Ошибка сохранения');
+    }
+  };
   
   // Bonus states
   const [prizeRedemptions, setPrizeRedemptions] = useState([]);
@@ -1716,7 +1730,7 @@ export default function AdminPage() {
           </TabsContent>
 
           {/* Warehouse Tab */}
-          <TabsContent value="warehouse" className="p-0">
+          <TabsContent value="warehouse" className="p-6">
             <AdminWarehousePage embedded />
           </TabsContent>
 
@@ -2483,6 +2497,45 @@ export default function AdminPage() {
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.3, ease: "easeOut" }}
             >
+              {/* Ozon certificate settings */}
+              <div className="bg-white rounded-2xl p-6 border border-slate-200 shadow-sm" data-testid="ozon-settings-card">
+                <div className="flex items-center justify-between gap-3 mb-4 flex-wrap">
+                  <div className="flex items-center gap-3">
+                    <div className="w-11 h-11 rounded-xl bg-gradient-to-br from-indigo-500 to-violet-500 flex items-center justify-center shadow-lg shadow-indigo-500/20">
+                      <Gift className="w-5 h-5 text-white" />
+                    </div>
+                    <div>
+                      <h2 className="text-lg font-bold text-slate-800">Сертификат Ozon за заказы</h2>
+                      <p className="text-sm text-slate-500">Начисление сертификата в зависимости от суммы заказа</p>
+                    </div>
+                  </div>
+                  <label className="flex items-center gap-2 cursor-pointer select-none" data-testid="ozon-enabled-toggle" onClick={() => setOzonSettings(s => ({ ...s, ozon_enabled: !s.ozon_enabled }))}>
+                    <span className="text-sm font-medium text-slate-600">{ozonSettings.ozon_enabled ? 'Включено' : 'Выключено'}</span>
+                    <span className={`relative inline-flex h-6 w-11 flex-shrink-0 items-center rounded-full transition-colors duration-300 ${ozonSettings.ozon_enabled ? 'bg-indigo-500' : 'bg-slate-300'}`}>
+                      <span className={`inline-block h-5 w-5 transform rounded-full bg-white shadow-sm transition-transform duration-300 ${ozonSettings.ozon_enabled ? 'translate-x-[22px]' : 'translate-x-0.5'}`} />
+                    </span>
+                  </label>
+                </div>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div>
+                    <Label className="text-xs font-bold uppercase tracking-widest text-slate-500 mb-1.5 block">За какую сумму заказа (₽)</Label>
+                    <Input type="number" min="1" value={ozonSettings.ozon_step} onChange={(e) => setOzonSettings(s => ({ ...s, ozon_step: parseInt(e.target.value) || 0 }))} className="rounded-xl" data-testid="ozon-step-input" />
+                    <p className="text-xs text-slate-400 mt-1">Сертификат выдаётся за каждые столько ₽ в заказе</p>
+                  </div>
+                  <div>
+                    <Label className="text-xs font-bold uppercase tracking-widest text-slate-500 mb-1.5 block">Сумма сертификата (₽)</Label>
+                    <Input type="number" min="0" value={ozonSettings.ozon_reward} onChange={(e) => setOzonSettings(s => ({ ...s, ozon_reward: parseInt(e.target.value) || 0 }))} className="rounded-xl" data-testid="ozon-reward-input" />
+                    <p className="text-xs text-slate-400 mt-1">Начисляется за каждую полную сумму выше</p>
+                  </div>
+                </div>
+                <div className="mt-3 text-sm text-slate-500 bg-indigo-50/60 rounded-xl px-4 py-2.5">
+                  Например: заказ на {new Intl.NumberFormat('ru-RU').format((ozonSettings.ozon_step || 10000) * 3)} ₽ → сертификат {new Intl.NumberFormat('ru-RU').format((ozonSettings.ozon_reward || 0) * 3)} ₽
+                </div>
+                <Button onClick={handleSaveOzonSettings} className="mt-4 bg-indigo-500 hover:bg-indigo-600 text-white rounded-xl" data-testid="ozon-save-btn">
+                  Сохранить настройки Ozon
+                </Button>
+              </div>
+
               {/* Header with Add Button */}
               <div className="bg-gradient-to-br from-teal-50/50 to-emerald-50/30 rounded-2xl p-6 border border-teal-100/50">
                 <div className="flex justify-between items-center">

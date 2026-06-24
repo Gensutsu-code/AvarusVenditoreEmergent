@@ -380,7 +380,13 @@ async def create_order(data: OrderCreate, user=Depends(get_current_user)):
             cash_part = total
 
     # Ozon certificate: +500₽ per full 10 000₽ of (adjusted) goods
-    ozon_certificate = int(ozon_base // 10000) * 500
+    # Ozon certificate: configurable reward per tranche of (adjusted) goods
+    ozon_cfg = await db.settings.find_one({"key": "ozon_certificate_settings"})
+    ozon_vals = (ozon_cfg or {}).get("value", {})
+    ozon_enabled = ozon_vals.get("ozon_enabled", True)
+    ozon_step = max(1, int(ozon_vals.get("ozon_step", 10000) or 10000))
+    ozon_reward = max(0, int(ozon_vals.get("ozon_reward", 500) or 500))
+    ozon_certificate = (int(ozon_base // ozon_step) * ozon_reward) if ozon_enabled else 0
 
     # Deferred card/crypto: order is placed now, payment due within an admin-defined window
     payment_due_date = None
