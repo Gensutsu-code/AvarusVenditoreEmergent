@@ -37,6 +37,7 @@ import {
   LogsTab
 } from '../components/admin';
 import CryptoSettingsTab from '../components/admin/CryptoSettingsTab';
+import CardPaymentSettings from '../components/admin/CardPaymentSettings';
 
 const API = `${process.env.REACT_APP_BACKEND_URL}/api`;
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
@@ -3605,6 +3606,7 @@ export default function AdminPage() {
               handleSavePrepaymentSettings={handleSavePrepaymentSettings}
               isDark={isDark}
             />
+            <CardPaymentSettings />
             </motion.div>
           </TabsContent>
 
