@@ -1,0 +1,37 @@
+{
+  "summary": "Frontend-only verification of the new Word invoice export feature. PART 2 (Invoice Requisites Settings) PASSES end-to-end. PART 1 (download-invoice-word button in admin order detail dialog) FAILS — the button is implemented in /app/frontend/src/pages/AdminPage.js inside the viewingOrder dialog which lives under the 'orders' TabsContent, but that tab is UNREACHABLE from the UI: 'orders' is not in defaultTabOrder (AdminPage.js:160) nor in tabConfig (AdminPage.js:1294), so no tab trigger renders. The header link 'Заказы' routes to /admin/orders → AdminOrdersPage component, which is a DIFFERENT component that has NO invoice button and no viewing dialog. Net result: the user cannot trigger the new Word invoice download from anywhere in the UI.",
+  "backend_issues": {"critical": [], "minor": []},
+  "frontend_issues": {
+    "ui_bugs": [
+      {"component": "AdminPage.js viewingOrder dialog (download-invoice-word button)", "issue": "Unreachable. The button is rendered inside <TabsContent value=\"orders\"> (AdminPage.js line 1840) but 'orders' is missing from defaultTabOrder (line 160) and tabConfig (line 1294), so no tab trigger exists. URL ?tab=orders is also rejected by the useEffect on line 339-344 because the guard checks defaultTabOrder.includes(tab). DOM probe confirms: document.querySelector('[data-testid=\"download-invoice-word\"]') returns null on /admin and on /admin?tab=orders.", "selector": "[data-testid=\"download-invoice-word\"]", "priority": "CRITICAL"},
+      {"component": "AdminOrdersPage.js (/admin/orders route)", "issue": "This is the page the user actually reaches via the global header 'Заказы' link. It has NO 'Документы' section and NO download-invoice-word button. Expanding an order card (164 expandable rows verified) does not reveal the button anywhere in the DOM.", "selector": "n/a (button absent)", "priority": "CRITICAL"}
+    ],
+    "integration_issues": [
+      {"flow": "Word invoice download (GET /api/admin/orders/{id}/invoice)", "issue": "Network request was NEVER fired during testing because the button cannot be located/clicked from the UI. invoice_responses list remained empty in all probes.", "affected_selectors": ["[data-testid=\"download-invoice-word\"]"]}
+    ],
+    "design_issues": []
+  },
+  "test_report_links": [
+    "/app/test_reports/screenshots/iter87b/",
+    "/app/test_reports/screenshots/iter87c/admin_orders_url.png"
+  ],
+  "action_items": [
+    "Add 'orders' to defaultTabOrder in /app/frontend/src/pages/AdminPage.js line 160 AND to tabConfig (line 1294) so the 'Заказы' tab trigger renders in the AdminPage tab bar; OR",
+    "(Preferred per problem statement) Port the download-invoice-word button + 'Документы' section into AdminOrdersPage.js so it appears on /admin/orders (the route the user actually visits via the header 'Заказы' link). Wire axios GET to /api/admin/orders/{id}/invoice with responseType:'blob' and the same .docx download logic that lives in AdminPage.js lines 3643-3655.",
+    "After fix, re-verify: clicking the button must trigger GET /api/admin/orders/{id}/invoice → 200, Content-Type: application/vnd.openxmlformats-officedocument.wordprocessingml.document, and no error toast."
+  ],
+  "critical_code_review_comments": [
+    "AdminPage.js is 4172 lines — far exceeds the 700-line guideline. The orphaned viewingOrder dialog (lines 3490-3694) including the new invoice button is dead code from the UI's perspective because the parent 'orders' tab is unreachable. Either delete the orphaned block or restore tab visibility.",
+    "InvoiceSettings.js silently swallows the initial GET error (.catch(() => {})) and renders nothing if cfg is null — fine for happy path but no user-visible loading/error state. Minor.",
+    "AdminPage.js useEffect at line 339 filters URL ?tab= against defaultTabOrder; since 'orders' is missing, even a deep link cannot activate the orders tab. Add 'orders' to defaultTabOrder or whitelist it explicitly.",
+    "Duplicated invoice button styling/logic between AdminPage.js (lines 3643-3655) and the missing AdminOrdersPage version would invite drift — extract into a reusable <InvoiceDownloadButton orderId=... /> component when the fix is applied."
+  ],
+  "updated_files": [],
+  "success_rate": {"backend": "n/a (skipped per request)", "frontend": "50% — Settings flow 100% OK, Invoice button flow 0% (button unreachable)"},
+  "test_credentials": "Admin: admin@avarus.ru / admin (verified working)",
+  "seed_data_creation": "None. Temporarily changed invoice-settings.seller_name to a TEST value, verified persistence via reload, then restored to original 'ООО «АВОпт»'.",
+  "retest_needed": true,
+  "main_agent_can_self_test": true,
+  "context_for_next_testing_agent": "For Invoice Settings: login admin@avarus.ru/admin → /admin → tab Настройки → sub-tab 'Реквизиты счёта'. Form data-testid='invoice-settings' renders with 8 fields (seller_name, bank_name, bik, corr_account, inn, kpp, account, footer_note). Sample defaults confirmed live: seller_name='ООО «АВОпт»', bik='044523459', corr_account='30101345600000000555', inn='7729666543', kpp='773086745', account='40709870100000084071', bank_name='ПАО «Банк Альфа» г. Санкт-Петербург', footer_note='Оплата данного счета означает согласие с условиями отгрузки товара.'. PUT /api/admin/invoice-settings returns 200, success toast 'Реквизиты счёта сохранены' appears, value persists after reload. For Invoice Button: until main agent surfaces the button on a reachable page, button-click test cannot run. Backend endpoint GET /api/admin/orders/{id}/invoice was reported pre-verified by main agent via curl.",
+  "rca of the issue": "AdminPage.js's tab bar is driven by `tabOrder` (from localStorage) which falls back to `defaultTabOrder = ['overview','products','warehouse','bonus','payments','crm','marketing','logs','settings']` (line 160). The Orders tab content block (`<TabsContent value=\"orders\">` at line 1840) remains in the JSX but has no matching entry in tabConfig (line 1294) and no entry in defaultTabOrder, so (a) no TabsTrigger renders for it, (b) the URL ?tab=orders handler on line 339 rejects it via the defaultTabOrder.includes(tab) guard, and (c) no AdminDashboard card or analytics-bar KPI calls setActiveTab('orders'). Meanwhile the global header link 'Заказы' navigates to /admin/orders, which renders the separate AdminOrdersPage.js component that never received the invoice button. Therefore the newly-added button is orphan code. Mitigation: add 'orders' to defaultTabOrder & tabConfig in AdminPage.js, OR (preferred) re-implement the Документы block + download-invoice-word button in AdminOrdersPage.js so the user-visible /admin/orders page exposes the feature."
+}

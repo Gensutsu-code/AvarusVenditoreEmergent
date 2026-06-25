@@ -3640,6 +3640,19 @@ export default function AdminPage() {
               {/* Document generation */}
               <div className="border border-zinc-200 rounded-lg p-4">
                 <Label className="text-xs font-bold uppercase text-zinc-500 mb-3 block">Документы</Label>
+                <button
+                  onClick={async () => {
+                    try {
+                      const res = await axios.get(`${API}/admin/orders/${viewingOrder.id}/invoice`, { responseType: 'blob' });
+                      const url = window.URL.createObjectURL(new Blob([res.data]));
+                      const a = document.createElement('a'); a.href = url; a.download = `Счет_${viewingOrder.id.slice(0,8)}.docx`;
+                      document.body.appendChild(a); a.click(); a.remove(); window.URL.revokeObjectURL(url);
+                    } catch (err) { toast.error('Ошибка скачивания счёта'); }
+                  }}
+                  className="w-full flex items-center justify-center gap-2 px-3 py-2.5 mb-2 bg-teal-500 hover:bg-teal-600 rounded-lg text-sm font-semibold text-white cursor-pointer transition-colors"
+                  data-testid="download-invoice-word">
+                  <FileSpreadsheet className="w-4 h-4" /> Счёт (Word) — по образцу
+                </button>
                 <div className="grid grid-cols-2 gap-2">
                   {[
                     { type: 'invoice', format: 'docx', label: 'Накладная WORD', color: 'blue' },
