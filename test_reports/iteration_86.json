@@ -1,0 +1,24 @@
+{
+  "summary": "Frontend-only verification of the rat-thief easter-egg on /bonus (user@demo.com). All four scenarios PASS: (A) steal — rat appears ~30s after page open, decreases the orange points number; (B) scare — clicking the rat within the peek/creep window makes it flee with no point change; (C) cooldown — after one appearance, reload within 120 min does not re-show the rat and localStorage 'ratThiefLastShown' is set; (D) visual-only — reload restores the real backend balance.",
+  "backend_issues": {"critical": [], "minor": []},
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [],
+    "design_issues": []
+  },
+  "test_report_links": ["/app/test_reports/screenshots/rat_appeared.png", "/app/test_reports/screenshots/scenario_b.png"],
+  "action_items": [],
+  "critical_code_review_comments": [
+    "BonusPage.js (828 lines) exceeds 700-line threshold — consider extracting RatThief, AnimatedNumber and Confetti into separate modules under /pages/bonus/ for maintainability.",
+    "Rat-thief cooldown localStorage key 'ratThiefLastShown' is written when setRatActive(true) fires (line 229). This is fine, but if the user navigates away during the 30s timer and the cleanup clearTimeout runs, the key is NOT set, so the rat could appear again on next visit — current behaviour is acceptable for an easter-egg, just noting.",
+    "handleRatSteal (line 214) returns silently if balance is 0; rat still completes its animation visually with no point change — UX would be slightly nicer if the rat doesn't appear at all when balance == 0."
+  ],
+  "updated_files": [],
+  "success_rate": {"backend": "n/a", "frontend": "100%"},
+  "test_credentials": "Client: user@demo.com / demo123 (~363,900 bonus points)",
+  "seed_data_creation": "None",
+  "retest_needed": false,
+  "main_agent_can_self_test": true,
+  "context_for_next_testing_agent": "Easter-egg lives in /app/frontend/src/pages/BonusPage.js. To re-test, login as user@demo.com/demo123, go to /bonus, run `localStorage.removeItem('ratThiefLastShown')` in console then reload — 30s later the rat (data-testid='bonus-rat-thief') peeks out at the top-right of the FIRST program card. Steal completes ~4-4.5s after appear (1s peek + 3s creep). To test scare, click the rat within ~3s of it appearing. Big points number selector: 'p.text-3xl.font-bold.text-orange-500' (first occurrence). Verified end-to-end values: 363900 -> 363805 (steal -95) -> 363900 (after reload).",
+  "rca of the issue": "n/a — feature works as specified"
+}
