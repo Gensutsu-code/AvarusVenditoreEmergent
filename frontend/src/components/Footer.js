@@ -27,7 +27,7 @@ export default function Footer() {
         <div className="flex items-center justify-between flex-wrap gap-x-6 gap-y-1">
           <div className="flex items-center gap-4 text-xs">
             {showEmail && (
-              <a href={`mailto:${footer.email}`} className="flex items-center gap-1 hover:underline" data-testid="footer-email">
+              <a href={`mailto:${footer.email}`} className="flex items-center gap-1 hover:underline py-1.5 min-h-[36px]" data-testid="footer-email">
                 <Mail className="w-3 h-3 shrink-0" />{footer.email}
               </a>
             )}

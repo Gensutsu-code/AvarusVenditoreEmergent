@@ -311,7 +311,7 @@ export const Header = () => {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex items-center h-16 gap-6">
           {/* Logo */}
-          <Link to={isAdmin ? "/admin" : "/"} className="flex-shrink-0 group" data-testid="logo-link">
+          <Link to={isAdmin ? "/admin" : "/"} className="flex-shrink-0 group flex items-center min-h-[40px]" data-testid="logo-link">
             <motion.h1 
               className="text-xl font-bold uppercase tracking-tight bg-gradient-to-r from-emerald-500 to-teal-600 bg-clip-text text-transparent"
               whileHover={{ scale: 1.02 }}

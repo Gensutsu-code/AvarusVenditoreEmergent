@@ -131,7 +131,7 @@ export const FloatingPromoBanner = () => {
               {/* Close button */}
               <motion.button 
                 onClick={handleCollapse}
-                className="ml-1 p-1 hover:bg-white/20 rounded-full transition-colors"
+                className="ml-1 p-2 hover:bg-white/20 rounded-full transition-colors flex-shrink-0"
                 whileHover={{ scale: 1.1, rotate: 90 }}
                 whileTap={{ scale: 0.9 }}
                 data-testid="promo-banner-close"

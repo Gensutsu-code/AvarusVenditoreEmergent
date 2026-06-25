@@ -1387,8 +1387,9 @@ export default function AdminPage() {
 
         {/* Tabs - Dynamic Order with Full Width Distribution */}
         <Tabs value={activeTab} onValueChange={setActiveTab} className={`rounded-xl border shadow-sm overflow-hidden ${isDark ? 'bg-zinc-900/60 border-zinc-800 backdrop-blur-xl' : 'bg-white border-zinc-200'}`}>
-          <div className="overflow-x-auto">
-            <TabsList className={`w-full flex border-b rounded-none p-0 h-auto ${isDark ? 'border-zinc-800 bg-zinc-900/50' : 'border-zinc-200 bg-zinc-50'}`}>
+          <div className="relative">
+            <div className="overflow-x-auto">
+              <TabsList className={`w-full flex border-b rounded-none p-0 h-auto ${isDark ? 'border-zinc-800 bg-zinc-900/50' : 'border-zinc-200 bg-zinc-50'}`}>
               {tabOrder.map((tabId) => {
                 const config = tabConfig[tabId];
                 const IconComponent = config.icon;
@@ -1427,6 +1428,11 @@ export default function AdminPage() {
                 );
               })}
             </TabsList>
+            </div>
+            {/* Mobile scroll affordance */}
+            <div className="sm:hidden pointer-events-none absolute right-0 top-0 bottom-0 w-8 flex items-center justify-end pr-1 bg-gradient-to-l from-white/90 dark:from-zinc-900/90 to-transparent">
+              <ChevronRight className="w-4 h-4 text-teal-500 animate-pulse" />
+            </div>
           </div>
 
           {/* Overview / Dashboard Tab */}

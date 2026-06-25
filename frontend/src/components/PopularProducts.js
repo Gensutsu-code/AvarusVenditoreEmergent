@@ -10,7 +10,11 @@ import { motion } from 'framer-motion';
 
 const API = `${process.env.REACT_APP_BACKEND_URL}/api`;
 
-const VISIBLE = 6;
+const getVisibleCount = (w) => {
+  if (w < 640) return 2;   // mobile
+  if (w < 1024) return 3;  // tablet
+  return 6;                // desktop
+};
 
 export const PopularProducts = () => {
   const [products, setProducts] = useState([]);
@@ -19,12 +23,20 @@ export const PopularProducts = () => {
   const [animated, setAnimated] = useState(true);
   const [viewportW, setViewportW] = useState(0);
   const [isPaused, setIsPaused] = useState(false);
+  const [visible, setVisible] = useState(() => getVisibleCount(typeof window !== 'undefined' ? window.innerWidth : 1280));
   const viewportRef = useRef(null);
   const { addToCart } = useCart();
   const { user } = useAuth();
 
   useEffect(() => {
     fetchPopular();
+  }, []);
+
+  // Responsive visible-cards count
+  useEffect(() => {
+    const onResize = () => setVisible(getVisibleCount(window.innerWidth));
+    window.addEventListener('resize', onResize);
+    return () => window.removeEventListener('resize', onResize);
   }, []);
 
   const fetchPopular = async () => {
@@ -103,13 +115,13 @@ export const PopularProducts = () => {
 
   // Auto-scroll every 5s; pauses on hover/touch
   useEffect(() => {
-    if (N <= VISIBLE || isPaused) return undefined;
+    if (N <= visible || isPaused) return undefined;
     const t = setInterval(() => {
       setAnimated(true);
       setRawIndex((r) => r + 1);
     }, 5000);
     return () => clearInterval(t);
-  }, [N, isPaused]);
+  }, [N, isPaused, visible]);
 
   if (loading) {
     return (
@@ -150,24 +162,24 @@ export const PopularProducts = () => {
           </div>
           <Link 
             to="/catalog?category=assortment"
-            className="text-teal-600 hover:text-teal-700 font-semibold text-2xl flex items-center gap-2 transition-colors"
+            className="text-teal-600 hover:text-teal-700 font-semibold text-base sm:text-xl md:text-2xl flex items-center gap-1.5 sm:gap-2 transition-colors whitespace-nowrap"
             data-testid="all-products-link"
           >
             Все товары
-            <ArrowRight className="w-7 h-7" />
+            <ArrowRight className="w-5 h-5 sm:w-7 sm:h-7" />
           </Link>
         </motion.div>
 
         {/* Carousel: 10 products with 6 visible at once and infinite loop */}
         {(() => {
-          const cardPx = viewportW > 0 ? viewportW / VISIBLE : 0;
-          // Extended list: append first VISIBLE cards to end (for forward wrap continuity)
-          // and prepend last VISIBLE cards to start (for backward wrap continuity)
-          const head = products.slice(-VISIBLE);
-          const tail = products.slice(0, VISIBLE);
+          const cardPx = viewportW > 0 ? viewportW / visible : 0;
+          // Extended list: append first `visible` cards to end (for forward wrap continuity)
+          // and prepend last `visible` cards to start (for backward wrap continuity)
+          const head = products.slice(-visible);
+          const tail = products.slice(0, visible);
           const extended = [...head, ...products, ...tail];
-          // rawIndex 0..N-1 maps to "middle" segment. Add VISIBLE offset to skip the head.
-          const translateX = -(rawIndex + VISIBLE) * cardPx;
+          // rawIndex 0..N-1 maps to "middle" segment. Add `visible` offset to skip the head.
+          const translateX = -(rawIndex + visible) * cardPx;
 
           return (
             <div
@@ -188,7 +200,7 @@ export const PopularProducts = () => {
                     <div
                       key={`${product.id}-${i}`}
                       className="flex-shrink-0 px-2"
-                      style={{ width: cardPx ? `${cardPx}px` : `${100 / VISIBLE}%` }}
+                      style={{ width: cardPx ? `${cardPx}px` : `${100 / visible}%` }}
                     >
                       <Link
                         to={`/product/${product.id}`}
@@ -211,7 +223,7 @@ export const PopularProducts = () => {
                             )}
                             <div className="absolute inset-0 bg-gradient-to-t from-white/80 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
                             <motion.div
-                              className="absolute bottom-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity duration-300"
+                              className="absolute bottom-2 right-2 opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity duration-300"
                               whileHover={{ scale: 1.1 }}
                               whileTap={{ scale: 0.9 }}
                             >
@@ -219,7 +231,7 @@ export const PopularProducts = () => {
                                 size="sm"
                                 onClick={(e) => handleAddToCart(e, product)}
                                 disabled={product.stock === 0}
-                                className="bg-gradient-to-r from-teal-500 to-emerald-500 hover:from-teal-600 hover:to-emerald-600 p-2 h-8 w-8 rounded-xl shadow-lg shadow-teal-500/30"
+                                className="bg-gradient-to-r from-teal-500 to-emerald-500 hover:from-teal-600 hover:to-emerald-600 p-2 h-9 w-9 rounded-xl shadow-lg shadow-teal-500/30"
                                 data-testid={`add-popular-${product.id}`}
                               >
                                 <ShoppingCart className="w-4 h-4" />
@@ -253,7 +265,7 @@ export const PopularProducts = () => {
               </div>
 
               {/* Arrows — show only if more products than visible */}
-              {N > VISIBLE && (
+              {N > visible && (
                 <>
                   <button
                     type="button"
