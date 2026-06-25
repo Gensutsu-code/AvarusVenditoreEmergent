@@ -36,6 +36,13 @@ Verified by testing_agent iteration_79: backend 12/12, frontend 100% (Ozon/Wareh
 3. **Page transitions**: global fade/slide between routes via `AnimatePresence` + `motion.div` keyed by pathname in `App.js`.
 Verified by testing_agent iteration_80: backend 100%, navigation intact, dashboard renders; fixed KPI navigation (orders is a route /admin/orders, not a tab) and re-verified.
 
+## 2026-06-25 — Mobile design overhaul (final pass)
+1. **PopularProducts** (`PopularProducts.js`): responsive visible-card count via `getVisibleCount` (2 mobile / 3 tablet / 6 desktop) — fixes truncated prices ('1 6' → '1 600 ₽') on mobile. Add-to-cart button now visible/tappable on touch (`opacity-100 sm:opacity-0 sm:group-hover:opacity-100`, `h-9 w-9`). «Все товары» link scaled down on mobile.
+2. **Admin tab strip** (`AdminPage.js` ~line 1390): wrapped in relative container with `sm:hidden` right-edge gradient fade + pulsing `ChevronRight` scroll affordance (icon-only tabs on mobile already in place).
+3. **Tap targets**: logo-link `min-h-[40px]`, footer-email `min-h-[36px]`, promo-banner-close `p-2` (≥36px). Mobile menu button already 44px; logged-out drawer already shows Каталог/Новости/Связь/Войти.
+Verified by testing_agent iteration_82: mobile 390px NO horizontal scroll on all client+admin pages, desktop 1280px intact. Testing agent hot-fixed one missed `VISIBLE`→`visible` reference (PopularProducts.js:203).
+
+
 
 
 
