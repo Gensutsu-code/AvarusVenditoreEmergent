@@ -1,0 +1,41 @@
+{
+  "summary": "BUG-FIX verification for Admin Word invoice (Счёт) document content. Downloaded the .docx via GET /api/admin/orders/{id}/invoice with admin Bearer token and parsed it with python-docx. ALL required structural and textual elements from the owner's sample 'Счет №24.docx' are now present. Also re-confirmed the UI download flow on /admin/orders works end-to-end (button data-testid='download-invoice-word' → 200 .docx).",
+  "backend_issues": {
+    "critical": [],
+    "minor": []
+  },
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [],
+    "design_issues": []
+  },
+  "test_report_links": [
+    "/app/backend/tests/test_invoice_docx.py",
+    "/app/test_reports/pytest/invoice_docx.xml",
+    "/app/test_reports/screenshots/iter89_admin_orders.png"
+  ],
+  "action_items": [],
+  "critical_code_review_comments": [
+    "Items table headers in code (invoices.py L194) match the sample exactly: №, Артикул, Товары (работы, услуги), Кол-во, Цена, Сумма.",
+    "Bank table merge correctly uses bank.cell(0,0).merge(bank.cell(1,0)) so the 'Банк получателя:' cell spans BIK and Сч.№ rows (verified via python-docx: c00._tc is c10._tc).",
+    "rub_in_words uses num2words(lang='ru') with correct plural agreement for рубль/копейка — verified output matches pattern 'X рубль(я/ей) NN копе(йка/йки/ек)'.",
+    "Title is now 'Счет на оплату № {inv_no} от {date_str}' as required (regex assertion passed).",
+    "'Внимание!' is rendered as bold prefix in the SAME paragraph as the footer note (verified: footer paragraph startswith('Внимание!')).",
+    "Minor: invoices.py L122-128 — datetime parsing falls back to empty string on error which would produce 'от  г.'. Consider falling back to datetime.utcnow() instead. Not blocking.",
+    "Minor: inv_no = order_id[:8] is fine for uniqueness but is not a sequential human-friendly invoice number like '24' in the sample filename. Acceptable per current spec.",
+    "Bank table layout uses 4 rows × 3 cols with the receiver name merged across the full bottom row — matches the canonical 'Счёт на оплату' header structure."
+  ],
+  "updated_files": [
+    "/app/backend/tests/test_invoice_docx.py (new regression test)"
+  ],
+  "success_rate": {
+    "backend": "100% (12/12 docx-content assertions passed)",
+    "frontend": "100% (button visible, click → 200 docx response)"
+  },
+  "test_credentials": "Admin: admin@avarus.ru / admin (verified). Order used: f8c49f31 (first card on /admin/orders).",
+  "seed_data_creation": "None — used existing real order data.",
+  "retest_needed": false,
+  "main_agent_can_self_test": true,
+  "context_for_next_testing_agent": "Regression suite for the Word invoice is now at /app/backend/tests/test_invoice_docx.py. It logs in as admin, lists orders, downloads the first order's invoice, and asserts: (a) HTTP 200 + correct Content-Type, (b) exactly 2 tables, (c) bank table cell(0,0)/cell(1,0) merged with 'Банк получателя' text, (d) BIK/Сч.№/ИНН/КПП rows present, (e) title 'Счет на оплату №', (f) 'Поставщик (Исполнитель):' line, (g) 'Покупатель (Заказчик):' line, (h) 'М.П.' line, (i) 'Внимание!' as prefix to the footer note, (j) items table headers exactly ['№','Артикул','Товары (работы, услуги)','Кол-во','Цена','Сумма'], (k) at least one item row, (l) amount-in-words line. All pass. Run with: /root/.venv/bin/python -m pytest /app/backend/tests/test_invoice_docx.py -v",
+  "rca of the issue": "Previous iteration (iter_88) only verified the download mechanic (HTTP 200 + docx content-type) but did NOT validate the document body. The owner reported the produced .docx did not match the sample 'Счет №24.docx'. Main agent rewrote /app/backend/routes/invoices.py to: (1) build a 4×3 bank header table with the 'Банк получателя' cell vertically merged across rows 0-1 via cell(0,0).merge(cell(1,0)); (2) change the title to 'Счет на оплату № {N} от {date} г.'; (3) add 'Поставщик (Исполнитель): {seller}'; (4) add 'Покупатель (Заказчик): {name}'; (5) make the discount line show percent (e.g. '10% (sum)'); (6) add 'М.П.' under signatures; (7) prefix the footer note with bold 'Внимание!'. This iteration parsed the regenerated .docx with python-docx and confirmed every one of those elements is present and structurally correct. No regressions observed in the existing download flow."
+}

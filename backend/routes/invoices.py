@@ -140,45 +140,55 @@ async def export_order_invoice(order_id: str, user=Depends(get_current_user)):
     style.font.name = "Times New Roman"
     style.font.size = Pt(10)
 
-    # Bank / recipient details table (canonical 3-col layout)
+    # Bank / recipient details table (canonical "Счёт на оплату" header)
     bank = doc.add_table(rows=4, cols=3)
     bank.style = "Table Grid"
     bank.alignment = WD_TABLE_ALIGNMENT.CENTER
-    bank.columns[0].width = Cm(11)
+    bank.columns[0].width = Cm(10)
     bank.columns[1].width = Cm(2.5)
-    bank.columns[2].width = Cm(5)
-    _set_cell_text(bank.cell(0, 0), f"Банк получателя: {s['bank_name']}")
+    bank.columns[2].width = Cm(6)
+    # Rows 0-1 left cell merged → bank name
+    bank_left = bank.cell(0, 0).merge(bank.cell(1, 0))
+    _set_cell_text(bank_left, f"Банк получателя:\n{s['bank_name']}")
     _set_cell_text(bank.cell(0, 1), "БИК")
     _set_cell_text(bank.cell(0, 2), s["bik"])
-    _set_cell_text(bank.cell(1, 0), "")
     _set_cell_text(bank.cell(1, 1), "Сч. №")
     _set_cell_text(bank.cell(1, 2), s["corr_account"])
     _set_cell_text(bank.cell(2, 0), f"ИНН {s['inn']}    КПП {s['kpp']}")
     _set_cell_text(bank.cell(2, 1), "Сч. №")
     _set_cell_text(bank.cell(2, 2), s["account"])
-    _set_cell_text(bank.cell(3, 0), f"Получатель: {s['seller_name']}", bold=True)
-    bank.cell(3, 0).merge(bank.cell(3, 1)).merge(bank.cell(3, 2))
-
-    # Payment type
-    p = doc.add_paragraph()
-    p.paragraph_format.space_before = Pt(6)
-    r = p.add_run(f"{pm_label} RUB")
-    r.bold = True
+    rcpt = bank.cell(3, 0).merge(bank.cell(3, 1)).merge(bank.cell(3, 2))
+    _set_cell_text(rcpt, f"Получатель: {s['seller_name']}", bold=True)
 
     # Title
     p = doc.add_paragraph()
-    p.paragraph_format.space_before = Pt(6)
-    r = p.add_run(f"Счет № {inv_no} от {date_str}")
+    p.alignment = WD_ALIGN_PARAGRAPH.CENTER
+    p.paragraph_format.space_before = Pt(10)
+    p.paragraph_format.space_after = Pt(6)
+    r = p.add_run(f"Счет на оплату № {inv_no} от {date_str}")
     r.bold = True
     r.font.size = Pt(14)
 
+    # Supplier
+    sp = doc.add_paragraph()
+    sr = sp.add_run("Поставщик (Исполнитель): ")
+    sr.bold = True
+    sp.add_run(s["seller_name"])
+
     # Buyer
-    doc.add_paragraph().add_run("Покупатель (Заказчик)").bold = True
-    doc.add_paragraph(f"{order.get('full_name', '')}")
+    bp = doc.add_paragraph()
+    br = bp.add_run("Покупатель (Заказчик): ")
+    br.bold = True
+    bp.add_run(order.get("full_name", ""))
     if order.get("address"):
         doc.add_paragraph(f"Адрес: {order.get('address')}")
     if order.get("phone"):
         doc.add_paragraph(f"Номер тел. {order.get('phone')}")
+
+    # Payment type
+    pp = doc.add_paragraph()
+    pp.paragraph_format.space_before = Pt(4)
+    pp.add_run(f"{pm_label} RUB")
 
     # Items table
     headers = ["№", "Артикул", "Товары (работы, услуги)", "Кол-во", "Цена", "Сумма"]
@@ -214,7 +224,8 @@ async def export_order_invoice(order_id: str, user=Depends(get_current_user)):
 
     total_line("Итого:", fmt_money(subtotal))
     if discount_percent:
-        total_line(f"Скидка {discount_percent}%:", fmt_money(subtotal - total))
+        disc_label = "Скидка при оплате наличными:" if pm == "cash" else "Скидка:"
+        total_line(disc_label, f"{discount_percent}% ({fmt_money(subtotal - total)})")
     total_line("Всего к оплате:", fmt_money(total), bold=True)
 
     p = doc.add_paragraph()
@@ -226,10 +237,15 @@ async def export_order_invoice(order_id: str, user=Depends(get_current_user)):
     doc.add_paragraph()
     sig = doc.add_paragraph()
     sig.add_run("Исполнитель _____________________________        Получатель _____________________________")
+    mp = doc.add_paragraph()
+    mp.add_run("М.П.").font.size = Pt(9)
 
-    # Footer
+    # Footer note
     foot = doc.add_paragraph()
     foot.paragraph_format.space_before = Pt(10)
+    fa = foot.add_run("Внимание! ")
+    fa.bold = True
+    fa.font.size = Pt(9)
     fr = foot.add_run(s["footer_note"])
     fr.italic = True
     fr.font.size = Pt(9)
