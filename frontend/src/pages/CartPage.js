@@ -92,14 +92,6 @@ export default function CartPage() {
     axios.get(`${API}/user/last-shipping`).then(r => setForm({ full_name: r.data.full_name || '', address: r.data.address || '', phone: r.data.phone || '', comment: '' })).catch(() => {});
   }, [user]);
 
-  useEffect(() => {
-    if (!cart.items.length) { setBonusPreview({ total_points: 0, programs: [] }); return; }
-    const t = setTimeout(() => {
-      axios.get(`${API}/bonus/cart-preview`).then(r => setBonusPreview(r.data)).catch(() => {});
-    }, 400);
-    return () => clearTimeout(t);
-  }, [cartTotal, cart.items.length]);
-
   // ----- Totals -----
   const getAdj = (m) => paymentSettings[`${m}_adjustment`] ?? 0;
   const singleAdj = mixedMode ? 0 : (payWithDeferral ? 0 : (payWithBalance ? (paymentSettings.balance_adjustment ?? 0) : getAdj(paymentMethod)));
@@ -128,6 +120,16 @@ export default function CartPage() {
   const isFreeDelivery = !delivery.delivery_enabled || goodsTotal >= delivery.min_free_delivery;
   const deliveryFee = isFreeDelivery ? 0 : delivery.delivery_price;
   const finalTotal = goodsTotal + deliveryFee;
+
+  // Bonus points preview — based on actual goods total after payment-method adjustment
+  useEffect(() => {
+    if (!cart.items.length) { setBonusPreview({ total_points: 0, programs: [] }); return undefined; }
+    const t = setTimeout(() => {
+      axios.get(`${API}/bonus/cart-preview`, { params: { amount: goodsTotal } })
+        .then(r => setBonusPreview(r.data)).catch(() => {});
+    }, 400);
+    return () => clearTimeout(t);
+  }, [goodsTotal, cart.items.length]);
 
   const isMethodEnabled = (m) => paymentSettings[`${m}_enabled`] !== false;
   const canPayWithBalance = prepaymentSettings.prepayment_enabled && userBalance >= finalTotal;

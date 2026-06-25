@@ -1,0 +1,37 @@
+{
+  "summary": "BUG-FIX verification for cart bonus-points preview reflecting payment-method adjustment. Backend pytest (4/4 PASS) confirms /api/bonus/cart-preview scales total_points by amount/order_total when amount is provided. End-to-end UI on /cart confirms switching payment method changes the bonus number proportionally to the adjusted goods total: CASH -10% (75->68₽) shows +7 pts; CARD +10% (75->83₽) shows +8 pts; CRYPTO -15% (75->64₽) shows +6 pts. Network capture confirms the frontend now calls /bonus/cart-preview?amount=<goodsTotal> on every payment-method change and the response total_points matches expectation (amount=83 -> 8.3, amount=64 -> 6.4).",
+  "backend_issues": {
+    "critical": [],
+    "minor": []
+  },
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [],
+    "design_issues": []
+  },
+  "test_report_links": [
+    "/app/backend/tests/test_bonus_cart_preview_scaling.py",
+    "/app/test_reports/pytest/bonus_cart_preview_scaling.xml",
+    "/app/test_reports/screenshots/iter90_cart_preview.png"
+  ],
+  "action_items": [],
+  "critical_code_review_comments": [
+    "bonus.py cart_bonus_preview: scaling logic (amount is not None and amount > 0 and order_total > 0) correctly guards division by zero and treats amount=0 as 'no scaling'. Test test_cart_preview_zero_amount_falls_back asserts this.",
+    "CartPage.js useEffect dependency array [goodsTotal, cart.items.length] ensures re-fetch when payment method changes (singleAdj -> goodsTotal). 400ms debounce timer avoids hammering the endpoint during rapid clicks.",
+    "Minor: total_points is rounded server-side to 2 decimals while CartPage displays with formatPrice = Math.round; this is consistent but the underlying float (e.g. 8.3) is only shown rounded (e.g. +8). Acceptable per spec.",
+    "Minor: when bonusPreview.total_points is between 0 and 0.5 it renders as +0 due to Math.round. Not in scope of this fix; consider hiding when <0.5 or showing one decimal."
+  ],
+  "updated_files": [
+    "/app/backend/tests/test_bonus_cart_preview_scaling.py (new regression test)"
+  ],
+  "success_rate": {
+    "backend": "100% (4/4 pytest)",
+    "frontend": "100% (3/3 payment-method switches change bonus preview proportionally)"
+  },
+  "test_credentials": "Client: user@demo.com / demo123 (verified). Has 1 600₽ balance + 50 000₽ credit limit. Cart had 1 item of 75₽ during test.",
+  "seed_data_creation": "None — used existing cart item for user@demo.com.",
+  "retest_needed": false,
+  "main_agent_can_self_test": true,
+  "context_for_next_testing_agent": "Regression suite for the cart bonus-preview scaling is at /app/backend/tests/test_bonus_cart_preview_scaling.py. It logs in as user@demo.com, ensures the cart has at least one bonus-eligible item, then validates: (1) baseline GET /api/bonus/cart-preview returns numeric total_points; (2) ?amount=90%*cartTotal returns ~90% points; (3) ?amount=110%*cartTotal returns ~110% points; (4) ?amount=0 falls back to baseline. Tolerance 3% for rounding. Run: /root/.venv/bin/python -m pytest backend/tests/test_bonus_cart_preview_scaling.py -v",
+  "rca of the issue": "Before fix: CartPage.js called /bonus/cart-preview without arguments → backend used raw cart subtotal as the eligible base, ignoring payment-method discount/surcharge → preview did not match the cashback that would actually accrue on the charged amount. After fix: (a) backend cart_bonus_preview(amount: float = None) now scales eligible_total by amount/order_total when amount is provided; (b) frontend computes goodsTotal (cartTotal * (1+singleAdj/100) for single, or sum of charged parts for mixed) and passes it as `amount` query param; (c) useEffect depends on [goodsTotal, cart.items.length] so it re-fetches automatically on payment method change. Verified end-to-end on /cart and via pytest."
+}

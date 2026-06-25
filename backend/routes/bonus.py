@@ -151,8 +151,11 @@ async def update_bonus_on_order_delivered(user_id: str, order_total: float, orde
 
 
 @router.get("/bonus/cart-preview")
-async def cart_bonus_preview(user=Depends(get_current_user)):
-    """Preview bonus points the user would earn for their current cart."""
+async def cart_bonus_preview(amount: float = None, user=Depends(get_current_user)):
+    """Preview bonus points the user would earn for their current cart.
+    `amount` (optional) = actual goods total after payment-method adjustment
+    (discount/surcharge); used to scale the bonus base so the preview matches
+    what will really be charged/accrued."""
     from routes.orders import _build_cart
     cart = await _build_cart(user)
     items = cart.get("items", [])
@@ -161,6 +164,9 @@ async def cart_bonus_preview(user=Depends(get_current_user)):
 
     order_total = sum((i.get("price", 0) or 0) * (i.get("quantity", 0) or 0) for i in items)
     eligible_total = await _calc_bonus_eligible_total(items, order_total)
+    # Apply the payment-method adjusted amount (e.g. cash discount) to the bonus base
+    if amount is not None and amount > 0 and order_total > 0:
+        eligible_total = round(eligible_total * (amount / order_total), 2)
 
     programs = await get_all_bonus_programs()
     current_year = datetime.now(timezone.utc).year
