@@ -5,6 +5,7 @@ import { Package, ShoppingCart, ArrowRight, TrendingUp, ChevronLeft, ChevronRigh
 import { Button } from './ui/button';
 import { useCart } from '../context/CartContext';
 import { useAuth } from '../context/AuthContext';
+import { isProductAvailable } from '../utils/productHelpers';
 import { toast } from 'sonner';
 import { motion } from 'framer-motion';
 
@@ -230,7 +231,7 @@ export const PopularProducts = () => {
                               <Button
                                 size="sm"
                                 onClick={(e) => handleAddToCart(e, product)}
-                                disabled={product.stock === 0}
+                                disabled={!isProductAvailable(product)}
                                 className="bg-gradient-to-r from-teal-500 to-emerald-500 hover:from-teal-600 hover:to-emerald-600 p-2 h-9 w-9 rounded-xl shadow-lg shadow-teal-500/30"
                                 data-testid={`add-popular-${product.id}`}
                               >
@@ -253,7 +254,7 @@ export const PopularProducts = () => {
                                 {formatPrice(product.price)} <span className="text-xs text-slate-400">₽</span>
                               </span>
                             </div>
-                            {product.stock === 0 && (
+                            {!isProductAvailable(product) && (
                               <p className="text-xs text-red-500 mt-1">Нет в наличии</p>
                             )}
                           </div>
