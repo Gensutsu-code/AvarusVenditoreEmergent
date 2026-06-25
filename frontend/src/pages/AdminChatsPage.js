@@ -173,7 +173,7 @@ export default function AdminChatsPage() {
   };
 
   const handleRespondProductReq = async (reqId, status) => {
-    if (!productReqResponse.trim()) {
+    if ((status === 'completed' || status === 'rejected') && !productReqResponse.trim()) {
       toast.error('Напишите ответ клиенту');
       return;
     }
@@ -183,7 +183,7 @@ export default function AdminChatsPage() {
         response_message: productReqResponse,
         status
       });
-      toast.success(status === 'fulfilled' ? 'Запрос выполнен' : status === 'rejected' ? 'Запрос отклонён' : 'Ответ отправлен');
+      toast.success(status === 'completed' ? 'Запрос выполнен' : status === 'rejected' ? 'Запрос отклонён' : status === 'processing' ? 'Запрос взят в обработку' : 'Статус обновлён');
       setSelectedProductReq(null);
       setProductReqResponse('');
       fetchProductRequests();
@@ -594,11 +594,11 @@ export default function AdminChatsPage() {
                       </div>
                       <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full flex-shrink-0 ${
                         req.status === 'pending' ? 'bg-amber-100 text-amber-700' :
-                        req.status === 'fulfilled' ? 'bg-green-100 text-green-700' :
-                        req.status === 'responded' ? 'bg-blue-100 text-blue-700' :
+                        req.status === 'completed' ? 'bg-green-100 text-green-700' :
+                        req.status === 'processing' ? 'bg-blue-100 text-blue-700' :
                         'bg-red-100 text-red-700'
                       }`}>
-                        {req.status === 'pending' ? 'Новый' : req.status === 'fulfilled' ? 'Выполнен' : req.status === 'responded' ? 'Ответ' : 'Отклонён'}
+                        {req.status === 'pending' ? 'На рассмотрении' : req.status === 'completed' ? 'Выполнен' : req.status === 'processing' ? 'В обработке' : 'Отклонён'}
                       </span>
                     </div>
                   </div>
@@ -641,20 +641,17 @@ export default function AdminChatsPage() {
                       </div>
                     )}
 
-                    {selectedProductReq.status !== 'pending' && (
+                    {(selectedProductReq.status === 'completed' || selectedProductReq.status === 'rejected') && (
                       <div className={`p-4 rounded-xl ${
-                        selectedProductReq.status === 'fulfilled'
+                        selectedProductReq.status === 'completed'
                           ? isDark ? 'bg-green-500/10 border border-green-500/30' : 'bg-green-50 border border-green-200'
-                          : selectedProductReq.status === 'responded'
-                          ? isDark ? 'bg-blue-500/10 border border-blue-500/30' : 'bg-blue-50 border border-blue-200'
                           : isDark ? 'bg-red-500/10 border border-red-500/30' : 'bg-red-50 border border-red-200'
                       }`}>
                         <p className={`text-sm font-bold ${
-                          selectedProductReq.status === 'fulfilled' ? isDark ? 'text-green-400' : 'text-green-700'
-                          : selectedProductReq.status === 'responded' ? isDark ? 'text-blue-400' : 'text-blue-700'
+                          selectedProductReq.status === 'completed' ? isDark ? 'text-green-400' : 'text-green-700'
                           : isDark ? 'text-red-400' : 'text-red-700'
                         }`}>
-                          {selectedProductReq.status === 'fulfilled' ? 'Запрос выполнен' : selectedProductReq.status === 'responded' ? 'Ответ отправлен' : 'Запрос отклонён'}
+                          {selectedProductReq.status === 'completed' ? 'Запрос выполнен' : 'Запрос отклонён'}
                         </p>
                         {selectedProductReq.admin_response && (
                           <p className={`text-sm mt-1 ${isDark ? 'text-zinc-400' : 'text-slate-600'}`}>{selectedProductReq.admin_response}</p>
@@ -662,8 +659,11 @@ export default function AdminChatsPage() {
                       </div>
                     )}
 
-                    {selectedProductReq.status === 'pending' && (
+                    {(selectedProductReq.status === 'pending' || selectedProductReq.status === 'processing') && (
                       <div className={`p-4 rounded-xl space-y-3 ${isDark ? 'bg-zinc-800/30 border border-zinc-700/50' : 'bg-white border border-slate-200'}`}>
+                        {selectedProductReq.status === 'processing' && (
+                          <p className={`text-xs font-bold ${isDark ? 'text-blue-400' : 'text-blue-600'}`}>Запрос в обработке</p>
+                        )}
                         <p className={`text-xs font-bold uppercase tracking-wider ${isDark ? 'text-zinc-500' : 'text-slate-400'}`}>Ваш ответ</p>
                         <Textarea
                           value={productReqResponse}
@@ -673,23 +673,25 @@ export default function AdminChatsPage() {
                           data-testid="product-req-response-input"
                         />
                         <div className="flex gap-2">
+                          {selectedProductReq.status === 'pending' && (
+                            <Button
+                              onClick={() => handleRespondProductReq(selectedProductReq.id, 'processing')}
+                              disabled={processing}
+                              className="flex-1 bg-blue-500 hover:bg-blue-600 text-white"
+                              data-testid="processing-product-req-btn"
+                            >
+                              {processing ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : <Clock className="w-4 h-4 mr-2" />}
+                              В обработку
+                            </Button>
+                          )}
                           <Button
-                            onClick={() => handleRespondProductReq(selectedProductReq.id, 'fulfilled')}
+                            onClick={() => handleRespondProductReq(selectedProductReq.id, 'completed')}
                             disabled={processing || !productReqResponse.trim()}
                             className="flex-1 bg-green-500 hover:bg-green-600 text-white"
-                            data-testid="fulfill-product-req-btn"
+                            data-testid="complete-product-req-btn"
                           >
                             {processing ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : <Check className="w-4 h-4 mr-2" />}
                             Выполнен
-                          </Button>
-                          <Button
-                            onClick={() => handleRespondProductReq(selectedProductReq.id, 'responded')}
-                            disabled={processing || !productReqResponse.trim()}
-                            className="flex-1 bg-blue-500 hover:bg-blue-600 text-white"
-                            data-testid="respond-product-req-btn"
-                          >
-                            {processing ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : <Send className="w-4 h-4 mr-2" />}
-                            Ответить
                           </Button>
                           <Button
                             onClick={() => handleRespondProductReq(selectedProductReq.id, 'rejected')}

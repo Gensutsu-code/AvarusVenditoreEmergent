@@ -52,7 +52,6 @@ export const CRMTab = ({
 
   const subTabs = [
     { id: 'clients', label: 'Клиенты', icon: Users },
-    { id: 'analytics', label: 'Аналитика', icon: BarChart3 },
   ];
 
   // Customer role colors

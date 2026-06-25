@@ -24,7 +24,7 @@ export default function BonusPage() {
   const [redeemingPrize, setRedeemingPrize] = useState({});
   const [collapsedPrograms, setCollapsedPrograms] = useState({});
   const [redeemedPrize, setRedeemedPrize] = useState(null);
-  const [prizeView, setPrizeView] = useState('list');
+  const [prizeView, setPrizeView] = useState('grid');
   const [copiedCode, setCopiedCode] = useState(null);
   const [showHistory, setShowHistory] = useState(false);
   const [myRedemptions, setMyRedemptions] = useState([]);
@@ -374,7 +374,7 @@ export default function BonusPage() {
                       )}
 
                       {!collapsedPrograms[program.id] && prizeView === 'grid' && (
-                        <div className="mt-4 grid grid-cols-2 sm:grid-cols-3 gap-3">
+                        <div className="mt-4 grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
                           {program.prizes.filter(p => p.enabled).map((prize) => {
                             const canAfford = (program.progress?.current_amount || 0) >= prize.points_cost;
                             const isRedeeming = redeemingPrize[`${program.id}_${prize.id}`];
@@ -383,45 +383,43 @@ export default function BonusPage() {
                             return (
                               <div 
                                 key={prize.id}
-                                className={`flex flex-col rounded-xl border-2 overflow-hidden transition-all ${
+                                className={`group flex flex-col rounded-xl border overflow-hidden transition-all hover:-translate-y-0.5 hover:shadow-md ${
                                   canAfford && isAvailable 
-                                    ? 'border-green-200 bg-green-50 hover:border-green-300' 
-                                    : 'border-zinc-200 bg-zinc-50'
+                                    ? 'border-orange-200 bg-white hover:border-orange-300' 
+                                    : 'border-zinc-200 bg-white'
                                 }`}
                                 data-testid={`prize-card-${prize.id}`}
                               >
-                                {prize.image_url ? (
-                                  <img 
-                                    src={prize.image_url} 
-                                    alt={prize.name} 
-                                    className="w-full h-32 object-cover"
-                                    onError={(e) => { e.target.style.display = 'none'; }}
-                                  />
-                                ) : (
-                                  <div className="w-full h-32 bg-gradient-to-br from-orange-100 to-orange-200 flex items-center justify-center">
-                                    <Gift className="w-12 h-12 text-orange-500" />
-                                  </div>
-                                )}
-                                <div className="p-3 flex flex-col flex-1">
-                                  <h4 className="font-semibold text-zinc-900 text-sm leading-tight">{prize.name}</h4>
-                                  {prize.description && (
-                                    <p className="text-xs text-zinc-500 mt-1 line-clamp-2">{prize.description}</p>
+                                <div className="relative w-full aspect-square bg-zinc-50 p-2 flex items-center justify-center">
+                                  {prize.image_url ? (
+                                    <img 
+                                      src={prize.image_url} 
+                                      alt={prize.name} 
+                                      className="max-w-full max-h-full object-contain mix-blend-multiply"
+                                      onError={(e) => { e.target.style.display = 'none'; }}
+                                    />
+                                  ) : (
+                                    <Gift className="w-10 h-10 text-orange-300" />
                                   )}
-                                  <div className="flex items-center gap-2 mt-2">
-                                    <span className="text-sm font-bold text-orange-600">{prize.points_cost}</span>
-                                    <span className="text-xs text-zinc-400">баллов</span>
-                                    {prize.quantity >= 0 && (
-                                      <span className="text-[10px] text-zinc-400 ml-auto">x{prize.quantity}</span>
-                                    )}
+                                  {prize.quantity >= 0 && (
+                                    <span className="absolute top-1.5 right-1.5 text-[10px] font-semibold px-1.5 py-0.5 rounded-full bg-white/90 border border-zinc-200 text-zinc-500">x{prize.quantity}</span>
+                                  )}
+                                </div>
+                                <div className="p-2.5 flex flex-col flex-1">
+                                  <h4 className="font-semibold text-zinc-900 text-[13px] leading-tight line-clamp-2 min-h-[34px]">{prize.name}</h4>
+                                  <div className="flex items-baseline gap-1 mt-1.5">
+                                    <span className="text-base font-bold text-orange-600">{prize.points_cost}</span>
+                                    <span className="text-[11px] text-zinc-400">баллов</span>
                                   </div>
                                   <Button
                                     onClick={() => handleRedeemPrize(program.id, prize.id, prize.name, prize.points_cost)}
                                     disabled={!canAfford || !isAvailable || isRedeeming}
                                     size="sm"
-                                    className={`mt-2 w-full text-xs ${
+                                    data-testid="bonus-redeem-btn"
+                                    className={`mt-2 w-full text-xs h-8 ${
                                       canAfford && isAvailable
-                                        ? 'bg-green-500 hover:bg-green-600'
-                                        : 'bg-zinc-300 cursor-not-allowed'
+                                        ? 'bg-orange-500 hover:bg-orange-600'
+                                        : 'bg-zinc-200 text-zinc-400 cursor-not-allowed'
                                     }`}
                                   >
                                     {isRedeeming ? '...' : !isAvailable ? 'Нет в наличии' : canAfford ? 'Получить' : 'Недостаточно'}

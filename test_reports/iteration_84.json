@@ -1,0 +1,50 @@
+{
+  "summary": "Iter84 verified 6 owner-requested changes (4 status PR flow, crypto subtab cleanup, admin catalog filter/sort, warehouse sort+hide OOS, collapsible analytics KPI bar between header and tabs, bonus page grid default). Critical fix applied by testing agent: AdminPage.js was importing 39 lucide-react icons but missing `Search` icon which was used in the new admin-catalog filter bar (line 1657 <Search />). This caused a PAGEERROR 'Search is not defined' that crashed AdminPage entirely (blocking tasks 2, 3, 4, 5 in the UI). After adding `Search` to the lucide-react import list, all 6 tasks pass UI + backend verification. Backend pytest (3 tests: dashboard totals, PR pending->processing->completed flow with client visibility, PR reject flow) — all 3 PASSED.",
+  "backend_issues": {"critical": [], "minor": []},
+  "frontend_issues": {
+    "ui_bugs": [
+      {
+        "component": "AdminPage.js (HOTFIX applied by testing agent)",
+        "issue": "Missing `Search` icon import from lucide-react. Used at line 1657 inside the new admin-catalog filter bar but not in the imports list at lines 5-9. Caused 'ReferenceError: Search is not defined' PAGEERROR on every /admin load (React error boundary), making tasks TASK2/TASK3/TASK5 inaccessible from the UI. Fixed by appending `Search` to the lucide-react import.",
+        "selector": "AdminPage.js line 8 (lucide-react imports)",
+        "priority": "CRITICAL (fixed)"
+      }
+    ],
+    "integration_issues": [],
+    "design_issues": []
+  },
+  "verified_pass": {
+    "task1_product_request_statuses": "Admin /admin/chats -> 'Запросы товара' shows badges 'На рассмотрении', 'Выполнен', 'Отклонён' (no 'Новый'). Pending request action panel shows buttons 'В обработку' + 'Выполнен' + reject (X). Backend PUT /api/admin/product-requests/{id}/respond accepts status processing|completed|rejected. Full pending->processing->completed flow verified and client /api/product-requests/my returns updated status. Reject flow also verified.",
+    "task2_crypto_subtab": "Под /admin -> Платежи -> 'Способы оплаты' has [data-testid=card-payment-settings] (Ручная оплата на карту block) present. Sub-tab 'Крипто' does NOT contain that block anymore.",
+    "task3_admin_catalog_filters": "All 8 testids present: admin-catalog-filters, admin-catalog-search, admin-catalog-sort, admin-catalog-manufacturer, admin-catalog-filter-inStock, -discount, -original, -bonus. Search input narrows product grid (7 visible -> 0 with nonexistent query).",
+    "task4_warehouse_sort_hide_oos": "[data-testid=wh-sort] select and [data-testid=wh-hide-oos] toggle present on Склад -> Остатки. Button label flips 'Скрыть нет в наличии' <-> 'Показать все'. Active state reduces table rows 7 -> 3 (hides stock=0 rows) and restores to 7 when toggled back. Sorting by stock vs purchase changes the first row (SIEMENS 03434302100 vs SIEMENS 03434365000).",
+    "task5_collapsible_analytics_bar": "[data-testid=admin-analytics-bar] rendered BETWEEN page header (top=97px) and tabs list (top=934px when expanded, ~225px when collapsed). All 4 KPIs render real values: analytics-kpi-orders=164, analytics-kpi-revenue=661 595 ₽, analytics-kpi-avg=5 129 ₽, analytics-kpi-customers=9. Toggle [data-testid=analytics-collapse-toggle] expands to show revenue chart + Топ товары + Низкие остатки. CRM tab subtabs no longer include 'Аналитика' (only Клиенты).",
+    "task6_bonus_grid_default": "/bonus (client user@demo.com/demo123) renders 'Доступные призы' as grid: prize-card-{id} inside parent class `mt-4 grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3` (square cards) by default — NOT list. Toggle buttons [data-testid=prize-view-grid] and [data-testid=prize-view-list] both present. [data-testid=bonus-redeem-btn] (Получить) present. Note: the single seeded prize has no uploaded image (renders default Gift icon) so object-contain styling on real images could not be visually confirmed; code path is the same.",
+    "backend_pytest": "/app/backend/tests/test_iter84.py — 3/3 PASSED (admin dashboard totals contains orders_total/total_revenue/avg_order_value/total_customers; product-request pending->processing->completed flow with client sees completed; reject flow)."
+  },
+  "test_report_links": [
+    "/app/backend/tests/test_iter84.py",
+    "/app/test_reports/pytest/iter84_results.xml"
+  ],
+  "action_items": [
+    "(Already fixed by testing agent) Keep `Search` icon import in AdminPage.js line 8 — without it the entire /admin crashes.",
+    "Consider enabling ESLint rule react/jsx-no-undef as error in CI. Two recent extractions (BonusTab and now AdminPage catalog filter bar) introduced missing-import regressions that would have been caught instantly.",
+    "Bonus prize cards currently default Gift icon when no image is uploaded — visual verification of object-contain not possible without seed data; recommend seeding at least one prize with a non-square image to spot-check no cropping/stretching.",
+    "AdminPage.js is now 4159 lines (with Search added). Splitting catalog/warehouse/payments UI into their own components (like BonusTab was) would reduce coupling and prevent more icon-import regressions."
+  ],
+  "critical_code_review_comments": [
+    "AdminPage.js: 4159-line monolith, well above the 700-line guideline. New filter UIs and KPI integrations land here without dedicated test coverage, which is exactly how the missing `Search` import slipped through.",
+    "The lucide-react import line at AdminPage.js:8 holds 39 icon names on one line — extremely error-prone for future additions. Recommend grouping by section (catalog icons / warehouse icons / payment icons) or splitting into multiple lines and sort-alphabetised."
+  ],
+  "updated_files": [
+    "/app/frontend/src/pages/AdminPage.js (added `Search` to lucide-react imports)",
+    "/app/backend/tests/test_iter84.py (new pytest file for dashboard totals + PR status flows)"
+  ],
+  "success_rate": {"backend": "100% (3/3 pytest)", "frontend": "100% after Search-import hotfix (6/6 tasks verified)"},
+  "test_credentials": "Admin: admin@avarus.ru / admin; Client: user@demo.com / demo123 (both work).",
+  "seed_data_creation": "Created 2 product-requests via /api/product-requests as user@demo.com during pytest run: TEST_PR_ARTICLE_84 (driven through processing->completed) and TEST_PR_REJECT_84 (driven to rejected). These remain visible in the admin chats list — consider cleaning if they pollute future runs.",
+  "retest_needed": false,
+  "main_agent_can_self_test": true,
+  "context_for_next_testing_agent": "AdminPage.js now imports `Search` from lucide-react — do not remove. Backend exposes /api/product-requests/my (NOT /me). admin/dashboard returns totals.{orders_total,total_revenue,avg_order_value,total_customers}. The 'Склад' admin tab embeds AdminWarehousePage with sub-tabs warehouse-tab-stock/movements/finance; URL /admin/warehouse now redirects into the unified AdminPage with the Склад tab. Bonus page default view is GRID via prizeView state init in BonusPage.js.",
+  "rca_of_the_issue": "Root cause: when the admin-catalog filter bar (TASK3) was added to AdminPage.js, the developer added `<Search className=\"...\" />` inside the search input wrapper at line 1657 but did not add `Search` to the lucide-react destructuring import. AdminPage.js already imports 39 icons on a single 200+ char line (line 8) which makes additions error-prone. Reproduction (pre-fix): login admin -> navigate to /admin -> React throws 'ReferenceError: Search is not defined' inside the Catalog tab render, which propagates up because the JSX is in the AdminPage default export. The page boundary catches it and shows an error screen; tasks TASK2/3/5 cannot be reached because the tabs strip never renders. Mitigation applied: appended `, Search` to the lucide-react import. Long-term: enable react/jsx-no-undef as error in ESLint and split the lucide imports onto multiple lines grouped by feature."
+}

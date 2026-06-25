@@ -7,6 +7,7 @@ import { Switch } from '../../components/ui/switch';
 import { toast } from 'sonner';
 import { motion } from 'framer-motion';
 import CryptoSettingsTab from './CryptoSettingsTab';
+import CardPaymentSettings from './CardPaymentSettings';
 
 // Sub-tab component for Payments section
 export const PaymentsTab = ({
@@ -225,6 +226,8 @@ export const PaymentsTab = ({
           <Button onClick={handleSavePaymentSettings} className={`${isDark ? 'bg-teal-500/90 hover:bg-teal-500' : 'bg-teal-500 hover:bg-teal-600'} text-white`}>
             Сохранить настройки оплаты
           </Button>
+
+          <CardPaymentSettings />
         </motion.div>
       )}
 

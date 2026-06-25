@@ -829,12 +829,25 @@ async def get_admin_dashboard(user=Depends(get_current_user)):
          "status": {"$nin": ["cancelled", "completed", "delivered"]}})
     revenue_30 = sum(o.get("total", 0) for o in recent if is_revenue(o) and (o.get("created_at") or "") >= cutoff_30)
 
+    # All-time revenue + average order value (exclude cancelled) + total customers
+    rev_agg = await db.orders.aggregate([
+        {"$match": {"status": {"$ne": "cancelled"}}},
+        {"$group": {"_id": None, "revenue": {"$sum": "$total"}, "count": {"$sum": 1}}}
+    ]).to_list(1)
+    total_revenue = round(rev_agg[0]["revenue"], 2) if rev_agg else 0
+    revenue_order_count = rev_agg[0]["count"] if rev_agg else 0
+    avg_order_value = round(total_revenue / revenue_order_count, 2) if revenue_order_count else 0
+    total_customers = await db.users.count_documents({"role": {"$ne": "admin"}})
+
     return {
         "today": today,
         "revenue_by_day": revenue_by_day,
         "totals": {
             "orders_total": total_orders,
             "revenue_30d": round(revenue_30, 2),
+            "total_revenue": total_revenue,
+            "avg_order_value": avg_order_value,
+            "total_customers": total_customers,
             "pending_processing": pending_processing,
             "awaiting_payment": awaiting_count,
         },

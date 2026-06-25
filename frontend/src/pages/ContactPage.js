@@ -16,9 +16,10 @@ const EMOJI_LIST = ['😀', '😃', '😄', '😁', '😅', '😂', '🤣', '�
 
 const REQ_STATUS = {
   pending: { label: 'На рассмотрении', cls: 'bg-amber-100 text-amber-700', Icon: Hourglass },
+  processing: { label: 'В обработке', cls: 'bg-blue-100 text-blue-700', Icon: Clock },
   approved: { label: 'Одобрено', cls: 'bg-emerald-100 text-emerald-700', Icon: CheckCircle },
-  completed: { label: 'Выполнено', cls: 'bg-emerald-100 text-emerald-700', Icon: CheckCircle },
-  rejected: { label: 'Отклонено', cls: 'bg-rose-100 text-rose-700', Icon: XCircle },
+  completed: { label: 'Выполнен', cls: 'bg-emerald-100 text-emerald-700', Icon: CheckCircle },
+  rejected: { label: 'Отклонён', cls: 'bg-rose-100 text-rose-700', Icon: XCircle },
 };
 
 const TABS = [

@@ -35,6 +35,8 @@ export default function AdminWarehousePage({ embedded = false }) {
 
   const [stockData, setStockData] = useState({ items: [], summary: {} });
   const [search, setSearch] = useState('');
+  const [whSort, setWhSort] = useState('name');
+  const [whHideOOS, setWhHideOOS] = useState(false);
   const [movements, setMovements] = useState([]);
   const [mvFilter, setMvFilter] = useState('');
   const [finance, setFinance] = useState(null);
@@ -99,8 +101,20 @@ export default function AdminWarehousePage({ embedded = false }) {
   };
 
   const toggleSelect = (id) => setSelected((s) => s.includes(id) ? s.filter(x => x !== id) : [...s, id]);
-  const allVisibleSelected = stockData.items.length > 0 && stockData.items.every(it => selected.includes(it.id));
-  const toggleSelectAll = () => setSelected(allVisibleSelected ? [] : stockData.items.map(it => it.id));
+  const displayedStockItems = [...(stockData.items || [])]
+    .filter(it => !whHideOOS || it.stock > 0)
+    .sort((a, b) => {
+      switch (whSort) {
+        case 'stock': return (b.stock || 0) - (a.stock || 0);
+        case 'stock_asc': return (a.stock || 0) - (b.stock || 0);
+        case 'purchase': return (b.purchase_price || 0) - (a.purchase_price || 0);
+        case 'cost': return (b.stock_cost_value || 0) - (a.stock_cost_value || 0);
+        case 'margin': return (b.margin || 0) - (a.margin || 0);
+        default: return (a.name || '').localeCompare(b.name || '', 'ru');
+      }
+    });
+  const allVisibleSelected = displayedStockItems.length > 0 && displayedStockItems.every(it => selected.includes(it.id));
+  const toggleSelectAll = () => setSelected(allVisibleSelected ? [] : displayedStockItems.map(it => it.id));
 
   const submitMv = async () => {
     const qty = parseInt(mvQty, 10);
@@ -203,6 +217,28 @@ export default function AdminWarehousePage({ embedded = false }) {
                 <div className="flex gap-2 mb-4 flex-wrap items-center">
                   <Input value={search} onChange={(e) => setSearch(e.target.value)} onKeyDown={(e) => e.key === 'Enter' && fetchStock()} placeholder="Поиск по названию, артикулу, бренду..." className="rounded-xl max-w-md" data-testid="wh-search-input" />
                   <Button onClick={() => fetchStock()} className="bg-amber-500 hover:bg-amber-600 text-white rounded-xl" data-testid="wh-search-btn">Найти</Button>
+                  <select
+                    value={whSort}
+                    onChange={(e) => setWhSort(e.target.value)}
+                    className="border border-slate-200 rounded-xl px-2 h-10 text-sm bg-white focus:border-amber-400"
+                    data-testid="wh-sort"
+                  >
+                    <option value="name">По названию</option>
+                    <option value="stock">Остаток ↓</option>
+                    <option value="stock_asc">Остаток ↑</option>
+                    <option value="purchase">Цена закупки ↓</option>
+                    <option value="cost">Стоимость остатка ↓</option>
+                    <option value="margin">Маржа ↓</option>
+                  </select>
+                  <button
+                    onClick={() => setWhHideOOS(v => !v)}
+                    className={`px-3 h-10 rounded-xl text-sm font-medium border transition-all ${
+                      whHideOOS ? 'bg-amber-500 text-white border-amber-500' : 'bg-white text-slate-600 border-slate-200 hover:border-amber-300'
+                    }`}
+                    data-testid="wh-hide-oos"
+                  >
+                    {whHideOOS ? 'Показать все' : 'Скрыть нет в наличии'}
+                  </button>
                 </div>
 
                 {/* Bulk operations bar */}
@@ -235,7 +271,7 @@ export default function AdminWarehousePage({ embedded = false }) {
                       <tbody>
                         {stockData.items.length === 0 ? (
                           <tr><td colSpan={8} className="text-center py-10 text-slate-400">Нет товаров</td></tr>
-                        ) : stockData.items.map(it => (
+                        ) : displayedStockItems.map(it => (
                           <tr key={it.id} className="border-t border-slate-100 hover:bg-slate-50" data-testid={`wh-row-${it.id}`}>
                             <td className="px-3 py-3"><input type="checkbox" checked={selected.includes(it.id)} onChange={() => toggleSelect(it.id)} className="accent-amber-500" data-testid={`wh-select-${it.id}`} /></td>
                             <td className="px-4 py-3">

@@ -5,7 +5,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { 
   Users, Package, ShoppingBag, TrendingUp, User,
   Plus, Pencil, Trash2, Save, Eye, FolderOpen, Megaphone, Upload, Image,
-  MessageCircle, Send, BarChart3, Download, FileSpreadsheet, Pin, Tag, X, Copy, Gift, Award, ChevronDown, ChevronUp, Paperclip, Play, ZoomIn, ZoomOut, Settings, ChevronLeft, ChevronRight, CreditCard, FileText, Mail, Bell, Wallet, Clock, ScrollText, Code, Minus, RotateCcw, Merge, Truck, ListChecks, Warehouse, LayoutDashboard
+  MessageCircle, Send, BarChart3, Download, FileSpreadsheet, Pin, Tag, X, Copy, Gift, Award, ChevronDown, ChevronUp, Paperclip, Play, ZoomIn, ZoomOut, Settings, ChevronLeft, ChevronRight, CreditCard, FileText, Mail, Bell, Wallet, Clock, ScrollText, Code, Minus, RotateCcw, Merge, Truck, ListChecks, Warehouse, LayoutDashboard, Search
 } from 'lucide-react';
 import { Button } from '../components/ui/button';
 import { Input } from '../components/ui/input';
@@ -38,9 +38,9 @@ import {
   BonusTab
 } from '../components/admin';
 import CryptoSettingsTab from '../components/admin/CryptoSettingsTab';
-import CardPaymentSettings from '../components/admin/CardPaymentSettings';
 import AdminWarehousePage from './AdminWarehousePage';
 import AdminDashboard from '../components/admin/AdminDashboard';
+import AdminAnalyticsBar from '../components/admin/AdminAnalyticsBar';
 
 const API = `${process.env.REACT_APP_BACKEND_URL}/api`;
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
@@ -133,6 +133,10 @@ export default function AdminPage() {
   const [categories, setCategories] = useState([]);
   const [categoriesColumns, setCategoriesColumns] = useState(4);
   const [selectedCategoryId, setSelectedCategoryId] = useState(null); // For filtering products by category
+  // Admin catalog filter/sort
+  const [catSearch, setCatSearch] = useState('');
+  const [catSort, setCatSort] = useState('name');
+  const [catFilters, setCatFilters] = useState({ inStock: false, discount: false, original: false, bonus: false, manufacturer: '' });
   const [users, setUsers] = useState([]);
   const [orders, setOrders] = useState([]);
   const [promoBanner, setPromoBanner] = useState({ enabled: false, text: '', link: '', bg_color: '#f97316', height: 40, image: null, image_position: 'left' });
@@ -1386,6 +1390,9 @@ export default function AdminPage() {
           </div>
         )}
 
+        {/* Collapsible analytics KPI bar (between header and tabs) */}
+        <AdminAnalyticsBar onNavigate={setActiveTab} />
+
         {/* Tabs - Dynamic Order with Full Width Distribution */}
         <Tabs value={activeTab} onValueChange={setActiveTab} className={`rounded-xl border shadow-sm overflow-hidden ${isDark ? 'bg-zinc-900/60 border-zinc-800 backdrop-blur-xl' : 'bg-white border-zinc-200'}`}>
           <div className="relative">
@@ -1644,11 +1651,88 @@ export default function AdminPage() {
                   </div>
                 </div>
 
+                {/* Filter & Sort bar */}
+                <div className="px-6 pt-4 flex flex-wrap items-center gap-2" data-testid="admin-catalog-filters">
+                  <div className="relative flex-1 min-w-[180px]">
+                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+                    <Input
+                      value={catSearch}
+                      onChange={(e) => setCatSearch(e.target.value)}
+                      placeholder="Поиск: название / артикул / производитель"
+                      className="pl-9 h-9"
+                      data-testid="admin-catalog-search"
+                    />
+                  </div>
+                  <select
+                    value={catSort}
+                    onChange={(e) => setCatSort(e.target.value)}
+                    className="border border-slate-200 rounded-lg px-2 h-9 text-sm bg-white focus:border-teal-400"
+                    data-testid="admin-catalog-sort"
+                  >
+                    <option value="name">По названию (А-Я)</option>
+                    <option value="name_desc">По названию (Я-А)</option>
+                    <option value="price">Цена ↑</option>
+                    <option value="price_desc">Цена ↓</option>
+                    <option value="article">По артикулу</option>
+                    <option value="date">Сначала новые</option>
+                    <option value="stock">По наличию (остаток)</option>
+                  </select>
+                  <select
+                    value={catFilters.manufacturer}
+                    onChange={(e) => setCatFilters({ ...catFilters, manufacturer: e.target.value })}
+                    className="border border-slate-200 rounded-lg px-2 h-9 text-sm bg-white focus:border-teal-400"
+                    data-testid="admin-catalog-manufacturer"
+                  >
+                    <option value="">Все производители</option>
+                    {[...new Set(products.map(p => p.manufacturer).filter(Boolean))].sort().map(m => (
+                      <option key={m} value={m}>{m}</option>
+                    ))}
+                  </select>
+                  {[
+                    { key: 'inStock', label: 'В наличии' },
+                    { key: 'discount', label: 'Со скидкой' },
+                    { key: 'original', label: 'Оригинал' },
+                    { key: 'bonus', label: 'Бонусы' },
+                  ].map(f => (
+                    <button
+                      key={f.key}
+                      onClick={() => setCatFilters({ ...catFilters, [f.key]: !catFilters[f.key] })}
+                      className={`px-3 h-9 rounded-lg text-sm font-medium border transition-all ${
+                        catFilters[f.key] ? 'bg-teal-500 text-white border-teal-500' : 'bg-white text-slate-600 border-slate-200 hover:border-teal-300'
+                      }`}
+                      data-testid={`admin-catalog-filter-${f.key}`}
+                    >
+                      {f.label}
+                    </button>
+                  ))}
+                </div>
+
                 {/* Products Grid - Compact Cards like Categories */}
                 <div className="p-6">
                   <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6 gap-4">
                     {products
                       .filter(p => selectedCategoryId ? p.category_id === selectedCategoryId : true)
+                      .filter(p => {
+                        const q = catSearch.trim().toLowerCase();
+                        if (q && !(`${p.name || ''} ${p.article || ''} ${p.manufacturer || ''}`.toLowerCase().includes(q))) return false;
+                        if (catFilters.manufacturer && p.manufacturer !== catFilters.manufacturer) return false;
+                        if (catFilters.inStock && !p.in_stock) return false;
+                        if (catFilters.discount && !(p.discount_active || (p.discount_tiers && p.discount_tiers.length))) return false;
+                        if (catFilters.original && !p.is_original) return false;
+                        if (catFilters.bonus && !p.bonus_eligible) return false;
+                        return true;
+                      })
+                      .sort((a, b) => {
+                        switch (catSort) {
+                          case 'name_desc': return (b.name || '').localeCompare(a.name || '', 'ru');
+                          case 'price': return (a.price || 0) - (b.price || 0);
+                          case 'price_desc': return (b.price || 0) - (a.price || 0);
+                          case 'article': return (a.article || '').localeCompare(b.article || '', 'ru');
+                          case 'date': return new Date(b.created_at || 0) - new Date(a.created_at || 0);
+                          case 'stock': return (b.stock || 0) - (a.stock || 0);
+                          default: return (a.name || '').localeCompare(b.name || '', 'ru');
+                        }
+                      })
                       .map((product) => (
                         <motion.div 
                           key={product.id}
@@ -2718,7 +2802,6 @@ export default function AdminPage() {
               handleSavePrepaymentSettings={handleSavePrepaymentSettings}
               isDark={isDark}
             />
-            <CardPaymentSettings />
             </motion.div>
           </TabsContent>
 

@@ -21,7 +21,7 @@ class ProductRequestCreate(BaseModel):
 
 class ProductRequestRespond(BaseModel):
     response_message: str
-    status: str = "responded"  # responded, fulfilled, rejected
+    status: str = "processing"  # pending, processing, completed, rejected
 
 
 @router.post("/product-requests")
@@ -95,8 +95,8 @@ async def respond_product_request(request_id: str, data: ProductRequestRespond, 
     )
 
     status_text = {
-        "responded": "получил ответ",
-        "fulfilled": "выполнен",
+        "processing": "взят в обработку",
+        "completed": "выполнен",
         "rejected": "отклонён"
     }.get(data.status, "обновлён")
 
