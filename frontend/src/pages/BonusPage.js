@@ -70,6 +70,7 @@ export default function BonusPage() {
   const [redeemingPrize, setRedeemingPrize] = useState({});
   const [collapsedPrograms, setCollapsedPrograms] = useState({});
   const [redeemedPrize, setRedeemedPrize] = useState(null);
+  const [confirmPrize, setConfirmPrize] = useState(null);
   const [celebrate, setCelebrate] = useState(false);
   const [prizeView, setPrizeView] = useState('grid');
   const [copiedCode, setCopiedCode] = useState(null);
@@ -106,15 +107,20 @@ export default function BonusPage() {
     return date.toLocaleDateString('ru-RU', { day: '2-digit', month: '2-digit', year: 'numeric' });
   };
 
-  const handleRedeemPrize = async (programId, prizeId, prizeName, pointsCost) => {
-    const confirmText = `Обменять ${pointsCost} баллов на «${prizeName}»?\n\nПосле подтверждения баллы будут списаны с вашего счёта.`;
-    if (!window.confirm(confirmText)) return;
-    
+  const handleRedeemPrize = (programId, prizeId, prizeName, pointsCost) => {
+    // Open in-app confirmation (window.confirm is blocked in sandboxed iframes / some browsers)
+    setConfirmPrize({ programId, prizeId, prizeName, pointsCost });
+  };
+
+  const doRedeemPrize = async () => {
+    if (!confirmPrize) return;
+    const { programId, prizeId, prizeName, pointsCost } = confirmPrize;
     const key = `${programId}_${prizeId}`;
     setRedeemingPrize(prev => ({ ...prev, [key]: true }));
     try {
       const res = await axios.post(`${API}/bonus/redeem-prize`, { program_id: programId, prize_id: prizeId });
-      toast.success(res.data.message);
+      toast.success(res.data?.message || 'Приз успешно оформлен!');
+      setConfirmPrize(null);
       setRedeemedPrize({ name: prizeName, pointsCost });
       setCelebrate(true);
       setTimeout(() => setCelebrate(false), 2800);
@@ -568,6 +574,57 @@ export default function BonusPage() {
 
         {/* Celebration confetti */}
         {celebrate && <Confetti />}
+
+        {/* Redeem confirmation modal */}
+        <AnimatePresence>
+          {confirmPrize && (
+            <motion.div
+              className="fixed inset-0 z-[70] flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={() => setConfirmPrize(null)}
+              data-testid="redeem-confirm-overlay"
+            >
+              <motion.div
+                className="bg-white rounded-2xl shadow-2xl w-full max-w-sm p-6"
+                initial={{ scale: 0.9, y: 20, opacity: 0 }}
+                animate={{ scale: 1, y: 0, opacity: 1 }}
+                exit={{ scale: 0.9, y: 20, opacity: 0 }}
+                transition={{ type: 'spring', stiffness: 300, damping: 24 }}
+                onClick={(e) => e.stopPropagation()}
+                data-testid="redeem-confirm-modal"
+              >
+                <div className="w-12 h-12 rounded-full bg-orange-100 flex items-center justify-center mx-auto mb-4">
+                  <Gift className="w-6 h-6 text-orange-500" />
+                </div>
+                <h3 className="text-lg font-bold text-zinc-900 text-center">Получить приз?</h3>
+                <p className="text-sm text-zinc-500 text-center mt-2">
+                  Обменять <span className="font-bold text-orange-600">{confirmPrize.pointsCost}</span> баллов на «<span className="font-semibold text-zinc-700">{confirmPrize.prizeName}</span>»?
+                </p>
+                <p className="text-xs text-zinc-400 text-center mt-1">Баллы будут списаны с вашего счёта.</p>
+                <div className="flex gap-3 mt-5">
+                  <Button
+                    variant="outline"
+                    className="flex-1"
+                    onClick={() => setConfirmPrize(null)}
+                    data-testid="redeem-cancel-btn"
+                  >
+                    Отмена
+                  </Button>
+                  <Button
+                    className="flex-1 bg-orange-500 hover:bg-orange-600 text-white"
+                    onClick={doRedeemPrize}
+                    disabled={redeemingPrize[`${confirmPrize.programId}_${confirmPrize.prizeId}`]}
+                    data-testid="redeem-confirm-btn"
+                  >
+                    {redeemingPrize[`${confirmPrize.programId}_${confirmPrize.prizeId}`] ? 'Оформляем...' : 'Получить'}
+                  </Button>
+                </div>
+              </motion.div>
+            </motion.div>
+          )}
+        </AnimatePresence>
 
         {/* Redeemed Prize Notification */}
         {redeemedPrize && (
