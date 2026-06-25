@@ -1,0 +1,47 @@
+{
+  "summary": "Regression check for BonusTab.js extraction from AdminPage.js. Static lint immediately flagged TWO CRITICAL missing imports in /app/frontend/src/components/admin/BonusTab.js: 'Textarea' (used at line 463 — programs editor 'Краткое/Расширенное описание' fields and prize descriptions) and 'Switch' (used at line 946 — prize 'Активен' toggle). Testing agent FIXED both by adding `import { Textarea } from '../ui/textarea'` and `import { Switch } from '../ui/switch'`. Without these, opening the program editor dialog or the prizes section would throw 'ReferenceError: Textarea is not defined / Switch is not defined' and crash the bonus tab. After fix, complete UI regression of the Бонусы tab passes: tab renders, programs list shows, new+edit dialogs open with all fields including Textarea/Switch, Ozon settings save returns success toast, program user list expands, points (Начислить/Списать) modal opens, prize redemptions render. Zero pageerrors, zero console errors observed.",
+  "backend_issues": {"critical": [], "minor": []},
+  "frontend_issues": {
+    "ui_bugs": [
+      {
+        "component": "BonusTab.js (HOTFIX applied by testing agent)",
+        "issue": "Two critical undefined identifiers in extracted component: line 463 used <Textarea /> and line 946 used <Switch /> but neither was imported (these were imported in AdminPage.js but not carried over during extraction). Would cause 'ReferenceError: Textarea/Switch is not defined' at runtime as soon as the program editor opens, crashing the bonus tab. Fixed by adding `import { Textarea } from '../ui/textarea';` and `import { Switch } from '../ui/switch';`.",
+        "selector": "BonusTab.js lines 4-9 (imports), used at 463 (Textarea) & 946 (Switch)",
+        "priority": "CRITICAL (fixed)"
+      }
+    ],
+    "integration_issues": [],
+    "design_issues": []
+  },
+  "verified_pass": {
+    "bonus_tab_renders": "Бонусы tab loads cleanly. Ozon card + Bonus programs list (1 program: 'Новая бонусная программа') + History/redemptions (Умар Ахмадов / Iphone 17 pro max) all visible.",
+    "ozon_save": "Click 'Сохранить настройки Ozon' → toast 'Настройки Ozon-сертификата сохранены' shown. No errors.",
+    "new_program_dialog": "Plus 'Добавить программу' opens dialog 'Создать бонусную программу' with fields: ЗАГОЛОВОК, КРАТКОЕ ОПИСАНИЕ, РАСШИРЕННОЕ ОПИСАНИЕ, ИЗОБРАЖЕНИЕ ПРОГРАММЫ (Загрузить), БАННЕР (Загрузить баннер), Размер заголовка px, ПРИЗЫ (Добавить приз).",
+    "edit_program_dialog": "Pencil opens 'Редактировать программу' with same fields plus populated prize #1 (Фото / Стоимость баллов / Количество / Активен switch) and УРОВНИ ПРОГРАММЫ section. 5 image-upload related elements present in dialog.",
+    "program_expansion": "Clicking program card loads users (Максим 3656715, Demo User 374900) with Bronze level/Active status and per-row 'Начислить'/'Списать' buttons.",
+    "points_modal": "Clicking 'Списать' opens modal 'Списать баллы' for Demo User with КОЛИЧЕСТВО БАЛЛОВ input (100), ПРИЧИНА (ОПЦ.) input, Отмена/Списать buttons. Renders without errors.",
+    "prize_redemptions": "История и запросы призов section renders with 1 запросов row (Умар Ахмадов, Iphone 17 pro max, 09.02.2026 Выдан).",
+    "runtime_errors": "0 pageerrors and 0 console errors across all flows after the import hotfix."
+  },
+  "test_report_links": [],
+  "action_items": [
+    "(Already fixed by testing agent) Add `import { Textarea } from '../ui/textarea';` and `import { Switch } from '../ui/switch';` to BonusTab.js. Main agent should keep these imports.",
+    "When extracting further admin tabs from AdminPage.js, run `eslint --rule 'react/jsx-no-undef:error'` on the new component before considering the refactor complete. This would have caught both Textarea and Switch immediately.",
+    "Pre-existing react/no-unescaped-entities warnings at BonusTab.js:609:83 and 609:102 (double quotes in JSX text) — not runtime errors, can be addressed by replacing literal `\"` with `&quot;` or wrapping in {}."
+  ],
+  "critical_code_review_comments": [
+    "Verbatim JSX extractions must include a static-import audit of every identifier used inside the new component. The previous BonusTab extraction missed two ui-library imports because the original AdminPage.js imported them at the top; mechanical copy of JSX doesn't bring along the import lines. A simple eslint --max-warnings 0 in CI would prevent this regression class entirely.",
+    "BonusTab.js still receives ~20 props as a flat prop drilling list from AdminPage.js. Consider grouping into 2-3 objects (e.g., bonusState, bonusHandlers) or moving state into the BonusTab component itself with a useBonusAdmin hook. Future tab extractions will benefit from the same cleanup.",
+    "The points dialog title currently says 'Списать баллы' when triggered from the minus button — verify the symmetric add-points flow via the '+ Начислить' button also opens with title 'Начислить баллы' (logic dependent on pointsModal.type)."
+  ],
+  "updated_files": [
+    "/app/frontend/src/components/admin/BonusTab.js (added Textarea and Switch imports)"
+  ],
+  "success_rate": {"backend": "n/a (skipped per request)", "frontend": "100% (all 8 requested regression items pass after the Textarea/Switch import hotfix)"},
+  "test_credentials": "Admin: admin@avarus.ru / admin (works).",
+  "seed_data_creation": "None — used existing 'Новая бонусная программа' and existing users (Максим, Demo User, Умар Ахмадов).",
+  "retest_needed": false,
+  "main_agent_can_self_test": true,
+  "context_for_next_testing_agent": "BonusTab.js was extracted from AdminPage.js verbatim. Testing agent fixed two missing imports (Textarea, Switch). If main agent extracts more admin tabs the same way (CRMTab, OrdersTab, etc. are already in /app/frontend/src/components/admin/), run `mcp_lint_javascript` on each new file to catch jsx-no-undef before testing. All bonus admin flows confirmed working: Ozon save, list, new/edit program dialog, expand users, points modal, redemptions.",
+  "rca_of_the_issue": "Root cause: during the verbatim JSX extraction of the bonus tab from AdminPage.js into BonusTab.js, only ~9 imports were carried over (axios, motion, lucide icons, Button, Input, Label, Dialog parts, TabsContent, toast). Two additional shadcn-ui components used inside the JSX — Textarea (program description fields & prize descriptions) and Switch (prize 'Активен' toggle) — were left out because the developer copied JSX in isolation without scanning identifier usage. Reproduction (pre-fix): login as admin → /admin?tab=bonus → click 'Добавить программу' or the pencil edit icon → React render throws 'ReferenceError: Textarea is not defined' inside <DialogContent>, dialog never appears and the bonus tab shows a white React error overlay. Mitigation applied: added the two missing imports from '../ui/textarea' and '../ui/switch'. Long-term: enforce ESLint react/jsx-no-undef as error in CI; or refactor with a codemod that auto-rewrites import lines based on actually-used JSX components."
+}
