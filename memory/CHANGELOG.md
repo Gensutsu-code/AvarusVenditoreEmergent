@@ -42,6 +42,13 @@ Verified by testing_agent iteration_80: backend 100%, navigation intact, dashboa
 3. **Tap targets**: logo-link `min-h-[40px]`, footer-email `min-h-[36px]`, promo-banner-close `p-2` (≥36px). Mobile menu button already 44px; logged-out drawer already shows Каталог/Новости/Связь/Войти.
 Verified by testing_agent iteration_82: mobile 390px NO horizontal scroll on all client+admin pages, desktop 1280px intact. Testing agent hot-fixed one missed `VISIBLE`→`visible` reference (PopularProducts.js:203).
 
+## 2026-06-25 — Refactor: extract BonusTab from AdminPage.js
+- Extracted the ~1000-line «Бонусы» tab (programs CRUD, prizes, levels, Ozon settings, points modal, prize redemptions) verbatim into `components/admin/BonusTab.js`; AdminPage now renders `<BonusTab ...props />`. AdminPage.js reduced 5047 → 4075 lines.
+- Props bundle (22): bonus state/setters + ozonSettings + refs + handleFileUpload + handleSaveOzonSettings + users + uploading.
+- Verified by testing_agent iteration_83: 100% bonus-tab regression pass (list, new/edit dialog, Ozon save, user expand, points modal, redemptions). Testing agent added missing `Textarea`/`Switch` imports.
+- NOTE for future tab extractions: run eslint `react/jsx-no-undef` on the new file (verbatim JSX copy doesn't bring import lines). Many other tabs already live in `components/admin/`.
+
+
 
 
 
