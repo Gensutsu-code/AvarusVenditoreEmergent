@@ -57,6 +57,10 @@ Verified by testing_agent iteration_82: mobile 390px NO horizontal scroll on all
 6. **Bonus page** (`BonusPage.js`): default prize view = GRID (square), compact cards with `object-contain` (photos not cropped), 4-col grid.
 Verified by testing_agent iteration_84: frontend 6/6 + backend 3/3 pytest. Testing agent hot-fixed a missing `Search` lucide import in AdminPage.js.
 
+## 2026-06-25 — Bonus: "progress to next prize" + popular-products availability fix
+- `PopularProducts.js`: availability now uses shared `isProductAvailable()` (effective `in_stock`) instead of raw `stock===0`, so the "Нет в наличии" badge/disabled add-button matches the catalog and respects the admin manual-availability flag.
+- `BonusPage.js`: added "До следующего приза" block per program (`data-testid=next-prize-progress`) — finds the cheapest available prize the user can't yet afford, shows points remaining + a progress bar; if all prizes affordable shows a celebratory note. Drives repeat purchases.
+
 
 
 

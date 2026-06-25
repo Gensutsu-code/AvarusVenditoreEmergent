@@ -308,6 +308,52 @@ export default function BonusPage() {
                           </div>
                         )}
                       </div>
+
+                      {/* Progress to next prize */}
+                      {!collapsedPrograms[program.id] && (() => {
+                        const balance = program.progress?.current_amount || 0;
+                        const avail = program.prizes
+                          .filter(p => p.enabled && (p.quantity === -1 || p.quantity > 0))
+                          .sort((a, b) => a.points_cost - b.points_cost);
+                        const next = avail.find(p => p.points_cost > balance);
+                        if (!next) {
+                          if (avail.length === 0) return null;
+                          return (
+                            <div className="mt-4 flex items-center gap-2 rounded-xl bg-emerald-50 border border-emerald-200 px-4 py-3" data-testid="next-prize-progress">
+                              <Gift className="w-5 h-5 text-emerald-600 flex-shrink-0" />
+                              <p className="text-sm font-semibold text-emerald-700">Вам доступны все призы — выберите и получите свой подарок 🎁</p>
+                            </div>
+                          );
+                        }
+                        const remaining = next.points_cost - balance;
+                        const pct = Math.min(100, Math.round((balance / next.points_cost) * 100));
+                        return (
+                          <div className="mt-4 rounded-xl bg-gradient-to-r from-orange-50 to-amber-50 border border-orange-200 p-4" data-testid="next-prize-progress">
+                            <div className="flex items-center justify-between gap-3 mb-2">
+                              <div className="flex items-center gap-2 min-w-0">
+                                <div className="w-8 h-8 rounded-lg bg-orange-100 flex items-center justify-center flex-shrink-0">
+                                  <Award className="w-4 h-4 text-orange-600" />
+                                </div>
+                                <div className="min-w-0">
+                                  <p className="text-[11px] uppercase tracking-wide text-orange-500 font-semibold">До следующего приза</p>
+                                  <p className="text-sm font-bold text-zinc-900 truncate">{next.name}</p>
+                                </div>
+                              </div>
+                              <div className="text-right flex-shrink-0">
+                                <p className="text-lg font-bold text-orange-600 tabular-nums leading-none" data-testid="next-prize-remaining">{remaining}</p>
+                                <p className="text-[11px] text-zinc-500 mt-0.5">баллов осталось</p>
+                              </div>
+                            </div>
+                            <div className="h-2.5 bg-orange-100 rounded-full overflow-hidden">
+                              <div className="h-full rounded-full bg-gradient-to-r from-orange-400 to-amber-500 transition-all duration-500" style={{ width: `${pct}%` }} />
+                            </div>
+                            <div className="flex justify-between mt-1.5 text-[11px] text-zinc-500">
+                              <span>{balance} баллов</span>
+                              <span>{next.points_cost} баллов</span>
+                            </div>
+                          </div>
+                        );
+                      })()}
                       
                       {!collapsedPrograms[program.id] && prizeView === 'list' && (
                         <div className="mt-4 grid gap-3">
