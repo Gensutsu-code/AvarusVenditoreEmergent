@@ -5,7 +5,7 @@ import {
   Package, Search, Eye, Pencil, Trash2, Save, X, 
   Clock, CheckCircle, Truck, XCircle, ChevronDown,
   User, Phone, MapPin, Calendar, CreditCard, RefreshCw,
-  AlertTriangle, Check, RotateCcw, Plus, GitMerge, PackageCheck, CircleDashed, Gift
+  AlertTriangle, Check, RotateCcw, Plus, GitMerge, PackageCheck, CircleDashed, Gift, FileSpreadsheet
 } from 'lucide-react';
 import { Button } from '../components/ui/button';
 import { Input } from '../components/ui/input';
@@ -105,6 +105,20 @@ export default function AdminOrdersPage() {
       toast.success(next ? 'Сертификат Ozon отмечен как выданный' : 'Отметка о выдаче снята');
     } catch (err) {
       toast.error('Не удалось обновить статус сертификата');
+    }
+  };
+
+  const downloadInvoice = async (orderId) => {
+    try {
+      const res = await axios.get(`${API}/admin/orders/${orderId}/invoice`, { responseType: 'blob' });
+      const url = window.URL.createObjectURL(new Blob([res.data]));
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `Счет_${orderId.slice(0, 8)}.docx`;
+      document.body.appendChild(a); a.click(); a.remove();
+      window.URL.revokeObjectURL(url);
+    } catch (err) {
+      toast.error('Ошибка скачивания счёта');
     }
   };
 
@@ -730,6 +744,9 @@ export default function AdminOrdersPage() {
                                       <Pencil className="w-4 h-4 mr-1" /> Редактировать
                                     </Button>
                                   )}
+                                  <Button variant="outline" size="sm" onClick={() => downloadInvoice(order.id)} className="rounded-xl border-teal-200 text-teal-600 hover:bg-teal-50" data-testid="download-invoice-word" title="Скачать счёт в Word">
+                                    <FileSpreadsheet className="w-4 h-4 mr-1" /> Счёт (Word)
+                                  </Button>
                                   <Button variant="outline" size="sm" className="rounded-xl text-rose-500 border-rose-200 hover:bg-rose-50" onClick={() => handleDeleteOrder(order.id)}>
                                     <Trash2 className="w-4 h-4" />
                                   </Button>

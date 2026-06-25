@@ -1,0 +1,26 @@
+{
+  "summary": "RETEST of Word invoice download on /admin/orders PASSES end-to-end. The download-invoice-word button now appears in the expanded order action row of AdminOrdersPage.js (route /admin/orders, reached via the global header 'Заказы' link). Verified for 2 different orders: clicking the button fires GET /api/admin/orders/{id}/invoice, both return HTTP 200 with Content-Type 'application/vnd.openxmlformats-officedocument.wordprocessingml.document', and the browser receives a .docx download (filenames: Счет_f8c49f31.docx, Счет_1a88a08f.docx). No error toasts shown.",
+  "backend_issues": {"critical": [], "minor": []},
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [],
+    "design_issues": []
+  },
+  "test_report_links": [
+    "/app/test_reports/screenshots/iter88/admin_orders_expanded.png"
+  ],
+  "action_items": [],
+  "critical_code_review_comments": [
+    "AdminOrdersPage.js is 964 lines — slightly over the 700-line guideline. Consider extracting the Fulfill modal (lines 829-961) and Merge sticky bar (lines 769-827) into separate components to improve maintainability.",
+    "downloadInvoice handler (lines 111-123) duplicates the same logic that presumably still exists in AdminPage.js (orphaned dialog from prev iter). Extracting into a shared <InvoiceDownloadButton orderId=... /> component would prevent future drift, and the dead orphaned block in AdminPage.js should be removed.",
+    "downloadInvoice error path only fires toast.error('Ошибка скачивания счёта') — does not surface the underlying HTTP status/detail for debugging. Minor."
+  ],
+  "updated_files": [],
+  "success_rate": {"backend": "n/a (skipped per request)", "frontend": "100% — both required test cases (button visible+clickable, 200 .docx response, 2 different orders) pass"},
+  "test_credentials": "Admin: admin@avarus.ru / admin (verified working)",
+  "seed_data_creation": "None. Two real-data orders expanded for verification: f8c49f31-d529-4957-94df-80b837af0b1d and 1a88a08f-c857-44f5-9c74-95345b248cfb. Two .docx files were downloaded to the test browser context but not retained.",
+  "retest_needed": false,
+  "main_agent_can_self_test": true,
+  "context_for_next_testing_agent": "Word invoice download is fully working on /admin/orders. The button data-testid='download-invoice-word' is rendered in the expanded action row of each order card (AdminOrdersPage.js lines 747-749). For future regression: login admin@avarus.ru/admin → /admin/orders → click any order card header → expanded action row shows 'Счёт (Word)' button → clicking triggers GET /api/admin/orders/{id}/invoice → 200 docx. The orphaned button block still exists inside the unreachable 'orders' tab of AdminPage.js — recommend main agent delete it to remove dead code. Invoice Settings page (Реквизиты счёта) was previously verified in iter_87 and was not retested.",
+  "rca of the issue": "Fix from iter_87 verified: previously the download-invoice-word button was orphaned in AdminPage.js inside an unreachable 'orders' TabsContent. Main agent has now ported the downloadInvoice handler and button into AdminOrdersPage.js (the actual page served at /admin/orders that the user reaches via the header 'Заказы' link). The button renders in the expanded action row alongside Отгрузить / Редактировать / delete buttons. Both required acceptance criteria — (a) button reachable and clickable, (b) GET /api/admin/orders/{id}/invoice returns 200 with docx Content-Type — are met for multiple orders."
+}
