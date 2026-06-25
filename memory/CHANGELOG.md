@@ -48,6 +48,15 @@ Verified by testing_agent iteration_82: mobile 390px NO horizontal scroll on all
 - Verified by testing_agent iteration_83: 100% bonus-tab regression pass (list, new/edit dialog, Ozon save, user expand, points modal, redemptions). Testing agent added missing `Textarea`/`Switch` imports.
 - NOTE for future tab extractions: run eslint `react/jsx-no-undef` on the new file (verbatim JSX copy doesn't bring import lines). Many other tabs already live in `components/admin/`.
 
+## 2026-06-25 — 6 owner-requested changes (statuses, payments, filters, analytics, bonus)
+1. **Product-request statuses** → На рассмотрении / В обработке / Выполнен / Отклонён. Admin (`AdminChatsPage.js`) action panel: «В обработку» → «Выполнен»/reject; in-progress requests stay editable. Backend `product_requests.py` status_text = processing/completed/rejected. Client map updated in `ContactPage.js`.
+2. **Manual card payment block** (`CardPaymentSettings`) moved INTO Payments→«Способы оплаты»; removed from the Crypto sub-tab (was rendered globally under all sub-tabs). Files: `PaymentsTab.js`, `AdminPage.js`.
+3. **Admin catalog filter/sort** (`AdminPage.js` Каталог tab): search (name/article/manufacturer), sort (name/price/article/date/stock), manufacturer select, toggle chips В наличии/Со скидкой/Оригинал/Бонусы.
+4. **Warehouse** (`AdminWarehousePage.js`): sort select (остаток/закупка/стоимость/маржа) + «Скрыть нет в наличии» toggle (`wh-hide-oos`).
+5. **Collapsible analytics KPI bar** (`AdminAnalyticsBar.js`, NEW) between page header and tabs: collapsed = Всего заказов/Выручка/Средний чек/Всего клиентов; expanded = full dashboard. `/admin/dashboard` extended with total_revenue/avg_order_value/total_customers. Removed «Аналитика» sub-tab from CRM (`CRMTab.js`).
+6. **Bonus page** (`BonusPage.js`): default prize view = GRID (square), compact cards with `object-contain` (photos not cropped), 4-col grid.
+Verified by testing_agent iteration_84: frontend 6/6 + backend 3/3 pytest. Testing agent hot-fixed a missing `Search` lucide import in AdminPage.js.
+
 
 
 
