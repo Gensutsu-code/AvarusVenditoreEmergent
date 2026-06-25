@@ -66,3 +66,10 @@ Verified by testing_agent iteration_84: frontend 6/6 + backend 3/3 pytest. Testi
 
 
 
+
+## 2026-06-25 — Выгрузка счёта (Счёт) в Word по образцу
+- Бэкенд `routes/invoices.py`: GET /api/admin/orders/{id}/invoice генерирует .docx (python-docx) по шаблону образца — банковская таблица реквизитов, тип оплаты, № счёта (id[:8]) + дата, блок покупателя, таблица товаров (№/Артикул/Товары/Кол-во/Цена/Сумма), Итого/Скидка(реальная из заказа)/Всего к оплате, «Всего наименований N», сумма прописью (num2words + склонение), подписи, примечание.
+- Редактируемые реквизиты: GET /api/invoice-settings, PUT /api/admin/invoice-settings (дефолты из образца). UI: Настройки → подвкладка «Реквизиты счёта» (`InvoiceSettings.js`).
+- Кнопка «Счёт (Word)» в развёрнутой карточке заказа на /admin/orders (`AdminOrdersPage.js`).
+- Зависимости: python-docx==1.2.0, num2words==0.5.14 (в requirements.txt).
+- Проверено testing_agent iter_87 (настройки 100%) + iter_88 (кнопка/скачивание 100%); бэкенд счёта проверен curl (включая сумму прописью). Исправлено: кнопка изначально была в недостижимом блоке AdminPage.js → перенесена в AdminOrdersPage.js.
