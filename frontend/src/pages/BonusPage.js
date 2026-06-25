@@ -14,6 +14,52 @@ import { motion, AnimatePresence } from 'framer-motion';
 
 const API = `${process.env.REACT_APP_BACKEND_URL}/api`;
 
+const CONFETTI_COLORS = ['#f97316', '#fbbf24', '#10b981', '#3b82f6', '#ec4899', '#a855f7'];
+
+const Confetti = () => (
+  <div className="fixed inset-0 pointer-events-none z-[60] overflow-hidden" data-testid="bonus-confetti">
+    {Array.from({ length: 90 }).map((_, i) => {
+      const left = Math.random() * 100;
+      const delay = Math.random() * 0.35;
+      const dur = 1.8 + Math.random() * 1.4;
+      const size = 6 + Math.random() * 8;
+      const color = CONFETTI_COLORS[i % CONFETTI_COLORS.length];
+      const rot = Math.random() * 360;
+      return (
+        <motion.span
+          key={i}
+          initial={{ y: -30, opacity: 1, rotate: rot }}
+          animate={{ y: '105vh', rotate: rot + 540, opacity: [1, 1, 0.9, 0] }}
+          transition={{ duration: dur, delay, ease: 'easeIn' }}
+          style={{ position: 'absolute', left: `${left}%`, top: 0, width: size, height: size * 0.6, backgroundColor: color, borderRadius: 2 }}
+        />
+      );
+    })}
+  </div>
+);
+
+const AnimatedNumber = ({ value }) => {
+  const [display, setDisplay] = useState(value);
+  useEffect(() => {
+    const start = display;
+    const end = value;
+    if (start === end) return undefined;
+    const dur = 800;
+    const t0 = performance.now();
+    let raf;
+    const tick = (t) => {
+      const p = Math.min(1, (t - t0) / dur);
+      const eased = 1 - Math.pow(1 - p, 3);
+      setDisplay(Math.round(start + (end - start) * eased));
+      if (p < 1) raf = requestAnimationFrame(tick);
+    };
+    raf = requestAnimationFrame(tick);
+    return () => cancelAnimationFrame(raf);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [value]);
+  return <>{new Intl.NumberFormat('ru-RU').format(display)}</>;
+};
+
 export default function BonusPage() {
   const { user, loading: authLoading } = useAuth();
   const { isDark } = useTheme();
@@ -24,6 +70,7 @@ export default function BonusPage() {
   const [redeemingPrize, setRedeemingPrize] = useState({});
   const [collapsedPrograms, setCollapsedPrograms] = useState({});
   const [redeemedPrize, setRedeemedPrize] = useState(null);
+  const [celebrate, setCelebrate] = useState(false);
   const [prizeView, setPrizeView] = useState('grid');
   const [copiedCode, setCopiedCode] = useState(null);
   const [showHistory, setShowHistory] = useState(false);
@@ -69,6 +116,8 @@ export default function BonusPage() {
       const res = await axios.post(`${API}/bonus/redeem-prize`, { program_id: programId, prize_id: prizeId });
       toast.success(res.data.message);
       setRedeemedPrize({ name: prizeName, pointsCost });
+      setCelebrate(true);
+      setTimeout(() => setCelebrate(false), 2800);
       fetchBonusData();
     } catch (err) {
       toast.error(err.response?.data?.detail || 'Ошибка обмена');
@@ -184,7 +233,7 @@ export default function BonusPage() {
                         <p className="text-zinc-500 text-sm mt-1">{program.description}</p>
                       </div>
                       <div className="text-right">
-                        <p className="text-3xl font-bold text-orange-500">{(program.progress?.current_amount || 0).toFixed(0)}</p>
+                        <p className="text-3xl font-bold text-orange-500"><AnimatedNumber value={Math.round(program.progress?.current_amount || 0)} /></p>
                         <p className="text-xs text-zinc-400">баллов</p>
                       </div>
                     </div>
@@ -516,6 +565,9 @@ export default function BonusPage() {
             })}
           </div>
         )}
+
+        {/* Celebration confetti */}
+        {celebrate && <Confetti />}
 
         {/* Redeemed Prize Notification */}
         {redeemedPrize && (
