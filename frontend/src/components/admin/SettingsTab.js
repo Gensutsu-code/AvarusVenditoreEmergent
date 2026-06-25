@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Send, Image, FileText, Truck, Bell, Upload, Download, FileSpreadsheet, Power, Code, Globe } from 'lucide-react';
+import { Send, Image, FileText, Truck, Bell, Upload, Download, FileSpreadsheet, Power, Code, Globe, Wrench } from 'lucide-react';
 import { motion } from 'framer-motion';
 import axios from 'axios';
 import { toast } from 'sonner';
@@ -10,6 +10,7 @@ import { Button } from '../ui/button';
 // Import existing components
 import { TelegramTab, PartnersTab, TermsTab } from './index';
 import InvoiceSettings from './InvoiceSettings';
+import PartsFinderSettings from './PartsFinderSettings';
 
 const API = `${process.env.REACT_APP_BACKEND_URL}/api`;
 
@@ -666,6 +667,7 @@ export const SettingsTab = ({
     { id: 'partners', label: 'Партнёры', icon: Image },
     { id: 'terms', label: 'Правила', icon: FileText },
     { id: 'invoice', label: 'Реквизиты счёта', icon: FileSpreadsheet },
+    { id: 'parts_finder', label: 'Подбор запчастей', icon: Wrench },
   ];
 
   return (
@@ -794,6 +796,13 @@ export const SettingsTab = ({
       {activeSubTab === 'invoice' && (
         <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}>
           <InvoiceSettings isDark={isDark} />
+        </motion.div>
+      )}
+
+      {/* Parts finder */}
+      {activeSubTab === 'parts_finder' && (
+        <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}>
+          <PartsFinderSettings isDark={isDark} />
         </motion.div>
       )}
 

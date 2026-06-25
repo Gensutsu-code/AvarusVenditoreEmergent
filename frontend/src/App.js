@@ -41,6 +41,7 @@ import AdminProductsPage from "./pages/AdminProductsPage";
 import CreditPage from "./pages/CreditPage";
 import AdminCreditPage from "./pages/AdminCreditPage";
 import ContactPage from "./pages/ContactPage";
+import PartsFinderPage from "./pages/PartsFinderPage";
 
 const API = `${process.env.REACT_APP_BACKEND_URL}/api`;
 
@@ -136,6 +137,7 @@ function AppContent() {
           <Routes location={location}>
           <Route path="/" element={<HomePage />} />
           <Route path="/catalog" element={<CatalogPage />} />
+          <Route path="/parts-finder" element={<PartsFinderPage />} />
           <Route path="/cart" element={<CartPage />} />
           <Route path="/checkout" element={<Navigate to="/cart" replace />} />
           <Route path="/login" element={<LoginPage />} />

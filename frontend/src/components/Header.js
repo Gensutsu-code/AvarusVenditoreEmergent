@@ -1,5 +1,5 @@
 import { Link, useLocation, useNavigate } from 'react-router-dom';
-import { ShoppingCart, User, Search, LogOut, Settings, Heart, Package, ClipboardList, Gift, Newspaper, Menu, X, MessageCircle, Bell, Wallet, RefreshCw, CreditCard } from 'lucide-react';
+import { ShoppingCart, User, Search, LogOut, Settings, Heart, Package, ClipboardList, Gift, Newspaper, Menu, X, MessageCircle, Bell, Wallet, RefreshCw, CreditCard, Wrench } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { useCart } from '../context/CartContext';
 import { Button } from './ui/button';
@@ -330,6 +330,15 @@ export const Header = () => {
                   compact={true}
                 />
               </div>
+              <NavLink to="/parts-finder" data-testid="parts-finder-link" title="Подбор запчастей">
+                <motion.div 
+                  className="h-10 px-3 rounded-xl flex items-center gap-1.5 bg-gradient-to-br from-teal-500 to-emerald-500 text-white hover:shadow-lg hover:shadow-teal-500/30 transition-all duration-300 font-semibold text-sm"
+                  whileHover={{ scale: 1.05 }}
+                  whileTap={{ scale: 0.95 }}
+                >
+                  <Wrench className="w-4 h-4" /> Подбор
+                </motion.div>
+              </NavLink>
               <NavLink to="/catalog" data-testid="search-page-link">
                 <motion.div 
                   className="w-10 h-10 rounded-xl flex items-center justify-center bg-gradient-to-br from-teal-50 to-emerald-50 text-teal-600 border-2 border-teal-200 hover:border-teal-400 hover:shadow-lg hover:shadow-teal-500/20 transition-all duration-300"
@@ -668,6 +677,10 @@ export const Header = () => {
                         <Search className="w-5 h-5" />
                         Каталог
                       </Link>
+                      <Link to="/parts-finder" onClick={() => setMobileMenuOpen(false)} className="flex items-center gap-3 p-3 rounded-xl text-teal-600 hover:bg-teal-50 font-medium" data-testid="parts-finder-link-mobile">
+                        <Wrench className="w-5 h-5" />
+                        Подбор запчастей
+                      </Link>
                       <Link to="/orders" onClick={() => setMobileMenuOpen(false)} className="flex items-center gap-3 p-3 rounded-xl text-slate-600 hover:bg-slate-50">
                         <Package className="w-5 h-5" />
                         Мои заказы
@@ -715,6 +728,10 @@ export const Header = () => {
                   <Link to="/catalog" onClick={() => setMobileMenuOpen(false)} className="flex items-center gap-3 p-3 rounded-xl text-slate-600 hover:bg-slate-50">
                     <Search className="w-5 h-5" />
                     Каталог
+                  </Link>
+                  <Link to="/parts-finder" onClick={() => setMobileMenuOpen(false)} className="flex items-center gap-3 p-3 rounded-xl text-teal-600 hover:bg-teal-50 font-medium" data-testid="parts-finder-link-mobile">
+                    <Wrench className="w-5 h-5" />
+                    Подбор запчастей
                   </Link>
                   <Link to="/news" onClick={() => setMobileMenuOpen(false)} className="flex items-center gap-3 p-3 rounded-xl text-slate-600 hover:bg-slate-50">
                     <Newspaper className="w-5 h-5" />
