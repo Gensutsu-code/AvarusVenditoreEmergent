@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import { 
@@ -10,7 +10,7 @@ import { Button } from '../components/ui/button';
 import { useAuth } from '../context/AuthContext';
 import { useTheme } from '../context/ThemeContext';
 import { toast } from 'sonner';
-import { motion, AnimatePresence, useAnimationControls } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 
 const API = `${process.env.REACT_APP_BACKEND_URL}/api`;
 
@@ -60,83 +60,6 @@ const AnimatedNumber = ({ value }) => {
   return <>{new Intl.NumberFormat('ru-RU').format(display)}</>;
 };
 
-const RatThief = ({ imgSrc, onSteal, onGone }) => {
-  const controls = useAnimationControls();
-  const [done, setDone] = useState(false);
-  const [scared, setScared] = useState(false);
-  const stoleRef = useRef(false);
-  const scaredRef = useRef(false);
-
-  useEffect(() => {
-    let cancelled = false;
-    const run = async () => {
-      try {
-        // Peek out from behind the block
-        await controls.start({ x: -8, opacity: 1, transition: { duration: 1.0, ease: 'easeOut' } });
-        if (cancelled || scaredRef.current) return;
-        // Creep toward the points (window for the user to click & scare it)
-        await controls.start({ x: -78, y: 6, transition: { duration: 3.0, ease: 'easeInOut' } });
-        if (cancelled || scaredRef.current) return;
-        // Grab the points!
-        stoleRef.current = true;
-        onSteal();
-        await controls.start({ rotate: [0, -10, 10, -6, 0], transition: { duration: 0.5 } });
-        if (cancelled) return;
-        // Flee with the loot
-        await controls.start({ x: 320, y: 14, opacity: 0, transition: { duration: 1.0, ease: 'easeIn' } });
-      } catch (e) { /* animation interrupted */ }
-      if (!cancelled) { setDone(true); onGone && onGone(); }
-    };
-    run();
-    return () => { cancelled = true; };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
-
-  const handleScare = async () => {
-    if (stoleRef.current || scaredRef.current) return; // too late once stealing started
-    scaredRef.current = true;
-    setScared(true);
-    try {
-      await controls.start({ x: 340, y: -60, rotate: 35, opacity: 0, transition: { duration: 0.7, ease: 'easeIn' } });
-    } catch (e) { /* noop */ }
-    setDone(true);
-    onGone && onGone();
-  };
-
-  if (done) return null;
-  return (
-    <motion.button
-      type="button"
-      onClick={handleScare}
-      className="absolute -top-6 right-0 z-30 cursor-pointer select-none bg-transparent border-0 p-0"
-      style={{ width: 104, height: 104 }}
-      initial={{ x: 130, opacity: 0 }}
-      animate={controls}
-      data-testid="bonus-rat-thief"
-      aria-label="Прогнать крысу"
-      title="Прогнать крысу!"
-    >
-      <motion.img
-        src={imgSrc}
-        alt="Крыса-воришка"
-        className="w-full h-full object-contain drop-shadow-xl pointer-events-none"
-        animate={scared ? { rotate: [0, -8, 8, 0] } : { y: [0, -3, 0] }}
-        transition={scared ? { duration: 0.3 } : { duration: 0.7, repeat: Infinity, ease: 'easeInOut' }}
-      />
-      <AnimatePresence>
-        {scared && (
-          <motion.span
-            className="absolute -top-3 -left-3 text-2xl"
-            initial={{ scale: 0, opacity: 0 }}
-            animate={{ scale: 1, opacity: 1 }}
-            exit={{ opacity: 0 }}
-          >💨</motion.span>
-        )}
-      </AnimatePresence>
-    </motion.button>
-  );
-};
-
 export default function BonusPage() {
   const { user, loading: authLoading } = useAuth();
   const { isDark } = useTheme();
@@ -149,8 +72,6 @@ export default function BonusPage() {
   const [redeemedPrize, setRedeemedPrize] = useState(null);
   const [confirmPrize, setConfirmPrize] = useState(null);
   const [celebrate, setCelebrate] = useState(false);
-  const [ratActive, setRatActive] = useState(false);
-  const [stolenPoints, setStolenPoints] = useState(0);
   const [prizeView, setPrizeView] = useState('grid');
   const [copiedCode, setCopiedCode] = useState(null);
   const [showHistory, setShowHistory] = useState(false);
@@ -210,26 +131,6 @@ export default function BonusPage() {
       setRedeemingPrize(prev => ({ ...prev, [key]: false }));
     }
   };
-
-  const handleRatSteal = () => {
-    const bal = Math.round(bonusPrograms[0]?.progress?.current_amount || 0);
-    if (bal <= 0) return;
-    const amount = Math.min(bal, 30 + Math.floor(Math.random() * 170));
-    setStolenPoints(amount);
-  };
-
-  // 🐀 Rat thief easter-egg: appears after 30s on page, max once per 120 min
-  useEffect(() => {
-    if (authLoading || loading || bonusPrograms.length === 0) return undefined;
-    const LAST_KEY = 'ratThiefLastShown';
-    const last = parseInt(localStorage.getItem(LAST_KEY) || '0', 10);
-    if (Date.now() - last < 120 * 60 * 1000) return undefined; // 120-min cooldown
-    const t = setTimeout(() => {
-      setRatActive(true);
-      localStorage.setItem(LAST_KEY, String(Date.now()));
-    }, 30 * 1000); // 30 seconds
-    return () => clearTimeout(t);
-  }, [authLoading, loading, bonusPrograms.length]);
 
   const copyPromoCode = (code) => {
     navigator.clipboard.writeText(code);
@@ -311,7 +212,7 @@ export default function BonusPage() {
           </div>
         ) : (
           <div className="space-y-6">
-            {bonusPrograms.map((program, programIndex) => {
+            {bonusPrograms.map((program) => {
               const yearlyTotal = program.yearly_total || 0;
               const currentYear = program.current_year || new Date().getFullYear();
               const sortedLevels = [...(program.levels || [])].sort((a, b) => a.min_points - b.min_points);
@@ -322,8 +223,7 @@ export default function BonusPage() {
               const amountToNextLevel = nextLevel ? Math.max(0, nextLevel.min_points - yearlyTotal) : 0;
 
               return (
-                <div key={program.id} className="relative">
-                <div className="bg-white rounded-2xl border border-zinc-200 shadow-sm overflow-hidden">
+                <div key={program.id} className="bg-white rounded-2xl border border-zinc-200 shadow-sm overflow-hidden">
                   {/* Program Header */}
                   <div className="p-6 border-b border-zinc-100">
                     <div className="flex items-start gap-4">
@@ -339,7 +239,7 @@ export default function BonusPage() {
                         <p className="text-zinc-500 text-sm mt-1">{program.description}</p>
                       </div>
                       <div className="text-right">
-                        <p className="text-3xl font-bold text-orange-500"><AnimatedNumber value={Math.max(0, Math.round(program.progress?.current_amount || 0) - (programIndex === 0 ? stolenPoints : 0))} /></p>
+                        <p className="text-3xl font-bold text-orange-500"><AnimatedNumber value={Math.round(program.progress?.current_amount || 0)} /></p>
                         <p className="text-xs text-zinc-400">баллов</p>
                       </div>
                     </div>
@@ -666,10 +566,6 @@ export default function BonusPage() {
                     </div>
                   )}
 
-                </div>
-                  {programIndex === 0 && ratActive && (
-                    <RatThief imgSrc="/rat-thief.png" onSteal={handleRatSteal} onGone={() => setRatActive(false)} />
-                  )}
                 </div>
               );
             })}
