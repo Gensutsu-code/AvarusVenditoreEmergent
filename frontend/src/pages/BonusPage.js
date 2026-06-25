@@ -220,42 +220,58 @@ export default function BonusPage() {
 
                       {/* Levels Visualization */}
                       <div className="mb-4">
-                        <div className="flex justify-between mb-2">
-                          {sortedLevels.map((level, idx) => {
-                            const isActive = program.current_level?.id === level.id;
-                            const isAchieved = yearlyTotal >= level.min_points;
-                            return (
-                              <div key={level.id} className="flex flex-col items-center">
-                                <div 
-                                  className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold transition-all ${
-                                    isActive 
-                                      ? 'ring-4 ring-offset-2 scale-110' 
-                                      : ''
-                                  } ${isAchieved ? 'text-white' : 'text-white opacity-50'}`}
-                                  style={{ 
-                                    backgroundColor: level.color,
-                                    '--tw-ring-color': isActive ? level.color + '60' : 'transparent'
-                                  }}
-                                >
-                                  {idx + 1}
-                                </div>
-                                <p className={`text-xs mt-1 ${isActive ? 'font-bold' : isAchieved ? '' : 'opacity-60'}`} style={{ color: level.color }}>
-                                  {level.name}
-                                </p>
-                              </div>
-                            );
-                          })}
+                        <div className="flex items-center justify-between mb-3">
+                          <p className="text-[11px] font-semibold uppercase tracking-wide text-zinc-400">Уровни программы</p>
+                          <span className="text-xs font-medium text-zinc-500">
+                            Достигнуто <span className="font-bold text-orange-600">{sortedLevels.filter(l => yearlyTotal >= l.min_points).length}</span> из {sortedLevels.length}
+                          </span>
                         </div>
-                        
-                        {/* Progress Line */}
-                        <div className="h-2 bg-zinc-200 rounded-full overflow-hidden">
-                          <div 
-                            className="h-full rounded-full transition-all duration-500"
-                            style={{ 
-                              width: `${Math.min(100, (yearlyTotal / (sortedLevels[sortedLevels.length - 1]?.min_points || 100000)) * 100)}%`,
-                              backgroundColor: program.current_level.color
-                            }}
-                          />
+
+                        <div className="relative pt-1">
+                          {/* Track */}
+                          <div className="absolute left-5 right-5 top-6 h-1.5 bg-zinc-200 rounded-full overflow-hidden">
+                            <motion.div 
+                              className="h-full rounded-full"
+                              style={{ backgroundColor: program.current_level.color }}
+                              initial={{ width: 0 }}
+                              animate={{ width: `${Math.min(100, (yearlyTotal / (sortedLevels[sortedLevels.length - 1]?.min_points || 100000)) * 100)}%` }}
+                              transition={{ duration: 0.9, ease: 'easeOut', delay: 0.2 }}
+                            />
+                          </div>
+                          {/* Nodes */}
+                          <div className="relative flex justify-between">
+                            {sortedLevels.map((level, idx) => {
+                              const isActive = program.current_level?.id === level.id;
+                              const isAchieved = yearlyTotal >= level.min_points;
+                              return (
+                                <motion.div 
+                                  key={level.id} 
+                                  className="flex flex-col items-center text-center"
+                                  initial={{ opacity: 0, y: 12, scale: 0.6 }}
+                                  animate={{ opacity: 1, y: 0, scale: 1 }}
+                                  transition={{ delay: 0.15 + idx * 0.09, type: 'spring', stiffness: 280, damping: 18 }}
+                                >
+                                  <motion.div 
+                                    className={`relative w-10 h-10 rounded-full flex items-center justify-center text-sm font-bold shadow-md z-10 ${isAchieved ? 'text-white' : 'text-white/70'}`}
+                                    style={{ backgroundColor: isAchieved ? level.color : '#d4d4d8' }}
+                                    animate={isActive ? { boxShadow: [`0 0 0 0 ${level.color}66`, `0 0 0 10px ${level.color}00`] } : {}}
+                                    transition={isActive ? { duration: 1.8, repeat: Infinity, ease: 'easeOut' } : {}}
+                                  >
+                                    {isAchieved ? <CheckCircle className="w-5 h-5" /> : (idx + 1)}
+                                  </motion.div>
+                                  <p className={`text-xs mt-1.5 leading-tight ${isActive ? 'font-bold' : isAchieved ? 'font-medium' : 'opacity-60'}`} style={{ color: isAchieved ? level.color : '#a1a1aa' }}>
+                                    {level.name}
+                                  </p>
+                                  <p className="text-[10px] text-zinc-400 mt-0.5 tabular-nums">от {formatPrice(level.min_points)} ₽</p>
+                                  {level.cashback_percent > 0 && (
+                                    <span className="text-[10px] font-semibold mt-0.5 px-1.5 py-0.5 rounded-full" style={{ color: isAchieved ? level.color : '#a1a1aa', backgroundColor: isAchieved ? level.color + '18' : '#f4f4f5' }}>
+                                      {level.cashback_percent}%
+                                    </span>
+                                  )}
+                                </motion.div>
+                              );
+                            })}
+                          </div>
                         </div>
                       </div>
 
@@ -311,11 +327,12 @@ export default function BonusPage() {
 
                       {/* Progress to next prize */}
                       {!collapsedPrograms[program.id] && (() => {
-                        const balance = program.progress?.current_amount || 0;
+                        const rawBalance = program.progress?.current_amount || 0;
+                        const balance = Math.round(rawBalance);
                         const avail = program.prizes
                           .filter(p => p.enabled && (p.quantity === -1 || p.quantity > 0))
                           .sort((a, b) => a.points_cost - b.points_cost);
-                        const next = avail.find(p => p.points_cost > balance);
+                        const next = avail.find(p => p.points_cost > rawBalance);
                         if (!next) {
                           if (avail.length === 0) return null;
                           return (
@@ -325,8 +342,8 @@ export default function BonusPage() {
                             </div>
                           );
                         }
-                        const remaining = next.points_cost - balance;
-                        const pct = Math.min(100, Math.round((balance / next.points_cost) * 100));
+                        const remaining = Math.max(0, Math.ceil(next.points_cost - rawBalance));
+                        const pct = Math.min(100, Math.round((rawBalance / next.points_cost) * 100));
                         return (
                           <div className="mt-4 rounded-xl bg-gradient-to-r from-orange-50 to-amber-50 border border-orange-200 p-4" data-testid="next-prize-progress">
                             <div className="flex items-center justify-between gap-3 mb-2">
