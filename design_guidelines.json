@@ -1,194 +1,95 @@
 {
-  "project_name": "Heavy Vehicle Parts - Glassmorphism Redesign",
-  "theme": "dark",
-  "design_philosophy": {
-    "core_concept": "Industrial Glassmorphism",
-    "emotional_tone": "Premium, Robust, Futuristic, High-Performance",
-    "key_principles": [
-      "Glassmorphism: Use translucency to create depth and hierarchy.",
-      "Neon Accents: Electric Orange for primary actions to signal power and warning.",
-      "Fluid Motion: Everything must animate smoothly (hover, enter, exit).",
-      "No Sharp Corners: Rounded corners (xl or 2xl) but not pill-shaped for everything.",
-      "Data Density: High density for admin, spacious for marketing."
-    ]
+  "theme_archetype": {
+    "admin_dashboard": "Archetype 4 (Swiss & High-Contrast) adapted. Crisp borders, stark neutral backgrounds (White/Zinc-900), and Deep Emerald (#047857) replacing the generic teal for a more authoritative, industrial feel.",
+    "bonus_client_page": "Archetype 1 (Organic & Earthy). Utilizing tactical Orange (#F97316) for loyalty points, tactile soft interactions, and clear layout."
   },
   "typography": {
     "headings": {
       "font_family": "Chivo, sans-serif",
-      "weights": ["700", "900"],
-      "usage": "Use for all page titles, section headers, and hero text. Tight tracking (-0.02em)."
+      "rules": "Must not use Inter for headings. Use tracking-tight for H1-H2. Use font-semibold for authoritative headers."
     },
     "body": {
-      "font_family": "Outfit, sans-serif",
-      "weights": ["300", "400", "500"],
-      "usage": "Use for all body text, UI labels, and data tables. Clean and legible."
+      "font_family": "IBM Plex Sans, sans-serif",
+      "rules": "Highly legible, tabular numbers for analytics."
     },
-    "mono": {
-      "font_family": "JetBrains Mono, monospace",
-      "usage": "Use for part numbers, technical specs, and code snippets."
+    "labels_overlines": {
+      "rules": "Uppercase, tracking-[0.1em], text-xs to text-sm, muted foreground. Perfect for KPI titles."
     }
   },
   "colors": {
-    "palette": {
-      "background": {
-        "default": "#09090b",
-        "secondary": "#18181b",
-        "glass": "rgba(24, 24, 27, 0.6)"
-      },
-      "foreground": {
-        "default": "#fafafa",
-        "muted": "#a1a1aa",
-        "inverse": "#09090b"
-      },
-      "primary": {
-        "default": "#f97316",
-        "hover": "#ea580c",
-        "foreground": "#ffffff"
-      },
-      "secondary": {
-        "default": "#27272a",
-        "foreground": "#fafafa"
-      },
-      "accent": {
-        "default": "#f97316",
-        "glass": "rgba(249, 115, 22, 0.1)"
-      },
-      "border": {
-        "default": "rgba(255, 255, 255, 0.1)",
-        "hover": "rgba(255, 255, 255, 0.2)"
-      },
-      "status": {
-        "success": "#22c55e",
-        "warning": "#eab308",
-        "error": "#ef4444",
-        "info": "#3b82f6"
-      }
+    "admin_primary": {
+      "light": "#047857",
+      "dark": "#10B981",
+      "description": "Deep Emerald, sophisticated alternative to AI-slop Teal."
     },
-    "gradients": {
-      "glass_surface": "linear-gradient(145deg, rgba(255,255,255,0.05) 0%, rgba(255,255,255,0.01) 100%)",
-      "primary_glow": "radial-gradient(circle at center, rgba(249,115,22,0.15) 0%, rgba(0,0,0,0) 70%)"
-    }
-  },
-  "visual_enhancers": {
-    "glassmorphism": {
-      "classes": "bg-zinc-900/40 backdrop-blur-xl border border-white/10 shadow-2xl",
-      "heavy_glass": "bg-zinc-950/70 backdrop-blur-2xl border border-white/5",
-      "light_glass": "bg-white/5 backdrop-blur-md border border-white/10"
+    "bonus_accent": {
+      "light": "#F97316",
+      "dark": "#FB923C",
+      "description": "Vibrant Orange for loyalty and gamification points."
+    },
+    "backgrounds": {
+      "light": "#FFFFFF",
+      "dark": "#18181B",
+      "subtle_light": "#F4F4F5",
+      "subtle_dark": "#27272A"
     },
     "borders": {
-      "radius": "rounded-xl",
-      "width": "border",
-      "color": "border-white/10"
-    },
-    "shadows": {
-      "card": "0 8px 32px 0 rgba(0, 0, 0, 0.36)",
-      "glow": "0 0 20px rgba(249, 115, 22, 0.3)"
-    },
-    "textures": {
-      "noise": "url('/assets/noise.png')",
-      "mesh_gradient": "Use subtle moving gradients in the background"
+      "light": "#E4E4E7",
+      "dark": "#3F3F46"
     }
   },
-  "layout_strategies": {
-    "general": {
-      "container": "max-w-7xl mx-auto px-4 sm:px-6 lg:px-8",
-      "spacing": "Generous padding (p-6, p-8) for cards to allow the glass effect to breathe."
+  "spacing_and_layout": {
+    "general": "Optical alignment. Containers with borders must have internal padding. Max 8px border-radius.",
+    "admin_kpi_bar": {
+      "collapsed": "Dense, inline flex or 4-col grid, gap-4 to gap-6, py-3 px-6.",
+      "expanded": "Grid expands vertically to reveal complex Recharts, gap-8."
     },
-    "grid_system": {
-      "catalog": "grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6",
-      "dashboard": "grid grid-cols-1 md:grid-cols-12 gap-6",
-      "bento": "Use col-span-2 or row-span-2 for featured items."
+    "bonus_grid": {
+      "layout": "Grid cols-2 md:cols-3 lg:cols-4 lg:cols-5 for highly compact cards. gap-4.",
+      "card_padding": "p-3 or p-4."
     }
   },
-  "component_guidelines": {
-    "buttons": {
-      "primary": "bg-orange-500 hover:bg-orange-600 text-white rounded-xl px-6 py-3 font-semibold shadow-[0_0_15px_rgba(249,115,22,0.4)] transition-all hover:scale-[1.02]",
-      "secondary": "bg-white/5 hover:bg-white/10 text-white border border-white/10 rounded-xl px-6 py-3 backdrop-blur-md transition-all",
-      "ghost": "hover:bg-white/5 text-zinc-400 hover:text-white rounded-lg px-4 py-2 transition-colors"
+  "motion_and_interactions": {
+    "collapsible": "Framer Motion or Shadcn Collapsible component. Smooth height transition, opacity fade-in for charts.",
+    "card_hover": "Hover: border darkens, slight lift (-translate-y-0.5), subtle shadow-md. Do not over-animate.",
+    "buttons": "Active states must have a darker background. Orange buttons -> hover:bg-orange-600."
+  },
+  "components_instructions": {
+    "AdminAnalyticsBar": {
+      "path": "frontend/src/components/admin/AdminAnalyticsBar.js",
+      "type": "New Component",
+      "instructions": "Place between Site Header and Admin Tabs. Use Shadcn `Collapsible` or Framer Motion for smooth open/close. In Collapsed state, render 4 KPI cards inline: Всего заказов, Выручка, Средний чек, Всего клиентов. Use subtle typography for titles (uppercase, muted) and bold tabular numbers for values. Include a 'chevron-down' button on the far right to toggle. When Expanded, show a deeper Grid with Recharts (Revenue trend) and Top Products. Background must be Stark White (Dark: Zinc-900) with a 1px border. No shadows."
     },
-    "cards": {
-      "default": "group relative overflow-hidden rounded-2xl bg-zinc-900/40 border border-white/10 backdrop-blur-xl transition-all hover:border-orange-500/50 hover:shadow-[0_0_30px_rgba(249,115,22,0.1)]",
-      "interactive": "cursor-pointer hover:-translate-y-1 hover:shadow-2xl transition-all duration-300"
+    "BonusPrizeCard": {
+      "path": "frontend/src/components/bonus/BonusPrizeCard.js",
+      "type": "Update/Refactor",
+      "instructions": "Redesign as a compact square card. The image wrapper must have a fixed aspect ratio (e.g., aspect-square or h-32 to h-40) with `bg-zinc-50 dark:bg-zinc-800/50` padding. The image itself MUST use `object-contain max-h-full max-w-full mix-blend-multiply dark:mix-blend-normal` so spare part photos are NEVER cropped. Below image: Title (truncate to 2 lines, text-sm), Points cost (text-orange-500 font-bold text-lg), and a compact 100%-width 'Redeem' (Получить) button. Remove any `h-32 object-cover` classes."
     },
-    "inputs": {
-      "style": "bg-zinc-950/50 border border-white/10 text-white placeholder:text-zinc-500 rounded-xl focus:ring-2 focus:ring-orange-500/50 focus:border-orange-500 transition-all"
-    },
-    "navigation": {
-      "sidebar": "fixed left-0 top-0 h-full w-64 bg-zinc-950/80 backdrop-blur-xl border-r border-white/5 z-50",
-      "header": "sticky top-0 w-full z-40 bg-zinc-950/60 backdrop-blur-2xl border-b border-white/5"
+    "BonusPageLayout": {
+      "path": "frontend/src/pages/bonus/BonusPage.js",
+      "type": "Update/Refactor",
+      "instructions": "Ensure Grid view is the default, not List view. Improve the 'Progress' visualization for the user's loyalty tier—use a sleek progress bar with Orange accent, indicating current points vs next tier. Provide adequate spacing (py-8) between the user's progress summary and the prize grid."
     }
   },
-  "navigation_structure": {
-    "user": [
-      {"label": "Catalog", "path": "/catalog"},
-      {"label": "Orders", "path": "/orders"},
-      {"label": "Bonus", "path": "/bonus"},
-      {"label": "News", "path": "/news"},
-      {"label": "Favorites", "path": "/favorites"},
-      {"label": "Cart", "path": "/cart"},
-      {"label": "Account", "path": "/account"}
-    ],
-    "admin": [
-      {"label": "Dashboard", "path": "/admin", "icon": "LayoutDashboard"},
-      {"label": "Orders", "path": "/admin/orders", "icon": "ShoppingCart"},
-      {"label": "Chats", "path": "/admin/chats", "icon": "MessageSquare"},
-      {"label": "CRM", "path": "/admin/crm", "sub_items": ["Analytics", "Clients"], "icon": "Users"},
-      {"label": "Payments", "path": "/admin/payments", "sub_items": ["General", "Crypto"], "icon": "Wallet"},
-      {"label": "Marketing", "path": "/admin/marketing", "sub_items": ["Promotions", "News", "Newsletters"], "icon": "Megaphone"},
-      {"label": "Settings", "path": "/admin/settings", "sub_items": ["TG", "Import", "Partners", "Rules"], "icon": "Settings"}
-    ]
-  },
-  "assets": {
+  "testing_attributes": [
+    "data-testid='analytics-collapse-toggle'",
+    "data-testid='analytics-kpi-revenue'",
+    "data-testid='bonus-prize-grid-view-btn'",
+    "data-testid='bonus-prize-card'",
+    "data-testid='bonus-redeem-btn'"
+  ],
+  "media": {
     "images": [
       {
-        "category": "hero_background",
-        "url": "https://images.unsplash.com/photo-1757981989497-fa816e1f1634?crop=entropy&cs=srgb&fm=jpg&ixid=M3w4NjA1NDh8MHwxfHNlYXJjaHwxfHxoZWF2eSUyMHRydWNrJTIwZW5naW5lJTIwaW5kdXN0cmlhbCUyMGdlYXJzJTIwbWVjaGFuaWMlMjB3b3Jrc2hvcCUyMGZ1dHVyaXN0aWMlMjB0cnVja3xlbnwwfHx8fDE3NzE5NzMzNTF8MA&ixlib=rb-4.1.0&q=85",
-        "description": "Complex industrial machinery for hero section background"
+        "url": "https://images.unsplash.com/photo-1672853827236-e2ccf90761a1?crop=entropy&cs=srgb&fm=jpg&ixid=M3w4NjA1MDV8MHwxfHNlYXJjaHwxfHxnaWZ0JTIwYm94JTIwb3JhbmdlfGVufDB8fHx8MTc4MjM2NTgyN3ww&ixlib=rb-4.1.0&q=85",
+        "category": "bonus_prize_placeholder",
+        "description": "Orange wrapped gift box, perfect placeholder for high-tier bonus prize."
       },
       {
-        "category": "tech_texture",
-        "url": "https://images.unsplash.com/photo-1657368146328-086bbdeb2527?crop=entropy&cs=srgb&fm=jpg&ixid=M3w4NjA1NDh8MHwxfHNlYXJjaHwyfHxoZWF2eSUyMHRydWNrJTIwZW5naW5lJTIwaW5kdXN0cmlhbCUyMGdlYXJzJTIwbWVjaGFuaWMlMjB3b3Jrc2hvcCUyMGZ1dHVyaXN0aWMlMjB0cnVja3xlbnwwfHx8fDE3NzE5NzMzNTF8MA&ixlib=rb-4.1.0&q=85",
-        "description": "Machine with wires for tech texture overlays"
+        "url": "https://images.unsplash.com/photo-1775810944393-73af1f1d78bd?crop=entropy&cs=srgb&fm=jpg&ixid=M3w4NjA8Mzl8MHwxfHNlYXJjaHwyfHx0cnVjayUyMGVuZ2luZSUyMHBhcnQlMjBpc29sYXRlZHxlbnwwfHx8fDE3ODIzNjU4MzJ8MA&ixlib=rb-4.1.0&q=85",
+        "category": "truck_part_placeholder",
+        "description": "Isolated engine part, strictly requires object-contain to avoid cropping."
       }
-    ],
-    "icons": "Use lucide-react. Stroke width 1.5px for elegance."
-  },
-  "animations": {
-    "library": "framer-motion",
-    "instructions": "Install framer-motion: `yarn add framer-motion`",
-    "patterns": {
-      "page_transition": {
-        "initial": { "opacity": 0, "y": 20 },
-        "animate": { "opacity": 1, "y": 0 },
-        "exit": { "opacity": 0, "y": -20 },
-        "transition": { "duration": 0.3, "ease": "easeOut" }
-      },
-      "hover_card": {
-        "scale": 1.02,
-        "transition": { "type": "spring", "stiffness": 300 }
-      },
-      "list_item": {
-        "hidden": { "opacity": 0, "x": -20 },
-        "show": { "opacity": 1, "x": 0 }
-      }
-    }
-  },
-  "instructions_to_main_agent": [
-    "1. INSTALLATION: Install `framer-motion` immediately.",
-    "2. THEME SETUP: Update `tailwind.config.js` to include the custom colors (zinc-950, orange-500) and animations.",
-    "3. GLOBAL STYLES: Update `index.css` to set the dark background `#09090b` as default and add global glass styles.",
-    "4. COMPONENT UPDATE: Refactor `Header`, `Sidebar`, and `Card` components to use the glassmorphism classes defined above.",
-    "5. ADMIN REFACTOR: Update the Admin Sidebar to reflect the new merged structure (CRM, Payments, Marketing, Settings).",
-    "6. ANIMATION: Wrap page content in `motion.div` for smooth transitions. Use `AnimatePresence` in `App.js` if possible.",
-    "7. IMAGES: Use the provided industrial images for backgrounds/hero sections. Use gradients/overlays to ensure text readability.",
-    "8. ACCESSIBILITY: Ensure all text on glass backgrounds has sufficient contrast (use white or zinc-200).",
-    "9. FILE EXTENSIONS: Continue using .js/.jsx as per the project structure."
-  ],
-  "UNIVERSAL_GUIDELINES": [
-    "Do not use generic gradients. Use subtle noise or mesh gradients.",
-    "Avoid sharp corners. Use `rounded-xl` or `rounded-2xl`.",
-    "Interactive elements MUST have hover states.",
-    "Use `data-testid` for all interactive elements.",
-    "Ensure the app feels 'heavy' and 'premium' - no flimsy borders or light shadows."
-  ]
+    ]
+  }
 }
