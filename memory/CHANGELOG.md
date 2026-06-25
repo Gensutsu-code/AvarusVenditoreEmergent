@@ -73,3 +73,7 @@ Verified by testing_agent iteration_84: frontend 6/6 + backend 3/3 pytest. Testi
 - Кнопка «Счёт (Word)» в развёрнутой карточке заказа на /admin/orders (`AdminOrdersPage.js`).
 - Зависимости: python-docx==1.2.0, num2words==0.5.14 (в requirements.txt).
 - Проверено testing_agent iter_87 (настройки 100%) + iter_88 (кнопка/скачивание 100%); бэкенд счёта проверен curl (включая сумму прописью). Исправлено: кнопка изначально была в недостижимом блоке AdminPage.js → перенесена в AdminOrdersPage.js.
+
+## 2026-06-26 — Фикс предпросмотра бонусов + Подборщик запчастей
+- BUG: предпросмотр бонусов в корзине теперь учитывает скидку/наценку способа оплаты — backend `/bonus/cart-preview?amount=` масштабирует базу; фронт `CartPage.js` передаёт фактический goodsTotal. Проверено testing_agent iter_90 (бэк 4/4, фронт 3/3).
+- FEATURE «Подбор запчастей» (`routes/parts_finder.py`, `pages/PartsFinderPage.js`, /parts-finder, ссылки в Header): поля VIN/марка/модель/год/двигатель/ось/кросс-номер/описание. ИИ-подбор по нашему каталогу через Emergent LLM (gpt-5.4) с ранжированием по уверенности; graceful fallback на текстовый поиск. Заглушка платного каталога (Laximo/TecDoc) + админ-настройки подключения (Настройки → «Подбор запчастей»: провайдер/URL/API-ключ + тумблеры ИИ/каталог). api_key не отдаётся в публичном /config. Проверено testing_agent iter_91 (бэк 7/7, фронт 100%).
