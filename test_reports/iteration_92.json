@@ -1,0 +1,32 @@
+{
+  "summary": "Frontend E2E testing of paid Parts Finder (/parts-finder) — all 7 scenarios from review request PASSED. Guest gating, authenticated access bar, one-time payment by balance and points, subscription purchase via balance, post-subscription unlimited search, and neutral client-facing note all verified end-to-end with real balance/points decrements.",
+  "backend_issues": {"critical": [], "minor": []},
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [],
+    "design_issues": []
+  },
+  "test_results": {
+    "guest_finder_login_required_card": "PASS — finder-login-required + finder-login-btn shown; no parts-finder-form rendered",
+    "logged_in_access_bar": "PASS — finder-access-bar visible. Price: 100 ₽ / 200 баллов; Balance: 1640 ₽; Points: 365588; finder-open-sub-btn visible",
+    "search_without_payment_shows_pay_prompt": "PASS — finder-pay-prompt appeared, finder-results NOT present, both finder-pay-balance-btn and finder-pay-points-btn rendered",
+    "pay_points_then_results": "PASS — finder-results appeared after points payment; toast 'Списано 200 баллов' fired; points decreased 365588 → 365388 (-200, matches price 100 × multiplier 2)",
+    "pay_balance_then_results": "PASS — finder-results appeared after balance payment; balance decreased 1640 → 1540 (-100, matches request_price 100 ₽)",
+    "subscribe_via_balance": "PASS — finder-sub-balance-btn click → 'Подписка активна' with finder-sub-until = 'Безлимит до 26.07.2026'; balance decreased 1540 → 550 (-990 ₽)",
+    "search_with_active_subscription": "PASS — finder-results appeared immediately; finder-pay-prompt count = 0; results note = 'Подобрали подходящие варианты из нашего каталога.' (neutral, no admin phrases like 'настройки' / 'подключите каталог')"
+  },
+  "test_report_links": ["/app/test_reports/screenshots/iter92_guest.png", "/app/test_reports/screenshots/iter92_logged_in.png", "/app/test_reports/screenshots/iter92_final.png"],
+  "action_items": [],
+  "critical_code_review_comments": [
+    "PartsFinderPage.js: 'requires_payment' branch sets payPrompt but on points/balance retry uses runSearch(payWith) — works, but consider also resetting payPrompt to null on result success (currently relies on setResult+setPayPrompt(null) at top of runSearch — verified OK).",
+    "Toast was observed appearing twice in a row in test ('Списано 200 баллов', 'Списано 200 баллов') — likely due to React StrictMode double-effect in dev or duplicate sonner mount. Worth investigating to avoid double-toast UX in production."
+  ],
+  "updated_files": [],
+  "success_rate": {"backend": "n/a (skipped per request)", "frontend": "100% (7/7 scenarios)"},
+  "test_credentials": "user@demo.com / demo123 (used per review request)",
+  "seed_data_creation": "None — used existing demo user balance/points. Test consumed: 200 баллов (pay points) + 100 ₽ (pay balance) + 990 ₽ (subscription). Resulting state: balance 550 ₽, points 365388, active subscription until 26.07.2026 (30 days).",
+  "retest_needed": false,
+  "main_agent_can_self_test": true,
+  "context_for_next_testing_agent": "Demo user user@demo.com now has an ACTIVE parts-finder subscription until 26.07.2026 — subsequent searches will not trigger pay-prompt until subscription expires. Balance reduced to 550 ₽ and points to 365388. If subscription/payment flows must be retested, either wait for expiry, or admin must reset access via /admin/parts-finder endpoints. Backend endpoints (per main agent note): /api/parts-finder/access, /search, /subscribe — already verified via curl by main agent.",
+  "rca_of_the_issue": "No issues found. Feature works end-to-end."
+}

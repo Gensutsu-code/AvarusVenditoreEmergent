@@ -51,6 +51,47 @@ const PartsFinderSettings = ({ isDark }) => {
         </div>
       </div>
 
+      {/* Monetization */}
+      <div className={`rounded-xl border p-5 ${cardCls}`}>
+        <div className="flex items-center justify-between gap-3 mb-1">
+          <div className="flex items-center gap-2">
+            <Sparkles className="w-5 h-5 text-amber-500" />
+            <h3 className={`font-bold ${txt}`}>Платный доступ к подбору</h3>
+          </div>
+          <Switch checked={!!cfg.paid_enabled} onCheckedChange={(v) => setCfg({ ...cfg, paid_enabled: v })} data-testid="finder-paid-toggle" />
+        </div>
+        <p className={`text-sm mb-4 ${sub}`}>
+          Когда включено — клиент платит за подбор: подписка (период, безлимит) или разовый запрос. Оплата с баланса (₽) или баллами (× множитель). Баллы за подбор не начисляются.
+        </p>
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div>
+            <Label className={`text-xs ${sub}`}>Цена разового запроса, ₽</Label>
+            <Input type="number" min="0" value={cfg.request_price ?? 0} onChange={(e) => setCfg({ ...cfg, request_price: e.target.value })} className={`mt-1 ${inputCls}`} data-testid="finder-request-price" />
+          </div>
+          <div>
+            <Label className={`text-xs ${sub}`}>Бесплатных запросов на клиента</Label>
+            <Input type="number" min="0" value={cfg.free_requests ?? 0} onChange={(e) => setCfg({ ...cfg, free_requests: e.target.value })} className={`mt-1 ${inputCls}`} data-testid="finder-free-requests" />
+          </div>
+          <div>
+            <Label className={`text-xs ${sub}`}>Цена подписки, ₽</Label>
+            <Input type="number" min="0" value={cfg.subscription_price ?? 0} onChange={(e) => setCfg({ ...cfg, subscription_price: e.target.value })} className={`mt-1 ${inputCls}`} data-testid="finder-sub-price" />
+          </div>
+          <div>
+            <Label className={`text-xs ${sub}`}>Длительность подписки, дней</Label>
+            <Input type="number" min="1" value={cfg.subscription_days ?? 30} onChange={(e) => setCfg({ ...cfg, subscription_days: e.target.value })} className={`mt-1 ${inputCls}`} data-testid="finder-sub-days" />
+          </div>
+          <div>
+            <Label className={`text-xs ${sub}`}>Множитель цены в баллах (× от ₽)</Label>
+            <Input type="number" min="1" step="0.5" value={cfg.points_multiplier ?? 2} onChange={(e) => setCfg({ ...cfg, points_multiplier: e.target.value })} className={`mt-1 ${inputCls}`} data-testid="finder-points-mult" />
+          </div>
+        </div>
+        {cfg.paid_enabled && (
+          <p className={`text-xs mt-3 ${sub}`}>
+            В баллах: разовый — {Math.round((Number(cfg.request_price) || 0) * (Number(cfg.points_multiplier) || 1))}, подписка — {Math.round((Number(cfg.subscription_price) || 0) * (Number(cfg.points_multiplier) || 1))}.
+          </p>
+        )}
+      </div>
+
       {/* Paid catalog */}
       <div className={`rounded-xl border p-5 ${cardCls}`}>
         <div className="flex items-center justify-between gap-3 mb-1">

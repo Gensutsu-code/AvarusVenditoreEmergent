@@ -1,9 +1,11 @@
-"""Parts finder (Подбор запчастей) — AI-assisted matching against our catalog,
-with a configurable hook for a future paid catalog/VIN-decoder API."""
+"""Parts finder (Подбор запчастей) — AI-assisted matching against our catalog.
+Paid feature: subscription (period, unlimited) + one-time request. Charged from the
+user's balance (₽) or bonus points (×multiplier). Prices set by admin in settings."""
 import os
 import re
 import json
 import uuid
+from datetime import datetime, timezone, timedelta
 from fastapi import APIRouter, HTTPException, Depends
 from pydantic import BaseModel
 
@@ -17,6 +19,13 @@ DEFAULTS = {
     "base_url": "",
     "api_key": "",
     "ai_enabled": True,
+    # Monetization
+    "paid_enabled": True,
+    "request_price": 100,        # ₽ per single search
+    "subscription_price": 990,   # ₽ per subscription period
+    "subscription_days": 30,     # subscription length
+    "free_requests": 0,          # free searches per user before paying
+    "points_multiplier": 2,      # points cost = ₽ price × multiplier
 }
 
 
@@ -25,6 +34,64 @@ async def _get_settings():
     if s:
         return {**DEFAULTS, **s.get("value", {})}
     return dict(DEFAULTS)
+
+
+def _now():
+    return datetime.now(timezone.utc)
+
+
+def _now_iso():
+    return _now().isoformat()
+
+
+async def _user_points(user_id):
+    rows = await db.bonus_progress.find(
+        {"user_id": user_id}, {"_id": 0, "program_id": 1, "current_amount": 1}
+    ).to_list(100)
+    total = sum(r.get("current_amount", 0) or 0 for r in rows)
+    return rows, total
+
+
+async def _deduct_points(user_id, amount):
+    rows, total = await _user_points(user_id)
+    if total < amount:
+        return False
+    remaining = amount
+    for r in sorted(rows, key=lambda x: x.get("current_amount", 0) or 0, reverse=True):
+        if remaining <= 0:
+            break
+        take = min(r.get("current_amount", 0) or 0, remaining)
+        if take <= 0:
+            continue
+        await db.bonus_progress.update_one(
+            {"user_id": user_id, "program_id": r["program_id"]},
+            {"$inc": {"current_amount": -take}},
+        )
+        remaining -= take
+    return True
+
+
+async def _deduct_balance(user_id, amount, description):
+    u = await db.users.find_one({"id": user_id}, {"_id": 0, "balance": 1})
+    bal = (u.get("balance", 0) or 0) if u else 0
+    if bal < amount:
+        return False
+    await db.users.update_one({"id": user_id}, {"$inc": {"balance": -amount}})
+    await db.balance_transactions.insert_one({
+        "id": str(uuid.uuid4()),
+        "user_id": user_id,
+        "type": "payment",
+        "amount": -amount,
+        "method": "balance",
+        "status": "completed",
+        "created_at": _now_iso(),
+        "description": description,
+    })
+    return True
+
+
+def _has_active_sub(until):
+    return bool(until and str(until) > _now_iso())
 
 
 class FinderQuery(BaseModel):
@@ -36,6 +103,7 @@ class FinderQuery(BaseModel):
     axle: str = ""
     cross_number: str = ""
     query: str = ""
+    pay_with: str = ""  # "" | "balance" | "points" (for paid one-time request)
 
 
 @router.get("/parts-finder/config")
@@ -45,7 +113,71 @@ async def finder_config():
         "catalog_enabled": bool(s["catalog_enabled"]) and bool(s["api_key"]),
         "ai_enabled": bool(s["ai_enabled"]),
         "provider": s["provider"],
+        "paid_enabled": bool(s["paid_enabled"]),
     }
+
+
+@router.get("/parts-finder/access")
+async def finder_access(user=Depends(get_current_user)):
+    s = await _get_settings()
+    mult = float(s["points_multiplier"]) or 1
+    fresh = await db.users.find_one(
+        {"id": user["id"]}, {"_id": 0, "balance": 1, "pf_subscription_until": 1, "pf_free_used": 1}
+    ) or {}
+    until = fresh.get("pf_subscription_until")
+    _, points = await _user_points(user["id"])
+    req_price = float(s["request_price"])
+    sub_price = float(s["subscription_price"])
+    return {
+        "paid_enabled": bool(s["paid_enabled"]),
+        "has_subscription": _has_active_sub(until),
+        "subscription_until": until,
+        "free_remaining": max(0, int(s["free_requests"]) - int(fresh.get("pf_free_used", 0) or 0)),
+        "request_price": req_price,
+        "request_price_points": round(req_price * mult),
+        "subscription_price": sub_price,
+        "subscription_price_points": round(sub_price * mult),
+        "subscription_days": int(s["subscription_days"]),
+        "balance": fresh.get("balance", 0) or 0,
+        "points": points,
+    }
+
+
+@router.post("/parts-finder/subscribe")
+async def finder_subscribe(data: dict, user=Depends(get_current_user)):
+    s = await _get_settings()
+    if not s["paid_enabled"]:
+        raise HTTPException(status_code=400, detail="Подписка недоступна")
+    mult = float(s["points_multiplier"]) or 1
+    pay_with = data.get("pay_with")
+    price = float(s["subscription_price"])
+    pts = round(price * mult)
+    days = int(s["subscription_days"])
+
+    if pay_with == "balance":
+        if not await _deduct_balance(user["id"], price, "Подписка на подбор запчастей"):
+            raise HTTPException(status_code=400, detail="Недостаточно средств на балансе")
+    elif pay_with == "points":
+        if not await _deduct_points(user["id"], pts):
+            raise HTTPException(status_code=400, detail="Недостаточно баллов")
+    else:
+        raise HTTPException(status_code=400, detail="Выберите способ оплаты")
+
+    fresh = await db.users.find_one({"id": user["id"]}, {"_id": 0, "pf_subscription_until": 1}) or {}
+    base = _now()
+    cur = fresh.get("pf_subscription_until")
+    if cur:
+        try:
+            cdt = datetime.fromisoformat(str(cur))
+            if cdt.tzinfo is None:
+                cdt = cdt.replace(tzinfo=timezone.utc)
+            if cdt > base:
+                base = cdt
+        except (ValueError, TypeError):
+            pass
+    new_until = (base + timedelta(days=days)).isoformat()
+    await db.users.update_one({"id": user["id"]}, {"$set": {"pf_subscription_until": new_until}})
+    return {"success": True, "subscription_until": new_until}
 
 
 @router.get("/admin/parts-finder/settings")
@@ -59,12 +191,26 @@ async def get_finder_settings(user=Depends(get_current_user)):
 async def update_finder_settings(data: dict, user=Depends(get_current_user)):
     if user.get("role") != "admin":
         raise HTTPException(status_code=403, detail="Admin access required")
+
+    def _num(key, default, integer=False):
+        try:
+            v = float(data.get(key, default))
+            return int(v) if integer else v
+        except (TypeError, ValueError):
+            return default
+
     value = {
         "catalog_enabled": bool(data.get("catalog_enabled", False)),
         "provider": str(data.get("provider", ""))[:128],
         "base_url": str(data.get("base_url", ""))[:512],
         "api_key": str(data.get("api_key", ""))[:512],
         "ai_enabled": bool(data.get("ai_enabled", True)),
+        "paid_enabled": bool(data.get("paid_enabled", True)),
+        "request_price": max(0, _num("request_price", 100)),
+        "subscription_price": max(0, _num("subscription_price", 990)),
+        "subscription_days": max(1, _num("subscription_days", 30, integer=True)),
+        "free_requests": max(0, _num("free_requests", 0, integer=True)),
+        "points_multiplier": max(1, _num("points_multiplier", 2)),
     }
     await db.settings.update_one(
         {"key": "parts_finder_settings"},
@@ -127,7 +273,7 @@ async def _ai_rank(q: FinderQuery, candidates):
             "Максимум 8 элементов. Только товары из списка. Если ничего не подходит — верни []. "
             "Никакого текста кроме JSON."
         )
-        vehicle = {k: v for k, v in q.dict().items() if v}
+        vehicle = {k: v for k, v in q.dict().items() if v and k != "pay_with"}
         prompt = (
             f"Параметры запроса: {json.dumps(vehicle, ensure_ascii=False)}\n\n"
             f"Каталог (кандидаты):\n{json.dumps([_slim(c) for c in candidates], ensure_ascii=False)}\n\n"
@@ -145,52 +291,77 @@ async def _ai_rank(q: FinderQuery, candidates):
         return None
 
 
+def _result_card(p, conf=None, reason=None):
+    return {
+        "id": p["id"], "name": p.get("name"), "article": p.get("article"),
+        "manufacturer": p.get("manufacturer"), "price": p.get("price"),
+        "image_url": p.get("image_url"), "stock": p.get("stock", 0),
+        "confidence": conf, "reason": reason,
+    }
+
+
 @router.post("/parts-finder/search")
-async def finder_search(q: FinderQuery):
+async def finder_search(q: FinderQuery, user=Depends(get_current_user)):
     if not any([q.vin, q.brand, q.model, q.engine, q.axle, q.cross_number, q.query]):
         raise HTTPException(status_code=400, detail="Укажите хотя бы один параметр подбора")
 
     s = await _get_settings()
-    catalog_live = bool(s["catalog_enabled"]) and bool(s["api_key"])
+    mult = float(s["points_multiplier"]) or 1
+    charged = None
 
+    # ---- Paywall ----
+    if s["paid_enabled"]:
+        fresh = await db.users.find_one(
+            {"id": user["id"]}, {"_id": 0, "balance": 1, "pf_subscription_until": 1, "pf_free_used": 1}
+        ) or {}
+        if not _has_active_sub(fresh.get("pf_subscription_until")):
+            free_total = int(s["free_requests"])
+            free_used = int(fresh.get("pf_free_used", 0) or 0)
+            if free_used < free_total:
+                await db.users.update_one({"id": user["id"]}, {"$inc": {"pf_free_used": 1}})
+            else:
+                price = float(s["request_price"])
+                pts = round(price * mult)
+                if not q.pay_with:
+                    _, points = await _user_points(user["id"])
+                    return {
+                        "requires_payment": True, "mode": "paywall", "note": "",
+                        "request_price": price, "request_price_points": pts,
+                        "balance": fresh.get("balance", 0) or 0, "points": points,
+                        "count": 0, "results": [],
+                    }
+                if q.pay_with == "balance":
+                    if not await _deduct_balance(user["id"], price, "Подбор запчастей (разовый запрос)"):
+                        raise HTTPException(status_code=400, detail="Недостаточно средств на балансе")
+                    charged = {"method": "balance", "amount": price}
+                elif q.pay_with == "points":
+                    if not await _deduct_points(user["id"], pts):
+                        raise HTTPException(status_code=400, detail="Недостаточно баллов")
+                    charged = {"method": "points", "amount": pts}
+                else:
+                    raise HTTPException(status_code=400, detail="Неверный способ оплаты")
+
+    # ---- Search ----
+    catalog_live = bool(s["catalog_enabled"]) and bool(s["api_key"])
     candidates = await _find_candidates(q)
     by_id = {c["id"]: c for c in candidates}
-
     ranked = await _ai_rank(q, candidates) if s["ai_enabled"] else None
 
     results = []
     if ranked:
         for r in ranked:
             p = by_id.get(r.get("id"))
-            if not p:
-                continue
-            results.append({
-                "id": p["id"], "name": p.get("name"), "article": p.get("article"),
-                "manufacturer": p.get("manufacturer"), "price": p.get("price"),
-                "image_url": p.get("image_url"), "stock": p.get("stock", 0),
-                "confidence": r.get("confidence"), "reason": r.get("reason"),
-            })
+            if p:
+                results.append(_result_card(p, r.get("confidence"), r.get("reason")))
     else:
-        # Fallback: plain catalog matches without AI ranking
         for p in candidates[:8]:
-            results.append({
-                "id": p["id"], "name": p.get("name"), "article": p.get("article"),
-                "manufacturer": p.get("manufacturer"), "price": p.get("price"),
-                "image_url": p.get("image_url"), "stock": p.get("stock", 0),
-                "confidence": None, "reason": None,
-            })
+            results.append(_result_card(p))
 
     if catalog_live:
-        mode = "catalog"
-        note = (f"Платный каталог «{s['provider']}» подключён (заглушка интеграции). "
-                "Ниже — предварительный подбор по нашему каталогу.")
+        mode, note = "catalog", f"Подбор по каталогу «{s['provider']}»."
     elif ranked is not None:
-        mode = "ai"
-        note = ("Предварительный ИИ-подбор по нашему каталогу. Для 100% точного артикула "
-                "по VIN подключите платный каталог в настройках.")
+        mode, note = "ai", "Подобрали подходящие варианты из нашего каталога."
     else:
-        mode = "basic"
-        note = ("Базовый поиск по каталогу (ИИ недоступен). Для точного подбора по VIN "
-                "подключите платный каталог.")
+        mode, note = "basic", "Подобрали варианты из нашего каталога."
 
-    return {"mode": mode, "note": note, "count": len(results), "results": results}
+    return {"mode": mode, "note": note, "count": len(results), "results": results, "charged": charged}
