@@ -213,8 +213,8 @@ async def export_order_invoice(order_id: str, user=Depends(get_current_user)):
         _set_cell_text(cells[1], str(article), align=WD_ALIGN_PARAGRAPH.CENTER)
         _set_cell_text(cells[2], str(name), align=WD_ALIGN_PARAGRAPH.LEFT)
         _set_cell_text(cells[3], str(qty), align=WD_ALIGN_PARAGRAPH.CENTER)
-        _set_cell_text(cells[4], fmt_int(price), align=WD_ALIGN_PARAGRAPH.RIGHT)
-        _set_cell_text(cells[5], fmt_int(line_sum), align=WD_ALIGN_PARAGRAPH.RIGHT)
+        _set_cell_text(cells[4], fmt_int(price), align=WD_ALIGN_PARAGRAPH.CENTER)
+        _set_cell_text(cells[5], fmt_int(line_sum), align=WD_ALIGN_PARAGRAPH.CENTER)
 
     # Title + totals (totals rendered as a clean right-aligned borderless table)
     totals_anchor = None
@@ -235,22 +235,19 @@ async def export_order_invoice(order_id: str, user=Depends(get_current_user)):
             _set_para_text(p, s["footer_note"])
 
     if totals_anchor is not None:
-        tt = doc.add_table(rows=2, cols=2)
+        tt = doc.add_table(rows=1, cols=2)
         tt.alignment = WD_TABLE_ALIGNMENT.RIGHT
         tt.autofit = False
         tt.columns[0].width = Cm(5.5)
         tt.columns[1].width = Cm(4.0)
-        totals_data = [("Итого:", fmt_money(subtotal), False),
-                       ("Всего к оплате:", fmt_money(total), True)]
-        for ri, (label, value, bold) in enumerate(totals_data):
-            lc, vc = tt.rows[ri].cells
-            lc.width = Cm(5.5)
-            vc.width = Cm(4.0)
-            _set_cell_text(lc, label, bold=bold, align=WD_ALIGN_PARAGRAPH.RIGHT)
-            _set_cell_text(vc, value, bold=bold, align=WD_ALIGN_PARAGRAPH.RIGHT)
-            for c in (lc, vc):
-                for r in c.paragraphs[0].runs:
-                    r.font.size = Pt(11)
+        lc, vc = tt.rows[0].cells
+        lc.width = Cm(5.5)
+        vc.width = Cm(4.0)
+        _set_cell_text(lc, "Всего к оплате:", bold=True, align=WD_ALIGN_PARAGRAPH.RIGHT)
+        _set_cell_text(vc, fmt_money(total), bold=True, align=WD_ALIGN_PARAGRAPH.RIGHT)
+        for c in (lc, vc):
+            for r in c.paragraphs[0].runs:
+                r.font.size = Pt(11)
         # move the table to sit right before the (now empty) "Итого" paragraph
         totals_anchor._p.addprevious(tt._tbl)
 
