@@ -1,19 +1,24 @@
-"""Invoice (Счёт) Word export"""
+"""Invoice (Счёт) Word export — generated from the user's .docx template (1:1)."""
 import io
+import re
+import copy
+import os
 from datetime import datetime
 from fastapi import APIRouter, HTTPException, Depends
 from fastapi.responses import StreamingResponse
 from urllib.parse import quote
 
 from docx import Document
-from docx.shared import Pt, Cm
+from docx.shared import Pt
 from docx.enum.text import WD_ALIGN_PARAGRAPH
-from docx.enum.table import WD_TABLE_ALIGNMENT
+from pymongo import ReturnDocument
 
 from database import db, get_current_user
 from num2words import num2words
 
 router = APIRouter(tags=["invoices"])
+
+TEMPLATE_PATH = os.path.join(os.path.dirname(os.path.dirname(__file__)), "templates", "invoice_template.docx")
 
 INVOICE_DEFAULTS = {
     "bank_name": "ПАО «Банк Альфа» г. Санкт-Петербург",
@@ -28,6 +33,10 @@ INVOICE_DEFAULTS = {
 
 RU_MONTHS = ["", "Января", "Февраля", "Марта", "Апреля", "Мая", "Июня",
              "Июля", "Августа", "Сентября", "Октября", "Ноября", "Декабря"]
+
+PM_TYPE_LABEL = {"card": "Оплата картой", "crypto": "Оплата криптовалютой",
+                 "cash": "Наличная оплата", "balance": "Оплата с баланса",
+                 "mixed": "Смешанная оплата", "deferral": "Оплата в отсрочку"}
 
 
 async def get_invoice_settings():
@@ -60,22 +69,57 @@ def rub_in_words(amount):
 
 
 def fmt_money(v):
-    return f"{v:,.2f}".replace(",", " ").replace(".", ",")
+    """2 decimals, space thousands (totals block) — e.g. 40 050,00."""
+    return f"{v:,.2f}".replace(",", "\u00a0").replace(".", ",")
 
 
-def _set_cell_text(cell, text, bold=False, size=9, align=None):
-    cell.text = ""
-    p = cell.paragraphs[0]
-    if align is not None:
-        p.alignment = align
-    for i, line in enumerate(str(text).split("\n")):
-        if i > 0:
-            p = cell.add_paragraph()
-            if align is not None:
-                p.alignment = align
-        run = p.add_run(line)
-        run.bold = bold
-        run.font.size = Pt(size)
+def fmt_int(v):
+    """No decimals, space thousands (items table) — e.g. 18 300."""
+    return f"{int(round(v)):,}".replace(",", "\u00a0")
+
+
+def _set_para_text(para, text, bold=None):
+    """Replace a paragraph's text while keeping the first run's formatting."""
+    runs = para.runs
+    if runs:
+        runs[0].text = text
+        if bold is not None:
+            runs[0].bold = bold
+        for r in runs[1:]:
+            r.text = ""
+    else:
+        r = para.add_run(text)
+        if bold is not None:
+            r.bold = bold
+
+
+def _set_cell_text(cell, text, bold=None):
+    """Replace a table cell's text keeping the first run's font; supports merged cells."""
+    para = cell.paragraphs[0]
+    _set_para_text(para, text, bold=bold)
+    for extra in cell.paragraphs[1:]:
+        extra._p.getparent().remove(extra._p)
+
+
+def _replace_value_suffix(para, new_value):
+    """Replace the trailing numeric/percent value, keeping the label + spacing prefix."""
+    text = para.text
+    new_text, n = re.subn(r"[\d][\d\s\u00a0.,]*%?\s*$", lambda m: new_value, text, count=1)
+    if n == 0:
+        new_text = text + new_value
+    _set_para_text(para, new_text)
+
+
+async def _next_invoice_no(order):
+    if order.get("invoice_no"):
+        return order["invoice_no"]
+    doc = await db.counters.find_one_and_update(
+        {"_id": "invoice_no"}, {"$inc": {"seq": 1}},
+        upsert=True, return_document=ReturnDocument.AFTER,
+    )
+    no = 1000 + (doc.get("seq", 1) if doc else 1)
+    await db.orders.update_one({"id": order["id"]}, {"$set": {"invoice_no": no}})
+    return no
 
 
 @router.get("/invoice-settings")
@@ -108,147 +152,101 @@ async def export_order_invoice(order_id: str, user=Depends(get_current_user)):
 
     s = await get_invoice_settings()
     items = order.get("items", [])
+    pm = order.get("payment_method", "cash")
 
-    # Money
-    subtotal = sum((it.get("price", 0) or 0) * (it.get("quantity", 0) or 0) for it in items)
-    discount_percent = order.get("order_discount_percent", 0) or 0
+    # ---- Money model ----
+    # Prices are shown already discounted (final charged unit price). No separate
+    # discount line — only Итого and the final "Всего к оплате".
+    rows = []
+    subtotal = 0.0
+    for it in items:
+        qty = it.get("quantity", 0) or 0
+        unit = it.get("price", 0) or 0
+        line_sum = unit * qty
+        subtotal += line_sum
+        rows.append((it.get("article", ""), it.get("name", ""), qty, unit, line_sum))
+    subtotal = round(subtotal, 2)
     total = order.get("total", subtotal)
 
-    # Payment type label
-    pm = order.get("payment_method", "cash")
-    pm_label = {"card": "Оплата на карту", "crypto": "Оплата криптовалютой",
-                "cash": "Наличная оплата", "balance": "Оплата с баланса"}.get(pm, "Оплата")
-
-    # Date
+    # Date / number
     created = order.get("created_at", "")
     try:
         dt = datetime.fromisoformat(str(created).replace("Z", "+00:00"))
         date_str = f"{dt.day} {RU_MONTHS[dt.month]} {dt.year} г."
     except Exception:
         date_str = ""
+    inv_no = await _next_invoice_no(order)
 
-    inv_no = order_id[:8]
+    # ---- Fill the template ----
+    doc = Document(TEMPLATE_PATH)
 
-    # ---- Build document ----
-    doc = Document()
-    section = doc.sections[0]
-    section.top_margin = Cm(1.2)
-    section.bottom_margin = Cm(1.2)
-    section.left_margin = Cm(1.5)
-    section.right_margin = Cm(1.5)
-    style = doc.styles["Normal"]
-    style.font.name = "Times New Roman"
-    style.font.size = Pt(10)
+    # Bank details table (table 0)
+    bank = doc.tables[0]
+    _set_cell_text(bank.cell(0, 0), f"Банк получателя {s['bank_name']}")
+    _set_cell_text(bank.cell(0, 3), s["bik"])
+    _set_cell_text(bank.cell(1, 3), s["corr_account"])
+    _set_cell_text(bank.cell(2, 0), f"ИНН {s['inn']}")
+    _set_cell_text(bank.cell(2, 1), f"КПП {s['kpp']}")
+    _set_cell_text(bank.cell(2, 3), s["account"])
+    _set_cell_text(bank.cell(3, 0), s["seller_name"])
+    _set_cell_text(bank.cell(3, 3), s["account"])
 
-    # Bank / recipient details table (canonical "Счёт на оплату" header)
-    bank = doc.add_table(rows=4, cols=3)
-    bank.style = "Table Grid"
-    bank.alignment = WD_TABLE_ALIGNMENT.CENTER
-    bank.columns[0].width = Cm(10)
-    bank.columns[1].width = Cm(2.5)
-    bank.columns[2].width = Cm(6)
-    # Rows 0-1 left cell merged → bank name
-    bank_left = bank.cell(0, 0).merge(bank.cell(1, 0))
-    _set_cell_text(bank_left, f"Банк получателя:\n{s['bank_name']}")
-    _set_cell_text(bank.cell(0, 1), "БИК")
-    _set_cell_text(bank.cell(0, 2), s["bik"])
-    _set_cell_text(bank.cell(1, 1), "Сч. №")
-    _set_cell_text(bank.cell(1, 2), s["corr_account"])
-    _set_cell_text(bank.cell(2, 0), f"ИНН {s['inn']}    КПП {s['kpp']}")
-    _set_cell_text(bank.cell(2, 1), "Сч. №")
-    _set_cell_text(bank.cell(2, 2), s["account"])
-    rcpt = bank.cell(3, 0).merge(bank.cell(3, 1)).merge(bank.cell(3, 2))
-    _set_cell_text(rcpt, f"Получатель: {s['seller_name']}", bold=True)
-
-    # Title
-    p = doc.add_paragraph()
-    p.alignment = WD_ALIGN_PARAGRAPH.CENTER
-    p.paragraph_format.space_before = Pt(10)
-    p.paragraph_format.space_after = Pt(6)
-    r = p.add_run(f"Счет на оплату № {inv_no} от {date_str}")
-    r.bold = True
-    r.font.size = Pt(14)
-
-    # Supplier
-    sp = doc.add_paragraph()
-    sr = sp.add_run("Поставщик (Исполнитель): ")
-    sr.bold = True
-    sp.add_run(s["seller_name"])
-
-    # Buyer
-    bp = doc.add_paragraph()
-    br = bp.add_run("Покупатель (Заказчик): ")
-    br.bold = True
-    bp.add_run(order.get("full_name", ""))
+    # Payment / buyer table (table 1)
+    pay = doc.tables[1]
+    _set_cell_text(pay.cell(0, 0), PM_TYPE_LABEL.get(pm, "Оплата"))
+    buyer_parts = [order.get("full_name", "") or ""]
     if order.get("address"):
-        doc.add_paragraph(f"Адрес: {order.get('address')}")
+        buyer_parts.append(f"Адрес: {order.get('address')}")
     if order.get("phone"):
-        doc.add_paragraph(f"Номер тел. {order.get('phone')}")
+        buyer_parts.append(f"Тел.: {order.get('phone')}")
+    _set_cell_text(pay.cell(1, 1), "  /  ".join([p for p in buyer_parts if p]))
 
-    # Payment type
-    pp = doc.add_paragraph()
-    pp.paragraph_format.space_before = Pt(4)
-    pp.add_run(f"{pm_label} RUB")
+    # Items table (table 2): keep header, clone its data-row formatting per item
+    tbl = doc.tables[2]
+    tbl_elem = tbl._tbl
+    data_rows = tbl.rows[1:]
+    template_tr = copy.deepcopy(data_rows[0]._tr) if data_rows else None
+    for r in list(data_rows):
+        tbl_elem.remove(r._tr)
+    for idx, (article, name, qty, price, line_sum) in enumerate(rows, 1):
+        if template_tr is not None:
+            new_tr = copy.deepcopy(template_tr)
+            tbl_elem.append(new_tr)
+        else:
+            tbl.add_row()
+        cells = tbl.rows[-1].cells
+        _set_cell_text(cells[0], str(idx))
+        _set_cell_text(cells[1], str(article))
+        _set_cell_text(cells[2], str(name))
+        _set_cell_text(cells[3], str(qty))
+        _set_cell_text(cells[4], fmt_int(price))
+        _set_cell_text(cells[5], fmt_int(line_sum))
 
-    # Items table
-    headers = ["№", "Артикул", "Товары (работы, услуги)", "Кол-во", "Цена", "Сумма"]
-    tbl = doc.add_table(rows=1, cols=len(headers))
-    tbl.style = "Table Grid"
-    tbl.alignment = WD_TABLE_ALIGNMENT.CENTER
-    widths = [Cm(1), Cm(2.8), Cm(8.5), Cm(1.8), Cm(2.2), Cm(2.4)]
-    for i, w in enumerate(widths):
-        tbl.columns[i].width = w
-    hdr = tbl.rows[0].cells
-    for i, h in enumerate(headers):
-        _set_cell_text(hdr[i], h, bold=True, size=9,
-                       align=WD_ALIGN_PARAGRAPH.CENTER)
+    # Title + totals paragraphs (by matching prefixes)
+    for p in doc.paragraphs:
+        t = p.text.strip()
+        if t.startswith("Счет №"):
+            _set_para_text(p, f"Счет № {inv_no} от {date_str}", bold=True)
+        elif t.startswith("Итого:"):
+            _replace_value_suffix(p, fmt_money(subtotal))
+        elif t.startswith("Скидка") or t.startswith("Наценка"):
+            _set_para_text(p, "")  # no discount line — prices already discounted
+        elif t.startswith("Всего к оплате:"):
+            _replace_value_suffix(p, fmt_money(total))
+        elif t.startswith("Всего наименований"):
+            _set_para_text(p, f"Всего наименований {len(items)}, на сумму {fmt_money(total)} RUB", bold=True)
+        elif t.startswith(("Оплата данного", "Внимание")):
+            _set_para_text(p, s["footer_note"])
 
-    for idx, it in enumerate(items, 1):
-        qty = it.get("quantity", 0) or 0
-        price = it.get("price", 0) or 0
-        line_sum = price * qty
-        cells = tbl.add_row().cells
-        _set_cell_text(cells[0], str(idx), align=WD_ALIGN_PARAGRAPH.CENTER)
-        _set_cell_text(cells[1], it.get("article", ""))
-        _set_cell_text(cells[2], it.get("name", ""))
-        _set_cell_text(cells[3], str(qty), align=WD_ALIGN_PARAGRAPH.CENTER)
-        _set_cell_text(cells[4], fmt_money(price), align=WD_ALIGN_PARAGRAPH.RIGHT)
-        _set_cell_text(cells[5], fmt_money(line_sum), align=WD_ALIGN_PARAGRAPH.RIGHT)
-
-    # Totals
-    def total_line(label, value, bold=False):
-        pp = doc.add_paragraph()
-        pp.alignment = WD_ALIGN_PARAGRAPH.RIGHT
-        rr = pp.add_run(f"{label} {value}")
-        rr.bold = bold
-
-    total_line("Итого:", fmt_money(subtotal))
-    if discount_percent:
-        disc_label = "Скидка при оплате наличными:" if pm == "cash" else "Скидка:"
-        total_line(disc_label, f"{discount_percent}% ({fmt_money(subtotal - total)})")
-    total_line("Всего к оплате:", fmt_money(total), bold=True)
-
-    p = doc.add_paragraph()
-    p.paragraph_format.space_before = Pt(4)
-    p.add_run(f"Всего наименований {len(items)}, на сумму {fmt_money(total)} RUB").bold = True
-    doc.add_paragraph().add_run(rub_in_words(total)).bold = True
-
-    # Signatures
-    doc.add_paragraph()
-    sig = doc.add_paragraph()
-    sig.add_run("Исполнитель _____________________________        Получатель _____________________________")
-    mp = doc.add_paragraph()
-    mp.add_run("М.П.").font.size = Pt(9)
-
-    # Footer note
-    foot = doc.add_paragraph()
-    foot.paragraph_format.space_before = Pt(10)
-    fa = foot.add_run("Внимание! ")
-    fa.bold = True
-    fa.font.size = Pt(9)
-    fr = foot.add_run(s["footer_note"])
-    fr.italic = True
-    fr.font.size = Pt(9)
+    # Amount in words — paragraph immediately after "Всего наименований"
+    paras = doc.paragraphs
+    for i, p in enumerate(paras):
+        if p.text.strip().startswith("Всего наименований"):
+            for q in paras[i + 1:]:
+                if q.text.strip():
+                    _set_para_text(q, rub_in_words(total))
+                    break
+            break
 
     buf = io.BytesIO()
     doc.save(buf)

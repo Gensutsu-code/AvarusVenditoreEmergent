@@ -473,6 +473,17 @@ async def create_order(data: OrderCreate, user=Depends(get_current_user)):
     else:
         order_payment_status = "unpaid"
 
+    # Bonus accrual base = adjusted goods total (after payment-method discount/surcharge),
+    # restricted to bonus-eligible items. The eligible fraction is taken from item final
+    # prices (the payment multiplier is uniform for a single method and =1 for mixed), so
+    # this base is identical to what the cart preview shows the user.
+    elig_sum = 0.0
+    for it in items:
+        prod = products_map.get(it["product_id"])
+        if prod is None or prod.get("bonus_eligible", True):
+            elig_sum += (it.get("price", 0) or 0) * (it.get("quantity", 0) or 0)
+    bonus_base = round(goods_total * (elig_sum / base_subtotal), 2) if base_subtotal > 0 else 0.0
+
     order_id = str(uuid.uuid4())
     order = {
         "id": order_id,
@@ -480,6 +491,7 @@ async def create_order(data: OrderCreate, user=Depends(get_current_user)):
         "items": items,
         "total": total,
         "subtotal": round(subtotal, 2),
+        "bonus_base": bonus_base,
         "delivery_fee": delivery_fee,
         "payment_adjustment": payment_adjustment,
         "status": "pending",

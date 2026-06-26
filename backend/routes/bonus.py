@@ -79,9 +79,12 @@ async def _calc_bonus_eligible_total(order_items: list, fallback_total: float) -
     return eligible if has_any or eligible > 0 else fallback_total
 
 
-async def update_bonus_on_order_delivered(user_id: str, order_total: float, order_items: list = None):
+async def update_bonus_on_order_delivered(user_id: str, order_total: float, order_items: list = None, bonus_base: float = None):
     """Called when order status changes to 'completed'.
-    Only bonus_eligible items contribute to the accrual base."""
+    Bonus is accrued on the adjusted goods total (after payment-method discount/surcharge),
+    restricted to bonus-eligible items. Prefer the precomputed `bonus_base` stored on the
+    order (identical to the cart preview); fall back to recomputing from items.
+    Accrued points are whole numbers."""
     from notify import notify_user
 
     programs = await get_all_bonus_programs()
@@ -98,8 +101,11 @@ async def update_bonus_on_order_delivered(user_id: str, order_total: float, orde
 
     yearly_total = sum(order.get("total", 0) for order in yearly_orders)
 
-    # Compute eligible amount (only products with bonus_eligible != False)
-    eligible_total = await _calc_bonus_eligible_total(order_items or [], order_total)
+    # Eligible base for accrual: stored bonus_base (preferred) or recomputed from items
+    if bonus_base is not None:
+        eligible_total = bonus_base
+    else:
+        eligible_total = await _calc_bonus_eligible_total(order_items or [], order_total)
 
     for program in programs:
         if not program.get("enabled"):
@@ -125,9 +131,9 @@ async def update_bonus_on_order_delivered(user_id: str, order_total: float, orde
                 current_level = level
 
         if current_level and current_level.get("cashback_percent", 0) > 0:
-            bonus_points = base_amount * (current_level["cashback_percent"] / 100)
+            bonus_points = round(base_amount * (current_level["cashback_percent"] / 100))
         else:
-            bonus_points = base_amount
+            bonus_points = round(base_amount)
 
         new_points = progress.get("current_amount", 0) + bonus_points
 
@@ -195,12 +201,12 @@ async def cart_bonus_preview(amount: float = None, user=Depends(get_current_user
             pts = base_amount * (current_level["cashback_percent"] / 100)
         else:
             pts = base_amount
-        pts = round(pts, 2)
+        pts = round(pts)
         if pts > 0:
             result_programs.append({"program_id": program["id"], "title": program.get("title", "Бонусы"), "points": pts})
             total_points += pts
 
-    return {"total_points": round(total_points, 2), "programs": result_programs}
+    return {"total_points": int(round(total_points)), "programs": result_programs}
 
 
 @router.post("/admin/bonus/recalculate")

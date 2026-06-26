@@ -419,7 +419,8 @@ async def update_admin_order(order_id: str, data: AdminOrderUpdate, user=Depends
             await update_bonus_on_order_delivered(
                 original_order["user_id"],
                 update_data.get("total", original_order.get("total", 0)),
-                update_data.get("items", original_order.get("items", []))
+                update_data.get("items", original_order.get("items", [])),
+                bonus_base=original_order.get("bonus_base"),
             )
         
         # Restore stock when order is cancelled
@@ -498,7 +499,7 @@ async def update_order_status(order_id: str, status: str, user=Depends(get_curre
                     {"$set": {"active": False, "used_in_order_id": order_id}}
                 )
         # Accrue bonus points
-        await update_bonus_on_order_delivered(order["user_id"], order.get("total", 0), order.get("items", []))
+        await update_bonus_on_order_delivered(order["user_id"], order.get("total", 0), order.get("items", []), bonus_base=order.get("bonus_base"))
     
     # Log for revert
     status_labels = {
