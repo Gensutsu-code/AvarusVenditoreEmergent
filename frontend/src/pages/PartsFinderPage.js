@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { Link } from 'react-router-dom';
 import axios from 'axios';
 import { motion } from 'framer-motion';
-import { Search, Wrench, Sparkles, Info, Loader2, ArrowRight, Package, Lock, Crown, Wallet, Coins, CheckCircle2 } from 'lucide-react';
+import { Search, Wrench, Sparkles, Info, Loader2, ArrowRight, Package, Lock, Crown, Wallet, Coins, CheckCircle2, History, Clock } from 'lucide-react';
 import { toast } from 'sonner';
 import { Button } from '../components/ui/button';
 import { Input } from '../components/ui/input';
@@ -23,6 +23,9 @@ const FIELDS = [
 
 const fmtPrice = (v) => new Intl.NumberFormat('ru-RU').format(Math.round(v || 0));
 const fmtDate = (iso) => { try { return new Date(iso).toLocaleDateString('ru-RU'); } catch { return ''; } };
+const fmtDateTime = (iso) => { try { return new Date(iso).toLocaleString('ru-RU', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' }); } catch { return ''; } };
+const QLABELS = { vin: 'VIN', brand: 'Марка', model: 'Модель', year: 'Год', engine: 'Двигатель', axle: 'Ось', cross_number: 'Кросс', query: 'Запрос' };
+const querySummary = (q) => Object.entries(q || {}).filter(([, v]) => v).map(([k, v]) => `${QLABELS[k] || k}: ${v}`).join(' · ');
 
 export default function PartsFinderPage() {
   const { user } = useAuth();
@@ -34,6 +37,7 @@ export default function PartsFinderPage() {
   const [payPrompt, setPayPrompt] = useState(null);
   const [showSub, setShowSub] = useState(false);
   const [busy, setBusy] = useState(false);
+  const [history, setHistory] = useState([]);
 
   const update = (k, v) => setForm((f) => ({ ...f, [k]: v }));
 
@@ -45,7 +49,15 @@ export default function PartsFinderPage() {
     } catch { /* ignore */ }
   }, [user]);
 
-  useEffect(() => { fetchAccess(); }, [fetchAccess]);
+  const fetchHistory = useCallback(async () => {
+    if (!user) return;
+    try {
+      const r = await axios.get(`${API}/parts-finder/history`);
+      setHistory(r.data.history || []);
+    } catch { /* ignore */ }
+  }, [user]);
+
+  useEffect(() => { fetchAccess(); fetchHistory(); }, [fetchAccess, fetchHistory]);
 
   const runSearch = async (payWith = '') => {
     if (!user) { setError('Войдите в аккаунт, чтобы пользоваться подбором'); return; }
@@ -66,6 +78,7 @@ export default function PartsFinderPage() {
             : `Списано ${fmtPrice(res.data.charged.amount)} ₽ с баланса`);
         }
         fetchAccess();
+        fetchHistory();
       }
     } catch (err) {
       const code = err.response?.status;
@@ -283,6 +296,40 @@ export default function PartsFinderPage() {
                 ))}
               </div>
             )}
+          </motion.div>
+        )}
+
+        {/* Search history */}
+        {user && history.length > 0 && (
+          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="mt-10" data-testid="finder-history">
+            <h2 className="text-lg font-semibold text-slate-800 flex items-center gap-2 mb-4">
+              <History className="w-5 h-5 text-teal-500" /> История подборов
+            </h2>
+            <div className="space-y-3">
+              {history.map((h) => (
+                <div key={h.id} className="bg-white rounded-xl border border-slate-200 p-4" data-testid={`finder-history-${h.id}`}>
+                  <div className="flex items-center justify-between gap-3 flex-wrap">
+                    <p className="text-sm font-medium text-slate-700 min-w-0 break-words">{querySummary(h.query) || '—'}</p>
+                    <span className="text-xs text-slate-400 flex items-center gap-1 whitespace-nowrap"><Clock className="w-3.5 h-3.5" /> {fmtDateTime(h.created_at)}</span>
+                  </div>
+                  {h.results && h.results.length > 0 ? (
+                    <div className="flex flex-wrap gap-2 mt-3">
+                      {h.results.map((p) => (
+                        <Link key={p.id} to={`/product/${p.id}`}
+                          className="inline-flex items-center gap-1.5 text-xs bg-slate-50 hover:bg-teal-50 border border-slate-200 hover:border-teal-300 rounded-lg px-2.5 py-1.5 transition-colors"
+                          data-testid={`finder-history-item-${p.id}`}>
+                          <span className="font-mono font-bold text-teal-600">{p.article}</span>
+                          <span className="text-slate-500 truncate max-w-[180px]">{p.name}</span>
+                          {typeof p.confidence === 'number' && <span className="text-[10px] text-emerald-600 font-semibold">{p.confidence}%</span>}
+                        </Link>
+                      ))}
+                    </div>
+                  ) : (
+                    <p className="text-xs text-slate-400 mt-2">Ничего не найдено</p>
+                  )}
+                </div>
+              ))}
+            </div>
           </motion.div>
         )}
       </div>

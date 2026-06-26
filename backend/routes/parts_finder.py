@@ -364,4 +364,27 @@ async def finder_search(q: FinderQuery, user=Depends(get_current_user)):
     else:
         mode, note = "basic", "Подобрали варианты из нашего каталога."
 
+    # Save to the user's search history
+    q_summary = {k: v for k, v in q.dict().items() if v and k != "pay_with"}
+    await db.parts_finder_history.insert_one({
+        "id": str(uuid.uuid4()),
+        "user_id": user["id"],
+        "query": q_summary,
+        "results": [{"id": r["id"], "name": r.get("name"), "article": r.get("article"),
+                     "manufacturer": r.get("manufacturer"), "price": r.get("price"),
+                     "image_url": r.get("image_url"), "confidence": r.get("confidence")}
+                    for r in results[:8]],
+        "count": len(results),
+        "mode": mode,
+        "created_at": _now_iso(),
+    })
+
     return {"mode": mode, "note": note, "count": len(results), "results": results, "charged": charged}
+
+
+@router.get("/parts-finder/history")
+async def finder_history(user=Depends(get_current_user)):
+    rows = await db.parts_finder_history.find(
+        {"user_id": user["id"]}, {"_id": 0}
+    ).sort("created_at", -1).limit(30).to_list(30)
+    return {"history": rows}
