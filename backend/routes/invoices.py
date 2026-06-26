@@ -1,6 +1,5 @@
 """Invoice (Счёт) Word export — generated from the user's .docx template (1:1)."""
 import io
-import re
 import copy
 import os
 from datetime import datetime
@@ -9,8 +8,9 @@ from fastapi.responses import StreamingResponse
 from urllib.parse import quote
 
 from docx import Document
-from docx.shared import Pt
+from docx.shared import Pt, Cm
 from docx.enum.text import WD_ALIGN_PARAGRAPH
+from docx.enum.table import WD_TABLE_ALIGNMENT
 from pymongo import ReturnDocument
 
 from database import db, get_current_user
@@ -93,21 +93,14 @@ def _set_para_text(para, text, bold=None):
             r.bold = bold
 
 
-def _set_cell_text(cell, text, bold=None):
+def _set_cell_text(cell, text, bold=None, align=None):
     """Replace a table cell's text keeping the first run's font; supports merged cells."""
     para = cell.paragraphs[0]
+    if align is not None:
+        para.alignment = align
     _set_para_text(para, text, bold=bold)
     for extra in cell.paragraphs[1:]:
         extra._p.getparent().remove(extra._p)
-
-
-def _replace_value_suffix(para, new_value):
-    """Replace the trailing numeric/percent value, keeping the label + spacing prefix."""
-    text = para.text
-    new_text, n = re.subn(r"[\d][\d\s\u00a0.,]*%?\s*$", lambda m: new_value, text, count=1)
-    if n == 0:
-        new_text = text + new_value
-    _set_para_text(para, new_text)
 
 
 async def _next_invoice_no(order):
@@ -187,6 +180,7 @@ async def export_order_invoice(order_id: str, user=Depends(get_current_user)):
     _set_cell_text(bank.cell(1, 3), s["corr_account"])
     _set_cell_text(bank.cell(2, 0), f"ИНН {s['inn']}")
     _set_cell_text(bank.cell(2, 1), f"КПП {s['kpp']}")
+    _set_cell_text(bank.cell(2, 2), "Сч. №")  # fix template typo "Ст. №"
     _set_cell_text(bank.cell(2, 3), s["account"])
     _set_cell_text(bank.cell(3, 0), s["seller_name"])
     _set_cell_text(bank.cell(3, 3), s["account"])
@@ -215,28 +209,50 @@ async def export_order_invoice(order_id: str, user=Depends(get_current_user)):
         else:
             tbl.add_row()
         cells = tbl.rows[-1].cells
-        _set_cell_text(cells[0], str(idx))
-        _set_cell_text(cells[1], str(article))
-        _set_cell_text(cells[2], str(name))
-        _set_cell_text(cells[3], str(qty))
-        _set_cell_text(cells[4], fmt_int(price))
-        _set_cell_text(cells[5], fmt_int(line_sum))
+        _set_cell_text(cells[0], str(idx), align=WD_ALIGN_PARAGRAPH.CENTER)
+        _set_cell_text(cells[1], str(article), align=WD_ALIGN_PARAGRAPH.CENTER)
+        _set_cell_text(cells[2], str(name), align=WD_ALIGN_PARAGRAPH.LEFT)
+        _set_cell_text(cells[3], str(qty), align=WD_ALIGN_PARAGRAPH.CENTER)
+        _set_cell_text(cells[4], fmt_int(price), align=WD_ALIGN_PARAGRAPH.RIGHT)
+        _set_cell_text(cells[5], fmt_int(line_sum), align=WD_ALIGN_PARAGRAPH.RIGHT)
 
-    # Title + totals paragraphs (by matching prefixes)
+    # Title + totals (totals rendered as a clean right-aligned borderless table)
+    totals_anchor = None
     for p in doc.paragraphs:
         t = p.text.strip()
         if t.startswith("Счет №"):
             _set_para_text(p, f"Счет № {inv_no} от {date_str}", bold=True)
         elif t.startswith("Итого:"):
-            _replace_value_suffix(p, fmt_money(subtotal))
+            totals_anchor = p
+            _set_para_text(p, "")
         elif t.startswith("Скидка") or t.startswith("Наценка"):
             _set_para_text(p, "")  # no discount line — prices already discounted
         elif t.startswith("Всего к оплате:"):
-            _replace_value_suffix(p, fmt_money(total))
+            _set_para_text(p, "")
         elif t.startswith("Всего наименований"):
             _set_para_text(p, f"Всего наименований {len(items)}, на сумму {fmt_money(total)} RUB", bold=True)
         elif t.startswith(("Оплата данного", "Внимание")):
             _set_para_text(p, s["footer_note"])
+
+    if totals_anchor is not None:
+        tt = doc.add_table(rows=2, cols=2)
+        tt.alignment = WD_TABLE_ALIGNMENT.RIGHT
+        tt.autofit = False
+        tt.columns[0].width = Cm(5.5)
+        tt.columns[1].width = Cm(4.0)
+        totals_data = [("Итого:", fmt_money(subtotal), False),
+                       ("Всего к оплате:", fmt_money(total), True)]
+        for ri, (label, value, bold) in enumerate(totals_data):
+            lc, vc = tt.rows[ri].cells
+            lc.width = Cm(5.5)
+            vc.width = Cm(4.0)
+            _set_cell_text(lc, label, bold=bold, align=WD_ALIGN_PARAGRAPH.RIGHT)
+            _set_cell_text(vc, value, bold=bold, align=WD_ALIGN_PARAGRAPH.RIGHT)
+            for c in (lc, vc):
+                for r in c.paragraphs[0].runs:
+                    r.font.size = Pt(11)
+        # move the table to sit right before the (now empty) "Итого" paragraph
+        totals_anchor._p.addprevious(tt._tbl)
 
     # Amount in words — paragraph immediately after "Всего наименований"
     paras = doc.paragraphs
