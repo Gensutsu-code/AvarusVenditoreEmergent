@@ -262,13 +262,15 @@ async def create_order(data: OrderCreate, user=Depends(get_current_user)):
         if product:
             original_price = product["price"]
             
-            # Determine base price (individual_price > original) and track flag
+            # Determine base price (individual_price > original) and track flag.
+            # The payment-method adjustment (discount/surcharge) applies to the individual
+            # price too — same as for regular items. For mixed payment price_multiplier=1
+            # and the adjustment is applied per payment part below.
             ind_price = ind_prices_map.get(cart_item["product_id"])
             if ind_price is not None:
-                base_price = ind_price
+                base_price = round(ind_price * price_multiplier, 2)
                 used_individual_price_product_ids.append(cart_item["product_id"])
             else:
-                # Apply payment discount to unit price
                 base_price = round(original_price * price_multiplier, 2)
 
             # Apply product promo discount on top of base price (tier-aware)

@@ -156,11 +156,12 @@ async def update_bonus_on_order_delivered(user_id: str, order_total: float, orde
 
         # Notify user about bonus accrual
         if bonus_points > 0:
+            base_str = f"{int(round(eligible_total)):,}".replace(",", "\u00a0")
             await notify_user(
                 user_id,
                 "bonus",
                 "Начисление баллов",
-                f"Вам начислено {int(bonus_points)} бонусных баллов за выполненный заказ. Баланс: {int(new_points)} баллов",
+                f"Вам начислено {int(bonus_points)} баллов с суммы {base_str} ₽ (после скидок). Баланс: {int(new_points)} баллов",
                 "/bonus"
             )
 
