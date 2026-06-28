@@ -1,0 +1,39 @@
+{
+  "summary": "Frontend E2E testing of individual (negotiated) price feature for logged-in client user@demo.com on product 8cd5b1c5-7980-4765-9db9-8e309614f8c5 (article E82KPD36, regular price 1600 ₽, individual price 777 ₽). PRODUCT PAGE works correctly. CATALOG CARD has a critical bug: main agent updated /app/frontend/src/components/ProductCard.js, but CatalogPage.js uses its OWN inline ProductCard component (declared locally at line 41) that was NOT updated to include the required data-testids or the 'Ваша цена по договорённости' badge.",
+  "test_results": {
+    "1_catalog_card_individual_price_logged_in": "FAIL — Visually the catalog card DOES render strikethrough 1 600 ₽ and 777 ₽ in emerald (because CatalogPage.js inline PriceDisplay handles individualPrice), BUT: (a) data-testid='old-price-<id>' MISSING, (b) data-testid='individual-price-<id>' MISSING, (c) data-testid='individual-badge-<id>' MISSING, (d) The text badge 'Ваша цена по договорённости' is NOT rendered in the catalog card at all.",
+    "2_product_page_individual_price_logged_in": "PASS — /product/8cd5b1c5... shows strikethrough 1 600 ₽ and 'product-price' = '777 ₽' in emerald, and 'individual-price-badge' = 'Ваша цена по договорённости'.",
+    "3_guest_product_page": "PASS — Guest sees regular price 1 600 ₽; individual-price-badge is NOT present.",
+    "4_guest_catalog": "PASS — Guest catalog card for the same product shows regular price '1 600 ₽' without strikethrough; individual-price-<id> and individual-badge-<id> are absent.",
+    "5_other_products_no_individual_price": "PASS — No spurious individual badges/prices were observed on other products for the logged-in user."
+  },
+  "backend_issues": {"critical": [], "minor": []},
+  "frontend_issues": {
+    "ui_bugs": [
+      {"component": "CatalogPage.js inline ProductCard (line 41)", "issue": "Missing data-testid attributes (old-price-<id>, individual-price-<id>, individual-badge-<id>) required by acceptance criteria.", "selector": "[data-testid=\"individual-price-8cd5b1c5-7980-4765-9db9-8e309614f8c5\"]", "priority": "HIGH"},
+      {"component": "CatalogPage.js inline ProductCard (line 41, 208-212)", "issue": "Catalog card does not render the badge text 'Ваша цена по договорённости' for products with individual price. Only the strikethrough+emerald price is shown.", "selector": "[data-testid=\"individual-badge-<id>\"]", "priority": "HIGH"}
+    ],
+    "integration_issues": [],
+    "design_issues": []
+  },
+  "test_report_links": ["/app/test_reports/screenshots/iter93_catalog_logged.png", "/app/test_reports/screenshots/iter93_product_logged.png", "/app/test_reports/screenshots/iter93_guest_catalog.png"],
+  "action_items": [
+    "Main agent must update CatalogPage.js — NOT /app/frontend/src/components/ProductCard.js. The shared ProductCard.js is currently DEAD CODE (not imported anywhere; grep proven).",
+    "In CatalogPage.js inline ProductCard (lines ~208-212 in the row-layout and the equivalent block used by grid layout) add data-testid='old-price-<product.id>' on the strikethrough span, data-testid='individual-price-<product.id>' on the emerald price span, and add a new element with data-testid='individual-badge-<product.id>' containing the text 'Ваша цена по договорённости' (e.g. an inline-flex pill like the one used on ProductPage.js line 357).",
+    "Optionally also wire CatalogPage's existing individualPrices map to read from the new IndividualPriceContext (useIndividualPrice) instead of calling /individual-prices/my locally, so the new GET /products/my-individual-prices endpoint is actually exercised from the catalog. Currently CatalogPage still calls the OLD /individual-prices/my endpoint at line 506, completely bypassing the new IndividualPriceProvider added in App.js."
+  ],
+  "critical_code_review_comments": [
+    "Dead code: /app/frontend/src/components/ProductCard.js is exported but never imported anywhere in the codebase (verified via grep). All product card rendering happens inside CatalogPage.js's inline component. The main agent's edits to components/ProductCard.js had zero runtime effect on the catalog flow.",
+    "Duplication: PriceDisplay/ProductCard logic duplicated between CatalogPage.js (inline) and components/ProductCard.js (orphan). Consolidate into one shared component to prevent this bug class.",
+    "IndividualPriceContext added in App.js but CatalogPage.js still uses its own axios.get('/individual-prices/my') (line 503-509). Two parallel client-side caches for the same data — risk of inconsistency.",
+    "CatalogPage.js is 1300 lines — should be split into smaller modules (PriceDisplay, ProductCard row/grid, filters, modal)."
+  ],
+  "updated_files": [],
+  "success_rate": {"backend": "n/a (skipped per request)", "frontend": "60% (3/5 scenarios — product page + guest flows + other-products pass; catalog card with individual price fails acceptance criteria)"},
+  "test_credentials": "user@demo.com / demo123 (per review request)",
+  "seed_data_creation": "None.",
+  "retest_needed": true,
+  "main_agent_can_self_test": true,
+  "context_for_next_testing_agent": "After main agent edits CatalogPage.js inline ProductCard, re-run scenario 1 only — verify the three data-testids and the 'Ваша цена по договорённости' badge appear on /catalog?search=E82KPD36 for user@demo.com on product 8cd5b1c5-7980-4765-9db9-8e309614f8c5. Allow ~3s after navigation for axios.get('/individual-prices/my') to populate the individualPrices state. Other scenarios (product page, guest, other-products) already pass.",
+  "rca_of_the_issue": "The main agent assumed the catalog uses the shared /app/frontend/src/components/ProductCard.js component. In fact, /app/frontend/src/pages/CatalogPage.js declares its OWN inline `const ProductCard = (...)` at line 41 and uses that exclusively (line 1211 and 1244). The shared file is orphaned. As a result, all the individual-price markup the main agent added (old-price-<id>, individual-price-<id>, individual-badge-<id>, 'Ваша цена по договорённости' label, Handshake icon) never reaches the user. Fix: replicate the markup inside CatalogPage.js inline component (lines 208-212), or — preferable — import and reuse the shared ProductCard."
+}

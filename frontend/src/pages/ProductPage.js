@@ -4,7 +4,7 @@ import axios from 'axios';
 import { 
   Package, ShoppingCart, Truck, ArrowLeft, Minus, Plus, 
   Heart, Share2, ChevronLeft, ChevronRight, Check, AlertCircle,
-  Tag, Layers, MapPin
+  Tag, Layers, MapPin, Handshake
 } from 'lucide-react';
 import { Button } from '../components/ui/button';
 import { useCart } from '../context/CartContext';
@@ -354,7 +354,9 @@ export default function ProductPage() {
                       <p className="text-4xl font-bold text-emerald-600" data-testid="product-price">
                         {formatPrice(individualPrice)} <span className="text-lg text-slate-400">₽</span>
                       </p>
-                      <p className="text-xs text-emerald-600 font-semibold mt-1">Ваша индивидуальная цена</p>
+                      <p className="text-xs text-emerald-700 font-semibold mt-1 inline-flex items-center gap-1 bg-emerald-50 border border-emerald-200 px-2 py-0.5 rounded-md" data-testid="individual-price-badge">
+                        <Handshake className="w-3 h-3" /> Ваша цена по договорённости
+                      </p>
                     </div>
                   ) : (() => {
                     const discount = computeDiscount(product, quantity);

@@ -472,6 +472,16 @@ async def search_products_with_alternatives(search: str, limit: int = 50):
     }
 
 
+@router.get("/products/my-individual-prices")
+async def get_my_individual_prices(user=Depends(get_current_user)):
+    """Return the authenticated user's approved individual (negotiated) prices."""
+    rows = await db.individual_prices.find(
+        {"user_id": user["id"], "active": True}, {"_id": 0, "product_id": 1, "price": 1}
+    ).to_list(1000)
+    return {"prices": {r["product_id"]: r["price"] for r in rows}}
+
+
+
 @router.get("/products/{product_id}", response_model=ProductResponse)
 async def get_product(product_id: str):
     product = await db.products.find_one({"id": product_id}, {"_id": 0})

@@ -5,6 +5,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { Toaster } from "./components/ui/sonner";
 import { AuthProvider, useAuth } from "./context/AuthContext";
 import { CartProvider } from "./context/CartContext";
+import { IndividualPriceProvider } from "./context/IndividualPriceContext";
 import { ThemeProvider, useTheme } from "./context/ThemeContext";
 import { Header } from "./components/Header";
 import { ChatWidget } from "./components/ChatWidget";
@@ -184,7 +185,9 @@ function App() {
       <ThemeProvider>
         <AuthProvider>
           <CartProvider>
-            <AppContent />
+            <IndividualPriceProvider>
+              <AppContent />
+            </IndividualPriceProvider>
           </CartProvider>
         </AuthProvider>
       </ThemeProvider>

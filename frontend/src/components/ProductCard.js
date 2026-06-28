@@ -1,8 +1,9 @@
 import { Link } from 'react-router-dom';
-import { ShoppingCart, Package, ShieldCheck, BadgeCheck, Gift, Tag, Truck, Layers } from 'lucide-react';
+import { ShoppingCart, Package, ShieldCheck, BadgeCheck, Gift, Tag, Truck, Layers, Handshake } from 'lucide-react';
 import { Button } from './ui/button';
 import { useCart } from '../context/CartContext';
 import { useAuth } from '../context/AuthContext';
+import { useIndividualPrice } from '../context/IndividualPriceContext';
 import { toast } from 'sonner';
 import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
@@ -11,6 +12,7 @@ import { computeDiscount, formatDiscountBadge, formatUntilDate, getDeliveryBadge
 export const ProductCard = ({ product, index = 0 }) => {
   const { addToCart } = useCart();
   const { user } = useAuth();
+  const { getIndividualPrice } = useIndividualPrice();
   const navigate = useNavigate();
 
   const handleAddToCart = async (e) => {
@@ -40,6 +42,7 @@ export const ProductCard = ({ product, index = 0 }) => {
   const untilFormatted = formatUntilDate(discount?.until);
   const quantityTiers = getQuantityTiers(product);
   const minTierQty = quantityTiers.length ? quantityTiers[0].minQty : null;
+  const individualPrice = getIndividualPrice(product.id);
 
   return (
     <motion.div
@@ -166,7 +169,19 @@ export const ProductCard = ({ product, index = 0 }) => {
             </h3>
             <div className="flex items-center justify-between gap-2 mb-2">
               <div className="flex flex-col">
-                {discount ? (
+                {individualPrice != null ? (
+                  <>
+                    <span className="text-xs text-slate-400 line-through" data-testid={`old-price-${product.id}`}>
+                      {formatPrice(product.price)} ₽
+                    </span>
+                    <span className="text-xl font-bold text-emerald-600" data-testid={`individual-price-${product.id}`}>
+                      {formatPrice(individualPrice)} <span className="text-sm text-emerald-400">₽</span>
+                    </span>
+                    <span className="inline-flex items-center gap-1 text-[10px] font-bold text-emerald-700 bg-emerald-50 border border-emerald-200 px-1.5 py-0.5 rounded-md mt-1 w-fit" data-testid={`individual-badge-${product.id}`}>
+                      <Handshake className="w-3 h-3" /> Ваша цена по договорённости
+                    </span>
+                  </>
+                ) : discount ? (
                   <>
                     <span className="text-xs text-slate-400 line-through" data-testid={`old-price-${product.id}`}>
                       {formatPrice(product.price)} ₽
