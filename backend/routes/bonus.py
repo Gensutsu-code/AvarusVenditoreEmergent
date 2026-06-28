@@ -79,11 +79,10 @@ async def _calc_bonus_eligible_total(order_items: list, fallback_total: float) -
     return eligible if has_any or eligible > 0 else fallback_total
 
 
-async def update_bonus_on_order_delivered(user_id: str, order_total: float, order_items: list = None, bonus_base: float = None):
+async def update_bonus_on_order_delivered(user_id: str, order_total: float, order_items: list = None, delivery_fee: float = 0):
     """Called when order status changes to 'completed'.
-    Bonus is accrued on the adjusted goods total (after payment-method discount/surcharge),
-    restricted to bonus-eligible items. Prefer the precomputed `bonus_base` stored on the
-    order (identical to the cart preview); fall back to recomputing from items.
+    Bonus is accrued on the FINAL order total after all discounts (the amount of the
+    completed order), excluding delivery, and restricted to bonus-eligible items.
     Accrued points are whole numbers."""
     from notify import notify_user
 
@@ -101,11 +100,23 @@ async def update_bonus_on_order_delivered(user_id: str, order_total: float, orde
 
     yearly_total = sum(order.get("total", 0) for order in yearly_orders)
 
-    # Eligible base for accrual: stored bonus_base (preferred) or recomputed from items
-    if bonus_base is not None:
-        eligible_total = bonus_base
-    else:
-        eligible_total = await _calc_bonus_eligible_total(order_items or [], order_total)
+    # Accrual base = final order total after all discounts, minus delivery, scaled by the
+    # share of bonus-eligible items (computed from the completed order's final item prices).
+    items = order_items or []
+    all_sum = 0.0
+    elig_sum = 0.0
+    for item in items:
+        line = (item.get("price", 0) or 0) * (item.get("quantity", 0) or 0)
+        all_sum += line
+        pid = item.get("product_id")
+        product = await db.products.find_one({"id": pid}, {"_id": 0, "bonus_eligible": 1}) if pid else None
+        if product is None or product.get("bonus_eligible", True):
+            elig_sum += line
+    eligible_fraction = (elig_sum / all_sum) if all_sum > 0 else 1.0
+    goods_final = order_total - (delivery_fee or 0)
+    if goods_final < 0:
+        goods_final = order_total
+    eligible_total = round(goods_final * eligible_fraction, 2)
 
     for program in programs:
         if not program.get("enabled"):
