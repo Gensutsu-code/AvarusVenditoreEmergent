@@ -113,6 +113,11 @@ export default function ContactPage() {
     return () => clearInterval(i);
   }, [tab, user, fetchChat]);
 
+  // refresh requests/statuses each time the "Мои обращения" tab is opened
+  useEffect(() => {
+    if (tab === 'history' && user) fetchRequests();
+  }, [tab, user, fetchRequests]);
+
   // Scroll only the chat container (never the page)
   const scrollChatToBottom = () => {
     const el = msgContainerRef.current;
