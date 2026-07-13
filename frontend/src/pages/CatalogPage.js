@@ -4,7 +4,7 @@ import axios from 'axios';
 import { Button } from '../components/ui/button';
 import { Input } from '../components/ui/input';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '../components/ui/dialog';
-import { Search, X, ShoppingCart, Package, Truck, Minus, Plus, ArrowRight, Heart, ChevronLeft, ChevronRight, Percent, Eye, Filter, MapPin, ArrowUpDown, Tag, Gift, Sparkles, Layers, Flame, LayoutGrid } from 'lucide-react';
+import { Search, X, ShoppingCart, Package, Truck, Minus, Plus, ArrowRight, Heart, ChevronLeft, ChevronRight, Percent, Eye, Filter, MapPin, ArrowUpDown, Tag, Gift, Sparkles, Layers, Flame, LayoutGrid, Handshake } from 'lucide-react';
 import { useCart } from '../context/CartContext';
 import { Skeleton } from '../components/ui/skeleton';
 import { useAuth } from '../context/AuthContext';
@@ -25,12 +25,15 @@ import NewProductsBanner from '../components/NewProductsBanner';
 const API = `${process.env.REACT_APP_BACKEND_URL}/api`;
 
 // Simple price display component
-const PriceDisplay = ({ price, individualPrice, formatPrice }) => {
+const PriceDisplay = ({ price, individualPrice, formatPrice, productId }) => {
   if (individualPrice != null) {
     return (
       <div className="flex flex-col items-end">
-        <span className="text-[10px] line-through text-slate-400">{formatPrice(price)} ₽</span>
-        <span className="text-sm font-bold text-emerald-600">{formatPrice(individualPrice)} ₽</span>
+        <span className="text-[10px] line-through text-slate-400" data-testid={productId ? `old-price-${productId}` : undefined}>{formatPrice(price)} ₽</span>
+        <span className="text-sm font-bold text-emerald-600" data-testid={productId ? `individual-price-${productId}` : undefined}>{formatPrice(individualPrice)} ₽</span>
+        <span className="inline-flex items-center gap-1 text-[9px] font-bold text-emerald-700 bg-emerald-50 border border-emerald-200 px-1 py-0.5 rounded mt-0.5 whitespace-nowrap" data-testid={productId ? `individual-badge-${productId}` : undefined}>
+          <Handshake className="w-2.5 h-2.5" /> Ваша цена
+        </span>
       </div>
     );
   }
@@ -206,9 +209,12 @@ const ProductCard = ({
       <div className="flex-shrink-0 flex items-stretch p-2">
         <div className="flex items-center gap-2 px-3 border-2 border-slate-300 rounded-xl bg-slate-50/80">
           {individualPrice != null ? (
-            <div className="flex flex-col items-center">
-              <span className="text-xs font-semibold line-through text-slate-500 decoration-rose-400 decoration-2">{formatPrice(product.price)} ₽</span>
-              <span className="text-sm font-bold text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded-lg">{formatPrice(individualPrice)} ₽</span>
+            <div className="flex flex-col items-center" data-testid={`individual-price-block-${product.id}`}>
+              <span className="text-xs font-semibold line-through text-slate-500 decoration-rose-400 decoration-2" data-testid={`old-price-${product.id}`}>{formatPrice(product.price)} ₽</span>
+              <span className="text-sm font-bold text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded-lg" data-testid={`individual-price-${product.id}`}>{formatPrice(individualPrice)} ₽</span>
+              <span className="inline-flex items-center gap-1 text-[9px] font-bold text-emerald-700 bg-emerald-50 border border-emerald-200 px-1.5 py-0.5 rounded mt-1 whitespace-nowrap" data-testid={`individual-badge-${product.id}`}>
+                <Handshake className="w-2.5 h-2.5" /> Ваша цена по договорённости
+              </span>
             </div>
           ) : discount ? (
             <div className="flex flex-col items-center" data-testid={`price-with-discount-${product.id}`}>
