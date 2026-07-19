@@ -509,6 +509,10 @@ async def create_product(data: ProductCreate, user=Depends(get_current_user)):
     if payload.get("discount_active") is True and payload.get("discount_type") in (None, ""):
         payload["discount_type"] = "percent"
 
+    # Initialize promo remaining stock from allocation
+    if payload.get("promo_allocated_stock") is not None and payload.get("promo_remaining_stock") is None:
+        payload["promo_remaining_stock"] = payload["promo_allocated_stock"]
+
     product = {
         "id": product_id,
         "created_at": now.isoformat(),
@@ -539,6 +543,10 @@ async def update_product(product_id: str, data: ProductUpdate, user=Depends(get_
     # If discount is being activated without a type, default to 'percent' (server-side safety net)
     if update_data.get("discount_active") is True and update_data.get("discount_type") in (None, ""):
         update_data["discount_type"] = "percent"
+
+    # When admin sets/changes promo allocation, reset the remaining counter to match
+    if "promo_allocated_stock" in update_data and "promo_remaining_stock" not in update_data:
+        update_data["promo_remaining_stock"] = update_data["promo_allocated_stock"]
 
     result = await db.products.update_one({"id": product_id}, {"$set": update_data})
     if result.matched_count == 0:

@@ -18,7 +18,8 @@ import { SearchDropdown } from '../components/SearchDropdown';
 import { trackClick } from '../utils/tracker';
 import DiscountRequestModal from '../components/DiscountRequestModal';
 import ProductRequestModal from '../components/ProductRequestModal';
-import { computeDiscount, computeNewBadge, formatDiscountBadge, formatUntilDate, getDeliveryBadge, getQuantityTiers, isProductAvailable } from '../utils/productHelpers';
+import { computeDiscount, computeNewBadge, formatDiscountBadge, formatUntilDate, getDeliveryBadge, getQuantityTiers, isProductAvailable, getPromoStock } from '../utils/productHelpers';
+import { PromoCountdown } from '../components/PromoCountdown';
 import DiscountPromoBanner from '../components/DiscountPromoBanner';
 import NewProductsBanner from '../components/NewProductsBanner';
 
@@ -199,6 +200,22 @@ const ProductCard = ({
               <Layers className="w-3 h-3 mr-0.5" />Опт. скидка от {minTierQty} шт.
             </span>
           )}
+          {discount && discount.until && (
+            <span className="inline-flex items-center h-[22px] text-[11px] font-semibold px-2.5 rounded-full border whitespace-nowrap bg-rose-50 text-rose-600 border-rose-200" data-testid={`card-countdown-${product.id}`}>
+              <PromoCountdown until={discount.until} variant="inline" />
+            </span>
+          )}
+          {(() => {
+            const ps = getPromoStock(product);
+            if (discount && ps && ps.remaining > 0) {
+              return (
+                <span className="inline-flex items-center h-[22px] text-[11px] font-semibold px-2.5 rounded-full border whitespace-nowrap bg-rose-100 text-rose-700 border-rose-300" data-testid={`card-promo-stock-${product.id}`}>
+                  Осталось {ps.remaining} шт.
+                </span>
+              );
+            }
+            return null;
+          })()}
           {isAlternative && product.cross_articles && (
             <span className="text-[11px] text-slate-400" style={{display:'none'}}>Кросс: {product.cross_articles}</span>
           )}

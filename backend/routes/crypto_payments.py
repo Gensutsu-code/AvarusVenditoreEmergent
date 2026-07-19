@@ -10,6 +10,7 @@ import asyncio
 from web3 import Web3
 
 from database import db, get_current_user
+from notify import notify_user
 
 router = APIRouter(tags=["crypto_payments"])
 
@@ -495,17 +496,7 @@ async def verify_crypto_payment(data: CryptoPaymentVerify, user=Depends(get_curr
         )
         
         # Create notification
-        notification = {
-            "id": str(uuid.uuid4()),
-            "user_id": user["id"],
-            "type": "order",
-            "title": "Оплата получена",
-            "message": f"Заказ #{payment['order_id'][:8]} оплачен криптовалютой ({token.upper()})",
-            "link": "/orders",
-            "read": False,
-            "created_at": now
-        }
-        await db.notifications.insert_one(notification)
+        await notify_user(user["id"], "order", "Оплата получена", f"Заказ #{payment['order_id'][:8]} оплачен криптовалютой ({token.upper()})", "/orders")
         
         return {
             "status": "completed",

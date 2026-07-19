@@ -32,6 +32,10 @@ class CryptoWalletSettings(BaseModel):
 
 
 async def create_notification(user_id: str, notif_type: str, title: str, message: str, link: str = None):
+    if user_id != "ADMIN":
+        settings = await db.settings.find_one({"type": "notification_settings"}, {"_id": 0})
+        if settings and not settings.get("client_notifications_enabled", True):
+            return
     notification = {
         "id": str(uuid.uuid4()),
         "user_id": user_id,

@@ -71,18 +71,8 @@ async def check_expired_orders_task():
                 )
                 
                 # Create notification for user
-                import uuid
-                notification = {
-                    "id": str(uuid.uuid4()),
-                    "user_id": order["user_id"],
-                    "type": "order",
-                    "title": f"Заказ #{order['id'][:8]} отменён",
-                    "message": "Заказ отменён автоматически: изменения не были подтверждены в течение 24 часов",
-                    "link": "/orders",
-                    "read": False,
-                    "created_at": now
-                }
-                await db.notifications.insert_one(notification)
+                from notify import notify_user
+                await notify_user(order["user_id"], "order", f"Заказ #{order['id'][:8]} отменён", "Заказ отменён автоматически: изменения не были подтверждены в течение 24 часов", "/orders")
                 
                 cancelled_count += 1
             
@@ -115,16 +105,8 @@ async def check_expired_orders_task():
                         "payment_due_date": None,
                     }}
                 )
-                await db.notifications.insert_one({
-                    "id": str(_uuid.uuid4()),
-                    "user_id": order["user_id"],
-                    "type": "order",
-                    "title": f"Заказ #{order['id'][:8]} отменён",
-                    "message": "Заказ отменён автоматически: оплата не поступила в установленный срок",
-                    "link": "/orders",
-                    "read": False,
-                    "created_at": now
-                })
+                from notify import notify_user
+                await notify_user(order["user_id"], "order", f"Заказ #{order['id'][:8]} отменён", "Заказ отменён автоматически: оплата не поступила в установленный срок", "/orders")
                 pay_cancelled += 1
             if pay_cancelled > 0:
                 logger.info(f"Auto-cancelled {pay_cancelled} unpaid card/crypto orders past due")

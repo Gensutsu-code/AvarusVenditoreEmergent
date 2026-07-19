@@ -28,6 +28,15 @@ def compute_promo_discount(product: dict, base_price: float, quantity: int = 1) 
     if not product or not product.get("discount_active"):
         return base_price, 0.0, False
 
+    # Promo limited stock exhausted?
+    alloc = product.get("promo_allocated_stock")
+    if alloc is not None and alloc > 0:
+        remaining = product.get("promo_remaining_stock")
+        if remaining is None:
+            remaining = alloc
+        if remaining <= 0:
+            return base_price, 0.0, False
+
     # Check expiry
     until = product.get("discount_until")
     if until:
@@ -326,6 +335,14 @@ async def create_order(data: OrderCreate, user=Depends(get_current_user)):
     payment_parts_out = None
     balance_to_deduct = 0.0
 
+    # Individual (account-wide) discount — applies ONLY when paying from balance (single method)
+    individual_discount_pct = float(user.get("individual_discount", 0) or 0)
+    individual_discount_amount = 0.0
+
+    # Pay delivery with bonus points (1 point = 1 ₽)
+    pay_delivery_with_points = bool(getattr(data, 'pay_delivery_with_points', False))
+    delivery_points_used = 0
+
     if parts:
         # MIXED PAYMENT: amounts are in base-goods terms; each method's adjustment
         # (discount/surcharge) is applied to its own part.
@@ -355,11 +372,12 @@ async def create_order(data: OrderCreate, user=Depends(get_current_user)):
             charged.append([m, round(a * (1 + adj / 100), 2)])
         goods_total = round(sum(c for _, c in charged), 2)
         delivery_fee = delivery_price if (delivery_enabled and goods_total < min_free) else 0
-        total = round(goods_total + delivery_fee, 2)
+        money_delivery = 0 if (pay_delivery_with_points and delivery_fee > 0) else delivery_fee
+        total = round(goods_total + money_delivery, 2)
         # Allocate delivery fee to a non-balance part (so the balance deduction stays exact)
-        if delivery_fee:
+        if money_delivery:
             idx = next((i for i in range(len(charged) - 1, -1, -1) if charged[i][0] != "balance"), len(charged) - 1)
-            charged[idx][1] = round(charged[idx][1] + delivery_fee, 2)
+            charged[idx][1] = round(charged[idx][1] + money_delivery, 2)
         amounts = {m: a for m, a in charged}
         balance_to_deduct = amounts.get("balance", 0)
         card_part = amounts.get("card", 0)
@@ -371,8 +389,13 @@ async def create_order(data: OrderCreate, user=Depends(get_current_user)):
     else:
         # SINGLE METHOD: base_subtotal already includes this method's adjustment
         goods_total = base_subtotal
+        # Individual discount stacks on top of promos/tiers, ONLY for balance prepayment
+        if pay_with_balance and individual_discount_pct > 0:
+            individual_discount_amount = round(goods_total * individual_discount_pct / 100, 2)
+            goods_total = max(0.0, round(goods_total - individual_discount_amount, 2))
         delivery_fee = delivery_price if (delivery_enabled and goods_total < min_free) else 0
-        total = round(goods_total + delivery_fee, 2)
+        money_delivery = 0 if (pay_delivery_with_points and delivery_fee > 0) else delivery_fee
+        total = round(goods_total + money_delivery, 2)
         ozon_base = goods_total
         if pay_with_balance:
             balance_to_deduct = total
@@ -380,6 +403,15 @@ async def create_order(data: OrderCreate, user=Depends(get_current_user)):
             card_part = total
         elif payment_method == "cash":
             cash_part = total
+
+    # Deduct bonus points for delivery if requested
+    if pay_delivery_with_points and delivery_fee > 0:
+        from routes.bonus import spend_bonus_points
+        need = int(round(delivery_fee))
+        ok = await spend_bonus_points(user["id"], need)
+        if not ok:
+            raise HTTPException(status_code=400, detail=f"Недостаточно баллов для оплаты доставки ({need} баллов)")
+        delivery_points_used = need
 
     # Ozon certificate: +500₽ per full 10 000₽ of (adjusted) goods
     # Ozon certificate: configurable reward per tranche of (adjusted) goods
@@ -484,6 +516,10 @@ async def create_order(data: OrderCreate, user=Depends(get_current_user)):
         "subtotal": round(subtotal, 2),
         "delivery_fee": delivery_fee,
         "payment_adjustment": payment_adjustment,
+        "individual_discount_percent": individual_discount_pct if (pay_with_balance and individual_discount_pct > 0) else 0,
+        "individual_discount_amount": individual_discount_amount,
+        "delivery_paid_with_points": bool(delivery_points_used > 0),
+        "delivery_points_used": delivery_points_used,
         "status": "pending",
         "full_name": data.full_name,
         "address": data.address,
@@ -513,6 +549,16 @@ async def create_order(data: OrderCreate, user=Depends(get_current_user)):
         )
     
     await db.orders.insert_one(order)
+
+    # Decrement promo limited stock for items that used an active promo
+    for it in items:
+        if it.get("promo_active"):
+            prod = products_map.get(it["product_id"])
+            if prod and (prod.get("promo_allocated_stock") or 0) > 0:
+                await db.products.update_one(
+                    {"id": it["product_id"]},
+                    {"$inc": {"promo_remaining_stock": -it["quantity"]}}
+                )
 
     # Individual (requested) prices are one-time: deactivate those consumed by this order
     if used_individual_price_product_ids:

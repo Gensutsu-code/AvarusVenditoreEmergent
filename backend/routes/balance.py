@@ -6,6 +6,7 @@ from datetime import datetime, timezone
 import uuid
 
 from database import db, get_current_user
+from notify import notify_user
 
 router = APIRouter(tags=["balance"])
 
@@ -340,16 +341,7 @@ async def admin_credit_balance(user_id: str, body: AdminBalanceAdjust, user=Depe
     })
 
     # Notify user
-    await db.notifications.insert_one({
-        "id": str(uuid.uuid4()),
-        "user_id": user_id,
-        "type": "balance",
-        "title": "Пополнение баланса",
-        "message": f"На ваш баланс зачислено {body.amount:.2f} ₽. {body.reason}".strip(),
-        "link": "/account",
-        "read": False,
-        "created_at": now,
-    })
+    await notify_user(user_id, "balance", "Пополнение баланса", f"На ваш баланс зачислено {body.amount:.2f} ₽. {body.reason}".strip(), "/account")
 
     return {
         "success": True,
@@ -392,16 +384,7 @@ async def admin_debit_balance(user_id: str, body: AdminBalanceAdjust, user=Depen
     })
 
     # Notify user
-    await db.notifications.insert_one({
-        "id": str(uuid.uuid4()),
-        "user_id": user_id,
-        "type": "balance",
-        "title": "Списание с баланса",
-        "message": f"С вашего баланса списано {body.amount:.2f} ₽. {body.reason}".strip(),
-        "link": "/account",
-        "read": False,
-        "created_at": now,
-    })
+    await notify_user(user_id, "balance", "Списание с баланса", f"С вашего баланса списано {body.amount:.2f} ₽. {body.reason}".strip(), "/account")
 
     return {
         "success": True,

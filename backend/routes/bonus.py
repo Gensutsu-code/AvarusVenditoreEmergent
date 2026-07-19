@@ -7,6 +7,7 @@ import uuid
 
 from database import db, get_current_user
 from routes.action_logs import log_action
+from notify import notify_user
 
 router = APIRouter(tags=["bonus"])
 
@@ -173,6 +174,56 @@ async def accrue_order_bonus(order: dict):
     accrued = await _accrue_points(user_id, delta)
     await db.orders.update_one({"id": order["id"]}, {"$set": {"bonus_accrued_base": delivered_eligible}})
     return accrued
+
+
+async def spend_bonus_points(user_id: str, amount: int) -> bool:
+    """Deduct `amount` points from the user's enabled programs, highest balance first.
+    Returns True if fully deducted, False if the user has insufficient total points."""
+    if amount <= 0:
+        return True
+    programs = await get_all_bonus_programs()
+    balances = []
+    total = 0
+    for p in programs:
+        if not p.get("enabled"):
+            continue
+        prog = await get_user_program_progress(user_id, p["id"])
+        bal = prog.get("current_amount", 0) or 0
+        balances.append([p["id"], bal])
+        total += bal
+    if total < amount:
+        return False
+    balances.sort(key=lambda x: -x[1])
+    remaining = amount
+    for pid, bal in balances:
+        if remaining <= 0:
+            break
+        deduct = min(bal, remaining)
+        if deduct > 0:
+            await db.bonus_progress.update_one(
+                {"user_id": user_id, "program_id": pid},
+                {"$inc": {"current_amount": -deduct}}
+            )
+            remaining -= deduct
+    return True
+
+
+async def get_total_bonus_points(user_id: str) -> int:
+    """Total bonus points across all enabled programs for a user."""
+    programs = await get_all_bonus_programs()
+    total = 0
+    for p in programs:
+        if not p.get("enabled"):
+            continue
+        prog = await get_user_program_progress(user_id, p["id"])
+        total += prog.get("current_amount", 0) or 0
+    return int(round(total))
+
+
+@router.get("/bonus/my-points")
+async def my_total_points(user=Depends(get_current_user)):
+    """Total bonus points across enabled programs (used for delivery-with-points option)."""
+    return {"total_points": await get_total_bonus_points(user["id"])}
 
 
 async def update_bonus_on_order_delivered(user_id: str, order_total: float, order_items: list = None, delivery_fee: float = 0, order_id: str = None):
@@ -725,16 +776,7 @@ async def admin_add_points(program_id: str, user_id: str, body: PointsAction, us
     target_name = (target.get("name") or target.get("email", "")) if target else ""
 
     # Notify user
-    await db.notifications.insert_one({
-        "id": str(uuid.uuid4()),
-        "user_id": user_id,
-        "type": "bonus_points",
-        "title": "Начисление баллов",
-        "message": f"Вам начислено {body.amount:.0f} баллов. {body.reason}".strip(),
-        "link": "/bonus",
-        "read": False,
-        "created_at": datetime.now(timezone.utc).isoformat()
-    })
+    await notify_user(user_id, "bonus_points", "Начисление баллов", f"Вам начислено {body.amount:.0f} баллов. {body.reason}".strip(), "/bonus")
 
     # Log for revert
     await log_action(
@@ -776,16 +818,7 @@ async def admin_remove_points(program_id: str, user_id: str, body: PointsAction,
     target = await db.users.find_one({"id": user_id}, {"_id": 0, "name": 1, "email": 1})
     target_name = (target.get("name") or target.get("email", "")) if target else ""
 
-    await db.notifications.insert_one({
-        "id": str(uuid.uuid4()),
-        "user_id": user_id,
-        "type": "bonus_points",
-        "title": "Списание баллов",
-        "message": f"Списано {body.amount:.0f} баллов. {body.reason}".strip(),
-        "link": "/bonus",
-        "read": False,
-        "created_at": datetime.now(timezone.utc).isoformat()
-    })
+    await notify_user(user_id, "bonus_points", "Списание баллов", f"Списано {body.amount:.0f} баллов. {body.reason}".strip(), "/bonus")
 
     # Log for revert
     await log_action(

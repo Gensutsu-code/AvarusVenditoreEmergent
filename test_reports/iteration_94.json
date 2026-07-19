@@ -1,0 +1,34 @@
+{
+  "summary": "Iteration 94 verification for 6 tasks (backend Tasks 1-4 via pytest, frontend Tasks 5-6 via Playwright). All 8 backend pytest cases PASSED (100%) and all frontend UI assertions PASSED (100%). Live-updating promo countdowns render on product page and catalog cards; admin products list correctly distinguishes active vs. expired discount badges.",
+  "backend_issues": {"critical": [], "minor": []},
+  "frontend_issues": {"ui_bugs": [], "integration_issues": [], "design_issues": []},
+  "test_results": {
+    "TASK1_notification_toggle": "PASS (4/4). With client_notifications_enabled=false: order creation produces NO client notification (unread_count unchanged) and admin balance credit also produces NO client notification. With toggle=true: order and admin balance credit BOTH produce client notifications (unread_count increased). Toggle correctly restored after each test.",
+    "TASK2_individual_discount": "PASS (2/2). Order created with pay_with_balance=true and payment_method='balance' for a 1000 ₽ item: order.individual_discount_percent=10, order.individual_discount_amount=100.0. Order with payment_method='cash' (no balance): order.individual_discount_percent=0 and individual_discount_amount=0.",
+    "TASK3_pay_delivery_with_points": "PASS (2/2). Delivery is ENABLED in env (delivery_price=500, min_free=5000). Order with pay_delivery_with_points=true and cart total 100 ₽ (< min_free) → 200 OK; delivery_paid_with_points=true; delivery_points_used=500; user's bonus points decreased by 500; order.total excludes the 500₽ delivery money. Baseline order without the flag has delivery_points_used=0 and delivery_paid_with_points=false.",
+    "TASK4_promo_limited_stock": "PASS. Product created with promo_allocated_stock=3 initializes promo_remaining_stock=3 (verified via GET /products/{id}). Order qty=2 → remaining=1 and item.price shows promo (720 ₽ with 20%-off + cash-adjustment 10%; less than base 1000). Second order qty=2 → still applies promo (gate is remaining>0 not qty check) and remaining ≤0. Third order → promo NOT applied, item.price returns to non-promo level (~1.25x promo price).",
+    "TASK5_live_countdown": "PASS. /product/{active_id} → data-testid='product-promo-countdown' present with LIVE ticking text ('06дн:23час:59мин:18сек' → 'мин:16сек' after 2 s). /product/{expired_id} → countdown ABSENT. /catalog?search=... row card shows data-testid='card-countdown-{id}' with LIVE tick ('6 дн.23:59:10' → ':08'); absent on expired product card.",
+    "TASK6_admin_expired_vs_active_badges": "PASS. In /admin/products list, active-promo product shows rose 'Скидка' badge with data-testid='admin-discount-active-{id}'; expired-promo product shows grey 'Скидка истекла' badge with data-testid='admin-discount-expired-{id}'. Cross-check confirms mutually exclusive (no active-testid on expired card and vice versa)."
+  },
+  "test_report_links": [
+    "/app/backend/tests/test_iter94_tasks.py",
+    "/app/test_reports/pytest/iter94_results.xml",
+    "/app/test_reports/screenshots/iter94_admin_products.png",
+    "/app/test_reports/screenshots/iter94_product_active.png",
+    "/app/test_reports/screenshots/iter94_catalog_active.png"
+  ],
+  "action_items": [],
+  "critical_code_review_comments": [
+    "compute_promo_discount treats promo_remaining_stock as a boolean gate (>0 means apply, no per-item qty check). Product with allocated=3 sells 4 units at promo (2 orders of qty=2 each) before promo cuts off — remaining_stock can go negative. Consider clamping decrement to remaining or refusing to apply promo when qty > remaining, if the intent is strict allocation. Current tests confirm this behavior.",
+    "CartItemResponse (models.py:206) strips promo_active/promo_amount/promo_discount_type/promo_label from order responses even though these fields are stored on order.items. Clients relying on order responses can't easily know if a line was promo-discounted (only via price comparison). Consider adding these to CartItemResponse.",
+    "orders.py has two notification-check paths — orders.py::create_notification and notify.py::notify_user — both consulting the same DB key. Small DRY issue, could be unified around notify_user."
+  ],
+  "updated_files": ["/app/backend/tests/test_iter94_tasks.py"],
+  "success_rate": {"backend": "100% (8/8)", "frontend": "100% (Tasks 5 & 6 all assertions passing)"},
+  "test_credentials": "admin@avarus.ru/admin, user@demo.com/demo123 (as per review request)",
+  "seed_data_creation": "Test created ephemeral products (TEST_* prefix and UI_TEST_*) — all deleted at end of tests. Notification settings restored to client_notifications_enabled=true. Client balance credited then debited by test — net zero. Client bonus points reduced by 500 (from pay_delivery_with_points test — irreversible unless admin refunds).",
+  "retest_needed": false,
+  "main_agent_can_self_test": true,
+  "context_for_next_testing_agent": "Reusable regression suite: /app/backend/tests/test_iter94_tasks.py (8 tests). Run with `REACT_APP_BACKEND_URL=<url> pytest backend/tests/test_iter94_tasks.py -v`. Frontend testing uses ACTIVE_ID/EXPIRED_ID products which get created & deleted inline. Delivery is currently enabled globally (delivery_price=500, min_free=5000); demo user had ~365k bonus points which is more than enough to cover 500-point delivery test. Note: individual_discount for user@demo.com is preseeded to 10% (per problem statement) and remains 10% (test does not modify).",
+  "rca_of_the_issue": "N/A — all 6 tasks confirmed working end-to-end."
+}

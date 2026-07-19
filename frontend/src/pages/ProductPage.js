@@ -15,7 +15,8 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { trackClick } from '../utils/tracker';
 import DiscountRequestModal from '../components/DiscountRequestModal';
 import ProductRequestModal from '../components/ProductRequestModal';
-import { computeDiscount, formatDiscountBadge, formatUntilDate, getQuantityTiers, getActiveTier, isProductAvailable } from '../utils/productHelpers';
+import { computeDiscount, formatDiscountBadge, formatUntilDate, getQuantityTiers, getActiveTier, isProductAvailable, getPromoStock } from '../utils/productHelpers';
+import { PromoCountdown } from '../components/PromoCountdown';
 
 const API = `${process.env.REACT_APP_BACKEND_URL}/api`;
 
@@ -379,9 +380,33 @@ export default function ProductPage() {
                           {discount.description && (
                             <p className="text-xs text-slate-500 mt-1">{discount.description}</p>
                           )}
-                          {until && (
-                            <p className="text-[11px] text-slate-400 mt-1">Акция до {until}</p>
-                          )}
+                          {discount.until && (() => {
+                            const promoStock = getPromoStock(product);
+                            return (
+                              <div className="mt-2 flex flex-col gap-2">
+                                <div className="flex items-center gap-2 flex-wrap">
+                                  <span className="text-xs text-slate-500">До конца акции:</span>
+                                  <PromoCountdown until={discount.until} variant="badge" testid="product-promo-countdown" />
+                                </div>
+                                {until && (
+                                  <p className="text-[11px] text-slate-400">Акция до {until}</p>
+                                )}
+                                {promoStock && (
+                                  <div data-testid="product-promo-stock" className="text-xs">
+                                    {promoStock.remaining > 0 ? (
+                                      <span className="inline-flex items-center gap-1 text-rose-600 font-semibold bg-rose-50 border border-rose-200 px-2 py-0.5 rounded-md">
+                                        По акции осталось: {promoStock.remaining} из {promoStock.allocated} шт.
+                                      </span>
+                                    ) : (
+                                      <span className="inline-flex items-center gap-1 text-slate-500 font-semibold bg-slate-100 border border-slate-200 px-2 py-0.5 rounded-md">
+                                        Акционный запас распродан
+                                      </span>
+                                    )}
+                                  </div>
+                                )}
+                              </div>
+                            );
+                          })()}
                         </div>
                       );
                     }

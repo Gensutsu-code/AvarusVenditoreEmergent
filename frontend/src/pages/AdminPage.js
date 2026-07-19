@@ -3178,6 +3178,27 @@ export default function AdminPage() {
                       />
                       <p className="text-[11px] text-slate-400 mt-1">После этой даты скидка автоматически отключается</p>
                     </div>
+                    <div>
+                      <Label className="text-xs font-semibold uppercase text-rose-600">Лимит по акции (шт.)</Label>
+                      <Input
+                        type="number"
+                        min="0"
+                        value={editingProduct.promo_allocated_stock ?? ''}
+                        onChange={(e) => {
+                          const raw = e.target.value;
+                          setEditingProduct({ ...editingProduct, promo_allocated_stock: raw === '' ? null : (parseInt(raw, 10) || 0) });
+                        }}
+                        placeholder="Оставьте пустым — без лимита"
+                        className="mt-1.5 border-slate-200 focus:border-rose-500"
+                        data-testid="product-promo-allocated-stock"
+                      />
+                      <p className="text-[11px] text-slate-400 mt-1">
+                        Количество единиц по акционной цене. При сохранении остаток сбрасывается на это значение.
+                        {editingProduct.id && editingProduct.promo_remaining_stock != null && (
+                          <span className="text-rose-500 font-semibold"> Сейчас осталось: {editingProduct.promo_remaining_stock} шт.</span>
+                        )}
+                      </p>
+                    </div>
                     {/* Preview */}
                     {editingProduct.price > 0 && editingProduct.discount_value > 0 && (
                       <div className="p-3 bg-white rounded-lg border border-rose-200">

@@ -14,6 +14,9 @@ export function isProductAvailable(p) {
  */
 export function computeDiscount(product, quantity = 1) {
   if (!product || !product.discount_active) return null;
+  // Promo limited-stock exhausted?
+  const ps = getPromoStock(product);
+  if (ps && ps.soldOut) return null;
   // Check expiry
   if (product.discount_until) {
     const until = new Date(product.discount_until);
@@ -77,6 +80,8 @@ export function computeDiscount(product, quantity = 1) {
  */
 export function getQuantityTiers(product) {
   if (!product || !product.discount_active) return [];
+  const ps = getPromoStock(product);
+  if (ps && ps.soldOut) return [];
   if (product.discount_until) {
     const until = new Date(product.discount_until);
     if (isNaN(until.getTime()) || until.getTime() <= Date.now()) return [];
@@ -191,6 +196,44 @@ export function computeNewBadge(product) {
     return { active: true, until: product.new_until };
   }
   return { active: true, until: null };
+}
+
+/**
+ * Promo limited-stock info: { allocated, remaining, soldOut } or null when no allocation set.
+ */
+export function getPromoStock(product) {
+  if (!product) return null;
+  const alloc = Number(product.promo_allocated_stock);
+  if (!alloc || alloc <= 0) return null;
+  let remaining = product.promo_remaining_stock;
+  remaining = remaining == null ? alloc : Number(remaining);
+  return { allocated: alloc, remaining: Math.max(0, remaining), soldOut: remaining <= 0 };
+}
+
+// Normalize a promo end date/datetime to a timestamp (date-only → end of day).
+function promoUntilMs(until) {
+  if (!until) return NaN;
+  let s = String(until);
+  if (!s.includes('T')) s = s + 'T23:59:59';
+  return new Date(s).getTime();
+}
+
+/**
+ * Live countdown to a promo end time. Returns { expired, days, hours, minutes, seconds }
+ * or null when `until` is falsy/invalid.
+ */
+export function formatCountdown(until) {
+  const end = promoUntilMs(until);
+  if (isNaN(end)) return null;
+  const diff = end - Date.now();
+  if (diff <= 0) return { expired: true, days: 0, hours: 0, minutes: 0, seconds: 0 };
+  return {
+    expired: false,
+    days: Math.floor(diff / 86400000),
+    hours: Math.floor((diff % 86400000) / 3600000),
+    minutes: Math.floor((diff % 3600000) / 60000),
+    seconds: Math.floor((diff % 60000) / 1000),
+  };
 }
 
 /**

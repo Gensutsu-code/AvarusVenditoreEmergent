@@ -102,6 +102,9 @@ class ProductCreate(BaseModel):
     discount_description: Optional[str] = ""
     discount_until: Optional[str] = None  # ISO date string
     discount_tiers: Optional[List[Dict[str, Any]]] = None  # [{min_qty, type, value}]
+    # Promo limited stock allocation
+    promo_allocated_stock: Optional[int] = None
+    promo_remaining_stock: Optional[int] = None
     # "New" badge
     is_new: Optional[bool] = True  # auto-true on creation
     new_until: Optional[str] = None  # ISO date, defaults to created_at + 14d
@@ -131,6 +134,8 @@ class ProductUpdate(BaseModel):
     discount_description: Optional[str] = None
     discount_until: Optional[str] = None
     discount_tiers: Optional[List[Dict[str, Any]]] = None
+    promo_allocated_stock: Optional[int] = None
+    promo_remaining_stock: Optional[int] = None
     is_new: Optional[bool] = None
     new_until: Optional[str] = None
 
@@ -161,6 +166,8 @@ class ProductResponse(BaseModel):
     discount_description: Optional[str] = ""
     discount_until: Optional[str] = None
     discount_tiers: Optional[List[Dict[str, Any]]] = None
+    promo_allocated_stock: Optional[int] = None
+    promo_remaining_stock: Optional[int] = None
     is_new: Optional[bool] = False
     new_until: Optional[str] = None
     created_at: Optional[str] = None
@@ -219,6 +226,7 @@ class OrderCreate(BaseModel):
     pay_with_balance: Optional[bool] = False
     pay_later: Optional[bool] = False  # deferred card/crypto: place order now, pay within admin window
     payment_parts: Optional[List[dict]] = None  # mixed payment: [{method, amount}], max 2, no deferral
+    pay_delivery_with_points: Optional[bool] = False  # cover delivery fee with bonus points
 
 class OrderItemUpdate(BaseModel):
     product_id: str
@@ -292,6 +300,10 @@ class OrderResponse(BaseModel):
     payment_parts: Optional[List[dict]] = None
     ozon_certificate: Optional[float] = None
     ozon_certificate_issued: Optional[bool] = None
+    individual_discount_percent: Optional[float] = None
+    individual_discount_amount: Optional[float] = None
+    delivery_paid_with_points: Optional[bool] = None
+    delivery_points_used: Optional[float] = None
 
 # ==================== FAVORITES ====================
 

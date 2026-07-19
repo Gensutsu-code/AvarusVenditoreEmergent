@@ -59,6 +59,8 @@ export default function CheckoutPage() {
   const [mix2Method, setMix2Method] = useState('card');
   const [prepaymentSettings, setPrepaymentSettings] = useState({ prepayment_enabled: true });
   const [deliverySettings, setDeliverySettings] = useState({ min_free_delivery: 5000, delivery_price: 500, delivery_enabled: true });
+  const [bonusPoints, setBonusPoints] = useState(0);
+  const [payDeliveryWithPoints, setPayDeliveryWithPoints] = useState(false);
 
   const isPaymentMethodEnabled = (method) => paymentSettings[`${method}_enabled`] !== false;
 
@@ -67,6 +69,7 @@ export default function CheckoutPage() {
       fetchLastShipping();
       fetchUserBalance();
       axios.get(`${API}/credit/my`).then(res => setCreditInfo(res.data)).catch(() => {});
+      axios.get(`${API}/bonus/my-points`).then(res => setBonusPoints(res.data.total_points || 0)).catch(() => {});
     }
     axios.get(`${API}/payment-settings`).then(res => {
       setPaymentSettings(res.data);
@@ -160,7 +163,8 @@ export default function CheckoutPage() {
       const res = await axios.post(`${API}/orders`, { 
         ...form, 
         payment_method: payWithDeferral ? 'deferral' : (payWithBalance ? 'balance' : paymentMethod),
-        pay_with_balance: payWithBalance
+        pay_with_balance: payWithBalance,
+        pay_delivery_with_points: deliveryPaidWithPoints
       });
       const newOrderId = res.data.id;
       setOrderId(newOrderId);
@@ -209,7 +213,8 @@ export default function CheckoutPage() {
       const res = await axios.post(`${API}/orders`, { 
         ...form, 
         payment_method: 'crypto',
-        crypto_tx_hash: txHash
+        crypto_tx_hash: txHash,
+        pay_delivery_with_points: deliveryPaidWithPoints
       });
       setOrderId(res.data.id);
       await fetchCart();
@@ -778,15 +783,40 @@ export default function CheckoutPage() {
                   </div>
                 </>
               )}
+              {individualDiscountAmount > 0 && (
+                <div className="flex justify-between text-sm font-medium text-emerald-600" data-testid="checkout-individual-discount-line">
+                  <span>Индивидуальная скидка ({individualDiscountPct}%):</span>
+                  <span>-{formatPrice(individualDiscountAmount)} ₽</span>
+                </div>
+              )}
               {deliverySettings.delivery_enabled && (
                 <div className="flex justify-between text-sm" data-testid="delivery-fee-row">
                   <span className="text-slate-600">Доставка:</span>
                   {isFreeDelivery ? (
                     <span className="text-emerald-600 font-medium">Бесплатно</span>
+                  ) : deliveryPaidWithPoints ? (
+                    <span className="text-violet-600 font-medium" data-testid="delivery-paid-points">−{formatPrice(deliveryFee)} ₽ (баллами)</span>
                   ) : (
                     <span className="text-slate-700 font-medium">{formatPrice(deliveryFee)} ₽</span>
                   )}
                 </div>
+              )}
+              {canPayDeliveryWithPoints && (
+                <label className="flex items-center justify-between gap-2 p-2.5 rounded-lg bg-violet-50 border border-violet-200 cursor-pointer" data-testid="pay-delivery-points-toggle">
+                  <span className="text-xs font-medium text-violet-700 flex items-center gap-1.5">
+                    <Sparkles className="w-3.5 h-3.5" />
+                    Оплатить доставку баллами ({Math.round(deliveryFee)} б.)
+                  </span>
+                  <input
+                    type="checkbox"
+                    checked={payDeliveryWithPoints}
+                    onChange={(e) => setPayDeliveryWithPoints(e.target.checked)}
+                    className="w-4 h-4 accent-violet-500 rounded"
+                  />
+                </label>
+              )}
+              {canPayDeliveryWithPoints && (
+                <p className="text-[11px] text-slate-400" data-testid="bonus-points-balance">Доступно баллов: {formatPrice(bonusPoints)}</p>
               )}
               {!isFreeDelivery && deliverySettings.delivery_enabled && (
                 <p className="text-xs text-slate-400">

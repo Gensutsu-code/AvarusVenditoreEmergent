@@ -10,6 +10,7 @@ import {
 } from 'lucide-react';
 import { toast } from 'sonner';
 import axios from 'axios';
+import { computeDiscount } from '../utils/productHelpers';
 
 const API = process.env.REACT_APP_BACKEND_URL + '/api';
 
@@ -297,7 +298,11 @@ export default function AdminProductsPage() {
                         {p.is_original && <span className="text-[10px] px-1.5 py-0.5 rounded bg-blue-50 text-blue-600">Оригинал</span>}
                         {p.has_guarantee && <span className="text-[10px] px-1.5 py-0.5 rounded bg-emerald-50 text-emerald-600">Гарантия</span>}
                         {p.is_new && <span className="text-[10px] px-1.5 py-0.5 rounded bg-amber-50 text-amber-600">Новинка</span>}
-                        {p.discount_active && <span className="text-[10px] px-1.5 py-0.5 rounded bg-rose-50 text-rose-600">Скидка</span>}
+                        {p.discount_active && (
+                          computeDiscount(p)
+                            ? <span className="text-[10px] px-1.5 py-0.5 rounded bg-rose-50 text-rose-600" data-testid={`admin-discount-active-${p.id}`}>Скидка</span>
+                            : <span className="text-[10px] px-1.5 py-0.5 rounded bg-slate-100 text-slate-400" data-testid={`admin-discount-expired-${p.id}`}>Скидка истекла</span>
+                        )}
                       </div>
                     </div>
                     <div className="text-right hidden sm:block">
