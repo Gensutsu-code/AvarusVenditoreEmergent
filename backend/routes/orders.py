@@ -514,6 +514,13 @@ async def create_order(data: OrderCreate, user=Depends(get_current_user)):
     
     await db.orders.insert_one(order)
 
+    # Individual (requested) prices are one-time: deactivate those consumed by this order
+    if used_individual_price_product_ids:
+        await db.individual_prices.update_many(
+            {"user_id": user["id"], "product_id": {"$in": used_individual_price_product_ids}, "active": True},
+            {"$set": {"active": False, "used_in_order_id": order_id}},
+        )
+
     # Record deferral debt entry
     if is_deferral:
         await db.deferrals.insert_one({
@@ -1385,6 +1392,12 @@ async def fulfill_order_partial(order_id: str, payload: dict, user: dict = Depen
         {"id": order_id},
         {"$set": set_data},
     )
+
+    # Accrue bonus points for the delivered (fulfilled) amount — idempotent, so partial
+    # then full fulfillment accrues the increment each time without double-counting.
+    from routes.bonus import accrue_order_bonus
+    merged_order = {**order, "items": updated_items, "status": new_status}
+    await accrue_order_bonus(merged_order)
 
     # Notify user
     user_id = order.get("user_id")

@@ -414,13 +414,10 @@ async def update_admin_order(order_id: str, data: AdminOrderUpdate, user=Depends
         new_status = update_data["status"]
         old_status = original_order.get("status")
         
-        # Accrue bonus points when order is completed
+        # Accrue bonus points when order is completed (idempotent, based on delivered items)
         if new_status == "completed":
             await update_bonus_on_order_delivered(
-                original_order["user_id"],
-                update_data.get("total", original_order.get("total", 0)),
-                update_data.get("items", original_order.get("items", [])),
-                delivery_fee=update_data.get("delivery_fee", original_order.get("delivery_fee", 0)),
+                original_order["user_id"], 0, order_id=order_id,
             )
         
         # Restore stock when order is cancelled

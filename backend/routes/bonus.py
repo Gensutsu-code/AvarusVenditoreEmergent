@@ -79,63 +79,41 @@ async def _calc_bonus_eligible_total(order_items: list, fallback_total: float) -
     return eligible if has_any or eligible > 0 else fallback_total
 
 
-async def update_bonus_on_order_delivered(user_id: str, order_total: float, order_items: list = None, delivery_fee: float = 0):
-    """Called when order status changes to 'completed'.
-    Bonus is accrued on the FINAL order total after all discounts (the amount of the
-    completed order), excluding delivery, and restricted to bonus-eligible items.
-    Accrued points are whole numbers."""
+async def _accrue_points(user_id: str, eligible_total: float):
+    """Accrue whole bonus points for the given eligible amount across all enabled
+    programs (level cashback applied). Returns total points accrued."""
     from notify import notify_user
+
+    if eligible_total <= 0:
+        return 0
 
     programs = await get_all_bonus_programs()
 
     current_year = datetime.now(timezone.utc).year
     year_start = f"{current_year}-01-01T00:00:00"
     year_end = f"{current_year}-12-31T23:59:59"
-
     yearly_orders = await db.orders.find({
         "user_id": user_id,
-        "status": "completed",
+        "status": {"$in": ["completed", "partially_fulfilled"]},
         "created_at": {"$gte": year_start, "$lte": year_end}
     }, {"_id": 0, "total": 1}).to_list(1000)
-
     yearly_total = sum(order.get("total", 0) for order in yearly_orders)
 
-    # Accrual base = final order total after all discounts, minus delivery, scaled by the
-    # share of bonus-eligible items (computed from the completed order's final item prices).
-    items = order_items or []
-    all_sum = 0.0
-    elig_sum = 0.0
-    for item in items:
-        line = (item.get("price", 0) or 0) * (item.get("quantity", 0) or 0)
-        all_sum += line
-        pid = item.get("product_id")
-        product = await db.products.find_one({"id": pid}, {"_id": 0, "bonus_eligible": 1}) if pid else None
-        if product is None or product.get("bonus_eligible", True):
-            elig_sum += line
-    eligible_fraction = (elig_sum / all_sum) if all_sum > 0 else 1.0
-    goods_final = order_total - (delivery_fee or 0)
-    if goods_final < 0:
-        goods_final = order_total
-    eligible_total = round(goods_final * eligible_fraction, 2)
-
+    total_accrued = 0
     for program in programs:
         if not program.get("enabled"):
             continue
-
         program_id = program["id"]
         progress = await get_user_program_progress(user_id, program_id)
 
         contribution_type = program.get("contribution_type", "order_total")
         contribution_percent = program.get("contribution_percent", 100)
-
         if contribution_type == "percentage":
             base_amount = eligible_total * (contribution_percent / 100)
         else:
             base_amount = eligible_total
 
-        levels = program.get("levels", [])
-        levels_sorted = sorted(levels, key=lambda x: x.get("min_points", 0))
-
+        levels_sorted = sorted(program.get("levels", []), key=lambda x: x.get("min_points", 0))
         current_level = None
         for level in levels_sorted:
             if yearly_total >= level.get("min_points", 0):
@@ -146,26 +124,66 @@ async def update_bonus_on_order_delivered(user_id: str, order_total: float, orde
         else:
             bonus_points = round(base_amount)
 
-        new_points = progress.get("current_amount", 0) + bonus_points
+        if bonus_points <= 0:
+            continue
 
+        new_points = progress.get("current_amount", 0) + bonus_points
         await db.bonus_progress.update_one(
             {"user_id": user_id, "program_id": program_id},
             {"$set": {"current_amount": new_points}},
             upsert=True
         )
+        total_accrued += bonus_points
+        base_str = f"{int(round(eligible_total)):,}".replace(",", "\u00a0")
+        await notify_user(
+            user_id, "bonus", "Начисление баллов",
+            f"Вам начислено {int(bonus_points)} баллов с суммы {base_str} ₽ (после скидок). Баланс: {int(new_points)} баллов",
+            "/bonus"
+        )
+    return total_accrued
 
-        # Notify user about bonus accrual
-        if bonus_points > 0:
-            base_str = f"{int(round(eligible_total)):,}".replace(",", "\u00a0")
-            await notify_user(
-                user_id,
-                "bonus",
-                "Начисление баллов",
-                f"Вам начислено {int(bonus_points)} баллов с суммы {base_str} ₽ (после скидок). Баланс: {int(new_points)} баллов",
-                "/bonus"
-            )
 
-    return {"updated": True}
+async def accrue_order_bonus(order: dict):
+    """Idempotently accrue bonus for an order based on its ACTUALLY DELIVERED eligible
+    amount. Delivered qty = quantity_fulfilled when present (partial/full fulfillment),
+    else full quantity. Uses final item prices (after all discounts). Only the increment
+    since the last accrual is added (tracked via order['bonus_accrued_base']), so partial
+    then full fulfillment accrues correctly and never double-counts."""
+    user_id = order.get("user_id")
+    items = order.get("items", [])
+
+    delivered_eligible = 0.0
+    for it in items:
+        if "quantity_fulfilled" in it:
+            dq = int(it.get("quantity_fulfilled", 0) or 0)
+        else:
+            dq = int(it.get("quantity", 0) or 0)
+        line = (it.get("price", 0) or 0) * dq
+        pid = it.get("product_id")
+        product = await db.products.find_one({"id": pid}, {"_id": 0, "bonus_eligible": 1}) if pid else None
+        if product is None or product.get("bonus_eligible", True):
+            delivered_eligible += line
+    delivered_eligible = round(delivered_eligible, 2)
+
+    already = order.get("bonus_accrued_base", 0) or 0
+    delta = round(delivered_eligible - already, 2)
+    if delta <= 0:
+        return 0
+
+    accrued = await _accrue_points(user_id, delta)
+    await db.orders.update_one({"id": order["id"]}, {"$set": {"bonus_accrued_base": delivered_eligible}})
+    return accrued
+
+
+async def update_bonus_on_order_delivered(user_id: str, order_total: float, order_items: list = None, delivery_fee: float = 0, order_id: str = None):
+    """Backward-compatible wrapper: accrue bonus for a completed order based on delivered
+    eligible amount (idempotent via accrue_order_bonus)."""
+    order = None
+    if order_id:
+        order = await db.orders.find_one({"id": order_id}, {"_id": 0})
+    if not order:
+        order = {"id": order_id, "user_id": user_id, "items": order_items or [], "bonus_accrued_base": 0}
+    return await accrue_order_bonus(order)
 
 
 @router.get("/bonus/cart-preview")
