@@ -172,6 +172,9 @@ E-commerce platform for truck spare parts with a comprehensive admin panel. Russ
 - OrderResponse now exposes is_deferral, deferral_due_date, payment_status, ozon_certificate(_issued) — /orders can show deferral context without extra fetch.
 - Decision: kept native date inputs on finance tab (admin uses native type="date" everywhere — shadcn DatePicker would reduce consistency). Skipped fin testid rename (test-internal, no UX impact).
 
+## Completed (Session 2026-06 — iter 94)
+6 задач (см. CHANGELOG для деталей): (1) уведомления уважают глобальный тумблер [notify_user], (2) индивидуальная скидка только при оплате с баланса (стакается), (3) оплата доставки бонусными баллами, (4) лимит стока по акции (promo_allocated/remaining_stock), (5) живой таймер HH:MM:SS для акций, (6) бейдж «Скидка истекла» в админ-списке. Проверено testing_agent iter_94 — backend 8/8, frontend 100%.
+
 ## Prioritized Backlog
 
 ### P1 (Important)
