@@ -209,11 +209,18 @@ class CartItemResponse(BaseModel):
     article: str
     manufacturer: Optional[str] = None
     price: float
+    original_price: Optional[float] = None
     quantity: int
     quantity_fulfilled: Optional[int] = 0
     image_url: Optional[str] = None
     warehouse: Optional[str] = None
     delivery_days: Optional[int] = None
+    promo_active: Optional[bool] = None
+    promo_amount: Optional[float] = None
+    promo_label: Optional[str] = None
+    promo_discount_type: Optional[str] = None
+    promo_discount_value: Optional[float] = None
+    has_individual_price: Optional[bool] = None
 
 # ==================== ORDER MODELS ====================
 

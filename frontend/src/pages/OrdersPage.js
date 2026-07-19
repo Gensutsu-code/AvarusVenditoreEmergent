@@ -633,6 +633,18 @@ export default function OrdersPage() {
                                         {item.manufacturer && <span className="text-xs text-teal-600 font-medium">{item.manufacturer}</span>}
                                         {item.warehouse && <span className="text-xs text-slate-400">Склад: {item.warehouse}</span>}
                                         {item.delivery_days && <span className="text-xs text-blue-500">{item.delivery_days} дн.</span>}
+                                        {item.promo_active && (
+                                          <span className="inline-flex items-center gap-1 text-[10px] font-bold text-white bg-gradient-to-r from-rose-500 to-pink-500 px-1.5 py-0.5 rounded" data-testid={`order-item-promo-${item.product_id}`}>
+                                            {item.promo_discount_type === 'percent' && item.promo_discount_value
+                                              ? `Акция −${Math.round(item.promo_discount_value)}%`
+                                              : `Акция${item.promo_label ? `: ${item.promo_label}` : ''}`}
+                                          </span>
+                                        )}
+                                        {item.has_individual_price && (
+                                          <span className="inline-flex items-center gap-1 text-[10px] font-bold text-emerald-700 bg-emerald-50 border border-emerald-200 px-1.5 py-0.5 rounded" data-testid={`order-item-individual-${item.product_id}`}>
+                                            Ваша цена
+                                          </span>
+                                        )}
                                       </div>
                                     </div>
 
@@ -642,6 +654,11 @@ export default function OrdersPage() {
                                           <div className="flex items-center gap-1">
                                             <span className="text-red-400 line-through text-xs">{formatPrice(prevItem.price)}</span>
                                             <span className="text-emerald-600 font-semibold">{formatPrice(item.price)} ₽</span>
+                                          </div>
+                                        ) : item.promo_active && item.original_price && item.original_price > item.price ? (
+                                          <div className="flex flex-col items-end leading-tight">
+                                            <span className="text-slate-400 line-through text-xs">{formatPrice(item.original_price)}</span>
+                                            <span className="text-rose-600 font-semibold">{formatPrice(item.price)} ₽</span>
                                           </div>
                                         ) : (
                                           <span className="text-slate-500">{formatPrice(item.price)} ₽</span>
