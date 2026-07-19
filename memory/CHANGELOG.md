@@ -109,3 +109,9 @@ Verified by testing_agent iteration_84: frontend 6/6 + backend 3/3 pytest. Testi
 - ЗАДАЧА 5 — Живой таймер HH:MM:SS: компонент `components/PromoCountdown.js` + хелперы `formatCountdown`/`getPromoStock` в `productHelpers.js`. На ProductPage (`product-promo-countdown`) и карточке каталога (`card-countdown-{id}`).
 - ЗАДАЧА 6 — Бейдж скидки в админ-списке товаров (`AdminProductsPage.js`): использует `computeDiscount(p)` → активная «Скидка» (`admin-discount-active-{id}`) vs истёкшая «Скидка истекла» (`admin-discount-expired-{id}`).
 - Регресс-тесты: `/app/backend/tests/test_iter94_tasks.py` (8 тестов).
+
+## Багфикс 2026-06 — каталог: товары >100 и «исчезновение» после приёмки
+- Причина: `GET /products` был ограничен 100 и БЕЗ сортировки — Mongo без `sort` отдаёт произвольные 100 из N, а после любого `update` (приёмка склада меняет stock) окно смещалось → товары «исчезали/появлялись», и всё что >100 не показывалось.
+- Фикс backend (`routes/products.py::get_products`): добавлена стабильная сортировка `[("created_at",-1),("id",1)]`, дефолтный `limit` поднят 100→1000, кап `min(limit,1000)`.
+- Фикс frontend (`CatalogPage.js` fetchProducts, ветка категорий): постраничная догрузка ВСЕХ товаров (пачки по 1000 через skip) с конкатенацией — каталог показывает все товары независимо от количества.
+- Проверено curl на 127 товарах: полный список отдаётся; после приёмки (movement receipt) набор/порядок товаров идентичен (SAME SET = True).

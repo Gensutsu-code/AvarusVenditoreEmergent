@@ -354,7 +354,7 @@ async def get_products(
     price_min: Optional[float] = None,
     price_max: Optional[float] = None,
     virtual_category: Optional[str] = None,  # "assortment" | "new" | "discounted"
-    limit: int = 100,
+    limit: int = 1000,
     skip: int = 0
 ):
     query = {}
@@ -412,7 +412,7 @@ async def get_products(
         }]
     # "assortment" or no virtual category — no filter
 
-    products = await db.products.find(query, {"_id": 0}).skip(skip).limit(min(limit, 100)).to_list(100)
+    products = await db.products.find(query, {"_id": 0}).sort([("created_at", -1), ("id", 1)]).skip(skip).limit(min(limit, 1000)).to_list(min(limit, 1000))
     gsync = await _global_stock_sync()
     return [_apply_availability(_ensure_new_status(p), gsync) for p in products]
 

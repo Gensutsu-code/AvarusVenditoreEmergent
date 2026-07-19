@@ -618,11 +618,26 @@ export default function CatalogPage() {
           filterParams.forEach((val, key) => params.append(key, val));
         }
         
-        const res = await axios.get(`${API}/products?${params.toString()}`);
-        setProducts(res.data);
+        // Fetch ALL matching products in stable pages (avoids the old 100-item cap
+        // and the "products shuffle/disappear" bug caused by unsorted, capped queries).
+        const PAGE = 1000;
+        let all = [];
+        let skip = 0;
+        // eslint-disable-next-line no-constant-condition
+        while (true) {
+          const pageParams = new URLSearchParams(params.toString());
+          pageParams.set('limit', String(PAGE));
+          pageParams.set('skip', String(skip));
+          const res = await axios.get(`${API}/products?${pageParams.toString()}`);
+          const batch = Array.isArray(res.data) ? res.data : [];
+          all = all.concat(batch);
+          if (batch.length < PAGE) break;
+          skip += PAGE;
+        }
+        setProducts(all);
         setAlternatives([]);
         const q = {};
-        res.data.forEach(p => q[p.id] = 1);
+        all.forEach(p => q[p.id] = 1);
         setQuantities(q);
       }
     } catch (err) {
