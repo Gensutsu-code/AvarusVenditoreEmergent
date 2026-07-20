@@ -1,0 +1,41 @@
+{
+  "summary": "Iteration 95: End-to-end verification of product-request OFFER accept/reject feature across backend (pytest, 4/4 PASS) and frontend UI (Admin AdminChatsPage send-offer, Client ContactPage 'Мои обращения', Client OrdersPage 'Предложения по запросам товаров', accept + reject with reason, prefill + Обновить предложение). Also FIXED a runtime bug: OrdersPage.js was rendering <ProductRequestOffer /> without importing it (would ReferenceError as soon as any offered request existed).",
+  "backend_issues": {"critical": [], "minor": []},
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [],
+    "design_issues": []
+  },
+  "test_results": {
+    "BACKEND_pytest": "4/4 PASS. TestOfferAccept.test_full_accept_flow, TestOfferReject.test_full_reject_flow (with reason persisted as client_reject_reason), TestGuardOnPending.test_accept_reject_pending_returns_400, TestOfferUpdate.test_admin_can_update_offer. Admin notifications observed with titles 'Клиент принял предложение' and 'Клиент отклонил предложение'. Double-accept and accept-after-reject correctly return 400.",
+    "UI_admin_send_offer": "PASS. Admin logs in, /admin/chats > tab-product-requests (label 'Запросы товара', NOT 'товаров' as in the review request text; testid is 'tab-product-requests'), selects the pending request, fills offer-price-input=2500, offer-qty-input=3, offer-delivery-input=10, textarea message, clicks send-offer-btn. Toast 'Предложение отправлено клиенту' shown; list badge changes from 'На рассмотрении' to 'Предложение'; backend status='offered', offer_price=2500, offer_quantity=3, offer_delivery_days=10.",
+    "UI_admin_reopen_prefill": "PASS. Reopening the request pre-populates offer-price-input=2500, offer-qty-input=3, offer-delivery-input=10, admin-offer-summary block visible with '⏳ Предложение отправлено, ждём решения клиента', and send-offer-btn label becomes 'Обновить предложение'.",
+    "UI_client_orders_page": "PASS. /orders shows 'Предложения по запросам товаров' section (product-offers-section) with offer-card-{id}, offer-price-{id} rendering '1 234 ₽/шт', quantity, delivery days, total, plus offer-accept-{id} & offer-reject-{id} buttons.",
+    "UI_client_contact_page": "PASS. /contact > 'Мои обращения' tab lists product requests; requests with status offered or offer_price!=null render ProductRequestOffer with 'Предложение' status badge. After accept/reject, status badges 'Принято вами' / 'Отклонён вами' are rendered.",
+    "UI_client_accept_flow": "PASS. Clicking offer-accept-{id} on OrdersPage removes the card from product-offers-section (filtered to status==offered); backend confirms status='accepted', client_decision_at set, and admin notifications include 'Клиент принял предложение'.",
+    "UI_client_reject_flow": "PASS. Clicking offer-reject-{id} reveals offer-reject-reason-{id} textarea; entering a reason and confirming via offer-reject-confirm-{id} rejects the offer. Backend confirms status='rejected_by_client' with client_reject_reason persisted, and admin notification 'Клиент отклонил предложение' fires.",
+    "UI_guard_no_crash": "PASS (implicit). Post-decision cards are removed from OrdersPage and rendered as read-only status badges in ContactPage — no double-action possible from UI so no crash observed; backend guard returns HTTP 400 (verified by pytest)."
+  },
+  "test_report_links": [
+    "/app/backend/tests/test_product_request_offer.py",
+    "/app/test_reports/pytest/iter95_offer.xml"
+  ],
+  "action_items": [],
+  "critical_code_review_comments": [
+    "BUG FIXED by testing agent: /app/frontend/src/pages/OrdersPage.js was using <ProductRequestOffer /> without importing it — would throw 'ProductRequestOffer is not defined' at render time as soon as productOffers.length > 0. Added `import { ProductRequestOffer } from '../components/ProductRequestOffer';` next to the existing CardPaymentBlock import. Please review and keep.",
+    "Minor UX: after sending an offer from AdminChatsPage the detail panel deselects (Выберите запрос для просмотра). Admin has to click the request row again to see the 'Обновить предложение' UI. Consider keeping the selection after successful send so the summary + updated form stay visible without a re-click.",
+    "Minor: the review request document refers to the admin tab as 'Запросы товаров' but the code label is 'Запросы товара' (singular). data-testid='tab-product-requests' is stable and used for automation.",
+    "Minor: ProductRequestOffer.js sends POST without an explicit Authorization header, relying on the axios default. This works because AuthContext sets axios.defaults.headers.common['Authorization']. If ever the default is cleared or replaced with a per-request instance, accept/reject would silently 401. Consider passing the token explicitly or using a shared authenticated axios instance."
+  ],
+  "updated_files": [
+    "/app/frontend/src/pages/OrdersPage.js (added missing ProductRequestOffer import)",
+    "/app/backend/tests/test_product_request_offer.py (new regression suite, 4 tests)"
+  ],
+  "success_rate": {"backend": "100% (4/4)", "frontend": "100% (all UI assertions PASS)"},
+  "test_credentials": "admin@avarus.ru/admin, user@demo.com/demo123 (as per /app/memory/test_credentials.md)",
+  "seed_data_creation": "Created 4 test product_requests (article prefix TEST-UI-ACC, TEST-UI-REJ, TEST-UI-VIEW, TEST-ADMIN-UI-* and TEST-OFFER/REJ/PEND/UPD from pytest). All admin-offered. 1 ended in status=accepted, 1 in status=rejected_by_client with reason 'UI TEST — не подходит цена', rest in status=offered. All belong to user@demo.com and can be left as-is or manually cleaned up by main agent (no user-visible harm — they only appear on the demo client's Мои обращения list). No production data touched.",
+  "retest_needed": false,
+  "main_agent_can_self_test": true,
+  "context_for_next_testing_agent": "Reusable regression: /app/backend/tests/test_product_request_offer.py (4 tests, ~18 s). Login response uses 'token' key (not 'access_token'). Admin notifications endpoint returns {notifications:[...], unread_count, total} — iterate .notifications. Admin chats tab testid is 'tab-product-requests' with label 'Запросы товара' (singular). Product request offer accept/reject POST bodies: accept {} , reject {reason: string}. After decision the offer card disappears from OrdersPage (which filters status==offered) but stays visible on ContactPage with a decision badge ('Принято вами' / 'Отклонён вами').",
+  "rca_of_the_issue": "Missing import in OrdersPage.js — `ProductRequestOffer` was JSX-referenced at line 524 but never imported. React would throw a ReferenceError as soon as a user with any offered product-request opened /orders (productOffers.length > 0 triggers the section render). Fixed by adding the named import from '../components/ProductRequestOffer'. All subsequent Playwright flows on /orders now render the section, cards, and Accept/Reject controls correctly."
+}

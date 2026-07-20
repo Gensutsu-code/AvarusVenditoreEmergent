@@ -60,6 +60,9 @@ export default function AdminChatsPage() {
   const [productRequests, setProductRequests] = useState([]);
   const [selectedProductReq, setSelectedProductReq] = useState(null);
   const [productReqResponse, setProductReqResponse] = useState('');
+  const [offerPrice, setOfferPrice] = useState('');
+  const [offerQty, setOfferQty] = useState('');
+  const [offerDelivery, setOfferDelivery] = useState('');
   
   // Lightbox states
   const [lightboxImage, setLightboxImage] = useState(null);
@@ -169,6 +172,31 @@ export default function AdminChatsPage() {
       setProductRequests(res.data);
     } catch (err) {
       console.error('Failed to fetch product requests', err);
+    }
+  };
+
+  const handleSendOffer = async (reqId) => {
+    if (!offerPrice || Number(offerPrice) <= 0) {
+      toast.error('Укажите цену предложения');
+      return;
+    }
+    setProcessing(true);
+    try {
+      await axios.put(`${API}/admin/product-requests/${reqId}/respond`, {
+        response_message: productReqResponse,
+        status: 'offered',
+        offer_price: Number(offerPrice),
+        offer_quantity: offerQty ? parseInt(offerQty, 10) : null,
+        offer_delivery_days: offerDelivery !== '' ? parseInt(offerDelivery, 10) : null,
+      });
+      toast.success('Предложение отправлено клиенту');
+      setSelectedProductReq(null);
+      setProductReqResponse(''); setOfferPrice(''); setOfferQty(''); setOfferDelivery('');
+      fetchProductRequests();
+    } catch (err) {
+      toast.error(err.response?.data?.detail || 'Ошибка');
+    } finally {
+      setProcessing(false);
     }
   };
 
@@ -569,7 +597,7 @@ export default function AdminChatsPage() {
                 productRequests.map(req => (
                   <div
                     key={req.id}
-                    onClick={() => { setSelectedProductReq(req); setProductReqResponse(''); }}
+                    onClick={() => { setSelectedProductReq(req); setProductReqResponse(req.admin_response || ''); setOfferPrice(req.offer_price != null ? String(req.offer_price) : ''); setOfferQty(req.offer_quantity != null ? String(req.offer_quantity) : ''); setOfferDelivery(req.offer_delivery_days != null ? String(req.offer_delivery_days) : ''); }}
                     className={`p-4 border-b cursor-pointer transition-colors ${
                       selectedProductReq?.id === req.id
                         ? isDark ? 'bg-zinc-800' : 'bg-blue-50'
@@ -596,9 +624,11 @@ export default function AdminChatsPage() {
                         req.status === 'pending' ? 'bg-amber-100 text-amber-700' :
                         req.status === 'completed' ? 'bg-green-100 text-green-700' :
                         req.status === 'processing' ? 'bg-blue-100 text-blue-700' :
+                        req.status === 'offered' ? 'bg-teal-100 text-teal-700' :
+                        req.status === 'accepted' ? 'bg-emerald-100 text-emerald-700' :
                         'bg-red-100 text-red-700'
                       }`}>
-                        {req.status === 'pending' ? 'На рассмотрении' : req.status === 'completed' ? 'Выполнен' : req.status === 'processing' ? 'В обработке' : 'Отклонён'}
+                        {req.status === 'pending' ? 'На рассмотрении' : req.status === 'completed' ? 'Выполнен' : req.status === 'processing' ? 'В обработке' : req.status === 'offered' ? 'Предложение' : req.status === 'accepted' ? 'Принято' : req.status === 'rejected_by_client' ? 'Отклонён клиентом' : 'Отклонён'}
                       </span>
                     </div>
                   </div>
@@ -659,12 +689,40 @@ export default function AdminChatsPage() {
                       </div>
                     )}
 
-                    {(selectedProductReq.status === 'pending' || selectedProductReq.status === 'processing') && (
+                    {(selectedProductReq.offer_price != null && ['offered', 'accepted', 'rejected_by_client'].includes(selectedProductReq.status)) && (
+                      <div className={`p-4 rounded-xl ${
+                        selectedProductReq.status === 'accepted'
+                          ? isDark ? 'bg-emerald-500/10 border border-emerald-500/30' : 'bg-emerald-50 border border-emerald-200'
+                          : selectedProductReq.status === 'rejected_by_client'
+                          ? isDark ? 'bg-red-500/10 border border-red-500/30' : 'bg-red-50 border border-red-200'
+                          : isDark ? 'bg-teal-500/10 border border-teal-500/30' : 'bg-teal-50 border border-teal-200'
+                      }`} data-testid="admin-offer-summary">
+                        <p className={`text-sm font-bold ${isDark ? 'text-teal-300' : 'text-teal-700'}`}>
+                          {selectedProductReq.status === 'accepted' ? '✅ Клиент принял предложение' : selectedProductReq.status === 'rejected_by_client' ? '❌ Клиент отклонил предложение' : '⏳ Предложение отправлено, ждём решения клиента'}
+                        </p>
+                        <div className={`text-sm mt-2 flex flex-wrap gap-x-4 gap-y-1 ${isDark ? 'text-zinc-300' : 'text-slate-700'}`}>
+                          <span>Цена: <b>{new Intl.NumberFormat('ru-RU').format(Math.round(selectedProductReq.offer_price))} ₽/шт</b></span>
+                          {selectedProductReq.offer_quantity != null && <span>Кол-во: <b>{selectedProductReq.offer_quantity} шт</b></span>}
+                          {selectedProductReq.offer_delivery_days != null && <span>Срок: <b>{selectedProductReq.offer_delivery_days} дн.</b></span>}
+                        </div>
+                        {selectedProductReq.admin_response && (
+                          <p className={`text-sm mt-1 italic ${isDark ? 'text-zinc-400' : 'text-slate-600'}`}>«{selectedProductReq.admin_response}»</p>
+                        )}
+                        {selectedProductReq.client_reject_reason && (
+                          <p className={`text-sm mt-1 ${isDark ? 'text-red-300' : 'text-red-600'}`}>Причина отказа: {selectedProductReq.client_reject_reason}</p>
+                        )}
+                      </div>
+                    )}
+
+                    {(selectedProductReq.status === 'pending' || selectedProductReq.status === 'processing' || selectedProductReq.status === 'offered') && (
                       <div className={`p-4 rounded-xl space-y-3 ${isDark ? 'bg-zinc-800/30 border border-zinc-700/50' : 'bg-white border border-slate-200'}`}>
                         {selectedProductReq.status === 'processing' && (
                           <p className={`text-xs font-bold ${isDark ? 'text-blue-400' : 'text-blue-600'}`}>Запрос в обработке</p>
                         )}
-                        <p className={`text-xs font-bold uppercase tracking-wider ${isDark ? 'text-zinc-500' : 'text-slate-400'}`}>Ваш ответ</p>
+                        {selectedProductReq.status === 'offered' && (
+                          <p className={`text-xs font-bold ${isDark ? 'text-teal-400' : 'text-teal-600'}`}>Можно изменить предложение</p>
+                        )}
+                        <p className={`text-xs font-bold uppercase tracking-wider ${isDark ? 'text-zinc-500' : 'text-slate-400'}`}>Ваш ответ / сообщение</p>
                         <Textarea
                           value={productReqResponse}
                           onChange={(e) => setProductReqResponse(e.target.value)}
@@ -672,6 +730,32 @@ export default function AdminChatsPage() {
                           className={`min-h-[60px] ${isDark ? 'bg-zinc-900 border-zinc-700 text-zinc-100' : ''}`}
                           data-testid="product-req-response-input"
                         />
+                        <div className="grid grid-cols-3 gap-2">
+                          <div>
+                            <label className={`text-[11px] font-semibold ${isDark ? 'text-zinc-500' : 'text-slate-400'}`}>Цена ₽/шт</label>
+                            <input type="number" min="0" value={offerPrice} onChange={(e) => setOfferPrice(e.target.value)} placeholder="0"
+                              className={`w-full h-9 px-2 rounded-md border text-sm ${isDark ? 'bg-zinc-900 border-zinc-700 text-zinc-100' : 'border-slate-200'}`} data-testid="offer-price-input" />
+                          </div>
+                          <div>
+                            <label className={`text-[11px] font-semibold ${isDark ? 'text-zinc-500' : 'text-slate-400'}`}>Кол-во</label>
+                            <input type="number" min="0" value={offerQty} onChange={(e) => setOfferQty(e.target.value)} placeholder={String(selectedProductReq.quantity || '')}
+                              className={`w-full h-9 px-2 rounded-md border text-sm ${isDark ? 'bg-zinc-900 border-zinc-700 text-zinc-100' : 'border-slate-200'}`} data-testid="offer-qty-input" />
+                          </div>
+                          <div>
+                            <label className={`text-[11px] font-semibold ${isDark ? 'text-zinc-500' : 'text-slate-400'}`}>Срок, дн.</label>
+                            <input type="number" min="0" value={offerDelivery} onChange={(e) => setOfferDelivery(e.target.value)} placeholder="—"
+                              className={`w-full h-9 px-2 rounded-md border text-sm ${isDark ? 'bg-zinc-900 border-zinc-700 text-zinc-100' : 'border-slate-200'}`} data-testid="offer-delivery-input" />
+                          </div>
+                        </div>
+                        <Button
+                          onClick={() => handleSendOffer(selectedProductReq.id)}
+                          disabled={processing || !offerPrice}
+                          className="w-full bg-teal-500 hover:bg-teal-600 text-white"
+                          data-testid="send-offer-btn"
+                        >
+                          {processing ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : <Tag className="w-4 h-4 mr-2" />}
+                          {selectedProductReq.status === 'offered' ? 'Обновить предложение' : 'Отправить предложение'}
+                        </Button>
                         <div className="flex gap-2">
                           {selectedProductReq.status === 'pending' && (
                             <Button

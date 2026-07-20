@@ -7,6 +7,7 @@ import { Button } from '../components/ui/button';
 import { Input } from '../components/ui/input';
 import { useAuth } from '../context/AuthContext';
 import { toast } from 'sonner';
+import { ProductRequestOffer } from '../components/ProductRequestOffer';
 
 const API = `${process.env.REACT_APP_BACKEND_URL}/api`;
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
@@ -17,9 +18,12 @@ const EMOJI_LIST = ['😀', '😃', '😄', '😁', '😅', '😂', '🤣', '�
 const REQ_STATUS = {
   pending: { label: 'На рассмотрении', cls: 'bg-amber-100 text-amber-700', Icon: Hourglass },
   processing: { label: 'В обработке', cls: 'bg-blue-100 text-blue-700', Icon: Clock },
+  offered: { label: 'Предложение', cls: 'bg-teal-100 text-teal-700', Icon: Tag },
+  accepted: { label: 'Принято вами', cls: 'bg-emerald-100 text-emerald-700', Icon: CheckCircle },
   approved: { label: 'Одобрено', cls: 'bg-emerald-100 text-emerald-700', Icon: CheckCircle },
   completed: { label: 'Выполнен', cls: 'bg-emerald-100 text-emerald-700', Icon: CheckCircle },
   rejected: { label: 'Отклонён', cls: 'bg-rose-100 text-rose-700', Icon: XCircle },
+  rejected_by_client: { label: 'Отклонён вами', cls: 'bg-rose-100 text-rose-700', Icon: XCircle },
 };
 
 const TABS = [
@@ -400,13 +404,20 @@ export default function ContactPage() {
                 ) : (
                   <div className="space-y-2">
                     {prodReqs.map(r => (
-                      <div key={r.id} className="bg-white rounded-xl p-3 shadow-sm flex items-center justify-between gap-3" data-testid={`history-prod-${r.id}`}>
-                        <div>
-                          <p className="text-sm font-medium text-slate-800">{r.product_name || r.article} <span className="text-xs text-slate-400">{r.article}</span></p>
-                          <p className="text-xs text-slate-500">Кол-во: {r.quantity}{r.admin_response ? ` · Ответ: ${r.admin_response}` : ''}</p>
+                      (r.status === 'offered' || r.offer_price != null) ? (
+                        <div key={r.id} data-testid={`history-prod-${r.id}`} className="space-y-1">
+                          <div className="flex items-center justify-end"><StatusBadge status={r.status} /></div>
+                          <ProductRequestOffer req={r} onDone={fetchRequests} />
                         </div>
-                        <StatusBadge status={r.status} />
-                      </div>
+                      ) : (
+                        <div key={r.id} className="bg-white rounded-xl p-3 shadow-sm flex items-center justify-between gap-3" data-testid={`history-prod-${r.id}`}>
+                          <div>
+                            <p className="text-sm font-medium text-slate-800">{r.product_name || r.article} <span className="text-xs text-slate-400">{r.article}</span></p>
+                            <p className="text-xs text-slate-500">Кол-во: {r.quantity}{r.admin_response ? ` · Ответ: ${r.admin_response}` : ''}</p>
+                          </div>
+                          <StatusBadge status={r.status} />
+                        </div>
+                      )
                     ))}
                   </div>
                 )}

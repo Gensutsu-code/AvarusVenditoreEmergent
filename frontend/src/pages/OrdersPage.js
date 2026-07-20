@@ -13,6 +13,7 @@ import { sendNotification, requestNotificationPermission } from '../utils/notifi
 import CryptoPaymentModal from '../components/CryptoPaymentModal';
 import ReturnModal from '../components/ReturnModal';
 import CardPaymentBlock from '../components/CardPaymentBlock';
+import { ProductRequestOffer } from '../components/ProductRequestOffer';
 
 const API = `${process.env.REACT_APP_BACKEND_URL}/api`;
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
@@ -54,6 +55,7 @@ export default function OrdersPage() {
   const [surchargeModal, setSurchargeModal] = useState(null); // { orderId, amount, userBalance }
   const [returnOrder, setReturnOrder] = useState(null);
   const [returnSettings, setReturnSettings] = useState(null);
+  const [productOffers, setProductOffers] = useState([]);
   const [periodFilter, setPeriodFilter] = useState('month'); // week | month | year | all (default last month)
 
   useEffect(() => {
@@ -63,6 +65,7 @@ export default function OrdersPage() {
       return;
     }
     fetchData();
+    fetchProductOffers();
     axios.get(`${API}/return-settings`).then((r) => setReturnSettings(r.data)).catch(() => {});
     // Request notification permission
     requestNotificationPermission();
@@ -87,6 +90,13 @@ export default function OrdersPage() {
     const interval = setInterval(fetchData, 15000);
     return () => clearInterval(interval);
   }, [user]);
+
+  const fetchProductOffers = async () => {
+    try {
+      const res = await axios.get(`${API}/product-requests/my`);
+      setProductOffers((res.data || []).filter(r => r.status === 'offered'));
+    } catch {}
+  };
 
   const fetchData = async () => {
     try {
@@ -501,6 +511,21 @@ export default function OrdersPage() {
                   )}
                 </div>
               </motion.div>
+            )}
+
+            {/* Product request offers awaiting client decision */}
+            {productOffers.length > 0 && (
+              <div className="glass-card p-4 mb-4 border-2 border-teal-200" data-testid="product-offers-section">
+                <h3 className="text-sm font-bold text-slate-800 mb-3 flex items-center gap-2">
+                  <Package className="w-4 h-4 text-teal-500" />
+                  Предложения по запросам товаров
+                </h3>
+                <div className="space-y-2">
+                  {productOffers.map(r => (
+                    <ProductRequestOffer key={r.id} req={r} onDone={fetchProductOffers} />
+                  ))}
+                </div>
+              </div>
             )}
 
             {/* Orders List */}
