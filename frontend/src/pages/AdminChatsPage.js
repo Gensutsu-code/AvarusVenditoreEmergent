@@ -190,8 +190,14 @@ export default function AdminChatsPage() {
         offer_delivery_days: offerDelivery !== '' ? parseInt(offerDelivery, 10) : null,
       });
       toast.success('Предложение отправлено клиенту');
-      setSelectedProductReq(null);
-      setProductReqResponse(''); setOfferPrice(''); setOfferQty(''); setOfferDelivery('');
+      setSelectedProductReq({
+        ...selectedProductReq,
+        status: 'offered',
+        admin_response: productReqResponse,
+        offer_price: Number(offerPrice),
+        offer_quantity: offerQty ? parseInt(offerQty, 10) : null,
+        offer_delivery_days: offerDelivery !== '' ? parseInt(offerDelivery, 10) : null,
+      });
       fetchProductRequests();
     } catch (err) {
       toast.error(err.response?.data?.detail || 'Ошибка');

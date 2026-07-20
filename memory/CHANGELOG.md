@@ -115,3 +115,10 @@ Verified by testing_agent iteration_84: frontend 6/6 + backend 3/3 pytest. Testi
 - Фикс backend (`routes/products.py::get_products`): добавлена стабильная сортировка `[("created_at",-1),("id",1)]`, дефолтный `limit` поднят 100→1000, кап `min(limit,1000)`.
 - Фикс frontend (`CatalogPage.js` fetchProducts, ветка категорий): постраничная догрузка ВСЕХ товаров (пачки по 1000 через skip) с конкатенацией — каталог показывает все товары независимо от количества.
 - Проверено curl на 127 товарах: полный список отдаётся; после приёмки (movement receipt) набор/порядок товаров идентичен (SAME SET = True).
+
+## Фича 2026-06 (iter 95) — Клиент принимает/отклоняет предложение по запросу товара
+- Backend (`product_requests.py`): `ProductRequestRespond` расширен полями `offer_price`/`offer_quantity`/`offer_delivery_days`; статус `offered`. Новые клиентские эндпоинты `POST /product-requests/{id}/accept` (→ `accepted`, уведомление админу) и `/reject` (→ `rejected_by_client` + `client_reject_reason`, уведомление админу). Гард: действие возможно только из статуса `offered`, иначе 400.
+- Компонент `components/ProductRequestOffer.js`: карточка оффера (цена/кол-во/срок/итог) + кнопки «Принять»/«Отклонить» (с полем причины).
+- Клиент видит оффер и действует в ДВУХ местах: `ContactPage` → «Мои обращения» и `OrdersPage` → секция «Предложения по запросам товаров».
+- Админ (`AdminChatsPage`): поля оффера (цена/кол-во/срок) + «Отправить/Обновить предложение», блок-сводка статуса и решения клиента; статусы в списке (Предложение/Принято/Отклонён клиентом). После отправки оффера выбор запроса сохраняется (UX-улучшение).
+- Проверено testing_agent iter_95: backend 4/4, frontend 100%. Регресс-тесты: `/app/backend/tests/test_product_request_offer.py`.
