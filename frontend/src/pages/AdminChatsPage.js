@@ -4,7 +4,7 @@ import axios from 'axios';
 import { 
   MessageCircle, Send, Image, Paperclip, User, Clock, CheckCheck,
   ChevronLeft, Search, X, Play, Tag, Check, XCircle, Loader2, Package,
-  Pin, Trash2, MoreVertical
+  Pin, Trash2, MoreVertical, ShoppingCart
 } from 'lucide-react';
 import { Button } from '../components/ui/button';
 import { Input } from '../components/ui/input';
@@ -63,6 +63,8 @@ export default function AdminChatsPage() {
   const [offerPrice, setOfferPrice] = useState('');
   const [offerQty, setOfferQty] = useState('');
   const [offerDelivery, setOfferDelivery] = useState('');
+  const [cartDiscountRequests, setCartDiscountRequests] = useState([]);
+  const [cartApproveInputs, setCartApproveInputs] = useState({});
   
   // Lightbox states
   const [lightboxImage, setLightboxImage] = useState(null);
@@ -84,6 +86,7 @@ export default function AdminChatsPage() {
     fetchChats();
     fetchDiscountRequests();
     fetchProductRequests();
+    fetchCartDiscountRequests();
   }, [user, authLoading, navigate]);
 
   // Polling for new messages
@@ -173,6 +176,37 @@ export default function AdminChatsPage() {
     } catch (err) {
       console.error('Failed to fetch product requests', err);
     }
+  };
+
+  const fetchCartDiscountRequests = async () => {
+    try {
+      const res = await axios.get(`${API}/admin/cart-discount-requests`);
+      setCartDiscountRequests(res.data || []);
+    } catch (err) {
+      console.error('Failed to fetch cart discount requests', err);
+    }
+  };
+
+  const approveCartDiscount = async (id) => {
+    const pct = Number(cartApproveInputs[id]);
+    if (!pct || pct <= 0 || pct > 90) { toast.error('Введите процент от 1 до 90'); return; }
+    setProcessing(true);
+    try {
+      await axios.put(`${API}/admin/cart-discount-requests/${id}/approve`, { admin_percent: pct });
+      toast.success('Скидка на корзину одобрена');
+      fetchCartDiscountRequests();
+    } catch (e) { toast.error(e.response?.data?.detail || 'Ошибка'); }
+    finally { setProcessing(false); }
+  };
+
+  const rejectCartDiscount = async (id) => {
+    setProcessing(true);
+    try {
+      await axios.put(`${API}/admin/cart-discount-requests/${id}/reject`, { response_message: '' });
+      toast.success('Запрос отклонён');
+      fetchCartDiscountRequests();
+    } catch (e) { toast.error(e.response?.data?.detail || 'Ошибка'); }
+    finally { setProcessing(false); }
   };
 
   const handleSendOffer = async (reqId) => {
@@ -333,6 +367,7 @@ export default function AdminChatsPage() {
   const totalUnread = chats.reduce((sum, chat) => sum + (chat.unread_count || 0), 0);
   const pendingDiscounts = discountRequests.filter(r => r.status === 'pending').length;
   const pendingProductReqs = productRequests.filter(r => r.status === 'pending').length;
+  const pendingCartDiscounts = cartDiscountRequests.filter(r => r.status === 'pending').length;
 
   if (authLoading || loading) {
     return (
@@ -400,6 +435,21 @@ export default function AdminChatsPage() {
               Запросы товара
               {pendingProductReqs > 0 && (
                 <span className="px-1.5 py-0.5 text-xs bg-red-500 text-white rounded-full">{pendingProductReqs}</span>
+              )}
+            </button>
+            <button
+              onClick={() => { setActiveTab('cart-discounts'); fetchCartDiscountRequests(); }}
+              className={`flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold transition-all ${
+                activeTab === 'cart-discounts'
+                  ? 'bg-teal-500 text-white'
+                  : isDark ? 'bg-zinc-800 text-zinc-400 hover:bg-zinc-700' : 'bg-white text-slate-600 hover:bg-slate-50 border border-slate-200'
+              }`}
+              data-testid="tab-cart-discounts"
+            >
+              <ShoppingCart className="w-4 h-4" />
+              Скидка на корзину
+              {pendingCartDiscounts > 0 && (
+                <span className="px-1.5 py-0.5 text-xs bg-red-500 text-white rounded-full">{pendingCartDiscounts}</span>
               )}
             </button>
           </div>
@@ -806,6 +856,63 @@ export default function AdminChatsPage() {
                 </div>
               )}
             </div>
+          </div>
+        )}
+
+        {/* Cart Discount Requests Tab */}
+        {activeTab === 'cart-discounts' && (
+          <div className="glass-card overflow-hidden p-4 md:p-6 min-h-[500px]" data-testid="cart-discounts-panel">
+            {cartDiscountRequests.length === 0 ? (
+              <div className="flex flex-col items-center justify-center py-20 text-center">
+                <ShoppingCart className={`w-12 h-12 mb-3 ${isDark ? 'text-zinc-700' : 'text-slate-300'}`} />
+                <p className={`text-sm ${isDark ? 'text-zinc-500' : 'text-slate-400'}`}>Запросов скидки на корзину пока нет</p>
+              </div>
+            ) : (
+              <div className="space-y-3">
+                {cartDiscountRequests.map(req => {
+                  const st = req.status;
+                  const badge = st === 'pending' ? { t: 'На рассмотрении', c: 'bg-amber-100 text-amber-700' }
+                    : st === 'approved' ? { t: `Одобрено ${req.admin_percent}%`, c: 'bg-emerald-100 text-emerald-700' }
+                    : st === 'used' ? { t: `Использовано ${req.admin_percent}%`, c: 'bg-slate-100 text-slate-500' }
+                    : st === 'rejected' ? { t: 'Отклонено', c: 'bg-rose-100 text-rose-700' }
+                    : st === 'superseded' ? { t: 'Заменено', c: 'bg-slate-100 text-slate-400' }
+                    : { t: 'Отменено клиентом', c: 'bg-slate-100 text-slate-400' };
+                  return (
+                    <div key={req.id} className={`rounded-xl border p-4 ${isDark ? 'bg-zinc-800/40 border-zinc-700' : 'bg-white border-slate-200'}`} data-testid={`cart-discount-req-${req.id}`}>
+                      <div className="flex items-start justify-between gap-3">
+                        <div className="min-w-0">
+                          <p className={`text-sm font-semibold ${isDark ? 'text-zinc-100' : 'text-slate-800'}`}>{req.user_name || req.user_email}</p>
+                          <p className={`text-xs ${isDark ? 'text-zinc-400' : 'text-slate-500'}`}>{req.user_email}</p>
+                          <p className={`text-sm mt-1 ${isDark ? 'text-zinc-300' : 'text-slate-700'}`}>Желаемая скидка: <b className="text-teal-600">{req.requested_percent}%</b></p>
+                          {req.message && <p className={`text-xs mt-1 italic ${isDark ? 'text-zinc-400' : 'text-slate-500'}`}>«{req.message}»</p>}
+                        </div>
+                        <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full flex-shrink-0 ${badge.c}`}>{badge.t}</span>
+                      </div>
+                      {st === 'pending' && (
+                        <div className="flex flex-wrap items-end gap-2 mt-3">
+                          <div>
+                            <label className={`text-[11px] font-semibold ${isDark ? 'text-zinc-500' : 'text-slate-400'}`}>Ваш процент, %</label>
+                            <input
+                              type="number" min="1" max="90"
+                              value={cartApproveInputs[req.id] ?? req.requested_percent}
+                              onChange={(e) => setCartApproveInputs(prev => ({ ...prev, [req.id]: e.target.value }))}
+                              className={`w-24 h-9 px-2 rounded-md border text-sm block mt-1 ${isDark ? 'bg-zinc-900 border-zinc-700 text-zinc-100' : 'border-slate-200'}`}
+                              data-testid={`cart-discount-approve-input-${req.id}`}
+                            />
+                          </div>
+                          <Button onClick={() => approveCartDiscount(req.id)} disabled={processing} className="bg-emerald-500 hover:bg-emerald-600 text-white h-9" data-testid={`cart-discount-approve-${req.id}`}>
+                            {processing ? <Loader2 className="w-4 h-4 animate-spin mr-1" /> : <Check className="w-4 h-4 mr-1" />}Одобрить
+                          </Button>
+                          <Button onClick={() => rejectCartDiscount(req.id)} disabled={processing} variant="outline" className="border-rose-300 text-rose-600 hover:bg-rose-50 h-9" data-testid={`cart-discount-reject-${req.id}`}>
+                            <XCircle className="w-4 h-4" />
+                          </Button>
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+            )}
           </div>
         )}
 

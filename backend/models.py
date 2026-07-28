@@ -210,6 +210,8 @@ class CartItemResponse(BaseModel):
     manufacturer: Optional[str] = None
     price: float
     original_price: Optional[float] = None
+    price_before_cart_discount: Optional[float] = None
+    cart_discount_percent: Optional[float] = None
     quantity: int
     quantity_fulfilled: Optional[int] = 0
     image_url: Optional[str] = None
@@ -309,6 +311,8 @@ class OrderResponse(BaseModel):
     ozon_certificate_issued: Optional[bool] = None
     individual_discount_percent: Optional[float] = None
     individual_discount_amount: Optional[float] = None
+    cart_discount_percent: Optional[float] = None
+    cart_discount_amount: Optional[float] = None
     delivery_paid_with_points: Optional[bool] = None
     delivery_points_used: Optional[float] = None
 

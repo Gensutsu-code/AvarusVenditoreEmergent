@@ -147,6 +147,12 @@ async def _build_cart(user):
     ).to_list(100)
     ind_prices_map = {ip["product_id"]: ip["price"] for ip in ind_prices}
     
+    # Active approved (unused) cart-wide discount for this user
+    active_cd = await db.cart_discount_requests.find_one(
+        {"user_id": user["id"], "status": "approved"}, {"_id": 0}
+    )
+    cart_discount_pct = float(active_cd.get("admin_percent") or 0) if active_cd else 0.0
+
     items_with_details = []
     for item in cart.get("items", []):
         product = products_map.get(item["product_id"])
@@ -156,12 +162,18 @@ async def _build_cart(user):
             # Apply promo discount on top of base price (with tier-aware quantity)
             promo_final, promo_amount, promo_active = compute_promo_discount(product, base_price, item["quantity"])
             final_unit_price = promo_final if promo_active else base_price
+            # Cart-wide discount (evenly per item), shown alongside the pre-discount price
+            unit_before_cart_discount = final_unit_price
+            if cart_discount_pct > 0:
+                final_unit_price = round(final_unit_price * (1 - cart_discount_pct / 100), 2)
             items_with_details.append({
                 "product_id": item["product_id"],
                 "name": product["name"],
                 "article": product["article"],
                 "manufacturer": product.get("manufacturer"),
                 "price": final_unit_price,
+                "price_before_cart_discount": unit_before_cart_discount,
+                "cart_discount_percent": cart_discount_pct,
                 "original_price": product["price"],
                 "individual_price": ind_price,
                 "promo_active": promo_active,
@@ -178,7 +190,7 @@ async def _build_cart(user):
                 "discount_tiers": product.get("discount_tiers") or [],
             })
     
-    return {"items": items_with_details}
+    return {"items": items_with_details, "cart_discount": active_cd}
 
 
 @router.post("/cart/add")
@@ -259,6 +271,13 @@ async def create_order(data: OrderCreate, user=Depends(get_current_user)):
     ).to_list(100)
     ind_prices_map = {ip["product_id"]: ip["price"] for ip in ind_prices}
     
+    # Active approved (unused) cart-wide discount — applies evenly per item, one-time
+    active_cart_discount = await db.cart_discount_requests.find_one(
+        {"user_id": user["id"], "status": "approved"}, {"_id": 0}
+    )
+    cart_discount_pct = float(active_cart_discount.get("admin_percent") or 0) if active_cart_discount else 0.0
+    cart_discount_amount = 0.0
+    
     items = []
     subtotal = 0
     used_individual_price_product_ids = []
@@ -285,6 +304,12 @@ async def create_order(data: OrderCreate, user=Depends(get_current_user)):
             # Apply product promo discount on top of base price (tier-aware)
             promo_final, promo_amount, promo_active = compute_promo_discount(product, base_price, cart_item["quantity"])
             final_price = promo_final if promo_active else base_price
+
+            # Cart-wide discount (evenly per item), stacks on top of everything
+            price_before_cart_discount = final_price
+            if cart_discount_pct > 0:
+                final_price = round(final_price * (1 - cart_discount_pct / 100), 2)
+                cart_discount_amount += round((price_before_cart_discount - final_price) * cart_item["quantity"], 2)
             
             item_data = {
                 "product_id": cart_item["product_id"],
@@ -292,6 +317,8 @@ async def create_order(data: OrderCreate, user=Depends(get_current_user)):
                 "article": product["article"],
                 "manufacturer": product.get("manufacturer"),
                 "price": final_price,
+                "price_before_cart_discount": price_before_cart_discount,
+                "cart_discount_percent": cart_discount_pct if cart_discount_pct > 0 else 0,
                 "original_price": original_price,
                 "base_price_before_promo": base_price,
                 "promo_active": promo_active,
@@ -518,6 +545,8 @@ async def create_order(data: OrderCreate, user=Depends(get_current_user)):
         "payment_adjustment": payment_adjustment,
         "individual_discount_percent": individual_discount_pct if (pay_with_balance and individual_discount_pct > 0) else 0,
         "individual_discount_amount": individual_discount_amount,
+        "cart_discount_percent": cart_discount_pct if cart_discount_pct > 0 else 0,
+        "cart_discount_amount": round(cart_discount_amount, 2),
         "delivery_paid_with_points": bool(delivery_points_used > 0),
         "delivery_points_used": delivery_points_used,
         "status": "pending",
@@ -549,6 +578,13 @@ async def create_order(data: OrderCreate, user=Depends(get_current_user)):
         )
     
     await db.orders.insert_one(order)
+
+    # Consume the one-time cart-wide discount (used up by this order)
+    if cart_discount_pct > 0 and active_cart_discount:
+        await db.cart_discount_requests.update_one(
+            {"id": active_cart_discount["id"]},
+            {"$set": {"status": "used", "used_at": datetime.now(timezone.utc).isoformat(), "order_id": order["id"]}}
+        )
 
     # Decrement promo limited stock for items that used an active promo
     for it in items:

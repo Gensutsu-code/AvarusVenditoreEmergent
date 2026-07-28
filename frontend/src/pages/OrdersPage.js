@@ -670,6 +670,11 @@ export default function OrdersPage() {
                                             Ваша цена
                                           </span>
                                         )}
+                                        {item.cart_discount_percent > 0 && (
+                                          <span className="inline-flex items-center gap-1 text-[10px] font-bold text-white bg-teal-500 px-1.5 py-0.5 rounded" data-testid={`order-item-cart-discount-${item.product_id}`}>
+                                            Скидка на корзину −{Math.round(item.cart_discount_percent)}%
+                                          </span>
+                                        )}
                                       </div>
                                     </div>
 
@@ -684,6 +689,11 @@ export default function OrdersPage() {
                                           <div className="flex flex-col items-end leading-tight">
                                             <span className="text-slate-400 line-through text-xs">{formatPrice(item.original_price)}</span>
                                             <span className="text-rose-600 font-semibold">{formatPrice(item.price)} ₽</span>
+                                          </div>
+                                        ) : item.cart_discount_percent > 0 && item.price_before_cart_discount && item.price_before_cart_discount > item.price ? (
+                                          <div className="flex flex-col items-end leading-tight">
+                                            <span className="text-slate-400 line-through text-xs">{formatPrice(item.price_before_cart_discount)}</span>
+                                            <span className="text-teal-600 font-semibold">{formatPrice(item.price)} ₽</span>
                                           </div>
                                         ) : (
                                           <span className="text-slate-500">{formatPrice(item.price)} ₽</span>
@@ -726,6 +736,12 @@ export default function OrdersPage() {
                             </div>
 
                             {/* Order total */}
+                            {order.cart_discount_amount > 0 && (
+                              <div className="flex justify-between items-center mt-3 text-sm" data-testid={`order-cart-discount-line-${order.id}`}>
+                                <span className="text-teal-600 font-medium">Скидка на корзину ({Math.round(order.cart_discount_percent)}%):</span>
+                                <span className="text-teal-600 font-semibold">−{formatPrice(order.cart_discount_amount)} ₽</span>
+                              </div>
+                            )}
                             <div className="flex justify-between items-center mt-3 pt-3 border-t border-slate-200/50">
                               <span className="text-slate-400 text-sm">Оплата: {PAYMENT_METHOD_LABELS[order.payment_method] || order.payment_method || 'не указан'}</span>
                               <div className="text-right">

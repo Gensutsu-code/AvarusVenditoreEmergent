@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import axios from 'axios';
-import { ArrowLeft, CheckCircle, Banknote, MessageSquare, CreditCard, Wallet, Loader2, FileText, Sparkles, ShoppingBag, TrendingUp, Clock } from 'lucide-react';
+import { ArrowLeft, CheckCircle, Banknote, MessageSquare, CreditCard, Wallet, Loader2, FileText, Sparkles, ShoppingBag, TrendingUp, Clock, Tag } from 'lucide-react';
 import { Button } from '../components/ui/button';
 import { Input } from '../components/ui/input';
 import { Label } from '../components/ui/label';
@@ -61,6 +61,10 @@ export default function CheckoutPage() {
   const [deliverySettings, setDeliverySettings] = useState({ min_free_delivery: 5000, delivery_price: 500, delivery_enabled: true });
   const [bonusPoints, setBonusPoints] = useState(0);
   const [payDeliveryWithPoints, setPayDeliveryWithPoints] = useState(false);
+  const [cdReq, setCdReq] = useState(null);
+  const [cdModalOpen, setCdModalOpen] = useState(false);
+  const [cdPercent, setCdPercent] = useState('');
+  const [cdBusy, setCdBusy] = useState(false);
 
   const isPaymentMethodEnabled = (method) => paymentSettings[`${method}_enabled`] !== false;
 
@@ -70,6 +74,7 @@ export default function CheckoutPage() {
       fetchUserBalance();
       axios.get(`${API}/credit/my`).then(res => setCreditInfo(res.data)).catch(() => {});
       axios.get(`${API}/bonus/my-points`).then(res => setBonusPoints(res.data.total_points || 0)).catch(() => {});
+      axios.get(`${API}/cart-discount-requests/my`).then(res => setCdReq((res.data || []).find(x => x.status === 'pending' || x.status === 'approved') || null)).catch(() => {});
     }
     axios.get(`${API}/payment-settings`).then(res => {
       setPaymentSettings(res.data);
@@ -109,15 +114,56 @@ export default function CheckoutPage() {
   const adjustedSubtotal = currentPaymentAdjustment !== 0 
     ? Math.round(subtotal * (1 + currentPaymentAdjustment / 100))
     : subtotal;
-  
-  const isFreeDelivery = !deliverySettings.delivery_enabled || adjustedSubtotal >= deliverySettings.min_free_delivery;
+
+  // Cart-wide discount is already baked into item.price by the backend; derive amounts for display.
+  const cartDiscountPct = cart.cart_discount?.admin_percent || 0;
+  const cartDiscountAmount = cart.items.reduce((s, i) => s + (((i.price_before_cart_discount ?? i.price) - i.price) * i.quantity), 0);
+  const subtotalBeforeCartDiscount = subtotal + cartDiscountAmount;
+
+  // Individual account-wide discount — ONLY when paying from balance (stacks on top of promos/adjustment)
+  const individualDiscountPct = (payWithBalance && !mixedMode && !payWithDeferral) ? (Number(user?.individual_discount) || 0) : 0;
+  const individualDiscountAmount = individualDiscountPct > 0 ? Math.round(adjustedSubtotal * individualDiscountPct / 100) : 0;
+  const goodsTotal = Math.max(0, adjustedSubtotal - individualDiscountAmount);
+
+  const isFreeDelivery = !deliverySettings.delivery_enabled || goodsTotal >= deliverySettings.min_free_delivery;
   const deliveryFee = isFreeDelivery ? 0 : deliverySettings.delivery_price;
-  const finalTotal = adjustedSubtotal + deliveryFee;
+
+  // Pay delivery with bonus points (1 балл = 1 ₽)
+  const canPayDeliveryWithPoints = !mixedMode && deliveryFee > 0 && bonusPoints >= Math.round(deliveryFee);
+  const deliveryPaidWithPoints = payDeliveryWithPoints && canPayDeliveryWithPoints;
+  const moneyDelivery = deliveryPaidWithPoints ? 0 : deliveryFee;
+  const finalTotal = goodsTotal + moneyDelivery;
 
   const canPayWithBalance = prepaymentSettings.prepayment_enabled && userBalance >= finalTotal;
   const creditApproved = creditInfo && creditInfo.status === 'approved';
   const creditAvailable = creditInfo ? (creditInfo.available || 0) : 0;
   const canPayWithDeferral = creditApproved && creditAvailable >= finalTotal;
+
+  const submitCartDiscount = async () => {
+    const p = Number(cdPercent);
+    if (!p || p <= 0 || p > 90) { toast.error('Введите процент от 1 до 90'); return; }
+    setCdBusy(true);
+    try {
+      await axios.post(`${API}/cart-discount-requests`, { requested_percent: p });
+      toast.success('Запрос отправлен администратору');
+      setCdModalOpen(false); setCdPercent('');
+      const res = await axios.get(`${API}/cart-discount-requests/my`);
+      setCdReq((res.data || []).find(x => x.status === 'pending' || x.status === 'approved') || null);
+    } catch (e) { toast.error(e.response?.data?.detail || 'Ошибка'); }
+    finally { setCdBusy(false); }
+  };
+
+  const cancelCartDiscount = async () => {
+    if (!cdReq) return;
+    setCdBusy(true);
+    try {
+      await axios.delete(`${API}/cart-discount-requests/${cdReq.id}`);
+      toast.success('Запрос отменён');
+      setCdReq(null);
+      await fetchCart();
+    } catch (e) { toast.error(e.response?.data?.detail || 'Ошибка'); }
+    finally { setCdBusy(false); }
+  };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -751,6 +797,11 @@ export default function CheckoutPage() {
                     ) : (
                       <p className="text-slate-500 text-xs mt-1">{item.quantity} шт. × {formatPrice(item.price)} ₽</p>
                     )}
+                    {item.cart_discount_percent > 0 && item.price_before_cart_discount != null && (
+                      <p className="text-teal-600 text-[11px] font-semibold mt-0.5" data-testid={`item-cart-discount-${item.product_id}`}>
+                        Скидка на корзину −{cartDiscountPct}%: <span className="line-through text-slate-400 font-normal">{formatPrice(item.price_before_cart_discount)}</span> → {formatPrice(item.price)} ₽/шт
+                      </p>
+                    )}
                     {(() => {
                       const up = getCartUpsell(item);
                       if (!up) return null;
@@ -780,6 +831,18 @@ export default function CheckoutPage() {
                   <div className={`flex justify-between text-sm font-medium ${currentPaymentAdjustment < 0 ? 'text-emerald-600' : 'text-rose-600'}`} data-testid="checkout-cart-discount-line">
                     <span>{currentPaymentAdjustment < 0 ? 'Скидка на корзину' : 'Наценка'} ({Math.abs(currentPaymentAdjustment)}%):</span>
                     <span>{currentPaymentAdjustment < 0 ? '-' : '+'}{formatPrice(Math.abs(adjustedSubtotal - subtotal))} ₽</span>
+                  </div>
+                </>
+              )}
+              {cartDiscountPct > 0 && (
+                <>
+                  <div className="flex justify-between text-sm text-slate-500">
+                    <span>Сумма без скидки на корзину:</span>
+                    <span>{formatPrice(subtotalBeforeCartDiscount)} ₽</span>
+                  </div>
+                  <div className="flex justify-between text-sm font-medium text-teal-600" data-testid="checkout-cart-wide-discount-line">
+                    <span>Скидка на корзину ({cartDiscountPct}%):</span>
+                    <span>−{formatPrice(cartDiscountAmount)} ₽</span>
                   </div>
                 </>
               )}
@@ -836,10 +899,61 @@ export default function CheckoutPage() {
                   {formatPrice(finalTotal)} ₽
                 </motion.span>
               </div>
+
+              {/* Cart-wide discount request */}
+              <div className="mt-3 pt-4 border-t border-slate-200" data-testid="cart-discount-request-block">
+                {cdReq?.status === 'approved' ? (
+                  <div className="flex items-center gap-2 p-3 rounded-lg bg-teal-50 border border-teal-200" data-testid="cart-discount-approved-badge">
+                    <Tag className="w-4 h-4 text-teal-600" />
+                    <span className="text-sm font-semibold text-teal-700">Скидка на корзину {cdReq.admin_percent}% применена</span>
+                  </div>
+                ) : cdReq?.status === 'pending' ? (
+                  <div className="flex items-center justify-between gap-2 p-3 rounded-lg bg-amber-50 border border-amber-200" data-testid="cart-discount-pending-badge">
+                    <span className="text-sm text-amber-700">Запрос скидки {cdReq.requested_percent}% на рассмотрении</span>
+                    <button type="button" onClick={cancelCartDiscount} disabled={cdBusy} className="text-xs font-medium text-rose-600 hover:underline" data-testid="cancel-cart-discount-btn">Отменить</button>
+                  </div>
+                ) : (
+                  <button
+                    type="button"
+                    onClick={() => setCdModalOpen(true)}
+                    className="w-full flex items-center justify-center gap-2 py-2.5 rounded-lg border-2 border-dashed border-teal-300 text-teal-700 font-medium hover:bg-teal-50 transition-colors"
+                    data-testid="request-cart-discount-btn"
+                  >
+                    <Tag className="w-4 h-4" />Запросить скидку на корзину
+                  </button>
+                )}
+              </div>
             </div>
           </motion.div>
         </div>
       </div>
+
+      {/* Cart discount request modal */}
+      <Dialog open={cdModalOpen} onOpenChange={setCdModalOpen}>
+        <DialogContent className="max-w-sm bg-white rounded-2xl" data-testid="cart-discount-modal">
+          <DialogTitle className="text-lg font-bold text-slate-800">Запрос скидки на корзину</DialogTitle>
+          <DialogDescription className="text-sm text-slate-500">
+            Укажите желаемый процент скидки на всю корзину. Администратор рассмотрит запрос и подтвердит свой вариант — скидка сразу применится к вашей корзине.
+          </DialogDescription>
+          <div className="mt-2">
+            <Label className="text-xs font-semibold text-slate-500">Желаемая скидка, %</Label>
+            <Input
+              type="number" min="1" max="90"
+              value={cdPercent}
+              onChange={(e) => setCdPercent(e.target.value)}
+              placeholder="например, 10"
+              className="mt-1"
+              data-testid="cart-discount-percent-input"
+            />
+          </div>
+          <div className="flex gap-2 mt-4">
+            <Button onClick={submitCartDiscount} disabled={cdBusy} className="flex-1 bg-teal-500 hover:bg-teal-600 text-white" data-testid="cart-discount-submit-btn">
+              {cdBusy ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : null}Отправить запрос
+            </Button>
+            <Button onClick={() => setCdModalOpen(false)} variant="outline">Отмена</Button>
+          </div>
+        </DialogContent>
+      </Dialog>
 
       {/* Terms Modal */}
       <Dialog open={showTermsModal} onOpenChange={setShowTermsModal}>

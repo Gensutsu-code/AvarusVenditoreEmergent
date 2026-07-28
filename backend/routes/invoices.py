@@ -216,11 +216,20 @@ async def export_order_invoice(order_id: str, user=Depends(get_current_user)):
 
     # "Всего к оплате" as the last row of the items table (flush to the right edge,
     # inside the table borders). Label spans the left columns; value sits under "Сумма".
-    total_row = tbl.add_row().cells
-    label_cell = total_row[0].merge(total_row[1]).merge(total_row[2]).merge(total_row[3])
-    value_cell = total_row[4].merge(total_row[5])
-    _set_cell_text(label_cell, "Всего к оплате:", bold=True, align=WD_ALIGN_PARAGRAPH.RIGHT)
-    _set_cell_text(value_cell, fmt_money(total), bold=True, align=WD_ALIGN_PARAGRAPH.RIGHT)
+    def _totals_row(label, value, bold=True):
+        r = tbl.add_row().cells
+        lc = r[0].merge(r[1]).merge(r[2]).merge(r[3])
+        vc = r[4].merge(r[5])
+        _set_cell_text(lc, label, bold=bold, align=WD_ALIGN_PARAGRAPH.RIGHT)
+        _set_cell_text(vc, value, bold=bold, align=WD_ALIGN_PARAGRAPH.RIGHT)
+
+    cart_discount_pct = order.get("cart_discount_percent", 0) or 0
+    cart_discount_amount = order.get("cart_discount_amount", 0) or 0
+    if cart_discount_amount and cart_discount_amount > 0:
+        goods_before = round(subtotal + cart_discount_amount, 2)
+        _totals_row("Итого без скидки:", fmt_money(goods_before), bold=False)
+        _totals_row(f"Скидка {int(round(cart_discount_pct))}%:", "\u2212" + fmt_money(cart_discount_amount), bold=False)
+    _totals_row("Всего к оплате:", fmt_money(total), bold=True)
 
     # Title, totals paragraphs (clear the old loose totals), naming line, footer
     for p in doc.paragraphs:

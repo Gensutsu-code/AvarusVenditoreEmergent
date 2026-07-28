@@ -1,0 +1,35 @@
+{
+  "summary": "Frontend-only cart-wide-discount E2E pass. CRITICAL BLOCKER: /checkout route is a redirect to /cart (App.js line 143: <Route path=\"/checkout\" element={<Navigate to=\"/cart\" replace />}/>) — so the rendered page is CartPage.js, NOT CheckoutPage.js. The main agent restored the cart-discount UI (request btn, pending/approved badges, modal, per-item note, checkout-cart-wide-discount-line) inside /app/frontend/src/pages/CheckoutPage.js, but that file is DEAD CODE — it is not imported/rendered anywhere. As a result, on /checkout the client sees ONLY CartPage.js which has NONE of the cart-wide-discount client UI. checkout-total DOES render (3 380 ₽, no ReferenceError/blank), so the regression is limited to the discount UI being unreachable, not a crash. Admin side (tab-cart-discounts, list) works correctly.",
+  "backend_issues": {"critical": [], "minor": []},
+  "frontend_issues": {
+    "ui_bugs": [
+      {"component": "Routing / CheckoutPage vs CartPage", "issue": "/checkout redirects to /cart which renders CartPage.js. All cart-wide-discount client UI (request-cart-discount-btn, cart-discount-modal, cart-discount-percent-input, cart-discount-submit-btn, cart-discount-pending-badge, cancel-cart-discount-btn, cart-discount-approved-badge, checkout-cart-wide-discount-line, per-item item-cart-discount-{product_id}) lives in CheckoutPage.js which is NEVER rendered. CartPage.js does not implement any of it — grep shows zero cdReq / price_before_cart_discount / item-cart-discount references. Client cannot request, cancel, or see an approved cart-wide discount from the checkout screen.", "selector": "[data-testid=request-cart-discount-btn]", "priority": "CRITICAL"}
+    ],
+    "integration_issues": [
+      {"flow": "Client cart-discount request", "issue": "request-cart-discount-btn absent on /checkout (renders CartPage). Modal cannot be opened, request cannot be submitted from UI.", "affected_selectors": ["[data-testid=request-cart-discount-btn]", "[data-testid=cart-discount-modal]", "[data-testid=cart-discount-submit-btn]"]},
+      {"flow": "Client sees approved discount + per-item breakdown on checkout", "issue": "cart-discount-approved-badge, checkout-cart-wide-discount-line, item-cart-discount-{product_id} are not rendered on /cart (the actual checkout screen). Cannot verify per-item struck original->discounted display or summary line.", "affected_selectors": ["[data-testid=cart-discount-approved-badge]", "[data-testid=checkout-cart-wide-discount-line]", "[data-testid^=item-cart-discount-]"]},
+      {"flow": "Place order + OrdersPage badges", "issue": "Could not test order-item-cart-discount-{product_id} / order-cart-discount-line-{orderId} because the client cannot get an approved cart-wide discount through the UI. Additionally, submit selector [data-testid=checkout-submit] not found on /cart — button visible as 'ОФОРМИТЬ ЗАКАЗ' but likely has different testid (submit-order?). Please expose a canonical checkout-submit data-testid.", "affected_selectors": ["[data-testid=checkout-submit]", "[data-testid^=order-item-cart-discount-]", "[data-testid^=order-cart-discount-line-]"]}
+    ],
+    "design_issues": []
+  },
+  "critical_code_review_comments": [
+    "App.js:143 — <Route path=\"/checkout\" element={<Navigate to=\"/cart\" replace />}/>. All client cart-discount UI added by the main agent to CheckoutPage.js is unreachable. Fix option A: change route to element={<CheckoutPage/>} and import CheckoutPage. Fix option B: port the cart-discount block from CheckoutPage.js into CartPage.js (request-btn / pending / approved states, modal, per-item price_before_cart_discount rendering, checkout-cart-wide-discount-line, cdReq fetch on mount, submitCartDiscount/cancelCartDiscount handlers).",
+    "CartPage.js has no reference to cart_discount / cdReq / price_before_cart_discount — the entire client-side feature is missing from the actually rendered page.",
+    "CheckoutPage.js appears to be dead code (no import, no route). Consider either deleting it or wiring it to /checkout to avoid future confusion.",
+    "Confirmed working: /checkout renders totals without ReferenceError; admin AdminChatsPage tab-cart-discounts is present and lists historical requests (Отменено клиентом / Отклонено / Использовано 8% badges visible)."
+  ],
+  "test_report_links": ["/app/test_reports/screenshots/co1.png", "/app/test_reports/screenshots/admin_approved.png"],
+  "action_items": [
+    "Wire /checkout to CheckoutPage OR port cart-discount UI into CartPage.js so client can request/see cart-wide discount.",
+    "Ensure the checkout submit button has a stable [data-testid=checkout-submit] on the actually-rendered page for E2E order placement tests.",
+    "Once client UI is reachable, re-run E2E: request 10% -> admin approve 8% -> reload -> approved badge + wide-discount-line + per-item note -> place CASH order -> verify OrdersPage badges."
+  ],
+  "updated_files": [],
+  "success_rate": {"backend": "N/A (frontend-only)", "frontend": "20% (only checkout renders + admin tab visible; client discount flow entirely inaccessible)"},
+  "test_credentials": "admin@avarus.ru/admin, user@demo.com/demo123 (from /app/memory/test_credentials.md)",
+  "seed_data_creation": "None. Existing cart item retained.",
+  "retest_needed": true,
+  "should_main_agent_self_test": false,
+  "context_for_next_testing_agent": "After main agent fixes the routing/UI placement, re-verify the six flows in the review request. Note that /checkout currently 302s to /cart (App.js:143) — the rendered page is CartPage.js, not CheckoutPage.js. Demo client (user@demo.com) has one cart item (E82KPD36 x2 = 3 200 ₽). window.confirm is blocked in iframe — for cancel/reject flows use direct API or ensure UI uses a shadcn dialog. Existing cart-discount history includes: cancelled, rejected, and one 'used 8%' — API GET /api/cart-discount-requests/my should be filtered by status='pending'||'approved' for cdReq.",
+  "rca of the issue": "Root cause: React Router config in /app/frontend/src/App.js line 143 declares <Route path=\"/checkout\" element={<Navigate to=\"/cart\" replace />}/> — a hard redirect. CheckoutPage.js is not imported anywhere and never mounts. The recently 'restored' computation block plus request/approve UI inside CheckoutPage.js therefore never renders. CartPage.js (the actual rendered component at /cart AND at /checkout after redirect) never implemented any cart-wide-discount client UI. Reproduction: 1) login user@demo.com/demo123; 2) navigate to /checkout; 3) observe URL becomes /cart; 4) inspect for [data-testid=request-cart-discount-btn] — absent; 5) inspect for [data-testid=cart-discount-approved-badge] and [data-testid=checkout-cart-wide-discount-line] — both absent. Mitigation: either replace the Navigate with CheckoutPage as element (+ import), or port the ~120 lines of cart-discount UI from CheckoutPage.js (block around lines 77, 118-121, 142-166, 800-956) into CartPage.js."
+}
