@@ -199,6 +199,7 @@ export default function CartPage() {
       const res = await axios.post(`${API}/orders`, { ...form, payment_method: 'crypto', crypto_tx_hash: txHash });
       setOrderId(res.data.id);
       await fetchCart();
+      setCdReq(null);
       toast.success('Заказ оплачен криптовалютой!');
       navigate('/orders');
     } catch (err) {
@@ -222,6 +223,7 @@ export default function CartPage() {
         });
         setOrderId(res.data.id);
         await fetchCart();
+        setCdReq(null);
         if (mixM1 === 'card' || mixM2 === 'card') {
           toast.success('Заказ создан! Завершите оплату картой в «Мои заказы»');
         } else {
@@ -247,6 +249,7 @@ export default function CartPage() {
       });
       setOrderId(res.data.id);
       await fetchCart();
+      setCdReq(null);
 
       if (payWithDeferral) toast.success('Заказ оформлен в отсрочку!');
       else if (payWithBalance) toast.success('Заказ оплачен с баланса!');
