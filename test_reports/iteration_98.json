@@ -1,0 +1,45 @@
+{
+  "summary": "Frontend E2E of cart-wide discount on /cart (CartPage.js). All client UI elements (request btn, modal, percent input, submit, pending badge, cancel btn, approved badge, per-item struck-through discount, checkout-cart-wide-discount-line) render correctly. Admin tab-cart-discounts lists request, approves with custom % (8%), row updates to 'Одобрено 8%'. Cart reflects: subtotal 3200₽ → wide-line −256₽ → total 3150₽ (with delivery). Placed CASH order via place-order-btn: order IS created backend-side with cart_discount_percent=8, cart_discount_amount=230.4; OrdersPage badges [order-item-cart-discount-{product_id}]='Скидка на корзину −8%' and [order-cart-discount-line-{orderId}]='−230,4 ₽' render correctly on order expand. HOWEVER two issues found: (A) /api/cart-discount/active STILL returns the approved request after order placement (spec requires null / one-time consumption) — the request status remains 'approved', not 'used'; (B) frontend does not navigate away from /cart after successful order and cart is not emptied (both cart items and approved-badge still visible), so client cannot make a second request → reject-flow step 5 could not be exercised via UI.",
+  "backend_issues": {
+    "critical": [
+      {"endpoint": "POST /api/orders + GET /api/cart-discount/active", "issue": "Cart-wide discount is NOT consumed after successful order placement. GET /api/cart-discount/active continues returning the approved request with status='approved' (should be null or status='used'). Multiple back-to-back orders re-apply the same 8% discount (verified: 2 identical orders 3149,6₽ each within seconds using the SAME discount id b055a123). Violates the 'one-time (consumed on one order)' spec.", "priority": "CRITICAL"},
+      {"endpoint": "POST /api/orders", "issue": "Cart is NOT cleared after successful order creation — GET /api/cart still returns the same item(s) with the same cart_discount_percent applied. This lets the client repeat the same order and stack the same discount indefinitely.", "priority": "HIGH"}
+    ],
+    "minor": [
+      {"endpoint": "Console 403 during admin approve navigation", "issue": "Two spurious 403 responses logged from client-tab endpoints while the admin session is active (likely a request originating from a customer-only endpoint fired on the admin page). Cosmetic — does not block flow."}
+    ]
+  },
+  "frontend_issues": {
+    "ui_bugs": [
+      {"component": "CartPage after place-order-btn", "issue": "After successful order the user remains on /cart with the cart items and approved-badge still displayed. There is no navigation to /orders (or /orders/{id}) and no explicit success toast/dialog. UX-wise, the client cannot tell the order was placed and cannot easily create a new cart-discount request (the request-btn is hidden by the persisting approved badge).", "selector": "[data-testid=place-order-btn]", "priority": "HIGH"}
+    ],
+    "integration_issues": [
+      {"flow": "Step 5 – reject flow", "issue": "Could not exercise via UI: because the previous approved discount is not consumed after order placement, the client-side [data-testid=request-cart-discount-btn] does not reappear (still shows approved-badge). Consequently no 2nd pending request can be created from the UI, and cart-discount-reject-{id} cannot be triggered from a fresh request. Blocked by backend issue A above.", "affected_selectors": ["[data-testid=request-cart-discount-btn]", "[data-testid^=cart-discount-reject-]"]}
+    ],
+    "design_issues": []
+  },
+  "critical_code_review_comments": [
+    "CartPage.js: After successful POST /api/orders in place-order handler, frontend should (a) refresh cart (should now be empty), (b) refresh cdReq (should now be null), (c) navigate to /orders or show a success screen. Currently none of these happen — the /cart page just re-renders with stale state.",
+    "Backend order creation must mark the associated cart-discount-request as status='used' (or delete) AND empty the user's cart atomically inside the order transaction. Right now both are leaking.",
+    "OrdersPage.js: order-item-cart-discount-{product_id} and order-cart-discount-line-{orderId} render only inside the expanded order card. This is fine per spec but consider surfacing a small teal chip in the collapsed row as well for discoverability.",
+    "AdminChatsPage.js tab-cart-discounts: after approve/reject, the row updates label but the pending request is not removed from the pending list until page reload — minor. Not blocking."
+  ],
+  "test_report_links": [
+    "/app/test_reports/screenshots/orders_detail.png",
+    "/app/test_reports/screenshots/orders_after.png"
+  ],
+  "action_items": [
+    "BACKEND: mark cart-discount request as consumed/used on order create so GET /api/cart-discount/active returns null after the order (one-time semantics).",
+    "BACKEND: empty user's cart on successful order create.",
+    "FRONTEND CartPage.js: after successful order, refresh cart + cdReq state and navigate to /orders (or show confirmation).",
+    "Re-test full 5-step flow (including the reject step) after the above fixes."
+  ],
+  "updated_files": [],
+  "success_rate": {"backend": "N/A (frontend-only run; but two backend defects observed while exercising the flow)", "frontend": "80% (4 of 5 flows fully verified; reject flow blocked by backend not consuming discount)"},
+  "test_credentials": "admin@avarus.ru/admin, user@demo.com/demo123 (from /app/memory/test_credentials.md)",
+  "seed_data_creation": "None manually. Two live orders (id 8a56a3c5..., 69a82421...) were created by the test run — both 3149,6₽ CASH, both stamped with cart_discount_percent=8 and cart_discount_amount=230,4.",
+  "retest_needed": true,
+  "should_main_agent_self_test": false,
+  "context_for_next_testing_agent": "CartPage.js UI is complete and correct for the client side (all data-testids present and functional). AdminChatsPage tab-cart-discounts approve/reject controls work. OrdersPage badges render on order expand. The remaining gap is the consumption / cart-clear step on the backend + a small frontend post-order UX update. Discount id b055a123-baf1-438e-9660-2046f9a71693 is currently stuck in 'approved' state on user@demo.com — either mark it 'used' via DB or DELETE via API before re-testing, otherwise the request-cart-discount-btn will be hidden.",
+  "rca of the issue": "Order placement in POST /api/orders does not update the approved cart-discount request row (status remains 'approved') and does not empty the cart. This breaks the one-time-consumption invariant. Reproduction: 1) login user@demo.com; 2) POST /api/cart-discount-requests {requested_percent:10}; 3) admin approve with 8%; 4) place CASH order via /cart place-order-btn; 5) GET /api/cart-discount/active — observed: returns the request with status='approved'; expected: null or status='used'; 6) GET /api/cart — observed: same items still present; expected: empty. Mitigation: inside order-create service transaction, look up the active cart-discount request for the user, set status='used' (updated_at=now, order_id=<new order id>), then clear cart items."
+}
