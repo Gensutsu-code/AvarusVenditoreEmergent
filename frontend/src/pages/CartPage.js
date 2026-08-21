@@ -116,6 +116,11 @@ export default function CartPage() {
     ? (mixCharged1 + mixCharged2)
     : (mixedMode ? cartTotal : (singleAdj !== 0 ? Math.round(cartTotal * (1 + singleAdj / 100)) : cartTotal));
 
+  // Individual account-wide discount — ONLY when paying from balance (stacks on top of promos/adjustment)
+  const individualDiscountPct = (payWithBalance && !mixedMode && !payWithDeferral) ? (Number(user?.individual_discount) || 0) : 0;
+  const individualDiscountAmount = individualDiscountPct > 0 ? Math.round(goodsTotal * individualDiscountPct / 100) : 0;
+  const goodsAfterIndividual = Math.max(0, goodsTotal - individualDiscountAmount);
+
   const toggleMixedMethod = (m) => {
     if (!['balance', 'card', 'cash'].includes(m)) { toast.error('В смешанной оплате доступны: баланс, карта, наличные'); return; }
     setMixedMethods((prev) => {
@@ -125,14 +130,14 @@ export default function CartPage() {
     });
   };
 
-  const isFreeDelivery = !delivery.delivery_enabled || goodsTotal >= delivery.min_free_delivery;
+  const isFreeDelivery = !delivery.delivery_enabled || goodsAfterIndividual >= delivery.min_free_delivery;
   const deliveryFee = isFreeDelivery ? 0 : delivery.delivery_price;
 
   // Pay delivery with bonus points (1 балл = 1 ₽)
   const canPayDeliveryWithPoints = !mixedMode && deliveryFee > 0 && bonusPoints >= Math.round(deliveryFee);
   const deliveryPaidWithPoints = payDeliveryWithPoints && canPayDeliveryWithPoints;
   const moneyDelivery = deliveryPaidWithPoints ? 0 : deliveryFee;
-  const finalTotal = goodsTotal + moneyDelivery;
+  const finalTotal = goodsAfterIndividual + moneyDelivery;
 
   // Cart-wide discount is already baked into item.price by backend; derive display amounts.
   const cartDiscountPct = cart.cart_discount?.admin_percent || 0;
@@ -169,11 +174,11 @@ export default function CartPage() {
   useEffect(() => {
     if (!cart.items.length) { setBonusPreview({ total_points: 0, programs: [] }); return undefined; }
     const t = setTimeout(() => {
-      axios.get(`${API}/bonus/cart-preview`, { params: { amount: goodsTotal } })
+      axios.get(`${API}/bonus/cart-preview`, { params: { amount: goodsAfterIndividual } })
         .then(r => setBonusPreview(r.data)).catch(() => {});
     }, 400);
     return () => clearTimeout(t);
-  }, [goodsTotal, cart.items.length]);
+  }, [goodsAfterIndividual, cart.items.length]);
 
   const isMethodEnabled = (m) => paymentSettings[`${m}_enabled`] !== false;
   const canPayWithBalance = prepaymentSettings.prepayment_enabled && userBalance >= finalTotal;
@@ -184,7 +189,7 @@ export default function CartPage() {
   const showPayLater = deferredEnabled && !mixedMode && !payWithBalance && !payWithDeferral && (paymentMethod === 'card' || paymentMethod === 'crypto');
 
   // ----- Free-delivery celebration -----
-  const freeDeliveryReached = delivery.delivery_enabled && delivery.min_free_delivery > 0 && goodsTotal >= delivery.min_free_delivery;
+  const freeDeliveryReached = delivery.delivery_enabled && delivery.min_free_delivery > 0 && goodsAfterIndividual >= delivery.min_free_delivery;
   const [celebrate, setCelebrate] = useState(false);
   const prevReachedRef = useRef(false);
   useEffect(() => {
@@ -333,9 +338,9 @@ export default function CartPage() {
 
         {/* Free-delivery progress bar (based on adjusted goods total) */}
         {delivery.delivery_enabled && delivery.min_free_delivery > 0 && (() => {
-          const remaining = Math.max(0, delivery.min_free_delivery - goodsTotal);
+          const remaining = Math.max(0, delivery.min_free_delivery - goodsAfterIndividual);
           const reached = remaining <= 0;
-          const pct = Math.min(100, (goodsTotal / delivery.min_free_delivery) * 100);
+          const pct = Math.min(100, (goodsAfterIndividual / delivery.min_free_delivery) * 100);
           return (
             <motion.div className={`glass-card p-4 mb-6 relative ${reached ? 'ring-2 ring-emerald-300/70' : ''}`} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} data-testid="free-delivery-bar">
               <AnimatePresence>
@@ -358,7 +363,7 @@ export default function CartPage() {
                     <><Truck className="w-4 h-4 text-rose-500" /><span>До бесплатной доставки осталось <span className="font-bold text-rose-600" data-testid="free-delivery-remaining">{formatPrice(remaining)} ₽</span></span></>
                   )}
                 </span>
-                <span className="text-xs text-slate-400 whitespace-nowrap">{formatPrice(goodsTotal)} / {formatPrice(delivery.min_free_delivery)} ₽</span>
+                <span className="text-xs text-slate-400 whitespace-nowrap">{formatPrice(goodsAfterIndividual)} / {formatPrice(delivery.min_free_delivery)} ₽</span>
               </div>
               <div className="h-2.5 w-full rounded-full bg-slate-100 overflow-hidden">
                 <motion.div className={`h-full rounded-full ${reached ? 'bg-gradient-to-r from-emerald-400 to-teal-500' : 'bg-gradient-to-r from-rose-400 to-pink-500'}`} initial={{ width: 0 }} animate={{ width: `${pct}%` }} transition={{ duration: 0.6, ease: 'easeOut' }} />
@@ -368,7 +373,7 @@ export default function CartPage() {
         })()}
 
         {/* Ozon certificate progress (based on adjusted goods total) */}
-        <OzonCertificateBar total={goodsTotal} />
+        <OzonCertificateBar total={goodsAfterIndividual} />
 
         <form onSubmit={handleSubmit} className="grid grid-cols-1 lg:grid-cols-3 gap-8 mt-2">
           {/* LEFT: Cart items + shipping + payment */}
@@ -609,6 +614,12 @@ export default function CartPage() {
                       <span>−{formatPrice(cartDiscountAmount)} ₽</span>
                     </div>
                   </>
+                )}
+                {individualDiscountAmount > 0 && (
+                  <div className="flex justify-between text-sm font-medium text-emerald-600" data-testid="checkout-individual-discount-line">
+                    <span>Индивидуальная скидка ({individualDiscountPct}%):</span>
+                    <span>−{formatPrice(individualDiscountAmount)} ₽</span>
+                  </div>
                 )}
                 {delivery.delivery_enabled && (
                   <div className="flex justify-between text-sm" data-testid="delivery-fee-row">
