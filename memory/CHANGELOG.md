@@ -131,3 +131,8 @@ Verified by testing_agent iteration_84: frontend 6/6 + backend 3/3 pytest. Testi
 - Frontend АДМИН (`AdminChatsPage.js`): вкладка «Скидка на корзину» (`tab-cart-discounts`) со списком, одобрением с вводом % и отклонением.
 - ВАЖНО (для будущих агентов): `pages/CheckoutPage.js` — МЁРТВЫЙ КОД (нигде не импортируется, `/checkout`→`/cart`). Реальная страница корзины/чекаута — `pages/CartPage.js`. Не редактировать CheckoutPage.js.
 - Проверка: backend curl e2e (запрос→одобрение 8%→корзина 1600→1472→заказ cart_discount_amount=230.4→скидка used, корзина очищена→накладная содержит строки скидки). Frontend testing_agent iter_98: клиентский UI, админ-вкладка, бейджи OrdersPage — работают.
+
+## Багфикс 2026-06 — «Оплата доставки баллами» перенесена в CartPage.js
+- Ранее UI был в мёртвом CheckoutPage.js. Перенесён в реальную страницу CartPage.js: переключатель pay-delivery-points-toggle (показывается когда доставка платная и баллов >= стоимости), строка «−N ₽ (баллами)», баланс баллов. В payload заказа добавлен pay_delivery_with_points. Загрузка баланса через /bonus/my-points.
+- Проверено curl e2e: заказ total исключает доставку, delivery_paid_with_points=true, delivery_points_used=500, баллы списаны.
+- ОСТАЁТСЯ (следующий шаг): перенести в CartPage.js отображение индивидуальной скидки при оплате с баланса — сейчас бэкенд применяет её, но итог на /cart для оплаты с баланса показывается без учёта скидки (расхождение отображения).
