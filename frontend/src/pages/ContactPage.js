@@ -2,7 +2,7 @@ import { useState, useEffect, useRef, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import { motion } from 'framer-motion';
-import { MessageCircle, Percent, Clock, ClipboardList, Send, Loader2, TrendingUp, CheckCircle, XCircle, Hourglass, Package, Tag, Paperclip, Smile, FileText, Download, X } from 'lucide-react';
+import { MessageCircle, Percent, Clock, ClipboardList, Send, Loader2, TrendingUp, CheckCircle, XCircle, Hourglass, Package, Tag, Paperclip, Smile, FileText, Download, X, ShoppingCart } from 'lucide-react';
 import { Button } from '../components/ui/button';
 import { Input } from '../components/ui/input';
 import { useAuth } from '../context/AuthContext';
@@ -24,6 +24,9 @@ const REQ_STATUS = {
   completed: { label: 'Выполнен', cls: 'bg-emerald-100 text-emerald-700', Icon: CheckCircle },
   rejected: { label: 'Отклонён', cls: 'bg-rose-100 text-rose-700', Icon: XCircle },
   rejected_by_client: { label: 'Отклонён вами', cls: 'bg-rose-100 text-rose-700', Icon: XCircle },
+  used: { label: 'Использовано', cls: 'bg-slate-100 text-slate-500', Icon: CheckCircle },
+  superseded: { label: 'Заменено', cls: 'bg-slate-100 text-slate-400', Icon: XCircle },
+  cancelled: { label: 'Отменено', cls: 'bg-slate-100 text-slate-400', Icon: XCircle },
 };
 
 const TABS = [
@@ -77,6 +80,7 @@ export default function ContactPage() {
   const [discReqs, setDiscReqs] = useState([]);
   const [prodReqs, setProdReqs] = useState([]);
   const [indPrices, setIndPrices] = useState([]);
+  const [cartDiscReqs, setCartDiscReqs] = useState([]);
 
   const fetchChat = useCallback(async () => {
     try {
@@ -88,18 +92,20 @@ export default function ContactPage() {
 
   const fetchRequests = useCallback(async () => {
     try {
-      const [mr, cr, dr, pr, ip] = await Promise.all([
+      const [mr, cr, dr, pr, ip, cd] = await Promise.all([
         axios.get(`${API}/my-requests`),
         axios.get(`${API}/credit/my`),
         axios.get(`${API}/discount-requests/my`),
         axios.get(`${API}/product-requests/my`),
         axios.get(`${API}/individual-prices/my`),
+        axios.get(`${API}/cart-discount-requests/my`),
       ]);
       setMyReqs(mr.data);
       setCredit(cr.data);
       setDiscReqs(dr.data || []);
       setProdReqs(pr.data || []);
       setIndPrices(ip.data || []);
+      setCartDiscReqs(cd.data || []);
     } catch {}
   }, []);
 
@@ -373,72 +379,146 @@ export default function ContactPage() {
 
           {/* HISTORY */}
           {tab === 'history' && (
-            <div className="space-y-6" data-testid="contact-history">
-              {/* Discount requests on products */}
-              <div>
-                <h2 className="text-sm font-bold text-slate-700 mb-2 flex items-center gap-2"><Tag className="w-4 h-4 text-rose-400" />Запросы скидок на товары</h2>
-                {discReqs.filter(r => r.product_id).length === 0 ? (
-                  <div className="bg-white rounded-2xl p-5 text-center text-slate-400 shadow-sm text-sm">Нет запросов</div>
-                ) : (
-                  <div className="space-y-2">
-                    {discReqs.filter(r => r.product_id).map(r => (
-                      <div key={r.id} className="bg-white rounded-xl p-3 shadow-sm flex items-center justify-between gap-3" data-testid={`history-disc-${r.id}`}>
-                        <div>
-                          <p className="text-sm font-medium text-slate-800">{r.product_name} <span className="text-xs text-slate-400">{r.product_article}</span></p>
-                          {r.message && <p className="text-xs text-slate-500 italic">«{r.message}»</p>}
-                          {r.individual_price && <p className="text-xs text-emerald-600">Индивидуальная цена: {fmt(r.individual_price)} ₽</p>}
-                          {r.admin_response && <p className="text-xs text-slate-500">Ответ: {r.admin_response}</p>}
-                        </div>
-                        <StatusBadge status={r.status} />
-                      </div>
-                    ))}
-                  </div>
-                )}
-              </div>
+            <div className="space-y-8" data-testid="contact-history">
+              {(() => {
+                const indDiscReqs = discReqs.filter(r => !r.product_id);
+                const prodDiscReqs = discReqs.filter(r => r.product_id);
 
-              {/* Product requests */}
-              <div>
-                <h2 className="text-sm font-bold text-slate-700 mb-2 flex items-center gap-2"><Package className="w-4 h-4 text-teal-400" />Запросы товаров</h2>
-                {prodReqs.length === 0 ? (
-                  <div className="bg-white rounded-2xl p-5 text-center text-slate-400 shadow-sm text-sm">Нет запросов</div>
-                ) : (
-                  <div className="space-y-2">
-                    {prodReqs.map(r => (
-                      (r.status === 'offered' || r.offer_price != null) ? (
-                        <div key={r.id} data-testid={`history-prod-${r.id}`} className="space-y-1">
-                          <div className="flex items-center justify-end"><StatusBadge status={r.status} /></div>
-                          <ProductRequestOffer req={r} onDone={fetchRequests} />
-                        </div>
-                      ) : (
-                        <div key={r.id} className="bg-white rounded-xl p-3 shadow-sm flex items-center justify-between gap-3" data-testid={`history-prod-${r.id}`}>
-                          <div>
-                            <p className="text-sm font-medium text-slate-800">{r.product_name || r.article} <span className="text-xs text-slate-400">{r.article}</span></p>
-                            <p className="text-xs text-slate-500">Кол-во: {r.quantity}{r.admin_response ? ` · Ответ: ${r.admin_response}` : ''}</p>
-                          </div>
-                          <StatusBadge status={r.status} />
-                        </div>
-                      )
-                    ))}
+                const SectionHeader = ({ Icon, color, title, count }) => (
+                  <div className="flex items-center gap-2.5 mb-3">
+                    <span className={`w-8 h-8 rounded-xl flex items-center justify-center ${color}`}><Icon className="w-4 h-4" /></span>
+                    <h2 className="text-sm font-bold text-slate-800 tracking-tight">{title}</h2>
+                    {count > 0 && <span className="text-[11px] font-bold text-slate-400 bg-slate-100 rounded-full px-2 py-0.5">{count}</span>}
                   </div>
-                )}
-              </div>
+                );
+                const Empty = ({ text }) => (
+                  <div className="rounded-2xl border-2 border-dashed border-slate-200 p-6 text-center text-slate-400 text-sm">{text}</div>
+                );
 
-              {/* Individual prices */}
-              <div>
-                <h2 className="text-sm font-bold text-slate-700 mb-2 flex items-center gap-2"><TrendingUp className="w-4 h-4 text-emerald-400" />Действующие индивидуальные цены</h2>
-                {indPrices.length === 0 ? (
-                  <div className="bg-white rounded-2xl p-5 text-center text-slate-400 shadow-sm text-sm">Нет индивидуальных цен</div>
-                ) : (
-                  <div className="space-y-2">
-                    {indPrices.map((p, i) => (
-                      <div key={p.id || i} className="bg-white rounded-xl p-3 shadow-sm flex items-center justify-between gap-3" data-testid={`history-price-${p.id || i}`}>
-                        <p className="text-sm font-medium text-slate-800">{p.product_name || p.product_article || 'Товар'}</p>
-                        <p className="text-sm font-bold text-emerald-600">{fmt(p.individual_price ?? p.price)} ₽</p>
-                      </div>
-                    ))}
-                  </div>
-                )}
-              </div>
+                return (
+                  <>
+                    {/* Individual (account-wide) discount requests */}
+                    <section>
+                      <SectionHeader Icon={Percent} color="bg-teal-100 text-teal-600" title="Запросы индивидуальной скидки" count={indDiscReqs.length} />
+                      {indDiscReqs.length === 0 ? <Empty text="Нет запросов на индивидуальную скидку" /> : (
+                        <div className="grid sm:grid-cols-2 gap-3">
+                          {indDiscReqs.map(r => (
+                            <div key={r.id} className="relative bg-white rounded-2xl p-4 shadow-sm border border-slate-100 hover:shadow-md hover:-translate-y-0.5 transition-all overflow-hidden" data-testid={`history-inddisc-${r.id}`}>
+                              <span className="absolute left-0 top-0 bottom-0 w-1 bg-teal-400" />
+                              <div className="flex items-start justify-between gap-2">
+                                <div className="pl-1">
+                                  <p className="text-2xl font-extrabold text-teal-600 leading-none">{r.requested_discount}%</p>
+                                  <p className="text-[11px] text-slate-400 mt-1">Запрошенная скидка на все заказы</p>
+                                </div>
+                                <StatusBadge status={r.status} />
+                              </div>
+                              {r.reason && <p className="text-xs text-slate-500 italic mt-2 pl-1">«{r.reason}»</p>}
+                              {r.admin_response && <p className="text-xs text-slate-600 mt-1.5 pl-1"><span className="font-semibold">Ответ:</span> {r.admin_response}</p>}
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </section>
+
+                    {/* Cart-wide discount requests */}
+                    <section>
+                      <SectionHeader Icon={ShoppingCart} color="bg-violet-100 text-violet-600" title="Запросы скидки на корзину" count={cartDiscReqs.length} />
+                      {cartDiscReqs.length === 0 ? <Empty text="Нет запросов на скидку корзины" /> : (
+                        <div className="grid sm:grid-cols-2 gap-3">
+                          {cartDiscReqs.map(r => (
+                            <div key={r.id} className="relative bg-white rounded-2xl p-4 shadow-sm border border-slate-100 hover:shadow-md hover:-translate-y-0.5 transition-all overflow-hidden" data-testid={`history-cartdisc-${r.id}`}>
+                              <span className="absolute left-0 top-0 bottom-0 w-1 bg-violet-400" />
+                              <div className="flex items-start justify-between gap-2">
+                                <div className="pl-1">
+                                  <div className="flex items-baseline gap-1.5">
+                                    <p className="text-2xl font-extrabold text-violet-600 leading-none">{r.admin_percent ?? r.requested_percent}%</p>
+                                    {r.admin_percent != null && r.admin_percent !== r.requested_percent && (
+                                      <span className="text-xs text-slate-400 line-through">{r.requested_percent}%</span>
+                                    )}
+                                  </div>
+                                  <p className="text-[11px] text-slate-400 mt-1">{r.admin_percent != null ? 'Одобренная скидка на корзину' : 'Запрошенная скидка на корзину'}</p>
+                                </div>
+                                <StatusBadge status={r.status} />
+                              </div>
+                              {r.message && <p className="text-xs text-slate-500 italic mt-2 pl-1">«{r.message}»</p>}
+                              {r.admin_response && <p className="text-xs text-slate-600 mt-1.5 pl-1"><span className="font-semibold">Ответ:</span> {r.admin_response}</p>}
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </section>
+
+                    {/* Product discount requests */}
+                    <section>
+                      <SectionHeader Icon={Tag} color="bg-rose-100 text-rose-600" title="Запросы скидок на товары" count={prodDiscReqs.length} />
+                      {prodDiscReqs.length === 0 ? <Empty text="Нет запросов скидок на товары" /> : (
+                        <div className="grid sm:grid-cols-2 gap-3">
+                          {prodDiscReqs.map(r => (
+                            <div key={r.id} className="relative bg-white rounded-2xl p-4 shadow-sm border border-slate-100 hover:shadow-md hover:-translate-y-0.5 transition-all overflow-hidden" data-testid={`history-disc-${r.id}`}>
+                              <span className="absolute left-0 top-0 bottom-0 w-1 bg-rose-400" />
+                              <div className="flex items-start justify-between gap-2">
+                                <div className="pl-1 min-w-0">
+                                  <p className="text-sm font-semibold text-slate-800 truncate">{r.product_name}</p>
+                                  <p className="text-[11px] font-mono text-slate-400">{r.product_article}</p>
+                                </div>
+                                <StatusBadge status={r.status} />
+                              </div>
+                              {r.message && <p className="text-xs text-slate-500 italic mt-2 pl-1">«{r.message}»</p>}
+                              {r.individual_price && <p className="text-xs text-emerald-600 font-semibold mt-1.5 pl-1">Индивидуальная цена: {fmt(r.individual_price)} ₽</p>}
+                              {r.admin_response && <p className="text-xs text-slate-600 mt-1 pl-1"><span className="font-semibold">Ответ:</span> {r.admin_response}</p>}
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </section>
+
+                    {/* Product requests (with offers) */}
+                    <section>
+                      <SectionHeader Icon={Package} color="bg-sky-100 text-sky-600" title="Запросы товаров" count={prodReqs.length} />
+                      {prodReqs.length === 0 ? <Empty text="Нет запросов товаров" /> : (
+                        <div className="space-y-3">
+                          {prodReqs.map(r => (
+                            (r.status === 'offered' || r.offer_price != null) ? (
+                              <div key={r.id} data-testid={`history-prod-${r.id}`} className="space-y-1.5">
+                                <div className="flex items-center justify-end"><StatusBadge status={r.status} /></div>
+                                <ProductRequestOffer req={r} onDone={fetchRequests} />
+                              </div>
+                            ) : (
+                              <div key={r.id} className="relative bg-white rounded-2xl p-4 shadow-sm border border-slate-100 hover:shadow-md hover:-translate-y-0.5 transition-all overflow-hidden" data-testid={`history-prod-${r.id}`}>
+                                <span className="absolute left-0 top-0 bottom-0 w-1 bg-sky-400" />
+                                <div className="flex items-start justify-between gap-2">
+                                  <div className="pl-1 min-w-0">
+                                    <p className="text-sm font-semibold text-slate-800 truncate">{r.product_name || r.article} <span className="text-[11px] font-mono text-slate-400">{r.article}</span></p>
+                                    <p className="text-xs text-slate-500 mt-0.5">Кол-во: {r.quantity}</p>
+                                  </div>
+                                  <StatusBadge status={r.status} />
+                                </div>
+                                {r.admin_response && <p className="text-xs text-slate-600 mt-1.5 pl-1"><span className="font-semibold">Ответ:</span> {r.admin_response}</p>}
+                              </div>
+                            )
+                          ))}
+                        </div>
+                      )}
+                    </section>
+
+                    {/* Active individual prices */}
+                    <section>
+                      <SectionHeader Icon={TrendingUp} color="bg-emerald-100 text-emerald-600" title="Действующие индивидуальные цены" count={indPrices.length} />
+                      {indPrices.length === 0 ? <Empty text="Нет индивидуальных цен" /> : (
+                        <div className="grid sm:grid-cols-2 gap-3">
+                          {indPrices.map((p, i) => (
+                            <div key={p.id || i} className="relative bg-gradient-to-br from-emerald-50 to-teal-50 rounded-2xl p-4 shadow-sm border border-emerald-100 flex items-center justify-between gap-3 overflow-hidden" data-testid={`history-price-${p.id || i}`}>
+                              <span className="absolute left-0 top-0 bottom-0 w-1 bg-emerald-400" />
+                              <p className="text-sm font-medium text-slate-800 pl-1 truncate">{p.product_name || p.product_article || 'Товар'}</p>
+                              <p className="text-base font-extrabold text-emerald-600 whitespace-nowrap">{fmt(p.individual_price ?? p.price)} ₽</p>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </section>
+                  </>
+                );
+              })()}
             </div>
           )}
         </motion.div>
