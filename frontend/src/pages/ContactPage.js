@@ -407,13 +407,28 @@ export default function ContactPage() {
                               <span className="absolute left-0 top-0 bottom-0 w-1 bg-teal-400" />
                               <div className="flex items-start justify-between gap-2">
                                 <div className="pl-1">
-                                  <p className="text-2xl font-extrabold text-teal-600 leading-none">{r.requested_discount}%</p>
-                                  <p className="text-[11px] text-slate-400 mt-1">Запрошенная скидка на все заказы</p>
+                                  <div className="flex items-baseline gap-1.5">
+                                    <p className="text-2xl font-extrabold text-teal-600 leading-none">{(r.status === 'offered' || r.status === 'accepted' || r.status === 'approved') && (r.offered_discount ?? r.approved_discount) != null ? (r.offered_discount ?? r.approved_discount) : r.requested_discount}%</p>
+                                    {r.status === 'offered' && r.offered_discount != null && r.offered_discount !== r.requested_discount && (
+                                      <span className="text-xs text-slate-400 line-through">{r.requested_discount}%</span>
+                                    )}
+                                  </div>
+                                  <p className="text-[11px] text-slate-400 mt-1">{r.status === 'offered' ? 'Предложенная скидка (при оплате с баланса)' : 'Скидка на все заказы'}</p>
                                 </div>
                                 <StatusBadge status={r.status} />
                               </div>
                               {r.reason && <p className="text-xs text-slate-500 italic mt-2 pl-1">«{r.reason}»</p>}
                               {r.admin_response && <p className="text-xs text-slate-600 mt-1.5 pl-1"><span className="font-semibold">Ответ:</span> {r.admin_response}</p>}
+                              {r.status === 'offered' && (
+                                <div className="flex gap-2 mt-3 pl-1" data-testid={`inddisc-actions-${r.id}`}>
+                                  <Button onClick={async () => { try { await axios.post(`${API}/discount-requests/${r.id}/accept`); toast.success('Скидка принята и применена'); fetchRequests(); } catch (e) { toast.error(e.response?.data?.detail || 'Ошибка'); } }} className="flex-1 bg-emerald-500 hover:bg-emerald-600 text-white h-9" data-testid={`inddisc-accept-${r.id}`}>
+                                    <CheckCircle className="w-4 h-4 mr-1" />Принять
+                                  </Button>
+                                  <Button onClick={async () => { try { await axios.post(`${API}/discount-requests/${r.id}/reject`, { reason: '' }); toast.success('Предложение отклонено'); fetchRequests(); } catch (e) { toast.error(e.response?.data?.detail || 'Ошибка'); } }} variant="outline" className="border-rose-300 text-rose-600 hover:bg-rose-50 h-9" data-testid={`inddisc-reject-${r.id}`}>
+                                    <XCircle className="w-4 h-4 mr-1" />Отклонить
+                                  </Button>
+                                </div>
+                              )}
                             </div>
                           ))}
                         </div>

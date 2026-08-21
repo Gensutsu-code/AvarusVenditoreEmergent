@@ -26,6 +26,113 @@ class DiscountRequestReject(BaseModel):
     response_message: str = ""
 
 
+class AccountDiscountBody(BaseModel):
+    discount_percent: float
+    response_message: str = ""
+
+
+class ClientRejectBody(BaseModel):
+    reason: str = ""
+
+
+# --- Account-wide individual discount: approve immediately / counter-offer / client accept-reject ---
+
+@router.put("/admin/discount-requests/{request_id}/approve-discount")
+async def approve_account_discount(request_id: str, data: AccountDiscountBody, user=Depends(get_current_user)):
+    """Admin applies an account-wide individual discount immediately."""
+    if user.get("role") != "admin":
+        raise HTTPException(status_code=403, detail="Admin access required")
+    req = await db.discount_requests.find_one({"id": request_id}, {"_id": 0})
+    if not req:
+        raise HTTPException(status_code=404, detail="Запрос не найден")
+    if req.get("status") not in ("pending", "offered"):
+        raise HTTPException(status_code=400, detail="Запрос уже обработан")
+    if data.discount_percent <= 0 or data.discount_percent > 90:
+        raise HTTPException(status_code=400, detail="Скидка должна быть от 1 до 90%")
+    now = datetime.now(timezone.utc).isoformat()
+    await db.discount_requests.update_one(
+        {"id": request_id},
+        {"$set": {"status": "approved", "approved_discount": data.discount_percent, "admin_response": data.response_message, "updated_at": now}},
+    )
+    await db.users.update_one({"id": req["user_id"]}, {"$set": {"individual_discount": data.discount_percent}})
+    await notify_user(
+        req["user_id"], "discount_approved", "Индивидуальная скидка одобрена",
+        data.response_message or f"Вам одобрена индивидуальная скидка {data.discount_percent:.0f}% (при оплате с баланса).",
+        "/contact",
+    )
+    return await db.discount_requests.find_one({"id": request_id}, {"_id": 0})
+
+
+@router.put("/admin/discount-requests/{request_id}/offer-discount")
+async def offer_account_discount(request_id: str, data: AccountDiscountBody, user=Depends(get_current_user)):
+    """Admin proposes a counter individual-discount %. Applied only after the client accepts."""
+    if user.get("role") != "admin":
+        raise HTTPException(status_code=403, detail="Admin access required")
+    req = await db.discount_requests.find_one({"id": request_id}, {"_id": 0})
+    if not req:
+        raise HTTPException(status_code=404, detail="Запрос не найден")
+    if req.get("status") not in ("pending", "offered"):
+        raise HTTPException(status_code=400, detail="Запрос уже обработан")
+    if data.discount_percent <= 0 or data.discount_percent > 90:
+        raise HTTPException(status_code=400, detail="Скидка должна быть от 1 до 90%")
+    now = datetime.now(timezone.utc).isoformat()
+    await db.discount_requests.update_one(
+        {"id": request_id},
+        {"$set": {"status": "offered", "offered_discount": data.discount_percent, "admin_response": data.response_message, "updated_at": now}},
+    )
+    await notify_user(
+        req["user_id"], "discount_offer", "Предложение по индивидуальной скидке",
+        (data.response_message + " " if data.response_message else "") + f"Предложена скидка {data.discount_percent:.0f}%. Примите или отклоните в разделе «Мои обращения».",
+        "/contact",
+    )
+    return await db.discount_requests.find_one({"id": request_id}, {"_id": 0})
+
+
+@router.post("/discount-requests/{request_id}/accept")
+async def accept_discount_offer(request_id: str, user=Depends(get_current_user)):
+    """Client accepts the admin's counter individual-discount offer."""
+    req = await db.discount_requests.find_one({"id": request_id, "user_id": user["id"]}, {"_id": 0})
+    if not req:
+        raise HTTPException(status_code=404, detail="Запрос не найден")
+    if req.get("status") != "offered":
+        raise HTTPException(status_code=400, detail="Нет активного предложения для принятия")
+    pct = req.get("offered_discount", 0) or 0
+    now = datetime.now(timezone.utc).isoformat()
+    await db.discount_requests.update_one(
+        {"id": request_id},
+        {"$set": {"status": "accepted", "approved_discount": pct, "client_decision_at": now, "updated_at": now}},
+    )
+    await db.users.update_one({"id": req["user_id"]}, {"$set": {"individual_discount": pct}})
+    await notify_admin(
+        "discount_request", "Клиент принял индивидуальную скидку",
+        f"{user.get('name', user.get('email',''))} принял индивидуальную скидку {pct:.0f}%.",
+        "/admin/chats",
+    )
+    return await db.discount_requests.find_one({"id": request_id}, {"_id": 0})
+
+
+@router.post("/discount-requests/{request_id}/reject")
+async def reject_discount_offer(request_id: str, data: ClientRejectBody, user=Depends(get_current_user)):
+    """Client rejects the admin's counter individual-discount offer."""
+    req = await db.discount_requests.find_one({"id": request_id, "user_id": user["id"]}, {"_id": 0})
+    if not req:
+        raise HTTPException(status_code=404, detail="Запрос не найден")
+    if req.get("status") != "offered":
+        raise HTTPException(status_code=400, detail="Нет активного предложения для отклонения")
+    now = datetime.now(timezone.utc).isoformat()
+    await db.discount_requests.update_one(
+        {"id": request_id},
+        {"$set": {"status": "rejected_by_client", "client_reject_reason": (data.reason or "").strip(), "client_decision_at": now, "updated_at": now}},
+    )
+    reason_txt = f" Причина: {data.reason.strip()}" if (data.reason and data.reason.strip()) else ""
+    await notify_admin(
+        "discount_request", "Клиент отклонил индивидуальную скидку",
+        f"{user.get('name', user.get('email',''))} отклонил предложенную индивидуальную скидку.{reason_txt}",
+        "/admin/chats",
+    )
+    return await db.discount_requests.find_one({"id": request_id}, {"_id": 0})
+
+
 # --- Client endpoints ---
 
 @router.post("/discount-requests")

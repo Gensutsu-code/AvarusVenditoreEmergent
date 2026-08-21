@@ -37,6 +37,10 @@ class CreditReject(BaseModel):
     response_message: str = ""
 
 
+class ClientReject(BaseModel):
+    reason: str = ""
+
+
 async def _credit_summary(user_id: str):
     u = await db.users.find_one({"id": user_id}, {"_id": 0, "credit_status": 1, "credit_limit": 1, "credit_term_days": 1})
     status = (u or {}).get("credit_status", "none")
@@ -61,10 +65,59 @@ async def _credit_summary(user_id: str):
 async def my_credit(user=Depends(get_current_user)):
     summary = await _credit_summary(user["id"])
     pending = await db.credit_requests.find_one(
-        {"user_id": user["id"], "status": "pending"}, {"_id": 0}
+        {"user_id": user["id"], "status": {"$in": ["pending", "offered"]}}, {"_id": 0}
     )
     summary["pending_request"] = pending
     return summary
+
+
+@router.post("/credit/requests/{request_id}/accept")
+async def accept_credit_offer(request_id: str, user=Depends(get_current_user)):
+    """Client accepts the admin's counter-offer for a deferral — grants the credit."""
+    req = await db.credit_requests.find_one({"id": request_id, "user_id": user["id"]}, {"_id": 0})
+    if not req:
+        raise HTTPException(status_code=404, detail="Запрос не найден")
+    if req.get("status") != "offered":
+        raise HTTPException(status_code=400, detail="Нет активного предложения для принятия")
+    limit = req.get("offered_limit", 0) or 0
+    term = req.get("offered_term_days", 30) or 30
+    now = datetime.now(timezone.utc).isoformat()
+    await db.credit_requests.update_one(
+        {"id": request_id},
+        {"$set": {"status": "accepted", "approved_limit": limit, "term_days": term, "client_decision_at": now, "updated_at": now}},
+    )
+    await db.users.update_one(
+        {"id": req["user_id"]},
+        {"$set": {"credit_status": "approved", "credit_limit": limit, "credit_term_days": term}},
+    )
+    await notify_admin(
+        "credit_request", "Клиент принял условия отсрочки",
+        f"{user.get('name', user.get('email',''))} принял отсрочку: лимит {limit:.0f} ₽, срок {term} дн.",
+        "/admin/credit",
+    )
+    return await db.credit_requests.find_one({"id": request_id}, {"_id": 0})
+
+
+@router.post("/credit/requests/{request_id}/reject")
+async def reject_credit_offer(request_id: str, data: ClientReject, user=Depends(get_current_user)):
+    """Client rejects the admin's counter-offer for a deferral."""
+    req = await db.credit_requests.find_one({"id": request_id, "user_id": user["id"]}, {"_id": 0})
+    if not req:
+        raise HTTPException(status_code=404, detail="Запрос не найден")
+    if req.get("status") != "offered":
+        raise HTTPException(status_code=400, detail="Нет активного предложения для отклонения")
+    now = datetime.now(timezone.utc).isoformat()
+    await db.credit_requests.update_one(
+        {"id": request_id},
+        {"$set": {"status": "rejected_by_client", "client_reject_reason": (data.reason or "").strip(), "client_decision_at": now, "updated_at": now}},
+    )
+    reason_txt = f" Причина: {data.reason.strip()}" if (data.reason and data.reason.strip()) else ""
+    await notify_admin(
+        "credit_request", "Клиент отклонил условия отсрочки",
+        f"{user.get('name', user.get('email',''))} отклонил предложенные условия отсрочки.{reason_txt}",
+        "/admin/credit",
+    )
+    return await db.credit_requests.find_one({"id": request_id}, {"_id": 0})
 
 
 @router.post("/credit/request")
@@ -164,6 +217,30 @@ async def approve_credit(request_id: str, data: CreditApprove, user=Depends(get_
     await notify_user(
         req["user_id"], "credit_request", "Отсрочка одобрена",
         f"Вам одобрен лимит отсрочки {data.limit:.0f} ₽ (срок оплаты {data.term_days} дн.)",
+        "/credit",
+    )
+    return await db.credit_requests.find_one({"id": request_id}, {"_id": 0})
+
+
+@router.put("/admin/credit-requests/{request_id}/offer")
+async def offer_credit(request_id: str, data: CreditApprove, user=Depends(get_current_user)):
+    """Admin proposes counter-terms for a deferral. Credit is granted only after the client accepts."""
+    await _ensure_admin(user)
+    req = await db.credit_requests.find_one({"id": request_id}, {"_id": 0})
+    if not req:
+        raise HTTPException(status_code=404, detail="Request not found")
+    if req.get("status") not in ("pending", "offered"):
+        raise HTTPException(status_code=400, detail="Запрос уже обработан")
+    if data.limit <= 0:
+        raise HTTPException(status_code=400, detail="Лимит должен быть больше 0")
+    await db.credit_requests.update_one(
+        {"id": request_id},
+        {"$set": {"status": "offered", "offered_limit": data.limit, "offered_term_days": data.term_days,
+                  "response_message": data.response_message, "updated_at": datetime.now(timezone.utc).isoformat()}},
+    )
+    await notify_user(
+        req["user_id"], "credit_offer", "Предложение по отсрочке",
+        (data.response_message + " " if data.response_message else "") + f"Предложены условия: лимит {data.limit:.0f} ₽, срок оплаты {data.term_days} дн. Примите или отклоните в разделе «Отсрочка».",
         "/credit",
     )
     return await db.credit_requests.find_one({"id": request_id}, {"_id": 0})

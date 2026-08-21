@@ -1,0 +1,38 @@
+{
+  "summary": "Frontend UI verification of counter-offer flow for deferral (кредит) and account-wide individual discount. Tested with admin@avarus.ru + user@demo.com. Admin deferral offer (/admin/credit): opens modal from credit-approve-{id}, filled approve-limit-input=40000, approve-term-input=30, approve-message-input, clicked offer-submit-btn — toast 'Условия предложены клиенту' + row updated to 'Предложено · 40 000 ₽ (ждём клиента)'. Both offer-submit-btn and approve-submit-btn are visible in the modal. Admin individual-discount offer (/admin/chats → Скидки): account-discount-actions panel shown for account-wide (no product_id) requests with input/response/approve/offer/reject buttons all present; 'Предложить' with 7% + comment → toast 'Предложение отправлено'; 'Применить сразу' also works and yields toast 'Скидка применена'. Client discount accept/reject (/contact → Мои обращения → Запросы индивидуальной скидки): offered card shows 7%/22% with inddisc-accept-{id} and inddisc-reject-{id}; Принять → toast 'Скидка принята и применена', card status → 'Принято вами'; Отклонить → toast 'Предложение отклонено', card status → 'Отклонён вами'. HOWEVER, Client deferral accept/reject on /credit is BROKEN for the test user: the pending offer (status=offered) is returned correctly by GET /api/credit/my (backend verified) but CreditPage.js hides the entire pending_request UI when info.status === 'approved' (user already has an active credit limit). Because user@demo.com already has an approved 60 000 ₽ limit, credit-offer-block never renders and neither credit-offer-accept nor credit-offer-reject can be reached.",
+  "backend_issues": {"critical": [], "minor": []},
+  "frontend_issues": {
+    "ui_bugs": [
+      {"component": "CreditPage.js", "issue": "credit-offer-block is never rendered when the user already has an active credit limit (info.status === 'approved'). The top-level ternary `{approved ? <summaryView> : <requestOrOfferView>}` skips the entire pending_request branch, so a NEW pending_request.status === 'offered' (limit increase / renewed deferral) is invisible to the client. This blocks the client accept/reject flow completely for any user who has ever been approved before. Reproduce: user@demo.com (limit 60000, status approved) — admin submits new offer via offer-submit-btn — GET /api/credit/my.pending_request.status === 'offered' (backend correct) but /credit page shows only the approved summary, not the offer block.", "selector": "[data-testid=credit-offer-block]", "priority": "HIGH"}
+    ],
+    "integration_issues": [
+      {"flow": "Client deferral accept/reject", "issue": "Cannot be triggered from UI when user has previously-approved credit — offer block hidden. Backend accept/reject endpoints work (curl-verified previously), but no UI entry point.", "affected_selectors": ["[data-testid=credit-offer-block]", "[data-testid=credit-offer-accept]", "[data-testid=credit-offer-reject]"]}
+    ],
+    "design_issues": []
+  },
+  "critical_code_review_comments": [
+    "CreditPage.js lines 74–130 (approved branch) and 130–172 (else branch): restructure so that pending_request with status 'offered' is ALWAYS rendered (as a prominent teal card ABOVE the summary), regardless of the current approved state. Suggested change: render <OfferBlock/> unconditionally when info.pending_request?.status === 'offered', then render either the approved summary OR the request form beneath it based on info.status.",
+    "AdminChatsPage.js discount-request-{id} rows: after admin approve/offer, the left-side list item label updates (Одобрен/Отклонён) but the pending count badge on the tab-discounts tab does not decrement without page reload — cosmetic.",
+    "Backend PUT /api/admin/discount-requests/{id}/offer-discount expects body field name `discount_percent` — the frontend handleAccountDiscount is correct, but the field name is inconsistent with the response payload key `offered_discount`. Consider aligning field names."
+  ],
+  "test_report_links": [
+    "/app/test_reports/screenshots/admin_credit_offered.png",
+    "/app/test_reports/screenshots/client_credit_page.png",
+    "/app/test_reports/screenshots/admin_discount_offered.png",
+    "/app/test_reports/screenshots/client_discount_accepted.png",
+    "/app/test_reports/screenshots/admin_discount_instant_approve.png",
+    "/app/test_reports/screenshots/client_discount_rejected.png"
+  ],
+  "action_items": [
+    "FRONTEND CreditPage.js: render credit-offer-block whenever pending_request.status === 'offered', irrespective of info.status. Currently the offer is invisible to users who already have an approved limit.",
+    "Re-test credit accept + reject client-side after the fix."
+  ],
+  "updated_files": [],
+  "success_rate": {"backend": "N/A (frontend-only run)", "frontend": "80% (4/5 flows fully verified via UI — deferral client accept/reject blocked by CreditPage rendering bug)"},
+  "test_credentials": "admin@avarus.ru/admin, user@demo.com/demo123",
+  "seed_data_creation": "Via API: POST /api/credit/request {requested_limit:50000} for user@demo.com (id 535700bc-…, admin then offered 40000/30d, still in status 'offered' at end of run — user has active 60 000 approved limit AND a pending 40 000 offer). POST /api/request-individual-discount 3 times with 12/15/20/22%. Admin offered 7% on 12% req (accepted by client → status accepted, individual_discount applied), instant-approved 6% on 15% req, offered 3% on 22% req (rejected by client → status rejected_by_client). One prior 7% request cancelled/otмeneno.",
+  "retest_needed": true,
+  "should_main_agent_self_test": false,
+  "context_for_next_testing_agent": "AdminCreditPage (offer-submit-btn / approve-submit-btn), AdminChatsPage discount tab (account-discount-*), and ContactPage Мои обращения (inddisc-accept-{id}/inddisc-reject-{id}) all work perfectly. The only remaining UI issue is CreditPage.js hiding pending offers for already-approved users. After the fix, log in as user@demo.com and go to /credit — the credit-offer-block should show the 40 000 ₽ / 30 dn offer left over from this run (request id 535700bc-6fad-47a9-803a-6ce8af024b9b, still status='offered'). Test both accept and reject there.",
+  "rca of the issue": "CreditPage.js:74 wraps the entire page body in `{approved ? approvedSummaryView : (pending_request ? offerOrPendingView : requestForm)}`. When `info.status === 'approved'`, the JSX for pending_request (which contains credit-offer-block with credit-offer-accept and credit-offer-reject buttons) is never mounted. Mitigation: extract the offered-block into a separate component and render it unconditionally at the top of the page whenever info.pending_request?.status === 'offered', before or independently of the approved/request-form branch."
+}

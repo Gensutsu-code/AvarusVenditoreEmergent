@@ -151,6 +151,26 @@ export default function AdminChatsPage() {
     }
   };
 
+  const handleAccountDiscount = async (reqId, mode) => {
+    if (!adminPrice || parseFloat(adminPrice) <= 0 || parseFloat(adminPrice) > 90) {
+      toast.error('Укажите процент скидки (1–90)');
+      return;
+    }
+    setProcessing(true);
+    try {
+      const ep = mode === 'offer' ? 'offer-discount' : 'approve-discount';
+      await axios.put(`${API}/admin/discount-requests/${reqId}/${ep}`, {
+        discount_percent: parseFloat(adminPrice),
+        response_message: adminResponse,
+      });
+      toast.success(mode === 'offer' ? 'Предложение отправлено' : 'Скидка применена');
+      setSelectedRequest(null); setAdminResponse(''); setAdminPrice('');
+      fetchDiscountRequests();
+    } catch (err) {
+      toast.error(err.response?.data?.detail || 'Ошибка');
+    } finally { setProcessing(false); }
+  };
+
   const handleRejectRequest = async (reqId) => {
     setProcessing(true);
     try {
@@ -468,7 +488,7 @@ export default function AdminChatsPage() {
                 discountRequests.map(req => (
                   <div
                     key={req.id}
-                    onClick={() => { setSelectedRequest(req); setAdminResponse(''); setAdminPrice(req.individual_price ? String(req.individual_price) : ''); }}
+                    onClick={() => { setSelectedRequest(req); setAdminResponse(req.admin_response || ''); setAdminPrice(req.product_id ? (req.individual_price ? String(req.individual_price) : '') : String(req.offered_discount ?? req.requested_discount ?? '')); }}
                     className={`p-4 border-b cursor-pointer transition-colors ${
                       selectedRequest?.id === req.id
                         ? isDark ? 'bg-zinc-800' : 'bg-teal-50'
@@ -554,20 +574,23 @@ export default function AdminChatsPage() {
                     )}
 
                     {/* Already processed */}
-                    {selectedRequest.status !== 'pending' && (
+                    {!['pending', 'offered'].includes(selectedRequest.status) && (
                       <div className={`p-4 rounded-xl ${
-                        selectedRequest.status === 'approved'
+                        ['approved', 'accepted'].includes(selectedRequest.status)
                           ? isDark ? 'bg-green-500/10 border border-green-500/30' : 'bg-green-50 border border-green-200'
                           : isDark ? 'bg-red-500/10 border border-red-500/30' : 'bg-red-50 border border-red-200'
                       }`}>
                         <p className={`text-sm font-bold ${
-                          selectedRequest.status === 'approved'
+                          ['approved', 'accepted'].includes(selectedRequest.status)
                             ? isDark ? 'text-green-400' : 'text-green-700'
                             : isDark ? 'text-red-400' : 'text-red-700'
                         }`}>
-                          {selectedRequest.status === 'approved' 
-                            ? `Одобрено — индивидуальная цена: ${new Intl.NumberFormat('ru-RU').format(selectedRequest.individual_price)} ₽`
-                            : 'Отклонено'}
+                          {selectedRequest.product_id
+                            ? (selectedRequest.status === 'approved' ? `Одобрено — индивидуальная цена: ${new Intl.NumberFormat('ru-RU').format(selectedRequest.individual_price)} ₽` : 'Отклонено')
+                            : (selectedRequest.status === 'approved' ? `Скидка применена: ${selectedRequest.approved_discount}%`
+                              : selectedRequest.status === 'accepted' ? `Клиент принял: ${selectedRequest.approved_discount || selectedRequest.offered_discount}%`
+                              : selectedRequest.status === 'rejected_by_client' ? 'Клиент отклонил предложение'
+                              : 'Отклонено')}
                         </p>
                         {selectedRequest.admin_response && (
                           <p className={`text-sm mt-1 ${isDark ? 'text-zinc-400' : 'text-slate-600'}`}>{selectedRequest.admin_response}</p>
@@ -576,55 +599,52 @@ export default function AdminChatsPage() {
                     )}
 
                     {/* Admin action area */}
-                    {selectedRequest.status === 'pending' && (
+                    {(selectedRequest.status === 'pending' || selectedRequest.status === 'offered') && (
+                      selectedRequest.product_id ? (
                       <div className={`p-4 rounded-xl space-y-3 ${isDark ? 'bg-zinc-800/30 border border-zinc-700/50' : 'bg-white border border-slate-200'}`}>
                         <p className={`text-xs font-bold uppercase tracking-wider ${isDark ? 'text-zinc-500' : 'text-slate-400'}`}>Ваш ответ</p>
-                        
                         <div>
                           <label className={`text-xs font-semibold block mb-1 ${isDark ? 'text-zinc-400' : 'text-slate-600'}`}>Индивидуальная цена (₽)</label>
-                          <Input
-                            type="number"
-                            value={adminPrice}
-                            onChange={(e) => setAdminPrice(e.target.value)}
-                            placeholder="Укажите цену..."
-                            className={`${isDark ? 'bg-zinc-900 border-zinc-700 text-zinc-100' : ''}`}
-                            data-testid="admin-price-input"
-                          />
+                          <Input type="number" value={adminPrice} onChange={(e) => setAdminPrice(e.target.value)} placeholder="Укажите цену..." className={`${isDark ? 'bg-zinc-900 border-zinc-700 text-zinc-100' : ''}`} data-testid="admin-price-input" />
                         </div>
-
                         <div>
                           <label className={`text-xs font-semibold block mb-1 ${isDark ? 'text-zinc-400' : 'text-slate-600'}`}>Сообщение клиенту (необязательно)</label>
-                          <Textarea
-                            value={adminResponse}
-                            onChange={(e) => setAdminResponse(e.target.value)}
-                            placeholder="Ваш комментарий..."
-                            className={`min-h-[60px] ${isDark ? 'bg-zinc-900 border-zinc-700 text-zinc-100' : ''}`}
-                            data-testid="admin-response-input"
-                          />
+                          <Textarea value={adminResponse} onChange={(e) => setAdminResponse(e.target.value)} placeholder="Ваш комментарий..." className={`min-h-[60px] ${isDark ? 'bg-zinc-900 border-zinc-700 text-zinc-100' : ''}`} data-testid="admin-response-input" />
                         </div>
-
                         <div className="flex gap-2">
-                          <Button
-                            onClick={() => handleApproveRequest(selectedRequest.id)}
-                            disabled={processing || !adminPrice}
-                            className="flex-1 bg-green-500 hover:bg-green-600 text-white"
-                            data-testid="approve-discount-btn"
-                          >
-                            {processing ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : <Check className="w-4 h-4 mr-2" />}
-                            Одобрить
+                          <Button onClick={() => handleApproveRequest(selectedRequest.id)} disabled={processing || !adminPrice} className="flex-1 bg-green-500 hover:bg-green-600 text-white" data-testid="approve-discount-btn">
+                            {processing ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : <Check className="w-4 h-4 mr-2" />}Одобрить
                           </Button>
-                          <Button
-                            onClick={() => handleRejectRequest(selectedRequest.id)}
-                            disabled={processing}
-                            variant="outline"
-                            className="flex-1 border-red-300 text-red-600 hover:bg-red-50"
-                            data-testid="reject-discount-btn"
-                          >
-                            {processing ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : <XCircle className="w-4 h-4 mr-2" />}
-                            Отклонить
+                          <Button onClick={() => handleRejectRequest(selectedRequest.id)} disabled={processing} variant="outline" className="flex-1 border-red-300 text-red-600 hover:bg-red-50" data-testid="reject-discount-btn">
+                            {processing ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : <XCircle className="w-4 h-4 mr-2" />}Отклонить
                           </Button>
                         </div>
                       </div>
+                      ) : (
+                      <div className={`p-4 rounded-xl space-y-3 ${isDark ? 'bg-zinc-800/30 border border-zinc-700/50' : 'bg-white border border-slate-200'}`} data-testid="account-discount-actions">
+                        <p className={`text-xs font-bold uppercase tracking-wider ${isDark ? 'text-zinc-500' : 'text-slate-400'}`}>Индивидуальная скидка на все заказы{selectedRequest.status === 'offered' ? ' (предложено, ждём клиента)' : ''}</p>
+                        <p className={`text-xs ${isDark ? 'text-zinc-400' : 'text-slate-500'}`}>Клиент запросил: <b>{selectedRequest.requested_discount}%</b>{selectedRequest.reason ? ` · «${selectedRequest.reason}»` : ''}</p>
+                        <div>
+                          <label className={`text-xs font-semibold block mb-1 ${isDark ? 'text-zinc-400' : 'text-slate-600'}`}>Ваш процент скидки, %</label>
+                          <Input type="number" min="1" max="90" value={adminPrice} onChange={(e) => setAdminPrice(e.target.value)} placeholder="например, 5" className={`${isDark ? 'bg-zinc-900 border-zinc-700 text-zinc-100' : ''}`} data-testid="account-discount-input" />
+                        </div>
+                        <div>
+                          <label className={`text-xs font-semibold block mb-1 ${isDark ? 'text-zinc-400' : 'text-slate-600'}`}>Комментарий / обоснование (необязательно)</label>
+                          <Textarea value={adminResponse} onChange={(e) => setAdminResponse(e.target.value)} placeholder="Ваш комментарий..." className={`min-h-[60px] ${isDark ? 'bg-zinc-900 border-zinc-700 text-zinc-100' : ''}`} data-testid="account-discount-response" />
+                        </div>
+                        <div className="flex gap-2 flex-wrap">
+                          <Button onClick={() => handleAccountDiscount(selectedRequest.id, 'approve')} disabled={processing || !adminPrice} className="flex-1 bg-green-500 hover:bg-green-600 text-white" data-testid="account-discount-approve-btn">
+                            {processing ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : <Check className="w-4 h-4 mr-2" />}Применить сразу
+                          </Button>
+                          <Button onClick={() => handleAccountDiscount(selectedRequest.id, 'offer')} disabled={processing || !adminPrice} className="flex-1 bg-teal-500 hover:bg-teal-600 text-white" data-testid="account-discount-offer-btn">
+                            {processing ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : <Send className="w-4 h-4 mr-2" />}Предложить
+                          </Button>
+                          <Button onClick={() => handleRejectRequest(selectedRequest.id)} disabled={processing} variant="outline" className="border-red-300 text-red-600 hover:bg-red-50" data-testid="account-discount-reject-btn">
+                            <XCircle className="w-4 h-4" />
+                          </Button>
+                        </div>
+                      </div>
+                      )
                     )}
                   </div>
                 </>

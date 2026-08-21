@@ -4,7 +4,7 @@ import { useNavigate, Link } from 'react-router-dom';
 import { Button } from '../components/ui/button';
 import { Input } from '../components/ui/input';
 import { motion } from 'framer-motion';
-import { CreditCard, Clock, CheckCircle, AlertTriangle, ArrowLeft, Wallet, Send, Loader2, Hourglass } from 'lucide-react';
+import { CreditCard, Clock, CheckCircle, XCircle, AlertTriangle, ArrowLeft, Wallet, Send, Loader2, Hourglass } from 'lucide-react';
 import { toast } from 'sonner';
 import axios from 'axios';
 
@@ -71,7 +71,7 @@ export default function CreditPage() {
           </div>
         </div>
 
-        {approved ? (
+        {(approved && info.pending_request?.status !== 'offered') ? (
           <>
             {/* Summary cards */}
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6">
@@ -131,11 +131,44 @@ export default function CreditPage() {
           /* Request credit limit */
           <div className="bg-white rounded-2xl p-6 shadow-sm" data-testid="credit-request-block">
             {info.pending_request ? (
+              info.pending_request.status === 'offered' ? (
+                <div className="py-2" data-testid="credit-offer-block">
+                  <div className="flex items-center gap-2 mb-3">
+                    <span className="w-9 h-9 rounded-xl bg-teal-100 text-teal-600 flex items-center justify-center"><CreditCard className="w-5 h-5" /></span>
+                    <h2 className="font-bold text-slate-800">Предложенные условия отсрочки</h2>
+                  </div>
+                  <div className="grid grid-cols-2 gap-3 mb-3">
+                    <div className="bg-teal-50 border border-teal-100 rounded-xl p-3">
+                      <p className="text-[11px] text-slate-400">Лимит</p>
+                      <p className="text-xl font-extrabold text-teal-600">{fmt(info.pending_request.offered_limit)} ₽</p>
+                      {info.pending_request.offered_limit !== info.pending_request.requested_limit && (
+                        <p className="text-[11px] text-slate-400 line-through">запрошено {fmt(info.pending_request.requested_limit)} ₽</p>
+                      )}
+                    </div>
+                    <div className="bg-teal-50 border border-teal-100 rounded-xl p-3">
+                      <p className="text-[11px] text-slate-400">Срок оплаты</p>
+                      <p className="text-xl font-extrabold text-teal-600">{info.pending_request.offered_term_days} дн.</p>
+                    </div>
+                  </div>
+                  {info.pending_request.response_message && (
+                    <p className="text-sm text-slate-500 italic mb-3">«{info.pending_request.response_message}»</p>
+                  )}
+                  <div className="flex gap-2">
+                    <Button onClick={async () => { try { await axios.post(`${API}/credit/requests/${info.pending_request.id}/accept`); toast.success('Условия приняты, отсрочка активирована'); fetchInfo(); } catch (e) { toast.error(e.response?.data?.detail || 'Ошибка'); } }} className="flex-1 bg-emerald-500 hover:bg-emerald-600 text-white rounded-xl" data-testid="credit-offer-accept">
+                      <CheckCircle className="w-4 h-4 mr-1" />Принять
+                    </Button>
+                    <Button onClick={async () => { try { await axios.post(`${API}/credit/requests/${info.pending_request.id}/reject`, { reason: '' }); toast.success('Предложение отклонено'); fetchInfo(); } catch (e) { toast.error(e.response?.data?.detail || 'Ошибка'); } }} variant="outline" className="border-rose-300 text-rose-600 hover:bg-rose-50 rounded-xl" data-testid="credit-offer-reject">
+                      <XCircle className="w-4 h-4 mr-1" />Отклонить
+                    </Button>
+                  </div>
+                </div>
+              ) : (
               <div className="text-center py-6">
                 <Hourglass className="w-10 h-10 text-amber-400 mx-auto mb-3" />
                 <p className="font-semibold text-slate-800">Запрос на отсрочку на рассмотрении</p>
                 <p className="text-sm text-slate-500 mt-1">Запрошенный лимит: {fmt(info.pending_request.requested_limit)} ₽</p>
               </div>
+              )
             ) : (
               <>
                 <CreditCard className="w-10 h-10 text-violet-400 mb-3" />

@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import { motion } from 'framer-motion';
-import { CreditCard, Clock, CheckCircle, AlertTriangle, Check, X, Wallet, Users, Loader2, Pencil } from 'lucide-react';
+import { CreditCard, Clock, CheckCircle, AlertTriangle, Check, X, Wallet, Users, Loader2, Pencil, Send } from 'lucide-react';
 import { Button } from '../components/ui/button';
 import { Input } from '../components/ui/input';
 import { Dialog, DialogContent, DialogTitle, DialogDescription } from '../components/ui/dialog';
@@ -82,6 +82,19 @@ export default function AdminCreditPage() {
         limit: val, term_days: Number(term) || 30, response_message: respMsg,
       });
       toast.success('Отсрочка одобрена');
+      setApproveModal(null); fetchAll();
+    } catch (e) { toast.error(e.response?.data?.detail || 'Ошибка'); } finally { setSubmitting(false); }
+  };
+
+  const submitOffer = async () => {
+    const val = Number(limit);
+    if (!val || val <= 0) { toast.error('Укажите лимит'); return; }
+    setSubmitting(true);
+    try {
+      await axios.put(`${API}/admin/credit-requests/${approveModal.request.id}/offer`, {
+        limit: val, term_days: Number(term) || 30, response_message: respMsg,
+      });
+      toast.success('Условия предложены клиенту');
       setApproveModal(null); fetchAll();
     } catch (e) { toast.error(e.response?.data?.detail || 'Ошибка'); } finally { setSubmitting(false); }
   };
@@ -183,11 +196,17 @@ export default function AdminCreditPage() {
                       <p className="text-lg font-bold text-slate-800">{fmt(r.requested_limit)} ₽</p>
                       {r.status === 'pending' ? (
                         <div className="flex gap-2 mt-2">
-                          <Button size="sm" onClick={() => openApprove(r)} className="bg-emerald-500 hover:bg-emerald-600 text-white rounded-lg" data-testid={`credit-approve-${r.id}`}><Check className="w-4 h-4 mr-1" />Одобрить</Button>
+                          <Button size="sm" onClick={() => openApprove(r)} className="bg-emerald-500 hover:bg-emerald-600 text-white rounded-lg" data-testid={`credit-approve-${r.id}`}><Check className="w-4 h-4 mr-1" />Условия</Button>
                           <Button size="sm" variant="outline" onClick={() => rejectRequest(r)} className="border-rose-200 text-rose-600 rounded-lg" data-testid={`credit-reject-${r.id}`}><X className="w-4 h-4 mr-1" />Отклонить</Button>
                         </div>
                       ) : (
-                        <span className={`text-xs font-medium ${r.status === 'approved' ? 'text-emerald-600' : 'text-rose-500'}`}>{r.status === 'approved' ? `Одобрено · ${fmt(r.approved_limit)} ₽` : 'Отклонено'}</span>
+                        <span className={`text-xs font-medium ${['approved', 'accepted'].includes(r.status) ? 'text-emerald-600' : r.status === 'offered' ? 'text-teal-600' : 'text-rose-500'}`}>
+                          {r.status === 'approved' ? `Одобрено · ${fmt(r.approved_limit)} ₽`
+                            : r.status === 'accepted' ? `Принято клиентом · ${fmt(r.approved_limit)} ₽`
+                            : r.status === 'offered' ? `Предложено · ${fmt(r.offered_limit)} ₽ (ждём клиента)`
+                            : r.status === 'rejected_by_client' ? 'Отклонено клиентом'
+                            : 'Отклонено'}
+                        </span>
                       )}
                     </div>
                   </div>
@@ -283,7 +302,10 @@ export default function AdminCreditPage() {
               <textarea value={respMsg} onChange={(e) => setRespMsg(e.target.value)} rows={2} className="w-full px-3 py-2 border border-slate-200 rounded-xl text-sm resize-none" data-testid="approve-message-input" />
             </div>
             <Button onClick={submitApprove} disabled={submitting} className="w-full bg-emerald-500 hover:bg-emerald-600 text-white rounded-xl" data-testid="approve-submit-btn">
-              {submitting ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Check className="w-4 h-4 mr-2" />}Одобрить
+              {submitting ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Check className="w-4 h-4 mr-2" />}Одобрить сразу
+            </Button>
+            <Button onClick={submitOffer} disabled={submitting} className="w-full bg-teal-500 hover:bg-teal-600 text-white rounded-xl" data-testid="offer-submit-btn">
+              {submitting ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Send className="w-4 h-4 mr-2" />}Предложить условия (нужно согласие клиента)
             </Button>
           </div>
         </DialogContent>
