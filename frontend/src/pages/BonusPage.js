@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import { 
   Gift, Award, Star, Trophy, TrendingUp, Clock, 
-  CheckCircle, Copy, History, ChevronDown, ChevronUp, Sparkles,
+  CheckCircle, Copy, History, ChevronDown, ChevronUp,
   LayoutList, LayoutGrid
 } from 'lucide-react';
 import { Button } from '../components/ui/button';
@@ -76,6 +76,8 @@ export default function BonusPage() {
   const [copiedCode, setCopiedCode] = useState(null);
   const [showHistory, setShowHistory] = useState(false);
   const [myRedemptions, setMyRedemptions] = useState([]);
+  const [variantPrize, setVariantPrize] = useState(null); // { programId, prize }
+  const [selectedOptions, setSelectedOptions] = useState({}); // { group_id: choice_id }
 
   useEffect(() => {
     if (authLoading) return;
@@ -107,20 +109,39 @@ export default function BonusPage() {
     return date.toLocaleDateString('ru-RU', { day: '2-digit', month: '2-digit', year: 'numeric' });
   };
 
-  const handleRedeemPrize = (programId, prizeId, prizeName, pointsCost) => {
-    // Open in-app confirmation (window.confirm is blocked in sandboxed iframes / some browsers)
-    setConfirmPrize({ programId, prizeId, prizeName, pointsCost });
+  const handleRedeemPrize = (programId, prize) => {
+    // If the prize has selectable options, open the variant modal first.
+    if (prize.options && prize.options.length > 0) {
+      const defaults = {};
+      prize.options.forEach(g => {
+        if (g.choices && g.choices.length > 0) defaults[g.id] = g.choices[0].id;
+      });
+      setSelectedOptions(defaults);
+      setVariantPrize({ programId, prize });
+      return;
+    }
+    // Otherwise open a simple confirmation (window.confirm is blocked in iframes)
+    setConfirmPrize({ programId, prizeId: prize.id, prizeName: prize.name, pointsCost: prize.points_cost });
   };
 
-  const doRedeemPrize = async () => {
-    if (!confirmPrize) return;
-    const { programId, prizeId, prizeName, pointsCost } = confirmPrize;
+  const optionsCostFor = (prize, sel) => {
+    if (!prize?.options) return 0;
+    return prize.options.reduce((sum, g) => {
+      const choice = (g.choices || []).find(c => c.id === sel[g.id]);
+      return sum + (choice ? (Number(choice.points) || 0) : 0);
+    }, 0);
+  };
+
+  const submitRedeem = async (programId, prizeId, prizeName, pointsCost, options) => {
     const key = `${programId}_${prizeId}`;
     setRedeemingPrize(prev => ({ ...prev, [key]: true }));
     try {
-      const res = await axios.post(`${API}/bonus/redeem-prize`, { program_id: programId, prize_id: prizeId });
+      const payload = { program_id: programId, prize_id: prizeId };
+      if (options && options.length > 0) payload.selected_options = options;
+      const res = await axios.post(`${API}/bonus/redeem-prize`, payload);
       toast.success(res.data?.message || 'Приз успешно оформлен!');
       setConfirmPrize(null);
+      setVariantPrize(null);
       setRedeemedPrize({ name: prizeName, pointsCost });
       setCelebrate(true);
       setTimeout(() => setCelebrate(false), 2800);
@@ -130,6 +151,12 @@ export default function BonusPage() {
     } finally {
       setRedeemingPrize(prev => ({ ...prev, [key]: false }));
     }
+  };
+
+  const doRedeemPrize = async () => {
+    if (!confirmPrize) return;
+    const { programId, prizeId, prizeName, pointsCost } = confirmPrize;
+    await submitRedeem(programId, prizeId, prizeName, pointsCost, null);
   };
 
   const copyPromoCode = (code) => {
@@ -171,24 +198,6 @@ export default function BonusPage() {
       </div>
 
       <div className="relative max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        {/* Header */}
-        <motion.div 
-          className="text-center mb-8"
-          initial={{ opacity: 0, y: -20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5 }}
-        >
-          <div 
-            className={`inline-flex items-center gap-2 px-4 py-2 rounded-full font-medium ${
-              isDark ? 'bg-orange-500/20 text-orange-400' : 'bg-teal-100 text-teal-600'
-            }`}
-            style={{ fontSize: bonusPrograms[0]?.header_font_size || 14 }}
-          >
-            <Sparkles className="w-4 h-4" />
-            Бонусная программа
-          </div>
-        </motion.div>
-
         {/* Banner Image - fetched from first bonus program */}
         {bonusPrograms.length > 0 && bonusPrograms[0].banner_url && (
           <div className="flex justify-center mb-8">
@@ -248,30 +257,39 @@ export default function BonusPage() {
                   {/* Current Level & Progress */}
                   {program.current_level && (
                     <div className="p-6 bg-gradient-to-r from-zinc-50 to-zinc-100/50">
-                      <div className="flex items-center justify-between mb-4">
-                        <div className="flex items-center gap-3">
-                          <div 
-                            className="w-12 h-12 rounded-full flex items-center justify-center text-white font-bold text-lg shadow-lg"
+                      <motion.div
+                        className="relative overflow-hidden rounded-2xl p-4 mb-5 flex items-center justify-between gap-3 shadow-sm border"
+                        style={{ borderColor: program.current_level.color + '40', background: `linear-gradient(120deg, ${program.current_level.color}14, ${program.current_level.color}04)` }}
+                        initial={{ opacity: 0, y: 12 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ duration: 0.4 }}
+                      >
+                        <div className="flex items-center gap-3.5 min-w-0">
+                          <motion.div 
+                            className="relative w-14 h-14 rounded-2xl flex items-center justify-center text-white shadow-lg flex-shrink-0"
                             style={{ backgroundColor: program.current_level.color }}
+                            animate={{ boxShadow: [`0 0 0 0 ${program.current_level.color}55`, `0 0 0 12px ${program.current_level.color}00`] }}
+                            transition={{ duration: 2.2, repeat: Infinity, ease: 'easeOut' }}
                           >
-                            {program.current_level.name?.charAt(0)}
-                          </div>
-                          <div>
-                            <p className="font-bold text-zinc-900">Уровень: {program.current_level.name}</p>
+                            <Trophy className="w-6 h-6" />
+                          </motion.div>
+                          <div className="min-w-0">
+                            <p className="text-[10px] font-bold uppercase tracking-[0.15em] text-zinc-400">Ваш уровень</p>
+                            <p className="text-xl font-black tracking-tight truncate" style={{ color: program.current_level.color }}>{program.current_level.name}</p>
                             {program.current_level.benefits && (
-                              <p className="text-sm text-zinc-500">{program.current_level.benefits}</p>
+                              <p className="text-xs text-zinc-500 truncate">{program.current_level.benefits}</p>
                             )}
                           </div>
                         </div>
                         {program.current_level.cashback_percent > 0 && (
-                          <div className="text-right bg-white px-4 py-2 rounded-xl shadow-sm">
-                            <p className="text-2xl font-bold" style={{ color: program.current_level.color }}>
+                          <div className="text-right bg-white/80 backdrop-blur px-4 py-2 rounded-xl shadow-sm flex-shrink-0">
+                            <p className="text-2xl font-black leading-none" style={{ color: program.current_level.color }}>
                               {program.current_level.cashback_percent}%
                             </p>
-                            <p className="text-xs text-zinc-400">кешбэк</p>
+                            <p className="text-[10px] font-medium text-zinc-400 mt-0.5">кешбэк</p>
                           </div>
                         )}
-                      </div>
+                      </motion.div>
 
                       {/* Levels Visualization */}
                       <div className="mb-4">
@@ -330,17 +348,42 @@ export default function BonusPage() {
                         </div>
                       </div>
 
-                      {/* Progress Info */}
-                      <div className="flex items-center justify-between text-sm">
-                        <div className="flex items-center gap-2">
-                          <TrendingUp className="w-4 h-4 text-teal-500" />
-                          <span className="text-zinc-600">Покупки за {currentYear}:</span>
-                          <span className="font-bold text-teal-600">{formatPrice(yearlyTotal)} ₽</span>
+                      {/* Progress toward next level */}
+                      <div className="rounded-xl bg-white border border-zinc-100 p-4 shadow-sm">
+                        <div className="flex items-center justify-between text-sm mb-2.5">
+                          <div className="flex items-center gap-2 min-w-0">
+                            <TrendingUp className="w-4 h-4 text-teal-500 flex-shrink-0" />
+                            <span className="text-zinc-500">Покупки за {currentYear}:</span>
+                            <span className="font-bold text-teal-600 tabular-nums">{formatPrice(yearlyTotal)} ₽</span>
+                          </div>
+                          {nextLevel && (
+                            <span className="text-xs text-zinc-500 text-right flex-shrink-0">
+                              до <span className="font-bold" style={{ color: nextLevel.color }}>{nextLevel.name}</span>
+                            </span>
+                          )}
                         </div>
-                        {nextLevel && (
-                          <span className="text-zinc-500">
-                            До <span className="font-semibold" style={{ color: nextLevel.color }}>{nextLevel.name}</span>: {formatPrice(amountToNextLevel)} ₽
-                          </span>
+                        {nextLevel ? (
+                          <>
+                            <div className="h-3 rounded-full bg-zinc-100 overflow-hidden">
+                              <motion.div
+                                className="h-full rounded-full"
+                                style={{ background: `linear-gradient(90deg, ${program.current_level.color}, ${nextLevel.color})` }}
+                                initial={{ width: 0 }}
+                                animate={{ width: `${program.level_percentage || 0}%` }}
+                                transition={{ type: 'spring', bounce: 0.2, duration: 1.4, delay: 0.25 }}
+                                data-testid="next-level-progress-fill"
+                              />
+                            </div>
+                            <div className="flex justify-between mt-1.5 text-[11px] text-zinc-400">
+                              <span className="tabular-nums">{program.level_percentage || 0}%</span>
+                              <span>Осталось <span className="font-semibold text-zinc-600 tabular-nums">{formatPrice(amountToNextLevel)} ₽</span></span>
+                            </div>
+                          </>
+                        ) : (
+                          <div className="flex items-center gap-2 text-sm font-medium text-emerald-600">
+                            <CheckCircle className="w-4 h-4" />
+                            Максимальный уровень достигнут 🎉
+                          </div>
                         )}
                       </div>
                     </div>
@@ -432,23 +475,32 @@ export default function BonusPage() {
                           {program.prizes.filter(p => p.enabled).map((prize) => {
                             const canAfford = (program.progress?.current_amount || 0) >= prize.points_cost;
                             const isRedeeming = redeemingPrize[`${program.id}_${prize.id}`];
-                            const isAvailable = prize.quantity === -1 || prize.quantity > 0;
+                            const outOfStock = prize.out_of_stock || prize.quantity === 0;
+                            const isAvailable = !outOfStock && (prize.quantity === -1 || prize.quantity > 0);
+                            const hasOptions = prize.options && prize.options.length > 0;
                             
                             return (
                               <div 
                                 key={prize.id}
-                                className={`flex items-center gap-4 p-4 rounded-xl border-2 transition-all ${
-                                  canAfford && isAvailable 
-                                    ? 'border-green-200 bg-green-50 hover:border-green-300' 
-                                    : 'border-zinc-200 bg-zinc-50'
+                                className={`relative flex items-center gap-4 p-4 rounded-xl border-2 transition-all ${
+                                  outOfStock
+                                    ? 'border-zinc-200 bg-zinc-50'
+                                    : canAfford
+                                      ? 'border-green-200 bg-green-50 hover:border-green-300' 
+                                      : 'border-zinc-200 bg-zinc-50'
                                 }`}
                                 data-testid={`prize-item-${prize.id}`}
                               >
+                                {outOfStock && (
+                                  <span className="absolute top-2 right-2 z-10 text-[10px] font-bold uppercase tracking-wide px-2 py-0.5 rounded-full bg-rose-500 text-white shadow" data-testid={`prize-oos-badge-${prize.id}`}>
+                                    Закончился
+                                  </span>
+                                )}
                                 {prize.image_url ? (
                                   <img 
                                     src={prize.image_url} 
                                     alt={prize.name} 
-                                    className="w-16 h-16 rounded-xl object-cover flex-shrink-0"
+                                    className={`w-16 h-16 rounded-xl object-cover flex-shrink-0 ${outOfStock ? 'grayscale opacity-60' : ''}`}
                                     onError={(e) => {
                                       e.target.style.display = 'none';
                                       const placeholder = e.target.parentElement.querySelector('[data-placeholder]');
@@ -458,7 +510,7 @@ export default function BonusPage() {
                                 ) : null}
                                 <div 
                                   data-placeholder
-                                  className={`w-16 h-16 rounded-xl bg-gradient-to-br from-orange-100 to-orange-200 items-center justify-center flex-shrink-0 ${prize.image_url ? 'hidden' : 'flex'}`}
+                                  className={`w-16 h-16 rounded-xl bg-gradient-to-br from-orange-100 to-orange-200 items-center justify-center flex-shrink-0 ${prize.image_url ? 'hidden' : 'flex'} ${outOfStock ? 'grayscale opacity-60' : ''}`}
                                 >
                                   <Gift className="w-8 h-8 text-orange-500" />
                                 </div>
@@ -467,15 +519,18 @@ export default function BonusPage() {
                                   {prize.description && (
                                     <p className="text-sm text-zinc-500 truncate">{prize.description}</p>
                                   )}
-                                  <div className="flex items-center gap-2 mt-1">
+                                  <div className="flex items-center gap-2 mt-1 flex-wrap">
                                     <span className="text-sm font-bold text-orange-600">{prize.points_cost} баллов</span>
-                                    {prize.quantity >= 0 && (
+                                    {hasOptions && (
+                                      <span className="text-[11px] font-medium text-teal-600 bg-teal-50 border border-teal-200 px-1.5 py-0.5 rounded-md">+ параметры</span>
+                                    )}
+                                    {!outOfStock && prize.quantity >= 0 && (
                                       <span className="text-xs text-zinc-400">(осталось: {prize.quantity})</span>
                                     )}
                                   </div>
                                 </div>
                                 <Button
-                                  onClick={() => handleRedeemPrize(program.id, prize.id, prize.name, prize.points_cost)}
+                                  onClick={() => handleRedeemPrize(program.id, prize)}
                                   disabled={!canAfford || !isAvailable || isRedeeming}
                                   className={`whitespace-nowrap ${
                                     canAfford && isAvailable
@@ -483,7 +538,7 @@ export default function BonusPage() {
                                       : 'bg-zinc-300 cursor-not-allowed'
                                   }`}
                                 >
-                                  {isRedeeming ? '...' : !isAvailable ? 'Нет в наличии' : canAfford ? 'Получить' : 'Недостаточно'}
+                                  {isRedeeming ? '...' : outOfStock ? 'Закончился' : hasOptions ? 'Выбрать' : canAfford ? 'Получить' : 'Недостаточно'}
                                 </Button>
                               </div>
                             );
@@ -496,15 +551,19 @@ export default function BonusPage() {
                           {program.prizes.filter(p => p.enabled).map((prize) => {
                             const canAfford = (program.progress?.current_amount || 0) >= prize.points_cost;
                             const isRedeeming = redeemingPrize[`${program.id}_${prize.id}`];
-                            const isAvailable = prize.quantity === -1 || prize.quantity > 0;
+                            const outOfStock = prize.out_of_stock || prize.quantity === 0;
+                            const isAvailable = !outOfStock && (prize.quantity === -1 || prize.quantity > 0);
+                            const hasOptions = prize.options && prize.options.length > 0;
                             
                             return (
                               <div 
                                 key={prize.id}
                                 className={`group flex flex-col rounded-xl border overflow-hidden transition-all hover:-translate-y-0.5 hover:shadow-md ${
-                                  canAfford && isAvailable 
-                                    ? 'border-orange-200 bg-white hover:border-orange-300' 
-                                    : 'border-zinc-200 bg-white'
+                                  outOfStock
+                                    ? 'border-zinc-200 bg-white'
+                                    : canAfford
+                                      ? 'border-orange-200 bg-white hover:border-orange-300' 
+                                      : 'border-zinc-200 bg-white'
                                 }`}
                                 data-testid={`prize-card-${prize.id}`}
                               >
@@ -513,14 +572,19 @@ export default function BonusPage() {
                                     <img 
                                       src={prize.image_url} 
                                       alt={prize.name} 
-                                      className="max-w-full max-h-full object-contain mix-blend-multiply"
+                                      className={`max-w-full max-h-full object-contain mix-blend-multiply ${outOfStock ? 'grayscale opacity-50' : ''}`}
                                       onError={(e) => { e.target.style.display = 'none'; }}
                                     />
                                   ) : (
-                                    <Gift className="w-10 h-10 text-orange-300" />
+                                    <Gift className={`w-10 h-10 text-orange-300 ${outOfStock ? 'grayscale opacity-50' : ''}`} />
                                   )}
-                                  {prize.quantity >= 0 && (
+                                  {outOfStock ? (
+                                    <span className="absolute top-1.5 right-1.5 text-[10px] font-bold uppercase tracking-wide px-2 py-0.5 rounded-full bg-rose-500 text-white shadow" data-testid={`prize-oos-badge-${prize.id}`}>Закончился</span>
+                                  ) : prize.quantity >= 0 ? (
                                     <span className="absolute top-1.5 right-1.5 text-[10px] font-semibold px-1.5 py-0.5 rounded-full bg-white/90 border border-zinc-200 text-zinc-500">x{prize.quantity}</span>
+                                  ) : null}
+                                  {hasOptions && !outOfStock && (
+                                    <span className="absolute top-1.5 left-1.5 text-[10px] font-semibold px-1.5 py-0.5 rounded-full bg-teal-500 text-white shadow">+ параметры</span>
                                   )}
                                 </div>
                                 <div className="p-2.5 flex flex-col flex-1">
@@ -530,7 +594,7 @@ export default function BonusPage() {
                                     <span className="text-[11px] text-zinc-400">баллов</span>
                                   </div>
                                   <Button
-                                    onClick={() => handleRedeemPrize(program.id, prize.id, prize.name, prize.points_cost)}
+                                    onClick={() => handleRedeemPrize(program.id, prize)}
                                     disabled={!canAfford || !isAvailable || isRedeeming}
                                     size="sm"
                                     data-testid="bonus-redeem-btn"
@@ -540,7 +604,7 @@ export default function BonusPage() {
                                         : 'bg-zinc-200 text-zinc-400 cursor-not-allowed'
                                     }`}
                                   >
-                                    {isRedeeming ? '...' : !isAvailable ? 'Нет в наличии' : canAfford ? 'Получить' : 'Недостаточно'}
+                                    {isRedeeming ? '...' : outOfStock ? 'Закончился' : hasOptions ? 'Выбрать' : canAfford ? 'Получить' : 'Недостаточно'}
                                   </Button>
                                 </div>
                               </div>
@@ -624,6 +688,118 @@ export default function BonusPage() {
               </motion.div>
             </motion.div>
           )}
+        </AnimatePresence>
+
+        {/* Variant / options selection modal */}
+        <AnimatePresence>
+          {variantPrize && (() => {
+            const { programId, prize } = variantPrize;
+            const program = bonusPrograms.find(p => p.id === programId);
+            const balance = Math.round(program?.progress?.current_amount || 0);
+            const optCost = optionsCostFor(prize, selectedOptions);
+            const total = (prize.points_cost || 0) + optCost;
+            const canAfford = balance >= total;
+            const allSelected = (prize.options || []).every(g => selectedOptions[g.id]);
+            const isRedeeming = redeemingPrize[`${programId}_${prize.id}`];
+            return (
+              <motion.div
+                className="fixed inset-0 z-[70] flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm"
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                onClick={() => setVariantPrize(null)}
+                data-testid="variant-overlay"
+              >
+                <motion.div
+                  className="bg-white rounded-2xl shadow-2xl w-full max-w-md flex flex-col max-h-[90vh]"
+                  initial={{ scale: 0.9, y: 20, opacity: 0 }}
+                  animate={{ scale: 1, y: 0, opacity: 1 }}
+                  exit={{ scale: 0.9, y: 20, opacity: 0 }}
+                  transition={{ type: 'spring', stiffness: 300, damping: 24 }}
+                  onClick={(e) => e.stopPropagation()}
+                  data-testid="variant-modal"
+                >
+                  <div className="p-6 pb-4 flex items-center gap-4 border-b border-zinc-100">
+                    {prize.image_url ? (
+                      <img src={prize.image_url} alt={prize.name} className="w-16 h-16 rounded-xl object-cover flex-shrink-0" />
+                    ) : (
+                      <div className="w-16 h-16 rounded-xl bg-gradient-to-br from-orange-100 to-orange-200 flex items-center justify-center flex-shrink-0">
+                        <Gift className="w-7 h-7 text-orange-500" />
+                      </div>
+                    )}
+                    <div className="min-w-0">
+                      <h3 className="text-lg font-bold text-zinc-900 leading-tight">{prize.name}</h3>
+                      <p className="text-sm text-zinc-500 mt-0.5">Базовая стоимость: {prize.points_cost} баллов</p>
+                    </div>
+                  </div>
+
+                  <div className="p-6 space-y-5 overflow-y-auto">
+                    {(prize.options || []).map((grp) => (
+                      <div key={grp.id} data-testid={`variant-group-${grp.id}`}>
+                        <p className="text-xs font-bold uppercase tracking-wide text-zinc-400 mb-2">{grp.name}</p>
+                        <div className="flex flex-wrap gap-2">
+                          {(grp.choices || []).map((ch) => {
+                            const active = selectedOptions[grp.id] === ch.id;
+                            return (
+                              <button
+                                key={ch.id}
+                                type="button"
+                                onClick={() => setSelectedOptions(prev => ({ ...prev, [grp.id]: ch.id }))}
+                                className={`px-4 py-2 rounded-xl border-2 text-sm font-medium transition-all active:scale-95 ${
+                                  active
+                                    ? 'border-orange-500 bg-orange-50 text-orange-700 shadow-sm'
+                                    : 'border-zinc-200 bg-white text-zinc-600 hover:border-zinc-300'
+                                }`}
+                                data-testid={`variant-choice-${grp.id}-${ch.id}`}
+                              >
+                                {ch.label}
+                                {ch.points > 0 && <span className="ml-1.5 text-xs text-orange-500 font-bold">+{ch.points}</span>}
+                              </button>
+                            );
+                          })}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+
+                  <div className="p-6 pt-4 border-t border-zinc-100 bg-zinc-50/60 rounded-b-2xl">
+                    <div className="flex items-center justify-between mb-3">
+                      <span className="text-sm text-zinc-500">Итого к списанию</span>
+                      <motion.span
+                        key={total}
+                        initial={{ scale: 1.15 }}
+                        animate={{ scale: 1 }}
+                        transition={{ type: 'spring', stiffness: 400, damping: 15 }}
+                        className={`text-2xl font-black tabular-nums ${canAfford ? 'text-orange-600' : 'text-rose-500'}`}
+                        data-testid="variant-total"
+                      >
+                        {total} <span className="text-sm font-medium text-zinc-400">баллов</span>
+                      </motion.span>
+                    </div>
+                    {!canAfford && (
+                      <p className="text-xs text-rose-500 mb-3 text-right">Недостаточно баллов (у вас {balance})</p>
+                    )}
+                    <div className="flex gap-3">
+                      <Button variant="outline" className="flex-1" onClick={() => setVariantPrize(null)} data-testid="variant-cancel-btn">
+                        Отмена
+                      </Button>
+                      <Button
+                        className="flex-1 bg-orange-500 hover:bg-orange-600 text-white"
+                        disabled={!canAfford || !allSelected || isRedeeming}
+                        onClick={() => {
+                          const options = (prize.options || []).map(g => ({ group_id: g.id, choice_id: selectedOptions[g.id] }));
+                          submitRedeem(programId, prize.id, prize.name, total, options);
+                        }}
+                        data-testid="variant-confirm-btn"
+                      >
+                        {isRedeeming ? 'Оформляем...' : 'Получить приз'}
+                      </Button>
+                    </div>
+                  </div>
+                </motion.div>
+              </motion.div>
+            );
+          })()}
         </AnimatePresence>
 
         {/* Redeemed Prize Notification */}

@@ -1,95 +1,97 @@
 {
-  "theme_archetype": {
-    "admin_dashboard": "Archetype 4 (Swiss & High-Contrast) adapted. Crisp borders, stark neutral backgrounds (White/Zinc-900), and Deep Emerald (#047857) replacing the generic teal for a more authoritative, industrial feel.",
-    "bonus_client_page": "Archetype 1 (Organic & Earthy). Utilizing tactical Orange (#F97316) for loyalty points, tactile soft interactions, and clear layout."
-  },
+  "project_context": "SaaS Loyalty/Bonus Rewards Dashboard (B2B/B2C). Re-designing the BonusPage.js with premium aesthetics, removing the generic 'Бонусная программа' top pill, and adding sophisticated features like an out-of-stock label and a variant selection modal with live points total.",
   "typography": {
-    "headings": {
-      "font_family": "Chivo, sans-serif",
-      "rules": "Must not use Inter for headings. Use tracking-tight for H1-H2. Use font-semibold for authoritative headers."
-    },
-    "body": {
-      "font_family": "IBM Plex Sans, sans-serif",
-      "rules": "Highly legible, tabular numbers for analytics."
-    },
-    "labels_overlines": {
-      "rules": "Uppercase, tracking-[0.1em], text-xs to text-sm, muted foreground. Perfect for KPI titles."
+    "headings": "Manrope or Work Sans (Must not use Inter for headings). Apply `tracking-tight` or `tracking-tighter`.",
+    "body": "IBM Plex Sans, Figtree, or clean sans-serif.",
+    "hierarchy": {
+      "H1_Balance": "text-5xl sm:text-6xl font-black tracking-tighter",
+      "H2_Section": "text-2xl sm:text-3xl font-bold tracking-tight",
+      "H3_Card": "text-xl font-bold",
+      "Body": "text-base leading-relaxed text-slate-600 dark:text-zinc-400",
+      "Overline": "text-xs font-bold uppercase tracking-[0.2em]"
     }
   },
   "colors": {
-    "admin_primary": {
-      "light": "#047857",
-      "dark": "#10B981",
-      "description": "Deep Emerald, sophisticated alternative to AI-slop Teal."
+    "strategy": "Dual-theme support matching strict requirements (Light: Teal, Dark: Orange). Never use pure black/white, tint with base hue.",
+    "light_mode": {
+      "background": "bg-slate-50",
+      "card": "bg-white",
+      "accent": "text-teal-600",
+      "accent_bg": "bg-teal-600",
+      "accent_hover": "hover:bg-teal-700 hover:text-white",
+      "border": "border-slate-200",
+      "text_primary": "text-slate-900",
+      "text_secondary": "text-slate-500",
+      "out_of_stock_badge": "bg-rose-500 text-white"
     },
-    "bonus_accent": {
-      "light": "#F97316",
-      "dark": "#FB923C",
-      "description": "Vibrant Orange for loyalty and gamification points."
-    },
-    "backgrounds": {
-      "light": "#FFFFFF",
-      "dark": "#18181B",
-      "subtle_light": "#F4F4F5",
-      "subtle_dark": "#27272A"
-    },
-    "borders": {
-      "light": "#E4E4E7",
-      "dark": "#3F3F46"
+    "dark_mode": {
+      "background": "bg-[#0A0A0A]",
+      "card": "bg-[#141414]",
+      "accent": "text-orange-500",
+      "accent_bg": "bg-orange-500",
+      "accent_hover": "hover:bg-orange-600 hover:text-white",
+      "border": "border-white/10",
+      "text_primary": "text-white",
+      "text_secondary": "text-white/50",
+      "out_of_stock_badge": "bg-red-900/80 text-red-200 border border-red-500/30"
     }
   },
-  "spacing_and_layout": {
-    "general": "Optical alignment. Containers with borders must have internal padding. Max 8px border-radius.",
-    "admin_kpi_bar": {
-      "collapsed": "Dense, inline flex or 4-col grid, gap-4 to gap-6, py-3 px-6.",
-      "expanded": "Grid expands vertically to reveal complex Recharts, gap-8."
-    },
-    "bonus_grid": {
-      "layout": "Grid cols-2 md:cols-3 lg:cols-4 lg:cols-5 for highly compact cards. gap-4.",
-      "card_padding": "p-3 or p-4."
-    }
+  "layouts": {
+    "page_container": "max-w-4xl mx-auto py-12 px-4 sm:px-6 space-y-16",
+    "hero_bento": "grid grid-cols-1 md:grid-cols-3 gap-6. Left span-2 for Balance & Progress. Right span-1 for Current Level & Cashback info.",
+    "prize_grid": "grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8",
+    "levels_track": "flex items-center justify-between relative w-full mt-8"
   },
-  "motion_and_interactions": {
-    "collapsible": "Framer Motion or Shadcn Collapsible component. Smooth height transition, opacity fade-in for charts.",
-    "card_hover": "Hover: border darkens, slight lift (-translate-y-0.5), subtle shadow-md. Do not over-animate.",
-    "buttons": "Active states must have a darker background. Orange buttons -> hover:bg-orange-600."
+  "components": {
+    "hero_points": "Massive text for points, left aligned. '12,450' in `text-6xl font-black`. Subtitle 'Доступно баллов'.",
+    "progress_bar": "Thick pill-shaped track `h-4 rounded-full bg-slate-200 dark:bg-white/10`. Inner fill is `h-full rounded-full bg-teal-600 dark:bg-orange-500`. Use Framer Motion to animate `width` from 0%.",
+    "levels_visualization": "Horizontal line connecting circular nodes. \n- Completed: Solid background, check icon.\n- Current: Accent background, pulsing outer ring (`animate-pulse` or motion ring).\n- Locked: Muted background, smaller icon. Text placed below nodes.",
+    "prize_card": "Cardless or subtle 1px border style. `rounded-2xl border border-border bg-card overflow-hidden hover:-translate-y-1 hover:shadow-xl transition-all duration-300`. \n- Image section: `h-48` with `object-cover`.\n- Content: generous padding `p-6`.\n- Redeem button: Full width, bold.",
+    "out_of_stock_treatment": "If `quantity === 0` -> Apply `grayscale opacity-60` to the image. Show an absolute positioned badge at top-right 'ЗАКОНЧИЛСЯ'. Disable the redeem button and change text to 'Нет в наличии'.",
+    "variant_selection_modal": "Shadcn Dialog or Framer Motion overlay. \n- Content: Grid of selectable pills for Color, Memory, etc. \n- Pills: `border rounded-lg px-4 py-2 cursor-pointer`. Active state gets solid border + light accent bg.\n- Live Total: Sticky bottom bar showing base cost + options cost. Animates when number changes.",
+    "confetti": "Use `canvas-confetti` on successful redemption."
   },
-  "components_instructions": {
-    "AdminAnalyticsBar": {
-      "path": "frontend/src/components/admin/AdminAnalyticsBar.js",
-      "type": "New Component",
-      "instructions": "Place between Site Header and Admin Tabs. Use Shadcn `Collapsible` or Framer Motion for smooth open/close. In Collapsed state, render 4 KPI cards inline: Всего заказов, Выручка, Средний чек, Всего клиентов. Use subtle typography for titles (uppercase, muted) and bold tabular numbers for values. Include a 'chevron-down' button on the far right to toggle. When Expanded, show a deeper Grid with Recharts (Revenue trend) and Top Products. Background must be Stark White (Dark: Zinc-900) with a 1px border. No shadows."
-    },
-    "BonusPrizeCard": {
-      "path": "frontend/src/components/bonus/BonusPrizeCard.js",
-      "type": "Update/Refactor",
-      "instructions": "Redesign as a compact square card. The image wrapper must have a fixed aspect ratio (e.g., aspect-square or h-32 to h-40) with `bg-zinc-50 dark:bg-zinc-800/50` padding. The image itself MUST use `object-contain max-h-full max-w-full mix-blend-multiply dark:mix-blend-normal` so spare part photos are NEVER cropped. Below image: Title (truncate to 2 lines, text-sm), Points cost (text-orange-500 font-bold text-lg), and a compact 100%-width 'Redeem' (Получить) button. Remove any `h-32 object-cover` classes."
-    },
-    "BonusPageLayout": {
-      "path": "frontend/src/pages/bonus/BonusPage.js",
-      "type": "Update/Refactor",
-      "instructions": "Ensure Grid view is the default, not List view. Improve the 'Progress' visualization for the user's loyalty tier—use a sleek progress bar with Orange accent, indicating current points vs next tier. Provide adequate spacing (py-8) between the user's progress summary and the prize grid."
-    }
+  "motion": {
+    "page_load": "Staggered fade-up for sections. `initial={{ opacity: 0, y: 20 }}`.",
+    "progress_fill": "Spring animation for width. `transition={{ type: 'spring', bounce: 0.2, duration: 1.5 }}`.",
+    "prize_cards": "Stagger children in grid. `variants={{ hidden: { opacity: 0, y: 20 }, visible: { opacity: 1, y: 0 } }}`.",
+    "number_counter": "When variant is selected, points total should ideally scale slightly or use a quick spring up/down to draw attention."
   },
-  "testing_attributes": [
-    "data-testid='analytics-collapse-toggle'",
-    "data-testid='analytics-kpi-revenue'",
-    "data-testid='bonus-prize-grid-view-btn'",
-    "data-testid='bonus-prize-card'",
-    "data-testid='bonus-redeem-btn'"
-  ],
+  "accessibility": {
+    "contrast": "Ensure teal-600 against slate-50 and orange-500 against #0A0A0A meet WCAG 4.5:1. Use Text Shadow on hero if needed.",
+    "interactive": "Include `data-testid` on all buttons, nodes, and variant pills (e.g., `data-testid='redeem-prize-button'`, `data-testid='variant-color-red'`).",
+    "reduced_motion": "Respect `prefers-reduced-motion` for the confetti and progress bar."
+  },
   "media": {
-    "images": [
-      {
-        "url": "https://images.unsplash.com/photo-1672853827236-e2ccf90761a1?crop=entropy&cs=srgb&fm=jpg&ixid=M3w4NjA1MDV8MHwxfHNlYXJjaHwxfHxnaWZ0JTIwYm94JTIwb3JhbmdlfGVufDB8fHx8MTc4MjM2NTgyN3ww&ixlib=rb-4.1.0&q=85",
-        "category": "bonus_prize_placeholder",
-        "description": "Orange wrapped gift box, perfect placeholder for high-tier bonus prize."
+    "image_urls": {
+      "smartphone": {
+        "url": "https://images.unsplash.com/photo-1598327105666-5b89351aff97?crop=entropy&cs=srgb&fm=jpg&ixid=M3w4NjA3MDR8MHwxfHNlYXJjaHwzfHxzbWFydHBob25lfGVufDB8fHx8MTc4NzkyMzExNnww&ixlib=rb-4.1.0&q=85",
+        "description": "Premium smartphone display, use for tech prizes"
       },
-      {
-        "url": "https://images.unsplash.com/photo-1775810944393-73af1f1d78bd?crop=entropy&cs=srgb&fm=jpg&ixid=M3w4NjA8Mzl8MHwxfHNlYXJjaHwyfHx0cnVjayUyMGVuZ2luZSUyMHBhcnQlMjBpc29sYXRlZHxlbnwwfHx8fDE3ODIzNjU4MzJ8MA&ixlib=rb-4.1.0&q=85",
-        "category": "truck_part_placeholder",
-        "description": "Isolated engine part, strictly requires object-contain to avoid cropping."
+      "headphones": {
+        "url": "https://images.unsplash.com/photo-1505740420928-5e560c06d30e?crop=entropy&cs=srgb&fm=jpg&ixid=M3w4NTYxOTB8MHwxfHNlYXJjaHwxfHx3aXJlbGVzcyUyMGhlYWRwaG9uZXN8ZW58MHx8fHwxNzg3OTIzMTE2fDA&ixlib=rb-4.1.0&q=85",
+        "description": "High-end wireless headphones"
+      },
+      "merch_hoodie": {
+        "url": "https://images.unsplash.com/photo-1556821840-3a63f95609a7?crop=entropy&cs=srgb&fm=jpg&ixid=M3w4NjA1NDh8MHwxfHNlYXJjaHwxfHxob29kaWV8ZW58MHx8fHwxNzg3OTIzMTE2fDA&ixlib=rb-4.1.0&q=85",
+        "description": "Branded clothing/merch"
       }
-    ]
-  }
+    }
+  },
+  "instructions_to_main_agent": [
+    "Remove the top 'Бонусная программа' pill entirely.",
+    "Refactor BonusPage.js to use the High Density Bento grid for the top stats.",
+    "Implement dual-theme using standard Tailwind `dark:` classes.",
+    "Add 'Закончился' label functionality to prize card items with 0 stock.",
+    "Create a new modal component for Variant Selection (Color, Memory) that calculates the live point cost.",
+    "Ensure the progress bar animates gracefully on mount using Framer Motion.",
+    "Do NOT use HTML `<select>`, use modern pill-buttons for variant choices in the modal."
+  ],
+  "UNIVERSAL_GUIDELINES_FOR_MAIN_AGENT": [
+    "Do not center-align the app container. Align left for readability.",
+    "Add transitions exclusively for interactive states (hover, focus), avoid `transition-all` where it breaks transforms.",
+    "Use 2-3x more spacing (p-6, p-8) to ensure premium feel.",
+    "Never use generic placeholder images, use the provided Unsplash URLs.",
+    "Ensure all components are strictly written in .js files since the project uses JS."
+  ]
 }

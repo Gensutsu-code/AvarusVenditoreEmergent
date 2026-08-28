@@ -1,0 +1,30 @@
+{
+  "summary": "Full regression of bonus prize system (user's 7 features). Backend: 8/8 pytest tests PASS (test_bonus_prize_system.py) — OOS blocks redemption, missing-option validation returns 400, options_cost correctly added to deduction (verified deduction == base+options), bulk index +10% and -pct revert work for ALL programs and single program, reject with reason='out_of_stock' returns points to client, auto-marks prize out_of_stock, and creates client notification titled 'Приз закончился' at /api/my-notifications. Frontend: /bonus page loads for user@demo.com with the top 'Бонусная программа' pill REMOVED (confirmed programmatically), 'ЗАКОНЧИЛСЯ' red badges render for 2 OOS prizes (prize-oos-badge-*), variant-modal opens from 'Выбрать' button on the options prize, variant-total updates from '1100 баллов' to '3300 баллов' after selecting Золотой (+0) and 256ГБ (+2200), variant-cancel-btn / variant-confirm-btn present. Normal (no-options) prize opens redeem-confirm-modal. Admin /admin?tab=bonus: bonus-index-prices-card with index-percent-input, index-scope-select ('Все программы' + program option), apply-index-btn all present; after clicking the program's pencil edit icon the modal exposes 6 prize-out-of-stock-{idx} checkboxes (label 'Товар закончился (метка «Закончился»)'), 6 prize-add-option-group-{idx} buttons ('Группа'), and reject-oos-prize-{id} ('Нет в наличии') buttons are visible on every pending redemption row. No blocking console errors from bonus features.",
+  "backend_issues": {"critical": [], "minor": []},
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [],
+    "design_issues": [
+      {"screen": "/bonus client", "issues": ["'next-level-progress-fill' element only mounts when a nextLevel exists; for programs with the user at max level (or no levels configured), only the 'Максимальный уровень достигнут' message shows. Not a bug — conditional. The seed program 'Бонусная программа' has 'Уровни не настроены' so the levels track/progress bar block is intentionally hidden. The redesigned 'До следующего приза' progress card renders correctly."]}
+    ]
+  },
+  "critical_code_review_comments": [
+    "BonusTab.js — clicking the collapsed program row expands only the Пользователи/История sections; the OOS toggle + options editor live inside a separate modal opened via the pencil icon. Consider surfacing a hint or making the row itself open the editor to reduce UX confusion for admins.",
+    "backend/routes/bonus.py:769 — IndexPricesBody has no validation on max percent (positive). A very large positive value could inflate prize costs unexpectedly; consider capping at e.g. +/- 100%.",
+    "backend/routes/bonus.py:627 — out_of_stock_reject only triggers via query params (?status=rejected&reason=out_of_stock). The alias at /admin/prize-redemptions/{id} works but the shape (query params vs body) is inconsistent with the rest of the admin API (usually PUT body). Minor consistency issue."
+  ],
+  "test_report_links": [
+    "/app/backend/tests/test_bonus_prize_system.py",
+    "/app/test_reports/pytest/bonus_prize_system.xml"
+  ],
+  "action_items": [],
+  "updated_files": [
+    "/app/backend/tests/test_bonus_prize_system.py"
+  ],
+  "success_rate": {"backend": "100% (8/8)", "frontend": "100% — all requested UI flows verified"},
+  "test_credentials": "admin@avarus.ru/admin, user@demo.com/demo123",
+  "seed_data_creation": "During reject_out_of_stock test a pending redemption was created then rejected (marks a prize OOS transiently); teardown restores prize.out_of_stock=false via admin PUT. Two options-based redemptions (3300 pts each) were also created for user@demo.com during test_redeem_with_options_deducts_correct_points. Points balance still ~93400 sufficient.",
+  "retest_needed": false,
+  "should_main_agent_self_test": false,
+  "context_for_next_testing_agent": "All bonus feature testids in /app/frontend/src/pages/BonusPage.js and /app/frontend/src/components/admin/BonusTab.js are stable. Admin prize editor with prize-out-of-stock-{idx} and prize-add-option-group-{idx} lives inside the edit-program modal opened by the pencil icon next to each program row (NOT by simply clicking the row header, which only reveals users/history). The variant modal correctly computes base + sum of selected choice points. The +10% indexation via POST /api/admin/bonus/index-prices multiplies both prize.points_cost and each option choice.points."
+}

@@ -1,6 +1,7 @@
 import axios from 'axios';
+import { useState } from 'react';
 import { motion } from 'framer-motion';
-import { Users, Plus, Pencil, Trash2, Save, Upload, Image, X, Gift, Award, ChevronDown, ChevronUp, Clock, Minus } from 'lucide-react';
+import { Users, Plus, Pencil, Trash2, Save, Upload, Image, X, Gift, Award, ChevronDown, ChevronUp, Clock, Minus, TrendingUp } from 'lucide-react';
 import { Button } from '../ui/button';
 import { Input } from '../ui/input';
 import { Label } from '../ui/label';
@@ -37,6 +38,29 @@ export default function BonusTab(props) {
     users,
     uploading
   } = props;
+
+  const [indexPercent, setIndexPercent] = useState('');
+  const [indexProgramId, setIndexProgramId] = useState('all');
+  const [indexing, setIndexing] = useState(false);
+
+  const applyIndexation = async () => {
+    const pct = parseFloat(indexPercent);
+    if (!pct || pct === 0) { toast.error('Укажите процент (напр. 10 или -5)'); return; }
+    setIndexing(true);
+    try {
+      const body = { percent: pct };
+      if (indexProgramId !== 'all') body.program_id = indexProgramId;
+      const res = await axios.post(`${API}/admin/bonus/index-prices`, body);
+      toast.success(`Цены обновлены: ${res.data.prizes_updated} призов в ${res.data.programs_updated} программах`);
+      setIndexPercent('');
+      const pr = await axios.get(`${API}/admin/bonus/programs`);
+      setBonusPrograms(pr.data || []);
+    } catch (err) {
+      toast.error(err.response?.data?.detail || 'Ошибка индексации');
+    } finally {
+      setIndexing(false);
+    }
+  };
 
   return (
     <>
@@ -115,6 +139,54 @@ export default function BonusTab(props) {
                   >
                     <Plus className="w-4 h-4 mr-2" />
                     Добавить программу
+                  </Button>
+                </div>
+              </div>
+
+              {/* Bulk price indexation */}
+              <div className="bg-white rounded-2xl p-5 border border-amber-200 shadow-sm" data-testid="bonus-index-prices-card">
+                <div className="flex items-center gap-3 mb-3">
+                  <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-amber-500 to-orange-500 flex items-center justify-center shadow-lg shadow-amber-500/20">
+                    <TrendingUp className="w-5 h-5 text-white" />
+                  </div>
+                  <div>
+                    <h3 className="text-base font-bold text-slate-800">Массовая индексация цен призов</h3>
+                    <p className="text-xs text-slate-500">Изменить стоимость всех призов (и вариантов) на процент</p>
+                  </div>
+                </div>
+                <div className="flex flex-wrap items-end gap-3">
+                  <div>
+                    <Label className="text-[11px] font-bold uppercase text-zinc-500">Процент (%)</Label>
+                    <Input
+                      type="number"
+                      value={indexPercent}
+                      onChange={(e) => setIndexPercent(e.target.value)}
+                      placeholder="напр. 10 или -5"
+                      className="mt-1 w-36 font-mono"
+                      data-testid="index-percent-input"
+                    />
+                  </div>
+                  <div>
+                    <Label className="text-[11px] font-bold uppercase text-zinc-500">Область</Label>
+                    <select
+                      value={indexProgramId}
+                      onChange={(e) => setIndexProgramId(e.target.value)}
+                      className="mt-1 block h-10 rounded-md border border-slate-200 bg-white px-3 text-sm min-w-[220px]"
+                      data-testid="index-scope-select"
+                    >
+                      <option value="all">Все программы</option>
+                      {bonusPrograms.map(p => (
+                        <option key={p.id} value={p.id}>{p.title || 'Без названия'}</option>
+                      ))}
+                    </select>
+                  </div>
+                  <Button
+                    onClick={applyIndexation}
+                    disabled={indexing}
+                    className="bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-white shadow-md"
+                    data-testid="apply-index-btn"
+                  >
+                    {indexing ? 'Применяем…' : 'Применить'}
                   </Button>
                 </div>
               </div>
@@ -396,6 +468,19 @@ export default function BonusTab(props) {
                                   } catch (err) { toast.error('Ошибка'); }
                                 }} data-testid={`reject-prize-${redemption.id}`}>
                                   Отклонить
+                                </Button>
+                                <Button size="sm" variant="outline" className="border-rose-400 text-rose-700 hover:bg-rose-50" onClick={async () => {
+                                  try {
+                                    await axios.put(`${API}/admin/prize-redemptions/${redemption.id}?status=rejected&reason=out_of_stock`);
+                                    setPrizeRedemptions(prev => prev.map(r => r.id === redemption.id ? {...r, status: 'rejected'} : r));
+                                    toast.success('Отклонено: товар закончился. Баллы возвращены, метка включена.');
+                                    try {
+                                      const res = await axios.get(`${API}/admin/bonus/programs`);
+                                      setBonusPrograms(res.data || []);
+                                    } catch (e) {}
+                                  } catch (err) { toast.error('Ошибка'); }
+                                }} data-testid={`reject-oos-prize-${redemption.id}`}>
+                                  Нет в наличии
                                 </Button>
                               </div>
                             )}
@@ -818,6 +903,123 @@ export default function BonusTab(props) {
                                 </label>
                               </div>
                             </div>
+
+                            {/* Out of stock toggle */}
+                            <label className="flex items-center gap-2 text-sm mt-2 cursor-pointer select-none" data-testid={`prize-out-of-stock-${idx}`}>
+                              <input
+                                type="checkbox"
+                                checked={!!prize.out_of_stock}
+                                onChange={(e) => {
+                                  const updatedPrizes = [...(editingProgram.prizes || [])];
+                                  updatedPrizes[idx].out_of_stock = e.target.checked;
+                                  setEditingProgram({...editingProgram, prizes: updatedPrizes});
+                                }}
+                                className="rounded"
+                              />
+                              <span className={prize.out_of_stock ? 'text-rose-600 font-medium' : 'text-zinc-600'}>
+                                Товар закончился (метка «Закончился»)
+                              </span>
+                            </label>
+
+                            {/* Extra parameters / variants */}
+                            <div className="mt-3 border-t border-zinc-200 pt-3">
+                              <div className="flex items-center justify-between mb-2">
+                                <span className="text-[11px] font-bold uppercase text-zinc-400">Доп. параметры (цвет, память…)</span>
+                                <Button type="button" size="sm" variant="outline" className="h-7 text-xs"
+                                  onClick={() => {
+                                    const updatedPrizes = [...(editingProgram.prizes || [])];
+                                    const groups = updatedPrizes[idx].options || [];
+                                    updatedPrizes[idx].options = [...groups, { id: `grp_${Date.now()}`, name: '', choices: [] }];
+                                    setEditingProgram({...editingProgram, prizes: updatedPrizes});
+                                  }}
+                                  data-testid={`prize-add-option-group-${idx}`}
+                                >
+                                  <Plus className="w-3 h-3 mr-1" /> Группа
+                                </Button>
+                              </div>
+                              {(prize.options || []).length === 0 ? (
+                                <p className="text-xs text-zinc-400">Нет доп. параметров.</p>
+                              ) : (
+                                <div className="space-y-2">
+                                  {(prize.options || []).map((grp, gIdx) => (
+                                    <div key={grp.id} className="rounded-lg border border-zinc-200 bg-white p-2">
+                                      <div className="flex items-center gap-2 mb-2">
+                                        <Input
+                                          value={grp.name}
+                                          onChange={(e) => {
+                                            const updatedPrizes = [...(editingProgram.prizes || [])];
+                                            updatedPrizes[idx].options[gIdx].name = e.target.value;
+                                            setEditingProgram({...editingProgram, prizes: updatedPrizes});
+                                          }}
+                                          placeholder="Название группы (напр. Цвет)"
+                                          className="h-8 text-sm flex-1"
+                                        />
+                                        <Button type="button" size="sm" variant="ghost" className="text-red-500 h-8 px-2"
+                                          onClick={() => {
+                                            const updatedPrizes = [...(editingProgram.prizes || [])];
+                                            updatedPrizes[idx].options = updatedPrizes[idx].options.filter((_, i) => i !== gIdx);
+                                            setEditingProgram({...editingProgram, prizes: updatedPrizes});
+                                          }}
+                                        >
+                                          <Trash2 className="w-3.5 h-3.5" />
+                                        </Button>
+                                      </div>
+                                      <div className="space-y-1.5 pl-1">
+                                        {(grp.choices || []).map((ch, cIdx) => (
+                                          <div key={ch.id} className="flex items-center gap-2">
+                                            <Input
+                                              value={ch.label}
+                                              onChange={(e) => {
+                                                const updatedPrizes = [...(editingProgram.prizes || [])];
+                                                updatedPrizes[idx].options[gIdx].choices[cIdx].label = e.target.value;
+                                                setEditingProgram({...editingProgram, prizes: updatedPrizes});
+                                              }}
+                                              placeholder="Вариант (напр. Красный)"
+                                              className="h-7 text-xs flex-1"
+                                            />
+                                            <div className="flex items-center gap-1">
+                                              <span className="text-[10px] text-zinc-400">+</span>
+                                              <Input
+                                                type="number"
+                                                value={ch.points ?? 0}
+                                                onChange={(e) => {
+                                                  const updatedPrizes = [...(editingProgram.prizes || [])];
+                                                  updatedPrizes[idx].options[gIdx].choices[cIdx].points = parseInt(e.target.value) || 0;
+                                                  setEditingProgram({...editingProgram, prizes: updatedPrizes});
+                                                }}
+                                                className="h-7 text-xs w-20"
+                                              />
+                                              <span className="text-[10px] text-zinc-400">б.</span>
+                                            </div>
+                                            <Button type="button" size="sm" variant="ghost" className="text-red-400 h-7 px-1.5"
+                                              onClick={() => {
+                                                const updatedPrizes = [...(editingProgram.prizes || [])];
+                                                updatedPrizes[idx].options[gIdx].choices = updatedPrizes[idx].options[gIdx].choices.filter((_, i) => i !== cIdx);
+                                                setEditingProgram({...editingProgram, prizes: updatedPrizes});
+                                              }}
+                                            >
+                                              <X className="w-3 h-3" />
+                                            </Button>
+                                          </div>
+                                        ))}
+                                        <Button type="button" size="sm" variant="ghost" className="h-7 text-xs text-teal-600"
+                                          onClick={() => {
+                                            const updatedPrizes = [...(editingProgram.prizes || [])];
+                                            const choices = updatedPrizes[idx].options[gIdx].choices || [];
+                                            updatedPrizes[idx].options[gIdx].choices = [...choices, { id: `ch_${Date.now()}`, label: '', points: 0 }];
+                                            setEditingProgram({...editingProgram, prizes: updatedPrizes});
+                                          }}
+                                          data-testid={`prize-add-choice-${idx}-${gIdx}`}
+                                        >
+                                          <Plus className="w-3 h-3 mr-1" /> Вариант
+                                        </Button>
+                                      </div>
+                                    </div>
+                                  ))}
+                                </div>
+                              )}
+                            </div>
+
                           </div>
                         ))}
                       </div>

@@ -1,5 +1,22 @@
 # Changelog
 
+## 2026-06-28 — Bonus system: out-of-stock, variants, bulk indexation, page redesign
+Backend (`routes/bonus.py`):
+- `redeem_prize`: accepts `selected_options`, validates each option group is chosen, adds option points to base cost; blocks redemption when prize `out_of_stock` or quantity 0; stores options breakdown on the redemption.
+- `update_prize_redemption_status`: new `reason` param — `reason=out_of_stock` on reject returns points, auto-sets the prize `out_of_stock=true`, and notifies the client ("Приз закончился…"). Alias updated to pass reason.
+- New `POST /api/admin/bonus/index-prices` ({percent, program_id?}) — bulk-adjusts all prize `points_cost` and option `points` by a % for one program or all.
+Admin (`components/admin/BonusTab.js`):
+- Prize editor: out-of-stock toggle + variant/options editor (groups → choices with +points).
+- Bulk price indexation card (percent + scope select all/one + apply).
+- "Нет в наличии" reject button on pending prize requests.
+Client (`pages/BonusPage.js`):
+- Removed the top "Бонусная программа" pill.
+- Redesigned current-level hero card (pulsing trophy badge, level color gradient) and a clearer animated "Покупки за YYYY → next level" progress bar (framer-motion spring).
+- Prize cards: "ЗАКОНЧИЛСЯ" red badge + grayscale + disabled button for out-of-stock; "+ параметры" badge for prizes with options.
+- New variant selection modal (pill buttons per group, live animated total = base + options) before redeeming.
+- Verified: testing_agent iteration_100 — backend 8/8 pytest, frontend 100%, no blockers.
+
+
 ## 2026-06-28 — Fix: individual price badge persisted after order + lint cleanup
 - **Bug**: "Ваша цена по договорённости" (individual/negotiated price) stayed on the catalog/product card after an order was placed. Backend already deactivates one-time individual prices on every order path (`orders.py` L599-604) — verified via curl for card/deferral/mixed. Root cause was frontend: `CatalogPage`/`ProductPage` kept their own local individual-price state and never re-fetched within the SPA session.
 - **Fix**: centralized on `IndividualPriceContext` as single source of truth.

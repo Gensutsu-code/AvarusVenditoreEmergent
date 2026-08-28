@@ -444,17 +444,36 @@ async def redeem_prize(data: dict, user=Depends(get_current_user)):
     
     if not prize.get("enabled", True):
         raise HTTPException(status_code=400, detail="Приз недоступен")
-    
+
+    if prize.get("out_of_stock") or prize.get("quantity", -1) == 0:
+        raise HTTPException(status_code=400, detail="Приз закончился")
+
+    # Compute additional cost from selected options (color/memory/quantity, etc.)
+    selected_options = data.get("selected_options") or []
+    prize_options = prize.get("options", []) or []
+    options_cost = 0
+    options_detail = []
+    for grp in prize_options:
+        sel = next((s for s in selected_options if s.get("group_id") == grp.get("id")), None)
+        if not sel:
+            raise HTTPException(status_code=400, detail=f"Выберите параметр «{grp.get('name', '')}»")
+        choice = next((c for c in grp.get("choices", []) if c.get("id") == sel.get("choice_id")), None)
+        if not choice:
+            raise HTTPException(status_code=400, detail=f"Некорректный выбор параметра «{grp.get('name', '')}»")
+        cp = int(choice.get("points", 0) or 0)
+        options_cost += cp
+        options_detail.append({"group_name": grp.get("name", ""), "choice_label": choice.get("label", ""), "points": cp})
+
     progress = await get_user_program_progress(user["id"], program_id)
     current_points = progress.get("current_amount", 0)
-    points_cost = prize.get("points_cost", 0)
-    
+    base_cost = prize.get("points_cost", 0)
+    points_cost = base_cost + options_cost
+
     if current_points < points_cost:
         raise HTTPException(status_code=400, detail="Недостаточно баллов")
-    
-    if prize.get("quantity", -1) == 0:
-        raise HTTPException(status_code=400, detail="Приз закончился")
-    
+
+    options_suffix = (" — " + ", ".join(f"{o['group_name']}: {o['choice_label']}" for o in options_detail)) if options_detail else ""
+
     redemption = {
         "id": str(uuid.uuid4()),
         "user_id": user["id"],
@@ -463,6 +482,9 @@ async def redeem_prize(data: dict, user=Depends(get_current_user)):
         "program_id": program_id,
         "prize_id": prize_id,
         "prize_name": prize.get("name", ""),
+        "base_cost": base_cost,
+        "options_cost": options_cost,
+        "options": options_detail,
         "points_cost": points_cost,
         "status": "pending",
         "created_at": datetime.now(timezone.utc).isoformat()
@@ -475,7 +497,7 @@ async def redeem_prize(data: dict, user=Depends(get_current_user)):
         "user_id": "ADMIN",
         "type": "prize_request",
         "title": "Запрос приза",
-        "message": f"Клиент {user.get('name') or user.get('email')} запросил приз «{prize.get('name', '')}» ({points_cost} баллов)",
+        "message": f"Клиент {user.get('name') or user.get('email')} запросил приз «{prize.get('name', '')}»{options_suffix} ({points_cost} баллов)",
         "link": "/admin",
         "read": False,
         "created_at": datetime.now(timezone.utc).isoformat()
@@ -589,7 +611,7 @@ async def get_admin_prize_redemptions(user=Depends(get_current_user)):
 
 
 @router.put("/admin/bonus/prize-redemptions/{redemption_id}/status")
-async def update_prize_redemption_status(redemption_id: str, status: str, user=Depends(get_current_user)):
+async def update_prize_redemption_status(redemption_id: str, status: str, reason: str = None, user=Depends(get_current_user)):
     if user.get("role") != "admin":
         raise HTTPException(status_code=403, detail="Admin access required")
     
@@ -602,6 +624,7 @@ async def update_prize_redemption_status(redemption_id: str, status: str, user=D
         raise HTTPException(status_code=404, detail="Redemption not found")
     
     old_status = redemption.get("status")
+    out_of_stock_reject = status == "rejected" and reason == "out_of_stock"
     
     if status == "rejected" and old_status == "pending":
         points_cost = redemption.get("points_cost", 0)
@@ -609,10 +632,23 @@ async def update_prize_redemption_status(redemption_id: str, status: str, user=D
             {"user_id": redemption["user_id"], "program_id": redemption["program_id"]},
             {"$inc": {"current_amount": points_cost}}
         )
+
+    # Auto-mark the prize as out of stock when rejected for that reason
+    if out_of_stock_reject:
+        program = await get_bonus_program(redemption["program_id"])
+        if program:
+            prizes = program.get("prizes", [])
+            for p in prizes:
+                if p.get("id") == redemption.get("prize_id"):
+                    p["out_of_stock"] = True
+                    break
+            await db.bonus_programs.update_one(
+                {"id": redemption["program_id"]}, {"$set": {"prizes": prizes}}
+            )
     
     await db.prize_redemptions.update_one(
         {"id": redemption_id},
-        {"$set": {"status": status, "updated_at": datetime.now(timezone.utc).isoformat()}}
+        {"$set": {"status": status, "reject_reason": reason, "updated_at": datetime.now(timezone.utc).isoformat()}}
     )
 
     # Log for revert
@@ -625,7 +661,7 @@ async def update_prize_redemption_status(redemption_id: str, status: str, user=D
         method="PUT",
         path=f"/admin/bonus/prize-redemptions/{redemption_id}/status",
         status_code=200,
-        details={"old_status": old_status, "new_status": status, "prize_name": redemption.get("prize_name")},
+        details={"old_status": old_status, "new_status": status, "prize_name": redemption.get("prize_name"), "reason": reason},
         before_state={**redemption},
         after_state={"status": status},
         collection_name="prize_redemptions",
@@ -633,15 +669,20 @@ async def update_prize_redemption_status(redemption_id: str, status: str, user=D
     )
 
     # Notify client about status change
+    rejected_msg = (
+        f"Приз «{redemption.get('prize_name', '')}» закончился, поэтому ваш запрос отклонён. Баллы возвращены на счёт."
+        if out_of_stock_reject else
+        f"Ваш запрос на приз «{redemption.get('prize_name', '')}» отклонён. Баллы возвращены."
+    )
     status_messages = {
         "approved": f"Ваш запрос на приз «{redemption.get('prize_name', '')}» одобрен!",
         "issued": f"Приз «{redemption.get('prize_name', '')}» выдан! Свяжитесь с администратором для получения.",
-        "rejected": f"Ваш запрос на приз «{redemption.get('prize_name', '')}» отклонён. Баллы возвращены.",
+        "rejected": rejected_msg,
     }
     status_titles = {
         "approved": "Приз одобрен",
         "issued": "Приз выдан",
-        "rejected": "Запрос отклонён",
+        "rejected": "Приз закончился" if out_of_stock_reject else "Запрос отклонён",
     }
     if status in status_messages:
         await db.notifications.insert_one({
@@ -716,9 +757,55 @@ async def get_admin_prize_redemptions_alias(user=Depends(get_current_user)):
 
 
 @router.put("/admin/prize-redemptions/{redemption_id}")
-async def update_prize_redemption_alias(redemption_id: str, status: str, user=Depends(get_current_user)):
+async def update_prize_redemption_alias(redemption_id: str, status: str, reason: str = None, user=Depends(get_current_user)):
     """Alias for /admin/bonus/prize-redemptions/{id}/status"""
-    return await update_prize_redemption_status(redemption_id, status, user)
+    return await update_prize_redemption_status(redemption_id, status, reason, user)
+
+
+class IndexPricesBody(BaseModel):
+    percent: float
+    program_id: str = None  # if omitted -> apply to all programs
+
+
+@router.post("/admin/bonus/index-prices")
+async def index_prize_prices(body: IndexPricesBody, user=Depends(get_current_user)):
+    """Admin: bulk-adjust all prize point costs (and option point costs) by a percentage.
+    Positive percent increases, negative decreases. Applies to one program or all."""
+    if user.get("role") != "admin":
+        raise HTTPException(status_code=403, detail="Admin access required")
+
+    factor = 1 + (body.percent / 100.0)
+    if factor < 0:
+        raise HTTPException(status_code=400, detail="Слишком большое понижение")
+
+    query = {"id": body.program_id} if body.program_id else {}
+    programs = await db.bonus_programs.find(query, {"_id": 0}).to_list(100)
+    if not programs:
+        raise HTTPException(status_code=404, detail="Программы не найдены")
+
+    updated_prizes = 0
+    for program in programs:
+        prizes = program.get("prizes", []) or []
+        for p in prizes:
+            p["points_cost"] = max(0, round((p.get("points_cost", 0) or 0) * factor))
+            for grp in (p.get("options", []) or []):
+                for ch in (grp.get("choices", []) or []):
+                    ch["points"] = max(0, round((ch.get("points", 0) or 0) * factor))
+            updated_prizes += 1
+        await db.bonus_programs.update_one({"id": program["id"]}, {"$set": {"prizes": prizes}})
+
+    await log_action(
+        action=f"Индексация цен призов: {'+' if body.percent >= 0 else ''}{body.percent}% ({'все программы' if not body.program_id else '1 программа'})",
+        user_id=user["id"],
+        user_name=user.get("name", user.get("email")),
+        user_role=user.get("role"),
+        method="POST",
+        path="/admin/bonus/index-prices",
+        status_code=200,
+        details={"percent": body.percent, "program_id": body.program_id, "prizes_updated": updated_prizes},
+    )
+
+    return {"success": True, "programs_updated": len(programs), "prizes_updated": updated_prizes}
 
 
 @router.get("/admin/bonus/history")
