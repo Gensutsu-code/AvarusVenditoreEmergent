@@ -1,5 +1,16 @@
 # Changelog
 
+## 2026-06-28 — Bonus page RADICAL redesign (client)
+- `pages/BonusPage.js` header/level/progress area fully rebuilt into a premium dark hero:
+  - Animated aurora glow blobs (orange/amber/teal) + subtle dot-grid texture on a near-black `#0a0e17` panel.
+  - Large glowing gradient points balance (animated counter) with a "К призам" quick-scroll button.
+  - Level medallion (pulsing ring, level-color gradient, Award icon) + big gradient cashback badge.
+  - Glowing "до следующего уровня" progress bar with an animated shimmer sweep and remaining ₽.
+  - Gamified "Путь уровней" roadmap: connected nodes on a track, achieved=checkmark+color gradient, current level pulses, locked=dim; per-node threshold + cashback pill; staggered spring entrance.
+  - Prizes moved into a "Магазин призов" section with an anchor for the scroll button; kept existing OOS badge / "+ параметры" / variant modal logic intact.
+- Verified via screenshot: hero, medallion, progress and roadmap render correctly on the demo program (4 sample levels were added to the preview program so the roadmap is visible — editable in Admin → Бонусы).
+
+
 ## 2026-06-28 — Bonus system: out-of-stock, variants, bulk indexation, page redesign
 Backend (`routes/bonus.py`):
 - `redeem_prize`: accepts `selected_options`, validates each option group is chosen, adds option points to base cost; blocks redemption when prize `out_of_stock` or quantity 0; stores options breakdown on the redemption.

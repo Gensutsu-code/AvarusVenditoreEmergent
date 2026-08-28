@@ -232,176 +232,160 @@ export default function BonusPage() {
               const amountToNextLevel = nextLevel ? Math.max(0, nextLevel.min_points - yearlyTotal) : 0;
 
               return (
-                <div key={program.id} className="bg-white rounded-2xl border border-zinc-200 shadow-sm overflow-hidden">
-                  {/* Program Header */}
-                  <div className="p-6 border-b border-zinc-100">
-                    <div className="flex items-start gap-4">
-                      {program.image_url ? (
-                        <img src={program.image_url} alt="" className="w-14 h-14 rounded-xl object-cover" />
-                      ) : (
-                        <div className="w-14 h-14 bg-gradient-to-br from-orange-400 to-orange-600 rounded-xl flex items-center justify-center">
-                          <Trophy className="w-7 h-7 text-white" />
+                <div key={program.id} className="rounded-[28px] border border-zinc-200/70 bg-white shadow-sm overflow-hidden">
+                  {/* Premium dark hero */}
+                  <div className="relative overflow-hidden bg-[#0a0e17] text-white">
+                    <motion.div aria-hidden className="pointer-events-none absolute -top-24 -right-16 w-80 h-80 rounded-full bg-orange-500/30 blur-[90px]"
+                      animate={{ scale: [1, 1.25, 1], opacity: [0.35, 0.6, 0.35] }} transition={{ duration: 9, repeat: Infinity }} />
+                    <motion.div aria-hidden className="pointer-events-none absolute -bottom-28 -left-16 w-80 h-80 rounded-full bg-amber-400/20 blur-[90px]"
+                      animate={{ scale: [1.2, 1, 1.2], opacity: [0.25, 0.5, 0.25] }} transition={{ duration: 11, repeat: Infinity }} />
+                    <motion.div aria-hidden className="pointer-events-none absolute top-10 left-1/3 w-64 h-64 rounded-full bg-teal-400/10 blur-[80px]"
+                      animate={{ x: [0, 30, 0], opacity: [0.2, 0.4, 0.2] }} transition={{ duration: 13, repeat: Infinity }} />
+                    <div className="pointer-events-none absolute inset-0 opacity-[0.14]" style={{ backgroundImage: 'radial-gradient(circle at 1px 1px, #ffffff 1px, transparent 0)', backgroundSize: '22px 22px' }} />
+
+                    <div className="relative p-6 sm:p-8">
+                      {/* Top row: program + jump to prizes */}
+                      <div className="flex items-start justify-between gap-4 flex-wrap">
+                        <div className="flex items-center gap-3">
+                          {program.image_url ? (
+                            <img src={program.image_url} alt="" className="w-11 h-11 rounded-xl object-cover ring-1 ring-white/15" />
+                          ) : (
+                            <div className="w-11 h-11 rounded-xl bg-white/10 backdrop-blur flex items-center justify-center ring-1 ring-white/15">
+                              <Trophy className="w-5 h-5 text-amber-300" />
+                            </div>
+                          )}
+                          <div>
+                            <h2 className="text-base font-bold text-white leading-tight">{program.title || 'Программа лояльности'}</h2>
+                            {program.description && <p className="text-white/50 text-xs mt-0.5 max-w-xs">{program.description}</p>}
+                          </div>
+                        </div>
+                        <button onClick={() => document.getElementById(`prizes-${program.id}`)?.scrollIntoView({ behavior: 'smooth' })}
+                          data-testid="jump-to-prizes"
+                          className="text-xs font-semibold text-amber-300 hover:text-amber-200 flex items-center gap-1.5 bg-white/5 hover:bg-white/10 px-3 py-1.5 rounded-full ring-1 ring-white/10 transition-colors">
+                          <Gift className="w-3.5 h-3.5" /> К призам
+                        </button>
+                      </div>
+
+                      {/* Balance */}
+                      <motion.div className="mt-6" initial={{ opacity: 0, y: 14 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5 }}>
+                        <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-white/40">Доступно баллов</p>
+                        <div className="flex items-end gap-3 mt-1">
+                          <span className="text-5xl sm:text-6xl font-black tracking-tight bg-gradient-to-br from-orange-300 via-amber-200 to-orange-400 bg-clip-text text-transparent tabular-nums" data-testid="bonus-balance">
+                            <AnimatedNumber value={Math.round(program.progress?.current_amount || 0)} />
+                          </span>
+                          <Star className="w-6 h-6 text-amber-300 mb-2.5 fill-amber-300/40" />
+                        </div>
+                      </motion.div>
+
+                      {/* Level medallion + progress */}
+                      {program.current_level ? (
+                        <div className="mt-7 grid gap-5">
+                          <div className="flex items-center justify-between gap-4 flex-wrap">
+                            <div className="flex items-center gap-3.5">
+                              <motion.div className="relative w-14 h-14 rounded-2xl flex items-center justify-center shadow-xl"
+                                style={{ background: `linear-gradient(135deg, ${program.current_level.color}, ${program.current_level.color}aa)` }}
+                                animate={{ boxShadow: [`0 0 0 0 ${program.current_level.color}66`, `0 0 0 14px ${program.current_level.color}00`] }}
+                                transition={{ duration: 2.2, repeat: Infinity, ease: 'easeOut' }}>
+                                <Award className="w-7 h-7 text-white" />
+                              </motion.div>
+                              <div className="min-w-0">
+                                <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-white/40">Ваш уровень</p>
+                                <p className="text-xl font-black tracking-tight" style={{ color: program.current_level.color }}>{program.current_level.name}</p>
+                                {program.current_level.benefits && <p className="text-xs text-white/50 max-w-[220px] truncate">{program.current_level.benefits}</p>}
+                              </div>
+                            </div>
+                            {program.current_level.cashback_percent > 0 && (
+                              <div className="text-center bg-white/5 ring-1 ring-white/10 backdrop-blur px-5 py-2.5 rounded-2xl">
+                                <p className="text-3xl font-black leading-none bg-gradient-to-b from-amber-200 to-orange-400 bg-clip-text text-transparent">{program.current_level.cashback_percent}%</p>
+                                <p className="text-[10px] font-medium text-white/40 mt-1 uppercase tracking-wide">кешбэк</p>
+                              </div>
+                            )}
+                          </div>
+
+                          {nextLevel ? (
+                            <div>
+                              <div className="flex items-center justify-between text-xs mb-2">
+                                <span className="text-white/50">Покупки за {currentYear}: <span className="font-bold text-white/90 tabular-nums">{formatPrice(yearlyTotal)} ₽</span></span>
+                                <span className="text-white/50">до <span className="font-bold" style={{ color: nextLevel.color }}>{nextLevel.name}</span></span>
+                              </div>
+                              <div className="relative h-3.5 rounded-full bg-white/10 overflow-hidden ring-1 ring-white/10">
+                                <motion.div className="absolute inset-y-0 left-0 rounded-full overflow-hidden"
+                                  style={{ background: `linear-gradient(90deg, ${program.current_level.color}, ${nextLevel.color})` }}
+                                  initial={{ width: 0 }} animate={{ width: `${program.level_percentage || 0}%` }}
+                                  transition={{ type: 'spring', bounce: 0.15, duration: 1.5, delay: 0.3 }} data-testid="next-level-progress-fill">
+                                  <motion.div className="absolute inset-y-0 bg-white/30" style={{ width: '35%' }}
+                                    animate={{ x: ['-120%', '320%'] }} transition={{ duration: 1.9, repeat: Infinity, ease: 'easeInOut', repeatDelay: 0.7 }} />
+                                </motion.div>
+                              </div>
+                              <div className="flex justify-between mt-1.5 text-[11px] text-white/40">
+                                <span className="tabular-nums">{program.level_percentage || 0}%</span>
+                                <span>Осталось <span className="font-semibold text-white/75 tabular-nums">{formatPrice(amountToNextLevel)} ₽</span></span>
+                              </div>
+                            </div>
+                          ) : (
+                            <div className="flex items-center gap-2 text-sm font-semibold text-emerald-300"><CheckCircle className="w-4 h-4" /> Максимальный уровень достигнут 🎉</div>
+                          )}
+                        </div>
+                      ) : null}
+
+                      {/* Levels roadmap */}
+                      {sortedLevels.length > 0 && (
+                        <div className="mt-8">
+                          <div className="flex items-center justify-between mb-4">
+                            <p className="text-[11px] font-semibold uppercase tracking-[0.15em] text-white/40">Путь уровней</p>
+                            <span className="text-[11px] text-white/50">Достигнуто <span className="font-bold text-amber-300">{sortedLevels.filter(l => yearlyTotal >= l.min_points).length}</span> / {sortedLevels.length}</span>
+                          </div>
+                          <div className="relative pt-1">
+                            <div className="absolute left-5 right-5 top-6 h-1 bg-white/10 rounded-full overflow-hidden">
+                              <motion.div className="h-full rounded-full bg-gradient-to-r from-orange-400 to-amber-300"
+                                initial={{ width: 0 }} animate={{ width: `${Math.min(100, (yearlyTotal / (sortedLevels[sortedLevels.length - 1]?.min_points || 100000)) * 100)}%` }}
+                                transition={{ duration: 1, ease: 'easeOut', delay: 0.3 }} />
+                            </div>
+                            <div className="relative flex justify-between">
+                              {sortedLevels.map((level, idx) => {
+                                const isActive = program.current_level?.id === level.id;
+                                const isAchieved = yearlyTotal >= level.min_points;
+                                return (
+                                  <motion.div key={level.id} className="flex flex-col items-center text-center flex-1 min-w-0"
+                                    initial={{ opacity: 0, y: 14, scale: 0.5 }} animate={{ opacity: 1, y: 0, scale: 1 }}
+                                    transition={{ delay: 0.2 + idx * 0.08, type: 'spring', stiffness: 260, damping: 16 }}>
+                                    <motion.div className="relative w-11 h-11 rounded-full flex items-center justify-center text-sm font-bold shadow-lg z-10 ring-2 ring-[#0a0e17]"
+                                      style={{ background: isAchieved ? `linear-gradient(135deg, ${level.color}, ${level.color}bb)` : 'rgba(255,255,255,0.08)', color: isAchieved ? '#fff' : 'rgba(255,255,255,0.5)' }}
+                                      animate={isActive ? { boxShadow: [`0 0 0 0 ${level.color}88`, `0 0 0 12px ${level.color}00`] } : {}}
+                                      transition={isActive ? { duration: 1.8, repeat: Infinity, ease: 'easeOut' } : {}}>
+                                      {isAchieved ? <CheckCircle className="w-5 h-5" /> : (idx + 1)}
+                                    </motion.div>
+                                    <p className={`text-[11px] mt-2 leading-tight truncate max-w-full px-0.5 ${isActive ? 'font-bold' : 'font-medium'}`} style={{ color: isAchieved ? '#fff' : 'rgba(255,255,255,0.45)' }}>{level.name}</p>
+                                    <p className="text-[10px] text-white/35 mt-0.5 tabular-nums">от {formatPrice(level.min_points)} ₽</p>
+                                    {level.cashback_percent > 0 && (
+                                      <span className="text-[10px] font-bold mt-1 px-1.5 py-0.5 rounded-full" style={{ color: isAchieved ? level.color : 'rgba(255,255,255,0.4)', backgroundColor: isAchieved ? level.color + '22' : 'rgba(255,255,255,0.06)' }}>{level.cashback_percent}%</span>
+                                    )}
+                                  </motion.div>
+                                );
+                              })}
+                            </div>
+                          </div>
                         </div>
                       )}
-                      <div className="flex-1">
-                        <h2 className="text-xl font-bold text-zinc-900">{program.title || 'Бонусная программа'}</h2>
-                        <p className="text-zinc-500 text-sm mt-1">{program.description}</p>
-                      </div>
-                      <div className="text-right">
-                        <p className="text-3xl font-bold text-orange-500"><AnimatedNumber value={Math.round(program.progress?.current_amount || 0)} /></p>
-                        <p className="text-xs text-zinc-400">баллов</p>
-                      </div>
                     </div>
                   </div>
 
-                  {/* Current Level & Progress */}
-                  {program.current_level && (
-                    <div className="p-6 bg-gradient-to-r from-zinc-50 to-zinc-100/50">
-                      <motion.div
-                        className="relative overflow-hidden rounded-2xl p-4 mb-5 flex items-center justify-between gap-3 shadow-sm border"
-                        style={{ borderColor: program.current_level.color + '40', background: `linear-gradient(120deg, ${program.current_level.color}14, ${program.current_level.color}04)` }}
-                        initial={{ opacity: 0, y: 12 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        transition={{ duration: 0.4 }}
-                      >
-                        <div className="flex items-center gap-3.5 min-w-0">
-                          <motion.div 
-                            className="relative w-14 h-14 rounded-2xl flex items-center justify-center text-white shadow-lg flex-shrink-0"
-                            style={{ backgroundColor: program.current_level.color }}
-                            animate={{ boxShadow: [`0 0 0 0 ${program.current_level.color}55`, `0 0 0 12px ${program.current_level.color}00`] }}
-                            transition={{ duration: 2.2, repeat: Infinity, ease: 'easeOut' }}
-                          >
-                            <Trophy className="w-6 h-6" />
-                          </motion.div>
-                          <div className="min-w-0">
-                            <p className="text-[10px] font-bold uppercase tracking-[0.15em] text-zinc-400">Ваш уровень</p>
-                            <p className="text-xl font-black tracking-tight truncate" style={{ color: program.current_level.color }}>{program.current_level.name}</p>
-                            {program.current_level.benefits && (
-                              <p className="text-xs text-zinc-500 truncate">{program.current_level.benefits}</p>
-                            )}
-                          </div>
-                        </div>
-                        {program.current_level.cashback_percent > 0 && (
-                          <div className="text-right bg-white/80 backdrop-blur px-4 py-2 rounded-xl shadow-sm flex-shrink-0">
-                            <p className="text-2xl font-black leading-none" style={{ color: program.current_level.color }}>
-                              {program.current_level.cashback_percent}%
-                            </p>
-                            <p className="text-[10px] font-medium text-zinc-400 mt-0.5">кешбэк</p>
-                          </div>
-                        )}
-                      </motion.div>
-
-                      {/* Levels Visualization */}
-                      <div className="mb-4">
-                        <div className="flex items-center justify-between mb-3">
-                          <p className="text-[11px] font-semibold uppercase tracking-wide text-zinc-400">Уровни программы</p>
-                          <span className="text-xs font-medium text-zinc-500">
-                            Достигнуто <span className="font-bold text-orange-600">{sortedLevels.filter(l => yearlyTotal >= l.min_points).length}</span> из {sortedLevels.length}
-                          </span>
-                        </div>
-
-                        <div className="relative pt-1">
-                          {/* Track */}
-                          <div className="absolute left-5 right-5 top-6 h-1.5 bg-zinc-200 rounded-full overflow-hidden">
-                            <motion.div 
-                              className="h-full rounded-full"
-                              style={{ backgroundColor: program.current_level.color }}
-                              initial={{ width: 0 }}
-                              animate={{ width: `${Math.min(100, (yearlyTotal / (sortedLevels[sortedLevels.length - 1]?.min_points || 100000)) * 100)}%` }}
-                              transition={{ duration: 0.9, ease: 'easeOut', delay: 0.2 }}
-                            />
-                          </div>
-                          {/* Nodes */}
-                          <div className="relative flex justify-between">
-                            {sortedLevels.map((level, idx) => {
-                              const isActive = program.current_level?.id === level.id;
-                              const isAchieved = yearlyTotal >= level.min_points;
-                              return (
-                                <motion.div 
-                                  key={level.id} 
-                                  className="flex flex-col items-center text-center"
-                                  initial={{ opacity: 0, y: 12, scale: 0.6 }}
-                                  animate={{ opacity: 1, y: 0, scale: 1 }}
-                                  transition={{ delay: 0.15 + idx * 0.09, type: 'spring', stiffness: 280, damping: 18 }}
-                                >
-                                  <motion.div 
-                                    className={`relative w-10 h-10 rounded-full flex items-center justify-center text-sm font-bold shadow-md z-10 ${isAchieved ? 'text-white' : 'text-white/70'}`}
-                                    style={{ backgroundColor: isAchieved ? level.color : '#d4d4d8' }}
-                                    animate={isActive ? { boxShadow: [`0 0 0 0 ${level.color}66`, `0 0 0 10px ${level.color}00`] } : {}}
-                                    transition={isActive ? { duration: 1.8, repeat: Infinity, ease: 'easeOut' } : {}}
-                                  >
-                                    {isAchieved ? <CheckCircle className="w-5 h-5" /> : (idx + 1)}
-                                  </motion.div>
-                                  <p className={`text-xs mt-1.5 leading-tight ${isActive ? 'font-bold' : isAchieved ? 'font-medium' : 'opacity-60'}`} style={{ color: isAchieved ? level.color : '#a1a1aa' }}>
-                                    {level.name}
-                                  </p>
-                                  <p className="text-[10px] text-zinc-400 mt-0.5 tabular-nums">от {formatPrice(level.min_points)} ₽</p>
-                                  {level.cashback_percent > 0 && (
-                                    <span className="text-[10px] font-semibold mt-0.5 px-1.5 py-0.5 rounded-full" style={{ color: isAchieved ? level.color : '#a1a1aa', backgroundColor: isAchieved ? level.color + '18' : '#f4f4f5' }}>
-                                      {level.cashback_percent}%
-                                    </span>
-                                  )}
-                                </motion.div>
-                              );
-                            })}
-                          </div>
-                        </div>
-                      </div>
-
-                      {/* Progress toward next level */}
-                      <div className="rounded-xl bg-white border border-zinc-100 p-4 shadow-sm">
-                        <div className="flex items-center justify-between text-sm mb-2.5">
-                          <div className="flex items-center gap-2 min-w-0">
-                            <TrendingUp className="w-4 h-4 text-teal-500 flex-shrink-0" />
-                            <span className="text-zinc-500">Покупки за {currentYear}:</span>
-                            <span className="font-bold text-teal-600 tabular-nums">{formatPrice(yearlyTotal)} ₽</span>
-                          </div>
-                          {nextLevel && (
-                            <span className="text-xs text-zinc-500 text-right flex-shrink-0">
-                              до <span className="font-bold" style={{ color: nextLevel.color }}>{nextLevel.name}</span>
-                            </span>
-                          )}
-                        </div>
-                        {nextLevel ? (
-                          <>
-                            <div className="h-3 rounded-full bg-zinc-100 overflow-hidden">
-                              <motion.div
-                                className="h-full rounded-full"
-                                style={{ background: `linear-gradient(90deg, ${program.current_level.color}, ${nextLevel.color})` }}
-                                initial={{ width: 0 }}
-                                animate={{ width: `${program.level_percentage || 0}%` }}
-                                transition={{ type: 'spring', bounce: 0.2, duration: 1.4, delay: 0.25 }}
-                                data-testid="next-level-progress-fill"
-                              />
-                            </div>
-                            <div className="flex justify-between mt-1.5 text-[11px] text-zinc-400">
-                              <span className="tabular-nums">{program.level_percentage || 0}%</span>
-                              <span>Осталось <span className="font-semibold text-zinc-600 tabular-nums">{formatPrice(amountToNextLevel)} ₽</span></span>
-                            </div>
-                          </>
-                        ) : (
-                          <div className="flex items-center gap-2 text-sm font-medium text-emerald-600">
-                            <CheckCircle className="w-4 h-4" />
-                            Максимальный уровень достигнут 🎉
-                          </div>
-                        )}
-                      </div>
-                    </div>
-                  )}
-
                   {/* Prizes Section - Expanded by default */}
                   {program.prizes && program.prizes.filter(p => p.enabled).length > 0 && (
-                    <div className="p-6 border-t border-zinc-100">
+                    <div id={`prizes-${program.id}`} className="p-6 sm:p-8 scroll-mt-20">
                       <div className="flex items-center justify-between">
                         <button 
                           className="flex items-center gap-2"
                           onClick={() => setCollapsedPrograms(prev => ({ ...prev, [program.id]: !prev[program.id] }))}
                         >
-                          <h3 className="font-bold text-zinc-900 flex items-center gap-2">
-                            <Award className="w-5 h-5 text-orange-500" />
-                            Доступные призы ({program.prizes.filter(p => p.enabled).length})
+                          <h3 className="text-lg font-black text-zinc-900 flex items-center gap-2 tracking-tight">
+                            <span className="w-8 h-8 rounded-xl bg-gradient-to-br from-orange-500 to-amber-500 flex items-center justify-center shadow-lg shadow-orange-500/20">
+                              <Gift className="w-4 h-4 text-white" />
+                            </span>
+                            Магазин призов
+                            <span className="text-sm font-semibold text-zinc-400">({program.prizes.filter(p => p.enabled).length})</span>
                           </h3>
-                          {collapsedPrograms[program.id] ? <ChevronDown className="w-5 h-5" /> : <ChevronUp className="w-5 h-5" />}
+                          {collapsedPrograms[program.id] ? <ChevronDown className="w-5 h-5 text-zinc-400" /> : <ChevronUp className="w-5 h-5 text-zinc-400" />}
                         </button>
                         {!collapsedPrograms[program.id] && (
                           <div className="flex items-center gap-1 bg-zinc-100 rounded-lg p-0.5" data-testid="prize-view-toggle">
