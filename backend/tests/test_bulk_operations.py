@@ -75,7 +75,7 @@ def test_files(admin_session):
     for f in created_files:
         try:
             admin_session.delete(f"{BASE_URL}/api/personal-files/files/{f['id']}")
-        except:
+        except Exception:
             pass
 
 
@@ -95,7 +95,7 @@ def test_folder(admin_session):
     # Cleanup: delete test folder
     try:
         admin_session.delete(f"{BASE_URL}/api/personal-files/folders/{folder['id']}")
-    except:
+    except Exception:
         pass
 
 

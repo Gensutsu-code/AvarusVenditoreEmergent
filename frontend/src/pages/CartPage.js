@@ -9,6 +9,7 @@ import { Textarea } from '../components/ui/textarea';
 import { Dialog, DialogContent, DialogTitle, DialogDescription } from '../components/ui/dialog';
 import { useCart } from '../context/CartContext';
 import { useAuth } from '../context/AuthContext';
+import { useIndividualPrice } from '../context/IndividualPriceContext';
 import { motion, AnimatePresence } from 'framer-motion';
 import { toast } from 'sonner';
 import { trackClick } from '../utils/tracker';
@@ -38,6 +39,7 @@ const METHOD_NAME = { balance: 'Баланс', card: 'Карта', cash: 'Нал
 export default function CartPage() {
   const { cart, updateQuantity, removeFromCart, clearCart, fetchCart, loading: cartLoading } = useCart();
   const { user, loading: authLoading } = useAuth();
+  const { refresh: refreshIndividualPrices } = useIndividualPrice();
   const navigate = useNavigate();
 
   const formatPrice = (price) => new Intl.NumberFormat('ru-RU').format(Math.round(price));
@@ -213,6 +215,7 @@ export default function CartPage() {
       setOrderId(res.data.id);
       await fetchCart();
       setCdReq(null);
+      refreshIndividualPrices();
       toast.success('Заказ оплачен криптовалютой!');
       navigate('/orders');
     } catch (err) {
@@ -237,6 +240,7 @@ export default function CartPage() {
         setOrderId(res.data.id);
         await fetchCart();
         setCdReq(null);
+        refreshIndividualPrices();
         if (mixM1 === 'card' || mixM2 === 'card') {
           toast.success('Заказ создан! Завершите оплату картой в «Мои заказы»');
         } else {
@@ -264,6 +268,7 @@ export default function CartPage() {
       setOrderId(res.data.id);
       await fetchCart();
       setCdReq(null);
+      refreshIndividualPrices();
 
       if (payWithDeferral) toast.success('Заказ оформлен в отсрочку!');
       else if (payWithBalance) toast.success('Заказ оплачен с баланса!');

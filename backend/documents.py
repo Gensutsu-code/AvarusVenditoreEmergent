@@ -361,6 +361,6 @@ def _parse_date(date_str):
         if isinstance(date_str, str) and date_str:
             dt = datetime.fromisoformat(date_str.replace('Z', '+00:00'))
             return dt.strftime('%d.%m.%Y %H:%M')
-    except:
+    except Exception:
         pass
     return datetime.now(timezone.utc).strftime('%d.%m.%Y %H:%M')

@@ -9,6 +9,7 @@ import {
 import { Button } from '../components/ui/button';
 import { useCart } from '../context/CartContext';
 import { useAuth } from '../context/AuthContext';
+import { useIndividualPrice } from '../context/IndividualPriceContext';
 import { FavoritesButton } from '../components/FavoritesButton';
 import { toast } from 'sonner';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -32,7 +33,8 @@ export default function ProductPage() {
   const [quantity, setQuantity] = useState(1);
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
   const [addingToCart, setAddingToCart] = useState(false);
-  const [individualPrice, setIndividualPrice] = useState(null);
+  const { getIndividualPrice } = useIndividualPrice();
+  const individualPrice = getIndividualPrice(id);
   const [discountOpen, setDiscountOpen] = useState(false);
   const [requestOpen, setRequestOpen] = useState(false);
 
@@ -44,14 +46,6 @@ export default function ProductPage() {
   }, [id]);
 
   // Fetch individual price for this product
-  useEffect(() => {
-    if (user && id) {
-      axios.get(`${API}/individual-prices/my`).then(r => {
-        const ip = r.data.find(p => p.product_id === id);
-        setIndividualPrice(ip ? ip.price : null);
-      }).catch(() => {});
-    }
-  }, [user, id]);
 
   const fetchProduct = async () => {
     setLoading(true);

@@ -8,6 +8,7 @@ import { Search, X, ShoppingCart, Package, Truck, Minus, Plus, ArrowRight, Heart
 import { useCart } from '../context/CartContext';
 import { Skeleton } from '../components/ui/skeleton';
 import { useAuth } from '../context/AuthContext';
+import { useIndividualPrice } from '../context/IndividualPriceContext';
 import { toast } from 'sonner';
 import { useNavigate } from 'react-router-dom';
 import { FavoritesButton } from '../components/FavoritesButton';
@@ -498,7 +499,7 @@ export default function CatalogPage() {
   const [showFilters, setShowFilters] = useState(false);
   const [filters, setFilters] = useState({ manufacturer: '', warehouse: '', inStock: false, priceMin: '', priceMax: '', deliveryDays: '', hasPhoto: false, hasCross: false, sortBy: '' });
   const [filterOptions, setFilterOptions] = useState({ manufacturers: [], warehouses: [] });
-  const [individualPrices, setIndividualPrices] = useState({});
+  const { getIndividualPrice } = useIndividualPrice();
   const [discountProduct, setDiscountProduct] = useState(null);
   const [requestModalOpen, setRequestModalOpen] = useState(false);
   
@@ -522,17 +523,6 @@ export default function CatalogPage() {
     fetchCategories();
     fetchFilterOptions();
   }, []);
-
-  // Fetch individual prices for logged-in user
-  useEffect(() => {
-    if (user) {
-      axios.get(`${API}/individual-prices/my`).then(r => {
-        const map = {};
-        r.data.forEach(ip => { map[ip.product_id] = ip.price; });
-        setIndividualPrices(map);
-      }).catch(() => {});
-    }
-  }, [user]);
 
   useEffect(() => {
     if (searchQuery || categoryId) {
@@ -1256,7 +1246,7 @@ export default function CatalogPage() {
                           formatPrice={formatPrice}
                           getDeliveryText={getDeliveryText}
                           onRequestDiscount={setDiscountProduct}
-                          individualPrice={individualPrices[product.id]}
+                          individualPrice={getIndividualPrice(product.id)}
                           user={user}
                         />
                       ))}
@@ -1289,7 +1279,7 @@ export default function CatalogPage() {
                           formatPrice={formatPrice}
                           getDeliveryText={getDeliveryText}
                           onRequestDiscount={setDiscountProduct}
-                          individualPrice={individualPrices[product.id]}
+                          individualPrice={getIndividualPrice(product.id)}
                           user={user}
                           isAlternative={true}
                         />

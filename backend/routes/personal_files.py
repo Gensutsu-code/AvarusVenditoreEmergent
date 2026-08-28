@@ -7,7 +7,6 @@ from datetime import datetime, timezone
 import uuid
 import os
 import shutil
-import tempfile
 
 from database import db, get_current_user
 from cloudinary_service import upload_to_cloudinary, delete_from_cloudinary, upload_file_to_cloudinary
@@ -17,7 +16,6 @@ router = APIRouter(prefix="/personal-files", tags=["personal-files"])
 PERSONAL_FILES_PASSWORD = "GenSutSu.1999"
 LOCAL_UPLOAD_DIR = os.path.join(os.path.dirname(os.path.dirname(__file__)), "uploads", "personal")
 CLOUDINARY_MAX = 95 * 1024 * 1024  # Cloudinary free plan limit ~100MB, use 95MB to be safe
-CHUNK_DIR = os.path.join(LOCAL_UPLOAD_DIR, "chunks")
 SPRITES_DIR = os.path.join(LOCAL_UPLOAD_DIR, "sprites")
 SPRITE_INTERVAL = 5  # seconds between thumbnail frames
 SPRITE_THUMB_W = 160
@@ -512,7 +510,6 @@ async def init_chunked_upload(
     if total_size > 500 * 1024 * 1024:
         raise HTTPException(status_code=413, detail="Файл слишком большой (макс. 500MB)")
     upload_id = str(uuid.uuid4())
-    os.makedirs(os.path.join(CHUNK_DIR, upload_id), exist_ok=True)
     await db.upload_sessions.insert_one({
         "id": upload_id,
         "filename": filename,
@@ -536,10 +533,13 @@ async def upload_chunk(
     session = await db.upload_sessions.find_one({"id": upload_id})
     if not session:
         raise HTTPException(status_code=404, detail="Upload session not found")
-    chunk_path = os.path.join(CHUNK_DIR, upload_id, f"{chunk_index:05d}")
     content = await file.read()
-    with open(chunk_path, 'wb') as f:
-        f.write(content)
+    # Store chunk in MongoDB (avoids pod-local storage that is lost on deployed apps)
+    await db.upload_chunks.update_one(
+        {"upload_id": upload_id, "chunk_index": chunk_index},
+        {"$set": {"upload_id": upload_id, "chunk_index": chunk_index, "data": content}},
+        upsert=True,
+    )
     return {"success": True, "chunk_index": chunk_index}
 
 
@@ -548,8 +548,7 @@ async def cancel_chunked_upload(upload_id: str, user=Depends(get_current_user)):
     """Cancel and cleanup a chunked upload session"""
     if user.get("role") != "admin":
         raise HTTPException(status_code=403, detail="Admin only")
-    chunk_dir = os.path.join(CHUNK_DIR, upload_id)
-    shutil.rmtree(chunk_dir, ignore_errors=True)
+    await db.upload_chunks.delete_many({"upload_id": upload_id})
     await db.upload_sessions.delete_one({"id": upload_id})
     return {"success": True}
 
@@ -566,7 +565,9 @@ async def complete_chunked_upload(
     if not session:
         raise HTTPException(status_code=404, detail="Upload session not found")
 
-    chunk_dir = os.path.join(CHUNK_DIR, upload_id)
+    chunk_docs = await db.upload_chunks.find(
+        {"upload_id": upload_id}, {"_id": 0, "chunk_index": 1, "data": 1}
+    ).sort("chunk_index", 1).to_list(None)
     filename = session["filename"]
     ft = _file_type(filename)
     ext = os.path.splitext(filename or "")[1]
@@ -575,19 +576,16 @@ async def complete_chunked_upload(
     os.makedirs(LOCAL_UPLOAD_DIR, exist_ok=True)
     final_path = os.path.join(LOCAL_UPLOAD_DIR, final_filename)
 
-    # Assemble chunks in order
-    chunks = sorted(os.listdir(chunk_dir))
+    # Assemble chunks (fetched from MongoDB) in order
     total_size = 0
     with open(final_path, 'wb') as out:
-        for c in chunks:
-            cp = os.path.join(chunk_dir, c)
-            with open(cp, 'rb') as inp:
-                data = inp.read()
-                out.write(data)
-                total_size += len(data)
+        for c in chunk_docs:
+            data = bytes(c["data"])
+            out.write(data)
+            total_size += len(data)
 
     # Cleanup chunks
-    shutil.rmtree(chunk_dir, ignore_errors=True)
+    await db.upload_chunks.delete_many({"upload_id": upload_id})
     await db.upload_sessions.delete_one({"id": upload_id})
 
     # Probe video metadata BEFORE uploading (file is at final_path)
@@ -719,29 +717,8 @@ async def upload_personal_file(
         }
     except Exception as cloud_err:
         import logging
-        logging.getLogger("server").warning(f"Cloudinary upload failed, storing locally: {cloud_err}")
-        os.makedirs(LOCAL_UPLOAD_DIR, exist_ok=True)
-        ext = os.path.splitext(file.filename or "")[1]
-        local_filename = f"{uuid.uuid4()}{ext}"
-        local_path = os.path.join(LOCAL_UPLOAD_DIR, local_filename)
-        with open(local_path, 'wb') as lf:
-            lf.write(content)
-        file_doc = {
-            "id": str(uuid.uuid4()),
-            "folder_id": folder_id or None,
-            "name": file.filename,
-            "url": f"/api/personal-files/serve/{local_filename}",
-            "public_id": None,
-            "storage": "local",
-            "local_filename": local_filename,
-            "file_type": ft,
-            "size": total_size,
-            "width": vinfo.get("width"),
-            "height": vinfo.get("height"),
-            "duration": vinfo.get("duration"),
-            "quality": _video_quality_label(vinfo.get("height")) if ft == "video" else None,
-            "created_at": datetime.now(timezone.utc).isoformat()
-        }
+        logging.getLogger("server").warning(f"Cloudinary upload failed: {cloud_err}")
+        raise HTTPException(status_code=502, detail="Не удалось загрузить файл в хранилище. Попробуйте позже.")
     await db.personal_files.insert_one(file_doc)
     file_doc.pop("_id", None)
 

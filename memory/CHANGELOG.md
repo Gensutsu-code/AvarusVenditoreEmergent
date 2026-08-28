@@ -1,5 +1,15 @@
 # Changelog
 
+## 2026-06-28 — Fix: individual price badge persisted after order + lint cleanup
+- **Bug**: "Ваша цена по договорённости" (individual/negotiated price) stayed on the catalog/product card after an order was placed. Backend already deactivates one-time individual prices on every order path (`orders.py` L599-604) — verified via curl for card/deferral/mixed. Root cause was frontend: `CatalogPage`/`ProductPage` kept their own local individual-price state and never re-fetched within the SPA session.
+- **Fix**: centralized on `IndividualPriceContext` as single source of truth.
+  - `CatalogPage.js`: removed local `individualPrices` state + fetch; now uses `getIndividualPrice(product.id)` from context.
+  - `ProductPage.js`: removed local fetch effect; derives `individualPrice` from context.
+  - `CartPage.js`: calls `refreshIndividualPrices()` after every successful order (crypto, mixed, main path) so the badge clears immediately without a page reload.
+- Verified e2e via browser: placed a real order for a product with an active individual price → badge disappeared, product returned to regular price with the discount-request button restored.
+- **Lint cleanup** (unblocked pre-completion gate): deleted dead `backend/server_backup.py`; fixed bare `except:` in `documents.py`, `tests/test_bulk_operations.py`, `tests/test_multiple_bonus_programs.py`.
+
+
 ## 2026-06-24 — Checkout/Cart rework + UI fixes (7 user requests)
 1. **Returns page (/returns)**: removed collapsible "Условия и правила возврата" block; fixed broken JSX (missing `{loading ? (`). File: `ClientReturnsPage.js`.
 2. **Contact page (/contact) → Скидки и условия**: fully removed customer statuses (Розница/Опт/Партнёр) — deleted "Текущий статус" card, "Повышение статуса" block and `submitStatus`. Discount request kept. File: `ContactPage.js`.

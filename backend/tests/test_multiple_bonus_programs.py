@@ -69,7 +69,7 @@ class TestMultipleBonusPrograms:
         for program_id in cls.created_program_ids:
             try:
                 requests.delete(f"{BASE_URL}/api/admin/bonus/programs/{program_id}", headers=headers)
-            except:
+            except Exception:
                 pass
     
     # ==================== ADMIN CRUD TESTS ====================
