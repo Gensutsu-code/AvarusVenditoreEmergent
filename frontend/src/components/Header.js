@@ -174,11 +174,24 @@ export const Header = () => {
   const [userBalance, setUserBalance] = useState(null);
   const [creditInfo, setCreditInfo] = useState(null);
   const [chatUnread, setChatUnread] = useState(0);
+  const [pointsEarned, setPointsEarned] = useState(null);
   const lastSeenCountRef = useRef(0);
   const hasInitRef = useRef(false);
   const lastToastTimeRef = useRef(0);
   
   const isAdmin = user?.role === 'admin';
+
+  // Floating "+N баллов" in the header right after an order is placed
+  useEffect(() => {
+    const handler = (e) => {
+      const amount = Math.round(e.detail?.amount || 0);
+      if (amount <= 0) return;
+      setPointsEarned(amount);
+      setTimeout(() => setPointsEarned(null), 3800);
+    };
+    window.addEventListener('bonus-points-earned', handler);
+    return () => window.removeEventListener('bonus-points-earned', handler);
+  }, []);
 
   // Global notification polling with sound + push
   useEffect(() => {
@@ -460,7 +473,7 @@ export const Header = () => {
                       </Link>
                       
                       {/* Бонусы */}
-                      <Link to="/bonus" data-testid="bonus-link">
+                      <Link to="/bonus" data-testid="bonus-link" className="relative">
                         <motion.div 
                           className="flex items-center gap-2 px-3 py-2 rounded-xl cursor-pointer"
                           initial="rest"
@@ -477,6 +490,7 @@ export const Header = () => {
                               rest: { rotate: 0, scale: 1 },
                               hover: { rotate: 360, scale: 1.2 }
                             }}
+                            animate={pointsEarned ? { rotate: [0, -15, 15, -10, 10, 0], scale: [1, 1.35, 1] } : {}}
                             transition={{ duration: 0.6, ease: "easeOut" }}
                           >
                             <Gift className="w-5 h-5 text-emerald-500" />
@@ -491,6 +505,24 @@ export const Header = () => {
                             Бонусы
                           </motion.span>
                         </motion.div>
+
+                        {/* Floating "+N баллов" after order */}
+                        <AnimatePresence>
+                          {pointsEarned && (
+                            <motion.div
+                              className="absolute left-1/2 -translate-x-1/2 top-full mt-0.5 flex items-center gap-1 whitespace-nowrap pointer-events-none z-50"
+                              initial={{ opacity: 0, y: -4, scale: 0.7 }}
+                              animate={{ opacity: [0, 1, 1, 0], y: [-4, -14, -22, -34], scale: 1 }}
+                              exit={{ opacity: 0 }}
+                              transition={{ duration: 3.6, times: [0, 0.12, 0.7, 1], ease: 'easeOut' }}
+                              data-testid="header-points-earned"
+                            >
+                              <span className="px-2 py-0.5 rounded-full bg-emerald-500 text-white text-xs font-black shadow-lg shadow-emerald-500/40 tabular-nums">
+                                +{new Intl.NumberFormat('ru-RU').format(pointsEarned)} баллов
+                              </span>
+                            </motion.div>
+                          )}
+                        </AnimatePresence>
                       </Link>
                       
                       {/* Новости */}

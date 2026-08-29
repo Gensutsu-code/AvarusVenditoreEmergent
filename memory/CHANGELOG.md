@@ -1,5 +1,11 @@
 # Changelog
 
+## 2026-06-28 — Bonus: admin hero cover, header "+N баллов" after order, remove "Мои призы"
+- **Admin hero cover** (`BonusTab.js` + `bonus.py`): added `hero_preset` (6 presets: midnight/graphite/ocean/royal/sunset/forest) + optional `hero_image_url` to the program (persisted via `BonusProgramCreate`). Admin picks a preset swatch and/or uploads a background image, with a live preview. `BonusPage.js` applies `HERO_PRESETS[program.hero_preset]` to the hero background + glow colors; if `hero_image_url` is set it renders as a cover with a dark gradient overlay.
+- **Header "+N баллов" after order**: `Header.js` listens for a `bonus-points-earned` window event and shows a floating emerald "+N баллов" popup above the "Бонусы" nav item (gift icon wiggles). `CartPage.js` fetches expected points via `/bonus/cart-preview` right before placing the order (cart still full) and dispatches the event on success across all payment paths (crypto, mixed, main). Verified: event → popup "+1 734 баллов".
+- **Removed "Мои призы"** block (and its now-unused state/fetch) from `BonusPage.js`.
+
+
 ## 2026-06-28 — Bonus: "+N баллов" accrual wow animation
 - `pages/BonusPage.js`: `detectPointsGain()` compares the current points balance against the last-seen value persisted per user+program in `localStorage` (`bonus_seen_<userId>_<programId>`). On an increase (e.g. cashback credited after an order), a floating emerald "+N баллов" popup rises and fades over the balance, the balance number does a scale pop, and confetti fires. First visit only stores the baseline (no false trigger); redemptions decrease the balance so they never trigger it.
 - Verified via browser: popup `data-testid="points-gain-popup"` renders with the correct delta ("+2 500 баллов").

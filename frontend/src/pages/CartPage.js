@@ -208,14 +208,29 @@ export default function CartPage() {
     if (window.confirm('Очистить корзину? Все товары будут удалены.')) clearCart();
   };
 
+  // Expected bonus points for the current cart (fetched BEFORE the cart is cleared)
+  const fetchExpectedPoints = async () => {
+    try {
+      const r = await axios.get(`${API}/bonus/cart-preview`);
+      return Math.round(r.data?.total_points || 0);
+    } catch {
+      return 0;
+    }
+  };
+  const emitPointsEarned = (pts) => {
+    if (pts > 0) window.dispatchEvent(new CustomEvent('bonus-points-earned', { detail: { amount: pts } }));
+  };
+
   const handleCryptoSuccess = async (txHash) => {
     setShowCryptoModal(false);
     try {
+      const expectedPts = await fetchExpectedPoints();
       const res = await axios.post(`${API}/orders`, { ...form, payment_method: 'crypto', crypto_tx_hash: txHash, pay_delivery_with_points: deliveryPaidWithPoints });
       setOrderId(res.data.id);
       await fetchCart();
       setCdReq(null);
       refreshIndividualPrices();
+      emitPointsEarned(expectedPts);
       toast.success('Заказ оплачен криптовалютой!');
       navigate('/orders');
     } catch (err) {
@@ -229,6 +244,7 @@ export default function CartPage() {
     trackClick('place_order', '/cart');
     setLoading(true);
     try {
+      const expectedPts = await fetchExpectedPoints();
       // MIXED payment: base amounts, backend applies per-part adjustment
       if (mixedMode) {
         if (mixedMethods.length !== 2) { toast.error('Выберите два способа оплаты'); setLoading(false); return; }
@@ -241,6 +257,7 @@ export default function CartPage() {
         await fetchCart();
         setCdReq(null);
         refreshIndividualPrices();
+        emitPointsEarned(expectedPts);
         if (mixM1 === 'card' || mixM2 === 'card') {
           toast.success('Заказ создан! Завершите оплату картой в «Мои заказы»');
         } else {
@@ -269,6 +286,7 @@ export default function CartPage() {
       await fetchCart();
       setCdReq(null);
       refreshIndividualPrices();
+      emitPointsEarned(expectedPts);
 
       if (payWithDeferral) toast.success('Заказ оформлен в отсрочку!');
       else if (payWithBalance) toast.success('Заказ оплачен с баланса!');

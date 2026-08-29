@@ -16,6 +16,16 @@ const API = `${process.env.REACT_APP_BACKEND_URL}/api`;
 
 const CONFETTI_COLORS = ['#f97316', '#fbbf24', '#10b981', '#3b82f6', '#ec4899', '#a855f7'];
 
+// Premium hero background presets (selectable from admin)
+const HERO_PRESETS = {
+  midnight: { base: '#0a0e17', g1: 'rgba(249,115,22,0.30)', g2: 'rgba(251,191,36,0.20)', g3: 'rgba(45,212,191,0.10)' },
+  graphite: { base: 'linear-gradient(160deg,#1c1c1e,#0a0a0b)', g1: 'rgba(249,115,22,0.22)', g2: 'rgba(255,255,255,0.07)', g3: 'rgba(148,163,184,0.12)' },
+  ocean: { base: 'linear-gradient(160deg,#04303a,#04121a)', g1: 'rgba(45,212,191,0.30)', g2: 'rgba(56,189,248,0.20)', g3: 'rgba(16,185,129,0.14)' },
+  royal: { base: 'linear-gradient(160deg,#221a4e,#0b1020)', g1: 'rgba(168,85,247,0.32)', g2: 'rgba(217,70,239,0.20)', g3: 'rgba(59,130,246,0.16)' },
+  sunset: { base: 'linear-gradient(160deg,#3b0f0f,#0a0e17)', g1: 'rgba(249,115,22,0.34)', g2: 'rgba(244,63,94,0.22)', g3: 'rgba(251,191,36,0.16)' },
+  forest: { base: 'linear-gradient(160deg,#0f2417,#08120c)', g1: 'rgba(34,197,94,0.28)', g2: 'rgba(132,204,22,0.18)', g3: 'rgba(20,184,166,0.14)' },
+};
+
 const Confetti = () => (
   <div className="fixed inset-0 pointer-events-none z-[60] overflow-hidden" data-testid="bonus-confetti">
     {Array.from({ length: 90 }).map((_, i) => {
@@ -75,7 +85,6 @@ export default function BonusPage() {
   const [prizeView, setPrizeView] = useState('grid');
   const [copiedCode, setCopiedCode] = useState(null);
   const [showHistory, setShowHistory] = useState(false);
-  const [myRedemptions, setMyRedemptions] = useState([]);
   const [variantPrize, setVariantPrize] = useState(null); // { programId, prize }
   const [selectedOptions, setSelectedOptions] = useState({}); // { group_id: choice_id }
   const [pointsGain, setPointsGain] = useState(null); // { programId, amount }
@@ -91,14 +100,10 @@ export default function BonusPage() {
 
   const fetchBonusData = async () => {
     try {
-      const [programsRes, redemptionsRes] = await Promise.all([
-        axios.get(`${API}/bonus/programs`),
-        axios.get(`${API}/bonus/my-redemptions`).catch(() => ({ data: { redemptions: [] } }))
-      ]);
+      const programsRes = await axios.get(`${API}/bonus/programs`);
       const programs = Array.isArray(programsRes.data) ? programsRes.data : [];
       detectPointsGain(programs);
       setBonusPrograms(programs);
-      setMyRedemptions(redemptionsRes.data.redemptions || []);
     } catch (err) {
       console.error('Failed to fetch bonus data', err);
     } finally {
@@ -252,17 +257,24 @@ export default function BonusPage() {
                 ? sortedLevels[currentLevelIndex + 1] 
                 : null;
               const amountToNextLevel = nextLevel ? Math.max(0, nextLevel.min_points - yearlyTotal) : 0;
+              const hero = HERO_PRESETS[program.hero_preset] || HERO_PRESETS.midnight;
 
               return (
                 <div key={program.id} className="rounded-[28px] border border-zinc-200/70 bg-white shadow-sm overflow-hidden">
                   {/* Premium dark hero */}
-                  <div className="relative overflow-hidden bg-[#0a0e17] text-white">
-                    <motion.div aria-hidden className="pointer-events-none absolute -top-24 -right-16 w-80 h-80 rounded-full bg-orange-500/30 blur-[90px]"
-                      animate={{ scale: [1, 1.25, 1], opacity: [0.35, 0.6, 0.35] }} transition={{ duration: 9, repeat: Infinity }} />
-                    <motion.div aria-hidden className="pointer-events-none absolute -bottom-28 -left-16 w-80 h-80 rounded-full bg-amber-400/20 blur-[90px]"
-                      animate={{ scale: [1.2, 1, 1.2], opacity: [0.25, 0.5, 0.25] }} transition={{ duration: 11, repeat: Infinity }} />
-                    <motion.div aria-hidden className="pointer-events-none absolute top-10 left-1/3 w-64 h-64 rounded-full bg-teal-400/10 blur-[80px]"
-                      animate={{ x: [0, 30, 0], opacity: [0.2, 0.4, 0.2] }} transition={{ duration: 13, repeat: Infinity }} />
+                  <div className="relative overflow-hidden text-white" style={{ background: hero.base }}>
+                    {program.hero_image_url && (
+                      <>
+                        <div className="pointer-events-none absolute inset-0 bg-cover bg-center" style={{ backgroundImage: `url(${program.hero_image_url})`, opacity: 0.5 }} />
+                        <div className="pointer-events-none absolute inset-0" style={{ background: 'linear-gradient(180deg, rgba(5,8,15,0.35), rgba(5,8,15,0.85))' }} />
+                      </>
+                    )}
+                    <motion.div aria-hidden className="pointer-events-none absolute -top-24 -right-16 w-80 h-80 rounded-full blur-[90px]" style={{ background: hero.g1 }}
+                      animate={{ scale: [1, 1.25, 1], opacity: [0.7, 1, 0.7] }} transition={{ duration: 9, repeat: Infinity }} />
+                    <motion.div aria-hidden className="pointer-events-none absolute -bottom-28 -left-16 w-80 h-80 rounded-full blur-[90px]" style={{ background: hero.g2 }}
+                      animate={{ scale: [1.2, 1, 1.2], opacity: [0.6, 1, 0.6] }} transition={{ duration: 11, repeat: Infinity }} />
+                    <motion.div aria-hidden className="pointer-events-none absolute top-10 left-1/3 w-64 h-64 rounded-full blur-[80px]" style={{ background: hero.g3 }}
+                      animate={{ x: [0, 30, 0], opacity: [0.6, 1, 0.6] }} transition={{ duration: 13, repeat: Infinity }} />
                     <div className="pointer-events-none absolute inset-0 opacity-[0.14]" style={{ backgroundImage: 'radial-gradient(circle at 1px 1px, #ffffff 1px, transparent 0)', backgroundSize: '22px 22px' }} />
 
                     <div className="relative p-6 sm:p-8">
@@ -891,39 +903,6 @@ export default function BonusPage() {
           </div>
         )}
 
-        {/* My Prize Redemptions */}
-        {myRedemptions.length > 0 && (
-          <div className="mt-8 bg-white rounded-2xl border border-zinc-200 shadow-sm overflow-hidden" data-testid="my-prize-redemptions">
-            <div className="p-4 border-b border-zinc-100">
-              <span className="flex items-center gap-2 font-medium">
-                <Gift className="w-5 h-5 text-amber-500" />
-                Мои призы ({myRedemptions.length})
-              </span>
-            </div>
-            <div>
-              {myRedemptions.map(r => (
-                <div key={r.id} className="px-4 py-3 flex items-center justify-between border-b border-zinc-100 last:border-0 hover:bg-zinc-50">
-                  <div>
-                    <p className="font-medium">{r.prize_name}</p>
-                    <p className="text-xs text-zinc-400">{formatDate(r.created_at)} — {r.points_cost} баллов</p>
-                  </div>
-                  <span className={`text-xs font-bold px-2.5 py-1 rounded-full ${
-                    r.status === 'pending' ? 'bg-yellow-100 text-yellow-700' :
-                    r.status === 'approved' ? 'bg-blue-100 text-blue-700' :
-                    (r.status === 'issued' || r.status === 'delivered') ? 'bg-teal-100 text-green-700' :
-                    r.status === 'cancelled' ? 'bg-red-100 text-red-700' :
-                    'bg-zinc-100 text-zinc-600'
-                  }`}>
-                    {r.status === 'pending' && 'Ожидает'}
-                    {r.status === 'approved' && 'Одобрен'}
-                    {(r.status === 'issued' || r.status === 'delivered') && 'Выдан'}
-                    {r.status === 'cancelled' && 'Отклонён'}
-                  </span>
-                </div>
-              ))}
-            </div>
-          </div>
-        )}
       </div>
     </div>
   );

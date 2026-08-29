@@ -22,6 +22,8 @@ class BonusProgramCreate(BaseModel):
     banner_url: str = ""
     banner_height: int = 200
     header_font_size: int = 14
+    hero_preset: str = "midnight"
+    hero_image_url: str = ""
     max_amount: float = 50000
     contribution_type: str = "order_total"
     contribution_percent: float = 100

@@ -1,5 +1,5 @@
 import axios from 'axios';
-import { useState } from 'react';
+import { useState, useRef } from 'react';
 import { motion } from 'framer-motion';
 import { Users, Plus, Pencil, Trash2, Save, Upload, Image, X, Gift, Award, ChevronDown, ChevronUp, Clock, Minus, TrendingUp } from 'lucide-react';
 import { Button } from '../ui/button';
@@ -42,6 +42,16 @@ export default function BonusTab(props) {
   const [indexPercent, setIndexPercent] = useState('');
   const [indexProgramId, setIndexProgramId] = useState('all');
   const [indexing, setIndexing] = useState(false);
+  const bonusHeroFileRef = useRef(null);
+
+  const HERO_PRESETS = [
+    { id: 'midnight', name: 'Midnight', css: 'linear-gradient(160deg,#1a2233,#0a0e17)' },
+    { id: 'graphite', name: 'Graphite', css: 'linear-gradient(160deg,#2a2a2c,#0a0a0b)' },
+    { id: 'ocean', name: 'Ocean', css: 'linear-gradient(160deg,#075e6b,#04121a)' },
+    { id: 'royal', name: 'Royal', css: 'linear-gradient(160deg,#3b2f8f,#0b1020)' },
+    { id: 'sunset', name: 'Sunset', css: 'linear-gradient(160deg,#7a1f1f,#0a0e17)' },
+    { id: 'forest', name: 'Forest', css: 'linear-gradient(160deg,#1c4a2e,#08120c)' },
+  ];
 
   const applyIndexation = async () => {
     const pct = parseFloat(indexPercent);
@@ -700,6 +710,75 @@ export default function BonusTab(props) {
                           max={48}
                           className="mt-1"
                         />
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Hero cover (premium header) */}
+                  <div className="border-t pt-4">
+                    <Label className="text-xs font-bold uppercase text-zinc-500">Обложка премиум-шапки (Hero)</Label>
+                    <p className="text-[11px] text-zinc-400 mt-0.5 mb-3">Фон верхнего блока страницы бонусов с балансом и уровнями</p>
+                    <div className="grid grid-cols-3 sm:grid-cols-6 gap-2">
+                      {HERO_PRESETS.map((p) => {
+                        const active = (editingProgram.hero_preset || 'midnight') === p.id;
+                        return (
+                          <button
+                            key={p.id}
+                            type="button"
+                            onClick={() => setEditingProgram({ ...editingProgram, hero_preset: p.id })}
+                            className={`relative h-16 rounded-xl overflow-hidden ring-2 transition-all ${active ? 'ring-orange-500 scale-[1.02]' : 'ring-transparent hover:ring-zinc-300'}`}
+                            style={{ background: p.css }}
+                            data-testid={`hero-preset-${p.id}`}
+                          >
+                            <span className="absolute bottom-1 left-0 right-0 text-center text-[10px] font-semibold text-white/90">{p.name}</span>
+                            {active && <span className="absolute top-1 right-1 w-4 h-4 rounded-full bg-orange-500 flex items-center justify-center text-white text-[9px]">✓</span>}
+                          </button>
+                        );
+                      })}
+                    </div>
+
+                    <div className="mt-3">
+                      <Label className="text-xs text-zinc-500">Своё фоновое изображение (необязательно)</Label>
+                      <input
+                        type="file"
+                        ref={bonusHeroFileRef}
+                        onChange={async (e) => {
+                          const file = e.target.files?.[0];
+                          if (file) {
+                            const url = await handleFileUpload(file, 'bonus_hero');
+                            if (url) setEditingProgram({ ...editingProgram, hero_image_url: url });
+                          }
+                        }}
+                        accept="image/*"
+                        className="hidden"
+                      />
+                      <div className="mt-1 flex items-center gap-3">
+                        <Button type="button" variant="outline" size="sm" onClick={() => bonusHeroFileRef.current?.click()} disabled={uploading} data-testid="hero-image-upload">
+                          <Upload className="w-4 h-4 mr-2" />
+                          {uploading ? 'Загрузка...' : (editingProgram.hero_image_url ? 'Заменить фон' : 'Загрузить фон')}
+                        </Button>
+                        {editingProgram.hero_image_url && (
+                          <div className="flex items-center gap-2">
+                            <img src={editingProgram.hero_image_url} alt="Hero" className="h-10 w-16 object-cover rounded ring-1 ring-zinc-200" />
+                            <Button variant="ghost" size="sm" onClick={() => setEditingProgram({ ...editingProgram, hero_image_url: '' })} className="text-red-500 h-8 px-2">
+                              <Trash2 className="w-4 h-4" />
+                            </Button>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+
+                    {/* Live preview */}
+                    <div className="mt-3 relative h-24 rounded-2xl overflow-hidden ring-1 ring-zinc-200 flex items-center px-5" style={{ background: (HERO_PRESETS.find(h => h.id === (editingProgram.hero_preset || 'midnight')) || HERO_PRESETS[0]).css }}>
+                      {editingProgram.hero_image_url && (
+                        <>
+                          <div className="absolute inset-0 bg-cover bg-center" style={{ backgroundImage: `url(${editingProgram.hero_image_url})`, opacity: 0.5 }} />
+                          <div className="absolute inset-0" style={{ background: 'linear-gradient(180deg, rgba(5,8,15,0.35), rgba(5,8,15,0.85))' }} />
+                        </>
+                      )}
+                      <div className="relative">
+                        <p className="text-[10px] uppercase tracking-widest text-white/50">Доступно баллов</p>
+                        <p className="text-2xl font-black bg-gradient-to-br from-orange-300 via-amber-200 to-orange-400 bg-clip-text text-transparent">1 250</p>
                       </div>
                     </div>
                   </div>
