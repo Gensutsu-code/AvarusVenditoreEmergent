@@ -1,5 +1,10 @@
 # Changelog
 
+## 2026-06-28 — Bonus: restore program description on hero
+- `BonusPage.js`: the program description is now rendered as a prominent, readable full-width paragraph under the title inside the hero (`text-sm text-white/70`, wraps up to max-w-2xl) instead of the tiny truncated line introduced during the redesign. `data-testid="bonus-description"`.
+- Note: the current program's `description` field is empty in the DB, so nothing displays until it is filled in Admin → Бонусы.
+
+
 ## 2026-06-28 — Bonus: admin hero cover, header "+N баллов" after order, remove "Мои призы"
 - **Admin hero cover** (`BonusTab.js` + `bonus.py`): added `hero_preset` (6 presets: midnight/graphite/ocean/royal/sunset/forest) + optional `hero_image_url` to the program (persisted via `BonusProgramCreate`). Admin picks a preset swatch and/or uploads a background image, with a live preview. `BonusPage.js` applies `HERO_PRESETS[program.hero_preset]` to the hero background + glow colors; if `hero_image_url` is set it renders as a cover with a dark gradient overlay.
 - **Header "+N баллов" after order**: `Header.js` listens for a `bonus-points-earned` window event and shows a floating emerald "+N баллов" popup above the "Бонусы" nav item (gift icon wiggles). `CartPage.js` fetches expected points via `/bonus/cart-preview` right before placing the order (cart still full) and dispatches the event on success across all payment paths (crypto, mixed, main). Verified: event → popup "+1 734 баллов".

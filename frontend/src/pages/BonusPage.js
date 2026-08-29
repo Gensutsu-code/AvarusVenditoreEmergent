@@ -290,7 +290,6 @@ export default function BonusPage() {
                           )}
                           <div>
                             <h2 className="text-base font-bold text-white leading-tight">{program.title || 'Программа лояльности'}</h2>
-                            {program.description && <p className="text-white/50 text-xs mt-0.5 max-w-xs">{program.description}</p>}
                           </div>
                         </div>
                         <button onClick={() => document.getElementById(`prizes-${program.id}`)?.scrollIntoView({ behavior: 'smooth' })}
@@ -299,6 +298,11 @@ export default function BonusPage() {
                           <Gift className="w-3.5 h-3.5" /> К призам
                         </button>
                       </div>
+
+                      {/* Program description */}
+                      {program.description && (
+                        <p className="mt-3 text-sm text-white/70 leading-relaxed max-w-2xl" data-testid="bonus-description">{program.description}</p>
+                      )}
 
                       {/* Balance */}
                       <motion.div className="mt-6 relative" initial={{ opacity: 0, y: 14 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5 }}>
