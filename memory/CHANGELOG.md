@@ -1,5 +1,10 @@
 # Changelog
 
+## 2026-06-28 — Bonus: "+N баллов" accrual wow animation
+- `pages/BonusPage.js`: `detectPointsGain()` compares the current points balance against the last-seen value persisted per user+program in `localStorage` (`bonus_seen_<userId>_<programId>`). On an increase (e.g. cashback credited after an order), a floating emerald "+N баллов" popup rises and fades over the balance, the balance number does a scale pop, and confetti fires. First visit only stores the baseline (no false trigger); redemptions decrease the balance so they never trigger it.
+- Verified via browser: popup `data-testid="points-gain-popup"` renders with the correct delta ("+2 500 баллов").
+
+
 ## 2026-06-28 — Bonus page RADICAL redesign (client)
 - `pages/BonusPage.js` header/level/progress area fully rebuilt into a premium dark hero:
   - Animated aurora glow blobs (orange/amber/teal) + subtle dot-grid texture on a near-black `#0a0e17` panel.

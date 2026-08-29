@@ -78,6 +78,7 @@ export default function BonusPage() {
   const [myRedemptions, setMyRedemptions] = useState([]);
   const [variantPrize, setVariantPrize] = useState(null); // { programId, prize }
   const [selectedOptions, setSelectedOptions] = useState({}); // { group_id: choice_id }
+  const [pointsGain, setPointsGain] = useState(null); // { programId, amount }
 
   useEffect(() => {
     if (authLoading) return;
@@ -94,13 +95,34 @@ export default function BonusPage() {
         axios.get(`${API}/bonus/programs`),
         axios.get(`${API}/bonus/my-redemptions`).catch(() => ({ data: { redemptions: [] } }))
       ]);
-      setBonusPrograms(Array.isArray(programsRes.data) ? programsRes.data : []);
+      const programs = Array.isArray(programsRes.data) ? programsRes.data : [];
+      detectPointsGain(programs);
+      setBonusPrograms(programs);
       setMyRedemptions(redemptionsRes.data.redemptions || []);
     } catch (err) {
       console.error('Failed to fetch bonus data', err);
     } finally {
       setLoading(false);
     }
+  };
+
+  // Detects when the points balance grew since the last visit and fires a "+N баллов" wow animation
+  const detectPointsGain = (programs) => {
+    if (!user) return;
+    programs.forEach((p) => {
+      const key = `bonus_seen_${user.id}_${p.id}`;
+      const cur = Math.round(p.progress?.current_amount || 0);
+      const stored = localStorage.getItem(key);
+      const prev = stored === null ? null : parseInt(stored, 10);
+      if (prev !== null && !isNaN(prev) && cur > prev) {
+        const amount = cur - prev;
+        setPointsGain({ programId: p.id, amount });
+        setCelebrate(true);
+        setTimeout(() => setCelebrate(false), 2600);
+        setTimeout(() => setPointsGain((g) => (g && g.programId === p.id ? null : g)), 3200);
+      }
+      localStorage.setItem(key, String(cur));
+    });
   };
 
   const formatPrice = (price) => new Intl.NumberFormat('ru-RU').format(price);
@@ -267,13 +289,38 @@ export default function BonusPage() {
                       </div>
 
                       {/* Balance */}
-                      <motion.div className="mt-6" initial={{ opacity: 0, y: 14 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5 }}>
+                      <motion.div className="mt-6 relative" initial={{ opacity: 0, y: 14 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5 }}>
                         <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-white/40">Доступно баллов</p>
-                        <div className="flex items-end gap-3 mt-1">
-                          <span className="text-5xl sm:text-6xl font-black tracking-tight bg-gradient-to-br from-orange-300 via-amber-200 to-orange-400 bg-clip-text text-transparent tabular-nums" data-testid="bonus-balance">
+                        <div className="flex items-end gap-3 mt-1 relative">
+                          <motion.span
+                            className="text-5xl sm:text-6xl font-black tracking-tight bg-gradient-to-br from-orange-300 via-amber-200 to-orange-400 bg-clip-text text-transparent tabular-nums"
+                            data-testid="bonus-balance"
+                            animate={pointsGain?.programId === program.id ? { scale: [1, 1.12, 1] } : {}}
+                            transition={{ duration: 0.6, times: [0, 0.4, 1] }}
+                          >
                             <AnimatedNumber value={Math.round(program.progress?.current_amount || 0)} />
-                          </span>
+                          </motion.span>
                           <Star className="w-6 h-6 text-amber-300 mb-2.5 fill-amber-300/40" />
+
+                          {/* Floating "+N баллов" wow animation */}
+                          <AnimatePresence>
+                            {pointsGain?.programId === program.id && (
+                              <motion.div
+                                key={`gain-${pointsGain.amount}`}
+                                className="absolute left-0 -top-2 flex items-center gap-1.5 pointer-events-none"
+                                initial={{ opacity: 0, y: 10, scale: 0.7 }}
+                                animate={{ opacity: [0, 1, 1, 0], y: -56, scale: 1 }}
+                                exit={{ opacity: 0 }}
+                                transition={{ duration: 2.6, times: [0, 0.15, 0.7, 1], ease: 'easeOut' }}
+                                data-testid="points-gain-popup"
+                              >
+                                <span className="text-2xl sm:text-3xl font-black text-emerald-300 drop-shadow-[0_2px_10px_rgba(16,185,129,0.6)] tabular-nums">
+                                  +{new Intl.NumberFormat('ru-RU').format(pointsGain.amount)}
+                                </span>
+                                <span className="text-sm font-bold text-emerald-200/90">баллов</span>
+                              </motion.div>
+                            )}
+                          </AnimatePresence>
                         </div>
                       </motion.div>
 

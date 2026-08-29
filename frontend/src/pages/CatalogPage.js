@@ -46,6 +46,7 @@ const PriceDisplay = ({ price, individualPrice, formatPrice, productId }) => {
 const ProductCard = ({ 
   product, 
   quantities, 
+  setQuantities, 
   updateQuantity, 
   handleAddToCart,
   setSelectedProduct, 
@@ -292,6 +293,7 @@ const ProductCard = ({
 const ProductModalContent = ({ 
   product, 
   quantities, 
+  setQuantityDirect, 
   updateQuantity, 
   handleAddToCart, 
   formatPrice, 
@@ -1240,6 +1242,7 @@ export default function CatalogPage() {
                           key={product.id} 
                           product={product} 
                           quantities={quantities}
+                          setQuantities={setQuantities}
                           updateQuantity={updateQuantity}
                           handleAddToCart={handleAddToCart}
                           setSelectedProduct={setSelectedProduct}
@@ -1273,6 +1276,7 @@ export default function CatalogPage() {
                           key={product.id} 
                           product={product} 
                           quantities={quantities}
+                          setQuantities={setQuantities}
                           updateQuantity={updateQuantity}
                           handleAddToCart={handleAddToCart}
                           setSelectedProduct={setSelectedProduct}
@@ -1300,6 +1304,7 @@ export default function CatalogPage() {
             <ProductModalContent 
               product={selectedProduct}
               quantities={quantities}
+              setQuantityDirect={setQuantityDirect}
               updateQuantity={updateQuantity}
               handleAddToCart={handleAddToCart}
               formatPrice={formatPrice}
