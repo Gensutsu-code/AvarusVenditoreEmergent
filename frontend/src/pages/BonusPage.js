@@ -90,7 +90,7 @@ export default function BonusPage() {
   const [confirmPrize, setConfirmPrize] = useState(null);
   const [celebrate, setCelebrate] = useState(false);
   const [prizeView, setPrizeView] = useState('grid');
-  const [prizeSort, setPrizeSort] = useState('default'); // 'default' | 'price_asc' | 'price_desc'
+  const [prizeSort, setPrizeSort] = useState('price_asc'); // 'default' | 'price_asc' | 'price_desc'
 
   const sortedPrizes = (prizes) => {
     const list = (prizes || []).filter(p => p.enabled);
