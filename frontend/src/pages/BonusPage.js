@@ -90,6 +90,14 @@ export default function BonusPage() {
   const [confirmPrize, setConfirmPrize] = useState(null);
   const [celebrate, setCelebrate] = useState(false);
   const [prizeView, setPrizeView] = useState('grid');
+  const [prizeSort, setPrizeSort] = useState('default'); // 'default' | 'price_asc' | 'price_desc'
+
+  const sortedPrizes = (prizes) => {
+    const list = (prizes || []).filter(p => p.enabled);
+    if (prizeSort === 'price_asc') return [...list].sort((a, b) => a.points_cost - b.points_cost);
+    if (prizeSort === 'price_desc') return [...list].sort((a, b) => b.points_cost - a.points_cost);
+    return list;
+  };
   const [copiedCode, setCopiedCode] = useState(null);
   const [showHistory, setShowHistory] = useState(false);
   const [variantPrize, setVariantPrize] = useState(null); // { programId, prize }
@@ -510,21 +518,43 @@ export default function BonusPage() {
                           {collapsedPrograms[program.id] ? <ChevronDown className="w-5 h-5 text-zinc-400" /> : <ChevronUp className="w-5 h-5 text-zinc-400" />}
                         </button>
                         {!collapsedPrograms[program.id] && (
-                          <div className="flex items-center gap-1 bg-zinc-100 rounded-lg p-0.5" data-testid="prize-view-toggle">
-                            <button
-                              onClick={() => setPrizeView('list')}
-                              className={`p-1.5 rounded-md transition-colors ${prizeView === 'list' ? 'bg-white shadow text-orange-600' : 'text-zinc-400 hover:text-zinc-600'}`}
-                              data-testid="prize-view-list"
-                            >
-                              <LayoutList className="w-4 h-4" />
-                            </button>
-                            <button
-                              onClick={() => setPrizeView('grid')}
-                              className={`p-1.5 rounded-md transition-colors ${prizeView === 'grid' ? 'bg-white shadow text-orange-600' : 'text-zinc-400 hover:text-zinc-600'}`}
-                              data-testid="prize-view-grid"
-                            >
-                              <LayoutGrid className="w-4 h-4" />
-                            </button>
+                          <div className="flex items-center gap-2">
+                            <div className="flex items-center gap-0.5 bg-zinc-100 rounded-lg p-0.5" data-testid="prize-sort-toggle">
+                              <button
+                                onClick={() => setPrizeSort('default')}
+                                className={`px-2 py-1 rounded-md text-[11px] font-semibold transition-colors ${prizeSort === 'default' ? 'bg-white shadow text-orange-600' : 'text-zinc-400 hover:text-zinc-600'}`}
+                                data-testid="prize-sort-default"
+                                title="Без сортировки"
+                              >Все</button>
+                              <button
+                                onClick={() => setPrizeSort('price_asc')}
+                                className={`px-2 py-1 rounded-md text-[11px] font-semibold transition-colors ${prizeSort === 'price_asc' ? 'bg-white shadow text-orange-600' : 'text-zinc-400 hover:text-zinc-600'}`}
+                                data-testid="prize-sort-price-asc"
+                                title="Сначала дешевле"
+                              >Цена ↑</button>
+                              <button
+                                onClick={() => setPrizeSort('price_desc')}
+                                className={`px-2 py-1 rounded-md text-[11px] font-semibold transition-colors ${prizeSort === 'price_desc' ? 'bg-white shadow text-orange-600' : 'text-zinc-400 hover:text-zinc-600'}`}
+                                data-testid="prize-sort-price-desc"
+                                title="Сначала дороже"
+                              >Цена ↓</button>
+                            </div>
+                            <div className="flex items-center gap-1 bg-zinc-100 rounded-lg p-0.5" data-testid="prize-view-toggle">
+                              <button
+                                onClick={() => setPrizeView('list')}
+                                className={`p-1.5 rounded-md transition-colors ${prizeView === 'list' ? 'bg-white shadow text-orange-600' : 'text-zinc-400 hover:text-zinc-600'}`}
+                                data-testid="prize-view-list"
+                              >
+                                <LayoutList className="w-4 h-4" />
+                              </button>
+                              <button
+                                onClick={() => setPrizeView('grid')}
+                                className={`p-1.5 rounded-md transition-colors ${prizeView === 'grid' ? 'bg-white shadow text-orange-600' : 'text-zinc-400 hover:text-zinc-600'}`}
+                                data-testid="prize-view-grid"
+                              >
+                                <LayoutGrid className="w-4 h-4" />
+                              </button>
+                            </div>
                           </div>
                         )}
                       </div>
@@ -578,7 +608,7 @@ export default function BonusPage() {
                       
                       {!collapsedPrograms[program.id] && prizeView === 'list' && (
                         <div className="mt-4 grid gap-3">
-                          {program.prizes.filter(p => p.enabled).map((prize) => {
+                          {sortedPrizes(program.prizes).map((prize) => {
                             const canAfford = (program.progress?.current_amount || 0) >= prize.points_cost;
                             const isRedeeming = redeemingPrize[`${program.id}_${prize.id}`];
                             const outOfStock = prize.out_of_stock || prize.quantity === 0;
@@ -654,7 +684,7 @@ export default function BonusPage() {
 
                       {!collapsedPrograms[program.id] && prizeView === 'grid' && (
                         <div className="mt-4 grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 gap-2.5">
-                          {program.prizes.filter(p => p.enabled).map((prize) => {
+                          {sortedPrizes(program.prizes).map((prize) => {
                             const canAfford = (program.progress?.current_amount || 0) >= prize.points_cost;
                             const isRedeeming = redeemingPrize[`${program.id}_${prize.id}`];
                             const outOfStock = prize.out_of_stock || prize.quantity === 0;
