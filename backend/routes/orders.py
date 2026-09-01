@@ -449,6 +449,19 @@ async def create_order(data: OrderCreate, user=Depends(get_current_user)):
     ozon_reward = max(0, int(ozon_vals.get("ozon_reward", 500) or 500))
     ozon_certificate = (int(ozon_base // ozon_step) * ozon_reward) if ozon_enabled else 0
 
+    # Reward choice: 'points' (default, accrue bonus points on fulfillment) or 'ozon'
+    # (convert the cashback into an EXTRA Ozon certificate amount now — 2 points = 1 ₽,
+    # points floored to a multiple of 500 first).
+    reward_choice = (getattr(data, 'reward_choice', 'points') or 'points')
+    ozon_certificate_bonus = 0
+    if reward_choice == 'ozon' and ozon_enabled:
+        from routes.bonus import _calc_bonus_eligible_total, calc_points_for_eligible
+        eligible_for_bonus = await _calc_bonus_eligible_total(items, goods_total)
+        expected_points = await calc_points_for_eligible(user["id"], eligible_for_bonus)
+        rounded_points = (int(expected_points) // 500) * 500  # always round DOWN to 500
+        ozon_certificate_bonus = rounded_points // 2  # 2 баллов = 1 ₽
+        ozon_certificate += ozon_certificate_bonus
+
     # Deferred card/crypto: order is placed now, payment due within an admin-defined window
     payment_due_date = None
     if pay_later and not is_deferral and not pay_with_balance and not is_mixed and payment_method in ("card", "crypto"):
@@ -567,6 +580,8 @@ async def create_order(data: OrderCreate, user=Depends(get_current_user)):
         "payment_parts": payment_parts_out,
         "ozon_certificate": ozon_certificate,
         "ozon_certificate_issued": False,
+        "ozon_certificate_bonus": ozon_certificate_bonus,
+        "reward_choice": reward_choice,
         "created_at": datetime.now(timezone.utc).isoformat()
     }
     

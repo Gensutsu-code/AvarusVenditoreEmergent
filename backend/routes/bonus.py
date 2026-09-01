@@ -146,12 +146,50 @@ async def _accrue_points(user_id: str, eligible_total: float):
     return total_accrued
 
 
+async def calc_points_for_eligible(user_id: str, eligible_total: float) -> int:
+    """Compute (without writing) the total bonus points an eligible amount would earn
+    across all enabled programs, applying the user's current level cashback."""
+    if eligible_total <= 0:
+        return 0
+    programs = await get_all_bonus_programs()
+    current_year = datetime.now(timezone.utc).year
+    year_start = f"{current_year}-01-01T00:00:00"
+    year_end = f"{current_year}-12-31T23:59:59"
+    yearly_orders = await db.orders.find({
+        "user_id": user_id,
+        "status": {"$in": ["completed", "partially_fulfilled"]},
+        "created_at": {"$gte": year_start, "$lte": year_end}
+    }, {"_id": 0, "total": 1}).to_list(1000)
+    yearly_total = sum(o.get("total", 0) for o in yearly_orders)
+    total = 0
+    for program in programs:
+        if not program.get("enabled"):
+            continue
+        contribution_type = program.get("contribution_type", "order_total")
+        contribution_percent = program.get("contribution_percent", 100)
+        base_amount = eligible_total * (contribution_percent / 100) if contribution_type == "percentage" else eligible_total
+        levels_sorted = sorted(program.get("levels", []), key=lambda x: x.get("min_points", 0))
+        current_level = None
+        for level in levels_sorted:
+            if yearly_total >= level.get("min_points", 0):
+                current_level = level
+        if current_level and current_level.get("cashback_percent", 0) > 0:
+            total += round(base_amount * (current_level["cashback_percent"] / 100))
+        else:
+            total += round(base_amount)
+    return int(total)
+
+
 async def accrue_order_bonus(order: dict):
     """Idempotently accrue bonus for an order based on its ACTUALLY DELIVERED eligible
     amount. Delivered qty = quantity_fulfilled when present (partial/full fulfillment),
     else full quantity. Uses final item prices (after all discounts). Only the increment
     since the last accrual is added (tracked via order['bonus_accrued_base']), so partial
     then full fulfillment accrues correctly and never double-counts."""
+    # If the customer chose to convert their reward into an Ozon certificate at checkout,
+    # no bonus points are accrued for this order (the certificate was granted at placement).
+    if order.get("reward_choice") == "ozon":
+        return 0
     user_id = order.get("user_id")
     items = order.get("items", [])
 

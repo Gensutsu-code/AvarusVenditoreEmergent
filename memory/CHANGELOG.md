@@ -1,5 +1,15 @@
 # Changelog
 
+## 2026-06-28 — Checkout reward choice: bonus points vs extra Ozon certificate
+- **Checkout toggle** (`CartPage.js`): «Как начислить вознаграждение за заказ» with two cards — «Бонусные баллы» (default) and «К Ozon-сертификату». Sends `reward_choice` ('points'|'ozon') in all order paths (main/mixed/crypto). Live preview shows expected points and the equivalent «+N ₽ к сертификату». Header "+N баллов" popup fires only when 'points' is chosen.
+- **Backend** (`orders.py` + `bonus.py` + `models.py`): `OrderCreate.reward_choice`. On placement, if 'ozon': expected cashback points are computed (`calc_points_for_eligible`), floored DOWN to a multiple of 500, converted at **2 points = 1 ₽**, and added ON TOP of the base Ozon certificate (`ozon_certificate_bonus`, stored on order). `accrue_order_bonus` skips point accrual when `reward_choice=='ozon'` so the reward isn't granted twice.
+- Verified via curl: 15 pcs → 720 expected pts → floor 500 → +250 ₽, added to base 1000 ₽ = 1250 ₽ certificate; 'points' choice → base 1000 ₽ only, bonus 0, points accrue on fulfillment.
+
+
+## 2026-06-28 — Bonus page container widened +50%
+- `BonusPage.js`: main container `max-w-4xl` (896px) → `max-w-[1344px]` (~+50% wider). Hero, levels roadmap and prize grid now use the extra width. Also cleared the leftover temp description so the program `description` is empty again (to be filled in Admin).
+
+
 ## 2026-06-28 — Bonus: restore program description on hero
 - `BonusPage.js`: the program description is now rendered as a prominent, readable full-width paragraph under the title inside the hero (`text-sm text-white/70`, wraps up to max-w-2xl) instead of the tiny truncated line introduced during the redesign. `data-testid="bonus-description"`.
 - Note: the current program's `description` field is empty in the DB, so nothing displays until it is filled in Admin → Бонусы.

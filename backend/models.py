@@ -236,6 +236,7 @@ class OrderCreate(BaseModel):
     pay_later: Optional[bool] = False  # deferred card/crypto: place order now, pay within admin window
     payment_parts: Optional[List[dict]] = None  # mixed payment: [{method, amount}], max 2, no deferral
     pay_delivery_with_points: Optional[bool] = False  # cover delivery fee with bonus points
+    reward_choice: Optional[str] = "points"  # 'points' (accrue bonus points) or 'ozon' (extra Ozon certificate)
 
 class OrderItemUpdate(BaseModel):
     product_id: str

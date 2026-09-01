@@ -78,6 +78,7 @@ export default function CartPage() {
   const [cdBusy, setCdBusy] = useState(false);
   const [bonusPoints, setBonusPoints] = useState(0);
   const [payDeliveryWithPoints, setPayDeliveryWithPoints] = useState(false);
+  const [rewardChoice, setRewardChoice] = useState('points'); // 'points' | 'ozon'
 
   const cartTotal = cart.items.reduce((sum, item) => sum + item.price * item.quantity, 0);
 
@@ -225,12 +226,12 @@ export default function CartPage() {
     setShowCryptoModal(false);
     try {
       const expectedPts = await fetchExpectedPoints();
-      const res = await axios.post(`${API}/orders`, { ...form, payment_method: 'crypto', crypto_tx_hash: txHash, pay_delivery_with_points: deliveryPaidWithPoints });
+      const res = await axios.post(`${API}/orders`, { ...form, payment_method: 'crypto', crypto_tx_hash: txHash, pay_delivery_with_points: deliveryPaidWithPoints, reward_choice: rewardChoice });
       setOrderId(res.data.id);
       await fetchCart();
       setCdReq(null);
       refreshIndividualPrices();
-      emitPointsEarned(expectedPts);
+      if (rewardChoice === 'points') emitPointsEarned(expectedPts);
       toast.success('Заказ оплачен криптовалютой!');
       navigate('/orders');
     } catch (err) {
@@ -252,12 +253,13 @@ export default function CartPage() {
         const res = await axios.post(`${API}/orders`, {
           ...form,
           payment_parts: [{ method: mixM1, amount: a1 }, { method: mixM2, amount: a2 }],
+          reward_choice: rewardChoice,
         });
         setOrderId(res.data.id);
         await fetchCart();
         setCdReq(null);
         refreshIndividualPrices();
-        emitPointsEarned(expectedPts);
+        if (rewardChoice === 'points') emitPointsEarned(expectedPts);
         if (mixM1 === 'card' || mixM2 === 'card') {
           toast.success('Заказ создан! Завершите оплату картой в «Мои заказы»');
         } else {
@@ -281,12 +283,13 @@ export default function CartPage() {
         pay_with_balance: payWithBalance,
         pay_later: showPayLater ? payLater : false,
         pay_delivery_with_points: deliveryPaidWithPoints,
+        reward_choice: rewardChoice,
       });
       setOrderId(res.data.id);
       await fetchCart();
       setCdReq(null);
       refreshIndividualPrices();
-      emitPointsEarned(expectedPts);
+      if (rewardChoice === 'points') emitPointsEarned(expectedPts);
 
       if (payWithDeferral) toast.success('Заказ оформлен в отсрочку!');
       else if (payWithBalance) toast.success('Заказ оплачен с баланса!');
@@ -397,6 +400,46 @@ export default function CartPage() {
 
         {/* Ozon certificate progress (based on adjusted goods total) */}
         <OzonCertificateBar total={goodsAfterIndividual} />
+
+        {/* Reward choice: bonus points vs extra Ozon certificate */}
+        {(bonusPreview?.total_points > 0) && (() => {
+          const pts = bonusPreview.total_points || 0;
+          const roundedPts = Math.floor(pts / 500) * 500;
+          const certBonus = Math.floor(roundedPts / 2);
+          return (
+            <div className="mt-3 rounded-2xl border border-slate-200 bg-white p-4" data-testid="reward-choice">
+              <p className="text-xs font-bold uppercase tracking-wide text-slate-400 mb-3">Как начислить вознаграждение за заказ</p>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <button
+                  type="button"
+                  onClick={() => setRewardChoice('points')}
+                  className={`text-left rounded-xl border-2 p-3 transition-all ${rewardChoice === 'points' ? 'border-emerald-500 bg-emerald-50' : 'border-slate-200 hover:border-slate-300'}`}
+                  data-testid="reward-choice-points"
+                >
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm font-bold text-slate-800">Бонусные баллы</span>
+                    {rewardChoice === 'points' && <span className="w-5 h-5 rounded-full bg-emerald-500 text-white text-[10px] flex items-center justify-center">✓</span>}
+                  </div>
+                  <p className="text-lg font-black text-emerald-600 mt-1 tabular-nums">+{formatPrice(pts)} <span className="text-xs font-medium text-slate-400">баллов</span></p>
+                  <p className="text-[11px] text-slate-400 mt-0.5">Начислим на бонусный счёт</p>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setRewardChoice('ozon')}
+                  className={`text-left rounded-xl border-2 p-3 transition-all ${rewardChoice === 'ozon' ? 'border-indigo-500 bg-indigo-50' : 'border-slate-200 hover:border-slate-300'}`}
+                  data-testid="reward-choice-ozon"
+                >
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm font-bold text-slate-800">К Ozon-сертификату</span>
+                    {rewardChoice === 'ozon' && <span className="w-5 h-5 rounded-full bg-indigo-500 text-white text-[10px] flex items-center justify-center">✓</span>}
+                  </div>
+                  <p className="text-lg font-black text-indigo-600 mt-1 tabular-nums">+{formatPrice(certBonus)} <span className="text-xs font-medium text-slate-400">₽ к сертификату</span></p>
+                  <p className="text-[11px] text-slate-400 mt-0.5">2 балла = 1 ₽, округление вниз до 500 баллов</p>
+                </button>
+              </div>
+            </div>
+          );
+        })()}
 
         <form onSubmit={handleSubmit} className="grid grid-cols-1 lg:grid-cols-3 gap-8 mt-2">
           {/* LEFT: Cart items + shipping + payment */}

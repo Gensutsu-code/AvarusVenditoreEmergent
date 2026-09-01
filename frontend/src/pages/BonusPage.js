@@ -224,7 +224,7 @@ export default function BonusPage() {
         />
       </div>
 
-      <div className="relative max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      <div className="relative max-w-[1344px] mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Banner Image - fetched from first bonus program */}
         {bonusPrograms.length > 0 && bonusPrograms[0].banner_url && (
           <div className="flex justify-center mb-8">
