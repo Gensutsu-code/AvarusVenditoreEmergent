@@ -16,15 +16,22 @@ const API = `${process.env.REACT_APP_BACKEND_URL}/api`;
 
 const CONFETTI_COLORS = ['#f97316', '#fbbf24', '#10b981', '#3b82f6', '#ec4899', '#a855f7'];
 
-// Premium hero background presets (selectable from admin)
-const HERO_PRESETS = {
-  midnight: { base: '#0a0e17', g1: 'rgba(249,115,22,0.30)', g2: 'rgba(251,191,36,0.20)', g3: 'rgba(45,212,191,0.10)' },
-  graphite: { base: 'linear-gradient(160deg,#1c1c1e,#0a0a0b)', g1: 'rgba(249,115,22,0.22)', g2: 'rgba(255,255,255,0.07)', g3: 'rgba(148,163,184,0.12)' },
-  ocean: { base: 'linear-gradient(160deg,#04303a,#04121a)', g1: 'rgba(45,212,191,0.30)', g2: 'rgba(56,189,248,0.20)', g3: 'rgba(16,185,129,0.14)' },
-  royal: { base: 'linear-gradient(160deg,#221a4e,#0b1020)', g1: 'rgba(168,85,247,0.32)', g2: 'rgba(217,70,239,0.20)', g3: 'rgba(59,130,246,0.16)' },
-  sunset: { base: 'linear-gradient(160deg,#3b0f0f,#0a0e17)', g1: 'rgba(249,115,22,0.34)', g2: 'rgba(244,63,94,0.22)', g3: 'rgba(251,191,36,0.16)' },
-  forest: { base: 'linear-gradient(160deg,#0f2417,#08120c)', g1: 'rgba(34,197,94,0.28)', g2: 'rgba(132,204,22,0.18)', g3: 'rgba(20,184,166,0.14)' },
+// Selectable hero background themes (user picks live via swatches)
+const HERO_THEMES = {
+  midnight: { label: 'Тёмный', light: false, base: 'linear-gradient(160deg,#0f1729,#070b14)', swatch: '#0f1729', ringColor: '#0b1120',
+    g1: 'rgba(249,115,22,0.30)', g2: 'rgba(251,191,36,0.20)', g3: 'rgba(45,212,191,0.12)', balFrom: '#fdba74', balTo: '#fb923c', accent: '#fbbf24', dot: 'rgba(255,255,255,0.9)' },
+  ocean: { label: 'Океан', light: false, base: 'linear-gradient(160deg,#04303a,#04121a)', swatch: '#04303a', ringColor: '#052027',
+    g1: 'rgba(45,212,191,0.30)', g2: 'rgba(56,189,248,0.20)', g3: 'rgba(16,185,129,0.16)', balFrom: '#5eead4', balTo: '#22d3ee', accent: '#2dd4bf', dot: 'rgba(255,255,255,0.9)' },
+  royal: { label: 'Роял', light: false, base: 'linear-gradient(160deg,#221a4e,#0b1020)', swatch: '#221a4e', ringColor: '#100b26',
+    g1: 'rgba(168,85,247,0.32)', g2: 'rgba(217,70,239,0.20)', g3: 'rgba(59,130,246,0.18)', balFrom: '#d8b4fe', balTo: '#c084fc', accent: '#a855f7', dot: 'rgba(255,255,255,0.9)' },
+  mint: { label: 'Мятный', light: true, base: 'linear-gradient(135deg,#ecfeff 0%,#a7f3d0 50%,#5eead4 100%)', swatch: '#5eead4', ringColor: '#bff3e6',
+    g1: 'rgba(20,184,166,0.25)', g2: 'rgba(56,189,248,0.18)', g3: 'rgba(16,185,129,0.16)', balFrom: '#0d9488', balTo: '#0891b2', accent: '#0d9488', dot: 'rgba(6,95,70,0.35)' },
+  sunset: { label: 'Оранж', light: true, base: 'linear-gradient(135deg,#ffe8cc 0%,#fcb24e 50%,#f7922e 100%)', swatch: '#f7922e', ringColor: '#fbd7a8',
+    g1: 'rgba(249,115,22,0.28)', g2: 'rgba(251,191,36,0.20)', g3: 'rgba(244,63,94,0.14)', balFrom: '#ea580c', balTo: '#b45309', accent: '#ea580c', dot: 'rgba(120,53,15,0.35)' },
+  snow: { label: 'Светлый', light: true, base: 'linear-gradient(135deg,#ffffff 0%,#f1f5f9 60%,#e2e8f0 100%)', swatch: '#e2e8f0', ringColor: '#eef2f6',
+    g1: 'rgba(148,163,184,0.20)', g2: 'rgba(203,213,225,0.25)', g3: 'rgba(59,130,246,0.10)', balFrom: '#1e293b', balTo: '#475569', accent: '#f97316', dot: 'rgba(15,23,42,0.20)' },
 };
+const HERO_THEME_KEYS = ['midnight', 'ocean', 'royal', 'mint', 'sunset', 'snow'];
 
 const Confetti = () => (
   <div className="fixed inset-0 pointer-events-none z-[60] overflow-hidden" data-testid="bonus-confetti">
@@ -88,6 +95,14 @@ export default function BonusPage() {
   const [variantPrize, setVariantPrize] = useState(null); // { programId, prize }
   const [selectedOptions, setSelectedOptions] = useState({}); // { group_id: choice_id }
   const [pointsGain, setPointsGain] = useState(null); // { programId, amount }
+  const [heroTheme, setHeroTheme] = useState(() => {
+    try { return localStorage.getItem('bonus_hero_theme') || 'midnight'; } catch { return 'midnight'; }
+  });
+
+  const changeHeroTheme = (key) => {
+    setHeroTheme(key);
+    try { localStorage.setItem('bonus_hero_theme', key); } catch { /* ignore */ }
+  };
 
   useEffect(() => {
     if (authLoading) return;
@@ -257,8 +272,15 @@ export default function BonusPage() {
                 ? sortedLevels[currentLevelIndex + 1] 
                 : null;
               const amountToNextLevel = nextLevel ? Math.max(0, nextLevel.min_points - yearlyTotal) : 0;
-              const hero = HERO_PRESETS[program.hero_preset] || HERO_PRESETS.midnight;
-              // Roadmap fill aligned to EVENLY-SPACED nodes (not raw value/maxPoints),
+              const hero = HERO_THEMES[heroTheme] || HERO_THEMES.midnight;
+              const light = hero.light;
+              const tStrong = light ? 'text-zinc-900' : 'text-white';
+              const tMuted = light ? 'text-zinc-600' : 'text-white/70';
+              const tFaint = light ? 'text-zinc-500' : 'text-white/45';
+              const tLabel = light ? 'text-zinc-500' : 'text-white/40';
+              const surfaceCls = light ? 'bg-black/[0.04]' : 'bg-white/10';
+              const ringCls = light ? 'ring-black/10' : 'ring-white/15';
+              const trackCls = light ? 'bg-black/10' : 'bg-white/12';              // Roadmap fill aligned to EVENLY-SPACED nodes (not raw value/maxPoints),
               // so the line reaches exactly the achieved node + fraction toward the next.
               const lvlCount = sortedLevels.length;
               const achievedCount = sortedLevels.filter(l => yearlyTotal >= l.min_points).length;
@@ -280,146 +302,163 @@ export default function BonusPage() {
 
               return (
                 <div key={program.id} className="rounded-[28px] border border-zinc-200/70 bg-white shadow-sm overflow-hidden">
-                  {/* Premium dark hero */}
-                  <div className="relative overflow-hidden text-zinc-900" style={{ background: 'linear-gradient(135deg, #ffe8cc 0%, #fcb24e 50%, #f7922e 100%)' }}>
+                  {/* Themeable compact hero */}
+                  <div className={`relative overflow-hidden ${tStrong}`} style={{ background: hero.base }}>
                     {program.hero_image_url && (
                       <>
-                        <div className="pointer-events-none absolute inset-0 bg-cover bg-center" style={{ backgroundImage: `url(${program.hero_image_url})`, opacity: 0.25 }} />
-                        <div className="pointer-events-none absolute inset-0" style={{ background: 'linear-gradient(180deg, rgba(255,240,220,0.4), rgba(255,214,153,0.85))' }} />
+                        <div className="pointer-events-none absolute inset-0 bg-cover bg-center" style={{ backgroundImage: `url(${program.hero_image_url})`, opacity: light ? 0.22 : 0.5 }} />
+                        <div className="pointer-events-none absolute inset-0" style={{ background: light ? 'linear-gradient(180deg, rgba(255,255,255,0.35), rgba(255,255,255,0.8))' : 'linear-gradient(180deg, rgba(5,8,15,0.35), rgba(5,8,15,0.85))' }} />
                       </>
                     )}
-                    <motion.div aria-hidden className="pointer-events-none absolute -top-24 -right-16 w-80 h-80 rounded-full blur-[90px]" style={{ background: hero.g1 }}
+                    <motion.div aria-hidden className="pointer-events-none absolute -top-24 -right-16 w-72 h-72 rounded-full blur-[90px]" style={{ background: hero.g1 }}
                       animate={{ scale: [1, 1.25, 1], opacity: [0.7, 1, 0.7] }} transition={{ duration: 9, repeat: Infinity }} />
-                    <motion.div aria-hidden className="pointer-events-none absolute -bottom-28 -left-16 w-80 h-80 rounded-full blur-[90px]" style={{ background: hero.g2 }}
+                    <motion.div aria-hidden className="pointer-events-none absolute -bottom-28 -left-16 w-72 h-72 rounded-full blur-[90px]" style={{ background: hero.g2 }}
                       animate={{ scale: [1.2, 1, 1.2], opacity: [0.6, 1, 0.6] }} transition={{ duration: 11, repeat: Infinity }} />
-                    <motion.div aria-hidden className="pointer-events-none absolute top-10 left-1/3 w-64 h-64 rounded-full blur-[80px]" style={{ background: hero.g3 }}
+                    <motion.div aria-hidden className="pointer-events-none absolute top-10 left-1/3 w-56 h-56 rounded-full blur-[80px]" style={{ background: hero.g3 }}
                       animate={{ x: [0, 30, 0], opacity: [0.6, 1, 0.6] }} transition={{ duration: 13, repeat: Infinity }} />
-                    <div className="pointer-events-none absolute inset-0 opacity-[0.10]" style={{ backgroundImage: 'radial-gradient(circle at 1px 1px, rgba(120,53,15,0.35) 1px, transparent 0)', backgroundSize: '22px 22px' }} />
+                    <div className="pointer-events-none absolute inset-0 opacity-[0.10]" style={{ backgroundImage: `radial-gradient(circle at 1px 1px, ${hero.dot} 1px, transparent 0)`, backgroundSize: '22px 22px' }} />
 
                     <div className="relative p-4 sm:p-5">
-                      {/* Top row: program + jump to prizes */}
-                      <div className="flex items-start justify-between gap-4 flex-wrap">
-                        <div className="flex items-center gap-3">
+                      {/* Top row: title + theme picker + jump */}
+                      <div className="flex items-center justify-between gap-3 flex-wrap">
+                        <div className="flex items-center gap-2.5 min-w-0">
                           {program.image_url ? (
-                            <img src={program.image_url} alt="" className="w-9 h-9 rounded-xl object-cover ring-1 ring-orange-300/40" />
+                            <img src={program.image_url} alt="" className={`w-8 h-8 rounded-lg object-cover ring-1 ${ringCls}`} />
                           ) : (
-                            <div className="w-9 h-9 rounded-xl bg-white/50 backdrop-blur flex items-center justify-center ring-1 ring-orange-300/40">
-                              <Trophy className="w-4 h-4 text-orange-600" />
+                            <div className={`w-8 h-8 rounded-lg ${surfaceCls} backdrop-blur flex items-center justify-center ring-1 ${ringCls}`}>
+                              <Trophy className="w-4 h-4" style={{ color: hero.accent }} />
                             </div>
                           )}
-                          <div>
-                            <h2 className="text-base font-bold text-zinc-900 leading-tight">{program.title || 'Программа лояльности'}</h2>
-                          </div>
+                          <h2 className={`text-sm sm:text-base font-bold ${tStrong} leading-tight truncate`}>{program.title || 'Программа лояльности'}</h2>
                         </div>
-                        <button onClick={() => document.getElementById(`prizes-${program.id}`)?.scrollIntoView({ behavior: 'smooth' })}
-                          data-testid="jump-to-prizes"
-                          className="text-xs font-semibold text-orange-700 hover:text-orange-800 flex items-center gap-1.5 bg-white/60 hover:bg-white/80 px-3 py-1.5 rounded-full ring-1 ring-orange-300/50 transition-colors">
-                          <Gift className="w-3.5 h-3.5" /> К призам
-                        </button>
+                        <div className="flex items-center gap-2">
+                          {/* Theme swatches */}
+                          <div className={`flex items-center gap-1 p-1 rounded-full ${surfaceCls} ring-1 ${ringCls}`} data-testid="hero-theme-picker">
+                            {HERO_THEME_KEYS.map((key) => (
+                              <button
+                                key={key}
+                                onClick={() => changeHeroTheme(key)}
+                                title={HERO_THEMES[key].label}
+                                aria-label={HERO_THEMES[key].label}
+                                data-testid={`hero-theme-${key}`}
+                                className={`w-4 h-4 rounded-full transition-transform hover:scale-110 ${heroTheme === key ? 'ring-2 ring-offset-1 scale-110' : ''}`}
+                                style={{ background: HERO_THEMES[key].swatch, boxShadow: heroTheme === key ? `0 0 0 2px ${hero.accent}` : 'none' }}
+                              />
+                            ))}
+                          </div>
+                          <button onClick={() => document.getElementById(`prizes-${program.id}`)?.scrollIntoView({ behavior: 'smooth' })}
+                            data-testid="jump-to-prizes"
+                            className={`text-xs font-semibold flex items-center gap-1.5 ${surfaceCls} hover:opacity-80 px-3 py-1.5 rounded-full ring-1 ${ringCls} transition-opacity`}
+                            style={{ color: hero.accent }}>
+                            <Gift className="w-3.5 h-3.5" /> К призам
+                          </button>
+                        </div>
                       </div>
 
                       {/* Program description */}
                       {program.description && (
-                        <p className="mt-2 text-sm text-zinc-700 leading-relaxed max-w-2xl" data-testid="bonus-description">{program.description}</p>
+                        <p className={`mt-2 text-xs ${tMuted} leading-relaxed max-w-2xl line-clamp-2`} data-testid="bonus-description">{program.description}</p>
                       )}
 
-                      {/* Balance */}
-                      <motion.div className="mt-3 relative" initial={{ opacity: 0, y: 14 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5 }}>
-                        <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-orange-800/60">Доступно баллов</p>
-                        <div className="flex items-end gap-3 mt-0.5 relative">
-                          <motion.span
-                            className="text-3xl sm:text-4xl font-black tracking-tight bg-gradient-to-br from-orange-600 via-amber-600 to-orange-700 bg-clip-text text-transparent tabular-nums"
-                            data-testid="bonus-balance"
-                            animate={pointsGain?.programId === program.id ? { scale: [1, 1.12, 1] } : {}}
-                            transition={{ duration: 0.6, times: [0, 0.4, 1] }}
-                          >
-                            <AnimatedNumber value={Math.round(program.progress?.current_amount || 0)} />
-                          </motion.span>
-                          <Star className="w-5 h-5 text-orange-500 mb-1.5 fill-orange-400/50" />
+                      {/* Main row: balance + level side by side */}
+                      <div className="mt-3 grid sm:grid-cols-2 gap-x-6 gap-y-3 items-center">
+                        {/* Balance */}
+                        <motion.div className="relative" initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5 }}>
+                          <p className={`text-[10px] font-semibold uppercase tracking-[0.2em] ${tLabel}`}>Доступно баллов</p>
+                          <div className="flex items-end gap-2.5 mt-0.5 relative">
+                            <motion.span
+                              className="text-3xl sm:text-4xl font-black tracking-tight bg-clip-text text-transparent tabular-nums"
+                              style={{ backgroundImage: `linear-gradient(135deg, ${hero.balFrom}, ${hero.balTo})` }}
+                              data-testid="bonus-balance"
+                              animate={pointsGain?.programId === program.id ? { scale: [1, 1.12, 1] } : {}}
+                              transition={{ duration: 0.6, times: [0, 0.4, 1] }}
+                            >
+                              <AnimatedNumber value={Math.round(program.progress?.current_amount || 0)} />
+                            </motion.span>
+                            <Star className="w-5 h-5 mb-1.5" style={{ color: hero.accent, fill: `${hero.accent}55` }} />
 
-                          {/* Floating "+N баллов" wow animation */}
-                          <AnimatePresence>
-                            {pointsGain?.programId === program.id && (
-                              <motion.div
-                                key={`gain-${pointsGain.amount}`}
-                                className="absolute left-0 -top-2 flex items-center gap-1.5 pointer-events-none"
-                                initial={{ opacity: 0, y: 10, scale: 0.7 }}
-                                animate={{ opacity: [0, 1, 1, 0], y: -56, scale: 1 }}
-                                exit={{ opacity: 0 }}
-                                transition={{ duration: 2.6, times: [0, 0.15, 0.7, 1], ease: 'easeOut' }}
-                                data-testid="points-gain-popup"
-                              >
-                                <span className="text-2xl sm:text-3xl font-black text-emerald-300 drop-shadow-[0_2px_10px_rgba(16,185,129,0.6)] tabular-nums">
-                                  +{new Intl.NumberFormat('ru-RU').format(pointsGain.amount)}
-                                </span>
-                                <span className="text-sm font-bold text-emerald-200/90">баллов</span>
-                              </motion.div>
-                            )}
-                          </AnimatePresence>
-                        </div>
-                      </motion.div>
+                            {/* Floating "+N баллов" wow animation */}
+                            <AnimatePresence>
+                              {pointsGain?.programId === program.id && (
+                                <motion.div
+                                  key={`gain-${pointsGain.amount}`}
+                                  className="absolute left-0 -top-2 flex items-center gap-1.5 pointer-events-none"
+                                  initial={{ opacity: 0, y: 10, scale: 0.7 }}
+                                  animate={{ opacity: [0, 1, 1, 0], y: -52, scale: 1 }}
+                                  exit={{ opacity: 0 }}
+                                  transition={{ duration: 2.6, times: [0, 0.15, 0.7, 1], ease: 'easeOut' }}
+                                  data-testid="points-gain-popup"
+                                >
+                                  <span className="text-2xl sm:text-3xl font-black text-emerald-500 drop-shadow-[0_2px_10px_rgba(16,185,129,0.5)] tabular-nums">
+                                    +{new Intl.NumberFormat('ru-RU').format(pointsGain.amount)}
+                                  </span>
+                                  <span className="text-sm font-bold text-emerald-500/90">баллов</span>
+                                </motion.div>
+                              )}
+                            </AnimatePresence>
+                          </div>
+                        </motion.div>
 
-                      {/* Level medallion + progress */}
-                      {program.current_level ? (
-                        <div className="mt-4 grid gap-3">
-                          <div className="flex items-center justify-between gap-4 flex-wrap">
-                            <div className="flex items-center gap-3">
-                              <motion.div className="relative w-11 h-11 rounded-xl flex items-center justify-center shadow-lg"
+                        {/* Level medallion + cashback */}
+                        {program.current_level && (
+                          <div className="flex items-center justify-between gap-3">
+                            <div className="flex items-center gap-2.5 min-w-0">
+                              <motion.div className="relative w-10 h-10 rounded-xl flex items-center justify-center shadow-lg flex-shrink-0"
                                 style={{ background: `linear-gradient(135deg, ${program.current_level.color}, ${program.current_level.color}aa)` }}
-                                animate={{ boxShadow: [`0 0 0 0 ${program.current_level.color}66`, `0 0 0 12px ${program.current_level.color}00`] }}
+                                animate={{ boxShadow: [`0 0 0 0 ${program.current_level.color}66`, `0 0 0 10px ${program.current_level.color}00`] }}
                                 transition={{ duration: 2.2, repeat: Infinity, ease: 'easeOut' }}>
                                 <Award className="w-5 h-5 text-white" />
                               </motion.div>
                               <div className="min-w-0">
-                                <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-orange-800/60">Ваш уровень</p>
-                                <p className="text-lg font-black tracking-tight" style={{ color: program.current_level.color }}>{program.current_level.name}</p>
-                                {program.current_level.benefits && <p className="text-xs text-zinc-600 max-w-[220px] truncate">{program.current_level.benefits}</p>}
+                                <p className={`text-[10px] font-bold uppercase tracking-[0.16em] ${tLabel}`}>Ваш уровень</p>
+                                <p className="text-base font-black tracking-tight leading-tight" style={{ color: light ? program.current_level.color : program.current_level.color }}>{program.current_level.name}</p>
                               </div>
                             </div>
                             {program.current_level.cashback_percent > 0 && (
-                              <div className="text-center bg-white/50 ring-1 ring-orange-300/40 backdrop-blur px-4 py-1.5 rounded-xl">
-                                <p className="text-2xl font-black leading-none bg-gradient-to-b from-amber-500 to-orange-600 bg-clip-text text-transparent">{program.current_level.cashback_percent}%</p>
-                                <p className="text-[10px] font-medium text-orange-800/60 mt-0.5 uppercase tracking-wide">кешбэк</p>
+                              <div className={`text-center ${surfaceCls} ring-1 ${ringCls} backdrop-blur px-3 py-1 rounded-xl flex-shrink-0`}>
+                                <p className="text-xl font-black leading-none" style={{ color: hero.accent }}>{program.current_level.cashback_percent}%</p>
+                                <p className={`text-[9px] font-medium ${tLabel} mt-0.5 uppercase tracking-wide`}>кешбэк</p>
                               </div>
                             )}
                           </div>
+                        )}
+                      </div>
 
-                          {nextLevel ? (
-                            <div>
-                              <div className="flex items-center justify-between text-xs mb-1.5">
-                                <span className="text-zinc-600">Покупки за {currentYear}: <span className="font-bold text-zinc-900 tabular-nums">{formatPrice(yearlyTotal)} ₽</span></span>
-                                <span className="text-zinc-600">до <span className="font-bold" style={{ color: nextLevel.color }}>{nextLevel.name}</span></span>
-                              </div>
-                              <div className="relative h-2.5 rounded-full bg-orange-200/70 overflow-hidden ring-1 ring-orange-300/40">
-                                <motion.div className="absolute inset-y-0 left-0 rounded-full overflow-hidden"
-                                  style={{ background: `linear-gradient(90deg, ${program.current_level.color}, ${nextLevel.color})` }}
-                                  initial={{ width: 0 }} animate={{ width: `${program.level_percentage || 0}%` }}
-                                  transition={{ type: 'spring', bounce: 0.15, duration: 1.5, delay: 0.3 }} data-testid="next-level-progress-fill">
-                                  <motion.div className="absolute inset-y-0 bg-white/40" style={{ width: '35%' }}
-                                    animate={{ x: ['-120%', '320%'] }} transition={{ duration: 1.9, repeat: Infinity, ease: 'easeInOut', repeatDelay: 0.7 }} />
-                                </motion.div>
-                              </div>
-                              <div className="flex justify-between mt-1 text-[11px] text-orange-800/60">
-                                <span className="tabular-nums">{program.level_percentage || 0}%</span>
-                                <span>Осталось <span className="font-semibold text-zinc-700 tabular-nums">{formatPrice(amountToNextLevel)} ₽</span></span>
-                              </div>
-                            </div>
-                          ) : (
-                            <div className="flex items-center gap-2 text-sm font-semibold text-emerald-600"><CheckCircle className="w-4 h-4" /> Максимальный уровень достигнут 🎉</div>
-                          )}
+                      {/* Progress to next level (full width) */}
+                      {program.current_level && (nextLevel ? (
+                        <div className="mt-3">
+                          <div className="flex items-center justify-between text-xs mb-1.5">
+                            <span className={tMuted}>Покупки за {currentYear}: <span className={`font-bold ${tStrong} tabular-nums`}>{formatPrice(yearlyTotal)} ₽</span></span>
+                            <span className={tMuted}>до <span className="font-bold" style={{ color: nextLevel.color }}>{nextLevel.name}</span></span>
+                          </div>
+                          <div className={`relative h-2.5 rounded-full ${trackCls} overflow-hidden ring-1 ${ringCls}`}>
+                            <motion.div className="absolute inset-y-0 left-0 rounded-full overflow-hidden"
+                              style={{ background: `linear-gradient(90deg, ${program.current_level.color}, ${nextLevel.color})` }}
+                              initial={{ width: 0 }} animate={{ width: `${program.level_percentage || 0}%` }}
+                              transition={{ type: 'spring', bounce: 0.15, duration: 1.5, delay: 0.3 }} data-testid="next-level-progress-fill">
+                              <motion.div className="absolute inset-y-0 bg-white/40" style={{ width: '35%' }}
+                                animate={{ x: ['-120%', '320%'] }} transition={{ duration: 1.9, repeat: Infinity, ease: 'easeInOut', repeatDelay: 0.7 }} />
+                            </motion.div>
+                          </div>
+                          <div className={`flex justify-between mt-1 text-[11px] ${tLabel}`}>
+                            <span className="tabular-nums">{program.level_percentage || 0}%</span>
+                            <span>Осталось <span className={`font-semibold ${tMuted} tabular-nums`}>{formatPrice(amountToNextLevel)} ₽</span></span>
+                          </div>
                         </div>
-                      ) : null}
+                      ) : (
+                        <div className="mt-3 flex items-center gap-2 text-sm font-semibold text-emerald-500"><CheckCircle className="w-4 h-4" /> Максимальный уровень достигнут 🎉</div>
+                      ))}
 
                       {/* Levels roadmap */}
                       {sortedLevels.length > 0 && (
-                        <div className="mt-5">
-                          <div className="flex items-center justify-between mb-3">
-                            <p className="text-[11px] font-semibold uppercase tracking-[0.15em] text-orange-800/60">Путь уровней</p>
-                            <span className="text-[11px] text-zinc-600">Достигнуто <span className="font-bold text-orange-600">{sortedLevels.filter(l => yearlyTotal >= l.min_points).length}</span> / {sortedLevels.length}</span>
+                        <div className="mt-4">
+                          <div className="flex items-center justify-between mb-2.5">
+                            <p className={`text-[10px] font-semibold uppercase tracking-[0.15em] ${tLabel}`}>Путь уровней</p>
+                            <span className={`text-[11px] ${tMuted}`}>Достигнуто <span className="font-bold" style={{ color: hero.accent }}>{sortedLevels.filter(l => yearlyTotal >= l.min_points).length}</span> / {sortedLevels.length}</span>
                           </div>
                           <div className="relative pt-1">
-                            <div className="absolute left-5 right-5 top-5 h-1 bg-orange-200/70 rounded-full overflow-hidden">
-                              <motion.div className="h-full rounded-full bg-gradient-to-r from-orange-500 to-amber-400"
+                            <div className={`absolute left-5 right-5 top-5 h-1 ${trackCls} rounded-full overflow-hidden`}>
+                              <motion.div className="h-full rounded-full" style={{ background: `linear-gradient(90deg, ${hero.balFrom}, ${hero.balTo})` }}
                                 initial={{ width: 0 }} animate={{ width: `${roadmapFillPct}%` }}
                                 transition={{ duration: 1, ease: 'easeOut', delay: 0.3 }} />
                             </div>
@@ -429,18 +468,18 @@ export default function BonusPage() {
                                 const isAchieved = yearlyTotal >= level.min_points;
                                 return (
                                   <motion.div key={level.id} className="flex flex-col items-center text-center flex-1 min-w-0"
-                                    initial={{ opacity: 0, y: 14, scale: 0.5 }} animate={{ opacity: 1, y: 0, scale: 1 }}
+                                    initial={{ opacity: 0, y: 12, scale: 0.5 }} animate={{ opacity: 1, y: 0, scale: 1 }}
                                     transition={{ delay: 0.2 + idx * 0.08, type: 'spring', stiffness: 260, damping: 16 }}>
-                                    <motion.div className="relative w-9 h-9 rounded-full flex items-center justify-center text-xs font-bold shadow-md z-10 ring-2 ring-white"
-                                      style={{ background: isAchieved ? `linear-gradient(135deg, ${level.color}, ${level.color}bb)` : 'rgba(255,255,255,0.7)', color: isAchieved ? '#fff' : 'rgba(120,53,15,0.5)' }}
-                                      animate={isActive ? { boxShadow: [`0 0 0 0 ${level.color}88`, `0 0 0 12px ${level.color}00`] } : {}}
+                                    <motion.div className="relative w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold shadow-md z-10 ring-2"
+                                      style={{ background: isAchieved ? `linear-gradient(135deg, ${level.color}, ${level.color}bb)` : (light ? 'rgba(255,255,255,0.85)' : 'rgba(255,255,255,0.12)'), color: isAchieved ? '#fff' : (light ? 'rgba(0,0,0,0.4)' : 'rgba(255,255,255,0.5)'), '--tw-ring-color': hero.ringColor }}
+                                      animate={isActive ? { boxShadow: [`0 0 0 0 ${level.color}88`, `0 0 0 10px ${level.color}00`] } : {}}
                                       transition={isActive ? { duration: 1.8, repeat: Infinity, ease: 'easeOut' } : {}}>
                                       {isAchieved ? <CheckCircle className="w-4 h-4" /> : (idx + 1)}
                                     </motion.div>
-                                    <p className={`text-[11px] mt-1.5 leading-tight truncate max-w-full px-0.5 ${isActive ? 'font-bold' : 'font-medium'}`} style={{ color: isAchieved ? '#78350f' : 'rgba(120,53,15,0.55)' }}>{level.name}</p>
-                                    <p className="text-[10px] text-orange-900/40 mt-0.5 tabular-nums">от {formatPrice(level.min_points)} ₽</p>
+                                    <p className={`text-[10px] mt-1 leading-tight truncate max-w-full px-0.5 ${isActive ? 'font-bold' : 'font-medium'} ${isAchieved ? tStrong : tFaint}`}>{level.name}</p>
+                                    <p className={`text-[10px] ${tLabel} mt-0.5 tabular-nums`}>от {formatPrice(level.min_points)} ₽</p>
                                     {level.cashback_percent > 0 && (
-                                      <span className="text-[10px] font-bold mt-0.5 px-1.5 py-0.5 rounded-full" style={{ color: isAchieved ? level.color : 'rgba(120,53,15,0.5)', backgroundColor: isAchieved ? level.color + '22' : 'rgba(120,53,15,0.08)' }}>{level.cashback_percent}%</span>
+                                      <span className="text-[10px] font-bold mt-0.5 px-1.5 py-0.5 rounded-full" style={{ color: isAchieved ? level.color : (light ? 'rgba(0,0,0,0.4)' : 'rgba(255,255,255,0.4)'), backgroundColor: isAchieved ? level.color + '22' : (light ? 'rgba(0,0,0,0.05)' : 'rgba(255,255,255,0.06)') }}>{level.cashback_percent}%</span>
                                     )}
                                   </motion.div>
                                 );
