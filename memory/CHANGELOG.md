@@ -1,5 +1,9 @@
 # Changelog
 
+## 2026-06-28 — Bonus prize grid: 6 per row (compact cards)
+- `BonusPage.js`: grid `grid-cols-2 sm:grid-cols-3 lg:grid-cols-4` → `grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6`, tighter gap; reduced card padding, title/price font sizes and button height so 6 prizes fit neatly in one row. Verified via screenshot.
+
+
 ## 2026-06-28 — Fix: bonus levels roadmap fill not aligned to nodes
 - `BonusPage.js`: the "Путь уровней" track fill was `yearlyTotal / maxLevelPoints`, but nodes are spaced EVENLY (`justify-between`), so with uneven level thresholds the fill line didn't line up with achieved nodes. New `roadmapFillPct` is computed from node index positions: fill reaches exactly the highest achieved node + the fraction of progress toward the next node (`((achievedIdx + frac) / (levels-1)) * 100`), 100% when all achieved. The "до следующего уровня" bar already used the correct `level_percentage` (progress between current and next level).
 
