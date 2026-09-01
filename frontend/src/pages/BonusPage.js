@@ -281,11 +281,11 @@ export default function BonusPage() {
               return (
                 <div key={program.id} className="rounded-[28px] border border-zinc-200/70 bg-white shadow-sm overflow-hidden">
                   {/* Premium dark hero */}
-                  <div className="relative overflow-hidden text-white" style={{ background: hero.base }}>
+                  <div className="relative overflow-hidden text-zinc-900" style={{ background: 'linear-gradient(135deg, #ffe8cc 0%, #fcb24e 50%, #f7922e 100%)' }}>
                     {program.hero_image_url && (
                       <>
-                        <div className="pointer-events-none absolute inset-0 bg-cover bg-center" style={{ backgroundImage: `url(${program.hero_image_url})`, opacity: 0.5 }} />
-                        <div className="pointer-events-none absolute inset-0" style={{ background: 'linear-gradient(180deg, rgba(5,8,15,0.35), rgba(5,8,15,0.85))' }} />
+                        <div className="pointer-events-none absolute inset-0 bg-cover bg-center" style={{ backgroundImage: `url(${program.hero_image_url})`, opacity: 0.25 }} />
+                        <div className="pointer-events-none absolute inset-0" style={{ background: 'linear-gradient(180deg, rgba(255,240,220,0.4), rgba(255,214,153,0.85))' }} />
                       </>
                     )}
                     <motion.div aria-hidden className="pointer-events-none absolute -top-24 -right-16 w-80 h-80 rounded-full blur-[90px]" style={{ background: hero.g1 }}
@@ -294,48 +294,48 @@ export default function BonusPage() {
                       animate={{ scale: [1.2, 1, 1.2], opacity: [0.6, 1, 0.6] }} transition={{ duration: 11, repeat: Infinity }} />
                     <motion.div aria-hidden className="pointer-events-none absolute top-10 left-1/3 w-64 h-64 rounded-full blur-[80px]" style={{ background: hero.g3 }}
                       animate={{ x: [0, 30, 0], opacity: [0.6, 1, 0.6] }} transition={{ duration: 13, repeat: Infinity }} />
-                    <div className="pointer-events-none absolute inset-0 opacity-[0.14]" style={{ backgroundImage: 'radial-gradient(circle at 1px 1px, #ffffff 1px, transparent 0)', backgroundSize: '22px 22px' }} />
+                    <div className="pointer-events-none absolute inset-0 opacity-[0.10]" style={{ backgroundImage: 'radial-gradient(circle at 1px 1px, rgba(120,53,15,0.35) 1px, transparent 0)', backgroundSize: '22px 22px' }} />
 
-                    <div className="relative p-6 sm:p-8">
+                    <div className="relative p-4 sm:p-5">
                       {/* Top row: program + jump to prizes */}
                       <div className="flex items-start justify-between gap-4 flex-wrap">
                         <div className="flex items-center gap-3">
                           {program.image_url ? (
-                            <img src={program.image_url} alt="" className="w-11 h-11 rounded-xl object-cover ring-1 ring-white/15" />
+                            <img src={program.image_url} alt="" className="w-9 h-9 rounded-xl object-cover ring-1 ring-orange-300/40" />
                           ) : (
-                            <div className="w-11 h-11 rounded-xl bg-white/10 backdrop-blur flex items-center justify-center ring-1 ring-white/15">
-                              <Trophy className="w-5 h-5 text-amber-300" />
+                            <div className="w-9 h-9 rounded-xl bg-white/50 backdrop-blur flex items-center justify-center ring-1 ring-orange-300/40">
+                              <Trophy className="w-4 h-4 text-orange-600" />
                             </div>
                           )}
                           <div>
-                            <h2 className="text-base font-bold text-white leading-tight">{program.title || 'Программа лояльности'}</h2>
+                            <h2 className="text-base font-bold text-zinc-900 leading-tight">{program.title || 'Программа лояльности'}</h2>
                           </div>
                         </div>
                         <button onClick={() => document.getElementById(`prizes-${program.id}`)?.scrollIntoView({ behavior: 'smooth' })}
                           data-testid="jump-to-prizes"
-                          className="text-xs font-semibold text-amber-300 hover:text-amber-200 flex items-center gap-1.5 bg-white/5 hover:bg-white/10 px-3 py-1.5 rounded-full ring-1 ring-white/10 transition-colors">
+                          className="text-xs font-semibold text-orange-700 hover:text-orange-800 flex items-center gap-1.5 bg-white/60 hover:bg-white/80 px-3 py-1.5 rounded-full ring-1 ring-orange-300/50 transition-colors">
                           <Gift className="w-3.5 h-3.5" /> К призам
                         </button>
                       </div>
 
                       {/* Program description */}
                       {program.description && (
-                        <p className="mt-3 text-sm text-white/70 leading-relaxed max-w-2xl" data-testid="bonus-description">{program.description}</p>
+                        <p className="mt-2 text-sm text-zinc-700 leading-relaxed max-w-2xl" data-testid="bonus-description">{program.description}</p>
                       )}
 
                       {/* Balance */}
-                      <motion.div className="mt-6 relative" initial={{ opacity: 0, y: 14 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5 }}>
-                        <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-white/40">Доступно баллов</p>
-                        <div className="flex items-end gap-3 mt-1 relative">
+                      <motion.div className="mt-3 relative" initial={{ opacity: 0, y: 14 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5 }}>
+                        <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-orange-800/60">Доступно баллов</p>
+                        <div className="flex items-end gap-3 mt-0.5 relative">
                           <motion.span
-                            className="text-5xl sm:text-6xl font-black tracking-tight bg-gradient-to-br from-orange-300 via-amber-200 to-orange-400 bg-clip-text text-transparent tabular-nums"
+                            className="text-3xl sm:text-4xl font-black tracking-tight bg-gradient-to-br from-orange-600 via-amber-600 to-orange-700 bg-clip-text text-transparent tabular-nums"
                             data-testid="bonus-balance"
                             animate={pointsGain?.programId === program.id ? { scale: [1, 1.12, 1] } : {}}
                             transition={{ duration: 0.6, times: [0, 0.4, 1] }}
                           >
                             <AnimatedNumber value={Math.round(program.progress?.current_amount || 0)} />
                           </motion.span>
-                          <Star className="w-6 h-6 text-amber-300 mb-2.5 fill-amber-300/40" />
+                          <Star className="w-5 h-5 text-orange-500 mb-1.5 fill-orange-400/50" />
 
                           {/* Floating "+N баллов" wow animation */}
                           <AnimatePresence>
@@ -361,65 +361,65 @@ export default function BonusPage() {
 
                       {/* Level medallion + progress */}
                       {program.current_level ? (
-                        <div className="mt-7 grid gap-5">
+                        <div className="mt-4 grid gap-3">
                           <div className="flex items-center justify-between gap-4 flex-wrap">
-                            <div className="flex items-center gap-3.5">
-                              <motion.div className="relative w-14 h-14 rounded-2xl flex items-center justify-center shadow-xl"
+                            <div className="flex items-center gap-3">
+                              <motion.div className="relative w-11 h-11 rounded-xl flex items-center justify-center shadow-lg"
                                 style={{ background: `linear-gradient(135deg, ${program.current_level.color}, ${program.current_level.color}aa)` }}
-                                animate={{ boxShadow: [`0 0 0 0 ${program.current_level.color}66`, `0 0 0 14px ${program.current_level.color}00`] }}
+                                animate={{ boxShadow: [`0 0 0 0 ${program.current_level.color}66`, `0 0 0 12px ${program.current_level.color}00`] }}
                                 transition={{ duration: 2.2, repeat: Infinity, ease: 'easeOut' }}>
-                                <Award className="w-7 h-7 text-white" />
+                                <Award className="w-5 h-5 text-white" />
                               </motion.div>
                               <div className="min-w-0">
-                                <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-white/40">Ваш уровень</p>
-                                <p className="text-xl font-black tracking-tight" style={{ color: program.current_level.color }}>{program.current_level.name}</p>
-                                {program.current_level.benefits && <p className="text-xs text-white/50 max-w-[220px] truncate">{program.current_level.benefits}</p>}
+                                <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-orange-800/60">Ваш уровень</p>
+                                <p className="text-lg font-black tracking-tight" style={{ color: program.current_level.color }}>{program.current_level.name}</p>
+                                {program.current_level.benefits && <p className="text-xs text-zinc-600 max-w-[220px] truncate">{program.current_level.benefits}</p>}
                               </div>
                             </div>
                             {program.current_level.cashback_percent > 0 && (
-                              <div className="text-center bg-white/5 ring-1 ring-white/10 backdrop-blur px-5 py-2.5 rounded-2xl">
-                                <p className="text-3xl font-black leading-none bg-gradient-to-b from-amber-200 to-orange-400 bg-clip-text text-transparent">{program.current_level.cashback_percent}%</p>
-                                <p className="text-[10px] font-medium text-white/40 mt-1 uppercase tracking-wide">кешбэк</p>
+                              <div className="text-center bg-white/50 ring-1 ring-orange-300/40 backdrop-blur px-4 py-1.5 rounded-xl">
+                                <p className="text-2xl font-black leading-none bg-gradient-to-b from-amber-500 to-orange-600 bg-clip-text text-transparent">{program.current_level.cashback_percent}%</p>
+                                <p className="text-[10px] font-medium text-orange-800/60 mt-0.5 uppercase tracking-wide">кешбэк</p>
                               </div>
                             )}
                           </div>
 
                           {nextLevel ? (
                             <div>
-                              <div className="flex items-center justify-between text-xs mb-2">
-                                <span className="text-white/50">Покупки за {currentYear}: <span className="font-bold text-white/90 tabular-nums">{formatPrice(yearlyTotal)} ₽</span></span>
-                                <span className="text-white/50">до <span className="font-bold" style={{ color: nextLevel.color }}>{nextLevel.name}</span></span>
+                              <div className="flex items-center justify-between text-xs mb-1.5">
+                                <span className="text-zinc-600">Покупки за {currentYear}: <span className="font-bold text-zinc-900 tabular-nums">{formatPrice(yearlyTotal)} ₽</span></span>
+                                <span className="text-zinc-600">до <span className="font-bold" style={{ color: nextLevel.color }}>{nextLevel.name}</span></span>
                               </div>
-                              <div className="relative h-3.5 rounded-full bg-white/10 overflow-hidden ring-1 ring-white/10">
+                              <div className="relative h-2.5 rounded-full bg-orange-200/70 overflow-hidden ring-1 ring-orange-300/40">
                                 <motion.div className="absolute inset-y-0 left-0 rounded-full overflow-hidden"
                                   style={{ background: `linear-gradient(90deg, ${program.current_level.color}, ${nextLevel.color})` }}
                                   initial={{ width: 0 }} animate={{ width: `${program.level_percentage || 0}%` }}
                                   transition={{ type: 'spring', bounce: 0.15, duration: 1.5, delay: 0.3 }} data-testid="next-level-progress-fill">
-                                  <motion.div className="absolute inset-y-0 bg-white/30" style={{ width: '35%' }}
+                                  <motion.div className="absolute inset-y-0 bg-white/40" style={{ width: '35%' }}
                                     animate={{ x: ['-120%', '320%'] }} transition={{ duration: 1.9, repeat: Infinity, ease: 'easeInOut', repeatDelay: 0.7 }} />
                                 </motion.div>
                               </div>
-                              <div className="flex justify-between mt-1.5 text-[11px] text-white/40">
+                              <div className="flex justify-between mt-1 text-[11px] text-orange-800/60">
                                 <span className="tabular-nums">{program.level_percentage || 0}%</span>
-                                <span>Осталось <span className="font-semibold text-white/75 tabular-nums">{formatPrice(amountToNextLevel)} ₽</span></span>
+                                <span>Осталось <span className="font-semibold text-zinc-700 tabular-nums">{formatPrice(amountToNextLevel)} ₽</span></span>
                               </div>
                             </div>
                           ) : (
-                            <div className="flex items-center gap-2 text-sm font-semibold text-emerald-300"><CheckCircle className="w-4 h-4" /> Максимальный уровень достигнут 🎉</div>
+                            <div className="flex items-center gap-2 text-sm font-semibold text-emerald-600"><CheckCircle className="w-4 h-4" /> Максимальный уровень достигнут 🎉</div>
                           )}
                         </div>
                       ) : null}
 
                       {/* Levels roadmap */}
                       {sortedLevels.length > 0 && (
-                        <div className="mt-8">
-                          <div className="flex items-center justify-between mb-4">
-                            <p className="text-[11px] font-semibold uppercase tracking-[0.15em] text-white/40">Путь уровней</p>
-                            <span className="text-[11px] text-white/50">Достигнуто <span className="font-bold text-amber-300">{sortedLevels.filter(l => yearlyTotal >= l.min_points).length}</span> / {sortedLevels.length}</span>
+                        <div className="mt-5">
+                          <div className="flex items-center justify-between mb-3">
+                            <p className="text-[11px] font-semibold uppercase tracking-[0.15em] text-orange-800/60">Путь уровней</p>
+                            <span className="text-[11px] text-zinc-600">Достигнуто <span className="font-bold text-orange-600">{sortedLevels.filter(l => yearlyTotal >= l.min_points).length}</span> / {sortedLevels.length}</span>
                           </div>
                           <div className="relative pt-1">
-                            <div className="absolute left-5 right-5 top-6 h-1 bg-white/10 rounded-full overflow-hidden">
-                              <motion.div className="h-full rounded-full bg-gradient-to-r from-orange-400 to-amber-300"
+                            <div className="absolute left-5 right-5 top-5 h-1 bg-orange-200/70 rounded-full overflow-hidden">
+                              <motion.div className="h-full rounded-full bg-gradient-to-r from-orange-500 to-amber-400"
                                 initial={{ width: 0 }} animate={{ width: `${roadmapFillPct}%` }}
                                 transition={{ duration: 1, ease: 'easeOut', delay: 0.3 }} />
                             </div>
@@ -431,16 +431,16 @@ export default function BonusPage() {
                                   <motion.div key={level.id} className="flex flex-col items-center text-center flex-1 min-w-0"
                                     initial={{ opacity: 0, y: 14, scale: 0.5 }} animate={{ opacity: 1, y: 0, scale: 1 }}
                                     transition={{ delay: 0.2 + idx * 0.08, type: 'spring', stiffness: 260, damping: 16 }}>
-                                    <motion.div className="relative w-11 h-11 rounded-full flex items-center justify-center text-sm font-bold shadow-lg z-10 ring-2 ring-[#0a0e17]"
-                                      style={{ background: isAchieved ? `linear-gradient(135deg, ${level.color}, ${level.color}bb)` : 'rgba(255,255,255,0.08)', color: isAchieved ? '#fff' : 'rgba(255,255,255,0.5)' }}
+                                    <motion.div className="relative w-9 h-9 rounded-full flex items-center justify-center text-xs font-bold shadow-md z-10 ring-2 ring-white"
+                                      style={{ background: isAchieved ? `linear-gradient(135deg, ${level.color}, ${level.color}bb)` : 'rgba(255,255,255,0.7)', color: isAchieved ? '#fff' : 'rgba(120,53,15,0.5)' }}
                                       animate={isActive ? { boxShadow: [`0 0 0 0 ${level.color}88`, `0 0 0 12px ${level.color}00`] } : {}}
                                       transition={isActive ? { duration: 1.8, repeat: Infinity, ease: 'easeOut' } : {}}>
-                                      {isAchieved ? <CheckCircle className="w-5 h-5" /> : (idx + 1)}
+                                      {isAchieved ? <CheckCircle className="w-4 h-4" /> : (idx + 1)}
                                     </motion.div>
-                                    <p className={`text-[11px] mt-2 leading-tight truncate max-w-full px-0.5 ${isActive ? 'font-bold' : 'font-medium'}`} style={{ color: isAchieved ? '#fff' : 'rgba(255,255,255,0.45)' }}>{level.name}</p>
-                                    <p className="text-[10px] text-white/35 mt-0.5 tabular-nums">от {formatPrice(level.min_points)} ₽</p>
+                                    <p className={`text-[11px] mt-1.5 leading-tight truncate max-w-full px-0.5 ${isActive ? 'font-bold' : 'font-medium'}`} style={{ color: isAchieved ? '#78350f' : 'rgba(120,53,15,0.55)' }}>{level.name}</p>
+                                    <p className="text-[10px] text-orange-900/40 mt-0.5 tabular-nums">от {formatPrice(level.min_points)} ₽</p>
                                     {level.cashback_percent > 0 && (
-                                      <span className="text-[10px] font-bold mt-1 px-1.5 py-0.5 rounded-full" style={{ color: isAchieved ? level.color : 'rgba(255,255,255,0.4)', backgroundColor: isAchieved ? level.color + '22' : 'rgba(255,255,255,0.06)' }}>{level.cashback_percent}%</span>
+                                      <span className="text-[10px] font-bold mt-0.5 px-1.5 py-0.5 rounded-full" style={{ color: isAchieved ? level.color : 'rgba(120,53,15,0.5)', backgroundColor: isAchieved ? level.color + '22' : 'rgba(120,53,15,0.08)' }}>{level.cashback_percent}%</span>
                                     )}
                                   </motion.div>
                                 );
