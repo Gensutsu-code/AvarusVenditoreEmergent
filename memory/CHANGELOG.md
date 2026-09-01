@@ -1,5 +1,14 @@
 # Changelog
 
+## 2026-06 — Bonus hero themes (compact + switchable + admin default) & Warehouse expansion (receipts, COGS, reserve)
+- **BonusPage hero redesign** (`BonusPage.js`): compacted ~50% (balance + level in one row, smaller paddings/fonts). Added live theme switcher `HERO_THEMES` (6: midnight, ocean, royal, mint, sunset, snow) with swatch picker (`hero-theme-picker`, `hero-theme-{key}`). Personal choice saved to `localStorage['bonus_hero_theme']`; falls back to admin default `program.hero_preset`. Text/tracks auto-adapt to light vs dark themes.
+- **Admin default theme** (`admin/BonusTab.js`): `HERO_PRESETS` synced to the same 6 keys with light-aware labels + preview; label clarifies it's the default for all clients. Added `edit-program-{id}` testid on pencil (by testing agent).
+- **Warehouse — Receipt documents** (`warehouse.py`): `POST/GET /admin/warehouse/receipts`, `GET /admin/warehouse/receipts/{id}`. One delivery = one document (auto number П-000001) with many items; posting increments stock, updates purchase_price, logs `receipt` movements referencing `receipt_id`. Frontend: 'Приёмки' tab with builder (supplier/date/comment + product search + editable qty/price) and document list + detail modal.
+- **Warehouse — Reserve** (`warehouse.py` `_reserved_by_product`): stock endpoint now returns `reserved`/`available` per product and `summary.total_reserved`, computed from open orders (payment_status in unpaid/deferred/awaiting_*, status not cancelled/completed/delivered). Frontend: 'Резерв'/'Доступно' columns + reserve stat card.
+- **Warehouse — COGS/profit report** (`warehouse.py` `GET /admin/warehouse/cogs-report`): revenue/COGS/gross profit/margin% for a period + per-product breakdown. `sale` movements now store `unit_price`/`line_revenue` (`orders.py`); legacy movements backfilled from order items. Frontend: 'Прибыль' tab.
+- Tested: backend 5/5 pytest PASS; frontend 6/6 flows verified. Note: DB `hero_preset` left = 'sunset' after test run.
+
+
 ## 2026-06-28 — Reward display in orders, certificate threshold, prize hover
 - **«Мои заказы»** (`OrdersPage.js` + `OrderResponse` + `orders.py`): each order now stores/returns `reward_choice`, `reward_points`, `ozon_certificate_bonus`. In the expanded order card a badge shows the chosen reward — green «+N бонусных баллов» or indigo «+N ₽ к Ozon-сертификату».
 - **Certificate threshold** (`CartPage.js`): the «К Ozon-сертификату» option is hidden when expected points < 500 (rounds down to 0 anyway); a hint «доступен от 500 баллов за заказ» is shown and rewardChoice auto-resets to 'points'.

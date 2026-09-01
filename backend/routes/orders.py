@@ -643,6 +643,8 @@ async def create_order(data: OrderCreate, user=Depends(get_current_user)):
     # Send Telegram notification about new order
     await send_telegram_order_notification(order, user)
     
+    # Price map for COGS/profit report (revenue per product line)
+    order_price_map = {it.get("product_id"): it.get("price", 0) for it in items}
     for cart_item in cart["items"]:
         prod = await db.products.find_one(
             {"id": cart_item["product_id"]},
@@ -656,6 +658,7 @@ async def create_order(data: OrderCreate, user=Depends(get_current_user)):
         )
         if result.modified_count:
             unit_cost = prod.get("purchase_price", 0) or 0
+            unit_price = order_price_map.get(cart_item["product_id"], 0) or 0
             stock_after = (prod.get("stock", 0) or 0) - cart_item["quantity"]
             await db.stock_movements.insert_one({
                 "id": str(uuid.uuid4()),
@@ -666,6 +669,8 @@ async def create_order(data: OrderCreate, user=Depends(get_current_user)):
                 "quantity": cart_item["quantity"],
                 "unit_cost": unit_cost,
                 "total_cost": round(cart_item["quantity"] * unit_cost, 2),
+                "unit_price": unit_price,
+                "line_revenue": round(cart_item["quantity"] * unit_price, 2),
                 "supplier": "",
                 "reason": "",
                 "comment": f"Заказ #{order_id[:8]}",

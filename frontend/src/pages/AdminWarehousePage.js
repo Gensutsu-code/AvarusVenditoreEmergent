@@ -14,7 +14,9 @@ const fmt = (p) => new Intl.NumberFormat('ru-RU').format(Math.round(p || 0));
 
 const TABS = [
   { id: 'stock', label: 'Остатки' },
+  { id: 'receipts', label: 'Приёмки' },
   { id: 'movements', label: 'Движения' },
+  { id: 'cogs', label: 'Прибыль' },
   { id: 'finance', label: 'Финансы' },
 ];
 
@@ -58,6 +60,63 @@ export default function AdminWarehousePage({ embedded = false }) {
   const [finCategory, setFinCategory] = useState('');
   const [finComment, setFinComment] = useState('');
 
+  // Receipts (документы приёмки)
+  const [receipts, setReceipts] = useState([]);
+  const [receiptDetail, setReceiptDetail] = useState(null);
+  const [showReceiptForm, setShowReceiptForm] = useState(false);
+  const [rcSupplier, setRcSupplier] = useState('');
+  const [rcComment, setRcComment] = useState('');
+  const [rcDate, setRcDate] = useState(today());
+  const [rcItems, setRcItems] = useState([]);
+  const [rcSearch, setRcSearch] = useState('');
+  const [rcResults, setRcResults] = useState([]);
+  const [rcSearching, setRcSearching] = useState(false);
+
+  // COGS / profit report
+  const [cogs, setCogs] = useState(null);
+  const [cogsStart, setCogsStart] = useState(firstOfMonth());
+  const [cogsEnd, setCogsEnd] = useState(today());
+
+  const fetchReceipts = async () => {
+    const res = await axios.get(`${API}/admin/warehouse/receipts`);
+    setReceipts(res.data || []);
+  };
+  const fetchCogs = async () => {
+    const res = await axios.get(`${API}/admin/warehouse/cogs-report`, { params: { start: `${cogsStart}T00:00:00+00:00`, end: `${cogsEnd}T23:59:59+00:00` } });
+    setCogs(res.data);
+  };
+  const rcSearchProducts = async () => {
+    if (!rcSearch.trim()) { setRcResults([]); return; }
+    setRcSearching(true);
+    try {
+      const res = await axios.get(`${API}/admin/warehouse/stock`, { params: { search: rcSearch } });
+      setRcResults((res.data.items || []).slice(0, 20));
+    } catch { toast.error('Ошибка поиска'); } finally { setRcSearching(false); }
+  };
+  const rcAddItem = (p) => {
+    if (rcItems.some(i => i.product_id === p.id)) { toast.info('Товар уже добавлен'); return; }
+    setRcItems(prev => [...prev, { product_id: p.id, name: p.name, article: p.article, quantity: 1, purchase_price: p.purchase_price || 0 }]);
+    setRcSearch(''); setRcResults([]);
+  };
+  const rcUpdateItem = (idx, field, val) => setRcItems(prev => prev.map((it, i) => i === idx ? { ...it, [field]: val } : it));
+  const rcRemoveItem = (idx) => setRcItems(prev => prev.filter((_, i) => i !== idx));
+  const rcTotalCost = rcItems.reduce((s, it) => s + (Number(it.quantity) || 0) * (Number(it.purchase_price) || 0), 0);
+  const submitReceipt = async () => {
+    const valid = rcItems.filter(it => (Number(it.quantity) || 0) > 0);
+    if (valid.length === 0) { toast.error('Добавьте товары с количеством > 0'); return; }
+    setSubmitting(true);
+    try {
+      await axios.post(`${API}/admin/warehouse/receipts`, {
+        supplier: rcSupplier, comment: rcComment, date: `${rcDate}T12:00:00+00:00`,
+        items: valid.map(it => ({ product_id: it.product_id, quantity: Number(it.quantity), purchase_price: it.purchase_price === '' ? null : Number(it.purchase_price) })),
+      });
+      toast.success('Приёмка оформлена');
+      setShowReceiptForm(false);
+      setRcSupplier(''); setRcComment(''); setRcDate(today()); setRcItems([]); setRcSearch(''); setRcResults([]);
+      await Promise.all([fetchReceipts(), fetchStock(), fetchMovements(), fetchFinance()]);
+    } catch (e) { toast.error(e.response?.data?.detail || 'Ошибка'); } finally { setSubmitting(false); }
+  };
+
   const fetchStock = async (s = search) => {
     const res = await axios.get(`${API}/admin/warehouse/stock`, { params: s ? { search: s } : {} });
     setStockData(res.data);
@@ -74,7 +133,7 @@ export default function AdminWarehousePage({ embedded = false }) {
   useEffect(() => {
     if (authLoading) return;
     if (!user || user.role !== 'admin') { if (!embedded) navigate('/login'); return; }
-    Promise.all([fetchStock(), fetchMovements(), fetchFinance()]).catch(() => toast.error('Ошибка загрузки')).finally(() => setLoading(false));
+    Promise.all([fetchStock(), fetchMovements(), fetchFinance(), fetchReceipts(), fetchCogs()]).catch(() => toast.error('Ошибка загрузки')).finally(() => setLoading(false));
     axios.get(`${API}/stock-sync-settings`).then(r => setGlobalSync(r.data.stock_sync_enabled)).catch(() => {});
     // eslint-disable-next-line
   }, [user, authLoading, navigate]);
@@ -206,8 +265,9 @@ export default function AdminWarehousePage({ embedded = false }) {
                     <span className={`inline-block h-6 w-6 transform rounded-full bg-white shadow-md transition-transform duration-200 ${globalSync ? 'translate-x-9' : 'translate-x-1'}`} />
                   </button>
                 </div>
-                <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3 mb-6">
+                <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3 mb-6">
                   <div className="bg-white rounded-2xl p-4 shadow-sm" data-testid="wh-stat-units"><div className="flex items-center gap-2 mb-1"><Package className="w-4 h-4 text-slate-400" /><p className="text-xs text-slate-500">Единиц на складе</p></div><p className="text-xl font-bold text-slate-800">{fmt(s.total_units)}</p></div>
+                  <div className="bg-white rounded-2xl p-4 shadow-sm" data-testid="wh-stat-reserved"><div className="flex items-center gap-2 mb-1"><ShoppingCart className="w-4 h-4 text-indigo-400" /><p className="text-xs text-slate-500">В резерве (неоплач.)</p></div><p className="text-xl font-bold text-indigo-600">{fmt(s.total_reserved)}</p></div>
                   <div className="bg-white rounded-2xl p-4 shadow-sm"><div className="flex items-center gap-2 mb-1"><Coins className="w-4 h-4 text-slate-400" /><p className="text-xs text-slate-500">Стоимость (закупка)</p></div><p className="text-xl font-bold text-slate-800">{fmt(s.total_cost_value)} ₽</p></div>
                   <div className="bg-white rounded-2xl p-4 shadow-sm"><div className="flex items-center gap-2 mb-1"><TrendingUp className="w-4 h-4 text-slate-400" /><p className="text-xs text-slate-500">Потенц. выручка</p></div><p className="text-xl font-bold text-slate-800">{fmt(s.total_revenue_value)} ₽</p></div>
                   <div className="bg-gradient-to-br from-emerald-500 to-teal-600 text-white rounded-2xl p-4 shadow-sm" data-testid="wh-stat-profit"><div className="flex items-center gap-2 mb-1"><Wallet className="w-4 h-4 opacity-80" /><p className="text-xs opacity-80">Потенц. прибыль</p></div><p className="text-xl font-bold">{fmt(s.potential_profit)} ₽</p></div>
@@ -261,6 +321,8 @@ export default function AdminWarehousePage({ embedded = false }) {
                           <th className="px-3 py-3 w-8"><input type="checkbox" checked={allVisibleSelected} onChange={toggleSelectAll} className="accent-amber-500" data-testid="wh-select-all" /></th>
                           <th className="text-left px-4 py-3 font-medium">Товар</th>
                           <th className="text-right px-4 py-3 font-medium">Остаток</th>
+                          <th className="text-right px-4 py-3 font-medium">Резерв</th>
+                          <th className="text-right px-4 py-3 font-medium">Доступно</th>
                           <th className="text-right px-4 py-3 font-medium">Закуп.</th>
                           <th className="text-right px-4 py-3 font-medium">Продажа</th>
                           <th className="text-right px-4 py-3 font-medium">Маржа</th>
@@ -270,7 +332,7 @@ export default function AdminWarehousePage({ embedded = false }) {
                       </thead>
                       <tbody>
                         {stockData.items.length === 0 ? (
-                          <tr><td colSpan={8} className="text-center py-10 text-slate-400">Нет товаров</td></tr>
+                          <tr><td colSpan={10} className="text-center py-10 text-slate-400">Нет товаров</td></tr>
                         ) : displayedStockItems.map(it => (
                           <tr key={it.id} className="border-t border-slate-100 hover:bg-slate-50" data-testid={`wh-row-${it.id}`}>
                             <td className="px-3 py-3"><input type="checkbox" checked={selected.includes(it.id)} onChange={() => toggleSelect(it.id)} className="accent-amber-500" data-testid={`wh-select-${it.id}`} /></td>
@@ -279,6 +341,8 @@ export default function AdminWarehousePage({ embedded = false }) {
                               <p className="text-xs text-slate-400">{it.manufacturer ? it.manufacturer + ' · ' : ''}{it.article}</p>
                             </td>
                             <td className="px-4 py-3 text-right"><span className={`font-bold ${it.is_low ? 'text-rose-600' : 'text-slate-800'}`}>{it.stock}</span>{it.is_low && <AlertTriangle className="w-3.5 h-3.5 text-rose-400 inline ml-1" />}</td>
+                            <td className="px-4 py-3 text-right">{it.reserved > 0 ? <span className="font-medium text-indigo-600" data-testid={`wh-reserved-${it.id}`}>{it.reserved}</span> : <span className="text-slate-300">—</span>}</td>
+                            <td className="px-4 py-3 text-right"><span className={`font-semibold ${it.available < 0 ? 'text-rose-600' : 'text-slate-700'}`}>{it.available}</span></td>
                             <td className="px-4 py-3 text-right text-slate-600 whitespace-nowrap">{fmt(it.purchase_price)} ₽</td>
                             <td className="px-4 py-3 text-right text-slate-600 whitespace-nowrap">{fmt(it.price)} ₽</td>
                             <td className={`px-4 py-3 text-right font-medium whitespace-nowrap ${it.margin >= 0 ? 'text-emerald-600' : 'text-rose-600'}`}>{fmt(it.margin)} ₽</td>
@@ -330,6 +394,146 @@ export default function AdminWarehousePage({ embedded = false }) {
                     );
                   })}
                 </div>
+              </>
+            )}
+
+            {/* RECEIPTS TAB (документы приёмки) */}
+            {tab === 'receipts' && (
+              <>
+                <div className="flex items-center justify-between mb-4 gap-3 flex-wrap">
+                  <p className="text-sm text-slate-500">Одна поставка = один документ с несколькими товарами. Проведение документа увеличивает остатки и создаёт движения прихода.</p>
+                  {!showReceiptForm && (
+                    <Button onClick={() => setShowReceiptForm(true)} className="bg-emerald-500 hover:bg-emerald-600 text-white rounded-xl" data-testid="new-receipt-btn"><Plus className="w-4 h-4 mr-1.5" />Новая приёмка</Button>
+                  )}
+                </div>
+
+                {showReceiptForm && (
+                  <div className="bg-white rounded-2xl shadow-sm p-5 mb-6" data-testid="receipt-form">
+                    <div className="grid sm:grid-cols-3 gap-3 mb-4">
+                      <div><label className="block text-xs text-slate-500 mb-1">Поставщик</label><Input value={rcSupplier} onChange={(e) => setRcSupplier(e.target.value)} placeholder="ООО Автозапчасть..." className="rounded-xl" data-testid="rc-supplier" /></div>
+                      <div><label className="block text-xs text-slate-500 mb-1">Дата</label><Input type="date" value={rcDate} onChange={(e) => setRcDate(e.target.value)} className="rounded-xl" data-testid="rc-date" /></div>
+                      <div><label className="block text-xs text-slate-500 mb-1">Комментарий</label><Input value={rcComment} onChange={(e) => setRcComment(e.target.value)} placeholder="№ накладной, примечание" className="rounded-xl" data-testid="rc-comment" /></div>
+                    </div>
+
+                    {/* Product search */}
+                    <div className="relative mb-3">
+                      <div className="flex gap-2">
+                        <Input value={rcSearch} onChange={(e) => setRcSearch(e.target.value)} onKeyDown={(e) => e.key === 'Enter' && rcSearchProducts()} placeholder="Найти товар по названию/артикулу для добавления..." className="rounded-xl" data-testid="rc-search" />
+                        <Button onClick={rcSearchProducts} variant="outline" className="rounded-xl" data-testid="rc-search-btn">{rcSearching ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Найти'}</Button>
+                      </div>
+                      {rcResults.length > 0 && (
+                        <div className="absolute z-20 mt-1 w-full bg-white border border-slate-200 rounded-xl shadow-lg max-h-64 overflow-y-auto" data-testid="rc-results">
+                          {rcResults.map(p => (
+                            <button key={p.id} onClick={() => rcAddItem(p)} className="w-full text-left px-4 py-2 hover:bg-emerald-50 flex items-center justify-between gap-3 border-b border-slate-50 last:border-0" data-testid={`rc-result-${p.id}`}>
+                              <div><p className="text-sm font-medium text-slate-800">{p.name}</p><p className="text-xs text-slate-400">{p.article} · остаток {p.stock}</p></div>
+                              <Plus className="w-4 h-4 text-emerald-500 flex-shrink-0" />
+                            </button>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Items */}
+                    {rcItems.length === 0 ? (
+                      <div className="text-center py-8 text-slate-400 border border-dashed border-slate-200 rounded-xl">Добавьте товары в документ через поиск выше</div>
+                    ) : (
+                      <div className="overflow-x-auto">
+                        <table className="w-full text-sm">
+                          <thead className="text-slate-500 text-xs uppercase"><tr><th className="text-left py-2">Товар</th><th className="text-right py-2 w-28">Кол-во</th><th className="text-right py-2 w-36">Закуп. цена ₽</th><th className="text-right py-2 w-28">Сумма</th><th className="w-10" /></tr></thead>
+                          <tbody>
+                            {rcItems.map((it, idx) => (
+                              <tr key={it.product_id} className="border-t border-slate-100" data-testid={`rc-item-${it.product_id}`}>
+                                <td className="py-2"><p className="font-medium text-slate-800">{it.name}</p><p className="text-xs text-slate-400">{it.article}</p></td>
+                                <td className="py-2 text-right"><Input type="number" min="1" value={it.quantity} onChange={(e) => rcUpdateItem(idx, 'quantity', e.target.value)} className="rounded-lg h-9 text-right" data-testid={`rc-qty-${it.product_id}`} /></td>
+                                <td className="py-2 text-right"><Input type="number" min="0" value={it.purchase_price} onChange={(e) => rcUpdateItem(idx, 'purchase_price', e.target.value)} className="rounded-lg h-9 text-right" data-testid={`rc-price-${it.product_id}`} /></td>
+                                <td className="py-2 text-right font-medium text-slate-700 whitespace-nowrap">{fmt((Number(it.quantity) || 0) * (Number(it.purchase_price) || 0))} ₽</td>
+                                <td className="py-2 text-right"><button onClick={() => rcRemoveItem(idx)} className="text-slate-300 hover:text-rose-500" data-testid={`rc-remove-${it.product_id}`}><Trash2 className="w-4 h-4" /></button></td>
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
+                      </div>
+                    )}
+
+                    <div className="flex items-center justify-between mt-4 pt-4 border-t border-slate-100">
+                      <div className="text-sm text-slate-500">Позиций: <b className="text-slate-800">{rcItems.length}</b> · Итого: <b className="text-emerald-600">{fmt(rcTotalCost)} ₽</b></div>
+                      <div className="flex gap-2">
+                        <Button variant="outline" onClick={() => { setShowReceiptForm(false); setRcItems([]); setRcSupplier(''); setRcComment(''); }} className="rounded-xl" data-testid="rc-cancel">Отмена</Button>
+                        <Button onClick={submitReceipt} disabled={submitting || rcItems.length === 0} className="bg-emerald-500 hover:bg-emerald-600 text-white rounded-xl" data-testid="rc-submit">{submitting ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <ArrowDownCircle className="w-4 h-4 mr-2" />}Провести приёмку</Button>
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                {/* Receipts list */}
+                <div className="space-y-2">
+                  {receipts.length === 0 ? (
+                    <div className="bg-white rounded-2xl p-10 text-center text-slate-400 shadow-sm">Документов приёмки пока нет</div>
+                  ) : receipts.map(r => (
+                    <button key={r.id} onClick={async () => { try { const res = await axios.get(`${API}/admin/warehouse/receipts/${r.id}`); setReceiptDetail(res.data); } catch { toast.error('Ошибка'); } }}
+                      className="w-full text-left bg-white rounded-xl p-3 shadow-sm flex items-center justify-between gap-3 flex-wrap hover:shadow-md transition-shadow" data-testid={`receipt-${r.id}`}>
+                      <div className="flex items-center gap-3">
+                        <div className="w-9 h-9 rounded-lg bg-emerald-50 text-emerald-600 flex items-center justify-center"><ArrowDownCircle className="w-5 h-5" /></div>
+                        <div>
+                          <p className="font-semibold text-slate-800 text-sm">{r.number}{r.supplier ? ` · ${r.supplier}` : ''}</p>
+                          <p className="text-xs text-slate-400">{String(r.date).slice(0, 10)} · {r.positions} поз. · {r.total_units} шт.{r.comment ? ` · ${r.comment}` : ''}</p>
+                        </div>
+                      </div>
+                      <p className="font-bold text-slate-700">{fmt(r.total_cost)} ₽</p>
+                    </button>
+                  ))}
+                </div>
+              </>
+            )}
+
+            {/* COGS / PROFIT TAB */}
+            {tab === 'cogs' && (
+              <>
+                <div className="flex items-end gap-3 mb-5 flex-wrap">
+                  <div><label className="block text-xs text-slate-500 mb-1">С</label><Input type="date" value={cogsStart} onChange={(e) => setCogsStart(e.target.value)} className="rounded-xl" data-testid="cogs-start" /></div>
+                  <div><label className="block text-xs text-slate-500 mb-1">По</label><Input type="date" value={cogsEnd} onChange={(e) => setCogsEnd(e.target.value)} className="rounded-xl" data-testid="cogs-end" /></div>
+                  <Button onClick={fetchCogs} className="bg-amber-500 hover:bg-amber-600 text-white rounded-xl" data-testid="cogs-apply">Применить</Button>
+                </div>
+                {cogs && (
+                  <>
+                    <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 mb-6">
+                      <div className="bg-white rounded-2xl p-4 shadow-sm" data-testid="cogs-revenue"><div className="flex items-center gap-2 mb-1"><TrendingUp className="w-4 h-4 text-emerald-500" /><p className="text-xs text-slate-500">Выручка (продажи)</p></div><p className="text-2xl font-bold text-slate-800">{fmt(cogs.total_revenue)} ₽</p><p className="text-xs text-slate-400">{cogs.total_units} шт · {cogs.sales_count} продаж</p></div>
+                      <div className="bg-white rounded-2xl p-4 shadow-sm" data-testid="cogs-cost"><div className="flex items-center gap-2 mb-1"><Coins className="w-4 h-4 text-rose-500" /><p className="text-xs text-slate-500">Себестоимость (COGS)</p></div><p className="text-2xl font-bold text-rose-600">{fmt(cogs.total_cogs)} ₽</p></div>
+                      <div className={`rounded-2xl p-4 shadow-sm text-white ${cogs.profit >= 0 ? 'bg-gradient-to-br from-emerald-500 to-teal-600' : 'bg-gradient-to-br from-rose-500 to-red-600'}`} data-testid="cogs-profit"><div className="flex items-center gap-2 mb-1"><Wallet className="w-4 h-4 opacity-80" /><p className="text-xs opacity-80">Валовая прибыль</p></div><p className="text-2xl font-bold">{fmt(cogs.profit)} ₽</p></div>
+                      <div className="bg-white rounded-2xl p-4 shadow-sm" data-testid="cogs-margin"><div className="flex items-center gap-2 mb-1"><TrendingUp className="w-4 h-4 text-indigo-500" /><p className="text-xs text-slate-500">Маржа</p></div><p className="text-2xl font-bold text-indigo-600">{cogs.margin_percent}%</p></div>
+                    </div>
+
+                    <h2 className="text-sm font-bold text-slate-700 mb-3">Прибыль по товарам</h2>
+                    <div className="bg-white rounded-2xl shadow-sm overflow-hidden">
+                      <div className="overflow-x-auto">
+                        <table className="w-full text-sm">
+                          <thead className="bg-slate-50 text-slate-500 text-xs uppercase"><tr>
+                            <th className="text-left px-4 py-3 font-medium">Товар</th>
+                            <th className="text-right px-4 py-3 font-medium">Продано</th>
+                            <th className="text-right px-4 py-3 font-medium">Выручка</th>
+                            <th className="text-right px-4 py-3 font-medium">Себест.</th>
+                            <th className="text-right px-4 py-3 font-medium">Прибыль</th>
+                            <th className="text-right px-4 py-3 font-medium">Маржа</th>
+                          </tr></thead>
+                          <tbody>
+                            {cogs.products.length === 0 ? (
+                              <tr><td colSpan={6} className="text-center py-10 text-slate-400">Нет продаж за период</td></tr>
+                            ) : cogs.products.map(p => (
+                              <tr key={p.product_id} className="border-t border-slate-100 hover:bg-slate-50" data-testid={`cogs-row-${p.product_id}`}>
+                                <td className="px-4 py-3"><p className="font-medium text-slate-800">{p.product_name}</p><p className="text-xs text-slate-400">{p.product_article}</p></td>
+                                <td className="px-4 py-3 text-right text-slate-700">{p.quantity}</td>
+                                <td className="px-4 py-3 text-right text-slate-700 whitespace-nowrap">{fmt(p.revenue)} ₽</td>
+                                <td className="px-4 py-3 text-right text-slate-500 whitespace-nowrap">{fmt(p.cogs)} ₽</td>
+                                <td className={`px-4 py-3 text-right font-semibold whitespace-nowrap ${p.profit >= 0 ? 'text-emerald-600' : 'text-rose-600'}`}>{fmt(p.profit)} ₽</td>
+                                <td className="px-4 py-3 text-right text-indigo-600">{p.margin_percent}%</td>
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
+                      </div>
+                    </div>
+                  </>
+                )}
               </>
             )}
 
@@ -437,6 +641,37 @@ export default function AdminWarehousePage({ embedded = false }) {
             </Button>
             <Button variant="outline" onClick={() => setFinModal(false)} className="w-full rounded-xl" data-testid="fin-cancel-btn">Отмена</Button>
           </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Receipt detail modal */}
+      <Dialog open={!!receiptDetail} onOpenChange={(o) => !o && setReceiptDetail(null)}>
+        <DialogContent className="rounded-2xl max-w-2xl max-h-[85vh] overflow-y-auto" data-testid="receipt-detail-modal">
+          <DialogTitle>Приёмка {receiptDetail?.number}</DialogTitle>
+          <DialogDescription>{receiptDetail ? `${String(receiptDetail.date).slice(0, 10)}${receiptDetail.supplier ? ` · ${receiptDetail.supplier}` : ''}${receiptDetail.comment ? ` · ${receiptDetail.comment}` : ''}` : ''}</DialogDescription>
+          {receiptDetail && (
+            <div className="mt-2">
+              <div className="overflow-x-auto">
+                <table className="w-full text-sm">
+                  <thead className="text-slate-500 text-xs uppercase"><tr><th className="text-left py-2">Товар</th><th className="text-right py-2">Кол-во</th><th className="text-right py-2">Закуп.</th><th className="text-right py-2">Сумма</th></tr></thead>
+                  <tbody>
+                    {(receiptDetail.items || []).map((it, i) => (
+                      <tr key={i} className="border-t border-slate-100">
+                        <td className="py-2"><p className="font-medium text-slate-800">{it.product_name}</p><p className="text-xs text-slate-400">{it.product_article} · {it.stock_before} → {it.stock_after}</p></td>
+                        <td className="py-2 text-right text-slate-700">{it.quantity}</td>
+                        <td className="py-2 text-right text-slate-500 whitespace-nowrap">{fmt(it.unit_cost)} ₽</td>
+                        <td className="py-2 text-right font-medium text-slate-700 whitespace-nowrap">{fmt(it.line_cost)} ₽</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+              <div className="flex items-center justify-between mt-4 pt-4 border-t border-slate-100 text-sm">
+                <span className="text-slate-500">Позиций: <b className="text-slate-800">{receiptDetail.positions}</b> · Единиц: <b className="text-slate-800">{receiptDetail.total_units}</b></span>
+                <span className="text-slate-500">Итого: <b className="text-emerald-600">{fmt(receiptDetail.total_cost)} ₽</b></span>
+              </div>
+            </div>
+          )}
         </DialogContent>
       </Dialog>
     </div>

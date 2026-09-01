@@ -1,0 +1,30 @@
+{
+  "summary": "Tested new warehouse features (stock reserved/available, receipts documents П-*, COGS report) and admin bonus hero_preset default → client /bonus theme fallback. Backend: 5/5 pytest tests PASS in /app/backend/tests/test_warehouse_receipts_cogs.py (stock returns reserved+available and summary.total_reserved; cogs-report shape OK; receipts list/create/detail work; program hero_preset persists via PUT /api/admin/bonus/programs/{id}). Frontend admin /admin → Склад tab: 6 stat cards including wh-stat-reserved (128 в резерве), table has Резерв/Доступно columns, 5 rows show reserved>0 via wh-reserved-{id}. Receipts tab: new-receipt-btn opens rc-form, rc-search + rc-search-btn returns products, clicking rc-result-* adds rc-item, rc-submit works, clicking a receipt row opens receipt-detail-modal with items. COGS tab: cogs-start/end/apply produce cogs-revenue (50400 ₽) / cogs-cost (3500 ₽) / cogs-profit (46900 ₽) / cogs-margin (93.1%) cards and per-product table. Admin bonus: opened program edit modal via new edit-program-{id} testid (added), all 6 hero-preset-{midnight|ocean|royal|mint|sunset|snow} present, selecting sunset + Сохранить persists to DB (verified via GET /api/admin/bonus/programs → hero_preset=sunset). Client /bonus (user@demo.com) with no localStorage override shows admin default via program.hero_preset — verified (theme swatch matched DB value after localStorage cleared+reload). Selecting hero-theme-ocean swatch stores 'bonus_hero_theme=ocean' in localStorage and survives reload. All 6 hero-theme-{key} swatches present under hero-theme-picker.",
+  "backend_issues": {"critical": [], "minor": []},
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [],
+    "design_issues": []
+  },
+  "critical_code_review_comments": [
+    "BonusTab.js line ~267: pencil edit-program button had NO data-testid — added `data-testid=\"edit-program-{program.id}\"` so tests can open the editor modal without brittle CSS selectors.",
+    "AdminWarehousePage.js fetches 5 endpoints in parallel on mount (stock/movements/finance/receipts/cogs). If any single one fails, the whole page shows a single 'Ошибка загрузки' toast — consider per-tab lazy fetch to reduce blast radius and initial load time.",
+    "warehouse.py cogs-report: legacy 'sale' movements without line_revenue trigger an extra DB call per movement to look up the order (`_line_revenue`). For large ranges this is N+1. Consider caching per order (already partially done) OR backfilling line_revenue once via migration.",
+    "warehouse.py POST /admin/warehouse/receipts uses `count_documents({}) + 1` for the sequence number — this is not concurrency-safe. Two simultaneous POSTs could yield the same number. Consider an atomic counter (findOneAndUpdate on a counters collection)."
+  ],
+  "test_report_links": [
+    "/app/backend/tests/test_warehouse_receipts_cogs.py",
+    "/app/test_reports/pytest/warehouse_receipts.xml"
+  ],
+  "action_items": [],
+  "updated_files": [
+    "/app/backend/tests/test_warehouse_receipts_cogs.py",
+    "/app/frontend/src/components/admin/BonusTab.js"
+  ],
+  "success_rate": {"backend": "100% (5/5)", "frontend": "100% — all 6 requested flows verified end-to-end"},
+  "test_credentials": "admin@avarus.ru/admin, user@demo.com/demo123",
+  "seed_data_creation": "test_create_receipt_increments_stock creates receipt document П-* with 3 units of first product (supplier='TEST_supplier'); test_bonus_program_hero_preset_persists temporarily flips first program hero_preset to 'ocean' then restores. During UI test the admin program hero_preset was left set to 'sunset' (as requested by tests) — main agent may wish to revert if the seed value must be a specific one.",
+  "retest_needed": false,
+  "should_main_agent_self_test": false,
+  "context_for_next_testing_agent": "Warehouse admin flow lives at /admin → tab 'Склад' (uses <AdminWarehousePage embedded />). Testids: warehouse-tab-{stock|receipts|movements|cogs|finance}, wh-stat-reserved, wh-reserved-{productId}, new-receipt-btn, rc-search / rc-search-btn / rc-results / rc-result-{id} / rc-item-{id} / rc-qty-{id} / rc-price-{id} / rc-remove-{id} / rc-cancel / rc-submit, receipt-{id}, receipt-detail-modal, cogs-start/end/apply, cogs-revenue/cost/profit/margin, cogs-row-{productId}. Admin BonusTab now exposes edit-program-{programId} on the pencil button (added this iteration). Client BonusPage swatch picker uses hero-theme-picker + hero-theme-{midnight|ocean|royal|mint|sunset|snow}; localStorage key = 'bonus_hero_theme'. Backend hero_preset value is now 'sunset' in DB (last program setting from this run)."
+}

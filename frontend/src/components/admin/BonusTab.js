@@ -45,12 +45,12 @@ export default function BonusTab(props) {
   const bonusHeroFileRef = useRef(null);
 
   const HERO_PRESETS = [
-    { id: 'midnight', name: 'Midnight', css: 'linear-gradient(160deg,#1a2233,#0a0e17)' },
-    { id: 'graphite', name: 'Graphite', css: 'linear-gradient(160deg,#2a2a2c,#0a0a0b)' },
-    { id: 'ocean', name: 'Ocean', css: 'linear-gradient(160deg,#075e6b,#04121a)' },
-    { id: 'royal', name: 'Royal', css: 'linear-gradient(160deg,#3b2f8f,#0b1020)' },
-    { id: 'sunset', name: 'Sunset', css: 'linear-gradient(160deg,#7a1f1f,#0a0e17)' },
-    { id: 'forest', name: 'Forest', css: 'linear-gradient(160deg,#1c4a2e,#08120c)' },
+    { id: 'midnight', name: 'Тёмный', light: false, css: 'linear-gradient(160deg,#0f1729,#070b14)' },
+    { id: 'ocean', name: 'Океан', light: false, css: 'linear-gradient(160deg,#04303a,#04121a)' },
+    { id: 'royal', name: 'Роял', light: false, css: 'linear-gradient(160deg,#221a4e,#0b1020)' },
+    { id: 'mint', name: 'Мятный', light: true, css: 'linear-gradient(135deg,#ecfeff,#a7f3d0,#5eead4)' },
+    { id: 'sunset', name: 'Оранж', light: true, css: 'linear-gradient(135deg,#ffe8cc,#fcb24e,#f7922e)' },
+    { id: 'snow', name: 'Светлый', light: true, css: 'linear-gradient(135deg,#ffffff,#f1f5f9,#e2e8f0)' },
   ];
 
   const applyIndexation = async () => {
@@ -271,6 +271,7 @@ export default function BonusTab(props) {
                               setEditingProgram({...program});
                               setIsNewProgram(false);
                             }}
+                            data-testid={`edit-program-${program.id}`}
                           >
                             <Pencil className="w-4 h-4" />
                           </button>
@@ -716,8 +717,8 @@ export default function BonusTab(props) {
 
                   {/* Hero cover (premium header) */}
                   <div className="border-t pt-4">
-                    <Label className="text-xs font-bold uppercase text-zinc-500">Обложка премиум-шапки (Hero)</Label>
-                    <p className="text-[11px] text-zinc-400 mt-0.5 mb-3">Фон верхнего блока страницы бонусов с балансом и уровнями</p>
+                    <Label className="text-xs font-bold uppercase text-zinc-500">Тема оформления блока (по умолчанию для всех клиентов)</Label>
+                    <p className="text-[11px] text-zinc-400 mt-0.5 mb-3">Фон верхнего блока страницы бонусов с балансом и уровнями. Клиент может выбрать свою тему, но по умолчанию показывается эта.</p>
                     <div className="grid grid-cols-3 sm:grid-cols-6 gap-2">
                       {HERO_PRESETS.map((p) => {
                         const active = (editingProgram.hero_preset || 'midnight') === p.id;
@@ -730,7 +731,7 @@ export default function BonusTab(props) {
                             style={{ background: p.css }}
                             data-testid={`hero-preset-${p.id}`}
                           >
-                            <span className="absolute bottom-1 left-0 right-0 text-center text-[10px] font-semibold text-white/90">{p.name}</span>
+                            <span className={`absolute bottom-1 left-0 right-0 text-center text-[10px] font-semibold ${p.light ? 'text-zinc-700' : 'text-white/90'}`}>{p.name}</span>
                             {active && <span className="absolute top-1 right-1 w-4 h-4 rounded-full bg-orange-500 flex items-center justify-center text-white text-[9px]">✓</span>}
                           </button>
                         );
@@ -769,18 +770,23 @@ export default function BonusTab(props) {
                     </div>
 
                     {/* Live preview */}
-                    <div className="mt-3 relative h-24 rounded-2xl overflow-hidden ring-1 ring-zinc-200 flex items-center px-5" style={{ background: (HERO_PRESETS.find(h => h.id === (editingProgram.hero_preset || 'midnight')) || HERO_PRESETS[0]).css }}>
-                      {editingProgram.hero_image_url && (
-                        <>
-                          <div className="absolute inset-0 bg-cover bg-center" style={{ backgroundImage: `url(${editingProgram.hero_image_url})`, opacity: 0.5 }} />
-                          <div className="absolute inset-0" style={{ background: 'linear-gradient(180deg, rgba(5,8,15,0.35), rgba(5,8,15,0.85))' }} />
-                        </>
-                      )}
-                      <div className="relative">
-                        <p className="text-[10px] uppercase tracking-widest text-white/50">Доступно баллов</p>
-                        <p className="text-2xl font-black bg-gradient-to-br from-orange-300 via-amber-200 to-orange-400 bg-clip-text text-transparent">1 250</p>
-                      </div>
-                    </div>
+                    {(() => {
+                      const ap = HERO_PRESETS.find(h => h.id === (editingProgram.hero_preset || 'midnight')) || HERO_PRESETS[0];
+                      return (
+                        <div className="mt-3 relative h-24 rounded-2xl overflow-hidden ring-1 ring-zinc-200 flex items-center px-5" style={{ background: ap.css }}>
+                          {editingProgram.hero_image_url && (
+                            <>
+                              <div className="absolute inset-0 bg-cover bg-center" style={{ backgroundImage: `url(${editingProgram.hero_image_url})`, opacity: ap.light ? 0.22 : 0.5 }} />
+                              <div className="absolute inset-0" style={{ background: ap.light ? 'linear-gradient(180deg, rgba(255,255,255,0.35), rgba(255,255,255,0.8))' : 'linear-gradient(180deg, rgba(5,8,15,0.35), rgba(5,8,15,0.85))' }} />
+                            </>
+                          )}
+                          <div className="relative">
+                            <p className={`text-[10px] uppercase tracking-widest ${ap.light ? 'text-zinc-500' : 'text-white/50'}`}>Доступно баллов</p>
+                            <p className={`text-2xl font-black bg-clip-text text-transparent ${ap.light ? 'bg-gradient-to-br from-orange-600 to-amber-600' : 'bg-gradient-to-br from-orange-300 via-amber-200 to-orange-400'}`}>1 250</p>
+                          </div>
+                        </div>
+                      );
+                    })()}
                   </div>
 
                   {/* Prizes Section */}

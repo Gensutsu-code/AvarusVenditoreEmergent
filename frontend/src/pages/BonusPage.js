@@ -96,7 +96,7 @@ export default function BonusPage() {
   const [selectedOptions, setSelectedOptions] = useState({}); // { group_id: choice_id }
   const [pointsGain, setPointsGain] = useState(null); // { programId, amount }
   const [heroTheme, setHeroTheme] = useState(() => {
-    try { return localStorage.getItem('bonus_hero_theme') || 'midnight'; } catch { return 'midnight'; }
+    try { return localStorage.getItem('bonus_hero_theme') || null; } catch { return null; }
   });
 
   const changeHeroTheme = (key) => {
@@ -272,7 +272,8 @@ export default function BonusPage() {
                 ? sortedLevels[currentLevelIndex + 1] 
                 : null;
               const amountToNextLevel = nextLevel ? Math.max(0, nextLevel.min_points - yearlyTotal) : 0;
-              const hero = HERO_THEMES[heroTheme] || HERO_THEMES.midnight;
+              const hero = HERO_THEMES[heroTheme] || HERO_THEMES[program.hero_preset] || HERO_THEMES.midnight;
+              const heroKey = HERO_THEMES[heroTheme] ? heroTheme : (HERO_THEMES[program.hero_preset] ? program.hero_preset : 'midnight');
               const light = hero.light;
               const tStrong = light ? 'text-zinc-900' : 'text-white';
               const tMuted = light ? 'text-zinc-600' : 'text-white/70';
@@ -341,8 +342,8 @@ export default function BonusPage() {
                                 title={HERO_THEMES[key].label}
                                 aria-label={HERO_THEMES[key].label}
                                 data-testid={`hero-theme-${key}`}
-                                className={`w-4 h-4 rounded-full transition-transform hover:scale-110 ${heroTheme === key ? 'ring-2 ring-offset-1 scale-110' : ''}`}
-                                style={{ background: HERO_THEMES[key].swatch, boxShadow: heroTheme === key ? `0 0 0 2px ${hero.accent}` : 'none' }}
+                                className={`w-4 h-4 rounded-full transition-transform hover:scale-110 ${heroKey === key ? 'ring-2 ring-offset-1 scale-110' : ''}`}
+                                style={{ background: HERO_THEMES[key].swatch, boxShadow: heroKey === key ? `0 0 0 2px ${hero.accent}` : 'none' }}
                               />
                             ))}
                           </div>
