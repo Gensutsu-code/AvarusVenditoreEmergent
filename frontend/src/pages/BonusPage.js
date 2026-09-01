@@ -258,6 +258,25 @@ export default function BonusPage() {
                 : null;
               const amountToNextLevel = nextLevel ? Math.max(0, nextLevel.min_points - yearlyTotal) : 0;
               const hero = HERO_PRESETS[program.hero_preset] || HERO_PRESETS.midnight;
+              // Roadmap fill aligned to EVENLY-SPACED nodes (not raw value/maxPoints),
+              // so the line reaches exactly the achieved node + fraction toward the next.
+              const lvlCount = sortedLevels.length;
+              const achievedCount = sortedLevels.filter(l => yearlyTotal >= l.min_points).length;
+              let roadmapFillPct = 0;
+              if (lvlCount > 1) {
+                if (achievedCount >= lvlCount) {
+                  roadmapFillPct = 100;
+                } else if (achievedCount >= 1) {
+                  const curIdx = achievedCount - 1;
+                  const cur = sortedLevels[curIdx];
+                  const nxt = sortedLevels[curIdx + 1];
+                  const span = (nxt.min_points - cur.min_points) || 1;
+                  const frac = Math.min(1, Math.max(0, (yearlyTotal - cur.min_points) / span));
+                  roadmapFillPct = ((curIdx + frac) / (lvlCount - 1)) * 100;
+                }
+              } else {
+                roadmapFillPct = achievedCount >= 1 ? 100 : 0;
+              }
 
               return (
                 <div key={program.id} className="rounded-[28px] border border-zinc-200/70 bg-white shadow-sm overflow-hidden">
@@ -401,7 +420,7 @@ export default function BonusPage() {
                           <div className="relative pt-1">
                             <div className="absolute left-5 right-5 top-6 h-1 bg-white/10 rounded-full overflow-hidden">
                               <motion.div className="h-full rounded-full bg-gradient-to-r from-orange-400 to-amber-300"
-                                initial={{ width: 0 }} animate={{ width: `${Math.min(100, (yearlyTotal / (sortedLevels[sortedLevels.length - 1]?.min_points || 100000)) * 100)}%` }}
+                                initial={{ width: 0 }} animate={{ width: `${roadmapFillPct}%` }}
                                 transition={{ duration: 1, ease: 'easeOut', delay: 0.3 }} />
                             </div>
                             <div className="relative flex justify-between">

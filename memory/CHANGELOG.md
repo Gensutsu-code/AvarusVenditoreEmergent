@@ -1,5 +1,9 @@
 # Changelog
 
+## 2026-06-28 — Fix: bonus levels roadmap fill not aligned to nodes
+- `BonusPage.js`: the "Путь уровней" track fill was `yearlyTotal / maxLevelPoints`, but nodes are spaced EVENLY (`justify-between`), so with uneven level thresholds the fill line didn't line up with achieved nodes. New `roadmapFillPct` is computed from node index positions: fill reaches exactly the highest achieved node + the fraction of progress toward the next node (`((achievedIdx + frac) / (levels-1)) * 100`), 100% when all achieved. The "до следующего уровня" bar already used the correct `level_percentage` (progress between current and next level).
+
+
 ## 2026-06-28 — Checkout reward choice: bonus points vs extra Ozon certificate
 - **Checkout toggle** (`CartPage.js`): «Как начислить вознаграждение за заказ» with two cards — «Бонусные баллы» (default) and «К Ozon-сертификату». Sends `reward_choice` ('points'|'ozon') in all order paths (main/mixed/crypto). Live preview shows expected points and the equivalent «+N ₽ к сертификату». Header "+N баллов" popup fires only when 'points' is chosen.
 - **Backend** (`orders.py` + `bonus.py` + `models.py`): `OrderCreate.reward_choice`. On placement, if 'ozon': expected cashback points are computed (`calc_points_for_eligible`), floored DOWN to a multiple of 500, converted at **2 points = 1 ₽**, and added ON TOP of the base Ozon certificate (`ozon_certificate_bonus`, stored on order). `accrue_order_bonus` skips point accrual when `reward_choice=='ozon'` so the reward isn't granted twice.
