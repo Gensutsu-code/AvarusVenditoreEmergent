@@ -3,7 +3,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import { 
   Package, ChevronDown, ChevronUp, TrendingUp, ShoppingBag, 
-  Wallet, BarChart3, Star, CalendarDays, AlertTriangle, Check, XCircle, CreditCard, X, RefreshCw, Clock
+  Wallet, BarChart3, Star, CalendarDays, AlertTriangle, Check, XCircle, CreditCard, X, RefreshCw, Clock, Gift
 } from 'lucide-react';
 import { Button } from '../components/ui/button';
 import { useAuth } from '../context/AuthContext';
@@ -756,7 +756,25 @@ export default function OrdersPage() {
                               </div>
                             </div>
 
-                            {/* Payment due countdown (deferred card/crypto) */}
+                            {/* Reward for this order: bonus points or extra Ozon certificate */}
+                            {(order.reward_choice === 'ozon'
+                              ? (order.ozon_certificate_bonus > 0)
+                              : (order.reward_points > 0)) && (
+                              <div className="mt-2 flex items-center gap-2" data-testid={`order-reward-${order.id}`}>
+                                {order.reward_choice === 'ozon' ? (
+                                  <span className="inline-flex items-center gap-1.5 text-xs font-bold px-2.5 py-1 rounded-full bg-indigo-50 text-indigo-700 border border-indigo-200">
+                                    <Gift className="w-3.5 h-3.5" />
+                                    +{formatPrice(order.ozon_certificate_bonus)} ₽ к Ozon-сертификату
+                                  </span>
+                                ) : (
+                                  <span className="inline-flex items-center gap-1.5 text-xs font-bold px-2.5 py-1 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200">
+                                    <Gift className="w-3.5 h-3.5" />
+                                    +{formatPrice(order.reward_points)} бонусных баллов
+                                  </span>
+                                )}
+                              </div>
+                            )}
+
                             {order.payment_due_date && order.payment_status !== 'paid' && !['cancelled', 'completed', 'delivered'].includes(order.status) && !order.card_receipt_url && (() => {
                               const cd = formatCountdown(order.payment_due_date);
                               const isCrypto = order.payment_method === 'crypto';

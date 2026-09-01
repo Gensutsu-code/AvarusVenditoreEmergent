@@ -310,6 +310,9 @@ class OrderResponse(BaseModel):
     payment_parts: Optional[List[dict]] = None
     ozon_certificate: Optional[float] = None
     ozon_certificate_issued: Optional[bool] = None
+    ozon_certificate_bonus: Optional[float] = None
+    reward_choice: Optional[str] = None
+    reward_points: Optional[int] = None
     individual_discount_percent: Optional[float] = None
     individual_discount_amount: Optional[float] = None
     cart_discount_percent: Optional[float] = None

@@ -632,6 +632,7 @@ export default function BonusPage() {
                                       : 'border-zinc-200 bg-white'
                                 }`}
                                 data-testid={`prize-card-${prize.id}`}
+                                title={prize.name + (prize.description ? ' — ' + prize.description : '') + `\n${prize.points_cost} баллов` + (hasOptions ? ' + параметры' : '')}
                               >
                                 <div className="relative w-full aspect-square bg-zinc-50 p-2 flex items-center justify-center">
                                   {prize.image_url ? (

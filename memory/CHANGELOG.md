@@ -1,5 +1,12 @@
 # Changelog
 
+## 2026-06-28 — Reward display in orders, certificate threshold, prize hover
+- **«Мои заказы»** (`OrdersPage.js` + `OrderResponse` + `orders.py`): each order now stores/returns `reward_choice`, `reward_points`, `ozon_certificate_bonus`. In the expanded order card a badge shows the chosen reward — green «+N бонусных баллов» or indigo «+N ₽ к Ozon-сертификату».
+- **Certificate threshold** (`CartPage.js`): the «К Ozon-сертификату» option is hidden when expected points < 500 (rounds down to 0 anyway); a hint «доступен от 500 баллов за заказ» is shown and rewardChoice auto-resets to 'points'.
+- **Prize hover** (`BonusPage.js`): compact grid cards carry a `title` (native tooltip) with full name + description + cost (shadcn Tooltip was reverted — it triggered an eslint parser conflict).
+- Fix: a missing `</div>` in the OrdersPage reward block caused a JSX parse error (was misattributed to BonusPage due to a shared error line); corrected.
+
+
 ## 2026-06-28 — Bonus prize grid: 6 per row (compact cards)
 - `BonusPage.js`: grid `grid-cols-2 sm:grid-cols-3 lg:grid-cols-4` → `grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6`, tighter gap; reduced card padding, title/price font sizes and button height so 6 prizes fit neatly in one row. Verified via screenshot.
 

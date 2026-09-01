@@ -183,6 +183,13 @@ export default function CartPage() {
     return () => clearTimeout(t);
   }, [goodsAfterIndividual, cart.items.length]);
 
+  // Reset reward choice to points if the Ozon-certificate option is no longer available (< 500 pts)
+  useEffect(() => {
+    if ((bonusPreview?.total_points || 0) < 500 && rewardChoice === 'ozon') {
+      setRewardChoice('points');
+    }
+  }, [bonusPreview, rewardChoice]);
+
   const isMethodEnabled = (m) => paymentSettings[`${m}_enabled`] !== false;
   const canPayWithBalance = prepaymentSettings.prepayment_enabled && userBalance >= finalTotal;
   const creditApproved = creditInfo && creditInfo.status === 'approved';
@@ -406,10 +413,11 @@ export default function CartPage() {
           const pts = bonusPreview.total_points || 0;
           const roundedPts = Math.floor(pts / 500) * 500;
           const certBonus = Math.floor(roundedPts / 2);
+          const showOzon = pts >= 500;
           return (
             <div className="mt-3 rounded-2xl border border-slate-200 bg-white p-4" data-testid="reward-choice">
               <p className="text-xs font-bold uppercase tracking-wide text-slate-400 mb-3">Как начислить вознаграждение за заказ</p>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <div className={`grid grid-cols-1 ${showOzon ? 'sm:grid-cols-2' : ''} gap-3`}>
                 <button
                   type="button"
                   onClick={() => setRewardChoice('points')}
@@ -423,20 +431,25 @@ export default function CartPage() {
                   <p className="text-lg font-black text-emerald-600 mt-1 tabular-nums">+{formatPrice(pts)} <span className="text-xs font-medium text-slate-400">баллов</span></p>
                   <p className="text-[11px] text-slate-400 mt-0.5">Начислим на бонусный счёт</p>
                 </button>
-                <button
-                  type="button"
-                  onClick={() => setRewardChoice('ozon')}
-                  className={`text-left rounded-xl border-2 p-3 transition-all ${rewardChoice === 'ozon' ? 'border-indigo-500 bg-indigo-50' : 'border-slate-200 hover:border-slate-300'}`}
-                  data-testid="reward-choice-ozon"
-                >
-                  <div className="flex items-center justify-between">
-                    <span className="text-sm font-bold text-slate-800">К Ozon-сертификату</span>
-                    {rewardChoice === 'ozon' && <span className="w-5 h-5 rounded-full bg-indigo-500 text-white text-[10px] flex items-center justify-center">✓</span>}
-                  </div>
-                  <p className="text-lg font-black text-indigo-600 mt-1 tabular-nums">+{formatPrice(certBonus)} <span className="text-xs font-medium text-slate-400">₽ к сертификату</span></p>
-                  <p className="text-[11px] text-slate-400 mt-0.5">2 балла = 1 ₽, округление вниз до 500 баллов</p>
-                </button>
+                {showOzon && (
+                  <button
+                    type="button"
+                    onClick={() => setRewardChoice('ozon')}
+                    className={`text-left rounded-xl border-2 p-3 transition-all ${rewardChoice === 'ozon' ? 'border-indigo-500 bg-indigo-50' : 'border-slate-200 hover:border-slate-300'}`}
+                    data-testid="reward-choice-ozon"
+                  >
+                    <div className="flex items-center justify-between">
+                      <span className="text-sm font-bold text-slate-800">К Ozon-сертификату</span>
+                      {rewardChoice === 'ozon' && <span className="w-5 h-5 rounded-full bg-indigo-500 text-white text-[10px] flex items-center justify-center">✓</span>}
+                    </div>
+                    <p className="text-lg font-black text-indigo-600 mt-1 tabular-nums">+{formatPrice(certBonus)} <span className="text-xs font-medium text-slate-400">₽ к сертификату</span></p>
+                    <p className="text-[11px] text-slate-400 mt-0.5">2 балла = 1 ₽, округление вниз до 500 баллов</p>
+                  </button>
+                )}
               </div>
+              {!showOzon && (
+                <p className="text-[11px] text-slate-400 mt-2">Вариант «К Ozon-сертификату» доступен от 500 баллов за заказ.</p>
+              )}
             </div>
           );
         })()}
