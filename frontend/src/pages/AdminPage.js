@@ -650,8 +650,8 @@ export default function AdminPage() {
         toast.success('Пользователь создан');
       } else {
         // Send only editable fields
-        const { email, name, phone, address, address_comment, role, customer_status, individual_discount, password } = editingUser;
-        const payload = { email, name, phone, address, address_comment, role, customer_status, individual_discount };
+        const { email, name, phone, address, address_comment, role, customer_status, individual_discount, delivery_cost, deferral_days, credit_limit, password } = editingUser;
+        const payload = { email, name, phone, address, address_comment, role, customer_status, individual_discount, delivery_cost, deferral_days, credit_limit };
         if (password) payload.password = password;
         const res = await axios.put(`${API}/admin/users/${editingUser.id}`, payload);
         setUsers(users.map(u => u.id === editingUser.id ? { ...u, ...res.data } : u));
@@ -2985,6 +2985,41 @@ export default function AdminPage() {
                     className="mt-1.5 border-slate-200 focus:border-amber-500 focus:ring-amber-500"
                     data-testid="product-purchase-price-input"
                   />
+                  <Label className="text-xs font-semibold uppercase text-rose-600 mt-2 block">Минимальная цена (пол)</Label>
+                  <Input
+                    type="number"
+                    value={editingProduct.min_price ?? ''}
+                    placeholder={`по умолчанию ${Math.round((editingProduct.purchase_price || 0) * 1.3)} (закупка+30%)`}
+                    onChange={(e) => setEditingProduct({ ...editingProduct, min_price: e.target.value === '' ? null : (parseFloat(e.target.value) || 0) })}
+                    className="mt-1.5 border-slate-200 focus:border-rose-500 focus:ring-rose-500"
+                    data-testid="product-min-price-input"
+                  />
+                  <p className="text-[11px] text-slate-400 mt-1">Ниже этой цены товар не продаётся даже со скидкой на корзину</p>
+                </div>
+                <div className="sm:col-span-2">
+                  <div className="flex items-center justify-between rounded-lg bg-orange-50 border border-orange-200 px-3 py-2.5">
+                    <div className="flex items-center gap-2">
+                      <Tag className="w-4 h-4 text-orange-500" />
+                      <span className="text-sm font-semibold text-slate-700">Уценённый товар</span>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => setEditingProduct({ ...editingProduct, is_markdown: !editingProduct.is_markdown })}
+                      className={`relative inline-flex h-7 w-14 items-center rounded-full transition-colors ${editingProduct.is_markdown ? 'bg-orange-500' : 'bg-slate-300'}`}
+                      data-testid="product-markdown-toggle"
+                    >
+                      <span className={`inline-block h-5 w-5 transform rounded-full bg-white shadow transition-transform ${editingProduct.is_markdown ? 'translate-x-8' : 'translate-x-1'}`} />
+                    </button>
+                  </div>
+                  {editingProduct.is_markdown && (
+                    <Input
+                      value={editingProduct.markdown_comment || ''}
+                      onChange={(e) => setEditingProduct({ ...editingProduct, markdown_comment: e.target.value })}
+                      placeholder="Комментарий к уценке (напр. «вскрыта упаковка», «витринный образец»)"
+                      className="mt-2 border-orange-200 focus:border-orange-500 focus:ring-orange-500"
+                      data-testid="product-markdown-comment-input"
+                    />
+                  )}
                 </div>
                 <div className="sm:col-span-2">
                   <Label className="text-xs font-semibold uppercase text-teal-600">Наличие и доставка</Label>
@@ -3751,6 +3786,49 @@ export default function AdminPage() {
                   <option value="user">Пользователь</option>
                   <option value="admin">Администратор</option>
                 </select>
+              </div>
+
+              <div className="pt-3 mt-1 border-t border-zinc-200">
+                <p className="text-xs font-bold uppercase text-teal-600 mb-2">Индивидуальные условия (выше общих настроек сайта)</p>
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <Label className="text-[11px] font-semibold text-zinc-500">Статус клиента</Label>
+                    <select
+                      value={editingUser.customer_status || 'retail'}
+                      onChange={(e) => setEditingUser({ ...editingUser, customer_status: e.target.value })}
+                      className="mt-1 w-full h-10 px-3 border border-zinc-200 bg-white rounded-md text-sm"
+                      data-testid="user-status-select"
+                    >
+                      <option value="retail">Розница</option>
+                      <option value="opt">Опт</option>
+                      <option value="b2b">B2B</option>
+                    </select>
+                  </div>
+                  <div>
+                    <Label className="text-[11px] font-semibold text-zinc-500">Персональная скидка, %</Label>
+                    <Input type="number" min="0" max="100" value={editingUser.individual_discount ?? ''} placeholder="0"
+                      onChange={(e) => setEditingUser({ ...editingUser, individual_discount: e.target.value === '' ? 0 : parseFloat(e.target.value) || 0 })}
+                      className="mt-1" data-testid="user-discount-input" />
+                  </div>
+                  <div>
+                    <Label className="text-[11px] font-semibold text-zinc-500">Стоимость доставки, ₽</Label>
+                    <Input type="number" min="0" value={editingUser.delivery_cost ?? ''} placeholder="как на сайте"
+                      onChange={(e) => setEditingUser({ ...editingUser, delivery_cost: e.target.value === '' ? null : parseFloat(e.target.value) || 0 })}
+                      className="mt-1" data-testid="user-delivery-cost-input" />
+                  </div>
+                  <div>
+                    <Label className="text-[11px] font-semibold text-zinc-500">Отсрочка платежа, дней</Label>
+                    <Input type="number" min="0" value={editingUser.deferral_days ?? ''} placeholder="0"
+                      onChange={(e) => setEditingUser({ ...editingUser, deferral_days: e.target.value === '' ? null : parseInt(e.target.value) || 0 })}
+                      className="mt-1" data-testid="user-deferral-input" />
+                  </div>
+                  <div className="col-span-2">
+                    <Label className="text-[11px] font-semibold text-zinc-500">Лимит отгрузки в долг, ₽</Label>
+                    <Input type="number" min="0" value={editingUser.credit_limit ?? ''} placeholder="0"
+                      onChange={(e) => setEditingUser({ ...editingUser, credit_limit: e.target.value === '' ? null : parseFloat(e.target.value) || 0 })}
+                      className="mt-1" data-testid="user-credit-limit-input" />
+                  </div>
+                </div>
               </div>
 
               <div className="flex justify-end gap-2 pt-4">

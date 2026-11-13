@@ -513,6 +513,12 @@ async def create_product(data: ProductCreate, user=Depends(get_current_user)):
     if payload.get("promo_allocated_stock") is not None and payload.get("promo_remaining_stock") is None:
         payload["promo_remaining_stock"] = payload["promo_allocated_stock"]
 
+    # Floor price: default to purchase_price + 30% if not provided
+    if payload.get("min_price") in (None, 0):
+        pp = payload.get("purchase_price") or 0
+        if pp:
+            payload["min_price"] = round(pp * 1.3, 2)
+
     product = {
         "id": product_id,
         "created_at": now.isoformat(),

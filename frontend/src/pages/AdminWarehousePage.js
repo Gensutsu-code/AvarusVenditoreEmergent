@@ -166,7 +166,7 @@ export default function AdminWarehousePage({ embedded = false }) {
   };
   const rcAddItem = (p) => {
     if (rcItems.some(i => i.product_id === p.id)) { toast.info('Товар уже добавлен'); return; }
-    setRcItems(prev => [...prev, { product_id: p.id, name: p.name, article: p.article, quantity: 1, purchase_price: p.purchase_price || 0 }]);
+    setRcItems(prev => [...prev, { product_id: p.id, name: p.name, article: p.article, quantity: 1, purchase_price: p.purchase_price || 0, min_price: p.min_price ?? '' }]);
     setRcSearch(''); setRcResults([]);
   };
   const rcUpdateItem = (idx, field, val) => setRcItems(prev => prev.map((it, i) => i === idx ? { ...it, [field]: val } : it));
@@ -180,7 +180,7 @@ export default function AdminWarehousePage({ embedded = false }) {
     try {
       await axios.post(`${API}/admin/warehouse/receipts`, {
         supplier: rcSupplier, comment: rcComment, date: `${rcDate}T12:00:00+00:00`, warehouse_id: rcWarehouse,
-        items: valid.map(it => ({ product_id: it.product_id, quantity: Number(it.quantity), purchase_price: it.purchase_price === '' ? null : Number(it.purchase_price) })),
+        items: valid.map(it => ({ product_id: it.product_id, quantity: Number(it.quantity), purchase_price: it.purchase_price === '' ? null : Number(it.purchase_price), min_price: it.min_price === '' || it.min_price === null || it.min_price === undefined ? null : Number(it.min_price) })),
       });
       toast.success('Приёмка оформлена');
       setShowReceiptForm(false);
@@ -564,13 +564,14 @@ export default function AdminWarehousePage({ embedded = false }) {
                     ) : (
                       <div className="overflow-x-auto">
                         <table className="w-full text-sm">
-                          <thead className="text-slate-500 text-xs uppercase"><tr><th className="text-left py-2">Товар</th><th className="text-right py-2 w-28">Кол-во</th><th className="text-right py-2 w-36">Закуп. цена ₽</th><th className="text-right py-2 w-28">Сумма</th><th className="w-10" /></tr></thead>
+                          <thead className="text-slate-500 text-xs uppercase"><tr><th className="text-left py-2">Товар</th><th className="text-right py-2 w-24">Кол-во</th><th className="text-right py-2 w-32">Закуп. ₽</th><th className="text-right py-2 w-32">Мин. цена ₽</th><th className="text-right py-2 w-28">Сумма</th><th className="w-10" /></tr></thead>
                           <tbody>
                             {rcItems.map((it, idx) => (
                               <tr key={it.product_id} className="border-t border-slate-100" data-testid={`rc-item-${it.product_id}`}>
                                 <td className="py-2"><p className="font-medium text-slate-800">{it.name}</p><p className="text-xs text-slate-400">{it.article}</p></td>
                                 <td className="py-2 text-right"><Input type="number" min="1" value={it.quantity} onChange={(e) => rcUpdateItem(idx, 'quantity', e.target.value)} className="rounded-lg h-9 text-right" data-testid={`rc-qty-${it.product_id}`} /></td>
                                 <td className="py-2 text-right"><Input type="number" min="0" value={it.purchase_price} onChange={(e) => rcUpdateItem(idx, 'purchase_price', e.target.value)} className="rounded-lg h-9 text-right" data-testid={`rc-price-${it.product_id}`} /></td>
+                                <td className="py-2 text-right"><Input type="number" min="0" value={it.min_price} placeholder={`${Math.round((Number(it.purchase_price) || 0) * 1.3)}`} onChange={(e) => rcUpdateItem(idx, 'min_price', e.target.value)} className="rounded-lg h-9 text-right" data-testid={`rc-minprice-${it.product_id}`} /></td>
                                 <td className="py-2 text-right font-medium text-slate-700 whitespace-nowrap">{fmt((Number(it.quantity) || 0) * (Number(it.purchase_price) || 0))} ₽</td>
                                 <td className="py-2 text-right"><button onClick={() => rcRemoveItem(idx)} className="text-slate-300 hover:text-rose-500" data-testid={`rc-remove-${it.product_id}`}><Trash2 className="w-4 h-4" /></button></td>
                               </tr>

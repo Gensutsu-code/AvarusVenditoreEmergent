@@ -59,6 +59,9 @@ class AdminUserUpdate(BaseModel):
     role: Optional[str] = None
     customer_status: Optional[str] = None
     individual_discount: Optional[float] = None
+    delivery_cost: Optional[float] = None
+    deferral_days: Optional[int] = None
+    credit_limit: Optional[float] = None
 
 class AdminUserResponse(BaseModel):
     id: str
@@ -94,6 +97,9 @@ class ProductCreate(BaseModel):
     has_guarantee: Optional[bool] = False
     bonus_eligible: Optional[bool] = True
     purchase_price: Optional[float] = 0
+    min_price: Optional[float] = None  # floor price (default purchase_price*1.3)
+    is_markdown: Optional[bool] = False  # уценённый товар
+    markdown_comment: Optional[str] = ""
     manual_available: Optional[bool] = True
     # Discount/promo fields
     discount_active: Optional[bool] = False
@@ -127,6 +133,9 @@ class ProductUpdate(BaseModel):
     has_guarantee: Optional[bool] = None
     bonus_eligible: Optional[bool] = None
     purchase_price: Optional[float] = None
+    min_price: Optional[float] = None
+    is_markdown: Optional[bool] = None
+    markdown_comment: Optional[str] = None
     manual_available: Optional[bool] = None
     discount_active: Optional[bool] = None
     discount_type: Optional[str] = None
@@ -159,6 +168,9 @@ class ProductResponse(BaseModel):
     has_guarantee: Optional[bool] = False
     bonus_eligible: Optional[bool] = True
     purchase_price: Optional[float] = 0
+    min_price: Optional[float] = None
+    is_markdown: Optional[bool] = False
+    markdown_comment: Optional[str] = ""
     manual_available: Optional[bool] = True
     in_stock: Optional[bool] = None
     discount_active: Optional[bool] = False

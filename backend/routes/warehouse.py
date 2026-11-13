@@ -636,6 +636,7 @@ class ReceiptItemIn(BaseModel):
     product_id: str
     quantity: int
     purchase_price: Optional[float] = None
+    min_price: Optional[float] = None
 
 
 class ReceiptCreate(BaseModel):
@@ -663,7 +664,7 @@ async def create_receipt(data: ReceiptCreate, user=Depends(get_current_user)):
         pp = it.get("purchase_price")
         if not pid or qty <= 0:
             continue
-        parsed.append({"product_id": pid, "quantity": qty, "purchase_price": pp})
+        parsed.append({"product_id": pid, "quantity": qty, "purchase_price": pp, "min_price": it.get("min_price")})
     if not parsed:
         raise HTTPException(status_code=400, detail="Нет корректных позиций (количество должно быть > 0)")
 
@@ -680,15 +681,23 @@ async def create_receipt(data: ReceiptCreate, user=Depends(get_current_user)):
     for it in parsed:
         product = await db.products.find_one(
             {"id": it["product_id"]},
-            {"_id": 0, "id": 1, "name": 1, "article": 1, "stock": 1, "purchase_price": 1},
+            {"_id": 0, "id": 1, "name": 1, "article": 1, "stock": 1, "purchase_price": 1, "min_price": 1},
         )
         if not product:
             continue
         stock_before = product.get("stock", 0) or 0
         unit_cost = product.get("purchase_price", 0) or 0
+        prod_set = {}
         if it["purchase_price"] is not None and it["purchase_price"] >= 0:
             unit_cost = float(it["purchase_price"])
-            await db.products.update_one({"id": it["product_id"]}, {"$set": {"purchase_price": unit_cost}})
+            prod_set["purchase_price"] = unit_cost
+        # Floor price: explicit value, else default to purchase+30% when product has none
+        if it.get("min_price") is not None and it["min_price"] >= 0:
+            prod_set["min_price"] = round(float(it["min_price"]), 2)
+        elif not (product.get("min_price") or 0) and unit_cost:
+            prod_set["min_price"] = round(unit_cost * 1.3, 2)
+        if prod_set:
+            await db.products.update_one({"id": it["product_id"]}, {"$set": prod_set})
         await add_stock(it["product_id"], data.warehouse_id, it["quantity"])
         line_cost = round(it["quantity"] * unit_cost, 2)
         total_cost += line_cost

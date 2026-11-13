@@ -515,6 +515,18 @@ export default function ProductPage() {
                   </div>
                 </div>
               )}
+
+              {product.is_markdown && (
+                <div className="glass-card p-4 flex items-center gap-3 border border-orange-200 bg-orange-50/60" data-testid="product-markdown-info">
+                  <div className="w-10 h-10 rounded-xl flex items-center justify-center bg-orange-500/10">
+                    <Tag className="w-5 h-5 text-orange-600" />
+                  </div>
+                  <div>
+                    <p className="text-xs text-orange-500 font-semibold">Уценённый товар</p>
+                    <p className="font-medium text-slate-700 text-sm">{product.markdown_comment || 'Товар со сниженной ценой'}</p>
+                  </div>
+                </div>
+              )}
             </motion.div>
 
             {/* Description */}

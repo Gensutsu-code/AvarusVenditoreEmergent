@@ -181,6 +181,10 @@ async def _build_cart(user):
             unit_before_cart_discount = final_unit_price
             if cart_discount_pct > 0:
                 final_unit_price = round(final_unit_price * (1 - cart_discount_pct / 100), 2)
+            # Floor price: never below product's min_price
+            floor = product.get("min_price")
+            if floor is not None and floor >= 0 and final_unit_price < floor:
+                final_unit_price = round(floor, 2)
             items_with_details.append({
                 "product_id": item["product_id"],
                 "name": product["name"],
@@ -325,6 +329,15 @@ async def create_order(data: OrderCreate, user=Depends(get_current_user)):
             if cart_discount_pct > 0:
                 final_price = round(final_price * (1 - cart_discount_pct / 100), 2)
                 cart_discount_amount += round((price_before_cart_discount - final_price) * cart_item["quantity"], 2)
+
+            # Floor price: never sell below product's min_price, whatever the discount
+            floor = product.get("min_price")
+            if floor is not None and floor >= 0 and final_price < floor:
+                # recompute cart discount contribution against the clamped price
+                if cart_discount_pct > 0 and price_before_cart_discount > floor:
+                    cart_discount_amount -= round((price_before_cart_discount - final_price) * cart_item["quantity"], 2)
+                    cart_discount_amount += round((price_before_cart_discount - floor) * cart_item["quantity"], 2)
+                final_price = round(floor, 2)
             
             item_data = {
                 "product_id": cart_item["product_id"],
@@ -361,6 +374,13 @@ async def create_order(data: OrderCreate, user=Depends(get_current_user)):
     delivery_enabled = delivery_vals.get("delivery_enabled", True)
     min_free = delivery_vals.get("min_free_delivery", 5000)
     delivery_price = delivery_vals.get("delivery_price", 500)
+    # Individual delivery cost overrides site-wide price when set on the client
+    _ind_delivery = user.get("delivery_cost")
+    if _ind_delivery is not None and _ind_delivery != "":
+        try:
+            delivery_price = float(_ind_delivery)
+        except (TypeError, ValueError):
+            pass
 
     # ---- Payment intent ----
     is_deferral = (payment_method == "deferral")

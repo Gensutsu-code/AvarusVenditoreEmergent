@@ -194,6 +194,11 @@ const ProductCard = ({
               Гарантия
             </span>
           )}
+          {product.is_markdown && (
+            <span className="inline-flex items-center h-[22px] gap-1 text-[11px] font-semibold px-2.5 rounded-full bg-orange-100 text-orange-700 border border-orange-300 whitespace-nowrap" title={product.markdown_comment || 'Уценённый товар'} data-testid={`badge-markdown-${product.id}`}>
+              <Tag className="w-3 h-3" />Уценка
+            </span>
+          )}
           <DeliveryBadge stockRegions={product.stock_regions} productId={product.id} />
           {minTierQty != null && (
             <span className="inline-flex items-center h-[22px] text-[11px] font-semibold px-2.5 rounded-full border whitespace-nowrap bg-rose-50 text-rose-600 border-rose-200" data-testid={`tier-badge-${product.id}`}>
