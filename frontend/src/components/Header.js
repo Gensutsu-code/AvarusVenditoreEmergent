@@ -722,6 +722,9 @@ export const Header = () => {
             className="md:hidden border-t border-cyan-200/50 bg-white/90 backdrop-blur-xl"
           >
             <div className="p-4 space-y-2">
+              {user && !isAdmin && (
+                <div className="pb-2 mb-1 border-b border-slate-100"><RegionSelector /></div>
+              )}
               {user ? (
                 <>
                   {isAdmin ? (

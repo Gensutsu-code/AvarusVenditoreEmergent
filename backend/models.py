@@ -27,6 +27,7 @@ class UserResponse(BaseModel):
     avatar_url: Optional[str] = None
     customer_status: str = "retail"
     individual_discount: float = 0
+    region: Optional[str] = ""
 
 class UserProfileUpdate(BaseModel):
     name: Optional[str] = None

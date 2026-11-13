@@ -1,5 +1,14 @@
 # Changelog
 
+## 2026-06 — Склады по регионам + расчёт доставки по формуле
+- **Убран тумблер «Наличие»** из формы товара (AdminPage.js) вместе с полями «Доставка (дней)» и ручным выбором склада — заменены инфо-блоком; наличие теперь считается по складам.
+- **Склады (CRUD)** `warehouse.py`: `GET/POST/PUT/DELETE /admin/warehouses` (name, region, address, units). Остатки теперь хранятся **по складам** в коллекции `stock_levels`; `product.stock` = сумма, `product.stock_regions` = регионы с qty>0 (денормализовано через `recompute_product_stock`). Приёмки/движения/массовые операции требуют `warehouse_id`. Перемещение между складами `POST /admin/warehouse/transfer` (атомарно, с 404-валидацией). UI: вкладки «Склады» (карточки CRUD), выбор склада в приёмке и в быстром приходе/списании, кнопка перемещения, чипы регионов в остатках.
+- **Доставка по формуле**: регион клиента (селектор в шапке, `GET /regions`, `PUT /me/region`, сохраняется в профиль+localStorage) сравнивается с регионами складов товара. Свой регион → зелёный «завтра» (конкретная дата); другой регион → жёлтый 3–7 дней (диапазон дат); нет на складах → красный 7–21 (диапазон дат). Настройки 3 состояний (подпись/цвет/дни) — вкладка «Доставка» в разделе Склад (`GET /delivery-display`, `PUT /admin/delivery-display`). Компонент `DeliveryBadge` + `RegionContext`; бейджи в каталоге (сетка+список) и на странице товара.
+- **Продажи/отмены учитывают склады**: продажа списывает остаток region-first (`allocate_stock`), хранит `stock_allocations` и `region` в заказе; отмена/возврат/авто-отмена восстанавливают через `restore_order_stock` (orders.py, admin.py, server.py).
+- **Миграция**: при старте `migrate_legacy_stock` идемпотентно переносит легаси `product.stock` на склад по умолчанию (выполнено для 4 товаров в preview). `region` добавлен в UserResponse (`/auth/me`).
+- Тестирование: бэкенд 13/16 pytest (после правок), критичные/важные замечания устранены (миграция, бейдж каталога, восстановление остатка в админ-отменах, мобильный селектор, валидации); проверено curl+скриншотами.
+
+
 ## 2026-06 — Bonus hero themes (compact + switchable + admin default) & Warehouse expansion (receipts, COGS, reserve)
 - **BonusPage hero redesign** (`BonusPage.js`): compacted ~50% (balance + level in one row, smaller paddings/fonts). Added live theme switcher `HERO_THEMES` (6: midnight, ocean, royal, mint, sunset, snow) with swatch picker (`hero-theme-picker`, `hero-theme-{key}`). Personal choice saved to `localStorage['bonus_hero_theme']`; falls back to admin default `program.hero_preset`. Text/tracks auto-adapt to light vs dark themes.
 - **Admin default theme** (`admin/BonusTab.js`): `HERO_PRESETS` synced to the same 6 keys with light-aware labels + preview; label clarifies it's the default for all clients. Added `edit-program-{id}` testid on pencil (by testing agent).

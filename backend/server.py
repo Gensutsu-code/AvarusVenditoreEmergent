@@ -10,6 +10,7 @@ from motor.motor_asyncio import AsyncIOMotorClient
 from dotenv import load_dotenv
 from pathlib import Path
 from contextlib import asynccontextmanager
+from routes.warehouse import restore_order_stock, migrate_legacy_stock
 import os
 import logging
 import asyncio
@@ -51,12 +52,8 @@ async def check_expired_orders_task():
             
             cancelled_count = 0
             for order in expired_orders:
-                # Restore stock for each item
-                for item in order.get("items", []):
-                    await db.products.update_one(
-                        {"id": item.get("product_id")},
-                        {"$inc": {"stock": item.get("quantity", 0)}}
-                    )
+                # Restore stock (per-warehouse when allocations exist)
+                await restore_order_stock(order)
                 
                 # Cancel the order
                 await db.orders.update_one(
@@ -90,11 +87,7 @@ async def check_expired_orders_task():
             import uuid as _uuid
             pay_cancelled = 0
             for order in due_expired:
-                for item in order.get("items", []):
-                    await db.products.update_one(
-                        {"id": item.get("product_id")},
-                        {"$inc": {"stock": item.get("quantity", 0)}}
-                    )
+                await restore_order_stock(order)
                 await db.orders.update_one(
                     {"id": order["id"]},
                     {"$set": {
@@ -122,7 +115,15 @@ async def lifespan(app: FastAPI):
     # Start background task for checking expired orders
     task = asyncio.create_task(check_expired_orders_task())
     logger.info("Started background task: check_expired_orders_task")
-    
+
+    # One-time idempotent migration: seed per-warehouse stock from legacy product.stock
+    try:
+        migrated = await migrate_legacy_stock()
+        if migrated:
+            logger.info(f"Legacy stock migrated to warehouses for {migrated} products")
+    except Exception as e:
+        logger.error(f"Legacy stock migration failed: {e}")
+
     yield
     
     # Cleanup on shutdown

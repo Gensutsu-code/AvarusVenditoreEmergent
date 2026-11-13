@@ -136,6 +136,40 @@ async def restore_stock(product_id: str, allocations):
     await recompute_product_stock(product_id)
 
 
+async def restore_order_stock(order):
+    """Restore stock for a cancelled/returned order (per-warehouse when allocations exist)."""
+    allocs = order.get("stock_allocations")
+    if allocs:
+        for a in allocs:
+            await restore_stock(a.get("product_id"), a.get("allocations", []))
+    else:
+        for item in order.get("items", []):
+            await db.products.update_one({"id": item.get("product_id")}, {"$inc": {"stock": item.get("quantity", 0)}})
+
+
+async def migrate_legacy_stock():
+    """Idempotent: seed stock_levels from legacy products.stock onto a default warehouse.
+    Runs once per product (skips products that already have any stock_levels rows)."""
+    products = await db.products.find({"stock": {"$gt": 0}}, {"_id": 0, "id": 1, "stock": 1}).to_list(100000)
+    if not products:
+        return 0
+    # pick or create a default warehouse
+    default_wh = await db.warehouses.find_one({}, {"_id": 0, "id": 1}, sort=[("created_at", 1)])
+    if not default_wh:
+        default_wh = {"id": str(uuid.uuid4()), "name": "Основной склад", "region": "Москва", "address": "", "created_at": datetime.now(timezone.utc).isoformat()}
+        await db.warehouses.insert_one(dict(default_wh))
+    wh_id = default_wh["id"]
+    migrated = 0
+    for p in products:
+        has_levels = await db.stock_levels.find_one({"product_id": p["id"]}, {"_id": 1})
+        if has_levels:
+            continue
+        await db.stock_levels.insert_one({"id": str(uuid.uuid4()), "product_id": p["id"], "warehouse_id": wh_id, "quantity": int(p.get("stock", 0) or 0)})
+        await recompute_product_stock(p["id"])
+        migrated += 1
+    return migrated
+
+
 class WarehouseIn(BaseModel):
     name: str
     region: str
@@ -192,6 +226,9 @@ async def update_warehouse(wh_id: str, data: WarehouseIn, user=Depends(get_curre
 @router.delete("/admin/warehouses/{wh_id}")
 async def delete_warehouse(wh_id: str, user=Depends(get_current_user)):
     await _ensure_admin(user)
+    wh = await db.warehouses.find_one({"id": wh_id}, {"_id": 1})
+    if not wh:
+        raise HTTPException(status_code=404, detail="Склад не найден")
     units = await db.stock_levels.aggregate([
         {"$match": {"warehouse_id": wh_id, "quantity": {"$gt": 0}}},
         {"$group": {"_id": None, "units": {"$sum": "$quantity"}}},
@@ -234,11 +271,21 @@ async def update_delivery_display(payload: dict, user=Depends(get_current_user))
     clean = {}
     for k in DEFAULT_DELIVERY_SETTINGS:
         src = payload.get(k) or {}
+        try:
+            dmin = max(0, int(src.get("days_min", DEFAULT_DELIVERY_SETTINGS[k]["days_min"]) or 0))
+        except (ValueError, TypeError):
+            dmin = DEFAULT_DELIVERY_SETTINGS[k]["days_min"]
+        try:
+            dmax = max(0, int(src.get("days_max", DEFAULT_DELIVERY_SETTINGS[k]["days_max"]) or 0))
+        except (ValueError, TypeError):
+            dmax = DEFAULT_DELIVERY_SETTINGS[k]["days_max"]
+        if dmax < dmin:
+            dmax = dmin
         clean[k] = {
             "label": str(src.get("label", DEFAULT_DELIVERY_SETTINGS[k]["label"]))[:120],
             "color": str(src.get("color", DEFAULT_DELIVERY_SETTINGS[k]["color"]))[:32],
-            "days_min": max(0, int(src.get("days_min", DEFAULT_DELIVERY_SETTINGS[k]["days_min"]) or 0)),
-            "days_max": max(0, int(src.get("days_max", DEFAULT_DELIVERY_SETTINGS[k]["days_max"]) or 0)),
+            "days_min": dmin,
+            "days_max": dmax,
         }
     await db.settings.update_one({"key": "delivery_display_settings"}, {"$set": {"value": clean}}, upsert=True)
     return clean
@@ -258,10 +305,19 @@ async def transfer_stock(data: TransferIn, user=Depends(get_current_user)):
         raise HTTPException(status_code=400, detail="Количество должно быть больше 0")
     if data.from_warehouse_id == data.to_warehouse_id:
         raise HTTPException(status_code=400, detail="Склады должны отличаться")
-    have = await warehouse_qty(data.product_id, data.from_warehouse_id)
-    if have < data.quantity:
+    if not await db.products.find_one({"id": data.product_id}, {"_id": 1}):
+        raise HTTPException(status_code=404, detail="Товар не найден")
+    if not await db.warehouses.find_one({"id": data.from_warehouse_id}, {"_id": 1}):
+        raise HTTPException(status_code=404, detail="Склад-источник не найден")
+    if not await db.warehouses.find_one({"id": data.to_warehouse_id}, {"_id": 1}):
+        raise HTTPException(status_code=404, detail="Склад-получатель не найден")
+    res = await db.stock_levels.update_one(
+        {"product_id": data.product_id, "warehouse_id": data.from_warehouse_id, "quantity": {"$gte": data.quantity}},
+        {"$inc": {"quantity": -data.quantity}},
+    )
+    if res.modified_count == 0:
+        have = await warehouse_qty(data.product_id, data.from_warehouse_id)
         raise HTTPException(status_code=400, detail=f"На складе-источнике только {have} шт.")
-    await db.stock_levels.update_one({"product_id": data.product_id, "warehouse_id": data.from_warehouse_id}, {"$inc": {"quantity": -data.quantity}})
     await add_stock(data.product_id, data.to_warehouse_id, data.quantity)
     return {"success": True}
 

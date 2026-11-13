@@ -1,0 +1,54 @@
+{
+  "summary": "Tested warehouses/regions/delivery-display features end-to-end. Backend 13/16 pytest pass (core CRUD, receipts, writeoff guard, transfer, delete-with-stock guard, delivery-display roundtrip, COGS/reserve regression all OK). Admin UI: warehouses CRUD, receipt with warehouse select + region chips, quick receipt/writeoff with mv-warehouse-select, transfer modal, Delivery tab (save + persists after reload, live preview), product form (no stock toggle, no delivery days, info block) all work. Client: region-selector + region-menu work on desktop, DeliveryBadge on ProductPage recalculates green/yellow correctly. BUT: catalog listing does NOT use the new DeliveryBadge (CatalogPage has its own local ProductCard with legacy 'N дн.' badge; components/ProductCard.js is imported nowhere), legacy product stock is not migrated to stock_levels (4/7 products), region not persisted server->client (/auth/me lacks region), region selector missing on mobile.",
+  "backend_issues": {
+    "critical": [
+      {"endpoint": "data model / recompute_product_stock", "issue": "No migration of legacy products.stock into stock_levels. 4 of 7 products (E82KPD36=13, E89HD734=3, 03434302100=14, PL270x=1) have stock>0 but no stock_levels rows. Consequences: (a) stock_regions empty -> client sees red 'Под заказ' for in-stock items; (b) any receipt/movement calls recompute_product_stock which sets stock=sum(levels) -> legacy stock silently LOST; (c) writeoff/transfer impossible for these (no warehouse qty); (d) orders: allocate_stock returns None -> no stock decrement and no 'sale' movement -> COGS/profit miss these sales.", "priority": "CRITICAL"},
+      {"endpoint": "admin.py PUT /admin/orders/{id} (cancel ~l.423), PUT status cancel (~l.480), DELETE /admin/orders/{id} (~l.590), server.py auto-cancel jobs (~l.55, ~l.93)", "issue": "Stock restore still uses legacy $inc products.stock instead of _restore_order_stock/stock_allocations. stock_levels not restored, stock_regions not updated; restored units are wiped on next recompute. Only orders.py client cancel uses the new helper.", "priority": "HIGH"}
+    ],
+    "minor": [
+      {"endpoint": "GET /api/auth/me (UserResponse)", "issue": "UserResponse has no 'region' field, so PUT /me/region is saved in DB but never returned; RegionContext seed-from-profile never works (verified: new browser session shows 'Выберите регион' after region was set to Ростов). Region persists only via localStorage."},
+      {"endpoint": "PUT /api/products/{id}", "issue": "Admin product form still sends 'stock' (stale value) in payload and ProductUpdate accepts it -> overwrites products.stock bypassing stock_levels. Also CSV import (products.py ~l.798) and product create set stock directly. Should drop 'stock' from ProductUpdate/Create or ignore it."},
+      {"endpoint": "POST /api/admin/warehouse/transfer", "issue": "to_warehouse_id/product_id not validated: transfer to nonexistent warehouse returns 200 and creates phantom stock_levels row (units disappear from regions). Return 404."},
+      {"endpoint": "PUT /api/admin/delivery-display", "issue": "Non-numeric days_min -> 500 (int() ValueError). No validation days_min<=days_max (UI preview shows '18.11 – 15.11'); no hex color validation (badge uses color+'55' alpha suffix, breaks for non-6-hex)."},
+      {"endpoint": "DELETE /api/admin/warehouses/{id}", "issue": "Returns 200 for nonexistent id (no 404). Writeoff/transfer decrements are non-atomic (check-then-$inc) - race can go negative; use conditional update {quantity:{$gte:qty}}."}
+    ]
+  },
+  "frontend_issues": {
+    "ui_bugs": [
+      {"component": "CatalogPage product cards (/catalog?category=...)", "issue": "Catalog uses its own local ProductCard (CatalogPage.js l.46) with legacy getDeliveryBadge(product.delivery_days) -> shows '4 дн.'/'3 дн.' with same testid delivery-badge-<id>; region-based badge never shown in listings. components/ProductCard.js (with DeliveryBadge) is not imported anywhere. List view (l.424) shows 'Доставка: N дней' from delivery_days; filters 'СКЛАД' (legacy product.warehouse string, e.g. 'Казань' for a product actually in Ростов) and 'СРОК ДОСТАВКИ', and sort 'По скорости доставки' still use legacy delivery_days/warehouse fields.", "selector": "[data-testid^='delivery-badge-']", "priority": "CRITICAL"},
+      {"component": "Header RegionSelector (mobile)", "issue": "RegionSelector rendered only inside 'hidden md:flex' desktop block; at 390px it's not visible and not in mobile menu -> mobile clients cannot choose region.", "selector": "[data-testid='region-selector']", "priority": "HIGH"},
+      {"component": "Movement modal (writeoff)", "issue": "mv-warehouse-select defaults to warehouses[0] (Основной склад with 0 qty) instead of empty/warehouse that holds stock -> immediate 'На складе «Основной склад» только 0 шт.' error. Default to product's warehouse with stock for writeoff.", "selector": "[data-testid='mv-warehouse-select']", "priority": "LOW"}
+    ],
+    "integration_issues": [
+      {"flow": "Region persistence across devices", "issue": "Region chosen by client saved to DB but not restored on new device/session because /auth/me doesn't return region.", "affected_selectors": ["[data-testid='region-selector']"]}
+    ],
+    "design_issues": [
+      {"screen": "ProductPage delivery block", "issues": ["DeliveryBadge (size lg) in narrow 'Доставка' card wraps label into 3 lines and date '· 14.11' floats separately; allow full width or put date on its own line."]},
+      {"screen": "Admin Warehouses", "issues": ["Region is free-text input - typos/case ('Москва' vs 'москва') create separate regions and break in_region matching; use select/autocomplete of existing regions.", "Native <select> used for rc-warehouse/mv-warehouse-select/tr-from/tr-to instead of shadcn Select (consistency)."]}
+    ]
+  },
+  "test_report_links": ["/app/backend/tests/test_warehouses_regions_delivery.py", "/app/test_reports/pytest/pytest_wh_regions.xml"],
+  "action_items": [
+    "CRITICAL: write idempotent migration: for every product with stock>0 and no stock_levels, create a stock_levels row on a default warehouse (e.g. 'Основной склад'), then recompute_product_stock.",
+    "CRITICAL: replace legacy delivery_days badge in CatalogPage local ProductCard (grid+list) with <DeliveryBadge stockRegions={product.stock_regions} productId={product.id}/>; update/remove 'Склад' and 'Срок доставки' filters and 'По скорости доставки' sort to use region-based state; delete or use components/ProductCard.js.",
+    "HIGH: use _restore_order_stock (stock_allocations) in admin.py cancel/delete paths and server.py auto-cancel jobs.",
+    "HIGH: add RegionSelector to mobile menu.",
+    "Add 'region' to UserResponse so /auth/me returns it.",
+    "Ignore/remove 'stock' in ProductCreate/ProductUpdate payloads (admin form sends stale stock); handle CSV import stock via stock_levels.",
+    "Validate transfer to_warehouse_id/product_id exist (404); validate delivery-display ints (400) and days_min<=days_max; 404 on deleting missing warehouse; atomic conditional decrements.",
+    "Writeoff modal: default warehouse to one that holds stock."
+  ],
+  "critical_code_review_comments": [
+    "routes/warehouse.py is 788 lines - split warehouses/regions/delivery-display into separate module.",
+    "allocate_stock does find then multiple $inc without condition - concurrent orders may oversell; use $inc with {quantity:{$gte:take}} filter.",
+    "list_warehouses runs one aggregate per warehouse (N+1) - single $group by warehouse_id.",
+    "Old tests (test_warehouse_receipts_cogs.py, test_warehouse_finance.py, test_stock_sync.py) likely post movements/receipts without warehouse_id and will now 422 - update them."
+  ],
+  "updated_files": ["/app/backend/tests/test_warehouses_regions_delivery.py"],
+  "success_rate": {"backend": "81% (13/16)", "frontend": "~70% - admin flows all pass; client listing badge and mobile selector fail"},
+  "seed_data_creation": "None persisted. Created/deleted TEST_ warehouses (API + UI 'TEST_UI_WH'), receipts/writeoffs on product 04362a26 (Датчик SIEMENS 03434365000) netted back to Ростов:5 (receipt docs/movements with supplier TEST_* remain in history). Removed phantom stock_levels row created by transfer-to-nonexistent test. Delivery-display settings restored to original. user@demo.com region reset to ''.",
+  "retest_needed": true,
+  "should_main_agent_self_test": false,
+  "context_for_next_testing_agent": "Warehouses: Основной склад(Москва, 9bcf5eec), Основной Москва(Москва, eaa8b03e), Склад Ростов(Ростов, 1e27d6f7). Only product 04362a26 has stock_levels (Ростов:5). Admin warehouse UI: /admin -> tab role=tab name 'Склад' -> warehouse-tab-<id>. Product edit button testid edit-<productId>. Catalog listing: /catalog then click 'Все товары'. Region badge only on /product/<id> currently. Run: pytest tests/test_warehouses_regions_delivery.py -p no:xdist -o addopts=''.",
+  "rca of the issue": "Catalog badge: E1 added DeliveryBadge to components/ProductCard.js, but the catalog renders a local ProductCard defined inside CatalogPage.js, so the component edit had no effect. Legacy stock: new model derives products.stock from stock_levels, but existing stock was never seeded into stock_levels; recompute overwrites it. Region persistence: UserResponse pydantic model strips 'region'."
+}

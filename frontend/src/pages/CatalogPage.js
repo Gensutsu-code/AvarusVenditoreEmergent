@@ -19,7 +19,8 @@ import { SearchDropdown } from '../components/SearchDropdown';
 import { trackClick } from '../utils/tracker';
 import DiscountRequestModal from '../components/DiscountRequestModal';
 import ProductRequestModal from '../components/ProductRequestModal';
-import { computeDiscount, computeNewBadge, formatDiscountBadge, formatUntilDate, getDeliveryBadge, getQuantityTiers, isProductAvailable, getPromoStock } from '../utils/productHelpers';
+import { computeDiscount, computeNewBadge, formatDiscountBadge, formatUntilDate, getQuantityTiers, isProductAvailable, getPromoStock } from '../utils/productHelpers';
+import { DeliveryBadge } from '../components/DeliveryBadge';
 import { PromoCountdown } from '../components/PromoCountdown';
 import DiscountPromoBanner from '../components/DiscountPromoBanner';
 import NewProductsBanner from '../components/NewProductsBanner';
@@ -59,7 +60,6 @@ const ProductCard = ({
 }) => {
   const discount = computeDiscount(product);
   const isNewProduct = computeNewBadge(product);
-  const deliveryBadge = getDeliveryBadge(product.delivery_days);
   const untilFormatted = formatUntilDate(discount?.until);
   const quantityTiers = getQuantityTiers(product);
   const minTierQty = quantityTiers.length ? quantityTiers[0].minQty : null;
@@ -174,9 +174,9 @@ const ProductCard = ({
           <span className="inline-flex items-center h-[22px] text-[11px] font-mono font-extrabold text-white bg-gradient-to-r from-pink-500 to-rose-500 px-2.5 rounded-full shadow-sm shadow-pink-500/30 whitespace-nowrap">
             {product.article}
           </span>
-          {product.warehouse && (
+          {product.stock_regions?.length > 0 && (
             <span className="inline-flex items-center h-[22px] text-[11px] font-semibold px-2.5 rounded-full bg-blue-50 text-blue-600 border border-blue-200 whitespace-nowrap">
-              <MapPin className="w-3 h-3 mr-0.5" />{product.warehouse}
+              <MapPin className="w-3 h-3 mr-0.5" />{product.stock_regions.join(', ')}
             </span>
           )}
           {product.bonus_eligible !== false && (
@@ -194,9 +194,7 @@ const ProductCard = ({
               Гарантия
             </span>
           )}
-          <span className={`inline-flex items-center h-[22px] text-[11px] font-semibold px-2.5 rounded-full border whitespace-nowrap ${deliveryBadge.classes}`} data-testid={`delivery-badge-${product.id}`}>
-            <Truck className="w-3 h-3 mr-0.5" />{deliveryBadge.label}
-          </span>
+          <DeliveryBadge stockRegions={product.stock_regions} productId={product.id} />
           {minTierQty != null && (
             <span className="inline-flex items-center h-[22px] text-[11px] font-semibold px-2.5 rounded-full border whitespace-nowrap bg-rose-50 text-rose-600 border-rose-200" data-testid={`tier-badge-${product.id}`}>
               <Layers className="w-3 h-3 mr-0.5" />Опт. скидка от {minTierQty} шт.
@@ -417,17 +415,14 @@ const ProductModalContent = ({
                 {isProductAvailable(product) ? 'В наличии' : 'Нет в наличии'}
               </span>
             </div>
-            <div className="flex justify-between">
+            <div className="flex justify-between items-center">
               <span className="text-slate-500">Доставка:</span>
-              <span className="flex items-center gap-1 text-slate-600">
-                <Truck className="w-4 h-4" />
-                {getDeliveryText(product.delivery_days || 3)}
-              </span>
+              <DeliveryBadge stockRegions={product.stock_regions} productId={`list-${product.id}`} />
             </div>
-            {product.warehouse && (
+            {product.stock_regions?.length > 0 && (
               <div className="flex justify-between">
                 <span className="text-slate-500">Склад:</span>
-                <span className="text-blue-600 font-semibold">{product.warehouse}</span>
+                <span className="text-blue-600 font-semibold">{product.stock_regions.join(', ')}</span>
               </div>
             )}
           </div>

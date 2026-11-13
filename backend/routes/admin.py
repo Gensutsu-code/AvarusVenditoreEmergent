@@ -12,6 +12,7 @@ import io
 from database import db, get_current_user, hash_password
 from models import AdminUserCreate, AdminUserUpdate, AdminOrderUpdate
 from routes.bonus import update_bonus_on_order_delivered
+from routes.warehouse import restore_order_stock
 from routes.action_logs import log_action
 
 router = APIRouter(prefix="/admin", tags=["admin"])
@@ -422,11 +423,7 @@ async def update_admin_order(order_id: str, data: AdminOrderUpdate, user=Depends
         
         # Restore stock when order is cancelled
         if new_status == "cancelled" and old_status != "cancelled":
-            for item in original_order.get("items", []):
-                await db.products.update_one(
-                    {"id": item.get("product_id")},
-                    {"$inc": {"stock": item.get("quantity", 0)}}
-                )
+            await restore_order_stock(original_order)
         
         status_labels = {
             "pending": "ожидает обработки",
@@ -479,11 +476,7 @@ async def update_order_status(order_id: str, status: str, user=Depends(get_curre
     
     # Restore stock if cancelling
     if status == "cancelled" and old_status != "cancelled":
-        for item in order.get("items", []):
-            await db.products.update_one(
-                {"id": item.get("product_id")},
-                {"$inc": {"stock": item.get("quantity", 0)}}
-            )
+        await restore_order_stock(order)
     
     await db.orders.update_one({"id": order_id}, {"$set": {"status": status, "previous_status": old_status, **({"completed_at": datetime.now(timezone.utc).isoformat()} if status == "completed" and old_status != "completed" else {})}})
     
@@ -588,11 +581,7 @@ async def delete_admin_order(order_id: str, user=Depends(get_current_user)):
         raise HTTPException(status_code=404, detail="Order not found")
     
     # Restore stock
-    for item in order.get("items", []):
-        await db.products.update_one(
-            {"id": item.get("product_id")},
-            {"$inc": {"stock": item.get("quantity", 0)}}
-        )
+    await restore_order_stock(order)
     
     await db.orders.delete_one({"id": order_id})
 
