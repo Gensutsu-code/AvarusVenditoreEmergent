@@ -1,5 +1,5 @@
 import { Link } from 'react-router-dom';
-import { ShoppingCart, Package, ShieldCheck, BadgeCheck, Gift, Tag, Truck, Layers, Handshake } from 'lucide-react';
+import { ShoppingCart, Package, ShieldCheck, BadgeCheck, Gift, Tag, Layers, Handshake } from 'lucide-react';
 import { Button } from './ui/button';
 import { useCart } from '../context/CartContext';
 import { useAuth } from '../context/AuthContext';
@@ -7,7 +7,8 @@ import { useIndividualPrice } from '../context/IndividualPriceContext';
 import { toast } from 'sonner';
 import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { computeDiscount, formatDiscountBadge, formatUntilDate, getDeliveryBadge, getQuantityTiers } from '../utils/productHelpers';
+import { computeDiscount, formatDiscountBadge, formatUntilDate, getQuantityTiers } from '../utils/productHelpers';
+import { DeliveryBadge } from './DeliveryBadge';
 
 export const ProductCard = ({ product, index = 0 }) => {
   const { addToCart } = useCart();
@@ -38,7 +39,6 @@ export const ProductCard = ({ product, index = 0 }) => {
   };
 
   const discount = computeDiscount(product);
-  const deliveryBadge = getDeliveryBadge(product.delivery_days);
   const untilFormatted = formatUntilDate(discount?.until);
   const quantityTiers = getQuantityTiers(product);
   const minTierQty = quantityTiers.length ? quantityTiers[0].minQty : null;
@@ -202,14 +202,8 @@ export const ProductCard = ({ product, index = 0 }) => {
                 </span>
               )}
             </div>
-            {/* Delivery badge */}
-            <span
-              className={`inline-flex items-center gap-1 text-[11px] font-semibold px-2 py-0.5 rounded-md border ${deliveryBadge.classes}`}
-              data-testid={`delivery-badge-${product.id}`}
-            >
-              <Truck className="w-3 h-3" />
-              {deliveryBadge.label}
-            </span>
+            {/* Delivery badge (region-based) */}
+            <DeliveryBadge stockRegions={product.stock_regions} productId={product.id} />
             {minTierQty != null && (
               <span
                 className="inline-flex items-center gap-1 text-[11px] font-semibold px-2 py-0.5 rounded-md border bg-rose-50 text-rose-600 border-rose-200 ml-2"

@@ -6,6 +6,7 @@ import { Toaster } from "./components/ui/sonner";
 import { AuthProvider, useAuth } from "./context/AuthContext";
 import { CartProvider } from "./context/CartContext";
 import { IndividualPriceProvider } from "./context/IndividualPriceContext";
+import { RegionProvider } from "./context/RegionContext";
 import { ThemeProvider, useTheme } from "./context/ThemeContext";
 import { Header } from "./components/Header";
 import { ChatWidget } from "./components/ChatWidget";
@@ -186,7 +187,9 @@ function App() {
         <AuthProvider>
           <CartProvider>
             <IndividualPriceProvider>
-              <AppContent />
+              <RegionProvider>
+                <AppContent />
+              </RegionProvider>
             </IndividualPriceProvider>
           </CartProvider>
         </AuthProvider>

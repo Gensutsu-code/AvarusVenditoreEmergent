@@ -1,5 +1,6 @@
 import { Link, useLocation, useNavigate } from 'react-router-dom';
-import { ShoppingCart, User, Search, LogOut, Settings, Heart, Package, ClipboardList, Gift, Newspaper, Menu, X, MessageCircle, Bell, Wallet, RefreshCw, CreditCard, Wrench } from 'lucide-react';
+import { ShoppingCart, User, Search, LogOut, Settings, Heart, Package, ClipboardList, Gift, Newspaper, Menu, X, MessageCircle, Bell, Wallet, RefreshCw, CreditCard, Wrench, MapPin, ChevronDown } from 'lucide-react';
+import { useRegion } from '../context/RegionContext';
 import { useAuth } from '../context/AuthContext';
 import { useCart } from '../context/CartContext';
 import { Button } from './ui/button';
@@ -12,6 +13,48 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { toast } from 'sonner';
 import axios from 'axios';
 import { playNotificationSound, showPushNotification, requestNotificationPermission } from '../utils/notifications';
+
+// Region selector (client region for delivery estimates)
+const RegionSelector = () => {
+  const { region, setRegion, regions } = useRegion();
+  const [open, setOpen] = useState(false);
+  const ref = useRef(null);
+  useEffect(() => {
+    const h = (e) => { if (ref.current && !ref.current.contains(e.target)) setOpen(false); };
+    document.addEventListener('mousedown', h);
+    return () => document.removeEventListener('mousedown', h);
+  }, []);
+  if (!regions || regions.length === 0) return null;
+  return (
+    <div className="relative" ref={ref}>
+      <button
+        onClick={() => setOpen(o => !o)}
+        className="h-10 px-3 rounded-xl flex items-center gap-1.5 bg-white/95 border border-slate-200 text-slate-600 hover:border-teal-300 hover:text-teal-600 transition-all duration-200 text-sm font-medium max-w-[180px]"
+        data-testid="region-selector"
+        title="Ваш регион для расчёта доставки"
+      >
+        <MapPin className="w-4 h-4 text-teal-500 flex-shrink-0" />
+        <span className="truncate">{region || 'Выберите регион'}</span>
+        <ChevronDown className="w-3.5 h-3.5 flex-shrink-0 opacity-60" />
+      </button>
+      {open && (
+        <div className="absolute left-0 mt-1 w-56 bg-white border border-slate-200 rounded-xl shadow-xl z-50 py-1 max-h-72 overflow-y-auto" data-testid="region-menu">
+          {regions.map((r) => (
+            <button
+              key={r}
+              onClick={() => { setRegion(r); setOpen(false); }}
+              className={`w-full text-left px-4 py-2 text-sm flex items-center gap-2 hover:bg-teal-50 ${region === r ? 'text-teal-600 font-semibold bg-teal-50/50' : 'text-slate-600'}`}
+              data-testid={`region-option-${r}`}
+            >
+              <MapPin className="w-3.5 h-3.5 opacity-60" /> {r}
+            </button>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+};
+
 
 // Expandable Profile Menu Component
 const ExpandableProfileMenu = ({ onLogout, unreadCount = 0 }) => {
@@ -361,6 +404,7 @@ export const Header = () => {
                   <Search className="w-5 h-5" />
                 </motion.div>
               </NavLink>
+              <RegionSelector />
             </div>
           )}
           

@@ -11,8 +11,23 @@ from models import CartItem, OrderCreate, OrderResponse, FavoriteItem
 from notify import notify_user, notify_admin
 from routes.telegram import send_telegram_order_notification
 from routes.credit import has_overdue_deferral
+from routes.warehouse import allocate_stock, restore_stock
 
 router = APIRouter(tags=["orders"])
+
+
+async def _restore_order_stock(order):
+    """Restore stock for a cancelled/returned order. Uses per-warehouse allocations when available."""
+    allocs = order.get("stock_allocations")
+    if allocs:
+        for a in allocs:
+            await restore_stock(a.get("product_id"), a.get("allocations", []))
+    else:
+        for item in order.get("items", []):
+            await db.products.update_one(
+                {"id": item.get("product_id")},
+                {"$inc": {"stock": item.get("quantity", 0)}}
+            )
 
 
 def compute_promo_discount(product: dict, base_price: float, quantity: int = 1) -> tuple:
@@ -583,6 +598,7 @@ async def create_order(data: OrderCreate, user=Depends(get_current_user)):
         "ozon_certificate_bonus": ozon_certificate_bonus,
         "reward_choice": reward_choice,
         "reward_points": int(reward_points),
+        "region": user.get("region", "") or "",
         "created_at": datetime.now(timezone.utc).isoformat()
     }
     
@@ -645,6 +661,8 @@ async def create_order(data: OrderCreate, user=Depends(get_current_user)):
     
     # Price map for COGS/profit report (revenue per product line)
     order_price_map = {it.get("product_id"): it.get("price", 0) for it in items}
+    order_region = user.get("region", "") or ""
+    order_allocations = []  # [{product_id, allocations:[{warehouse_id, quantity}]}]
     for cart_item in cart["items"]:
         prod = await db.products.find_one(
             {"id": cart_item["product_id"]},
@@ -652,14 +670,13 @@ async def create_order(data: OrderCreate, user=Depends(get_current_user)):
         )
         if not prod:
             continue
-        result = await db.products.update_one(
-            {"id": cart_item["product_id"], "stock": {"$gte": cart_item["quantity"]}},
-            {"$inc": {"stock": -cart_item["quantity"]}}
-        )
-        if result.modified_count:
+        stock_before = prod.get("stock", 0) or 0
+        allocations = await allocate_stock(cart_item["product_id"], cart_item["quantity"], order_region)
+        if allocations is not None:
+            order_allocations.append({"product_id": cart_item["product_id"], "allocations": allocations})
             unit_cost = prod.get("purchase_price", 0) or 0
             unit_price = order_price_map.get(cart_item["product_id"], 0) or 0
-            stock_after = (prod.get("stock", 0) or 0) - cart_item["quantity"]
+            stock_after = stock_before - cart_item["quantity"]
             await db.stock_movements.insert_one({
                 "id": str(uuid.uuid4()),
                 "product_id": cart_item["product_id"],
@@ -675,11 +692,14 @@ async def create_order(data: OrderCreate, user=Depends(get_current_user)):
                 "reason": "",
                 "comment": f"Заказ #{order_id[:8]}",
                 "order_id": order_id,
-                "stock_before": stock_after + cart_item["quantity"],
+                "warehouse_allocations": allocations,
+                "stock_before": stock_before,
                 "stock_after": stock_after,
                 "created_at": datetime.now(timezone.utc).isoformat(),
                 "created_by": user.get("name", user.get("email", "")),
             })
+    if order_allocations:
+        await db.orders.update_one({"id": order_id}, {"$set": {"stock_allocations": order_allocations}})
     
     await db.carts.update_one({"user_id": user["id"]}, {"$set": {"items": []}})
     
@@ -762,11 +782,7 @@ async def check_expired_orders():
     cancelled_count = 0
     for order in expired_orders:
         # Restore stock
-        for item in order.get("items", []):
-            await db.products.update_one(
-                {"id": item.get("product_id")},
-                {"$inc": {"stock": item.get("quantity", 0)}}
-            )
+        await _restore_order_stock(order)
         
         # Cancel order
         await db.orders.update_one(
@@ -1146,11 +1162,7 @@ async def cancel_order_by_customer(order_id: str, user=Depends(get_current_user)
                 raise HTTPException(status_code=400, detail="Время для отмены заказа истекло (24 часа)")
     
     # Restore stock
-    for item in order.get("items", []):
-        await db.products.update_one(
-            {"id": item.get("product_id")},
-            {"$inc": {"stock": item.get("quantity", 0)}}
-        )
+    await _restore_order_stock(order)
     
     # Refund to balance if order was paid (not cash)
     refund_amount = 0
@@ -1313,12 +1325,9 @@ async def return_order_to_cart(order_id: str, user=Depends(get_current_user)):
             existing_items[product_id]["quantity"] += quantity
         else:
             existing_items[product_id] = {"product_id": product_id, "quantity": quantity}
-        
-        # Restore stock
-        await db.products.update_one(
-            {"id": product_id},
-            {"$inc": {"stock": quantity}}
-        )
+    
+    # Restore stock (allocation-aware)
+    await _restore_order_stock(order)
     
     # Update cart
     await db.carts.update_one(

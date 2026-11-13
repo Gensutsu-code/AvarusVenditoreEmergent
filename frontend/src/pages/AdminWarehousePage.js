@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import { motion } from 'framer-motion';
-import { Warehouse, Package, TrendingUp, TrendingDown, Wallet, AlertTriangle, Plus, Minus, ArrowDownCircle, ArrowUpCircle, ShoppingCart, Trash2, Loader2, Coins } from 'lucide-react';
+import { Warehouse, Package, TrendingUp, TrendingDown, Wallet, AlertTriangle, Plus, Minus, ArrowDownCircle, ArrowUpCircle, ShoppingCart, Trash2, Loader2, Coins, MapPin, Pencil, ArrowRightLeft } from 'lucide-react';
 import { Button } from '../components/ui/button';
 import { Input } from '../components/ui/input';
 import { Dialog, DialogContent, DialogTitle, DialogDescription } from '../components/ui/dialog';
@@ -14,11 +14,23 @@ const fmt = (p) => new Intl.NumberFormat('ru-RU').format(Math.round(p || 0));
 
 const TABS = [
   { id: 'stock', label: 'Остатки' },
+  { id: 'warehouses', label: 'Склады' },
   { id: 'receipts', label: 'Приёмки' },
   { id: 'movements', label: 'Движения' },
   { id: 'cogs', label: 'Прибыль' },
+  { id: 'delivery', label: 'Доставка' },
   { id: 'finance', label: 'Финансы' },
 ];
+
+const DELIVERY_STATES = [
+  { key: 'in_region', title: 'Свой регион', hint: 'Товар есть на складе в регионе клиента' },
+  { key: 'other_region', title: 'Другой регион', hint: 'Товар есть на складе в другом регионе' },
+  { key: 'out_of_stock', title: 'Нет в наличии', hint: 'Товара нет ни на одном складе' },
+];
+
+const cfgColorFallback = (c) => (typeof c === 'string' && /^#[0-9a-fA-F]{6}$/.test(c)) ? c : '#000000';
+const _d2 = (n) => { const d = new Date(); d.setDate(d.getDate() + (n || 0)); return `${String(d.getDate()).padStart(2, '0')}.${String(d.getMonth() + 1).padStart(2, '0')}`; };
+const deliveryPreviewDate = (min, max) => (min === max ? _d2(min) : `${_d2(min)} – ${_d2(max)}`);
 
 const MV = {
   receipt: { label: 'Приход', color: 'text-emerald-600 bg-emerald-50', icon: ArrowDownCircle, sign: '+' },
@@ -52,7 +64,50 @@ export default function AdminWarehousePage({ embedded = false }) {
   const [mvPrice, setMvPrice] = useState('');
   const [mvSupplier, setMvSupplier] = useState('');
   const [mvReason, setMvReason] = useState('');
+  const [mvWarehouse, setMvWarehouse] = useState('');
   const [submitting, setSubmitting] = useState(false);
+
+  // Warehouses (склады с регионами)
+  const [warehouses, setWarehouses] = useState([]);
+  const [whForm, setWhForm] = useState(null); // {id?, name, region, address}
+  const [transferModal, setTransferModal] = useState(null); // { product }
+  const [trFrom, setTrFrom] = useState('');
+  const [trTo, setTrTo] = useState('');
+  const [trQty, setTrQty] = useState('');
+
+  const fetchWarehouses = async () => {
+    const res = await axios.get(`${API}/admin/warehouses`);
+    setWarehouses(res.data || []);
+  };
+  const saveWarehouse = async () => {
+    if (!whForm?.name?.trim() || !whForm?.region?.trim()) { toast.error('Укажите название и регион'); return; }
+    setSubmitting(true);
+    try {
+      if (whForm.id) await axios.put(`${API}/admin/warehouses/${whForm.id}`, { name: whForm.name, region: whForm.region, address: whForm.address || '' });
+      else await axios.post(`${API}/admin/warehouses`, { name: whForm.name, region: whForm.region, address: whForm.address || '' });
+      toast.success('Склад сохранён');
+      setWhForm(null);
+      await Promise.all([fetchWarehouses(), fetchStock()]);
+    } catch (e) { toast.error(e.response?.data?.detail || 'Ошибка'); } finally { setSubmitting(false); }
+  };
+  const deleteWarehouse = async (id) => {
+    try {
+      await axios.delete(`${API}/admin/warehouses/${id}`);
+      toast.success('Склад удалён');
+      await Promise.all([fetchWarehouses(), fetchStock()]);
+    } catch (e) { toast.error(e.response?.data?.detail || 'Ошибка'); }
+  };
+  const submitTransfer = async () => {
+    const q = parseInt(trQty, 10);
+    if (!trFrom || !trTo || !q || q <= 0) { toast.error('Заполните склады и количество'); return; }
+    setSubmitting(true);
+    try {
+      await axios.post(`${API}/admin/warehouse/transfer`, { product_id: transferModal.product.id, from_warehouse_id: trFrom, to_warehouse_id: trTo, quantity: q });
+      toast.success('Перемещено');
+      setTransferModal(null); setTrFrom(''); setTrTo(''); setTrQty('');
+      await fetchStock();
+    } catch (e) { toast.error(e.response?.data?.detail || 'Ошибка'); } finally { setSubmitting(false); }
+  };
 
   const [finModal, setFinModal] = useState(false);
   const [finType, setFinType] = useState('expense');
@@ -67,6 +122,7 @@ export default function AdminWarehousePage({ embedded = false }) {
   const [rcSupplier, setRcSupplier] = useState('');
   const [rcComment, setRcComment] = useState('');
   const [rcDate, setRcDate] = useState(today());
+  const [rcWarehouse, setRcWarehouse] = useState('');
   const [rcItems, setRcItems] = useState([]);
   const [rcSearch, setRcSearch] = useState('');
   const [rcResults, setRcResults] = useState([]);
@@ -76,6 +132,21 @@ export default function AdminWarehousePage({ embedded = false }) {
   const [cogs, setCogs] = useState(null);
   const [cogsStart, setCogsStart] = useState(firstOfMonth());
   const [cogsEnd, setCogsEnd] = useState(today());
+
+  // Delivery display settings (3 states: свой регион / другой / нет в наличии)
+  const [delivery, setDelivery] = useState(null);
+  const fetchDelivery = async () => {
+    const res = await axios.get(`${API}/delivery-display`);
+    setDelivery(res.data);
+  };
+  const saveDelivery = async () => {
+    setSubmitting(true);
+    try {
+      await axios.put(`${API}/admin/delivery-display`, delivery);
+      toast.success('Настройки доставки сохранены');
+    } catch (e) { toast.error(e.response?.data?.detail || 'Ошибка'); } finally { setSubmitting(false); }
+  };
+  const updDelivery = (key, field, val) => setDelivery(prev => ({ ...prev, [key]: { ...prev[key], [field]: val } }));
 
   const fetchReceipts = async () => {
     const res = await axios.get(`${API}/admin/warehouse/receipts`);
@@ -103,17 +174,18 @@ export default function AdminWarehousePage({ embedded = false }) {
   const rcTotalCost = rcItems.reduce((s, it) => s + (Number(it.quantity) || 0) * (Number(it.purchase_price) || 0), 0);
   const submitReceipt = async () => {
     const valid = rcItems.filter(it => (Number(it.quantity) || 0) > 0);
+    if (!rcWarehouse) { toast.error('Выберите склад приёмки'); return; }
     if (valid.length === 0) { toast.error('Добавьте товары с количеством > 0'); return; }
     setSubmitting(true);
     try {
       await axios.post(`${API}/admin/warehouse/receipts`, {
-        supplier: rcSupplier, comment: rcComment, date: `${rcDate}T12:00:00+00:00`,
+        supplier: rcSupplier, comment: rcComment, date: `${rcDate}T12:00:00+00:00`, warehouse_id: rcWarehouse,
         items: valid.map(it => ({ product_id: it.product_id, quantity: Number(it.quantity), purchase_price: it.purchase_price === '' ? null : Number(it.purchase_price) })),
       });
       toast.success('Приёмка оформлена');
       setShowReceiptForm(false);
-      setRcSupplier(''); setRcComment(''); setRcDate(today()); setRcItems([]); setRcSearch(''); setRcResults([]);
-      await Promise.all([fetchReceipts(), fetchStock(), fetchMovements(), fetchFinance()]);
+      setRcSupplier(''); setRcComment(''); setRcDate(today()); setRcWarehouse(''); setRcItems([]); setRcSearch(''); setRcResults([]);
+      await Promise.all([fetchReceipts(), fetchStock(), fetchMovements(), fetchFinance(), fetchWarehouses()]);
     } catch (e) { toast.error(e.response?.data?.detail || 'Ошибка'); } finally { setSubmitting(false); }
   };
 
@@ -133,7 +205,7 @@ export default function AdminWarehousePage({ embedded = false }) {
   useEffect(() => {
     if (authLoading) return;
     if (!user || user.role !== 'admin') { if (!embedded) navigate('/login'); return; }
-    Promise.all([fetchStock(), fetchMovements(), fetchFinance(), fetchReceipts(), fetchCogs()]).catch(() => toast.error('Ошибка загрузки')).finally(() => setLoading(false));
+    Promise.all([fetchStock(), fetchMovements(), fetchFinance(), fetchReceipts(), fetchCogs(), fetchWarehouses(), fetchDelivery()]).catch(() => toast.error('Ошибка загрузки')).finally(() => setLoading(false));
     axios.get(`${API}/stock-sync-settings`).then(r => setGlobalSync(r.data.stock_sync_enabled)).catch(() => {});
     // eslint-disable-next-line
   }, [user, authLoading, navigate]);
@@ -151,12 +223,14 @@ export default function AdminWarehousePage({ embedded = false }) {
   const openMv = (product, type) => {
     setMvModal({ product, type });
     setMvQty(''); setMvPrice(String(product.purchase_price || '')); setMvSupplier(''); setMvReason('');
+    setMvWarehouse(warehouses[0]?.id || '');
   };
 
   const openBulkMv = (type) => {
     if (selected.length === 0) { toast.error('Выберите товары'); return; }
     setMvModal({ bulk: true, type });
     setMvQty(''); setMvPrice(''); setMvSupplier(''); setMvReason('');
+    setMvWarehouse(warehouses[0]?.id || '');
   };
 
   const toggleSelect = (id) => setSelected((s) => s.includes(id) ? s.filter(x => x !== id) : [...s, id]);
@@ -178,26 +252,27 @@ export default function AdminWarehousePage({ embedded = false }) {
   const submitMv = async () => {
     const qty = parseInt(mvQty, 10);
     if (!qty || qty <= 0) { toast.error('Укажите количество'); return; }
+    if (!mvWarehouse) { toast.error('Выберите склад'); return; }
     setSubmitting(true);
     try {
       if (mvModal.bulk) {
-        const payload = { product_ids: selected, type: mvModal.type, quantity: qty, comment: '' };
+        const payload = { product_ids: selected, type: mvModal.type, quantity: qty, warehouse_id: mvWarehouse, comment: '' };
         if (mvModal.type === 'receipt') { payload.purchase_price = mvPrice === '' ? undefined : Number(mvPrice); payload.supplier = mvSupplier; }
         else { payload.reason = mvReason; }
         const res = await axios.post(`${API}/admin/warehouse/movements/bulk`, payload);
         const sk = res.data.skipped || [];
         toast.success(`Обработано: ${res.data.processed}${sk.length ? `, пропущено: ${sk.length}` : ''}`);
         setMvModal(null); setSelected([]);
-        await Promise.all([fetchStock(), fetchMovements(), fetchFinance()]);
+        await Promise.all([fetchStock(), fetchMovements(), fetchFinance(), fetchWarehouses()]);
         return;
       }
-      const payload = { product_id: mvModal.product.id, type: mvModal.type, quantity: qty, comment: '' };
+      const payload = { product_id: mvModal.product.id, type: mvModal.type, quantity: qty, warehouse_id: mvWarehouse, comment: '' };
       if (mvModal.type === 'receipt') { payload.purchase_price = mvPrice === '' ? undefined : Number(mvPrice); payload.supplier = mvSupplier; }
       else { payload.reason = mvReason; }
       await axios.post(`${API}/admin/warehouse/movement`, payload);
       toast.success(mvModal.type === 'receipt' ? 'Приход оформлен' : 'Списание оформлено');
       setMvModal(null);
-      await Promise.all([fetchStock(), fetchMovements(), fetchFinance()]);
+      await Promise.all([fetchStock(), fetchMovements(), fetchFinance(), fetchWarehouses()]);
     } catch (e) { toast.error(e.response?.data?.detail || 'Ошибка'); } finally { setSubmitting(false); }
   };
 
@@ -339,6 +414,13 @@ export default function AdminWarehousePage({ embedded = false }) {
                             <td className="px-4 py-3">
                               <p className="font-medium text-slate-800">{it.name}</p>
                               <p className="text-xs text-slate-400">{it.manufacturer ? it.manufacturer + ' · ' : ''}{it.article}</p>
+                              {it.regions?.length > 0 && (
+                                <div className="flex flex-wrap gap-1 mt-1">
+                                  {it.warehouses.map(w => (
+                                    <span key={w.warehouse_id} className="text-[10px] bg-teal-50 text-teal-700 border border-teal-100 rounded px-1.5 py-0.5" title={w.warehouse_name}>{w.region}: {w.quantity}</span>
+                                  ))}
+                                </div>
+                              )}
                             </td>
                             <td className="px-4 py-3 text-right"><span className={`font-bold ${it.is_low ? 'text-rose-600' : 'text-slate-800'}`}>{it.stock}</span>{it.is_low && <AlertTriangle className="w-3.5 h-3.5 text-rose-400 inline ml-1" />}</td>
                             <td className="px-4 py-3 text-right">{it.reserved > 0 ? <span className="font-medium text-indigo-600" data-testid={`wh-reserved-${it.id}`}>{it.reserved}</span> : <span className="text-slate-300">—</span>}</td>
@@ -351,6 +433,7 @@ export default function AdminWarehousePage({ embedded = false }) {
                               <div className="flex gap-1 justify-end">
                                 <Button size="sm" variant="outline" onClick={() => openMv(it, 'receipt')} className="border-emerald-200 text-emerald-600 rounded-lg h-8 px-2" data-testid={`wh-receipt-${it.id}`}><Plus className="w-4 h-4" /></Button>
                                 <Button size="sm" variant="outline" onClick={() => openMv(it, 'writeoff')} className="border-rose-200 text-rose-600 rounded-lg h-8 px-2" data-testid={`wh-writeoff-${it.id}`}><Minus className="w-4 h-4" /></Button>
+                                <Button size="sm" variant="outline" onClick={() => { setTransferModal({ product: it }); setTrFrom(it.warehouses?.[0]?.warehouse_id || ''); setTrTo(''); setTrQty(''); }} disabled={!(it.warehouses?.length > 0) || warehouses.length < 2} className="border-blue-200 text-blue-600 rounded-lg h-8 px-2" data-testid={`wh-transfer-${it.id}`} title="Переместить между складами"><ArrowRightLeft className="w-4 h-4" /></Button>
                               </div>
                             </td>
                           </tr>
@@ -397,6 +480,42 @@ export default function AdminWarehousePage({ embedded = false }) {
               </>
             )}
 
+            {/* WAREHOUSES TAB */}
+            {tab === 'warehouses' && (
+              <>
+                <div className="flex items-center justify-between mb-4 gap-3 flex-wrap">
+                  <p className="text-sm text-slate-500">Склады с привязкой к региону. Регион определяет срок доставки для клиента. Товар попадает на склад при приёмке.</p>
+                  <Button onClick={() => setWhForm({ name: '', region: '', address: '' })} className="bg-amber-500 hover:bg-amber-600 text-white rounded-xl" data-testid="new-warehouse-btn"><Plus className="w-4 h-4 mr-1.5" />Добавить склад</Button>
+                </div>
+                <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-3">
+                  {warehouses.length === 0 ? (
+                    <div className="col-span-full bg-white rounded-2xl p-10 text-center text-slate-400 shadow-sm">Складов пока нет. Добавьте первый склад.</div>
+                  ) : warehouses.map(w => (
+                    <div key={w.id} className="bg-white rounded-2xl p-4 shadow-sm" data-testid={`warehouse-card-${w.id}`}>
+                      <div className="flex items-start justify-between gap-2">
+                        <div className="flex items-center gap-2.5 min-w-0">
+                          <div className="w-10 h-10 rounded-xl bg-amber-50 text-amber-600 flex items-center justify-center flex-shrink-0"><Warehouse className="w-5 h-5" /></div>
+                          <div className="min-w-0">
+                            <p className="font-semibold text-slate-800 truncate">{w.name}</p>
+                            <p className="text-xs text-teal-600 font-medium flex items-center gap-1"><MapPin className="w-3 h-3" />{w.region}</p>
+                          </div>
+                        </div>
+                        <div className="flex gap-1 flex-shrink-0">
+                          <button onClick={() => setWhForm({ id: w.id, name: w.name, region: w.region, address: w.address || '' })} className="text-slate-400 hover:text-amber-600 p-1" data-testid={`wh-edit-${w.id}`}><Pencil className="w-4 h-4" /></button>
+                          <button onClick={() => deleteWarehouse(w.id)} className="text-slate-400 hover:text-rose-500 p-1" data-testid={`wh-delete-${w.id}`}><Trash2 className="w-4 h-4" /></button>
+                        </div>
+                      </div>
+                      {w.address && <p className="text-xs text-slate-400 mt-2">{w.address}</p>}
+                      <div className="flex gap-4 mt-3 pt-3 border-t border-slate-100 text-sm">
+                        <span className="text-slate-500">Единиц: <b className="text-slate-800">{fmt(w.total_units)}</b></span>
+                        <span className="text-slate-500">Позиций: <b className="text-slate-800">{fmt(w.total_skus)}</b></span>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </>
+            )}
+
             {/* RECEIPTS TAB (документы приёмки) */}
             {tab === 'receipts' && (
               <>
@@ -409,7 +528,13 @@ export default function AdminWarehousePage({ embedded = false }) {
 
                 {showReceiptForm && (
                   <div className="bg-white rounded-2xl shadow-sm p-5 mb-6" data-testid="receipt-form">
-                    <div className="grid sm:grid-cols-3 gap-3 mb-4">
+                    <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-3 mb-4">
+                      <div><label className="block text-xs text-slate-500 mb-1">Склад приёмки *</label>
+                        <select value={rcWarehouse} onChange={(e) => setRcWarehouse(e.target.value)} className="w-full h-10 rounded-xl border border-slate-200 bg-white px-3 text-sm focus:outline-none focus:border-emerald-400" data-testid="rc-warehouse">
+                          <option value="">— выберите —</option>
+                          {warehouses.map(w => <option key={w.id} value={w.id}>{w.name} ({w.region})</option>)}
+                        </select>
+                      </div>
                       <div><label className="block text-xs text-slate-500 mb-1">Поставщик</label><Input value={rcSupplier} onChange={(e) => setRcSupplier(e.target.value)} placeholder="ООО Автозапчасть..." className="rounded-xl" data-testid="rc-supplier" /></div>
                       <div><label className="block text-xs text-slate-500 mb-1">Дата</label><Input type="date" value={rcDate} onChange={(e) => setRcDate(e.target.value)} className="rounded-xl" data-testid="rc-date" /></div>
                       <div><label className="block text-xs text-slate-500 mb-1">Комментарий</label><Input value={rcComment} onChange={(e) => setRcComment(e.target.value)} placeholder="№ накладной, примечание" className="rounded-xl" data-testid="rc-comment" /></div>
@@ -537,6 +662,44 @@ export default function AdminWarehousePage({ embedded = false }) {
               </>
             )}
 
+            {/* DELIVERY DISPLAY SETTINGS TAB */}
+            {tab === 'delivery' && delivery && (
+              <>
+                <p className="text-sm text-slate-500 mb-5">Настройте, как показывается срок доставки клиентам. Срок рассчитывается автоматически по региону клиента и наличию товара на складах. Даты формируются прибавлением указанных дней к дате заказа.</p>
+                <div className="grid lg:grid-cols-3 gap-4">
+                  {DELIVERY_STATES.map(st => {
+                    const cfg = delivery[st.key] || {};
+                    return (
+                      <div key={st.key} className="bg-white rounded-2xl shadow-sm p-5" data-testid={`delivery-card-${st.key}`}>
+                        <div className="flex items-center gap-2 mb-3">
+                          <span className="w-4 h-4 rounded-full" style={{ background: cfg.color }} />
+                          <div>
+                            <p className="font-semibold text-slate-800">{st.title}</p>
+                            <p className="text-[11px] text-slate-400">{st.hint}</p>
+                          </div>
+                        </div>
+                        <label className="block text-xs text-slate-500 mb-1">Подпись (текст статуса)</label>
+                        <Input value={cfg.label || ''} onChange={(e) => updDelivery(st.key, 'label', e.target.value)} className="rounded-xl mb-3" data-testid={`delivery-label-${st.key}`} />
+                        <label className="block text-xs text-slate-500 mb-1">Цвет</label>
+                        <div className="flex items-center gap-2 mb-3">
+                          <input type="color" value={cfgColorFallback(cfg.color)} onChange={(e) => updDelivery(st.key, 'color', e.target.value)} className="w-10 h-10 rounded-lg border border-slate-200 cursor-pointer" data-testid={`delivery-color-${st.key}`} />
+                          <Input value={cfg.color || ''} onChange={(e) => updDelivery(st.key, 'color', e.target.value)} className="rounded-xl flex-1" />
+                        </div>
+                        <div className="grid grid-cols-2 gap-3">
+                          <div><label className="block text-xs text-slate-500 mb-1">Дней (от)</label><Input type="number" min="0" value={cfg.days_min ?? 0} onChange={(e) => updDelivery(st.key, 'days_min', parseInt(e.target.value || '0', 10))} className="rounded-xl" data-testid={`delivery-min-${st.key}`} /></div>
+                          <div><label className="block text-xs text-slate-500 mb-1">Дней (до)</label><Input type="number" min="0" value={cfg.days_max ?? 0} onChange={(e) => updDelivery(st.key, 'days_max', parseInt(e.target.value || '0', 10))} className="rounded-xl" data-testid={`delivery-max-${st.key}`} /></div>
+                        </div>
+                        <div className="mt-3 rounded-lg px-3 py-2 text-xs font-semibold inline-flex items-center gap-1.5" style={{ color: cfg.color, background: (cfg.color || '#000') + '14', border: `1px solid ${(cfg.color || '#000')}55` }}>
+                          {cfg.label} · {deliveryPreviewDate(cfg.days_min, cfg.days_max)}
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+                <Button onClick={saveDelivery} disabled={submitting} className="mt-5 bg-amber-500 hover:bg-amber-600 text-white rounded-xl" data-testid="delivery-save-btn">{submitting ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : null}Сохранить настройки</Button>
+              </>
+            )}
+
             {/* FINANCE TAB */}
             {tab === 'finance' && finance && (
               <>
@@ -585,6 +748,16 @@ export default function AdminWarehousePage({ embedded = false }) {
           <DialogTitle>{mvModal?.type === 'receipt' ? 'Приход товара' : 'Списание товара'}{mvModal?.bulk ? ' (массово)' : ''}</DialogTitle>
           <DialogDescription>{mvModal?.bulk ? `Будет применено к ${selected.length} товарам` : `${mvModal?.product?.name} · остаток ${mvModal?.product?.stock}`}</DialogDescription>
           <div className="space-y-3 mt-2">
+            <div>
+              <label className="block text-xs font-medium text-slate-500 mb-1">Склад {mvModal?.type === 'writeoff' ? '(списание)' : '(приход)'}</label>
+              <select value={mvWarehouse} onChange={(e) => setMvWarehouse(e.target.value)} className="w-full h-10 rounded-xl border border-slate-200 bg-white px-3 text-sm focus:outline-none focus:border-amber-400" data-testid="mv-warehouse-select">
+                <option value="">— выберите склад —</option>
+                {warehouses.map(w => <option key={w.id} value={w.id}>{w.name} ({w.region})</option>)}
+              </select>
+              {mvModal && !mvModal.bulk && mvModal.type === 'writeoff' && mvModal.product?.warehouses?.length > 0 && (
+                <p className="text-[11px] text-slate-400 mt-1">На складах: {mvModal.product.warehouses.map(w => `${w.warehouse_name}: ${w.quantity}`).join(', ')}</p>
+              )}
+            </div>
             <div>
               <label className="block text-xs font-medium text-slate-500 mb-1">Количество</label>
               <Input type="number" min="1" value={mvQty} onChange={(e) => setMvQty(e.target.value)} className="rounded-xl" data-testid="mv-qty-input" />
@@ -640,6 +813,46 @@ export default function AdminWarehousePage({ embedded = false }) {
               {submitting ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : null}Сохранить
             </Button>
             <Button variant="outline" onClick={() => setFinModal(false)} className="w-full rounded-xl" data-testid="fin-cancel-btn">Отмена</Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Warehouse create/edit modal */}
+      <Dialog open={!!whForm} onOpenChange={(o) => !o && setWhForm(null)}>
+        <DialogContent className="rounded-2xl" data-testid="warehouse-modal">
+          <DialogTitle>{whForm?.id ? 'Редактировать склад' : 'Новый склад'}</DialogTitle>
+          <DialogDescription>Регион обязателен — по нему рассчитывается срок доставки.</DialogDescription>
+          <div className="space-y-3 mt-2">
+            <div><label className="block text-xs font-medium text-slate-500 mb-1">Название *</label><Input value={whForm?.name || ''} onChange={(e) => setWhForm({ ...whForm, name: e.target.value })} placeholder="Основной склад" className="rounded-xl" data-testid="wh-name-input" /></div>
+            <div><label className="block text-xs font-medium text-slate-500 mb-1">Регион *</label><Input value={whForm?.region || ''} onChange={(e) => setWhForm({ ...whForm, region: e.target.value })} placeholder="Москва" className="rounded-xl" data-testid="wh-region-input" /></div>
+            <div><label className="block text-xs font-medium text-slate-500 mb-1">Адрес (необязательно)</label><Input value={whForm?.address || ''} onChange={(e) => setWhForm({ ...whForm, address: e.target.value })} placeholder="ул. Ленина, 1" className="rounded-xl" data-testid="wh-address-input" /></div>
+            <Button onClick={saveWarehouse} disabled={submitting} className="w-full bg-amber-500 hover:bg-amber-600 text-white rounded-xl" data-testid="wh-save-btn">{submitting ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : null}Сохранить</Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Transfer modal */}
+      <Dialog open={!!transferModal} onOpenChange={(o) => !o && setTransferModal(null)}>
+        <DialogContent className="rounded-2xl" data-testid="transfer-modal">
+          <DialogTitle>Перемещение товара</DialogTitle>
+          <DialogDescription>{transferModal?.product?.name}</DialogDescription>
+          <div className="space-y-3 mt-2">
+            <div>
+              <label className="block text-xs font-medium text-slate-500 mb-1">Со склада</label>
+              <select value={trFrom} onChange={(e) => setTrFrom(e.target.value)} className="w-full h-10 rounded-xl border border-slate-200 bg-white px-3 text-sm focus:outline-none focus:border-blue-400" data-testid="tr-from">
+                <option value="">— откуда —</option>
+                {(transferModal?.product?.warehouses || []).map(w => <option key={w.warehouse_id} value={w.warehouse_id}>{w.warehouse_name} ({w.region}) · {w.quantity} шт.</option>)}
+              </select>
+            </div>
+            <div>
+              <label className="block text-xs font-medium text-slate-500 mb-1">На склад</label>
+              <select value={trTo} onChange={(e) => setTrTo(e.target.value)} className="w-full h-10 rounded-xl border border-slate-200 bg-white px-3 text-sm focus:outline-none focus:border-blue-400" data-testid="tr-to">
+                <option value="">— куда —</option>
+                {warehouses.filter(w => w.id !== trFrom).map(w => <option key={w.id} value={w.id}>{w.name} ({w.region})</option>)}
+              </select>
+            </div>
+            <div><label className="block text-xs font-medium text-slate-500 mb-1">Количество</label><Input type="number" min="1" value={trQty} onChange={(e) => setTrQty(e.target.value)} className="rounded-xl" data-testid="tr-qty" /></div>
+            <Button onClick={submitTransfer} disabled={submitting} className="w-full bg-blue-500 hover:bg-blue-600 text-white rounded-xl" data-testid="tr-submit">{submitting ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <ArrowRightLeft className="w-4 h-4 mr-2" />}Переместить</Button>
           </div>
         </DialogContent>
       </Dialog>

@@ -2986,61 +2986,16 @@ export default function AdminPage() {
                     data-testid="product-purchase-price-input"
                   />
                 </div>
-                <div>
-                  <Label className="text-xs font-semibold uppercase text-teal-600">Наличие</Label>
-                  <div className="mt-1.5 flex items-center gap-3">
-                    <button
-                      type="button"
-                      onClick={() => setEditingProduct({ ...editingProduct, manual_available: !(editingProduct.manual_available ?? true) })}
-                      className={`relative inline-flex h-8 w-16 items-center rounded-full transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-teal-500 focus:ring-offset-2 ${
-                        (editingProduct.manual_available ?? true) ? 'bg-emerald-500' : 'bg-slate-300'
-                      }`}
-                      data-testid="product-stock-toggle"
-                    >
-                      <span
-                        className={`inline-block h-6 w-6 transform rounded-full bg-white shadow-md transition-transform duration-200 ${
-                          (editingProduct.manual_available ?? true) ? 'translate-x-9' : 'translate-x-1'
-                        }`}
-                      />
-                    </button>
-                    <span className={`text-sm font-medium ${(editingProduct.manual_available ?? true) ? 'text-emerald-600' : 'text-slate-500'}`}>
-                      {(editingProduct.manual_available ?? true) ? 'В наличии' : 'Нет в наличии'}
-                    </span>
+                <div className="sm:col-span-2">
+                  <Label className="text-xs font-semibold uppercase text-teal-600">Наличие и доставка</Label>
+                  <div className="mt-1.5 flex items-start gap-2 rounded-lg bg-slate-50 border border-slate-200 px-3 py-2.5">
+                    <Warehouse className="w-4 h-4 text-slate-400 mt-0.5 flex-shrink-0" />
+                    <p className="text-[12px] text-slate-500 leading-relaxed">
+                      Наличие и срок доставки определяются автоматически по складам. Товар поступает на склад через <b>приёмку</b> во вкладке «Склад», а срок доставки рассчитывается по региону клиента. Текущий остаток: <b className="text-slate-700">{editingProduct.stock ?? 0} шт.</b>
+                      {editingProduct.stock_regions?.length ? <> · регионы: <b className="text-slate-700">{editingProduct.stock_regions.join(', ')}</b></> : null}
+                    </p>
                   </div>
-                  <p className="text-[11px] text-slate-400 mt-1">Работает, когда глобальная синхронизация со складом выключена</p>
                 </div>
-                <div>
-                  <Label className="text-xs font-semibold uppercase text-teal-600">Доставка (дней)</Label>
-                  <Input
-                    type="number"
-                    min="0"
-                    value={editingProduct.delivery_days ?? 3}
-                    onChange={(e) => {
-                      const v = e.target.value;
-                      const parsed = v === '' ? 0 : parseInt(v);
-                      setEditingProduct({ ...editingProduct, delivery_days: isNaN(parsed) ? 0 : Math.max(0, parsed) });
-                    }}
-                    className="mt-1.5 border-slate-200 focus:border-teal-500 focus:ring-teal-500"
-                    data-testid="product-delivery-input"
-                  />
-                  <p className="text-[11px] text-slate-400 mt-1">0 = «Сегодня», 1 = «1 день», и т.д.</p>
-                </div>
-              </div>
-
-              <div>
-                <Label className="text-xs font-semibold uppercase text-teal-600">Склад</Label>
-                <select
-                  value={editingProduct.warehouse || ''}
-                  onChange={(e) => setEditingProduct({ ...editingProduct, warehouse: e.target.value })}
-                  className="mt-1.5 w-full h-10 rounded-md border border-slate-200 bg-white px-3 text-sm focus:border-teal-500 focus:ring-teal-500 focus:outline-none"
-                  data-testid="product-warehouse-select"
-                >
-                  <option value="">Не указан</option>
-                  <option value="Ростов">Ростов</option>
-                  <option value="Пятигорск">Пятигорск</option>
-                  <option value="Москва">Москва</option>
-                  <option value="Новосибирск">Новосибирск</option>
-                </select>
               </div>
 
               {/* Badges */}

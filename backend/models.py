@@ -151,6 +151,7 @@ class ProductResponse(BaseModel):
     images: Optional[List[str]] = None
     cross_articles: Optional[str] = None
     stock: int
+    stock_regions: Optional[List[str]] = []
     delivery_days: int = 3
     warehouse: Optional[str] = None
     is_original: Optional[bool] = False

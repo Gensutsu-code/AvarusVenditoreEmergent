@@ -17,6 +17,7 @@ import { trackClick } from '../utils/tracker';
 import DiscountRequestModal from '../components/DiscountRequestModal';
 import ProductRequestModal from '../components/ProductRequestModal';
 import { computeDiscount, formatDiscountBadge, formatUntilDate, getQuantityTiers, getActiveTier, isProductAvailable, getPromoStock } from '../utils/productHelpers';
+import { DeliveryBadge } from '../components/DeliveryBadge';
 import { PromoCountdown } from '../components/PromoCountdown';
 
 const API = `${process.env.REACT_APP_BACKEND_URL}/api`;
@@ -108,13 +109,6 @@ export default function ProductPage() {
 
   const formatPrice = (price) => {
     return new Intl.NumberFormat('ru-RU').format(price);
-  };
-
-  const getDeliveryText = (days) => {
-    if (!days || days === 0) return 'Сегодня';
-    if (days === 1) return '1 день';
-    if (days < 5) return `${days} дня`;
-    return `${days} дней`;
   };
 
   const allImages = [];
@@ -505,19 +499,19 @@ export default function ProductPage() {
                   <Truck className="w-5 h-5 text-teal-600" />
                 </div>
                 <div>
-                  <p className="text-xs text-slate-500">Доставка</p>
-                  <p className="font-semibold text-slate-700">{getDeliveryText(product.delivery_days)}</p>
+                  <p className="text-xs text-slate-500 mb-1">Доставка</p>
+                  <DeliveryBadge stockRegions={product.stock_regions} productId={product.id} size="lg" />
                 </div>
               </div>
-              
-              {product.warehouse && (
+
+              {product.stock_regions?.length > 0 && (
                 <div className="glass-card p-4 flex items-center gap-3">
                   <div className="w-10 h-10 rounded-xl flex items-center justify-center bg-blue-500/10">
                     <MapPin className="w-5 h-5 text-blue-600" />
                   </div>
                   <div>
-                    <p className="text-xs text-slate-500">Склад</p>
-                    <p className="font-semibold text-slate-700">{product.warehouse}</p>
+                    <p className="text-xs text-slate-500">В наличии в регионах</p>
+                    <p className="font-semibold text-slate-700">{product.stock_regions.join(', ')}</p>
                   </div>
                 </div>
               )}
