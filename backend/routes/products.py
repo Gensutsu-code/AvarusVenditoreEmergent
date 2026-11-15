@@ -2,6 +2,7 @@
 from fastapi import APIRouter, HTTPException, Depends, UploadFile, File
 from fastapi.responses import StreamingResponse
 from typing import List, Optional
+from pydantic import BaseModel
 from datetime import datetime, timedelta, timezone
 import uuid
 
@@ -656,6 +657,53 @@ async def admin_product_ids(
     query = _build_admin_query(search, category_id, manufacturer, in_stock, discounted)
     docs = await db.products.find(query, {"_id": 0, "id": 1}).to_list(100000)
     return {"ids": [d["id"] for d in docs], "total": len(docs)}
+
+
+class CategoryDiscountIn(BaseModel):
+    category_id: str
+    action: str = "apply"              # 'apply' | 'clear'
+    discount_type: str = "percent"     # 'percent' | 'amount'
+    discount_value: float = 0
+    discount_until: Optional[str] = None
+    discount_label: Optional[str] = ""
+
+
+@router.post("/admin/products/category-discount")
+async def admin_category_discount(data: CategoryDiscountIn, user=Depends(get_current_user)):
+    """Apply (or clear) one discount for every product of a category, including its subcategories."""
+    if user.get("role") != "admin":
+        raise HTTPException(status_code=403, detail="Admin access required")
+    if not await db.categories.find_one({"id": data.category_id}, {"_id": 1}):
+        raise HTTPException(status_code=404, detail="Категория не найдена")
+    cat_ids, frontier = [data.category_id], [data.category_id]
+    while frontier:
+        children = [c["id"] for c in await db.categories.find({"parent_id": {"$in": frontier}}, {"_id": 0, "id": 1}).to_list(1000)]
+        frontier = [c for c in children if c not in cat_ids]
+        cat_ids.extend(frontier)
+    match = {"category_id": {"$in": cat_ids}}
+    if data.action == "clear":
+        res = await db.products.update_many(match, {"$set": {
+            "discount_active": False, "discount_value": 0, "discount_until": None, "discount_label": "", "discount_type": None,
+        }})
+        return {"success": True, "matched_count": res.matched_count}
+    if data.action != "apply":
+        raise HTTPException(status_code=400, detail="Неизвестное действие")
+    if data.discount_type not in ("percent", "amount"):
+        raise HTTPException(status_code=400, detail="Неверный тип скидки")
+    if data.discount_value <= 0 or (data.discount_type == "percent" and data.discount_value > 90):
+        raise HTTPException(status_code=400, detail="Скидка: от 1 до 90% или сумма больше 0")
+    if not data.discount_until:
+        raise HTTPException(status_code=400, detail="Укажите дату окончания акции")
+    try:
+        if datetime.fromisoformat(str(data.discount_until)[:10]).date() < datetime.now(timezone.utc).date():
+            raise HTTPException(status_code=400, detail="Дата окончания уже прошла")
+    except ValueError:
+        raise HTTPException(status_code=400, detail="Неверная дата окончания")
+    res = await db.products.update_many(match, {"$set": {
+        "discount_active": True, "discount_type": data.discount_type, "discount_value": round(float(data.discount_value), 2),
+        "discount_until": str(data.discount_until)[:10], "discount_label": (data.discount_label or "").strip()[:60],
+    }})
+    return {"success": True, "matched_count": res.matched_count}
 
 
 ALLOWED_BULK_FIELDS = {

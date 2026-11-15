@@ -67,6 +67,7 @@ export default function CartPage() {
   const [payLater, setPayLater] = useState(false);
   const [mixedMode, setMixedMode] = useState(false);
   const [quote, setQuote] = useState(null);
+  const [preview, setPreview] = useState(null);
   const [mixedMethods, setMixedMethods] = useState([]); // up to 2 of: balance, card, cash
   const [mix1Amount, setMix1Amount] = useState('');
   const [form, setForm] = useState({ full_name: '', address: '', phone: '', comment: '' });
@@ -140,15 +141,34 @@ export default function CartPage() {
     : (mixedMode ? cartTotal : (quoteReady ? Math.round(quote.goods_total) : (singleAdj !== 0 ? Math.round(cartTotal * (1 + singleAdj / 100)) : cartTotal)));
 
   // Promo code (single-method only) — applied before individual discount, floor-guarded server-side
-  const promoDiscount = (!mixedMode && promoInfo) ? Math.min(promoInfo.discount || 0, goodsTotal) : 0;
-  const goodsAfterPromo = Math.max(0, goodsTotal - promoDiscount);
+  const localPromoDiscount = (!mixedMode && promoInfo) ? Math.min(promoInfo.discount || 0, goodsTotal) : 0;
+  const goodsAfterPromo = Math.max(0, goodsTotal - localPromoDiscount);
 
   // Individual account-wide discount — any payment method, never below the sum of minimum prices
   const individualDiscountPct = (!mixedMode || mixReady) ? (Number(user?.individual_discount) || 0) : 0;
-  const individualDiscountAmount = individualDiscountPct > 0
+  const localIndividualDiscountAmount = individualDiscountPct > 0
     ? Math.min(Math.round(goodsAfterPromo * individualDiscountPct / 100), Math.max(0, Math.floor(goodsAfterPromo - sumFloors)))
     : 0;
-  const goodsAfterIndividual = Math.max(0, goodsAfterPromo - individualDiscountAmount);
+  const localGoodsAfterIndividual = Math.max(0, goodsAfterPromo - localIndividualDiscountAmount);
+
+  // Server preview: the exact totals the order will be created with
+  const previewBody = mixedMode
+    ? (mixReady && a1 > 0 && a1 < cartTotal ? { payment_parts: [{ method: mixM1, amount: a1 }, { method: mixM2, amount: a2 }] } : null)
+    : { payment_method: quoteMethod, pay_with_balance: payWithBalance, promo_code: promoInfo?.code || null };
+  const previewSig = previewBody ? `${cartSig}#${JSON.stringify(previewBody)}` : '';
+  useEffect(() => {
+    if (!user || !cartSig || !previewSig) { setPreview(null); return undefined; }
+    let alive = true;
+    const t = setTimeout(() => {
+      axios.post(`${API}/cart/preview`, JSON.parse(previewSig.slice(previewSig.indexOf('#') + 1)))
+        .then(r => { if (alive) setPreview({ ...r.data, sig: previewSig }); })
+        .catch(() => { if (alive) setPreview(null); });
+    }, 250);
+    return () => { alive = false; clearTimeout(t); };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user, previewSig]);
+  const pv = preview && preview.sig === previewSig ? preview : null;
+  const goodsAfterIndividual = pv ? pv.goods_total : localGoodsAfterIndividual;
   const mixK = mixRaw > 0 ? goodsAfterIndividual / mixRaw : 1;
 
   const toggleMixedMethod = (m) => {
@@ -160,9 +180,11 @@ export default function CartPage() {
     });
   };
 
-  const isFreeDelivery = !delivery.delivery_enabled || goodsAfterIndividual >= delivery.min_free_delivery;
+  const promoDiscount = pv ? pv.promo_code_amount : localPromoDiscount;
+  const individualDiscountAmount = pv ? pv.individual_discount_amount : localIndividualDiscountAmount;
+  const isFreeDelivery = pv ? !(pv.delivery_fee > 0) : (!delivery.delivery_enabled || goodsAfterIndividual >= delivery.min_free_delivery);
   // Individual delivery cost from the client card overrides the site-wide price (same as the server)
-  const deliveryFee = isFreeDelivery ? 0 : (cart.delivery_cost ?? delivery.delivery_price);
+  const deliveryFee = pv ? pv.delivery_fee : (isFreeDelivery ? 0 : (cart.delivery_cost ?? delivery.delivery_price));
 
   // Pay delivery with bonus points (1 балл = 1 ₽)
   const canPayDeliveryWithPoints = !mixedMode && deliveryFee > 0 && bonusPoints >= Math.round(deliveryFee);

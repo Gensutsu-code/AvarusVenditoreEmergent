@@ -368,16 +368,8 @@ async def cart_quote(payment_method: str = "cash", user=Depends(get_current_user
     }
 
 
-@router.post("/orders", response_model=OrderResponse)
-async def create_order(data: OrderCreate, user=Depends(get_current_user)):
-    cart = await db.carts.find_one({"user_id": user["id"]})
-    if not cart or not cart.get("items"):
-        raise HTTPException(status_code=400, detail="Cart is empty")
-
-    # Block new orders if user has overdue deferral debt
-    if await has_overdue_deferral(user["id"]):
-        raise HTTPException(status_code=403, detail="Есть просроченный долг по отсрочке. Погасите задолженность, чтобы оформлять новые заказы.")
-    
+async def _compute_order_pricing(data, user, cart):
+    """All order money math, shared by create_order and the cart preview (no side effects)."""
     # Only payment method discounts are used
     payment_settings = await db.settings.find_one({"key": "payment_settings"})
     payment_adjustments = payment_settings.get("value", {}) if payment_settings else {}
@@ -540,6 +532,81 @@ async def create_order(data: OrderCreate, user=Depends(get_current_user)):
             card_part = total
         elif payment_method == "cash":
             cash_part = total
+    return {"base_subtotal": base_subtotal, "sum_floors": sum_floors, "active_cart_discount": active_cart_discount, "balance_to_deduct": balance_to_deduct, "card_part": card_part, "cart_discount_amount": cart_discount_amount, "cart_discount_pct": cart_discount_pct, "cash_part": cash_part, "delivery_fee": delivery_fee, "delivery_points_used": delivery_points_used, "goods_total": goods_total, "individual_discount_amount": individual_discount_amount, "individual_discount_pct": individual_discount_pct, "is_deferral": is_deferral, "is_mixed": is_mixed, "items": items, "ozon_base": ozon_base, "paid_from_balance": paid_from_balance, "pay_delivery_with_points": pay_delivery_with_points, "pay_later": pay_later, "pay_with_balance": pay_with_balance, "payment_adjustment": payment_adjustment, "payment_adjustments": payment_adjustments, "payment_method": payment_method, "payment_parts_out": payment_parts_out, "products_map": products_map, "promo_code_amount": promo_code_amount, "promo_code_obj": promo_code_obj, "subtotal": subtotal, "total": total, "used_individual_price_product_ids": used_individual_price_product_ids}
+
+
+class CartPreviewIn(BaseModel):
+    payment_method: Optional[str] = "cash"
+    pay_with_balance: Optional[bool] = False
+    payment_parts: Optional[List[dict]] = None
+    pay_delivery_with_points: Optional[bool] = False
+    promo_code: Optional[str] = None
+
+
+@router.post("/cart/preview")
+async def cart_preview(data: CartPreviewIn, user=Depends(get_current_user)):
+    """Exact totals create_order would charge for the current cart and payment choice."""
+    cart = await db.carts.find_one({"user_id": user["id"]})
+    if not cart or not cart.get("items"):
+        raise HTTPException(status_code=400, detail="Cart is empty")
+    p = await _compute_order_pricing(data, user, cart)
+    return {
+        "goods_before_discounts": p["base_subtotal"],
+        "promo_code": p["promo_code_obj"]["code"] if p["promo_code_obj"] else None,
+        "promo_code_amount": p["promo_code_amount"],
+        "individual_discount_percent": p["individual_discount_pct"] if p["individual_discount_amount"] > 0 else 0,
+        "individual_discount_amount": p["individual_discount_amount"],
+        "goods_total": p["goods_total"],
+        "sum_floors": round(p["sum_floors"], 2),
+        "delivery_fee": p["delivery_fee"],
+        "delivery_paid_with_points": bool(p["pay_delivery_with_points"] and p["delivery_fee"] > 0),
+        "total": p["total"],
+        "payment_parts": p["payment_parts_out"],
+        "items": [{"product_id": i["product_id"], "price": i["price"], "quantity": i["quantity"]} for i in p["items"]],
+    }
+
+
+
+@router.post("/orders", response_model=OrderResponse)
+async def create_order(data: OrderCreate, user=Depends(get_current_user)):
+    cart = await db.carts.find_one({"user_id": user["id"]})
+    if not cart or not cart.get("items"):
+        raise HTTPException(status_code=400, detail="Cart is empty")
+
+    # Block new orders if user has overdue deferral debt
+    if await has_overdue_deferral(user["id"]):
+        raise HTTPException(status_code=403, detail="Есть просроченный долг по отсрочке. Погасите задолженность, чтобы оформлять новые заказы.")
+    
+    pricing = await _compute_order_pricing(data, user, cart)
+    active_cart_discount = pricing["active_cart_discount"]
+    balance_to_deduct = pricing["balance_to_deduct"]
+    card_part = pricing["card_part"]
+    cart_discount_amount = pricing["cart_discount_amount"]
+    cart_discount_pct = pricing["cart_discount_pct"]
+    cash_part = pricing["cash_part"]
+    delivery_fee = pricing["delivery_fee"]
+    delivery_points_used = pricing["delivery_points_used"]
+    goods_total = pricing["goods_total"]
+    individual_discount_amount = pricing["individual_discount_amount"]
+    individual_discount_pct = pricing["individual_discount_pct"]
+    is_deferral = pricing["is_deferral"]
+    is_mixed = pricing["is_mixed"]
+    items = pricing["items"]
+    ozon_base = pricing["ozon_base"]
+    paid_from_balance = pricing["paid_from_balance"]
+    pay_delivery_with_points = pricing["pay_delivery_with_points"]
+    pay_later = pricing["pay_later"]
+    pay_with_balance = pricing["pay_with_balance"]
+    payment_adjustment = pricing["payment_adjustment"]
+    payment_adjustments = pricing["payment_adjustments"]
+    payment_method = pricing["payment_method"]
+    payment_parts_out = pricing["payment_parts_out"]
+    products_map = pricing["products_map"]
+    promo_code_amount = pricing["promo_code_amount"]
+    promo_code_obj = pricing["promo_code_obj"]
+    subtotal = pricing["subtotal"]
+    total = pricing["total"]
+    used_individual_price_product_ids = pricing["used_individual_price_product_ids"]
 
     # Deduct bonus points for delivery if requested
     if pay_delivery_with_points and delivery_fee > 0:

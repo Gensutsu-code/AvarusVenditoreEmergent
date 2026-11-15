@@ -684,6 +684,9 @@ export const Header = () => {
               </>
             ) : (
               <div className="flex items-center gap-2 ml-auto">
+                <Link to="/assistant" className="h-10 px-3 rounded-xl flex items-center gap-1.5 bg-white/95 border border-teal-200 text-teal-600 hover:border-teal-400 transition-colors duration-200 text-sm font-semibold whitespace-nowrap" title="ИИ-помощник по подбору запчастей" data-testid="ai-assistant-link-guest">
+                  <AiIcon className="w-4 h-4" /><span className="hidden sm:inline">ИИ-помощник</span>
+                </Link>
                 <Link to="/login" data-testid="login-link">
                   <motion.div whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}>
                     <Button className="font-bold uppercase tracking-wide rounded-xl shadow-lg shadow-teal-500/30 transition-all duration-300 bg-gradient-to-r from-teal-500 to-emerald-500 hover:from-teal-600 hover:to-emerald-600 text-white">

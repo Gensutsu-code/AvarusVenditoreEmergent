@@ -4,6 +4,7 @@ import { useAuth } from '../context/AuthContext';
 import axios from 'axios';
 import { Search, ArrowRight, Truck, Shield, Clock, Package } from 'lucide-react';
 import { motion } from 'framer-motion';
+import { PromoStrip } from '../components/PromoStrip';
 
 const API = `${process.env.REACT_APP_BACKEND_URL}/api`;
 
@@ -43,6 +44,7 @@ export default function HomePage() {
 
   return (
     <div className="min-h-screen" data-testid="home-page">
+      <PromoStrip />
       {/* Hero Section */}
       <div className="relative overflow-hidden">
         {/* Background gradient */}

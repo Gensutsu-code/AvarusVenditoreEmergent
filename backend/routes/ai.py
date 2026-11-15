@@ -7,18 +7,55 @@ import logging
 from datetime import datetime, timezone, timedelta
 from typing import Optional
 
-from fastapi import APIRouter, HTTPException, Depends
+import asyncio
+import jwt
+from fastapi import APIRouter, HTTPException, Depends, Request
+from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from fastapi.responses import StreamingResponse
 from pydantic import BaseModel, Field
 from emergentintegrations.llm.chat import LlmChat, UserMessage, TextDelta, StreamDone
 
-from database import db, get_current_user
+from database import db, get_current_user, JWT_SECRET, JWT_ALGORITHM
+from notify import notify_admin
 
 router = APIRouter(tags=["ai"])
 logger = logging.getLogger(__name__)
 
 AI_MODEL = ("openai", "gpt-5.4")
 DAILY_LIMIT = 60  # AI requests per client per day
+GUEST_DAILY_LIMIT = 5  # assistant questions per guest (by IP) per day
+GUEST_TOTAL_DAILY_LIMIT = 300  # all guests together per day — protects the AI balance
+optional_security = HTTPBearer(auto_error=False)
+
+
+async def get_optional_user(credentials: Optional[HTTPAuthorizationCredentials] = Depends(optional_security)):
+    if not credentials:
+        return None
+    try:
+        payload = jwt.decode(credentials.credentials, JWT_SECRET, algorithms=[JWT_ALGORITHM])
+    except jwt.PyJWTError:
+        return None
+    user = await db.users.find_one({"id": payload.get("user_id")}, {"_id": 0, "password": 0})
+    return None if (not user or user.get("blocked")) else user
+
+
+def _client_ip(request: Request) -> str:
+    fwd = request.headers.get("x-forwarded-for") or ""
+    return (fwd.split(",")[0].strip() or (request.client.host if request.client else "") or "unknown")[:64]
+
+
+async def _use_guest_quota(request: Request) -> int:
+    """Returns how many questions the guest has left today."""
+    now = datetime.now(timezone.utc)
+    since = (now - timedelta(days=1)).isoformat()
+    uid = f"guest-ip:{_client_ip(request)}"
+    used = await db.ai_usage.count_documents({"user_id": uid, "created_at": {"$gte": since}})
+    if used >= GUEST_DAILY_LIMIT:
+        raise HTTPException(status_code=429, detail="Лимит вопросов без входа исчерпан. Войдите в аккаунт, чтобы продолжить.")
+    if await db.ai_usage.count_documents({"guest": True, "created_at": {"$gte": since}}) >= GUEST_TOTAL_DAILY_LIMIT:
+        raise HTTPException(status_code=429, detail="Помощник сейчас доступен только после входа в аккаунт.")
+    await db.ai_usage.insert_one({"user_id": uid, "guest": True, "kind": "assistant", "created_at": now.isoformat()})
+    return GUEST_DAILY_LIMIT - used - 1
 AI_UNAVAILABLE = "ИИ-помощник временно недоступен. Попробуйте позже."
 
 STOP_WORDS = {
@@ -154,20 +191,26 @@ def _sse(payload: dict) -> str:
 # ==================== 1. PARTS ASSISTANT (multi-turn, streaming) ====================
 
 @router.get("/ai/assistant/history")
-async def assistant_history(session_id: str, user=Depends(get_current_user)):
+async def assistant_history(session_id: str, user=Depends(get_optional_user)):
+    owner = user["id"] if user else "guest"
     msgs = await db.ai_chat_messages.find(
-        {"session_id": session_id, "user_id": user["id"]}, {"_id": 0}
+        {"session_id": session_id, "user_id": owner}, {"_id": 0}
     ).sort("created_at", 1).to_list(200)
     return {"messages": msgs}
 
 
 @router.post("/ai/assistant/chat")
-async def assistant_chat(data: AssistantMessage, user=Depends(get_current_user)):
+async def assistant_chat(data: AssistantMessage, request: Request, user=Depends(get_optional_user)):
     text = data.message.strip()
     if not text:
         raise HTTPException(status_code=400, detail="Введите сообщение")
     _key()
-    await _use_quota(user, "assistant")
+    guest_left = None
+    if user:
+        await _use_quota(user, "assistant")
+    else:
+        guest_left = await _use_guest_quota(request)
+        user = {"id": "guest"}
 
     past = await db.ai_chat_messages.find(
         {"session_id": data.session_id, "user_id": user["id"]}, {"_id": 0}
@@ -211,7 +254,7 @@ async def assistant_chat(data: AssistantMessage, user=Depends(get_current_user))
             "role": "assistant", "text": answer, "products": mentioned,
             "created_at": datetime.now(timezone.utc).isoformat(),
         })
-        yield _sse({"type": "done", "products": mentioned})
+        yield _sse({"type": "done", "products": mentioned, "guest_left": guest_left})
 
     return StreamingResponse(gen(), media_type="text/event-stream",
                              headers={"Cache-Control": "no-cache", "X-Accel-Buffering": "no"})
@@ -301,3 +344,154 @@ async def ai_chat_draft(data: DraftIn, user=Depends(get_current_user)):
     if not draft:
         raise HTTPException(status_code=502, detail=AI_UNAVAILABLE)
     return {"draft": draft}
+
+
+# ==================== 5. HAND THE AI DIALOG OVER TO A MANAGER ====================
+
+class HandoffIn(BaseModel):
+    session_id: str = Field(min_length=8, max_length=64)
+
+
+@router.post("/ai/assistant/handoff")
+async def assistant_handoff(data: HandoffIn, user=Depends(get_current_user)):
+    msgs = await db.ai_chat_messages.find(
+        {"session_id": data.session_id, "user_id": user["id"]}, {"_id": 0}
+    ).sort("created_at", 1).to_list(200)
+    if not msgs:
+        raise HTTPException(status_code=400, detail="В диалоге пока нет сообщений")
+    if msgs[-1].get("handed_off"):
+        raise HTTPException(status_code=400, detail="Этот диалог уже передан менеджеру")
+    lines = [f"{'Клиент' if m['role'] == 'user' else 'ИИ-помощник'}: {m['text'][:700]}" for m in msgs[-12:]]
+    text = "Передаю диалог с ИИ-помощником, нужна помощь менеджера.\n\n" + "\n\n".join(lines)
+    now = datetime.now(timezone.utc).isoformat()
+    chat = await db.chats.find_one({"user_id": user["id"]})
+    if chat:
+        chat_id = chat["id"]
+        await db.chats.update_one({"id": chat_id}, {"$set": {"updated_at": now}})
+    else:
+        chat_id = str(uuid.uuid4())
+        await db.chats.insert_one({"id": chat_id, "user_id": user["id"], "user_name": user["name"], "user_email": user["email"],
+                                   "created_at": now, "updated_at": now, "pinned": False, "labels": []})
+    msg_id = str(uuid.uuid4())
+    await db.chat_messages.insert_one({
+        "id": msg_id, "chat_id": chat_id, "user_id": user["id"], "user_name": user["name"], "text": text[:6000],
+        "sender_type": "user", "message_type": "text", "created_at": now, "read": False, "edited": False,
+    })
+    await db.ai_chat_messages.update_one({"id": msgs[-1]["id"]}, {"$set": {"handed_off": True}})
+    try:
+        await notify_admin("chat", "Диалог с ИИ передан менеджеру", f"{user['name']}: {msgs[-1]['text'][:80]}", "/admin/chats")
+    except Exception as e:
+        logger.error(f"Handoff notify failed: {e}")
+    return {"success": True, "chat_id": chat_id, "message_id": msg_id}
+
+
+# ==================== 6. BULK PRODUCT DESCRIPTIONS (admin, background job) ====================
+
+BULK_KEY = "ai_bulk_descriptions"
+NO_DESCRIPTION = {"$or": [{"description": {"$exists": False}}, {"description": None}, {"description": {"$regex": r"^\s*$"}}]}
+DESCRIPTION_SYSTEM = (
+    "Ты пишешь описания товаров для интернет-магазина запчастей для грузовиков. Напиши описание на русском, "
+    "3–5 предложений, без заголовков, списков и markdown. Используй только переданные данные и общеизвестное "
+    "назначение детали такого типа. Не выдумывай технические характеристики, размеры, применимость к конкретным "
+    "моделям и гарантийные условия, если их нет в данных. Без рекламных штампов и восклицаний."
+)
+_bulk_task = None
+
+
+async def _bulk_state():
+    doc = await db.settings.find_one({"key": BULK_KEY}, {"_id": 0})
+    state = (doc or {}).get("value") or {"status": "idle", "total": 0, "done": 0, "failed": 0}
+    # a job that stopped reporting (server restart) is no longer running
+    if state.get("status") == "running":
+        try:
+            stale = datetime.now(timezone.utc) - datetime.fromisoformat(state.get("heartbeat")) > timedelta(minutes=3)
+        except (TypeError, ValueError):
+            stale = True
+        if stale:
+            state["status"] = "interrupted"
+    return state
+
+
+async def _bulk_save(state, replace=False):
+    state["heartbeat"] = datetime.now(timezone.utc).isoformat()
+    # field-wise update keeps a stop request made while a description is being written
+    update = {"value": state} if replace else {f"value.{k}": v for k, v in state.items()}
+    await db.settings.update_one({"key": BULK_KEY}, {"$set": update}, upsert=True)
+
+
+async def _bulk_run(state):
+    skip_ids = []
+    try:
+        while True:
+            current = (await db.settings.find_one({"key": BULK_KEY}, {"_id": 0}) or {}).get("value", {})
+            if current.get("stop_requested"):
+                state["status"] = "stopped"
+                break
+            p = await db.products.find_one({"$and": [NO_DESCRIPTION, {"id": {"$nin": skip_ids}}]},
+                                           {"_id": 0, "id": 1, "name": 1, "article": 1, "manufacturer": 1, "cross_articles": 1})
+            if not p:
+                state["status"] = "finished"
+                break
+            facts = {"Название": p.get("name"), "Артикул": p.get("article"), "Производитель": p.get("manufacturer"),
+                     "Кросс-номера": (p.get("cross_articles") or "")[:500]}
+            try:
+                text = await _complete(DESCRIPTION_SYSTEM, "\n".join(f"{k}: {v}" for k, v in facts.items() if v))
+            except HTTPException:
+                text = ""
+            if text and p.get("name"):
+                # only fill products that are still empty — never overwrite a text the admin typed meanwhile
+                await db.products.update_one({"$and": [{"id": p["id"]}, NO_DESCRIPTION]},
+                                             {"$set": {"description": text, "description_ai": True}})
+                state["done"] += 1
+                state["fail_streak"] = 0
+            else:
+                skip_ids.append(p["id"])
+                state["failed"] += 1
+                state["fail_streak"] = state.get("fail_streak", 0) + 1
+                if state["fail_streak"] >= 5:
+                    state["status"] = "error"
+                    state["error"] = AI_UNAVAILABLE
+                    break
+            await _bulk_save(state)
+    except Exception as e:
+        logger.error(f"Bulk descriptions failed: {e}")
+        state["status"] = "error"
+        state["error"] = "Задача прервана из-за ошибки"
+    state["finished_at"] = datetime.now(timezone.utc).isoformat()
+    await _bulk_save(state, replace=True)
+
+
+def _require_admin(user):
+    if user.get("role") != "admin":
+        raise HTTPException(status_code=403, detail="Admin access required")
+
+
+@router.get("/admin/ai/bulk-descriptions")
+async def bulk_descriptions_status(user=Depends(get_current_user)):
+    _require_admin(user)
+    state = await _bulk_state()
+    state["without_description"] = await db.products.count_documents(NO_DESCRIPTION)
+    return state
+
+
+@router.post("/admin/ai/bulk-descriptions/start")
+async def bulk_descriptions_start(user=Depends(get_current_user)):
+    global _bulk_task
+    _require_admin(user)
+    _key()
+    if (await _bulk_state()).get("status") == "running":
+        raise HTTPException(status_code=400, detail="Задача уже выполняется")
+    total = await db.products.count_documents(NO_DESCRIPTION)
+    if total == 0:
+        raise HTTPException(status_code=400, detail="Товаров без описания нет")
+    state = {"status": "running", "total": total, "done": 0, "failed": 0, "started_at": datetime.now(timezone.utc).isoformat()}
+    await _bulk_save(state, replace=True)
+    _bulk_task = asyncio.create_task(_bulk_run(state))
+    return state
+
+
+@router.post("/admin/ai/bulk-descriptions/stop")
+async def bulk_descriptions_stop(user=Depends(get_current_user)):
+    _require_admin(user)
+    await db.settings.update_one({"key": BULK_KEY, "value.status": "running"}, {"$set": {"value.stop_requested": True}})
+    return {"success": True}

@@ -22,6 +22,7 @@ import ProductRequestModal from '../components/ProductRequestModal';
 import { computeDiscount, computeNewBadge, formatDiscountBadge, formatUntilDate, getQuantityTiers, isProductAvailable, getPromoStock } from '../utils/productHelpers';
 import { DeliveryBadge } from '../components/DeliveryBadge';
 import { useRegion } from '../context/RegionContext';
+import { PromoStrip } from '../components/PromoStrip';
 import { PromoCountdown } from '../components/PromoCountdown';
 import DiscountPromoBanner from '../components/DiscountPromoBanner';
 import NewProductsBanner from '../components/NewProductsBanner';
@@ -777,6 +778,7 @@ export default function CatalogPage() {
 
   return (
     <div className="min-h-screen" data-testid="catalog-page">
+      <PromoStrip />
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Header */}
         <div className="mb-6">

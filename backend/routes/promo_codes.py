@@ -22,6 +22,7 @@ class PromoCodeIn(BaseModel):
     active: bool = True
     valid_until: Optional[str] = None  # ISO date, optional
     description: str = ""
+    show_on_storefront: bool = False  # show the code to everyone in the storefront banner
 
 
 class PromoValidateIn(BaseModel):
@@ -116,6 +117,43 @@ async def validate_promo_code(code: str, user_id: str, goods_total: float):
     return doc, round(disc, 2), None
 
 
+def _is_live(doc) -> bool:
+    if not doc.get("active", True):
+        return False
+    max_uses = int(doc.get("max_uses") or 0)
+    if max_uses > 0 and int(doc.get("used_count") or 0) >= max_uses:
+        return False
+    vu = doc.get("valid_until")
+    if vu:
+        try:
+            s = str(vu)
+            end = datetime.fromisoformat((s + "T23:59:59" if len(s) == 10 else s).replace("Z", "+00:00"))
+            if end.tzinfo is None:
+                end = end.replace(tzinfo=timezone.utc)
+            return datetime.now(timezone.utc) <= end
+        except (ValueError, TypeError):
+            return True
+    return True
+
+
+# --- Public storefront banner ---
+
+@router.get("/promotions/active")
+async def active_promotions():
+    """Public: promo codes the admin chose to show + count of discounted products."""
+    docs = await db.promo_codes.find({"show_on_storefront": True, "active": True}, {"_id": 0}).sort("created_at", -1).to_list(50)
+    codes = [{
+        "code": d["code"], "type": d.get("type", "percent"), "value": d.get("value", 0),
+        "min_order": d.get("min_order", 0), "valid_until": d.get("valid_until"),
+    } for d in docs if _is_live(d)][:5]
+    now_iso = datetime.now(timezone.utc).isoformat()
+    discounted = await db.products.count_documents({
+        "discount_active": True, "discount_value": {"$gt": 0},
+        "$or": [{"discount_until": None}, {"discount_until": {"$exists": False}}, {"discount_until": {"$gte": now_iso[:10]}}],
+    })
+    return {"promo_codes": codes, "discounted_products": discounted}
+
+
 # --- Client ---
 
 @router.post("/promo-codes/validate")
@@ -169,6 +207,7 @@ async def create_promo_code(data: PromoCodeIn, user=Depends(get_current_user)):
         "active": bool(data.active),
         "valid_until": data.valid_until or None,
         "description": data.description or "",
+        "show_on_storefront": bool(data.show_on_storefront),
         "used_count": 0,
         "created_at": _now(),
     }
@@ -197,6 +236,7 @@ async def update_promo_code(code_id: str, data: PromoCodeIn, user=Depends(get_cu
         "active": bool(data.active),
         "valid_until": data.valid_until or None,
         "description": data.description or "",
+        "show_on_storefront": bool(data.show_on_storefront),
     }})
     return await db.promo_codes.find_one({"id": code_id}, {"_id": 0})
 

@@ -15,6 +15,7 @@ import { Switch } from '../components/ui/switch';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '../components/ui/dialog';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '../components/ui/tabs';
 import { PaymentAdjustmentsSection } from '../components/admin/PaymentAdjustmentsSection';
+import { AiBulkDescriptions } from '../components/admin/AiBulkDescriptions';
 import RichTextEditor from '../components/RichTextEditor';
 import { useAuth } from '../context/AuthContext';
 import { useTheme } from '../context/ThemeContext';
@@ -1656,6 +1657,7 @@ export default function AdminPage() {
                       <ListChecks className="w-4 h-4 mr-2" />
                       Массовое редактирование
                     </Button>
+                    <AiBulkDescriptions />
                     <Button onClick={openNewProduct} className="bg-gradient-to-r from-teal-500 to-emerald-500 hover:from-teal-600 hover:to-emerald-600 text-white shadow-lg shadow-teal-500/20" data-testid="add-product-btn">
                       <Plus className="w-4 h-4 mr-2" />
                       Добавить товар

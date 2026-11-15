@@ -6,13 +6,15 @@ import { Input } from '../ui/input';
 import { Label } from '../ui/label';
 import { Percent, Ticket, Search, Save, Trash2, Plus, X, Tag, Loader2, Power, Pencil, ShoppingCart, Megaphone, CreditCard } from 'lucide-react';
 import { CartDiscountRequestsSection } from './CartDiscountRequestsSection';
+import { CategoryDiscountPanel } from './CategoryDiscountPanel';
+import { DatePicker } from '../DatePicker';
 
 const API = `${process.env.REACT_APP_BACKEND_URL}/api`;
 const fmt = (n) => new Intl.NumberFormat('ru-RU').format(Math.round(Number(n) || 0));
 
 const emptyCode = {
   code: '', type: 'percent', value: '', min_order: '', max_uses: 0,
-  per_user_limit: 1, active: true, valid_until: '', description: '',
+  per_user_limit: 1, active: true, valid_until: '', description: '', show_on_storefront: false,
 };
 
 // ===================== PROMO CODES =====================
@@ -50,6 +52,7 @@ const PromoCodesSection = ({ isDark }) => {
       active: !!form.active,
       valid_until: form.valid_until || null,
       description: form.description || '',
+      show_on_storefront: !!form.show_on_storefront,
     };
     try {
       if (editingId) {
@@ -71,7 +74,7 @@ const PromoCodesSection = ({ isDark }) => {
       code: c.code, type: c.type, value: c.value, min_order: c.min_order || '',
       max_uses: c.max_uses || 0, per_user_limit: c.per_user_limit || 0,
       active: c.active, valid_until: c.valid_until ? String(c.valid_until).slice(0, 10) : '',
-      description: c.description || '',
+      description: c.description || '', show_on_storefront: !!c.show_on_storefront,
     });
   };
 
@@ -123,7 +126,7 @@ const PromoCodesSection = ({ isDark }) => {
           </div>
           <div>
             <Label className={labelCls}>Действует до</Label>
-            <Input type="date" value={form.valid_until} onChange={(e) => setForm({ ...form, valid_until: e.target.value })} className={inputCls} data-testid="promo-code-valid-until" />
+            <DatePicker value={form.valid_until} onChange={(v) => setForm({ ...form, valid_until: v })} isDark={isDark} placeholder="Без срока" data-testid="promo-code-valid-until" />
           </div>
         </div>
         <div className="grid grid-cols-2 gap-3">
@@ -143,6 +146,10 @@ const PromoCodesSection = ({ isDark }) => {
         <label className="flex items-center gap-2 cursor-pointer" data-testid="promo-code-active-toggle">
           <input type="checkbox" checked={form.active} onChange={(e) => setForm({ ...form, active: e.target.checked })} className="w-4 h-4 accent-teal-500 rounded" />
           <span className={`text-sm ${isDark ? 'text-zinc-300' : 'text-zinc-700'}`}>Активен</span>
+        </label>
+        <label className="flex items-start gap-2 cursor-pointer" data-testid="promo-code-storefront-toggle">
+          <input type="checkbox" checked={!!form.show_on_storefront} onChange={(e) => setForm({ ...form, show_on_storefront: e.target.checked })} className="w-4 h-4 mt-0.5 accent-amber-500 rounded" />
+          <span className={`text-sm ${isDark ? 'text-zinc-300' : 'text-zinc-700'}`}>Показывать на витрине<span className="block text-[11px] text-slate-400">Код увидят все посетители в баннере на главной и в каталоге</span></span>
         </label>
         <div className="flex gap-2 pt-1">
           <Button onClick={save} disabled={saving} className="flex-1 bg-teal-500 hover:bg-teal-600 text-white" data-testid="promo-code-save-btn">
@@ -174,6 +181,7 @@ const PromoCodesSection = ({ isDark }) => {
               {c.valid_until && <span>до {String(c.valid_until).slice(0, 10)}</span>}
               <span>исп. {c.used_count || 0}{c.max_uses ? `/${c.max_uses}` : ''}</span>
               {c.per_user_limit > 0 && <span>{c.per_user_limit}/клиент</span>}
+              {c.show_on_storefront && <span className="text-amber-600 font-semibold" data-testid={`promo-code-storefront-badge-${c.id}`}>на витрине</span>}
             </div>
             <div className="flex items-center gap-1 ml-auto">
               <button onClick={() => toggleActive(c)} title={c.active ? 'Выключить' : 'Включить'} className={`w-8 h-8 rounded-lg flex items-center justify-center ${c.active ? 'bg-emerald-50 text-emerald-600 hover:bg-emerald-100' : 'bg-slate-100 text-slate-400 hover:bg-slate-200'}`} data-testid={`promo-code-toggle-${c.id}`}><Power className="w-4 h-4" /></button>
@@ -261,6 +269,7 @@ const ProductDiscountsSection = ({ isDark }) => {
               <input type="checkbox" checked={onlyDiscounted} onChange={(e) => setOnlyDiscounted(e.target.checked)} className="w-4 h-4 accent-rose-500 rounded" />
               <span className={isDark ? 'text-zinc-300' : 'text-zinc-700'}>Только со скидкой</span>
             </label>
+            <CategoryDiscountPanel isDark={isDark} onDone={load} />
           </div>
           <div className="space-y-2" data-testid="product-discount-results">
             {loading ? (
@@ -331,7 +340,7 @@ const ProductDiscountsSection = ({ isDark }) => {
               </div>
               <div>
                 <Label className={labelCls}>Действует до <span className="text-rose-500">*</span></Label>
-                <Input type="date" value={editing.discount_until ? String(editing.discount_until).slice(0, 10) : ''} onChange={(e) => setEditing({ ...editing, discount_until: e.target.value || null })} className={inputCls} data-testid="editor-discount-until" />
+                <DatePicker value={editing.discount_until ? String(editing.discount_until).slice(0, 10) : ''} onChange={(v) => setEditing({ ...editing, discount_until: v || null })} isDark={isDark} data-testid="editor-discount-until" />
               </div>
               <div>
                 <Label className={labelCls}>Лимит по акции (шт.)</Label>
