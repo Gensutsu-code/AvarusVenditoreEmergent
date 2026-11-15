@@ -8,6 +8,7 @@ export { default as PromoTab } from './PromoTab';
 export { default as TelegramTab } from './TelegramTab';
 export { default as StatsTab } from './StatsTab';
 export { default as DiscountsTab } from './DiscountsTab';
+export { default as DiscountsPromoTab } from './DiscountsPromoTab';
 export { default as TermsTab } from './TermsTab';
 export { default as NotificationsTab } from './NotificationsTab';
 export { default as PartnersTab } from './PartnersTab';

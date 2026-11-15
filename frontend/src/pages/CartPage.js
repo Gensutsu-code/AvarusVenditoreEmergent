@@ -77,6 +77,9 @@ export default function CartPage() {
   const [cdPercent, setCdPercent] = useState('');
   const [cdBusy, setCdBusy] = useState(false);
   const [bonusPoints, setBonusPoints] = useState(0);
+  const [promoCode, setPromoCode] = useState('');
+  const [promoInfo, setPromoInfo] = useState(null); // { discount, message, code }
+  const [promoChecking, setPromoChecking] = useState(false);
   const [payDeliveryWithPoints, setPayDeliveryWithPoints] = useState(false);
   const [rewardChoice, setRewardChoice] = useState('points'); // 'points' | 'ozon'
 
@@ -119,10 +122,14 @@ export default function CartPage() {
     ? (mixCharged1 + mixCharged2)
     : (mixedMode ? cartTotal : (singleAdj !== 0 ? Math.round(cartTotal * (1 + singleAdj / 100)) : cartTotal));
 
+  // Promo code (single-method only) — applied before individual discount, floor-guarded server-side
+  const promoDiscount = (!mixedMode && promoInfo) ? Math.min(promoInfo.discount || 0, goodsTotal) : 0;
+  const goodsAfterPromo = Math.max(0, goodsTotal - promoDiscount);
+
   // Individual account-wide discount — ONLY when paying from balance (stacks on top of promos/adjustment)
   const individualDiscountPct = (payWithBalance && !mixedMode && !payWithDeferral) ? (Number(user?.individual_discount) || 0) : 0;
-  const individualDiscountAmount = individualDiscountPct > 0 ? Math.round(goodsTotal * individualDiscountPct / 100) : 0;
-  const goodsAfterIndividual = Math.max(0, goodsTotal - individualDiscountAmount);
+  const individualDiscountAmount = individualDiscountPct > 0 ? Math.round(goodsAfterPromo * individualDiscountPct / 100) : 0;
+  const goodsAfterIndividual = Math.max(0, goodsAfterPromo - individualDiscountAmount);
 
   const toggleMixedMethod = (m) => {
     if (!['balance', 'card', 'cash'].includes(m)) { toast.error('В смешанной оплате доступны: баланс, карта, наличные'); return; }
@@ -173,6 +180,25 @@ export default function CartPage() {
     finally { setCdBusy(false); }
   };
 
+  const applyPromo = async () => {
+    const code = promoCode.trim();
+    if (!code) { toast.error('Введите промокод'); return; }
+    setPromoChecking(true);
+    try {
+      const r = await axios.post(`${API}/promo-codes/validate`, { code, goods_total: goodsTotal });
+      if (r.data?.valid) {
+        setPromoInfo({ discount: r.data.discount, message: r.data.message, code: r.data.code });
+        toast.success(r.data.message);
+      } else {
+        setPromoInfo(null);
+        toast.error(r.data?.message || 'Промокод недействителен');
+      }
+    } catch (e) { setPromoInfo(null); toast.error(e.response?.data?.detail || 'Ошибка'); }
+    finally { setPromoChecking(false); }
+  };
+
+  const clearPromo = () => { setPromoInfo(null); setPromoCode(''); };
+
   // Bonus points preview — based on actual goods total after payment-method adjustment
   useEffect(() => {
     if (!cart.items.length) { setBonusPreview({ total_points: 0, programs: [] }); return undefined; }
@@ -189,6 +215,23 @@ export default function CartPage() {
       setRewardChoice('points');
     }
   }, [bonusPreview, rewardChoice]);
+
+  // Keep promo valid as cart/payment changes; drop it in mixed mode
+  useEffect(() => {
+    if (!promoInfo) return;
+    if (mixedMode) { setPromoInfo(null); return; }
+    const code = promoInfo.code;
+    const t = setTimeout(() => {
+      axios.post(`${API}/promo-codes/validate`, { code, goods_total: goodsTotal })
+        .then(r => {
+          if (r.data?.valid) setPromoInfo({ discount: r.data.discount, message: r.data.message, code: r.data.code });
+          else { setPromoInfo(null); toast.error(r.data?.message || 'Промокод больше не действует'); }
+        })
+        .catch(() => {});
+    }, 400);
+    return () => clearTimeout(t);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [goodsTotal, mixedMode]);
 
   const isMethodEnabled = (m) => paymentSettings[`${m}_enabled`] !== false;
   const canPayWithBalance = prepaymentSettings.prepayment_enabled && userBalance >= finalTotal;
@@ -233,10 +276,11 @@ export default function CartPage() {
     setShowCryptoModal(false);
     try {
       const expectedPts = await fetchExpectedPoints();
-      const res = await axios.post(`${API}/orders`, { ...form, payment_method: 'crypto', crypto_tx_hash: txHash, pay_delivery_with_points: deliveryPaidWithPoints, reward_choice: rewardChoice });
+      const res = await axios.post(`${API}/orders`, { ...form, payment_method: 'crypto', crypto_tx_hash: txHash, pay_delivery_with_points: deliveryPaidWithPoints, reward_choice: rewardChoice, promo_code: promoInfo?.code || undefined });
       setOrderId(res.data.id);
       await fetchCart();
       setCdReq(null);
+      clearPromo();
       refreshIndividualPrices();
       if (rewardChoice === 'points') emitPointsEarned(expectedPts);
       toast.success('Заказ оплачен криптовалютой!');
@@ -291,10 +335,12 @@ export default function CartPage() {
         pay_later: showPayLater ? payLater : false,
         pay_delivery_with_points: deliveryPaidWithPoints,
         reward_choice: rewardChoice,
+        promo_code: promoInfo?.code || undefined,
       });
       setOrderId(res.data.id);
       await fetchCart();
       setCdReq(null);
+      clearPromo();
       refreshIndividualPrices();
       if (rewardChoice === 'points') emitPointsEarned(expectedPts);
 
@@ -694,6 +740,12 @@ export default function CartPage() {
                     </div>
                   </>
                 )}
+                {promoDiscount > 0 && (
+                  <div className="flex justify-between text-sm font-medium text-teal-600" data-testid="checkout-promo-discount-line">
+                    <span>Промокод {promoInfo?.code}:</span>
+                    <span>−{formatPrice(promoDiscount)} ₽</span>
+                  </div>
+                )}
                 {individualDiscountAmount > 0 && (
                   <div className="flex justify-between text-sm font-medium text-emerald-600" data-testid="checkout-individual-discount-line">
                     <span>Индивидуальная скидка ({individualDiscountPct}%):</span>
@@ -734,6 +786,27 @@ export default function CartPage() {
                   <span className="font-semibold text-slate-800">К оплате:</span>
                   <span className="text-2xl font-bold text-teal-600" data-testid="checkout-total">{formatPrice(finalTotal)} <span className="text-sm text-slate-400">₽</span></span>
                 </div>
+
+                {/* Promo code */}
+                {!mixedMode && (
+                  <div className="pt-1" data-testid="promo-code-block">
+                    {promoInfo ? (
+                      <div className="flex items-center justify-between gap-2 p-3 rounded-lg bg-teal-50 border border-teal-200" data-testid="promo-code-applied">
+                        <span className="text-sm font-semibold text-teal-700 flex items-center gap-1.5">
+                          <Tag className="w-4 h-4" />Промокод {promoInfo.code} применён
+                        </span>
+                        <button type="button" onClick={clearPromo} className="text-xs font-medium text-rose-600 hover:underline" data-testid="promo-code-remove-btn">Убрать</button>
+                      </div>
+                    ) : (
+                      <div className="flex items-center gap-2">
+                        <Input value={promoCode} onChange={(e) => setPromoCode(e.target.value.toUpperCase())} placeholder="Промокод" className="flex-1 h-10" data-testid="promo-code-field" maxLength={32} />
+                        <Button type="button" onClick={applyPromo} disabled={promoChecking} variant="outline" className="h-10 border-teal-300 text-teal-700 hover:bg-teal-50" data-testid="promo-code-apply-btn">
+                          {promoChecking ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Применить'}
+                        </Button>
+                      </div>
+                    )}
+                  </div>
+                )}
 
                 {/* Cart-wide discount request */}
                 <div className="pt-1" data-testid="cart-discount-request-block">

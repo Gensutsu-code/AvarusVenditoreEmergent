@@ -251,6 +251,7 @@ class OrderCreate(BaseModel):
     payment_parts: Optional[List[dict]] = None  # mixed payment: [{method, amount}], max 2, no deferral
     pay_delivery_with_points: Optional[bool] = False  # cover delivery fee with bonus points
     reward_choice: Optional[str] = "points"  # 'points' (accrue bonus points) or 'ozon' (extra Ozon certificate)
+    promo_code: Optional[str] = None  # cart-wide promo code (single-method payments only)
 
 class OrderItemUpdate(BaseModel):
     product_id: str
@@ -331,6 +332,8 @@ class OrderResponse(BaseModel):
     individual_discount_amount: Optional[float] = None
     cart_discount_percent: Optional[float] = None
     cart_discount_amount: Optional[float] = None
+    promo_code: Optional[str] = None
+    promo_code_amount: Optional[float] = None
     delivery_paid_with_points: Optional[bool] = None
     delivery_points_used: Optional[float] = None
 

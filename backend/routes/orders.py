@@ -299,6 +299,7 @@ async def create_order(data: OrderCreate, user=Depends(get_current_user)):
     
     items = []
     subtotal = 0
+    sum_floors = 0.0  # Σ min_price × qty — hard floor the order total can never go below
     used_individual_price_product_ids = []
     
     # Calculate price multiplier based on payment adjustment
@@ -338,6 +339,8 @@ async def create_order(data: OrderCreate, user=Depends(get_current_user)):
                     cart_discount_amount -= round((price_before_cart_discount - final_price) * cart_item["quantity"], 2)
                     cart_discount_amount += round((price_before_cart_discount - floor) * cart_item["quantity"], 2)
                 final_price = round(floor, 2)
+            if floor is not None and floor >= 0:
+                sum_floors += round(float(floor) * cart_item["quantity"], 2)
             
             item_data = {
                 "product_id": cart_item["product_id"],
@@ -401,6 +404,10 @@ async def create_order(data: OrderCreate, user=Depends(get_current_user)):
     individual_discount_pct = float(user.get("individual_discount", 0) or 0)
     individual_discount_amount = 0.0
 
+    # Cart-wide promo code (single-method payments only), respects the min_price floor
+    promo_code_obj = None
+    promo_code_amount = 0.0
+
     # Pay delivery with bonus points (1 point = 1 ₽)
     pay_delivery_with_points = bool(getattr(data, 'pay_delivery_with_points', False))
     delivery_points_used = 0
@@ -410,6 +417,8 @@ async def create_order(data: OrderCreate, user=Depends(get_current_user)):
         # (discount/surcharge) is applied to its own part.
         if is_deferral:
             raise HTTPException(status_code=400, detail="Отсрочка не поддерживает смешанную оплату")
+        if getattr(data, 'promo_code', None):
+            raise HTTPException(status_code=400, detail="Промокод недоступен при смешанной оплате")
         valid_methods = {"balance", "card", "cash"}
         norm = []
         for p in parts:
@@ -451,9 +460,20 @@ async def create_order(data: OrderCreate, user=Depends(get_current_user)):
     else:
         # SINGLE METHOD: base_subtotal already includes this method's adjustment
         goods_total = base_subtotal
+        # Cart-wide promo code (stacks on top of promos/tiers/cart-discount), floor-guarded
+        if getattr(data, 'promo_code', None):
+            from routes.promo_codes import validate_promo_code
+            code_doc, disc, err = await validate_promo_code(data.promo_code, user["id"], goods_total)
+            if err:
+                raise HTTPException(status_code=400, detail=err)
+            disc = min(disc, max(0.0, round(goods_total - sum_floors, 2)))
+            promo_code_obj = code_doc
+            promo_code_amount = round(disc, 2)
+            goods_total = max(0.0, round(goods_total - promo_code_amount, 2))
         # Individual discount stacks on top of promos/tiers, ONLY for balance prepayment
         if pay_with_balance and individual_discount_pct > 0:
             individual_discount_amount = round(goods_total * individual_discount_pct / 100, 2)
+            individual_discount_amount = min(individual_discount_amount, max(0.0, round(goods_total - sum_floors, 2)))
             goods_total = max(0.0, round(goods_total - individual_discount_amount, 2))
         delivery_fee = delivery_price if (delivery_enabled and goods_total < min_free) else 0
         money_delivery = 0 if (pay_delivery_with_points and delivery_fee > 0) else delivery_fee
@@ -595,6 +615,8 @@ async def create_order(data: OrderCreate, user=Depends(get_current_user)):
         "individual_discount_amount": individual_discount_amount,
         "cart_discount_percent": cart_discount_pct if cart_discount_pct > 0 else 0,
         "cart_discount_amount": round(cart_discount_amount, 2),
+        "promo_code": promo_code_obj["code"] if promo_code_obj else None,
+        "promo_code_amount": round(promo_code_amount, 2),
         "delivery_paid_with_points": bool(delivery_points_used > 0),
         "delivery_points_used": delivery_points_used,
         "status": "pending",
@@ -637,6 +659,10 @@ async def create_order(data: OrderCreate, user=Depends(get_current_user)):
             {"id": active_cart_discount["id"]},
             {"$set": {"status": "used", "used_at": datetime.now(timezone.utc).isoformat(), "order_id": order["id"]}}
         )
+
+    # Count promo code usage
+    if promo_code_obj:
+        await db.promo_codes.update_one({"id": promo_code_obj["id"]}, {"$inc": {"used_count": 1}})
 
     # Decrement promo limited stock for items that used an active promo
     for it in items:

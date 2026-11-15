@@ -32,6 +32,7 @@ from .warehouse import router as warehouse_router
 from .invoices import router as invoices_router
 from .parts_finder import router as parts_finder_router
 from .cart_discount_requests import router as cart_discount_requests_router
+from .promo_codes import router as promo_codes_router
 
 # Create main API router
 api_router = APIRouter(prefix="/api")
@@ -67,5 +68,6 @@ api_router.include_router(warehouse_router)
 api_router.include_router(invoices_router)
 api_router.include_router(parts_finder_router)
 api_router.include_router(cart_discount_requests_router)
+api_router.include_router(promo_codes_router)
 
 __all__ = ["api_router"]

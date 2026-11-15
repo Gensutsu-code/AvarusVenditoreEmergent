@@ -27,6 +27,7 @@ import {
   TelegramTab,
   StatsTab,
   DiscountsTab,
+  DiscountsPromoTab,
   TermsTab,
   NotificationsTab,
   PartnersTab,
@@ -157,7 +158,7 @@ export default function AdminPage() {
   const { isDark } = useTheme();
   
   // Tab order state - New restructured order
-  const defaultTabOrder = ['overview', 'products', 'warehouse', 'bonus', 'payments', 'crm', 'marketing', 'logs', 'settings'];
+  const defaultTabOrder = ['overview', 'products', 'warehouse', 'bonus', 'payments', 'crm', 'promotions', 'marketing', 'logs', 'settings'];
   const [tabOrder, setTabOrder] = useState(() => {
     const saved = localStorage.getItem('adminTabOrder');
     if (saved) {
@@ -183,6 +184,12 @@ export default function AdminPage() {
       // Add overview (dashboard) tab if missing (migration) — at the very front
       if (!filtered.includes('overview')) {
         filtered.unshift('overview');
+      }
+      // Add promotions (discounts & promo) tab if missing (migration) — after crm
+      if (!filtered.includes('promotions')) {
+        const crmIdx = filtered.indexOf('crm');
+        if (crmIdx >= 0) filtered.splice(crmIdx + 1, 0, 'promotions');
+        else filtered.push('promotions');
       }
       return filtered;
     }
@@ -1298,6 +1305,7 @@ export default function AdminPage() {
     bonus: { icon: Gift, label: 'Бонусы', badge: bonusPrograms.reduce((sum, p) => sum + (p.pending_requests || 0), 0) },
     payments: { icon: CreditCard, label: 'Платежи' },
     crm: { icon: Users, label: 'CRM', count: users.length },
+    promotions: { icon: Tag, label: 'Скидки и акции' },
     marketing: { icon: Megaphone, label: 'Маркетинг' },
     logs: { icon: ScrollText, label: 'Логи' },
     settings: { icon: Settings, label: 'Настройки' }
@@ -2827,6 +2835,10 @@ export default function AdminPage() {
           </TabsContent>
 
           {/* Marketing Tab - combines promo, news, newsletters */}
+          <TabsContent value="promotions" className="p-6">
+            <DiscountsPromoTab isDark={isDark} />
+          </TabsContent>
+
           <TabsContent value="marketing" className="p-6">
             <motion.div 
               initial={{ opacity: 0, y: 20 }}
@@ -3071,229 +3083,6 @@ export default function AdminPage() {
                   />
                   <span className="text-sm font-medium text-zinc-700">Новинка (14 дней)</span>
                 </label>
-              </div>
-
-              {/* Discount/Promo Section */}
-              <div className="rounded-xl border border-rose-200 bg-gradient-to-br from-rose-50/50 to-pink-50/30 p-4 space-y-3" data-testid="product-discount-section">
-                <div className="flex items-center justify-between gap-2 flex-wrap">
-                  <div className="flex items-center gap-2">
-                    <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-rose-500 to-pink-500 flex items-center justify-center">
-                      <span className="text-white text-xs font-bold">%</span>
-                    </div>
-                    <Label className="text-sm font-bold text-rose-700">Скидка / Акция</Label>
-                  </div>
-                  <label className="flex items-center gap-2 cursor-pointer" data-testid="product-discount-toggle">
-                    <input
-                      type="checkbox"
-                      checked={editingProduct.discount_active === true}
-                      onChange={(e) => {
-                        const next = { ...editingProduct, discount_active: e.target.checked };
-                        // When enabling discount, ensure discount_type has a sensible default
-                        if (e.target.checked && !next.discount_type) {
-                          next.discount_type = 'percent';
-                        }
-                        setEditingProduct(next);
-                      }}
-                      className="w-4 h-4 accent-rose-500 rounded"
-                    />
-                    <span className="text-sm font-medium text-zinc-700">Включена</span>
-                  </label>
-                </div>
-
-                {editingProduct.discount_active && (
-                  <div className="space-y-3">
-                    <div className="grid grid-cols-2 gap-3">
-                      <div>
-                        <Label className="text-xs font-semibold uppercase text-rose-600">Тип скидки</Label>
-                        <select
-                          value={editingProduct.discount_type || 'percent'}
-                          onChange={(e) => setEditingProduct({ ...editingProduct, discount_type: e.target.value })}
-                          className="mt-1.5 w-full h-10 rounded-md border border-slate-200 bg-white px-3 text-sm focus:border-rose-500 focus:outline-none"
-                          data-testid="product-discount-type"
-                        >
-                          <option value="percent">Процент (%)</option>
-                          <option value="amount">Сумма (₽)</option>
-                        </select>
-                      </div>
-                      <div>
-                        <Label className="text-xs font-semibold uppercase text-rose-600">
-                          Значение {editingProduct.discount_type === 'amount' ? '(₽)' : '(%)'}
-                        </Label>
-                        <Input
-                          type="number"
-                          min="0"
-                          step="0.01"
-                          value={editingProduct.discount_value ?? ''}
-                          onChange={(e) => setEditingProduct({ ...editingProduct, discount_value: parseFloat(e.target.value) || 0 })}
-                          placeholder={editingProduct.discount_type === 'amount' ? '500' : '15'}
-                          className="mt-1.5 border-slate-200 focus:border-rose-500"
-                          data-testid="product-discount-value"
-                        />
-                      </div>
-                    </div>
-                    <div>
-                      <Label className="text-xs font-semibold uppercase text-rose-600">Название акции</Label>
-                      <Input
-                        type="text"
-                        value={editingProduct.discount_label || ''}
-                        onChange={(e) => setEditingProduct({ ...editingProduct, discount_label: e.target.value })}
-                        placeholder="Например: Чёрная пятница"
-                        className="mt-1.5 border-slate-200 focus:border-rose-500"
-                        data-testid="product-discount-label"
-                        maxLength={60}
-                      />
-                    </div>
-                    <div>
-                      <Label className="text-xs font-semibold uppercase text-rose-600">Описание акции</Label>
-                      <textarea
-                        rows={2}
-                        value={editingProduct.discount_description || ''}
-                        onChange={(e) => setEditingProduct({ ...editingProduct, discount_description: e.target.value })}
-                        placeholder="Краткое описание, отображается в подсказке"
-                        className="mt-1.5 w-full px-3 py-2 border border-slate-200 rounded-md text-sm focus:border-rose-500 focus:outline-none resize-none"
-                        data-testid="product-discount-description"
-                        maxLength={200}
-                      />
-                    </div>
-                    <div>
-                      <Label className="text-xs font-semibold uppercase text-rose-600">
-                        Действует до <span className="text-rose-500">*</span>
-                      </Label>
-                      <Input
-                        type="date"
-                        value={editingProduct.discount_until ? String(editingProduct.discount_until).slice(0, 10) : ''}
-                        onChange={(e) => setEditingProduct({ ...editingProduct, discount_until: e.target.value || null })}
-                        className="mt-1.5 border-slate-200 focus:border-rose-500"
-                        data-testid="product-discount-until"
-                      />
-                      <p className="text-[11px] text-slate-400 mt-1">После этой даты скидка автоматически отключается</p>
-                    </div>
-                    <div>
-                      <Label className="text-xs font-semibold uppercase text-rose-600">Лимит по акции (шт.)</Label>
-                      <Input
-                        type="number"
-                        min="0"
-                        value={editingProduct.promo_allocated_stock ?? ''}
-                        onChange={(e) => {
-                          const raw = e.target.value;
-                          setEditingProduct({ ...editingProduct, promo_allocated_stock: raw === '' ? null : (parseInt(raw, 10) || 0) });
-                        }}
-                        placeholder="Оставьте пустым — без лимита"
-                        className="mt-1.5 border-slate-200 focus:border-rose-500"
-                        data-testid="product-promo-allocated-stock"
-                      />
-                      <p className="text-[11px] text-slate-400 mt-1">
-                        Количество единиц по акционной цене. При сохранении остаток сбрасывается на это значение.
-                        {editingProduct.id && editingProduct.promo_remaining_stock != null && (
-                          <span className="text-rose-500 font-semibold"> Сейчас осталось: {editingProduct.promo_remaining_stock} шт.</span>
-                        )}
-                      </p>
-                    </div>
-                    {/* Preview */}
-                    {editingProduct.price > 0 && editingProduct.discount_value > 0 && (
-                      <div className="p-3 bg-white rounded-lg border border-rose-200">
-                        <p className="text-xs text-slate-400 mb-1">Предпросмотр (базовая)</p>
-                        {(() => {
-                          const p = parseFloat(editingProduct.price) || 0;
-                          const v = parseFloat(editingProduct.discount_value) || 0;
-                          let finalPrice = p;
-                          if (editingProduct.discount_type === 'percent') {
-                            finalPrice = Math.max(0, p - (p * v) / 100);
-                          } else {
-                            finalPrice = Math.max(0, p - v);
-                          }
-                          return (
-                            <div className="flex items-center gap-2">
-                              <span className="line-through text-slate-400 text-sm">{formatPrice(p)} ₽</span>
-                              <span className="text-xl font-bold text-rose-600">{formatPrice(finalPrice)} ₽</span>
-                            </div>
-                          );
-                        })()}
-                      </div>
-                    )}
-
-                    {/* Tiered discounts */}
-                    <div className="pt-3 border-t border-rose-200 space-y-2">
-                      <div className="flex items-center justify-between">
-                        <Label className="text-xs font-semibold uppercase text-rose-600">Скидки по количеству</Label>
-                        <Button
-                          type="button"
-                          size="sm"
-                          variant="outline"
-                          onClick={() => {
-                            const tiers = Array.isArray(editingProduct.discount_tiers) ? [...editingProduct.discount_tiers] : [];
-                            tiers.push({ min_qty: 1, type: editingProduct.discount_type || 'percent', value: 0 });
-                            setEditingProduct({ ...editingProduct, discount_tiers: tiers });
-                          }}
-                          className="border-rose-200 text-rose-600 hover:bg-rose-50 h-7 text-xs rounded-lg"
-                          data-testid="add-tier-btn"
-                        >
-                          + Добавить порог
-                        </Button>
-                      </div>
-                      <p className="text-[11px] text-slate-400">
-                        При заказе от N шт. применяется скидка тира вместо базовой. Если ни один порог не совпадает — действует базовая выше.
-                      </p>
-                      {Array.isArray(editingProduct.discount_tiers) && editingProduct.discount_tiers.length > 0 && (
-                        <div className="space-y-2">
-                          {editingProduct.discount_tiers.map((tier, idx) => (
-                            <div key={idx} className="flex items-center gap-2 p-2 bg-white rounded-lg border border-rose-100" data-testid={`tier-row-${idx}`}>
-                              <span className="text-xs text-slate-500 whitespace-nowrap">От</span>
-                              <Input
-                                type="number"
-                                min="1"
-                                value={tier.min_qty}
-                                onChange={(e) => {
-                                  const tiers = [...editingProduct.discount_tiers];
-                                  tiers[idx] = { ...tier, min_qty: parseInt(e.target.value) || 1 };
-                                  setEditingProduct({ ...editingProduct, discount_tiers: tiers });
-                                }}
-                                className="w-16 h-8 text-xs"
-                              />
-                              <span className="text-xs text-slate-500">шт.</span>
-                              <select
-                                value={tier.type || 'percent'}
-                                onChange={(e) => {
-                                  const tiers = [...editingProduct.discount_tiers];
-                                  tiers[idx] = { ...tier, type: e.target.value };
-                                  setEditingProduct({ ...editingProduct, discount_tiers: tiers });
-                                }}
-                                className="h-8 rounded border border-slate-200 text-xs px-1"
-                              >
-                                <option value="percent">%</option>
-                                <option value="amount">₽</option>
-                              </select>
-                              <Input
-                                type="number"
-                                min="0"
-                                step="0.01"
-                                value={tier.value}
-                                onChange={(e) => {
-                                  const tiers = [...editingProduct.discount_tiers];
-                                  tiers[idx] = { ...tier, value: parseFloat(e.target.value) || 0 };
-                                  setEditingProduct({ ...editingProduct, discount_tiers: tiers });
-                                }}
-                                placeholder={tier.type === 'amount' ? '500' : '15'}
-                                className="flex-1 h-8 text-xs"
-                              />
-                              <button
-                                type="button"
-                                onClick={() => {
-                                  const tiers = editingProduct.discount_tiers.filter((_, i) => i !== idx);
-                                  setEditingProduct({ ...editingProduct, discount_tiers: tiers });
-                                }}
-                                className="w-7 h-7 rounded-lg bg-rose-50 hover:bg-rose-100 text-rose-500 flex items-center justify-center"
-                                data-testid={`remove-tier-${idx}`}
-                              >
-                                <X className="w-3.5 h-3.5" />
-                              </button>
-                            </div>
-                          ))}
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                )}
               </div>
 
               <div>
