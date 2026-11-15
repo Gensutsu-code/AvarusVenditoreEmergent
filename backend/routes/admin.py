@@ -336,7 +336,14 @@ async def get_admin_orders(user=Depends(get_current_user)):
         async for u in users_cursor:
             users_data[u["id"]] = u
     
+    manager_ids = list({o["manager_id"] for o in orders if o.get("manager_id")})
+    managers = {}
+    if manager_ids:
+        async for m in db.users.find({"id": {"$in": manager_ids}}, {"_id": 0, "id": 1, "name": 1}):
+            managers[m["id"]] = m.get("name", "")
+
     for order in orders:
+        order["manager_name"] = managers.get(order.get("manager_id"))
         uid = order.get("user_id")
         if uid and uid in users_data:
             order["customer_name"] = users_data[uid].get("name") or users_data[uid].get("email", "")

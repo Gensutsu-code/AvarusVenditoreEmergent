@@ -20,7 +20,7 @@ const ClientsTab = () => {
   useEffect(() => { load(); }, [load]);
   const save = async () => {
     setSaving(true);
-    try { await axios.put(`${API}/manager/clients/${edit.id}/conditions`, toConditionsPayload(edit.value)); toast.success('Условия клиента сохранены'); setEdit(null); load(); }
+    try { await axios.post(`${API}/manager/clients/${edit.id}/conditions-request`, { ...toConditionsPayload(edit.value), comment: edit.comment || '' }); toast.success('Запрос отправлен администратору'); setEdit(null); load(); }
     catch (e) { err(e); } finally { setSaving(false); }
   };
   if (!clients) return <div className="py-12 text-center"><Loader2 className="w-6 h-6 animate-spin mx-auto text-teal-500" /></div>;
@@ -39,19 +39,24 @@ const ClientsTab = () => {
             <span>Отсрочка: <b>{c.effective.deferral_days} дн.</b></span>
             <span>Лимит в долг: <b>{money(c.effective.credit_limit)}</b></span>
           </div>
-          <Button size="sm" variant="outline" className="mt-3 border-teal-200 text-teal-700 hover:bg-teal-50" onClick={() => setEdit({ id: c.id, name: c.name, value: { individual_discount: c.individual_discount || 0, delivery_cost: c.delivery_cost ?? null, deferral_days: c.deferral_days || 0, credit_limit: c.credit_limit || 0 } })} data-testid={`manager-edit-conditions-${c.id}`}>
-            <Pencil className="w-3.5 h-3.5 mr-1.5" />Индивидуальные условия
-          </Button>
+          {c.pending_request ? (
+            <p className="mt-3 text-xs rounded-lg bg-amber-50 text-amber-800 px-3 py-2" data-testid={`manager-request-pending-${c.id}`}>Запрос условий на рассмотрении у администратора</p>
+          ) : (
+            <Button size="sm" variant="outline" className="mt-3 border-teal-200 text-teal-700 hover:bg-teal-50" onClick={() => setEdit({ id: c.id, name: c.name, comment: '', value: { individual_discount: c.individual_discount || 0, delivery_cost: c.delivery_cost ?? null, deferral_days: c.deferral_days || 0, credit_limit: c.credit_limit || 0 } })} data-testid={`manager-edit-conditions-${c.id}`}>
+              <Pencil className="w-3.5 h-3.5 mr-1.5" />Запросить условия у администратора
+            </Button>
+          )}
         </div>
       ))}
       <Dialog open={!!edit} onOpenChange={(o) => !o && setEdit(null)}>
         <DialogContent className="rounded-2xl" data-testid="manager-conditions-modal">
-          <DialogHeader><DialogTitle>Условия: {edit?.name}</DialogTitle></DialogHeader>
+          <DialogHeader><DialogTitle>Запрос условий: {edit?.name}</DialogTitle></DialogHeader>
           {edit && (
             <>
-              <p className="text-xs text-slate-500">Индивидуальные условия важнее стандартных условий статуса. Нули и пустая доставка — действуют стандартные.</p>
+              <p className="text-xs text-slate-500">Укажите условия, которые вы предлагаете для клиента. Они начнут действовать только после подтверждения администратором.</p>
               <ConditionsFields value={edit.value} onChange={(v) => setEdit({ ...edit, value: v })} prefix="mgr" />
-              <Button onClick={save} disabled={saving} className="w-full bg-teal-500 hover:bg-teal-600 text-white" data-testid="manager-conditions-save">{saving ? 'Сохранение…' : 'Сохранить'}</Button>
+              <Input value={edit.comment} onChange={(e) => setEdit({ ...edit, comment: e.target.value })} placeholder="Комментарий для администратора" maxLength={1000} data-testid="mgr-comment" />
+              <Button onClick={save} disabled={saving} className="w-full bg-teal-500 hover:bg-teal-600 text-white" data-testid="manager-conditions-save">{saving ? 'Отправка…' : 'Отправить запрос'}</Button>
             </>
           )}
         </DialogContent>
@@ -124,10 +129,13 @@ export default function ManagerPage() {
   const [tab, setTab] = useState('stats');
   const [period, setPeriod] = useState('month');
   const [stats, setStats] = useState(null);
+  const [pay, setPay] = useState(null);
   const isManager = user?.role === 'manager';
   useEffect(() => {
     if (isManager) axios.get(`${API}/manager/overview`, { params: { period } }).then((r) => setStats(r.data)).catch(err);
   }, [isManager, period]);
+
+  useEffect(() => { if (isManager) axios.get(`${API}/manager/payouts`).then((r) => setPay(r.data)).catch(() => {}); }, [isManager]);
 
   if (loading) return null;
   if (!isManager) return <Navigate to="/" replace />;
@@ -148,6 +156,13 @@ export default function ManagerPage() {
           </div>
           {tab === 'stats' && <PeriodSwitch value={period} onChange={setPeriod} />}
         </div>
+        {tab === 'stats' && pay && (
+          <div className="mb-5 rounded-xl border border-slate-200 bg-white p-4 flex flex-wrap gap-x-8 gap-y-2 text-sm" data-testid="manager-payouts-summary">
+            <span className="text-slate-500">Начислено за всё время: <b className="text-slate-800">{money(pay.earned)}</b></span>
+            <span className="text-slate-500">Выплачено: <b className="text-slate-800">{money(pay.paid)}</b></span>
+            <span className="text-slate-500">К выплате: <b className="text-teal-600" data-testid="manager-payouts-balance">{money(pay.balance)}</b></span>
+          </div>
+        )}
         {tab === 'stats' && <ManagerStatsView stats={stats} />}
         {tab === 'clients' && <ClientsTab />}
         {tab === 'chats' && <ChatsTab />}

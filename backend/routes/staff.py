@@ -66,7 +66,7 @@ async def put_conditions(data: StatusConditionsIn, user=Depends(get_current_user
 async def my_conditions(user=Depends(get_current_user)):
     raw = await db.users.find_one({"id": user["id"]}, {"_id": 0, "password": 0})
     eff = effective_conditions(raw, await get_status_conditions())
-    pending = await db.conditions_requests.find_one({"user_id": user["id"], "status": "pending"}, {"_id": 0})
+    pending = await db.conditions_requests.find_one({"user_id": user["id"], "status": "pending", "manager_id": None}, {"_id": 0})
     manager = None
     if raw.get("manager_id"):
         m = await db.users.find_one({"id": raw["manager_id"], "role": "manager"}, {"_id": 0, "name": 1, "phone": 1, "email": 1})
@@ -115,12 +115,12 @@ async def create_conditions_request(data: ConditionsRequestIn, user=Depends(get_
     if data.discount <= 0 and data.deferral_days <= 0 and data.credit_limit <= 0 and not data.comment.strip():
         raise HTTPException(status_code=400, detail="Укажите желаемые условия или опишите их в комментарии")
     if await db.conditions_requests.find_one({"user_id": user["id"], "status": "pending"}):
-        raise HTTPException(status_code=400, detail="У вас уже есть запрос на рассмотрении")
+        raise HTTPException(status_code=400, detail="Запрос на индивидуальные условия уже на рассмотрении")
     doc = {
         "id": str(uuid.uuid4()), "user_id": user["id"], "user_name": user.get("name", ""), "user_email": user.get("email", ""),
         "current_status": user.get("customer_status", "retail"),
         "discount": data.discount, "deferral_days": data.deferral_days, "credit_limit": data.credit_limit,
-        "comment": data.comment.strip(), "status": "pending", "created_at": _now(),
+        "comment": data.comment.strip(), "status": "pending", "manager_id": None, "created_at": _now(),
     }
     await db.conditions_requests.insert_one(dict(doc))
     await notify_admin("conditions_request", "Запрос на индивидуальные условия", f"{doc['user_name']} ({doc['user_email']})", "/admin/staff")
@@ -149,14 +149,21 @@ async def decide_conditions_request(request_id: str, data: ConditionsDecisionIn,
     if req["status"] != "pending":
         raise HTTPException(status_code=400, detail="Запрос уже обработан")
     upd = {"status": "approved" if data.action == "approve" else "rejected", "handled_at": _now(), "response": data.response.strip()}
+    by_manager = bool(req.get("manager_id"))
     if data.action == "approve":
-        # an approved request makes the client a wholesale client with individual conditions
-        await _apply_individual_conditions(req["user_id"], data, {"customer_status": "wholesale"})
+        # a client's own approved request makes him a wholesale client; a manager's request only changes conditions
+        await _apply_individual_conditions(req["user_id"], data, {} if by_manager else {"customer_status": "wholesale"})
         upd["approved"] = {"individual_discount": data.individual_discount, "delivery_cost": data.delivery_cost,
                            "deferral_days": data.deferral_days, "credit_limit": data.credit_limit}
     await db.conditions_requests.update_one({"id": request_id}, {"$set": upd})
-    text = "Запрос одобрен: вам присвоен статус оптового клиента" if data.action == "approve" else "Запрос на индивидуальные условия отклонён"
-    await notify_user(req["user_id"], "conditions", "Индивидуальные условия", text, "/account")
+    if by_manager:
+        verdict = "одобрен" if data.action == "approve" else "отклонён"
+        await notify_user(req["manager_id"], "conditions", "Запрос условий для клиента", f"{req.get('user_name', '')}: запрос {verdict}", "/manager")
+        if data.action == "approve":
+            await notify_user(req["user_id"], "conditions", "Индивидуальные условия", "Вам установлены новые индивидуальные условия", "/account")
+    else:
+        text = "Запрос одобрен: вам присвоен статус оптового клиента" if data.action == "approve" else "Запрос на индивидуальные условия отклонён"
+        await notify_user(req["user_id"], "conditions", "Индивидуальные условия", text, "/account")
     return {"success": True}
 
 
@@ -285,6 +292,7 @@ async def list_staff(period: str = "month", user=Depends(get_current_user)):
         row = _public_manager(m)
         row["clients_total"] = await db.users.count_documents({"manager_id": m["id"], "role": "user"})
         row["stats"] = await _manager_stats(m, period, detailed=False)
+        row["payouts"] = await _payout_summary(m, with_list=False)
         out.append(row)
     return out
 
@@ -337,6 +345,88 @@ async def delete_manager(manager_id: str, user=Depends(get_current_user)):
 async def staff_stats(manager_id: str, period: str = "month", user=Depends(get_current_user)):
     _admin(user)
     return await _manager_stats(await _get_manager(manager_id), period)
+
+
+# ---- payouts ----
+
+class PayoutIn(BaseModel):
+    amount: float = Field(gt=0, le=100_000_000)
+    paid_at: Optional[str] = None  # YYYY-MM-DD, default today
+    comment: str = Field(default="", max_length=300)
+
+
+async def _payout_summary(manager: dict, with_list: bool = True):
+    earned = (await _manager_stats(manager, "all", detailed=False))["commission"]
+    payouts = await db.manager_payouts.find({"manager_id": manager["id"], "cancelled_at": None}, {"_id": 0}).sort("paid_at", -1).to_list(2000)
+    paid = round(sum(p["amount"] for p in payouts), 2)
+    out = {"earned": earned, "paid": paid, "balance": round(earned - paid, 2)}
+    if with_list:
+        out["payouts"] = payouts
+    return out
+
+
+@router.get("/admin/staff/{manager_id}/payouts")
+async def staff_payouts(manager_id: str, user=Depends(get_current_user)):
+    _admin(user)
+    return await _payout_summary(await _get_manager(manager_id))
+
+
+@router.post("/admin/staff/{manager_id}/payouts")
+async def add_payout(manager_id: str, data: PayoutIn, user=Depends(get_current_user)):
+    _admin(user)
+    await _get_manager(manager_id)
+    paid_at = (data.paid_at or _now())[:10]
+    try:
+        datetime.fromisoformat(paid_at)
+    except ValueError:
+        raise HTTPException(status_code=400, detail="Неверная дата выплаты")
+    doc = {"id": str(uuid.uuid4()), "manager_id": manager_id, "amount": round(data.amount, 2), "paid_at": paid_at,
+           "comment": data.comment.strip(), "cancelled_at": None, "created_at": _now(), "created_by": user.get("name", "")}
+    await db.manager_payouts.insert_one(dict(doc))
+    return doc
+
+
+@router.delete("/admin/staff/{manager_id}/payouts/{payout_id}")
+async def cancel_payout(manager_id: str, payout_id: str, user=Depends(get_current_user)):
+    _admin(user)
+    res = await db.manager_payouts.update_one({"id": payout_id, "manager_id": manager_id, "cancelled_at": None}, {"$set": {"cancelled_at": _now()}})
+    if res.matched_count == 0:
+        raise HTTPException(status_code=404, detail="Выплата не найдена")
+    return {"success": True}
+
+
+@router.get("/manager/payouts")
+async def my_payouts(user=Depends(get_current_user)):
+    _manager(user)
+    return await _payout_summary(user)
+
+
+# ---- monthly sales chart ----
+
+@router.get("/admin/staff-chart")
+async def staff_chart(months: int = 12, user=Depends(get_current_user)):
+    """Goods revenue per manager per month (cancelled orders excluded)."""
+    _admin(user)
+    months = max(1, min(months, 36))
+    now = datetime.now(timezone.utc)
+    keys, y, m = [], now.year, now.month
+    for _ in range(months):
+        keys.append(f"{y:04d}-{m:02d}")
+        y, m = (y - 1, 12) if m == 1 else (y, m - 1)
+    keys.reverse()
+    managers = await db.users.find({"role": "manager", "deleted_at": None}, {"_id": 0, "id": 1, "name": 1}).sort("created_at", 1).to_list(500)
+    ids = [mg["id"] for mg in managers]
+    rows = {k: {"month": k, **{i: 0.0 for i in ids}} for k in keys}
+    async for o in db.orders.find(
+        {"manager_id": {"$in": ids}, "status": {"$ne": "cancelled"}, "created_at": {"$gte": f"{keys[0]}-01"}},
+        {"_id": 0, "manager_id": 1, "created_at": 1, "total": 1, "delivery_fee": 1, "delivery_points_used": 1},
+    ):
+        row = rows.get(str(o.get("created_at"))[:7])
+        if row is not None:
+            delivery = 0 if o.get("delivery_points_used") else (o.get("delivery_fee") or 0)
+            row[o["manager_id"]] += max(0.0, (o.get("total") or 0) - delivery)
+    data = [{k: (round(v, 2) if k != "month" else v) for k, v in r.items()} for r in rows.values()]
+    return {"managers": managers, "data": data}
 
 
 # ---- binding clients ----
@@ -415,17 +505,36 @@ async def manager_clients(user=Depends(get_current_user)):
     _manager(user)
     sc = await get_status_conditions()
     clients = await db.users.find({"manager_id": user["id"], "role": "user"}, CLIENT_FIELDS).sort("name", 1).to_list(2000)
+    pending = {r["user_id"]: r for r in await db.conditions_requests.find(
+        {"user_id": {"$in": [c["id"] for c in clients]}, "status": "pending"}, {"_id": 0}).to_list(2000)}
     for c in clients:
         c["effective"] = effective_conditions(c, sc)
+        c["pending_request"] = pending.get(c["id"])
     return clients
 
 
-@router.put("/manager/clients/{user_id}/conditions")
-async def manager_set_conditions(user_id: str, data: IndividualConditionsIn, user=Depends(get_current_user)):
+class ManagerConditionsRequestIn(IndividualConditionsIn):
+    comment: str = Field(default="", max_length=1000)
+
+
+@router.post("/manager/clients/{user_id}/conditions-request")
+async def manager_request_conditions(user_id: str, data: ManagerConditionsRequestIn, user=Depends(get_current_user)):
+    """A manager cannot change client conditions himself — he asks the admin, who approves or rejects."""
     _manager(user)
-    await _own_client(user, user_id)
-    await _apply_individual_conditions(user_id, data, {"conditions_updated_by": user["id"], "conditions_updated_at": _now()})
-    return {"success": True}
+    client = await _own_client(user, user_id)
+    if await db.conditions_requests.find_one({"user_id": user_id, "status": "pending"}):
+        raise HTTPException(status_code=400, detail="По этому клиенту уже есть запрос на рассмотрении")
+    doc = {
+        "id": str(uuid.uuid4()), "user_id": user_id, "user_name": client.get("name", ""), "user_email": client.get("email", ""),
+        "current_status": client.get("customer_status", "retail"),
+        "discount": data.individual_discount, "delivery_cost": data.delivery_cost,
+        "deferral_days": data.deferral_days, "credit_limit": data.credit_limit,
+        "comment": data.comment.strip(), "status": "pending",
+        "manager_id": user["id"], "manager_name": user.get("name", ""), "created_at": _now(),
+    }
+    await db.conditions_requests.insert_one(dict(doc))
+    await notify_admin("conditions_request", "Запрос условий от менеджера", f"{doc['manager_name']} → {doc['user_name']}", "/admin/staff")
+    return doc
 
 
 class ChatText(BaseModel):

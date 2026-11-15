@@ -8,6 +8,7 @@ import { Input } from '../components/ui/input';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '../components/ui/dialog';
 import { useAuth } from '../context/AuthContext';
 import { PeriodSwitch, ManagerStatsView, ConditionsFields, toConditionsPayload, money } from '../components/staff/ManagerStats';
+import { StaffSalesChart, PayoutsPanel } from '../components/staff/StaffExtras';
 
 const API = `${process.env.REACT_APP_BACKEND_URL}/api`;
 const err = (e, fallback = 'Ошибка') => { const d = e.response?.data?.detail; toast.error(typeof d === 'string' ? d : fallback); };
@@ -82,6 +83,7 @@ const ManagerDetail = ({ manager, period, setPeriod, onBack }) => {
         <PeriodSwitch value={period} onChange={setPeriod} />
       </div>
       <ManagerStatsView stats={stats} />
+      <PayoutsPanel managerId={manager.id} />
 
       <div className="grid lg:grid-cols-2 gap-5 mt-6">
         <div className="rounded-xl border border-slate-200 bg-white p-4" data-testid="staff-bound-clients">
@@ -127,12 +129,12 @@ const ConditionsRequests = () => {
   const [busy, setBusy] = useState(false);
   const load = useCallback(() => axios.get(`${API}/admin/conditions-requests`).then((r) => setItems(r.data)).catch(err), []);
   useEffect(() => { load(); }, [load]);
-  const valueOf = (r) => edits[r.id] || { individual_discount: r.discount, delivery_cost: null, deferral_days: r.deferral_days, credit_limit: r.credit_limit };
+  const valueOf = (r) => edits[r.id] || { individual_discount: r.discount, delivery_cost: r.delivery_cost ?? null, deferral_days: r.deferral_days, credit_limit: r.credit_limit };
   const decide = async (r, action) => {
     setBusy(true);
     try {
       await axios.put(`${API}/admin/conditions-requests/${r.id}`, { action, ...toConditionsPayload(valueOf(r)) });
-      toast.success(action === 'approve' ? 'Одобрено: клиент стал оптовым' : 'Запрос отклонён');
+      toast.success(action !== 'approve' ? 'Запрос отклонён' : r.manager_id ? 'Одобрено: условия клиента изменены' : 'Одобрено: клиент стал оптовым');
       load();
     } catch (e) { err(e); } finally { setBusy(false); }
   };
@@ -143,19 +145,20 @@ const ConditionsRequests = () => {
       {items.map((r) => (
         <div key={r.id} className="rounded-xl border border-slate-200 bg-white p-4" data-testid={`conditions-request-${r.id}`}>
           <div className="flex items-start justify-between gap-3">
-            <div><p className="font-semibold text-slate-800">{r.user_name || r.user_email}</p><p className="text-xs text-slate-500">{r.user_email} · {new Date(r.created_at).toLocaleDateString('ru-RU')}</p></div>
+            <div><p className="font-semibold text-slate-800">{r.user_name || r.user_email}</p><p className="text-xs text-slate-500">{r.user_email} · {new Date(r.created_at).toLocaleDateString('ru-RU')}</p>
+              {r.manager_id && <p className="text-xs font-semibold text-slate-700 mt-0.5" data-testid={`conditions-request-manager-${r.id}`}>Запрос от менеджера: {r.manager_name}</p>}</div>
             <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${r.status === 'pending' ? 'bg-amber-100 text-amber-700' : r.status === 'approved' ? 'bg-emerald-100 text-emerald-700' : 'bg-rose-100 text-rose-700'}`} data-testid={`conditions-request-status-${r.id}`}>
               {r.status === 'pending' ? 'На рассмотрении' : r.status === 'approved' ? 'Одобрен' : 'Отклонён'}
             </span>
           </div>
-          <p className="text-sm text-slate-600 mt-2">Просит: скидка {r.discount}% · отсрочка {r.deferral_days} дн. · лимит {money(r.credit_limit)}</p>
+          <p className="text-sm text-slate-600 mt-2">Просит: скидка {r.discount}%{r.manager_id ? ` · доставка ${r.delivery_cost == null ? 'как на сайте' : money(r.delivery_cost)}` : ''} · отсрочка {r.deferral_days} дн. · лимит {money(r.credit_limit)}</p>
           {r.comment && <p className="text-sm italic text-slate-500 mt-1">«{r.comment}»</p>}
           {r.status === 'pending' && (
             <div className="mt-3 pt-3 border-t border-slate-100">
               <p className="text-xs font-bold uppercase text-teal-600 mb-2">Условия, которые получит клиент</p>
               <ConditionsFields value={valueOf(r)} onChange={(v) => setEdits({ ...edits, [r.id]: v })} prefix={`req-${r.id}`} />
               <div className="flex gap-2 mt-3">
-                <Button onClick={() => decide(r, 'approve')} disabled={busy} className="bg-emerald-500 hover:bg-emerald-600 text-white" data-testid={`conditions-approve-${r.id}`}><Check className="w-4 h-4 mr-1" />Одобрить и сделать оптовым</Button>
+                <Button onClick={() => decide(r, 'approve')} disabled={busy} className="bg-emerald-500 hover:bg-emerald-600 text-white" data-testid={`conditions-approve-${r.id}`}><Check className="w-4 h-4 mr-1" />{r.manager_id ? 'Одобрить условия' : 'Одобрить и сделать оптовым'}</Button>
                 <Button onClick={() => decide(r, 'reject')} disabled={busy} variant="outline" className="border-rose-300 text-rose-600 hover:bg-rose-50" data-testid={`conditions-reject-${r.id}`}><XCircle className="w-4 h-4 mr-1" />Отклонить</Button>
               </div>
             </div>
@@ -222,10 +225,10 @@ export default function AdminStaffPage() {
                   <div className="rounded-xl border border-dashed border-slate-300 p-12 text-center text-slate-400" data-testid="staff-empty">Менеджеров пока нет. Добавьте первого.</div>
                 ) : (
                   <div className="rounded-xl border border-slate-200 bg-white overflow-x-auto" data-testid="staff-list">
-                    <table className="w-full min-w-[820px]">
+                    <table className="w-full min-w-[940px]">
                       <thead><tr className="text-[11px] uppercase text-slate-400 text-left">
                         <th className="px-4 py-2.5">Менеджер</th><th className="px-3 py-2.5 text-right">Клиентов</th><th className="px-3 py-2.5 text-right">Заказов</th>
-                        <th className="px-3 py-2.5 text-right">Продано</th><th className="px-3 py-2.5 text-right">Прибыль</th><th className="px-3 py-2.5 text-right">Вознаграждение</th><th className="px-3 py-2.5" />
+                        <th className="px-3 py-2.5 text-right">Продано</th><th className="px-3 py-2.5 text-right">Прибыль</th><th className="px-3 py-2.5 text-right">Вознаграждение</th><th className="px-3 py-2.5 text-right">К выплате</th><th className="px-3 py-2.5" />
                       </tr></thead>
                       <tbody>{staff.map((m) => (
                         <tr key={m.id} className="border-t border-slate-100 hover:bg-slate-50 transition-colors" data-testid={`staff-row-${m.id}`}>
@@ -241,6 +244,7 @@ export default function AdminStaffPage() {
                           <td className="px-3 py-3 text-right text-sm font-semibold" data-testid={`staff-revenue-${m.id}`}>{money(m.stats.revenue)}</td>
                           <td className="px-3 py-3 text-right text-sm font-semibold text-emerald-600" data-testid={`staff-profit-${m.id}`}>{money(m.stats.profit)}</td>
                           <td className="px-3 py-3 text-right text-sm text-teal-600">{money(m.stats.commission)} <span className="text-[11px] text-slate-400">({m.stats.commission_percent}%)</span></td>
+                          <td className={`px-3 py-3 text-right text-sm font-semibold ${m.payouts.balance > 0 ? 'text-amber-600' : 'text-slate-400'}`} data-testid={`staff-balance-${m.id}`}>{money(m.payouts.balance)}</td>
                           <td className="px-3 py-3 text-right whitespace-nowrap">
                             <button onClick={() => setForm({ ...emptyForm, ...m, password: '', commission_percent: m.commission_percent ?? '' })} className="p-2 text-slate-400 hover:text-teal-600" title="Редактировать" data-testid={`staff-edit-${m.id}`}><Pencil className="w-4 h-4" /></button>
                             <button onClick={() => remove(m)} className="p-2 text-slate-400 hover:text-rose-500" title="Удалить" data-testid={`staff-delete-${m.id}`}><Trash2 className="w-4 h-4" /></button>
@@ -250,6 +254,7 @@ export default function AdminStaffPage() {
                     </table>
                   </div>
                 )}
+                {staff && staff.length > 0 && <StaffSalesChart />}
               </>
             )}
           </>
