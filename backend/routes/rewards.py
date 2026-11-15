@@ -427,7 +427,7 @@ async def admin_adjust_cashback(user_id: str, data: dict, user=Depends(get_curre
         amount = round(float(data.get("amount")), 2)
     except (TypeError, ValueError):
         raise HTTPException(status_code=400, detail="Укажите сумму")
-    target = await db.users.find_one({"id": user_id}, {"_id": 0, "cashback_balance": 1})
+    target = await db.users.find_one({"id": user_id}, {"_id": 0, "id": 1, "cashback_balance": 1})
     if not target:
         raise HTTPException(status_code=404, detail="Клиент не найден")
     if amount == 0 or (target.get("cashback_balance", 0) or 0) + amount < 0:

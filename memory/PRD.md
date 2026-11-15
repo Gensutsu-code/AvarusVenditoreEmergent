@@ -267,3 +267,17 @@ E-commerce platform for truck spare parts with a comprehensive admin panel. Russ
 - Balance: admin can go negative
 - Legacy products default `bonus_eligible=True`
 - Discount auto-expires client-side via `discount_until` check
+
+
+## Reward systems fine-tuning (June 2026, iteration_113)
+- Three reward systems: bonus points, Ozon certificates (% of order), cashback (NEW). Client picks ONE system once on /bonus (`RewardsPage` → chooser / BonusPage / OzonRewardView / CashbackView); admin can change or reset it. Client sees only the chosen system (points endpoints return empty/403 for others).
+- Settings (`db.settings` key `reward_settings`, `routes/rewards.py`, admin UI `components/admin/RewardSettings.js` in the Bonus tab): per system enabled, retail/wholesale %, min order, order-amount tiers, exclude discounted items, reduced-rate rules per product / category / warehouse (lowest matching rate wins); ozon `round_to`; cashback `allow_pay`, `max_pay_percent`, `allow_withdraw`, `min_withdraw`.
+- Order stores snapshot: `reward_system`, `reward_rates`, `reward_scale`, `reward_expected`, `cashback_used`. Accrual happens on completion/fulfillment (`accrue_order_reward`, idempotent). Legacy orders (no `reward_system` key) use the old points path.
+- Cashback: `users.cashback_balance`, `cashback_transactions`, `cashback_withdrawals`; pay in cart via `use_cashback`; refund on cancel; deducted on approved return; withdrawal requests handled by admin.
+- Ozon certificate is no longer granted at order placement; old checkout "points vs ozon" choice removed. Legacy `/ozon-settings` endpoints unused.
+- Tests: `backend/tests/test_rewards_system.py` (15/15). Frontend only smoke-tested (cart cashback block, returns with cashback not deeply UI-tested).
+
+### Backlog
+- P1: print layout refinement for return document
+- P2: reward rules by manufacturer / client-specific rates; expiry of points/cashback; spend limit for points
+- P2: useEffect dependency warnings in old components

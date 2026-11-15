@@ -138,6 +138,8 @@ async def restore_stock(product_id: str, allocations):
 
 async def restore_order_stock(order):
     """Restore stock for a cancelled/returned order (per-warehouse when allocations exist)."""
+    from routes.rewards import refund_order_cashback
+    await refund_order_cashback(order)
     allocs = order.get("stock_allocations")
     if allocs:
         for a in allocs:

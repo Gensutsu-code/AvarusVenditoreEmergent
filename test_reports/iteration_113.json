@@ -1,0 +1,46 @@
+{
+  "summary": "Tested the new 3-way reward system (points/ozon/cashback): admin settings CRUD, client choose-once, access restrictions, cart-preview, cashback topup/withdrawal flow, order-lifecycle cashback accrual on completion (idempotent), cashback spend + customer cancel refund, ozon certificate issuance on completion, admin UI tabs & reward chooser UI. 14/15 pytest tests pass; 1 reveals a real refund bug on admin status→'cancelled'. Also fixed an unrelated 404 in admin-adjust-cashback caused by Mongo projection returning {} (falsy).",
+  "backend_issues": {
+    "critical": [
+      {
+        "endpoint": "PUT /api/admin/orders/{id}/status (status=cancelled)",
+        "issue": "Does NOT refund order.cashback_used — admin.update_order_status only calls warehouse.restore_order_stock() and never invokes rewards.refund_order_cashback(). Requirement explicitly states admin cancel must refund cashback_used exactly once. The other admin edit endpoint PUT /api/admin/orders/{id} does call it (admin.py line 452-453); this one (line 489-508) is missing the call. Customer POST /api/orders/{id}/cancel works correctly because orders._restore_order_stock() handles the refund.",
+        "priority": "HIGH"
+      }
+    ],
+    "minor": [
+      {
+        "endpoint": "POST /api/admin/rewards/users/{id}/cashback",
+        "issue": "FIXED by test agent. find_one projection {_id:0, cashback_balance:1} returned {} (falsy) for users with no cashback_balance field yet, raising 404 'Клиент не найден'. Added id:1 to projection so result is truthy."
+      }
+    ]
+  },
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [],
+    "design_issues": []
+  },
+  "test_report_links": [
+    "/app/backend/tests/test_rewards_system.py",
+    "/app/test_reports/pytest/iter113_rewards.xml"
+  ],
+  "action_items": [
+    "Fix admin cancel via PUT /api/admin/orders/{id}/status — add refund_order_cashback(order) call when new_status=='cancelled' and old_status!='cancelled' (mirror the logic already in PUT /api/admin/orders/{id} at admin.py:452). Suggest extracting a helper handle_order_cancel(order) that does restore_order_stock + refund_order_cashback to avoid future divergence."
+  ],
+  "critical_code_review_comments": [
+    "Duplication between admin.py's two cancellation paths (PUT /orders/{id} and PUT /orders/{id}/status) caused the cashback-refund bug — extract shared helper.",
+    "rewards.admin_adjust_cashback used a projection that could return an empty dict; always include at least 'id:1' in Mongo projections used for existence checks. Fixed inline.",
+    "warehouse.restore_order_stock duplicates orders._restore_order_stock logic — consider consolidating to one function that also handles cashback refund; the 'underscore prefix' version in orders.py already does."
+  ],
+  "updated_files": [
+    "/app/backend/routes/rewards.py (fixed falsy-projection 404 in admin_adjust_cashback)",
+    "/app/backend/tests/test_rewards_system.py (new pytest suite, 15 tests)"
+  ],
+  "success_rate": {"backend": "93% (14/15)", "frontend": "100% (smoke)"},
+  "test_credentials": "admin@avarus.ru/admin, user@demo.com/demo123, 0x0errorr@gmail.com/admin123",
+  "seed_data_creation": "No seed data created. Test orders use TEST_ prefix in comments; test created cashback transactions/withdrawals via admin topup. Final module-scope fixture restores reward settings to defaults and resets both test clients' reward_system to null.",
+  "retest_needed": true,
+  "should_main_agent_self_test": true,
+  "context_for_next_testing_agent": "test_rewards_system.py covers: admin settings GET/PUT + 403, choose-once + disabled system, bonus access restriction for cashback clients, cart-preview endpoint, cashback topup + withdraw (min/details/double-process), reward_users listing, cashback accrual on completion + idempotency, pay-with-cashback + customer cancel refund, ozon certificate on completion. One test (test_admin_cancel_refunds_cashback) is designed to fail until main agent fixes the admin status-cancel endpoint. After fix, run `pytest backend/tests/test_rewards_system.py` to verify. Client user@demo.com has an active cart-wide discount (~19%) in DB — keep it in mind when computing expected totals. Only 7 products exist; product 23cda779 (680₽, 14 in stock) is the safest for cashback tests; product 8cd5b1c5 (1600₽, 13 in stock) for ozon. Client 0x0errorr has overdue deferral debt and cannot place new orders.",
+  "rca_of_the_issue": "RCA: admin.py defines two overlapping cancellation flows. Only one (PUT /orders/{id}, which calls restore_order_stock then explicitly refund_order_cashback) refunds cashback_used. The simpler PUT /orders/{id}/status endpoint also handles status transitions to 'cancelled' but delegates only to warehouse.restore_order_stock (stock only, no cashback). Reproduction: as cashback client place order with use_cashback>0; verify balance deducted; as admin call PUT /api/admin/orders/{id}/status?status=cancelled; balance is NOT restored. Mitigation: inside admin.py:update_order_status, between lines 505-508, when status transitions to 'cancelled', also import and await refund_order_cashback(order)."
+}
