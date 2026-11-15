@@ -1,0 +1,30 @@
+{
+  "summary": "Iteration 108 (8 features) tested end-to-end. Backend: 16/16 new tests pass (1 skipped for empty-start branch because products without description currently exist) plus full regression — test_iter106_floor_individual_discount.py 13/13, test_promo_codes.py 16/16, test_promo_fixes_iter104.py 12/12 — all green after _compute_order_pricing refactor. Guest assistant, handoff to manager, bulk-descriptions status/auth, server /cart/preview == order total (cash+card), empty-cart/invalid-promo 400, storefront promo banner (/promotions/active, no internal leak, filter by show_on_storefront+live), category discount apply/clear with subcategory walk & validation, calendar picker — all verified. Frontend: guest /assistant renders with ai-guest-note '5 вопросов', ai-assistant-link-guest in header, ai-input + ai-send-btn. PromoStrip renders on / and /catalog after seeding a show_on_storefront code (promo-strip-code-{CODE} button present) and does NOT render when there is nothing public. /cart for user@demo.com shows checkout-total matching POST /api/cart/preview total (527 ₽), promo-code-field and promo-code-apply-btn present. Admin Каталог shows ai-bulk-descriptions-btn 'Описания с ИИ (1)'. Discounts tab exposes discounts-subtab-promo, discounts-subtab-products, category-discount-open-btn → panel with category/type/value/until/label/apply/clear. DatePicker: category-discount-until is a <button>, opens category-discount-until-calendar popover, past days disabled, selecting a day closes popover and writes data-value=YYYY-MM-DD with Russian label '15 ноября 2026'.",
+  "backend_issues": {"critical": [], "minor": []},
+  "frontend_issues": {"ui_bugs": [], "integration_issues": [], "design_issues": []},
+  "test_report_links": [
+    "/app/backend/tests/test_iter108_features.py",
+    "/app/test_reports/pytest/iter108.xml"
+  ],
+  "action_items": [],
+  "critical_code_review_comments": [
+    "routes/ai.py _use_guest_quota writes the ai_usage row BEFORE the LLM call — if the LLM errors the guest still loses a slot. Low-impact; counted-down behavior is explicit.",
+    "routes/promo_codes.py /promotions/active caps to 5 codes but there is no server-side cache/ETag; cheap query, acceptable for storefront banner.",
+    "routes/products.py admin_category_discount reads cat_ids via BFS of parent_id — assumes no cycles. Current data has none; add a hop-limit as a safety net if arbitrary user data is ever imported.",
+    "routes/orders.py _compute_order_pricing is 170+ lines and still returns a 25-key dict; works and is well-tested, but splitting mixed vs single-method into helpers would help future maintenance.",
+    "bulk descriptions: the heartbeat-based 'interrupted' detection is good; consider setting status='interrupted' persistently (currently only derived on read) so the admin UI and API agree across restarts."
+  ],
+  "updated_files": [
+    "/app/backend/tests/test_iter108_features.py (new)"
+  ],
+  "success_rate": {
+    "backend": "100% (16/16 new + 41/41 regression, 1 skip by design)",
+    "frontend": "100% (8/8 UI checks across guest assistant, promo strip home+catalog, cart preview=total, admin bulk btn, category discount panel, calendar picker)"
+  },
+  "test_credentials": "admin@avarus.ru / admin ; user@demo.com / demo123 (loaded from /app/memory/test_credentials.md)",
+  "seed_data_creation": "Each test inserts and cleans its own TEST_IT108 records: 5 guest ai_usage docs (per-IP limit probe), 2 ai_chat_messages for the handoff flow (also deletes the resulting chat_message), 2 TESTIT108* promo codes for the /promotions/active filter test, TEST_IT108 category+subcategory+3 products for the category-discount test, one TESTIT108UI storefront promo for the PromoStrip UI smoke. All cleaned up in finally blocks and the final test_zzz_cleanup sweep. Cart preview vs order total test creates orders and immediately cancels them (stock restored, no state left behind).",
+  "retest_needed": false,
+  "main_agent_can_self_test": true,
+  "context_for_next_testing_agent": "Pytest files that read REACT_APP_BACKEND_URL via os.environ.get(...).rstrip('/') (test_iter106_*, test_promo_codes.py, test_promo_fixes_iter104.py) fail collection unless the env var is exported to the shell — these files DO NOT dotenv-load; export REACT_APP_BACKEND_URL=$(grep -oP 'REACT_APP_BACKEND_URL=\\K\\S+' /app/frontend/.env) before running them. My own test_iter108_features.py uses dotenv on backend/.env for MONGO_URL and falls back to the production URL. The X-Forwarded-For guest-quota test uses the external URL and worked (ingress preserves the first XFF entry here). System date was 2026-11-15 when tested; valid_until dates like '2099-12-31' are safe. Nothing left in the DB from this run.",
+  "rca of the issue": "N/A — no defects found."
+}

@@ -202,6 +202,16 @@ E-commerce platform for truck spare parts with a comprehensive admin panel. Russ
 - Персональная скидка клиента действует при любом способе оплаты (вкл. смешанную и отсрочку).
 - Скидки/наценки за способ оплаты редактируются в «Скидки и акции» → «За способ оплаты»; в «Платежи» только просмотр.
 
+### Iter 108 (DONE — backend 16/16 + 41/41 регресс, 8 UI-проверок)
+- **Гости в помощнике**: `/assistant` без входа, 5 вопросов/сутки на IP (`_use_guest_quota`, общий потолок 300/сутки), `get_optional_user`.
+- **В корзину из чата**: кнопка `ai-add-to-cart-{id}` на товарах в ответе. **Передача менеджеру**: `POST /api/ai/assistant/handoff` → сообщение в чат поддержки (`ai-handoff-btn`).
+- **Описания пачкой**: `GET/POST /api/admin/ai/bulk-descriptions[/start|/stop]`, фоновая задача, состояние в `settings.ai_bulk_descriptions`; кнопка `ai-bulk-descriptions-btn` в Каталоге. Пишет только пустые описания.
+- **Серверный расчёт корзины**: `_compute_order_pricing` — общий для `create_order` и `POST /api/cart/preview`; CartPage берёт итог, промокод, перс. скидку и доставку из preview.
+- **Баннер на витрине**: флаг промокода `show_on_storefront`, `GET /api/promotions/active`, `PromoStrip` на главной и в каталоге.
+- **Скидка на категорию**: `POST /api/admin/products/category-discount` (с подкатегориями), `CategoryDiscountPanel`.
+- **Календарь**: `components/DatePicker.js` (popover + calendar, ru) для всех «Действует до».
+- Не проверено кликами/полным прогоном: добавление в корзину из чата и передача менеджеру в UI (API проверены), полный прогон массовых описаний (проверены статус/права).
+
 ### P1 (Important)
 - Real Payment Gateway Integration (replace MOCKED YuKassa)
 - CartPage/ProductPage display mismatches (pre-existing): payment-method adjustment & tier preview not clamped to min_price in UI (server charges correct floor). Best fixed via a server-computed cart preview.
