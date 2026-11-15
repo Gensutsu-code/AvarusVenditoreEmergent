@@ -43,6 +43,9 @@ def compute_promo_discount(product: dict, base_price: float, quantity: int = 1) 
     
     Promo applies on top of any base_price (which may already be individual_price or payment-adjusted).
     """
+    from routes.features import is_on
+    if not is_on("discounts"):
+        return base_price, 0, False
     if not product or not product.get("discount_active"):
         return base_price, 0.0, False
 
@@ -164,11 +167,16 @@ async def _build_cart(user):
         {"_id": 0}
     ).to_list(100)
     ind_prices_map = {ip["product_id"]: ip["price"] for ip in ind_prices}
+    from routes.features import is_on as _feature_on
+    if not _feature_on("price_requests"):
+        ind_prices_map = {}
     
     # Active approved (unused) cart-wide discount for this user
     active_cd = await db.cart_discount_requests.find_one(
         {"user_id": user["id"], "status": "approved"}, {"_id": 0}
     )
+    if not _feature_on("cart_discounts"):
+        active_cd = None
     cart_discount_pct = float(active_cd.get("admin_percent") or 0) if active_cd else 0.0
 
     items_with_details = []
@@ -393,11 +401,16 @@ async def _compute_order_pricing(data, user, cart):
         {"_id": 0}
     ).to_list(100)
     ind_prices_map = {ip["product_id"]: ip["price"] for ip in ind_prices}
+    from routes.features import is_on as _feature_on
+    if not _feature_on("price_requests"):
+        ind_prices_map = {}
     
     # Active approved (unused) cart-wide discount — applies evenly per item, one-time
     active_cart_discount = await db.cart_discount_requests.find_one(
         {"user_id": user["id"], "status": "approved"}, {"_id": 0}
     )
+    if not _feature_on("cart_discounts"):
+        active_cart_discount = None
     cart_discount_pct = float(active_cart_discount.get("admin_percent") or 0) if active_cart_discount else 0.0
     cart_discount_amount = 0.0
     
@@ -426,6 +439,8 @@ async def _compute_order_pricing(data, user, cart):
 
     # ---- Payment intent ----
     is_deferral = (payment_method == "deferral")
+    if is_deferral and not _feature_on("credit", user):
+        raise HTTPException(status_code=400, detail="Отсрочка платежа сейчас недоступна")
     pay_with_balance = getattr(data, 'pay_with_balance', False) if hasattr(data, 'pay_with_balance') else False
     if is_deferral:
         pay_with_balance = False

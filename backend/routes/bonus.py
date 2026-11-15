@@ -189,6 +189,9 @@ async def accrue_order_bonus(order: dict):
     if "reward_system" in order:
         from routes.rewards import accrue_order_reward
         return await accrue_order_reward(order)
+    from routes.features import is_on
+    if not is_on("rewards"):
+        return 0
     # If the customer chose to convert their reward into an Ozon certificate at checkout,
     # no bonus points are accrued for this order (the certificate was granted at placement).
     if order.get("reward_choice") == "ozon":

@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
+import { useFeatures } from '../../context/FeaturesContext';
 import axios from 'axios';
 import { toast } from 'sonner';
 import { Button } from '../ui/button';
@@ -18,7 +19,7 @@ const emptyCode = {
 };
 
 // ===================== PROMO CODES =====================
-const PromoCodesSection = ({ isDark }) => {
+export const PromoCodesSection = ({ isDark }) => {
   const [codes, setCodes] = useState([]);
   const [loading, setLoading] = useState(true);
   const [form, setForm] = useState(emptyCode);
@@ -196,7 +197,7 @@ const PromoCodesSection = ({ isDark }) => {
 };
 
 // ===================== PRODUCT DISCOUNTS =====================
-const ProductDiscountsSection = ({ isDark }) => {
+export const ProductDiscountsSection = ({ isDark }) => {
   const [search, setSearch] = useState('');
   const [onlyDiscounted, setOnlyDiscounted] = useState(false);
   const [results, setResults] = useState([]);
@@ -389,15 +390,16 @@ const ProductDiscountsSection = ({ isDark }) => {
 
 // ===================== MAIN TAB =====================
 export default function DiscountsPromoTab({ isDark = false, bannerSlot = null, paymentSlot = null }) {
-  const [sub, setSub] = useState('products');
-
+  const { isEnabled } = useFeatures();
   const tabs = [
-    { id: 'products', label: 'Товарные скидки', icon: Percent },
-    { id: 'promo', label: 'Промокоды', icon: Ticket },
-    { id: 'cart', label: 'Скидки на корзину', icon: ShoppingCart },
+    ...(isEnabled('discounts') ? [{ id: 'products', label: 'Товарные скидки', icon: Percent }] : []),
+    ...(isEnabled('promo_codes') ? [{ id: 'promo', label: 'Промокоды', icon: Ticket }] : []),
+    ...(isEnabled('cart_discounts') ? [{ id: 'cart', label: 'Скидки на корзину', icon: ShoppingCart }] : []),
     ...(paymentSlot ? [{ id: 'payment', label: 'За способ оплаты', icon: CreditCard }] : []),
-    ...(bannerSlot ? [{ id: 'banner', label: 'Акционный баннер', icon: Megaphone }] : []),
+    ...(bannerSlot && isEnabled('promo_banner') ? [{ id: 'banner', label: 'Акционный баннер', icon: Megaphone }] : []),
   ];
+  const [picked, setSub] = useState('products');
+  const sub = tabs.some((t) => t.id === picked) ? picked : tabs[0]?.id;
 
   return (
     <div className="space-y-5" data-testid="discounts-promo-tab">

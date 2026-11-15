@@ -47,6 +47,10 @@ def _apply_availability(product: dict, global_sync: bool) -> dict:
     OFF -> by manual_available flag set on the product card."""
     if not product:
         return product
+    from routes.features import is_on
+    if not is_on("discounts"):
+        product["discount_active"] = False
+        product["discount_tiers"] = []
     if global_sync:
         product["in_stock"] = (product.get("stock", 0) or 0) > 0
     else:
@@ -540,6 +544,10 @@ async def update_product(product_id: str, data: ProductUpdate, user=Depends(get_
         raise HTTPException(status_code=403, detail="Admin access required")
     
     update_data = {k: v for k, v in data.model_dump().items() if v is not None}
+    from routes.features import is_on
+    if not is_on("discounts"):
+        # discounts are hidden while the feature is off: never overwrite the saved ones
+        update_data = {k: v for k, v in update_data.items() if not k.startswith(("discount_", "promo_"))}
     if not update_data:
         raise HTTPException(status_code=400, detail="No data to update")
 

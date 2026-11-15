@@ -479,6 +479,12 @@ export const Header = () => {
                         Отсрочка
                       </span>
                     </NavLink>
+                    <NavLink to="/admin/features" data-testid="admin-features-link">
+                      <span className="flex items-center gap-2">
+                        <Settings className="w-4 h-4" />
+                        Функционал
+                      </span>
+                    </NavLink>
                     <NavLink to="/admin/profile" data-testid="admin-profile-link">
                       <User className="w-4 h-4" />
                     </NavLink>
@@ -761,6 +767,10 @@ export const Header = () => {
                       <Link to="/admin" onClick={() => setMobileMenuOpen(false)} className="flex items-center gap-3 p-3 rounded-xl text-purple-500 hover:bg-purple-50">
                         <Settings className="w-5 h-5" />
                         Панель управления
+                      </Link>
+                      <Link to="/admin/features" onClick={() => setMobileMenuOpen(false)} className="flex items-center gap-3 p-3 rounded-xl text-slate-600 hover:bg-slate-50" data-testid="mobile-admin-features-link">
+                        <Settings className="w-5 h-5" />
+                        Функционал сайта
                       </Link>
                       <Link to="/admin/orders" onClick={() => setMobileMenuOpen(false)} className="flex items-center gap-3 p-3 rounded-xl text-slate-600 hover:bg-slate-50">
                         <ClipboardList className="w-5 h-5" />

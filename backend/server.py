@@ -268,6 +268,17 @@ class ActionLoggingMiddleware(BaseHTTPMiddleware):
 app.add_middleware(ActionLoggingMiddleware)
 
 
+@app.middleware("http")
+async def site_features_middleware(request: Request, call_next):
+    from routes.features import refresh_features, blocked_feature
+    from fastapi.responses import JSONResponse
+    if request.url.path.startswith("/api/"):
+        await refresh_features()
+        if blocked_feature(request.url.path, request.method):
+            return JSONResponse(status_code=403, content={"detail": "Эта функция сейчас отключена"})
+    return await call_next(request)
+
+
 # Health check endpoints
 @app.get("/health")
 async def health_check():

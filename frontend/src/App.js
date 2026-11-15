@@ -32,6 +32,8 @@ import Footer from "./components/Footer";
 import FavoritesPage from "./pages/FavoritesPage";
 import OrdersPage from "./pages/OrdersPage";
 import RewardsPage from "./pages/RewardsPage";
+import AdminFeaturesPage from "./pages/AdminFeaturesPage";
+import { FeaturesProvider, useFeatures } from "./context/FeaturesContext";
 import NewsPage from "./pages/NewsPage";
 import ProductPage from "./pages/ProductPage";
 import NotificationsPage from "./pages/NotificationsPage";
@@ -81,6 +83,7 @@ function AppContent() {
   const { isDark } = useTheme();
   const isAdmin = user?.role === 'admin';
   const location = useLocation();
+  const { isOn, blockedFeature, loaded: featuresLoaded } = useFeatures();
   const [maintenance, setMaintenance] = useState({ enabled: false, message: '', pages: {} });
   const [maintenanceChecked, setMaintenanceChecked] = useState(false);
 
@@ -126,6 +129,11 @@ function AppContent() {
   const pageMaint = pageKey && maintenance.pages?.[pageKey];
   const isPageDown = pageMaint?.enabled && !isAdmin && !isProtectedRoute;
 
+  // Pages of a switched-off function send everyone back to the start page
+  if (featuresLoaded && blockedFeature(location.pathname)) {
+    return <Navigate to={location.pathname.startsWith('/admin') ? '/admin' : '/'} replace />;
+  }
+
   return (
     <div className={`min-h-screen flex flex-col ${isDark ? 'bg-zinc-950' : 'bg-gradient-to-br from-cyan-50 via-pink-50 to-cyan-50'}`}>
       <Header />
@@ -160,6 +168,7 @@ function AppContent() {
           <Route path="/admin/carts" element={<AdminCartsPage />} />
           <Route path="/admin/returns" element={<AdminReturnsPage />} />
           <Route path="/admin/staff" element={<AdminStaffPage />} />
+          <Route path="/admin/features" element={<AdminFeaturesPage />} />
           <Route path="/manager" element={<ManagerPage />} />
           <Route path="/garage" element={<GaragePage />} />
           <Route path="/admin/products" element={<AdminProductsPage />} />
@@ -183,8 +192,8 @@ function AppContent() {
         )}
       </main>
       {!isAdmin && <Footer />}
-      {!isAdmin && location.pathname !== '/contact' && <FloatingPromoBanner />}
-      {!isAdmin && <ChatWidget />}
+      {!isAdmin && location.pathname !== '/contact' && isOn('promo_banner') && <FloatingPromoBanner />}
+      {!isAdmin && isOn('chat') && <ChatWidget />}
       <Toaster position="top-center" />
     </div>
   );
@@ -198,7 +207,9 @@ function App() {
           <CartProvider>
             <IndividualPriceProvider>
               <RegionProvider>
-                <AppContent />
+                <FeaturesProvider>
+                  <AppContent />
+                </FeaturesProvider>
               </RegionProvider>
             </IndividualPriceProvider>
           </CartProvider>

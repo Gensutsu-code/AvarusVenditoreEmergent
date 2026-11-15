@@ -18,6 +18,9 @@ async def _client_notifs_enabled():
 
 async def _send_telegram_admin_notification(title: str, message: str):
     """Forward admin notification to Telegram channel"""
+    from routes.features import is_on
+    if not is_on("telegram"):
+        return
     bot_token = None
     chat_id = None
     

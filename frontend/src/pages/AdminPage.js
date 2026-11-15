@@ -40,6 +40,7 @@ import {
   LogsTab,
   BonusTab
 } from '../components/admin';
+import { useFeatures } from '../context/FeaturesContext';
 import CryptoSettingsTab from '../components/admin/CryptoSettingsTab';
 import AdminWarehousePage from './AdminWarehousePage';
 import AdminDashboard from '../components/admin/AdminDashboard';
@@ -128,6 +129,7 @@ const AdminVideoLightbox = ({ src, onClose }) => {
 };
 
 export default function AdminPage() {
+  const { isEnabled: isFeatureEnabled } = useFeatures();
   const { user, loading: authLoading } = useAuth();
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
@@ -1303,6 +1305,12 @@ export default function AdminPage() {
   };
 
   // Tab configuration - New restructured tabs
+  // Tabs of switched-off site functions are not shown
+  const tabFeatureOff = {
+    bonus: !isFeatureEnabled('rewards'),
+    promotions: !['discounts', 'promo_codes', 'cart_discounts'].some(isFeatureEnabled),
+  };
+  const visibleTabs = tabOrder.filter((t) => !tabFeatureOff[t]);
   const tabConfig = {
     overview: { icon: LayoutDashboard, label: 'Обзор' },
     products: { icon: Package, label: 'Каталог', count: products.length },
@@ -1411,7 +1419,7 @@ export default function AdminPage() {
           <div className="relative">
             <div className="overflow-x-auto">
               <TabsList className={`w-full flex border-b rounded-none p-0 h-auto ${isDark ? 'border-zinc-800 bg-zinc-900/50' : 'border-zinc-200 bg-zinc-50'}`}>
-              {tabOrder.map((tabId) => {
+              {visibleTabs.map((tabId) => {
                 const config = tabConfig[tabId];
                 const IconComponent = config.icon;
                 const isActive = activeTab === tabId;

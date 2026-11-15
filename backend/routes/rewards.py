@@ -92,6 +92,9 @@ async def get_reward_settings() -> dict:
 
 
 def active_system(user: dict, settings: dict):
+    from routes.features import is_on
+    if not is_on("rewards", user):
+        return None
     system = user.get("reward_system")
     if system in SYSTEMS and settings[system]["enabled"]:
         return system
@@ -185,8 +188,9 @@ async def adjust_cashback(user_id: str, amount: float, tx_type: str, description
 
 async def accrue_order_reward(order: dict):
     """Idempotently accrue the reward for the delivered part of an order."""
+    from routes.features import is_on
     system = order.get("reward_system")
-    if system not in SYSTEMS:
+    if system not in SYSTEMS or not is_on("rewards"):
         return 0
     rates = order.get("reward_rates") or {}
     scale = order.get("reward_scale", 1) or 1
@@ -287,10 +291,11 @@ async def my_rewards(user=Depends(get_current_user)):
     status = user.get("customer_status", "retail")
     chosen = user.get("reward_system") if user.get("reward_system") in SYSTEMS else None
     system = active_system(user, settings)
+    from routes.features import is_on
     out = {
         "chosen": chosen,
         "system": system,
-        "options": [_public_option(k, settings[k], status) for k in SYSTEMS if settings[k]["enabled"]],
+        "options": [_public_option(k, settings[k], status) for k in SYSTEMS if settings[k]["enabled"]] if is_on("rewards", user) else [],
         "config": _public_option(system, settings[system], status) if system else None,
     }
     if system == "cashback":
@@ -324,10 +329,11 @@ async def choose_reward_system(data: dict, user=Depends(get_current_user)):
 async def reward_cart_preview(amount: float = None, promo_code: str = None, user=Depends(get_current_user)):
     """Expected reward for the current cart in the client's system. `amount` = goods total actually charged."""
     from routes.orders import _build_cart
+    from routes.features import is_on
     settings = await get_reward_settings()
     system = active_system(user, settings)
     base = {"system": system, "amount": 0, "total_points": 0, "programs": [],
-            "needs_choice": user.get("reward_system") not in SYSTEMS and any(settings[k]["enabled"] for k in SYSTEMS)}
+            "needs_choice": is_on("rewards", user) and user.get("reward_system") not in SYSTEMS and any(settings[k]["enabled"] for k in SYSTEMS)}
     if not system:
         return base
     cart = await _build_cart(user)

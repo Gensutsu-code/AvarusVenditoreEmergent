@@ -50,6 +50,9 @@ class TelegramSettings(BaseModel):
 
 async def send_telegram_order_notification(order: dict, user: dict):
     """Send order notification to Telegram"""
+    from routes.features import is_on
+    if not is_on("telegram"):
+        return
     try:
         # Try DB settings first, fall back to env token
         bot_token = None

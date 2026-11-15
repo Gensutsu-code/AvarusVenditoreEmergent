@@ -73,6 +73,9 @@ async def cart_floor_sum(user_id: str) -> float:
 
 async def validate_promo_code(code: str, user_id: str, goods_total: float):
     """Returns (code_doc | None, discount_amount, error_message | None)."""
+    from routes.features import is_on
+    if not is_on("promo_codes"):
+        return None, 0.0, "Промокоды сейчас недоступны"
     norm = _norm_code(code)
     if not norm:
         return None, 0.0, "Введите промокод"
