@@ -6,6 +6,7 @@ import { Textarea } from './ui/textarea';
 import { Package, Send, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
 import axios from 'axios';
+import { useFeatures } from '../context/FeaturesContext';
 
 const API = `${process.env.REACT_APP_BACKEND_URL}/api`;
 
@@ -14,6 +15,7 @@ export default function ProductRequestModal({ open, onClose, product, initialArt
   const [quantity, setQuantity] = useState(1);
   const [comment, setComment] = useState('');
   const [sending, setSending] = useState(false);
+  const commentRequired = !!useFeatures().settings.product_requests?.comment_required;
 
   const handleSubmit = async () => {
     if (!article.trim()) {
@@ -96,7 +98,7 @@ export default function ProductRequestModal({ open, onClose, product, initialArt
           </div>
 
           <div>
-            <label className="text-xs font-semibold text-slate-600 block mb-1">Комментарий (необязательно)</label>
+            <label className="text-xs font-semibold text-slate-600 block mb-1">Комментарий{commentRequired ? ' *' : ' (необязательно)'}</label>
             <Textarea
               value={comment}
               onChange={(e) => setComment(e.target.value)}
@@ -108,7 +110,7 @@ export default function ProductRequestModal({ open, onClose, product, initialArt
 
           <Button
             onClick={handleSubmit}
-            disabled={sending || !article.trim()}
+            disabled={sending || !article.trim() || (commentRequired && !comment.trim())}
             className="w-full bg-gradient-to-r from-blue-500 to-indigo-500 hover:from-blue-600 hover:to-indigo-600 text-white rounded-xl h-10 text-sm"
             data-testid="product-request-submit"
           >

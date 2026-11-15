@@ -567,11 +567,14 @@ async def update_product(product_id: str, data: ProductUpdate, user=Depends(get_
     if "promo_allocated_stock" in update_data and "promo_remaining_stock" not in update_data:
         update_data["promo_remaining_stock"] = update_data["promo_allocated_stock"]
 
+    before = await db.products.find_one({"id": product_id}, {"_id": 0, "price": 1, "stock": 1})
     result = await db.products.update_one({"id": product_id}, {"$set": update_data})
     if result.matched_count == 0:
         raise HTTPException(status_code=404, detail="Product not found")
     
     product = await db.products.find_one({"id": product_id}, {"_id": 0})
+    from notify import notify_favorites_change
+    await notify_favorites_change(product_id, before, product)
     gsync = await _global_stock_sync()
     return _apply_availability(_ensure_new_status(product), gsync)
 

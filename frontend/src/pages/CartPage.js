@@ -1,4 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
+import { useFeatures } from '../context/FeaturesContext';
+import { garageTypeLabel } from '../lib/garageTypes';
 import { Link, useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import { Trash2, ArrowLeft, ShoppingCart, Minus, Plus, Package, TrendingUp, Truck, PartyPopper, Award, Banknote, CreditCard, Wallet, Sparkles, Clock, Loader2, FileText, ShoppingBag, MessageSquare, Tag } from 'lucide-react';
@@ -72,6 +74,8 @@ export default function CartPage() {
   const [mix1Amount, setMix1Amount] = useState('');
   const [form, setForm] = useState({ full_name: '', address: '', phone: '', comment: '', vehicle_id: '' });
   const [vehicles, setVehicles] = useState([]);
+  const { isOn: featureOn, settings: featureSettings } = useFeatures();
+  const vehicleMode = featureOn('garage') ? (featureSettings.garage?.checkout_mode || 'optional') : 'off';
   useEffect(() => { if (user) axios.get(`${API}/garage/vehicles`).then(r => setVehicles(r.data || [])).catch(() => {}); }, [user]);
   const [agreedToTerms, setAgreedToTerms] = useState(true);
   const [showTermsModal, setShowTermsModal] = useState(false);
@@ -348,6 +352,7 @@ export default function CartPage() {
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (!form.full_name.trim() || !form.address.trim() || !form.phone.trim()) { toast.error('Заполните все обязательные поля'); return; }
+    if (vehicleMode === 'required' && vehicles.length > 0 && !form.vehicle_id) { toast.error('Выберите, для какой техники эта покупка'); return; }
     trackClick('place_order', '/cart');
     setLoading(true);
     try {
@@ -582,12 +587,12 @@ export default function CartPage() {
                 <Label className="text-xs font-bold uppercase tracking-widest text-slate-500 mb-2 block">Телефон *</Label>
                 <Input type="tel" value={form.phone} onChange={(e) => setForm({ ...form, phone: e.target.value })} placeholder="+7 (___) ___-__-__" className="h-12 rounded-xl" required data-testid="checkout-phone" />
               </div>
-              {vehicles.length > 0 && (
+              {vehicles.length > 0 && vehicleMode !== 'off' && (
                 <div>
-                  <Label className="text-xs font-bold uppercase tracking-widest text-slate-500 flex items-center gap-2 mb-2"><Truck className="w-4 h-4" />Для какой техники покупка</Label>
+                  <Label className="text-xs font-bold uppercase tracking-widest text-slate-500 flex items-center gap-2 mb-2"><Truck className="w-4 h-4" />Для какой техники покупка{vehicleMode === 'required' ? ' *' : ''}</Label>
                   <select value={form.vehicle_id} onChange={(e) => setForm({ ...form, vehicle_id: e.target.value })} className="w-full h-11 rounded-xl border border-slate-200 bg-white px-3 text-sm focus:outline-none focus:border-teal-400" data-testid="checkout-vehicle-select">
-                    <option value="">Не привязывать к технике</option>
-                    {vehicles.map(v => <option key={v.id} value={v.id}>{v.type === 'trailer' ? 'Прицеп' : 'Авто'}: {v.name} · {v.vin}</option>)}
+                    <option value="">{vehicleMode === 'required' ? '— выберите технику —' : 'Не привязывать к технике'}</option>
+                    {vehicles.map(v => <option key={v.id} value={v.id}>{garageTypeLabel(v.type, true)}: {v.name} · {v.vin}</option>)}
                   </select>
                 </div>
               )}

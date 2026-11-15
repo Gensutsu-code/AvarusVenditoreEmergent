@@ -8,6 +8,8 @@ import { Input } from '../components/ui/input';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '../components/ui/dialog';
 import { useAuth } from '../context/AuthContext';
 import { useCart } from '../context/CartContext';
+import { useFeatures } from '../context/FeaturesContext';
+import { GARAGE_TYPES, garageTypeLabel } from '../lib/garageTypes';
 
 const API = `${process.env.REACT_APP_BACKEND_URL}/api`;
 const money = (n) => `${new Intl.NumberFormat('ru-RU').format(Math.round(Number(n) || 0))} ₽`;
@@ -19,6 +21,10 @@ export default function GaragePage() {
   const { user, loading } = useAuth();
   const { addToCart } = useCart();
   const [data, setData] = useState(null);
+  const garageCfg = useFeatures().settings.garage || {};
+  const allowedTypes = garageCfg.allowed_types || ['truck', 'trailer'];
+  const maxVehicles = garageCfg.max_vehicles || 0;
+  const limitReached = maxVehicles > 0 && (data?.vehicles.length || 0) >= maxVehicles;
   const [form, setForm] = useState(null);
   const [saving, setSaving] = useState(false);
 
@@ -59,7 +65,7 @@ export default function GaragePage() {
             <h1 className="text-2xl md:text-3xl font-bold text-slate-800">Мой гараж</h1>
             <p className="text-sm text-slate-500">Добавьте автомобили и прицепы — при оформлении заказа можно выбрать, для какой техники покупка, и потом быстро купить те же запчасти снова.</p>
           </div>
-          <Button onClick={() => setForm({ ...empty })} className="bg-teal-500 hover:bg-teal-600 text-white" data-testid="garage-add-btn"><Plus className="w-4 h-4 mr-1.5" />Добавить технику</Button>
+          <Button onClick={() => setForm({ ...empty, type: allowedTypes[0] })} disabled={limitReached} title={limitReached ? `В гараже может быть не больше ${maxVehicles} единиц техники` : undefined} className="bg-teal-500 hover:bg-teal-600 text-white" data-testid="garage-add-btn"><Plus className="w-4 h-4 mr-1.5" />Добавить технику</Button>
         </div>
 
         {!data ? <div className="py-16 text-center"><Loader2 className="w-6 h-6 animate-spin mx-auto text-teal-500" /></div> : (
@@ -71,7 +77,7 @@ export default function GaragePage() {
                   <div className="flex flex-wrap items-start gap-3">
                     <div className="w-11 h-11 rounded-xl bg-teal-50 text-teal-600 flex items-center justify-center flex-shrink-0">{v.type === 'trailer' ? <Container className="w-5 h-5" /> : <Truck className="w-5 h-5" />}</div>
                     <div className="flex-1 min-w-0">
-                      <p className="font-bold text-slate-800">{v.name} <span className="ml-1 text-[11px] font-semibold px-2 py-0.5 rounded-full bg-slate-100 text-slate-500">{v.type === 'trailer' ? 'Прицеп' : 'Автомобиль'}</span></p>
+                      <p className="font-bold text-slate-800">{v.name} <span className="ml-1 text-[11px] font-semibold px-2 py-0.5 rounded-full bg-slate-100 text-slate-500">{garageTypeLabel(v.type)}</span></p>
                       <p className="text-sm text-slate-500">VIN: <span className="font-mono text-slate-700" data-testid={`garage-vin-${v.id}`}>{v.vin}</span>{v.year ? ` · ${v.year} г.` : ''}{v.plate ? ` · ${v.plate}` : ''}</p>
                       {v.note && <p className="text-xs text-slate-400 mt-0.5">{v.note}</p>}
                     </div>
@@ -130,7 +136,7 @@ export default function GaragePage() {
           {form && (
             <div className="space-y-3">
               <div className="grid grid-cols-2 gap-2">
-                {[['truck', 'Автомобиль'], ['trailer', 'Прицеп']].map(([id, label]) => (
+                {GARAGE_TYPES.filter(([id]) => allowedTypes.includes(id) || id === form.type).map(([id, label]) => (
                   <button key={id} type="button" onClick={() => setForm({ ...form, type: id })} className={`h-10 rounded-xl border text-sm font-medium transition-colors ${form.type === id ? 'border-teal-500 bg-teal-50 text-teal-700' : 'border-slate-200 text-slate-600'}`} data-testid={`garage-type-${id}`}>{label}</button>
                 ))}
               </div>

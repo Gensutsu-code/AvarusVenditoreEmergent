@@ -51,7 +51,7 @@ export const FavoritesButton = ({ productId, className = '', size = 'default', s
         toast.success('Добавлено в избранное');
       }
     } catch (err) {
-      toast.error('Ошибка');
+      toast.error(err.response?.data?.detail || 'Ошибка');
     } finally {
       setLoading(false);
     }

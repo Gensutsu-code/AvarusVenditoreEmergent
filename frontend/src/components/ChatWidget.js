@@ -4,6 +4,7 @@ import { MessageCircle, X, Send, Paperclip, Image, Smile, FileText, Download, Zo
 import { Button } from './ui/button';
 import { Input } from './ui/input';
 import { useAuth } from '../context/AuthContext';
+import { useFeatures } from '../context/FeaturesContext';
 import { toast } from 'sonner';
 
 const API = `${process.env.REACT_APP_BACKEND_URL}/api`;
@@ -148,8 +149,22 @@ const VideoLightbox = ({ src, onClose, isGoogleDrive }) => {
   );
 };
 
+const guestSessionId = () => {
+  let sid = localStorage.getItem('guest_chat_sid');
+  if (!sid) {
+    sid = (window.crypto?.randomUUID?.() || `${Date.now()}-${Math.random().toString(36).slice(2)}-guest-chat`);
+    localStorage.setItem('guest_chat_sid', sid);
+  }
+  return sid;
+};
+
 export const ChatWidget = () => {
   const { user } = useAuth();
+  const cfg = useFeatures().settings.chat || {};
+  const isGuest = !user;
+  const canChat = !!user || !!cfg.guests_allowed;
+  const canAttach = !!user && cfg.attachments_allowed !== false;
+  const [guestName, setGuestName] = useState('');
   const [isOpen, setIsOpen] = useState(false);
   const [messages, setMessages] = useState([]);
   const [newMessage, setNewMessage] = useState('');
@@ -165,22 +180,22 @@ export const ChatWidget = () => {
   const fileInputRef = useRef(null);
 
   useEffect(() => {
-    if (user && isOpen) {
+    if (canChat && isOpen) {
       fetchMessages();
-      markAsRead();
+      if (user) markAsRead();
     }
-  }, [user, isOpen]);
+  }, [user, canChat, isOpen]);
 
   useEffect(() => {
-    if (user) {
-      fetchUnreadCount();
+    if (canChat) {
+      if (user) fetchUnreadCount();
       const interval = setInterval(() => {
-        fetchUnreadCount();
+        if (user) fetchUnreadCount();
         if (isOpen) fetchMessages();
       }, 2000); // Poll every 2 seconds for real-time feel
       return () => clearInterval(interval);
     }
-  }, [user, isOpen]);
+  }, [user, canChat, isOpen]);
 
   useEffect(() => {
     if (shouldAutoScrollRef.current) scrollToBottom();
@@ -206,7 +221,9 @@ export const ChatWidget = () => {
 
   const fetchMessages = async () => {
     try {
-      const res = await axios.get(`${API}/chat/messages`);
+      const res = isGuest
+        ? await axios.get(`${API}/chat/guest/messages`, { params: { session_id: guestSessionId() } })
+        : await axios.get(`${API}/chat/messages`);
       setMessages(res.data.messages || []);
     } catch (err) {
       console.error('Failed to fetch messages', err);
@@ -237,14 +254,15 @@ export const ChatWidget = () => {
 
     setLoading(true);
     try {
-      await axios.post(`${API}/chat/send`, { text: newMessage });
+      if (isGuest) await axios.post(`${API}/chat/guest/send`, { session_id: guestSessionId(), name: guestName.trim(), text: newMessage });
+      else await axios.post(`${API}/chat/send`, { text: newMessage });
       setNewMessage('');
       setShowEmoji(false);
       shouldAutoScrollRef.current = true;
       fetchMessages();
     } catch (err) {
       console.error('Failed to send message', err);
-      toast.error('Ошибка отправки сообщения');
+      toast.error(err.response?.data?.detail || 'Ошибка отправки сообщения');
     } finally {
       setLoading(false);
     }
@@ -280,7 +298,7 @@ export const ChatWidget = () => {
       toast.success('Файл отправлен');
     } catch (err) {
       console.error('Failed to upload file', err);
-      toast.error('Ошибка загрузки файла');
+      toast.error(err.response?.data?.detail || 'Ошибка загрузки файла');
     } finally {
       setUploading(false);
       if (fileInputRef.current) fileInputRef.current.value = '';
@@ -313,7 +331,7 @@ export const ChatWidget = () => {
     return groups;
   }, {});
 
-  if (!user) return null;
+  if (!canChat) return null;
 
   return (
     <>
@@ -358,10 +376,10 @@ export const ChatWidget = () => {
           {/* Header */}
           <div className="flex items-center justify-between px-4 py-3 bg-gradient-to-r from-teal-500 to-emerald-500 text-white">
             <div>
-              <h3 className="font-semibold">Онлайн-чат</h3>
+              <h3 className="font-semibold" data-testid="chat-title">{cfg.title || 'Онлайн-чат'}</h3>
               <p className="text-xs text-teal-100 flex items-center gap-1">
                 <span className="w-2 h-2 bg-green-300 rounded-full animate-pulse"></span>
-                Поддержка avopt.store
+                {cfg.subtitle || 'Поддержка avopt.store'}
               </p>
             </div>
             <button 
@@ -384,8 +402,8 @@ export const ChatWidget = () => {
                 <div className="w-16 h-16 mx-auto mb-3 bg-teal-100 rounded-full flex items-center justify-center">
                   <MessageCircle className="w-8 h-8 text-teal-500" />
                 </div>
-                <p className="font-medium text-slate-600">Напишите нам!</p>
-                <p className="text-xs mt-1">Мы ответим как можно скорее</p>
+                <p className="font-medium text-slate-600" data-testid="chat-greeting-title">{cfg.greeting_title || 'Напишите нам!'}</p>
+                <p className="text-xs mt-1 whitespace-pre-line" data-testid="chat-greeting-text">{cfg.greeting_text}</p>
               </div>
             ) : (
               Object.entries(groupedMessages).map(([date, msgs]) => (
@@ -523,6 +541,16 @@ export const ChatWidget = () => {
 
           {/* Input */}
           <form onSubmit={sendMessage} className="p-3 border-t border-zinc-200 bg-white">
+            {isGuest && messages.length === 0 && (
+              <input
+                value={guestName}
+                onChange={(e) => setGuestName(e.target.value)}
+                maxLength={60}
+                placeholder="Как к вам обращаться? (необязательно)"
+                className="w-full mb-2 h-9 px-3 rounded-xl border border-zinc-200 text-sm focus:outline-none focus:border-teal-400"
+                data-testid="chat-guest-name"
+              />
+            )}
             <div className="flex items-center gap-2">
               {/* File upload */}
               <input
@@ -532,15 +560,18 @@ export const ChatWidget = () => {
                 accept="image/*,video/*,.pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.txt,.csv,.zip,.rar,.7z"
                 className="hidden"
               />
+              {canAttach && (
               <button
                 type="button"
                 onClick={() => fileInputRef.current?.click()}
                 disabled={uploading}
                 className="p-2 hover:bg-teal-50 rounded-full text-slate-400 hover:text-teal-500 transition-colors"
                 title="Прикрепить файл"
+                data-testid="chat-attach-btn"
               >
                 <Paperclip className="w-5 h-5" />
               </button>
+              )}
               
               {/* Emoji button */}
               <button

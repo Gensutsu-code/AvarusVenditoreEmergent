@@ -8,6 +8,7 @@ import { Search, X, ShoppingCart, Package, Truck, Minus, Plus, ArrowRight, Heart
 import { useCart } from '../context/CartContext';
 import { Skeleton } from '../components/ui/skeleton';
 import { useAuth } from '../context/AuthContext';
+import { useFeatures } from '../context/FeaturesContext';
 import { useIndividualPrice } from '../context/IndividualPriceContext';
 import { toast } from 'sonner';
 import { useNavigate } from 'react-router-dom';
@@ -508,6 +509,7 @@ export default function CatalogPage() {
   const { getIndividualPrice } = useIndividualPrice();
   const [discountProduct, setDiscountProduct] = useState(null);
   const [requestModalOpen, setRequestModalOpen] = useState(false);
+  const requestsCfg = useFeatures().settings.product_requests || {};
   
   const { addToCart } = useCart();
   const { user } = useAuth();
@@ -1220,7 +1222,7 @@ export default function CatalogPage() {
                     </Button>
                   )}
                   {aiSearchNote && <p className="text-sm text-slate-500 max-w-md" data-testid="ai-search-note">{aiSearchNote}</p>}
-                  {user && (
+                  {user && requestsCfg.show_not_found !== false && (
                     <Button
                       onClick={() => setRequestModalOpen(true)}
                       className="rounded-xl bg-gradient-to-r from-blue-500 to-indigo-500 text-white hover:from-blue-600 hover:to-indigo-600"

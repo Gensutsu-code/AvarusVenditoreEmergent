@@ -54,6 +54,11 @@ export function ProductRequestOffer({ req, onDone }) {
         <span className="text-xs font-mono text-slate-400">{req.article}</span>
       </div>
       <div className="flex flex-wrap gap-x-4 gap-y-1 text-sm">
+        {isOffered && req.offer_expires_at && (
+          <span className="text-xs text-amber-600 font-medium" data-testid={`offer-expires-${req.id}`}>
+            Действует до {new Date(req.offer_expires_at).toLocaleDateString('ru-RU', { day: 'numeric', month: 'long' })}
+          </span>
+        )}
         {req.offer_price != null && (
           <span className="inline-flex items-center gap-1 text-teal-700 font-semibold" data-testid={`offer-price-${req.id}`}>
             <Tag className="w-3.5 h-3.5" />{fmt(req.offer_price)} ₽/шт

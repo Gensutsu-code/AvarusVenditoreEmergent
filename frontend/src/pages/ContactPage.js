@@ -25,6 +25,7 @@ const REQ_STATUS = {
   completed: { label: 'Выполнен', cls: 'bg-emerald-100 text-emerald-700', Icon: CheckCircle },
   rejected: { label: 'Отклонён', cls: 'bg-rose-100 text-rose-700', Icon: XCircle },
   rejected_by_client: { label: 'Отклонён вами', cls: 'bg-rose-100 text-rose-700', Icon: XCircle },
+  expired: { label: 'Срок предложения истёк', cls: 'bg-slate-100 text-slate-500', Icon: XCircle },
   used: { label: 'Использовано', cls: 'bg-slate-100 text-slate-500', Icon: CheckCircle },
   superseded: { label: 'Заменено', cls: 'bg-slate-100 text-slate-400', Icon: XCircle },
   cancelled: { label: 'Отменено', cls: 'bg-slate-100 text-slate-400', Icon: XCircle },

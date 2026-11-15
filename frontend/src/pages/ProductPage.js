@@ -9,6 +9,7 @@ import {
 import { Button } from '../components/ui/button';
 import { useCart } from '../context/CartContext';
 import { useAuth } from '../context/AuthContext';
+import { useFeatures } from '../context/FeaturesContext';
 import { useIndividualPrice } from '../context/IndividualPriceContext';
 import { FavoritesButton } from '../components/FavoritesButton';
 import { toast } from 'sonner';
@@ -38,6 +39,7 @@ export default function ProductPage() {
   const individualPrice = getIndividualPrice(id);
   const [discountOpen, setDiscountOpen] = useState(false);
   const [requestOpen, setRequestOpen] = useState(false);
+  const requestsCfg = useFeatures().settings.product_requests || {};
 
   useEffect(() => {
     if (id) {
@@ -606,7 +608,7 @@ export default function ProductPage() {
                         </>
                       )}
                     </Button>
-                  ) : user ? (
+                  ) : (user && requestsCfg.show_out_of_stock !== false) ? (
                     <Button
                       onClick={() => setRequestOpen(true)}
                       className="w-full h-14 font-bold uppercase tracking-wide text-base rounded-xl shadow-lg transition-all duration-300 bg-gradient-to-r from-blue-500 to-indigo-500 hover:from-blue-600 hover:to-indigo-600 text-white"

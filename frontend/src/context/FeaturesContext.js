@@ -4,7 +4,7 @@ import { useAuth } from './AuthContext';
 import { SITE_FEATURES } from '../lib/siteFeatures';
 
 const API = `${process.env.REACT_APP_BACKEND_URL}/api`;
-const FeaturesContext = createContext({ flags: {}, loaded: false, isOn: () => true, isEnabled: () => true, reload: () => {} });
+const FeaturesContext = createContext({ flags: {}, settings: {}, loaded: false, isOn: () => true, isEnabled: () => true, reload: () => {} });
 
 const matches = (path, routes = []) => routes.some((r) => path === r || path.startsWith(`${r}/`));
 
@@ -13,10 +13,12 @@ export const FeaturesProvider = ({ children }) => {
   const [flags, setFlags] = useState({});
   const [loaded, setLoaded] = useState(false);
 
-  const reload = useCallback(
-    () => axios.get(`${API}/features`).then((r) => setFlags(r.data || {})).catch(() => {}).finally(() => setLoaded(true)),
-    [],
-  );
+  const [settings, setSettings] = useState({});
+
+  const reload = useCallback(() => {
+    axios.get(`${API}/feature-settings`).then((r) => setSettings(r.data || {})).catch(() => {});
+    return axios.get(`${API}/features`).then((r) => setFlags(r.data || {})).catch(() => {}).finally(() => setLoaded(true));
+  }, []);
   useEffect(() => { reload(); }, [reload]);
 
   // switched on globally (what the admin panel follows)
@@ -31,8 +33,8 @@ export const FeaturesProvider = ({ children }) => {
 
   const value = useMemo(() => {
     const blockedFeature = (path) => SITE_FEATURES.find((f) => !isOn(f.key) && (matches(path, f.routes) || matches(path, f.adminRoutes)));
-    return { flags, loaded, isOn, isEnabled, reload, blockedFeature };
-  }, [flags, loaded, isOn, isEnabled, reload]);
+    return { flags, settings, loaded, isOn, isEnabled, reload, blockedFeature };
+  }, [flags, settings, loaded, isOn, isEnabled, reload]);
 
   // every link to a switched-off page and every element the function owns disappears site-wide
   const css = SITE_FEATURES.filter((f) => !isOn(f.key)).flatMap((f) => [

@@ -2,7 +2,7 @@
 from fastapi import APIRouter, HTTPException, Depends
 from pydantic import BaseModel
 from typing import Optional
-from datetime import datetime, timezone
+from datetime import datetime, timezone, timedelta
 import uuid
 
 from database import db, get_current_user
@@ -33,6 +33,12 @@ class ClientRejectBody(BaseModel):
 
 @router.post("/product-requests")
 async def create_product_request(data: ProductRequestCreate, user=Depends(get_current_user)):
+    from routes.features import fsettings
+    cfg = fsettings("product_requests")
+    if not cfg["show_out_of_stock" if data.product_id else "show_not_found"]:
+        raise HTTPException(status_code=403, detail="Такие запросы сейчас не принимаются")
+    if cfg["comment_required"] and not data.comment.strip():
+        raise HTTPException(status_code=400, detail="Опишите в комментарии, что именно вам нужно")
     product_info = None
     if data.product_id:
         product_info = await db.products.find_one({"id": data.product_id}, {"_id": 0, "name": 1, "article": 1, "image_url": 1, "price": 1})
@@ -67,8 +73,18 @@ async def create_product_request(data: ProductRequestCreate, user=Depends(get_cu
     return doc
 
 
+async def _expire_offers(query: dict):
+    """Offers past their validity date become 'expired'."""
+    now = datetime.now(timezone.utc).isoformat()
+    await db.product_requests.update_many(
+        {**query, "status": "offered", "offer_expires_at": {"$ne": None, "$lt": now}},
+        {"$set": {"status": "expired", "updated_at": now}},
+    )
+
+
 @router.get("/product-requests/my")
 async def get_my_product_requests(user=Depends(get_current_user)):
+    await _expire_offers({"user_id": user["id"]})
     requests = await db.product_requests.find(
         {"user_id": user["id"]}, {"_id": 0}
     ).sort("created_at", -1).to_list(100)
@@ -79,6 +95,7 @@ async def get_my_product_requests(user=Depends(get_current_user)):
 async def get_all_product_requests(user=Depends(get_current_user)):
     if user.get("role") != "admin":
         raise HTTPException(status_code=403, detail="Admin access required")
+    await _expire_offers({})
     requests = await db.product_requests.find({}, {"_id": 0}).sort("created_at", -1).to_list(500)
     return requests
 
@@ -103,6 +120,10 @@ async def respond_product_request(request_id: str, data: ProductRequestRespond, 
         set_data["offer_quantity"] = data.offer_quantity
     if data.offer_delivery_days is not None:
         set_data["offer_delivery_days"] = data.offer_delivery_days
+    if data.status == "offered":
+        from routes.features import fsettings
+        days = fsettings("product_requests")["offer_valid_days"]
+        set_data["offer_expires_at"] = (datetime.now(timezone.utc) + timedelta(days=days)).isoformat() if days else None
 
     await db.product_requests.update_one(
         {"id": request_id},
@@ -151,9 +172,12 @@ async def respond_product_request(request_id: str, data: ProductRequestRespond, 
 @router.post("/product-requests/{request_id}/accept")
 async def client_accept_product_request(request_id: str, user=Depends(get_current_user)):
     """Client accepts the admin's offer on a product request."""
+    await _expire_offers({"id": request_id})
     req = await db.product_requests.find_one({"id": request_id, "user_id": user["id"]}, {"_id": 0})
     if not req:
         raise HTTPException(status_code=404, detail="Запрос не найден")
+    if req.get("status") == "expired":
+        raise HTTPException(status_code=400, detail="Срок действия предложения истёк. Отправьте запрос заново.")
     if req.get("status") != "offered":
         raise HTTPException(status_code=400, detail="Нет активного предложения для принятия")
     now = datetime.now(timezone.utc).isoformat()

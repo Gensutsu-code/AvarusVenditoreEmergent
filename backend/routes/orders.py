@@ -1,4 +1,5 @@
 """Cart, Orders, and Favorites routes"""
+import contextvars
 from fastapi import APIRouter, HTTPException, Depends
 from typing import List, Optional
 from pydantic import BaseModel
@@ -15,6 +16,10 @@ from routes.credit import has_overdue_deferral
 from routes.warehouse import allocate_stock, restore_stock
 
 router = APIRouter(tags=["orders"])
+
+
+# set by the manager cabinet while it places an order on behalf of a client
+manager_order = contextvars.ContextVar("manager_order", default=False)
 
 
 async def _restore_order_stock(order):
@@ -602,9 +607,14 @@ async def create_order(data: OrderCreate, user=Depends(get_current_user)):
         raise HTTPException(status_code=403, detail="Есть просроченный долг по отсрочке. Погасите задолженность, чтобы оформлять новые заказы.")
     
     vehicle_id = None
-    if data.vehicle_id:
+    from routes.features import is_on as _f_on, fsettings as _f_settings
+    vehicle_mode = _f_settings("garage")["checkout_mode"] if _f_on("garage", user) else "off"
+    if data.vehicle_id and vehicle_mode != "off":
         from routes.garage import own_vehicle
         vehicle_id = (await own_vehicle(user["id"], data.vehicle_id))["id"]
+    elif vehicle_mode == "required" and not manager_order.get() \
+            and await db.garage_vehicles.count_documents({"user_id": user["id"], "deleted_at": None}) > 0:
+        raise HTTPException(status_code=400, detail="Укажите, для какой техники из гаража эта покупка")
     pricing = await _compute_order_pricing(data, user, cart)
     active_cart_discount = pricing["active_cart_discount"]
     balance_to_deduct = pricing["balance_to_deduct"]
@@ -1421,6 +1431,11 @@ async def get_favorites(user=Depends(get_current_user)):
 @router.post("/favorites/add")
 async def add_to_favorites(item: FavoriteItem, user=Depends(get_current_user)):
     favorites = await db.favorites.find_one({"user_id": user["id"]})
+    from routes.features import fsettings
+    limit = fsettings("favorites")["max_items"]
+    current = (favorites or {}).get("items", [])
+    if limit and item.product_id not in current and len(current) >= limit:
+        raise HTTPException(status_code=400, detail=f"В избранном может быть не больше {limit} товаров")
     if not favorites:
         await db.favorites.insert_one({"user_id": user["id"], "items": [item.product_id]})
     else:

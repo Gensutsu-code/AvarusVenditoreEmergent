@@ -718,9 +718,12 @@ async def manager_create_order(user_id: str, data: ManagerOrderIn, user=Depends(
     # the client's own cart is kept aside while the manager's order is being placed
     saved = await db.carts.find_one({"user_id": user_id}, {"_id": 0, "items": 1})
     await db.carts.update_one({"user_id": user_id}, {"$set": {"items": [i.model_dump() for i in data.items]}}, upsert=True)
+    from routes.orders import manager_order
+    token = manager_order.set(True)
     try:
         order = await create_order(payload, user=client)
     finally:
+        manager_order.reset(token)
         await db.carts.update_one({"user_id": user_id}, {"$set": {"items": (saved or {}).get("items", [])}}, upsert=True)
     order_id = order["id"] if isinstance(order, dict) else order.id
     await db.orders.update_one({"id": order_id}, {"$set": {"created_by_manager_id": user["id"], "created_by_manager_name": user.get("name", "")}})

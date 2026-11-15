@@ -83,7 +83,11 @@ async def recompute_product_stock(product_id: str):
     if wh_ids:
         whs = await db.warehouses.find({"id": {"$in": wh_ids}}, {"_id": 0, "id": 1, "region": 1}).to_list(2000)
         regions = sorted({(w.get("region") or "").strip() for w in whs if (w.get("region") or "").strip()})
+    before = await db.products.find_one({"id": product_id}, {"_id": 0, "price": 1, "stock": 1, "name": 1})
     await db.products.update_one({"id": product_id}, {"$set": {"stock": total, "stock_regions": regions}})
+    if before and (before.get("stock") or 0) <= 0 < total:
+        from notify import notify_favorites_change
+        await notify_favorites_change(product_id, before, {**before, "stock": total})
     return total
 
 

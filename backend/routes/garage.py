@@ -38,9 +38,10 @@ async def own_vehicle(user_id: str, vehicle_id: str):
     return v
 
 
-async def _clean(user_id: str, data: VehicleIn, exclude_id: Optional[str] = None):
-    if data.type not in ("truck", "trailer"):
-        raise HTTPException(status_code=400, detail="Тип: автомобиль или прицеп")
+async def _clean(user_id: str, data: VehicleIn, exclude_id: Optional[str] = None, current_type: Optional[str] = None):
+    from routes.features import fsettings, GARAGE_TYPES
+    if data.type not in GARAGE_TYPES or (data.type != current_type and data.type not in fsettings("garage")["allowed_types"]):
+        raise HTTPException(status_code=400, detail="Этот тип техники нельзя добавить в гараж")
     vin = data.vin.strip().upper()
     if not VIN_RE.match(vin):
         raise HTTPException(status_code=400, detail="VIN: 17 символов, латинские буквы (кроме I, O, Q) и цифры")
@@ -97,6 +98,10 @@ async def list_vehicles(user=Depends(get_current_user)):
 
 @router.post("/garage/vehicles")
 async def add_vehicle(data: VehicleIn, user=Depends(get_current_user)):
+    from routes.features import fsettings
+    limit = fsettings("garage")["max_vehicles"]
+    if limit and await db.garage_vehicles.count_documents({"user_id": user["id"], "deleted_at": None}) >= limit:
+        raise HTTPException(status_code=400, detail=f"В гараже может быть не больше {limit} единиц техники")
     doc = {"id": str(uuid.uuid4()), "user_id": user["id"], **(await _clean(user["id"], data)), "deleted_at": None, "created_at": _now()}
     await db.garage_vehicles.insert_one(dict(doc))
     return doc
@@ -104,8 +109,8 @@ async def add_vehicle(data: VehicleIn, user=Depends(get_current_user)):
 
 @router.put("/garage/vehicles/{vehicle_id}")
 async def update_vehicle(vehicle_id: str, data: VehicleIn, user=Depends(get_current_user)):
-    await own_vehicle(user["id"], vehicle_id)
-    await db.garage_vehicles.update_one({"id": vehicle_id}, {"$set": await _clean(user["id"], data, vehicle_id)})
+    current = await own_vehicle(user["id"], vehicle_id)
+    await db.garage_vehicles.update_one({"id": vehicle_id}, {"$set": await _clean(user["id"], data, vehicle_id, current.get("type"))})
     return await own_vehicle(user["id"], vehicle_id)
 
 

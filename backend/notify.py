@@ -118,3 +118,23 @@ async def notify_all_users(notif_type: str, title: str, message: str, link: str 
         })
     if notifications:
         await db.notifications.insert_many(notifications)
+
+
+async def notify_favorites_change(product_id: str, before: dict, after: dict):
+    """Tell clients who keep the product in favourites about a price drop / restock (per site settings)."""
+    from routes.features import is_on, fsettings
+    if not is_on("favorites") or not before or not after:
+        return
+    cfg = fsettings("favorites")
+    old_price, new_price = before.get("price") or 0, after.get("price") or 0
+    events = []
+    if cfg["notify_price_drop"] and 0 < new_price < old_price:
+        events.append(("Цена снизилась", f"«{after.get('name')}» подешевел: {old_price:.0f} ₽ → {new_price:.0f} ₽"))
+    if cfg["notify_back_in_stock"] and (before.get("stock") or 0) <= 0 < (after.get("stock") or 0):
+        events.append(("Товар снова в наличии", f"«{after.get('name')}» из вашего избранного снова в наличии"))
+    if not events:
+        return
+    holders = await db.favorites.find({"items": product_id}, {"_id": 0, "user_id": 1}).to_list(5000)
+    for h in holders:
+        for title, message in events:
+            await notify_user(h["user_id"], "favorites", title, message, f"/product/{product_id}")
