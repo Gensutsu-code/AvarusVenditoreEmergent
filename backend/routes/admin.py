@@ -218,8 +218,26 @@ async def update_admin_user(user_id: str, data: AdminUserUpdate, user=Depends(ge
     if user.get("role") != "admin":
         raise HTTPException(status_code=403, detail="Admin access required")
     
-    update_data = {k: v for k, v in data.model_dump().items() if v is not None}
-    
+    # delivery_cost may be explicitly cleared (null = site-wide delivery price)
+    update_data = {k: v for k, v in data.model_dump(exclude_unset=True).items() if v is not None or k == "delivery_cost"}
+
+    for field, label in (("individual_discount", "Скидка"), ("delivery_cost", "Стоимость доставки"), ("deferral_days", "Отсрочка"), ("credit_limit", "Лимит")):
+        if update_data.get(field) is not None and update_data[field] < 0:
+            raise HTTPException(status_code=400, detail=f"{label}: значение не может быть отрицательным")
+    if (update_data.get("individual_discount") or 0) > 100:
+        raise HTTPException(status_code=400, detail="Скидка не может быть больше 100%")
+
+    # Individual deferral terms set in the client card drive the real deferral logic
+    if update_data.get("deferral_days"):
+        update_data["credit_term_days"] = update_data["deferral_days"]
+    if "credit_limit" in update_data:
+        if update_data["credit_limit"] > 0:
+            update_data["credit_status"] = "approved"
+        else:
+            current = await db.users.find_one({"id": user_id}, {"_id": 0, "credit_status": 1})
+            if (current or {}).get("credit_status") == "approved":
+                update_data["credit_status"] = "none"
+
     # Check email uniqueness
     if "email" in update_data:
         existing = await db.users.find_one({"email": update_data["email"], "id": {"$ne": user_id}}, {"_id": 0, "id": 1})

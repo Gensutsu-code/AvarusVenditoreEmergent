@@ -207,9 +207,14 @@ async def _build_cart(user):
                 "discount_active": product.get("discount_active", False),
                 "discount_until": product.get("discount_until"),
                 "discount_tiers": product.get("discount_tiers") or [],
+                "stock_regions": product.get("stock_regions") or [],
             })
-    
-    return {"items": items_with_details, "cart_discount": active_cd}
+
+    try:
+        ind_delivery = float(user.get("delivery_cost")) if user.get("delivery_cost") not in (None, "") else None
+    except (TypeError, ValueError):
+        ind_delivery = None
+    return {"items": items_with_details, "cart_discount": active_cd, "delivery_cost": ind_delivery}
 
 
 @router.post("/cart/add")

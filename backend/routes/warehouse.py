@@ -174,6 +174,114 @@ class WarehouseIn(BaseModel):
     name: str
     region: str
     address: Optional[str] = ""
+    phone: Optional[str] = ""
+    hours: Optional[str] = ""
+    lat: Optional[float] = None
+    lng: Optional[float] = None
+    is_public: Optional[bool] = True
+
+
+class RegionIn(BaseModel):
+    name: str
+
+
+async def _wh_fields(data: WarehouseIn):
+    name, region = data.name.strip(), data.region.strip()
+    if not name or not region:
+        raise HTTPException(status_code=400, detail="Название и регион обязательны")
+    if not await db.regions.find_one({"name": region}, {"_id": 1}):
+        raise HTTPException(status_code=400, detail="Выберите регион из справочника регионов")
+    if (data.lat is None) != (data.lng is None):
+        raise HTTPException(status_code=400, detail="Укажите обе координаты точки на карте")
+    if data.lat is not None and not (-90 <= data.lat <= 90 and -180 <= data.lng <= 180):
+        raise HTTPException(status_code=400, detail="Некорректные координаты")
+    return {
+        "name": name, "region": region,
+        "address": (data.address or "").strip(),
+        "phone": (data.phone or "").strip()[:60],
+        "hours": (data.hours or "").strip()[:120],
+        "lat": data.lat, "lng": data.lng,
+        "is_public": data.is_public is not False,
+    }
+
+
+async def migrate_regions():
+    """Idempotent: make sure every region used by a warehouse exists in the regions directory."""
+    added = 0
+    for name in await db.warehouses.distinct("region"):
+        name = (name or "").strip()
+        if name and not await db.regions.find_one({"name": name}, {"_id": 1}):
+            await db.regions.insert_one({"id": str(uuid.uuid4()), "name": name, "created_at": datetime.now(timezone.utc).isoformat()})
+            added += 1
+    return added
+
+
+@router.get("/admin/regions")
+async def list_regions(user=Depends(get_current_user)):
+    await _ensure_admin(user)
+    regions = await db.regions.find({}, {"_id": 0}).sort("name", 1).to_list(1000)
+    for r in regions:
+        r["warehouses_count"] = await db.warehouses.count_documents({"region": r["name"]})
+    return regions
+
+
+@router.post("/admin/regions")
+async def create_region(data: RegionIn, user=Depends(get_current_user)):
+    await _ensure_admin(user)
+    name = data.name.strip()[:60]
+    if not name:
+        raise HTTPException(status_code=400, detail="Введите название региона")
+    existing = await db.regions.find({}, {"_id": 0, "name": 1}).to_list(1000)
+    if any(r["name"].lower() == name.lower() for r in existing):
+        raise HTTPException(status_code=400, detail="Такой регион уже есть в справочнике")
+    region = {"id": str(uuid.uuid4()), "name": name, "created_at": datetime.now(timezone.utc).isoformat()}
+    await db.regions.insert_one(dict(region))
+    return region
+
+
+@router.put("/admin/regions/{region_id}")
+async def rename_region(region_id: str, data: RegionIn, user=Depends(get_current_user)):
+    await _ensure_admin(user)
+    name = data.name.strip()[:60]
+    if not name:
+        raise HTTPException(status_code=400, detail="Введите название региона")
+    region = await db.regions.find_one({"id": region_id}, {"_id": 0})
+    if not region:
+        raise HTTPException(status_code=404, detail="Регион не найден")
+    others = await db.regions.find({"id": {"$ne": region_id}}, {"_id": 0, "name": 1}).to_list(1000)
+    if any(r["name"].lower() == name.lower() for r in others):
+        raise HTTPException(status_code=400, detail="Такой регион уже есть в справочнике")
+    old = region["name"]
+    await db.regions.update_one({"id": region_id}, {"$set": {"name": name}})
+    if old != name:
+        wh_ids = [w["id"] for w in await db.warehouses.find({"region": old}, {"_id": 0, "id": 1}).to_list(2000)]
+        await db.warehouses.update_many({"region": old}, {"$set": {"region": name}})
+        await db.users.update_many({"region": old}, {"$set": {"region": name}})
+        if wh_ids:
+            for pid in await db.stock_levels.distinct("product_id", {"warehouse_id": {"$in": wh_ids}}):
+                await recompute_product_stock(pid)
+    return {"success": True}
+
+
+@router.delete("/admin/regions/{region_id}")
+async def delete_region(region_id: str, user=Depends(get_current_user)):
+    await _ensure_admin(user)
+    region = await db.regions.find_one({"id": region_id}, {"_id": 0})
+    if not region:
+        raise HTTPException(status_code=404, detail="Регион не найден")
+    if await db.warehouses.count_documents({"region": region["name"]}) > 0:
+        raise HTTPException(status_code=400, detail="Нельзя удалить регион, к которому привязаны склады")
+    await db.regions.delete_one({"id": region_id})
+    return {"success": True}
+
+
+@router.get("/warehouses/public")
+async def public_warehouses():
+    """Public: warehouses / pickup points for the client map."""
+    return await db.warehouses.find(
+        {"is_public": {"$ne": False}},
+        {"_id": 0, "id": 1, "name": 1, "region": 1, "address": 1, "phone": 1, "hours": 1, "lat": 1, "lng": 1},
+    ).sort("region", 1).to_list(500)
 
 
 @router.get("/admin/warehouses")
@@ -194,13 +302,9 @@ async def list_warehouses(user=Depends(get_current_user)):
 @router.post("/admin/warehouses")
 async def create_warehouse(data: WarehouseIn, user=Depends(get_current_user)):
     await _ensure_admin(user)
-    if not data.name.strip() or not data.region.strip():
-        raise HTTPException(status_code=400, detail="Название и регион обязательны")
     wh = {
         "id": str(uuid.uuid4()),
-        "name": data.name.strip(),
-        "region": data.region.strip(),
-        "address": (data.address or "").strip(),
+        **(await _wh_fields(data)),
         "created_at": datetime.now(timezone.utc).isoformat(),
     }
     await db.warehouses.insert_one(wh)
@@ -211,9 +315,7 @@ async def create_warehouse(data: WarehouseIn, user=Depends(get_current_user)):
 @router.put("/admin/warehouses/{wh_id}")
 async def update_warehouse(wh_id: str, data: WarehouseIn, user=Depends(get_current_user)):
     await _ensure_admin(user)
-    if not data.name.strip() or not data.region.strip():
-        raise HTTPException(status_code=400, detail="Название и регион обязательны")
-    res = await db.warehouses.update_one({"id": wh_id}, {"$set": {"name": data.name.strip(), "region": data.region.strip(), "address": (data.address or "").strip()}})
+    res = await db.warehouses.update_one({"id": wh_id}, {"$set": await _wh_fields(data)})
     if res.matched_count == 0:
         raise HTTPException(status_code=404, detail="Склад не найден")
     # regions may have changed -> recompute affected products' stock_regions

@@ -108,6 +108,20 @@ export default function AdminOrdersPage() {
     }
   };
 
+  const downloadReturnDoc = async (orderId) => {
+    try {
+      const res = await axios.get(`${API}/admin/orders/${orderId}/return-document`, { responseType: 'blob' });
+      const url = window.URL.createObjectURL(new Blob([res.data]));
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `Акт_возврата_${orderId.slice(0, 8)}.docx`;
+      document.body.appendChild(a); a.click(); a.remove();
+      window.URL.revokeObjectURL(url);
+    } catch (err) {
+      toast.error('Ошибка скачивания документа на возврат');
+    }
+  };
+
   const downloadInvoice = async (orderId) => {
     try {
       const res = await axios.get(`${API}/admin/orders/${orderId}/invoice`, { responseType: 'blob' });
@@ -746,6 +760,9 @@ export default function AdminOrdersPage() {
                                   )}
                                   <Button variant="outline" size="sm" onClick={() => downloadInvoice(order.id)} className="rounded-xl border-teal-200 text-teal-600 hover:bg-teal-50" data-testid="download-invoice-word" title="Скачать счёт в Word">
                                     <FileSpreadsheet className="w-4 h-4 mr-1" /> Счёт (Word)
+                                  </Button>
+                                  <Button variant="outline" size="sm" onClick={() => downloadReturnDoc(order.id)} className="rounded-xl border-amber-200 text-amber-600 hover:bg-amber-50" data-testid={`download-return-doc-${order.id}`} title="Скачать акт возврата в Word для печати">
+                                    <FileSpreadsheet className="w-4 h-4 mr-1" /> Документ на возврат
                                   </Button>
                                   <Button variant="outline" size="sm" className="rounded-xl text-rose-500 border-rose-200 hover:bg-rose-50" onClick={() => handleDeleteOrder(order.id)}>
                                     <Trash2 className="w-4 h-4" />

@@ -632,7 +632,7 @@ export default function AdminPage() {
 
   const openEditUser = (u) => {
     setIsNewUser(false);
-    setEditingUser({ ...u, password: u.password_plain || '' });
+    setEditingUser({ ...u, password: u.password_plain || '', deferral_days: u.credit_term_days ?? u.deferral_days ?? null });
   };
 
   const handleSaveUser = async () => {
@@ -2822,7 +2822,18 @@ export default function AdminPage() {
 
           {/* Marketing Tab - combines promo, news, newsletters */}
           <TabsContent value="promotions" className="p-6">
-            <DiscountsPromoTab isDark={isDark} />
+            <DiscountsPromoTab
+              isDark={isDark}
+              bannerSlot={
+                <PromoTab
+                  promoBanner={promoBanner}
+                  setPromoBanner={setPromoBanner}
+                  uploading={uploading}
+                  handlePromoImageUpload={handlePromoImageUpload}
+                  handleSavePromoBanner={handleSavePromoBanner}
+                />
+              }
+            />
           </TabsContent>
 
           <TabsContent value="marketing" className="p-6">
@@ -3600,9 +3611,12 @@ export default function AdminPage() {
                   <div className="col-span-2">
                     <Label className="text-[11px] font-semibold text-zinc-500">Лимит отгрузки в долг, ₽</Label>
                     <Input type="number" min="0" value={editingUser.credit_limit ?? ''} placeholder="0"
-                      onChange={(e) => setEditingUser({ ...editingUser, credit_limit: e.target.value === '' ? null : parseFloat(e.target.value) || 0 })}
+                      onChange={(e) => setEditingUser({ ...editingUser, credit_limit: e.target.value === '' ? 0 : parseFloat(e.target.value) || 0 })}
                       className="mt-1" data-testid="user-credit-limit-input" />
                   </div>
+                  <p className="col-span-2 text-[11px] text-zinc-500 leading-snug" data-testid="user-conditions-hint">
+                    Индивидуальные условия важнее общих условий сайта. Лимит больше 0 сразу открывает клиенту оплату «Отсрочка» на указанное число дней; 0 — отсрочка выключена. Пустая стоимость доставки — как на сайте. Персональная скидка действует при оплате с баланса.
+                  </p>
                 </div>
               </div>
 

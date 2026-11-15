@@ -43,6 +43,7 @@ import AdminProductsPage from "./pages/AdminProductsPage";
 import CreditPage from "./pages/CreditPage";
 import AdminCreditPage from "./pages/AdminCreditPage";
 import ContactPage from "./pages/ContactPage";
+import WarehousesMapPage from "./pages/WarehousesMapPage";
 import PartsFinderPage from "./pages/PartsFinderPage";
 
 const API = `${process.env.REACT_APP_BACKEND_URL}/api`;
@@ -158,6 +159,7 @@ function AppContent() {
           <Route path="/admin/warehouse" element={<Navigate to="/admin" replace />} />
           <Route path="/credit" element={<CreditPage />} />
           <Route path="/contact" element={<ContactPage />} />
+          <Route path="/warehouses" element={<WarehousesMapPage />} />
           <Route path="/returns" element={<ClientReturnsPage />} />
           <Route path="/favorites" element={<FavoritesPage />} />
           <Route path="/orders" element={<OrdersPage />} />

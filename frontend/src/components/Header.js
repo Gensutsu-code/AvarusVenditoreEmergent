@@ -1,6 +1,7 @@
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { ShoppingCart, User, Search, LogOut, Settings, Heart, Package, ClipboardList, Gift, Newspaper, Menu, X, MessageCircle, Bell, Wallet, RefreshCw, CreditCard, Wrench, MapPin, ChevronDown } from 'lucide-react';
 import { useRegion } from '../context/RegionContext';
+import { Map as MapIcon } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { useCart } from '../context/CartContext';
 import { Button } from './ui/button';
@@ -405,6 +406,9 @@ export const Header = () => {
                 </motion.div>
               </NavLink>
               <RegionSelector />
+              <Link to="/warehouses" className="h-10 px-3 rounded-xl flex items-center gap-1.5 bg-white/95 border border-slate-200 text-slate-600 hover:border-teal-300 hover:text-teal-600 transition-colors duration-200 text-sm font-medium whitespace-nowrap" title="Склады и пункты выдачи на карте" data-testid="warehouses-map-link">
+                <MapIcon className="w-4 h-4 text-teal-500" /><span className="hidden xl:inline">Склады</span>
+              </Link>
             </div>
           )}
           
@@ -723,7 +727,12 @@ export const Header = () => {
           >
             <div className="p-4 space-y-2">
               {user && !isAdmin && (
+                <>
                 <div className="pb-2 mb-1 border-b border-slate-100"><RegionSelector /></div>
+                <Link to="/warehouses" onClick={() => setMobileMenuOpen(false)} className="flex items-center gap-3 p-3 rounded-xl text-slate-600 hover:bg-slate-50" data-testid="warehouses-map-link-mobile">
+                  <MapIcon className="w-5 h-5 text-teal-500" /><span className="font-medium">Склады на карте</span>
+                </Link>
+                </>
               )}
               {user ? (
                 <>

@@ -10,7 +10,7 @@ from motor.motor_asyncio import AsyncIOMotorClient
 from dotenv import load_dotenv
 from pathlib import Path
 from contextlib import asynccontextmanager
-from routes.warehouse import restore_order_stock, migrate_legacy_stock
+from routes.warehouse import restore_order_stock, migrate_legacy_stock, migrate_regions
 import os
 import logging
 import asyncio
@@ -123,6 +123,11 @@ async def lifespan(app: FastAPI):
             logger.info(f"Legacy stock migrated to warehouses for {migrated} products")
     except Exception as e:
         logger.error(f"Legacy stock migration failed: {e}")
+
+    try:
+        await migrate_regions()
+    except Exception as e:
+        logger.error(f"Regions directory migration failed: {e}")
 
     yield
     

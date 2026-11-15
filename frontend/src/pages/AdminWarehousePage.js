@@ -8,6 +8,8 @@ import { Input } from '../components/ui/input';
 import { Dialog, DialogContent, DialogTitle, DialogDescription } from '../components/ui/dialog';
 import { useAuth } from '../context/AuthContext';
 import { toast } from 'sonner';
+import { RegionsPanel } from '../components/admin/RegionsPanel';
+import { LocationPicker } from '../components/WarehouseMap';
 
 const API = `${process.env.REACT_APP_BACKEND_URL}/api`;
 const fmt = (p) => new Intl.NumberFormat('ru-RU').format(Math.round(p || 0));
@@ -79,15 +81,28 @@ export default function AdminWarehousePage({ embedded = false }) {
     const res = await axios.get(`${API}/admin/warehouses`);
     setWarehouses(res.data || []);
   };
+  const [regionsDir, setRegionsDir] = useState([]);
+  const fetchRegions = async () => {
+    const res = await axios.get(`${API}/admin/regions`);
+    setRegionsDir(res.data || []);
+  };
+  const reloadRegions = () => Promise.all([fetchRegions(), fetchWarehouses(), fetchStock()]);
   const saveWarehouse = async () => {
-    if (!whForm?.name?.trim() || !whForm?.region?.trim()) { toast.error('Укажите название и регион'); return; }
+    if (!whForm?.name?.trim() || !whForm?.region?.trim()) { toast.error('Укажите название и выберите регион'); return; }
     setSubmitting(true);
     try {
-      if (whForm.id) await axios.put(`${API}/admin/warehouses/${whForm.id}`, { name: whForm.name, region: whForm.region, address: whForm.address || '' });
-      else await axios.post(`${API}/admin/warehouses`, { name: whForm.name, region: whForm.region, address: whForm.address || '' });
+      const payload = {
+        name: whForm.name, region: whForm.region, address: whForm.address || '',
+        phone: whForm.phone || '', hours: whForm.hours || '',
+        lat: typeof whForm.lat === 'number' ? whForm.lat : null,
+        lng: typeof whForm.lng === 'number' ? whForm.lng : null,
+        is_public: whForm.is_public !== false,
+      };
+      if (whForm.id) await axios.put(`${API}/admin/warehouses/${whForm.id}`, payload);
+      else await axios.post(`${API}/admin/warehouses`, payload);
       toast.success('Склад сохранён');
       setWhForm(null);
-      await Promise.all([fetchWarehouses(), fetchStock()]);
+      await Promise.all([fetchWarehouses(), fetchStock(), fetchRegions()]);
     } catch (e) { toast.error(e.response?.data?.detail || 'Ошибка'); } finally { setSubmitting(false); }
   };
   const deleteWarehouse = async (id) => {
@@ -205,7 +220,7 @@ export default function AdminWarehousePage({ embedded = false }) {
   useEffect(() => {
     if (authLoading) return;
     if (!user || user.role !== 'admin') { if (!embedded) navigate('/login'); return; }
-    Promise.all([fetchStock(), fetchMovements(), fetchFinance(), fetchReceipts(), fetchCogs(), fetchWarehouses(), fetchDelivery()]).catch(() => toast.error('Ошибка загрузки')).finally(() => setLoading(false));
+    Promise.all([fetchStock(), fetchMovements(), fetchFinance(), fetchReceipts(), fetchCogs(), fetchWarehouses(), fetchDelivery(), fetchRegions()]).catch(() => toast.error('Ошибка загрузки')).finally(() => setLoading(false));
     axios.get(`${API}/stock-sync-settings`).then(r => setGlobalSync(r.data.stock_sync_enabled)).catch(() => {});
     // eslint-disable-next-line
   }, [user, authLoading, navigate]);
@@ -485,8 +500,9 @@ export default function AdminWarehousePage({ embedded = false }) {
               <>
                 <div className="flex items-center justify-between mb-4 gap-3 flex-wrap">
                   <p className="text-sm text-slate-500">Склады с привязкой к региону. Регион определяет срок доставки для клиента. Товар попадает на склад при приёмке.</p>
-                  <Button onClick={() => setWhForm({ name: '', region: '', address: '' })} className="bg-amber-500 hover:bg-amber-600 text-white rounded-xl" data-testid="new-warehouse-btn"><Plus className="w-4 h-4 mr-1.5" />Добавить склад</Button>
+                  <Button onClick={() => setWhForm({ name: '', region: '', address: '', phone: '', hours: '', lat: null, lng: null, is_public: true })} className="bg-amber-500 hover:bg-amber-600 text-white rounded-xl" data-testid="new-warehouse-btn"><Plus className="w-4 h-4 mr-1.5" />Добавить склад</Button>
                 </div>
+                <RegionsPanel regions={regionsDir} reload={reloadRegions} />
                 <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-3">
                   {warehouses.length === 0 ? (
                     <div className="col-span-full bg-white rounded-2xl p-10 text-center text-slate-400 shadow-sm">Складов пока нет. Добавьте первый склад.</div>
@@ -501,7 +517,7 @@ export default function AdminWarehousePage({ embedded = false }) {
                           </div>
                         </div>
                         <div className="flex gap-1 flex-shrink-0">
-                          <button onClick={() => setWhForm({ id: w.id, name: w.name, region: w.region, address: w.address || '' })} className="text-slate-400 hover:text-amber-600 p-1" data-testid={`wh-edit-${w.id}`}><Pencil className="w-4 h-4" /></button>
+                          <button onClick={() => setWhForm({ id: w.id, name: w.name, region: w.region, address: w.address || '', phone: w.phone || '', hours: w.hours || '', lat: w.lat ?? null, lng: w.lng ?? null, is_public: w.is_public !== false })} className="text-slate-400 hover:text-amber-600 p-1" data-testid={`wh-edit-${w.id}`}><Pencil className="w-4 h-4" /></button>
                           <button onClick={() => deleteWarehouse(w.id)} className="text-slate-400 hover:text-rose-500 p-1" data-testid={`wh-delete-${w.id}`}><Trash2 className="w-4 h-4" /></button>
                         </div>
                       </div>
@@ -820,13 +836,38 @@ export default function AdminWarehousePage({ embedded = false }) {
 
       {/* Warehouse create/edit modal */}
       <Dialog open={!!whForm} onOpenChange={(o) => !o && setWhForm(null)}>
-        <DialogContent className="rounded-2xl" data-testid="warehouse-modal">
+        <DialogContent className="rounded-2xl max-h-[92vh] overflow-y-auto" data-testid="warehouse-modal">
           <DialogTitle>{whForm?.id ? 'Редактировать склад' : 'Новый склад'}</DialogTitle>
           <DialogDescription>Регион обязателен — по нему рассчитывается срок доставки.</DialogDescription>
           <div className="space-y-3 mt-2">
             <div><label className="block text-xs font-medium text-slate-500 mb-1">Название *</label><Input value={whForm?.name || ''} onChange={(e) => setWhForm({ ...whForm, name: e.target.value })} placeholder="Основной склад" className="rounded-xl" data-testid="wh-name-input" /></div>
-            <div><label className="block text-xs font-medium text-slate-500 mb-1">Регион *</label><Input value={whForm?.region || ''} onChange={(e) => setWhForm({ ...whForm, region: e.target.value })} placeholder="Москва" className="rounded-xl" data-testid="wh-region-input" /></div>
+            <div>
+              <label className="block text-xs font-medium text-slate-500 mb-1">Регион *</label>
+              <select value={whForm?.region || ''} onChange={(e) => setWhForm({ ...whForm, region: e.target.value })} className="w-full h-10 rounded-xl border border-slate-200 bg-white px-3 text-sm focus:outline-none focus:border-amber-400" data-testid="wh-region-select">
+                <option value="">— выберите регион —</option>
+                {regionsDir.map(r => <option key={r.id} value={r.name}>{r.name}</option>)}
+              </select>
+              {regionsDir.length === 0 && <p className="text-[11px] text-rose-500 mt-1">Сначала добавьте регион в «Справочник регионов» на вкладке «Склады».</p>}
+            </div>
             <div><label className="block text-xs font-medium text-slate-500 mb-1">Адрес (необязательно)</label><Input value={whForm?.address || ''} onChange={(e) => setWhForm({ ...whForm, address: e.target.value })} placeholder="ул. Ленина, 1" className="rounded-xl" data-testid="wh-address-input" /></div>
+            <div className="grid grid-cols-2 gap-3">
+              <div><label className="block text-xs font-medium text-slate-500 mb-1">Телефон</label><Input value={whForm?.phone || ''} onChange={(e) => setWhForm({ ...whForm, phone: e.target.value })} placeholder="+7 900 000-00-00" className="rounded-xl" data-testid="wh-phone-input" /></div>
+              <div><label className="block text-xs font-medium text-slate-500 mb-1">Часы работы</label><Input value={whForm?.hours || ''} onChange={(e) => setWhForm({ ...whForm, hours: e.target.value })} placeholder="Пн–Пт 9:00–18:00" className="rounded-xl" data-testid="wh-hours-input" /></div>
+            </div>
+            <div>
+              <div className="flex items-center justify-between mb-1">
+                <label className="block text-xs font-medium text-slate-500">Точка на карте — нажмите на карту</label>
+                {typeof whForm?.lat === 'number' && (
+                  <button type="button" onClick={() => setWhForm({ ...whForm, lat: null, lng: null })} className="text-[11px] text-rose-500 hover:underline" data-testid="wh-clear-point">Убрать точку</button>
+                )}
+              </div>
+              {whForm && <LocationPicker lat={whForm.lat} lng={whForm.lng} onChange={(lat, lng) => setWhForm(prev => ({ ...prev, lat, lng }))} />}
+              <p className="text-[11px] text-slate-400 mt-1" data-testid="wh-coords">{typeof whForm?.lat === 'number' ? `Координаты: ${whForm.lat}, ${whForm.lng}` : 'Точка не выбрана — склад будет в списке без метки на карте'}</p>
+            </div>
+            <label className="flex items-center gap-2 cursor-pointer text-sm text-slate-700">
+              <input type="checkbox" checked={whForm?.is_public !== false} onChange={(e) => setWhForm({ ...whForm, is_public: e.target.checked })} className="w-4 h-4 accent-amber-500" data-testid="wh-public-toggle" />
+              Показывать клиентам на карте складов
+            </label>
             <Button onClick={saveWarehouse} disabled={submitting} className="w-full bg-amber-500 hover:bg-amber-600 text-white rounded-xl" data-testid="wh-save-btn">{submitting ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : null}Сохранить</Button>
           </div>
         </DialogContent>

@@ -4,7 +4,8 @@ import { toast } from 'sonner';
 import { Button } from '../ui/button';
 import { Input } from '../ui/input';
 import { Label } from '../ui/label';
-import { Percent, Ticket, Search, Save, Trash2, Plus, X, Tag, Loader2, Power, Pencil } from 'lucide-react';
+import { Percent, Ticket, Search, Save, Trash2, Plus, X, Tag, Loader2, Power, Pencil, ShoppingCart, Megaphone } from 'lucide-react';
+import { CartDiscountRequestsSection } from './CartDiscountRequestsSection';
 
 const API = `${process.env.REACT_APP_BACKEND_URL}/api`;
 const fmt = (n) => new Intl.NumberFormat('ru-RU').format(Math.round(Number(n) || 0));
@@ -378,19 +379,21 @@ const ProductDiscountsSection = ({ isDark }) => {
 };
 
 // ===================== MAIN TAB =====================
-export default function DiscountsPromoTab({ isDark = false }) {
+export default function DiscountsPromoTab({ isDark = false, bannerSlot = null }) {
   const [sub, setSub] = useState('products');
 
   const tabs = [
     { id: 'products', label: 'Товарные скидки', icon: Percent },
     { id: 'promo', label: 'Промокоды', icon: Ticket },
+    { id: 'cart', label: 'Скидки на корзину', icon: ShoppingCart },
+    ...(bannerSlot ? [{ id: 'banner', label: 'Акционный баннер', icon: Megaphone }] : []),
   ];
 
   return (
     <div className="space-y-5" data-testid="discounts-promo-tab">
       <div>
         <h2 className={`text-lg font-bold ${isDark ? 'text-white' : 'text-zinc-900'}`}>Скидки и акции</h2>
-        <p className="text-sm text-slate-400">Управление скидками товаров, оптовыми порогами и промокодами в одном месте.</p>
+        <p className="text-sm text-slate-400">Скидки товаров, оптовые пороги, промокоды, скидки на корзину и акционный баннер — в одном месте.</p>
       </div>
 
       <div className={`inline-flex rounded-xl p-1 ${isDark ? 'bg-zinc-800' : 'bg-slate-100'}`}>
@@ -405,7 +408,10 @@ export default function DiscountsPromoTab({ isDark = false }) {
         })}
       </div>
 
-      {sub === 'products' ? <ProductDiscountsSection isDark={isDark} /> : <PromoCodesSection isDark={isDark} />}
+      {sub === 'products' && <ProductDiscountsSection isDark={isDark} />}
+      {sub === 'promo' && <PromoCodesSection isDark={isDark} />}
+      {sub === 'cart' && <CartDiscountRequestsSection isDark={isDark} />}
+      {sub === 'banner' && <div data-testid="promo-banner-section">{bannerSlot}</div>}
     </div>
   );
 }

@@ -7,7 +7,9 @@ from fastapi import APIRouter, HTTPException, Depends
 from fastapi.responses import StreamingResponse
 from urllib.parse import quote
 
+from typing import Optional
 from docx import Document
+from docx.shared import Pt
 from docx.enum.text import WD_ALIGN_PARAGRAPH
 from pymongo import ReturnDocument
 
@@ -131,6 +133,116 @@ async def update_invoice_settings(data: dict, user=Depends(get_current_user)):
         upsert=True,
     )
     return {"success": True, **value}
+
+
+@router.get("/admin/orders/{order_id}/return-document")
+async def export_return_document(order_id: str, return_id: Optional[str] = None, user=Depends(get_current_user)):
+    """Printable return act (Word). Uses the order's return requests, or all order items if there are none."""
+    if user.get("role") != "admin":
+        raise HTTPException(status_code=403, detail="Admin access required")
+    order = await db.orders.find_one({"id": order_id}, {"_id": 0})
+    if not order:
+        raise HTTPException(status_code=404, detail="Order not found")
+    query = {"order_id": order_id, "status": {"$ne": "rejected"}}
+    if return_id:
+        query = {"order_id": order_id, "id": return_id}
+    rets = await db.returns.find(query, {"_id": 0}).sort("created_at", 1).to_list(100)
+    if return_id and not rets:
+        raise HTTPException(status_code=404, detail="Возврат не найден")
+
+    s = await get_invoice_settings()
+    rows, reasons, total_sum, total_refund = [], [], 0.0, 0.0
+    is_warranty = bool(rets) and all(r.get("type") == "warranty" for r in rets)
+    if rets:
+        for r in rets:
+            if r.get("reason"):
+                reasons.append(r["reason"])
+            for it in r.get("items", []):
+                qty = it.get("quantity", 0) or 0
+                price = it.get("price", 0) or 0
+                line = it.get("item_total", price * qty) or 0
+                refund = (it.get("refund", 0) or 0) if r.get("type") == "return" else None
+                rows.append((it.get("article", ""), it.get("name", ""), qty, price, line, refund))
+                total_sum += line
+                total_refund += refund or 0
+    else:
+        for it in order.get("items", []):
+            qty = it.get("quantity", 0) or 0
+            price = it.get("price", 0) or 0
+            rows.append((it.get("article", ""), it.get("name", ""), qty, price, price * qty, None))
+            total_sum += price * qty
+
+    def _date(value):
+        try:
+            dt = datetime.fromisoformat(str(value).replace("Z", "+00:00"))
+            return f"{dt.day} {RU_MONTHS[dt.month]} {dt.year} г."
+        except Exception:
+            return ""
+
+    doc_no = (return_id or order_id)[:8].upper()
+    doc = Document()
+    doc.styles["Normal"].font.name = "Times New Roman"
+    doc.styles["Normal"].font.size = Pt(11)
+
+    title = doc.add_paragraph()
+    title.alignment = WD_ALIGN_PARAGRAPH.CENTER
+    run = title.add_run(f"Акт возврата товара № В-{doc_no} от {_date(datetime.now().isoformat())}")
+    run.bold = True
+    run.font.size = Pt(14)
+
+    def _line(label, value):
+        p = doc.add_paragraph()
+        p.add_run(f"{label}: ").bold = True
+        p.add_run(value)
+
+    _line("Продавец", f"{s['seller_name']}, ИНН {s['inn']}, КПП {s['kpp']}")
+    buyer = [order.get("full_name") or "", f"тел. {order['phone']}" if order.get("phone") else "", order.get("address") or ""]
+    _line("Покупатель", ", ".join([b for b in buyer if b]) or "____________________")
+    basis = f"Заказ № {order_id[:8]} от {_date(order.get('created_at', ''))}"
+    if order.get("invoice_no"):
+        basis += f", счёт № {order['invoice_no']}"
+    _line("Основание", basis)
+    _line("Вид возврата", "Гарантийный возврат" if is_warranty else "Возврат товара")
+    _line("Причина возврата", "; ".join(reasons) if reasons else "______________________________________________")
+
+    headers = ["№", "Артикул", "Наименование", "Кол-во", "Цена, ₽", "Сумма, ₽", "К возврату, ₽"]
+    table = doc.add_table(rows=1, cols=len(headers))
+    table.style = "Table Grid"
+    for i, h in enumerate(headers):
+        cell = table.rows[0].cells[i]
+        cell.text = ""
+        cell.paragraphs[0].add_run(h).bold = True
+        cell.paragraphs[0].alignment = WD_ALIGN_PARAGRAPH.CENTER
+    for idx, (article, name, qty, price, line, refund) in enumerate(rows, 1):
+        cells = table.add_row().cells
+        values = [str(idx), str(article), str(name), str(qty), fmt_money(price), fmt_money(line), fmt_money(refund) if refund is not None else "—"]
+        for i, v in enumerate(values):
+            cells[i].text = v
+            if i != 2:
+                cells[i].paragraphs[0].alignment = WD_ALIGN_PARAGRAPH.CENTER
+
+    doc.add_paragraph()
+    _line("Всего наименований", f"{len(rows)}, на сумму {fmt_money(total_sum)} ₽")
+    if total_refund > 0:
+        _line("К возврату покупателю", f"{fmt_money(total_refund)} ₽ ({rub_in_words(total_refund)})")
+    else:
+        _line("К возврату покупателю", "______________ ₽")
+    doc.add_paragraph()
+    doc.add_paragraph("Товар сдал (покупатель): ________________ / ____________________ /")
+    doc.add_paragraph()
+    doc.add_paragraph("Товар принял (продавец): ________________ / ____________________ /")
+    doc.add_paragraph()
+    doc.add_paragraph("Дата: «____» ______________ 20____ г.")
+
+    buf = io.BytesIO()
+    doc.save(buf)
+    buf.seek(0)
+    filename = f"Акт_возврата_{doc_no}.docx"
+    return StreamingResponse(
+        buf,
+        media_type="application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+        headers={"Content-Disposition": f"attachment; filename*=UTF-8''{quote(filename)}"},
+    )
 
 
 @router.get("/admin/orders/{order_id}/invoice")

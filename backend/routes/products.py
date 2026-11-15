@@ -211,7 +211,8 @@ async def get_product_filters():
     warehouses = await db.products.distinct("warehouse")
     manufacturers = sorted([m for m in manufacturers if m])
     warehouses = sorted([w for w in warehouses if w])
-    return {"manufacturers": manufacturers, "warehouses": warehouses}
+    regions = sorted([r for r in await db.warehouses.distinct("region") if r])
+    return {"manufacturers": manufacturers, "warehouses": warehouses, "regions": regions}
 
 
 
@@ -350,6 +351,7 @@ async def get_products(
     category_id: Optional[str] = None,
     manufacturer: Optional[str] = None,
     warehouse: Optional[str] = None,
+    region: Optional[str] = None,
     in_stock: Optional[bool] = None,
     price_min: Optional[float] = None,
     price_max: Optional[float] = None,
@@ -372,6 +374,8 @@ async def get_products(
         query["manufacturer"] = manufacturer
     if warehouse:
         query["warehouse"] = warehouse
+    if region:
+        query["stock_regions"] = region
     if in_stock:
         query["stock"] = {"$gt": 0}
     if price_min is not None or price_max is not None:

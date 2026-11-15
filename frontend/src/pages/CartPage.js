@@ -16,6 +16,8 @@ import { trackClick } from '../utils/tracker';
 import { getCartUpsell } from '../utils/productHelpers';
 import { OzonCertificateBar } from '../components/OzonCertificateBar';
 import CryptoPaymentModal from '../components/CryptoPaymentModal';
+import { DeliveryBadge } from '../components/DeliveryBadge';
+import { useRegion } from '../context/RegionContext';
 
 const API = `${process.env.REACT_APP_BACKEND_URL}/api`;
 
@@ -46,6 +48,7 @@ export default function CartPage() {
 
   // Settings
   const [delivery, setDelivery] = useState({ min_free_delivery: 5000, delivery_price: 500, delivery_enabled: true });
+  const { computeDelivery, region: clientRegion } = useRegion();
   const [paymentSettings, setPaymentSettings] = useState({
     card_adjustment: 0, crypto_adjustment: 0, cash_adjustment: 0, balance_adjustment: 0,
     card_enabled: true, crypto_enabled: true, cash_enabled: true, balance_enabled: true,
@@ -141,13 +144,22 @@ export default function CartPage() {
   };
 
   const isFreeDelivery = !delivery.delivery_enabled || goodsAfterIndividual >= delivery.min_free_delivery;
-  const deliveryFee = isFreeDelivery ? 0 : delivery.delivery_price;
+  // Individual delivery cost from the client card overrides the site-wide price (same as the server)
+  const deliveryFee = isFreeDelivery ? 0 : (cart.delivery_cost ?? delivery.delivery_price);
 
   // Pay delivery with bonus points (1 балл = 1 ₽)
   const canPayDeliveryWithPoints = !mixedMode && deliveryFee > 0 && bonusPoints >= Math.round(deliveryFee);
   const deliveryPaidWithPoints = payDeliveryWithPoints && canPayDeliveryWithPoints;
   const moneyDelivery = deliveryPaidWithPoints ? 0 : deliveryFee;
   const finalTotal = goodsAfterIndividual + moneyDelivery;
+
+  // Whole order arrives when its slowest item arrives
+  const orderEta = (() => {
+    const days = cart.items.reduce((m, i) => Math.max(m, computeDelivery(i.stock_regions).days_max || 0), 0);
+    const d = new Date();
+    d.setDate(d.getDate() + days);
+    return d.toLocaleDateString('ru-RU', { day: 'numeric', month: 'long' });
+  })();
 
   // Cart-wide discount is already baked into item.price by backend; derive display amounts.
   const cartDiscountPct = cart.cart_discount?.admin_percent || 0;
@@ -519,6 +531,7 @@ export default function CartPage() {
                           <h3 className="font-semibold text-slate-800 line-clamp-2 mb-1">{item.name}</h3>
                         </Link>
                         <p className="text-xs font-mono text-slate-500">{item.article}</p>
+                        <div className="mt-1.5"><DeliveryBadge stockRegions={item.stock_regions} productId={`cart-${item.product_id}`} /></div>
                       </div>
                       <div className="text-right">
                         <p className={`font-bold text-lg ${item.individual_price != null ? 'text-emerald-600' : item.promo_active ? 'text-rose-600' : item.cart_discount_percent > 0 ? 'text-teal-600' : 'text-teal-600'}`}>{formatPrice(item.price * item.quantity)} <span className="text-sm text-slate-400">₽</span></p>
@@ -669,6 +682,13 @@ export default function CartPage() {
                   <span className="text-slate-500">Товары ({cart.items.length})</span>
                   <span className="text-slate-800">{formatPrice(cartTotal)} ₽</span>
                 </div>
+                <div className="flex justify-between text-sm" data-testid="cart-delivery-eta">
+                  <span className="text-slate-500 flex items-center gap-1"><Truck className="w-3.5 h-3.5" />Весь заказ приедет</span>
+                  <span className="text-slate-800 font-medium">до {orderEta}</span>
+                </div>
+                {!clientRegion && (
+                  <p className="text-[11px] text-amber-600" data-testid="cart-region-hint">Выберите регион в шапке сайта, чтобы срок доставки был точным.</p>
+                )}
                 {mixedMode && (
                   <div className="rounded-2xl bg-gradient-to-br from-amber-50 to-orange-50/60 border border-amber-200/80 p-4 space-y-3" data-testid="mixed-amounts-block">
                     {mixedMethods.length < 2 ? (

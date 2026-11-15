@@ -21,6 +21,7 @@ import DiscountRequestModal from '../components/DiscountRequestModal';
 import ProductRequestModal from '../components/ProductRequestModal';
 import { computeDiscount, computeNewBadge, formatDiscountBadge, formatUntilDate, getQuantityTiers, isProductAvailable, getPromoStock } from '../utils/productHelpers';
 import { DeliveryBadge } from '../components/DeliveryBadge';
+import { useRegion } from '../context/RegionContext';
 import { PromoCountdown } from '../components/PromoCountdown';
 import DiscountPromoBanner from '../components/DiscountPromoBanner';
 import NewProductsBanner from '../components/NewProductsBanner';
@@ -491,6 +492,8 @@ const ProductModalContent = ({
 
 export default function CatalogPage() {
   const [searchParams, setSearchParams] = useSearchParams();
+  const { regions: stockRegionsList, computeDelivery } = useRegion();
+  const deliveryDaysOf = (p) => computeDelivery(p.stock_regions).days_max || 0;
   const [products, setProducts] = useState([]);
   const [alternatives, setAlternatives] = useState([]);
   const [categories, setCategories] = useState([]);
@@ -561,7 +564,7 @@ export default function CatalogPage() {
       // Build filter params
       const filterParams = new URLSearchParams();
       if (filters.manufacturer) filterParams.append('manufacturer', filters.manufacturer);
-      if (filters.warehouse) filterParams.append('warehouse', filters.warehouse);
+      if (filters.warehouse) filterParams.append('region', filters.warehouse);
       if (filters.inStock) filterParams.append('in_stock', 'true');
       if (filters.priceMin) filterParams.append('price_min', filters.priceMin);
       if (filters.priceMax) filterParams.append('price_max', filters.priceMax);
@@ -576,11 +579,11 @@ export default function CatalogPage() {
         // Apply client-side filters to search results
         const applyFilter = (list) => list.filter(p => {
           if (filters.manufacturer && p.manufacturer !== filters.manufacturer) return false;
-          if (filters.warehouse && p.warehouse !== filters.warehouse) return false;
+          if (filters.warehouse && !(p.stock_regions || []).includes(filters.warehouse)) return false;
           if (filters.inStock && !isProductAvailable(p)) return false;
           if (filters.priceMin && p.price < Number(filters.priceMin)) return false;
           if (filters.priceMax && p.price > Number(filters.priceMax)) return false;
-          if (filters.deliveryDays && (p.delivery_days || 3) > Number(filters.deliveryDays)) return false;
+          if (filters.deliveryDays && deliveryDaysOf(p) > Number(filters.deliveryDays)) return false;
           if (filters.hasPhoto && !p.image_url) return false;
           if (filters.hasCross && !p.cross_articles) return false;
           return true;
@@ -626,6 +629,9 @@ export default function CatalogPage() {
           if (batch.length < PAGE) break;
           skip += PAGE;
         }
+        if (filters.deliveryDays) all = all.filter(p => deliveryDaysOf(p) <= Number(filters.deliveryDays));
+        const sortFn = getSortFn(filters.sortBy);
+        if (sortFn) all.sort(sortFn);
         setProducts(all);
         setAlternatives([]);
         const q = {};
@@ -670,7 +676,7 @@ export default function CatalogPage() {
     switch (sortBy) {
       case 'price_asc': return (a, b) => a.price - b.price;
       case 'price_desc': return (a, b) => b.price - a.price;
-      case 'delivery_asc': return (a, b) => (a.delivery_days || 3) - (b.delivery_days || 3);
+      case 'delivery_asc': return (a, b) => deliveryDaysOf(a) - deliveryDaysOf(b);
       default: return null;
     }
   };
@@ -871,7 +877,7 @@ export default function CatalogPage() {
 
               {/* Warehouse */}
               <div>
-                <label className="text-xs font-semibold uppercase text-slate-500 mb-1.5 block">Склад</label>
+                <label className="text-xs font-semibold uppercase text-slate-500 mb-1.5 block">Регион склада</label>
                 <select
                   value={filters.warehouse}
                   onChange={e => setFilters({ ...filters, warehouse: e.target.value })}
@@ -879,7 +885,7 @@ export default function CatalogPage() {
                   data-testid="filter-warehouse"
                 >
                   <option value="">Все</option>
-                  {filterOptions.warehouses.map(w => (
+                  {stockRegionsList.map(w => (
                     <option key={w} value={w}>{w}</option>
                   ))}
                 </select>
@@ -1034,8 +1040,8 @@ export default function CatalogPage() {
                   <select value={filters.manufacturer} onChange={e => setFilters({...filters, manufacturer: e.target.value})} className="w-full h-9 rounded-lg border border-slate-200 bg-white px-2.5 text-sm" data-testid="filter-manufacturer-mobile"><option value="">Все</option>{filterOptions.manufacturers.map(m => <option key={m} value={m}>{m}</option>)}</select>
                 </div>
                 <div>
-                  <label className="text-xs font-semibold uppercase text-slate-500 mb-1 block">Склад</label>
-                  <select value={filters.warehouse} onChange={e => setFilters({...filters, warehouse: e.target.value})} className="w-full h-9 rounded-lg border border-slate-200 bg-white px-2.5 text-sm" data-testid="filter-warehouse-mobile"><option value="">Все</option>{filterOptions.warehouses.map(w => <option key={w} value={w}>{w}</option>)}</select>
+                  <label className="text-xs font-semibold uppercase text-slate-500 mb-1 block">Регион склада</label>
+                  <select value={filters.warehouse} onChange={e => setFilters({...filters, warehouse: e.target.value})} className="w-full h-9 rounded-lg border border-slate-200 bg-white px-2.5 text-sm" data-testid="filter-warehouse-mobile"><option value="">Все</option>{stockRegionsList.map(w => <option key={w} value={w}>{w}</option>)}</select>
                 </div>
                 <div className="flex gap-2">
                   <Input type="number" value={filters.priceMin} onChange={e => setFilters({...filters, priceMin: e.target.value})} placeholder="Цена от" className="h-9 rounded-lg text-sm" />

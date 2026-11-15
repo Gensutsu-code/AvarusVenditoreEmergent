@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import { motion, AnimatePresence } from 'framer-motion';
-import { RefreshCw, ShieldCheck, Package, Check, X, Clock, CheckCircle, XCircle } from 'lucide-react';
+import { RefreshCw, ShieldCheck, Package, Check, X, Clock, CheckCircle, XCircle, FileText } from 'lucide-react';
 import { Button } from '../components/ui/button';
 import { useAuth } from '../context/AuthContext';
 import { toast } from 'sonner';
@@ -68,6 +68,20 @@ export default function AdminReturnsPage() {
       toast.error(e.response?.data?.detail || 'Ошибка');
     } finally {
       setSubmitting(false);
+    }
+  };
+
+  const downloadDoc = async (ret) => {
+    try {
+      const res = await axios.get(`${API}/admin/orders/${ret.order_id}/return-document?return_id=${ret.id}`, { responseType: 'blob' });
+      const url = window.URL.createObjectURL(new Blob([res.data]));
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `Акт_возврата_${ret.id.slice(0, 8)}.docx`;
+      document.body.appendChild(a); a.click(); a.remove();
+      window.URL.revokeObjectURL(url);
+    } catch (e) {
+      toast.error('Ошибка скачивания документа');
     }
   };
 
@@ -307,6 +321,17 @@ export default function AdminReturnsPage() {
                         </div>
                       </div>
                     )}
+
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => downloadDoc(ret)}
+                      className="rounded-xl border-amber-200 text-amber-600 hover:bg-amber-50 mb-3"
+                      data-testid={`return-doc-btn-${ret.id}`}
+                    >
+                      <FileText className="w-4 h-4 mr-2" />
+                      Документ на возврат (Word)
+                    </Button>
 
                     {ret.status === 'pending' && (
                       <div className="flex gap-3">
