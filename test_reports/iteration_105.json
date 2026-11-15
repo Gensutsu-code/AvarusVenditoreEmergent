@@ -1,0 +1,28 @@
+{
+  "summary": "Tested the iteration-105 features (regions directory, warehouse form with map, client /warehouses map page, cart delivery badges + individual delivery_cost, catalog region filter, return document, client-card individual conditions driving credit, unified 'Скидки и акции' tab with its 4 sub-tabs). Backend: new pytest file test_iter105_regions_warehouses_delivery.py — 15/15 pass. Frontend: admin /admin → Склад → inner Склады shows regions-panel with 2 chips (Москва, Ростов); region-new-input + region-add-btn exist and work; warehouse-modal now contains wh-region-select (SELECT with 3 options), wh-phone-input, wh-hours-input, wh-location-picker (leaflet), wh-coords, wh-public-toggle, wh-save-btn (wh-clear-point only renders when a point is picked). Public /warehouses page: warehouses-map-page loads, 3 region chips (Все/Москва/Ростов), 3 warehouse cards, 1 leaflet marker (only one warehouse has coords), map-show-{id} button present; region filter switches to 1 card for Ростов. Client /cart (user@demo.com): delivery-badge-cart-{id} rendered, cart-delivery-eta reads 'Весь заказ приедет до 22 ноября', cart-region-hint visible because no region is selected, region-selector + warehouses-map-link visible in the header. The iteration-104 regression (cart Доставка row showed 500 ₽ while server charged 0) is fixed — the cart now shows Доставка 0 ₽ and К оплате 1 440 ₽, matching the server. Unified 'Скидки и акции' tab exposes all four sub-tabs discounts-subtab-products/promo/cart/banner; promo-cart-discounts-section lists 29 requests; promo-banner-section renders. Backend side-contract fully covered: POST /admin/regions dedup is case-insensitive (400 'Такой регион уже есть в справочнике'), PUT renames and cascades to warehouses + users + stock_regions, DELETE on a region with warehouses returns 400 'Нельзя удалить регион, к которому привязаны склады'. Warehouse form endpoint rejects a region not in the directory (400 'Выберите регион из справочника регионов'), rejects half-coords and out-of-range coords, respects is_public on /warehouses/public. GET /cart returns delivery_cost (0 for user@demo.com) and each item carries stock_regions. PUT /admin/users/{id} with delivery_cost=250 → cart reads 250; with explicit null → cart reads null (site-wide). PUT /admin/users/{id} with credit_limit>0 and deferral_days N → GET /credit/my returns approved + limit + term_days=N; with credit_limit=0 → status 'none'. Negative discount/delivery/deferral/credit_limit all return 400; discount>100 returns 400. GET /admin/orders/{id}/return-document returns a Word doc (content-type openxml, >1 KB) for admin; non-admin 403, unknown order 404, unknown return_id 404. GET /products?region=Москва filters to products whose stock_regions contains that region.",
+  "backend_issues": {"critical": [], "minor": []},
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [],
+    "design_issues": []
+  },
+  "test_report_links": [
+    "/app/backend/tests/test_iter105_regions_warehouses_delivery.py",
+    "/app/test_reports/pytest/iter105.xml"
+  ],
+  "action_items": [],
+  "critical_code_review_comments": [
+    "Still open from iteration 104: AdminPage.js is ~4000 lines and orders.create_order is ~400 lines; promo/floor/payment helpers should be extracted.",
+    "warehouse.update_warehouse recomputes stock_regions for every product that has any stock_level in this warehouse, even when the region is unchanged — cheap guard would be to skip the recompute when the old and new region match.",
+    "/api/warehouses/public returns _id removed but has no cache headers; a 60-second cache would reduce Leaflet-page requests.",
+    "RegionIn has no max-length validation at the Pydantic level (route truncates to 60 chars post-hoc)."
+  ],
+  "updated_files": [
+    "/app/backend/tests/test_iter105_regions_warehouses_delivery.py (new)"
+  ],
+  "success_rate": {"backend": "100% (15/15)", "frontend": "100% (all requested testids present and flows work)"},
+  "seed_data_creation": "Created and deleted (by id) TEST_Region_{tag} / TEST_Casc_{tag}(+_X) / TEST_CoordReg_{tag} regions and TEST_WH_{tag} / TEST_WH_C_{tag} warehouses during the backend run. user@demo.com delivery_cost / individual_discount / deferral_days / credit_limit are saved at test start and restored at the end (restored to delivery_cost=0 and the pre-existing credit values).",
+  "retest_needed": false,
+  "should_main_agent_self_test": true,
+  "context_for_next_testing_agent": "Run the iter105 file alone without xdist because it toggles user@demo.com's delivery_cost / credit fields and creates+deletes regions and warehouses: REACT_APP_BACKEND_URL=... pytest tests/test_iter105_regions_warehouses_delivery.py -p no:xdist -o addopts=''. Existing regions in prod data are Москва (2 warehouses) and Ростов (1). user@demo.com has an existing pending 12% cart-discount request (shown in /cart as 'Запрос скидки 12% на рассмотрении') so request-cart-discount-btn is not rendered — if a test must click it, first approve or reject that request from the admin promo-cart-discounts-section. wh-clear-point only renders after a point is picked on the map, so it does not appear in a freshly opened warehouse-modal."
+}

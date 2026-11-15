@@ -184,9 +184,21 @@ E-commerce platform for truck spare parts with a comprehensive admin panel. Russ
 - Checkout (`CartPage.js`): promo input (testids promo-code-field / promo-code-apply-btn / checkout-promo-discount-line), sent in single-method & crypto payloads (not mixed). Order stores `promo_code` + `promo_code_amount`; `used_count` increments only when discount>0.
 - min_price floor enforced server-side across product discount + tier + individual price + approved cart discount + promo; validate endpoint floor-caps using cart Σ(min_price×qty).
 
+### Регионы, карта складов, доставка в корзине, акт возврата, условия клиента (DONE — iter_105, backend 15/15, frontend testids/flows pass)
+- **Справочник регионов**: коллекция `regions`; `GET/POST /api/admin/regions`, `PUT/DELETE /api/admin/regions/{id}` (переименование каскадом на склады/клиентов/stock_regions; удаление запрещено при привязанных складах). Склад принимает регион только из справочника. UI: `RegionsPanel` на вкладке Склад → Склады; в форме склада `wh-region-select`. `migrate_regions()` на старте.
+- **Карта складов**: склад получил `phone, hours, lat, lng, is_public`; точка ставится кликом по карте (`LocationPicker`, leaflet + OpenStreetMap, без ключей). Публичная страница `/warehouses` (`WarehousesMapPage`, `GET /api/warehouses/public`), ссылка в шапке `warehouses-map-link` (только для вошедших клиентов).
+- **Доставка в корзине**: `GET /api/cart` отдаёт `stock_regions` по позициям и `delivery_cost` клиента; в CartPage бейдж срока/даты по каждой позиции + `cart-delivery-eta`; строка «Доставка» учитывает индивидуальную стоимость (расхождение iter_104 закрыто).
+- **Фильтры каталога**: «Регион склада» (`GET /api/products?region=`), «Срок доставки» и сортировка по скорости считаются по регионной оценке.
+- **Акт возврата (Word)**: `GET /api/admin/orders/{id}/return-document[?return_id=]`; кнопки в /admin/orders и /admin/returns.
+- **Условия клиента**: `PUT /api/admin/users/{id}` — лимит > 0 + дни отсрочки включают реальную отсрочку (`credit_status/credit_term_days`), 0 выключает; `delivery_cost: null` сбрасывает на общую; валидация отрицательных значений.
+- **Вкладка «Скидки и акции»**: добавлены подвкладки «Скидки на корзину» (заявки) и «Акционный баннер».
+- Не проверено кликами в UI: оформление заказа в отсрочку после настройки из карточки, скачивание акта кнопкой, фильтр «Срок доставки» (проверены API/наличие элементов).
+
 ### P1 (Important)
 - Real Payment Gateway Integration (replace MOCKED YuKassa)
-- CartPage/ProductPage display mismatches (pre-existing): cart ignores user's individual `delivery_cost`; payment-method adjustment & tier preview not clamped to min_price in UI (server charges correct floor). Best fixed via a server-computed cart preview.
+- CartPage/ProductPage display mismatches (pre-existing): payment-method adjustment & tier preview not clamped to min_price in UI (server charges correct floor). Best fixed via a server-computed cart preview.
+- Ссылка на карту складов для гостей (сейчас в шапке только для вошедших клиентов).
+- Индивидуальная скидка клиента действует только при оплате с баланса (решение iter 94) — уточнить у пользователя, нужна ли на все способы оплаты.
 
 ### P2 (Enhancement)
 - Decrement promo `used_count` on order cancel; make max_uses check atomic (find_one_and_update)
