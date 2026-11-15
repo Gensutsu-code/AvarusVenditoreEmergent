@@ -4,7 +4,7 @@ import { toast } from 'sonner';
 import { Button } from '../ui/button';
 import { Input } from '../ui/input';
 import { Label } from '../ui/label';
-import { Percent, Ticket, Search, Save, Trash2, Plus, X, Tag, Loader2, Power } from 'lucide-react';
+import { Percent, Ticket, Search, Save, Trash2, Plus, X, Tag, Loader2, Power, Pencil } from 'lucide-react';
 
 const API = `${process.env.REACT_APP_BACKEND_URL}/api`;
 const fmt = (n) => new Intl.NumberFormat('ru-RU').format(Math.round(Number(n) || 0));
@@ -176,7 +176,7 @@ const PromoCodesSection = ({ isDark }) => {
             </div>
             <div className="flex items-center gap-1 ml-auto">
               <button onClick={() => toggleActive(c)} title={c.active ? 'Выключить' : 'Включить'} className={`w-8 h-8 rounded-lg flex items-center justify-center ${c.active ? 'bg-emerald-50 text-emerald-600 hover:bg-emerald-100' : 'bg-slate-100 text-slate-400 hover:bg-slate-200'}`} data-testid={`promo-code-toggle-${c.id}`}><Power className="w-4 h-4" /></button>
-              <button onClick={() => startEdit(c)} className="w-8 h-8 rounded-lg bg-teal-50 text-teal-600 hover:bg-teal-100 flex items-center justify-center" data-testid={`promo-code-edit-${c.id}`}><Save className="w-4 h-4" /></button>
+              <button onClick={() => startEdit(c)} className="w-8 h-8 rounded-lg bg-teal-50 text-teal-600 hover:bg-teal-100 flex items-center justify-center" data-testid={`promo-code-edit-${c.id}`}><Pencil className="w-4 h-4" /></button>
               <button onClick={() => remove(c)} className="w-8 h-8 rounded-lg bg-rose-50 text-rose-500 hover:bg-rose-100 flex items-center justify-center" data-testid={`promo-code-delete-${c.id}`}><Trash2 className="w-4 h-4" /></button>
             </div>
           </div>
@@ -215,7 +215,8 @@ const ProductDiscountsSection = ({ isDark }) => {
   const save = async () => {
     if (!editing) return;
     if (editing.discount_active) {
-      if (!editing.discount_value || editing.discount_value <= 0) { toast.error('Укажите значение скидки'); return; }
+      const hasTier = Array.isArray(editing.discount_tiers) && editing.discount_tiers.some((t) => Number(t.value) > 0);
+      if ((!editing.discount_value || editing.discount_value <= 0) && !hasTier) { toast.error('Укажите значение базовой скидки или хотя бы один оптовый порог'); return; }
       if (!editing.discount_until) { toast.error('Укажите дату окончания акции'); return; }
     }
     setSaving(true);
@@ -227,8 +228,13 @@ const ProductDiscountsSection = ({ isDark }) => {
       discount_description: editing.discount_description || '',
       discount_until: editing.discount_until || null,
       discount_tiers: Array.isArray(editing.discount_tiers) ? editing.discount_tiers : [],
-      promo_allocated_stock: editing.promo_allocated_stock === '' ? null : editing.promo_allocated_stock,
     };
+    // Only send allocated stock when the admin actually changed it, so editing
+    // other fields mid-campaign does not reset promo_remaining_stock.
+    const curAlloc = editing.promo_allocated_stock === '' ? null : editing.promo_allocated_stock;
+    if (curAlloc !== (editing._origAlloc ?? null)) {
+      payload.promo_allocated_stock = curAlloc;
+    }
     try {
       await axios.put(`${API}/products/${editing.id}`, payload);
       toast.success('Скидка сохранена');
@@ -274,7 +280,7 @@ const ProductDiscountsSection = ({ isDark }) => {
                       {p.discount_active ? (p.discount_type === 'amount' ? `−${fmt(p.discount_value)}₽` : `−${p.discount_value}%`) : 'тиры'}
                     </span>
                   )}
-                  <Button size="sm" variant="outline" onClick={() => setEditing({ ...p, discount_type: p.discount_type || 'percent' })} className="flex-shrink-0 border-rose-200 text-rose-600 hover:bg-rose-50" data-testid={`edit-product-discount-${p.id}`}>
+                  <Button size="sm" variant="outline" onClick={() => setEditing({ ...p, discount_type: p.discount_type || 'percent', _origAlloc: p.promo_allocated_stock ?? null })} className="flex-shrink-0 border-rose-200 text-rose-600 hover:bg-rose-50" data-testid={`edit-product-discount-${p.id}`}>
                     <Percent className="w-4 h-4 mr-1" />Скидка
                   </Button>
                 </div>
@@ -298,7 +304,7 @@ const ProductDiscountsSection = ({ isDark }) => {
               if (e.target.checked && !next.discount_type) next.discount_type = 'percent';
               setEditing(next);
             }} className="w-4 h-4 accent-rose-500 rounded" />
-            <span className={`text-sm font-medium ${isDark ? 'text-zinc-300' : 'text-zinc-700'}`}>Базовая скидка включена</span>
+            <span className={`text-sm font-medium ${isDark ? 'text-zinc-300' : 'text-zinc-700'}`}>Скидка / акция активна</span>
           </label>
 
           {editing.discount_active && (

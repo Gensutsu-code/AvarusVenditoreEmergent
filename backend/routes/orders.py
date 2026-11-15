@@ -467,9 +467,10 @@ async def create_order(data: OrderCreate, user=Depends(get_current_user)):
             if err:
                 raise HTTPException(status_code=400, detail=err)
             disc = min(disc, max(0.0, round(goods_total - sum_floors, 2)))
-            promo_code_obj = code_doc
-            promo_code_amount = round(disc, 2)
-            goods_total = max(0.0, round(goods_total - promo_code_amount, 2))
+            if disc > 0:
+                promo_code_obj = code_doc
+                promo_code_amount = round(disc, 2)
+                goods_total = max(0.0, round(goods_total - promo_code_amount, 2))
         # Individual discount stacks on top of promos/tiers, ONLY for balance prepayment
         if pay_with_balance and individual_discount_pct > 0:
             individual_discount_amount = round(goods_total * individual_discount_pct / 100, 2)

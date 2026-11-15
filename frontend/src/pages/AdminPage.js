@@ -417,30 +417,16 @@ export default function AdminPage() {
       return;
     }
 
-    // Validate discount fields if active
-    if (editingProduct.discount_active) {
-      // Normalize missing discount_type (legacy records may have null)
-      if (!editingProduct.discount_type) {
-        editingProduct.discount_type = 'percent';
-      }
-      if (!editingProduct.discount_until) {
-        toast.error('Укажите дату окончания акции');
-        return;
-      }
-      if (!editingProduct.discount_value || editingProduct.discount_value <= 0) {
-        toast.error('Укажите положительное значение скидки');
-        return;
-      }
-      const until = new Date(editingProduct.discount_until);
-      if (isNaN(until.getTime())) {
-        toast.error('Некорректная дата окончания акции');
-        return;
-      }
-    }
+    // Discounts & promo are managed exclusively in the "Скидки и акции" tab.
+    // Strip those fields here so a catalog save never overwrites them with stale values.
+    const {
+      discount_active, discount_type, discount_value, discount_label, discount_description,
+      discount_until, discount_tiers, promo_allocated_stock, promo_remaining_stock,
+      ...productFields
+    } = editingProduct;
 
-    // Normalize delivery_days
     const payload = {
-      ...editingProduct,
+      ...productFields,
       delivery_days: Math.max(0, parseInt(editingProduct.delivery_days) || 0),
     };
 

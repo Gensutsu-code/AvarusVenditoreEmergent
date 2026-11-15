@@ -37,6 +37,37 @@ def _norm_code(code: str) -> str:
     return (code or "").strip().upper()
 
 
+def _validate_code_fields(data):
+    """Shared field validation for create/update."""
+    code = _norm_code(data.code)
+    if not code:
+        raise HTTPException(status_code=400, detail="Код не может быть пустым")
+    if data.type not in ("percent", "amount"):
+        raise HTTPException(status_code=400, detail="Неверный тип скидки")
+    if data.value <= 0:
+        raise HTTPException(status_code=400, detail="Значение скидки должно быть больше 0")
+    if data.type == "percent" and data.value > 100:
+        raise HTTPException(status_code=400, detail="Процент не может быть больше 100")
+    return code
+
+
+async def cart_floor_sum(user_id: str) -> float:
+    """Σ min_price × qty across the user's current cart — the hard floor the goods total cannot go below."""
+    cart = await db.carts.find_one({"user_id": user_id}, {"_id": 0})
+    if not cart or not cart.get("items"):
+        return 0.0
+    ids = [i["product_id"] for i in cart["items"]]
+    prods = await db.products.find({"id": {"$in": ids}}, {"_id": 0, "id": 1, "min_price": 1}).to_list(1000)
+    fm = {p["id"]: p.get("min_price") for p in prods}
+    qty = {i["product_id"]: i["quantity"] for i in cart["items"]}
+    total = 0.0
+    for pid, q in qty.items():
+        fl = fm.get(pid)
+        if fl is not None and fl >= 0:
+            total += float(fl) * q
+    return round(total, 2)
+
+
 async def validate_promo_code(code: str, user_id: str, goods_total: float):
     """Returns (code_doc | None, discount_amount, error_message | None)."""
     norm = _norm_code(code)
@@ -50,8 +81,11 @@ async def validate_promo_code(code: str, user_id: str, goods_total: float):
     vu = doc.get("valid_until")
     if vu:
         try:
-            # compare date-only to be lenient with timezones
-            end = datetime.fromisoformat(str(vu).replace("Z", "+00:00"))
+            s = str(vu)
+            # Date-only values (YYYY-MM-DD from the admin UI) are valid through the end of that day
+            if len(s) == 10:
+                s = s + "T23:59:59"
+            end = datetime.fromisoformat(s.replace("Z", "+00:00"))
             if end.tzinfo is None:
                 end = end.replace(tzinfo=timezone.utc)
             if datetime.now(timezone.utc) > end:
@@ -66,7 +100,9 @@ async def validate_promo_code(code: str, user_id: str, goods_total: float):
         return None, 0.0, "Лимит использований промокода исчерпан"
     per_user = int(doc.get("per_user_limit") or 0)
     if per_user > 0:
-        used_by_user = await db.orders.count_documents({"user_id": user_id, "promo_code": norm})
+        used_by_user = await db.orders.count_documents(
+            {"user_id": user_id, "promo_code": norm, "status": {"$ne": "cancelled"}}
+        )
         if used_by_user >= per_user:
             return None, 0.0, "Вы уже использовали этот промокод"
     # compute discount
@@ -82,15 +118,21 @@ async def validate_promo_code(code: str, user_id: str, goods_total: float):
 
 @router.post("/promo-codes/validate")
 async def validate_code(data: PromoValidateIn, user=Depends(get_current_user)):
-    doc, disc, err = await validate_promo_code(data.code, user["id"], float(data.goods_total or 0))
+    goods_total = float(data.goods_total or 0)
+    doc, disc, err = await validate_promo_code(data.code, user["id"], goods_total)
     if err:
         return {"valid": False, "message": err, "discount": 0}
+    # Floor-cap against the cart's Σ min_price × qty so the preview matches the actual charge
+    floor = await cart_floor_sum(user["id"])
+    disc = min(disc, max(0.0, round(goods_total - floor, 2)))
+    if disc <= 0:
+        return {"valid": False, "message": "Промокод не даёт скидку для текущего состава корзины", "discount": 0}
     return {
         "valid": True,
         "code": doc["code"],
         "type": doc.get("type", "percent"),
         "value": doc.get("value", 0),
-        "discount": disc,
+        "discount": round(disc, 2),
         "message": f"Промокод применён: −{disc:.0f} ₽",
     }
 
@@ -111,15 +153,7 @@ async def list_promo_codes(user=Depends(get_current_user)):
 @router.post("/admin/promo-codes")
 async def create_promo_code(data: PromoCodeIn, user=Depends(get_current_user)):
     _require_admin(user)
-    code = _norm_code(data.code)
-    if not code:
-        raise HTTPException(status_code=400, detail="Код не может быть пустым")
-    if data.type not in ("percent", "amount"):
-        raise HTTPException(status_code=400, detail="Неверный тип скидки")
-    if data.value <= 0:
-        raise HTTPException(status_code=400, detail="Значение скидки должно быть больше 0")
-    if data.type == "percent" and data.value > 100:
-        raise HTTPException(status_code=400, detail="Процент не может быть больше 100")
+    code = _validate_code_fields(data)
     if await db.promo_codes.find_one({"code": code}):
         raise HTTPException(status_code=400, detail="Промокод с таким кодом уже существует")
     doc = {
@@ -147,9 +181,7 @@ async def update_promo_code(code_id: str, data: PromoCodeIn, user=Depends(get_cu
     existing = await db.promo_codes.find_one({"id": code_id}, {"_id": 0})
     if not existing:
         raise HTTPException(status_code=404, detail="Промокод не найден")
-    code = _norm_code(data.code)
-    if not code:
-        raise HTTPException(status_code=400, detail="Код не может быть пустым")
+    code = _validate_code_fields(data)
     dup = await db.promo_codes.find_one({"code": code, "id": {"$ne": code_id}})
     if dup:
         raise HTTPException(status_code=400, detail="Промокод с таким кодом уже существует")

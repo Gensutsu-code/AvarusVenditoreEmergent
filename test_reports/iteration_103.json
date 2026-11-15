@@ -1,0 +1,53 @@
+{
+  "summary": "Tested the new 'Скидки и акции' admin tab, promo codes, checkout and orders end to end. Backend pytest: 14 of 16 passed. Admin UI: tab and both sub-tabs work; promo code create/toggle/edit/delete works; product discount editor saves the discount, end date and tiers, and they show again on reopen; the product edit card has no discount UI. Checkout: promo applies, the 'Промокод' line shows, and the promo block is hidden in mixed mode. The order saves promo_code and promo_code_amount, used_count goes up, the per-client limit works, and the backend rejects promo with mixed payment (400). The min_price floor holds on the server. Found 1 critical data-loss bug (saving a product in the Каталог tab reverts discount changes made in the new tab). Found 1 high bug (the cart shows a promo discount bigger than the server charges when the floor applies). Also several minor bugs.",
+  "backend_issues": {
+    "critical": [],
+    "minor": [
+      {"endpoint": "PUT /api/admin/promo-codes/{id}", "issue": "Has none of POST's checks: accepts value=500 with type=percent (test returned 200), value<=0, and any type string. Validation only exists in create_promo_code."},
+      {"endpoint": "POST /api/promo-codes/validate + create_order", "issue": "A date-only valid_until (the UI sends 'YYYY-MM-DD') is read as 00:00 UTC, so a code 'действует до' today is already reported as expired ('Срок действия промокода истёк') for the whole day. It should be compared as end of day."},
+      {"endpoint": "validate_promo_code per_user_limit", "issue": "Counts every order with this promo_code, cancelled ones included. When an order is cancelled, used_count is not decremented and the client stays blocked ('Вы уже использовали этот промокод'). Confirmed after cancelling order 4e0648d0."},
+      {"endpoint": "create_order promo", "issue": "When the floor is fully hit (promo_code_amount=0), the code is still saved on the order, used_count goes up and the per-user use is spent, even though the client got no discount."},
+      {"endpoint": "create_order promo", "issue": "The max_uses check and the used_count $inc are not atomic, so parallel orders can go over max_uses."},
+      {"endpoint": "PUT /api/products/{id} (discount editor payload)", "issue": "1) The new tab sends promo_allocated_stock without promo_remaining_stock, so every discount save resets promo_remaining_stock back to the allocated amount (the counter is wiped). 2) update_product drops None values, so you cannot clear discount_until or promo_allocated_stock ('Пусто — без лимита' does nothing)."},
+      {"endpoint": "orders items", "issue": "Item prices are saved before the promo (e.g. 1067×2=2134) while the total is 1900. Returns and partial refunds based on item price could refund more than the client paid."}
+    ]
+  },
+  "frontend_issues": {
+    "ui_bugs": [
+      {"component": "AdminPage product edit dialog (Каталог)", "issue": "Data loss, reproduced in UI: change a discount in 'Скидки и акции' (3% -> 7%), then open the same product in Каталог and click Сохранить. The discount goes back to 3%. openEditProduct uses the stale products list (loaded once on mount), and handleSaveProduct sends the whole object, including old discount_* and discount_tiers. Fix: re-fetch the product when opening the edit dialog, or remove the discount_* and discount_tiers fields from the catalog save payload. Updating the parent products state after a DiscountsPromoTab save would also help.", "selector": "[data-testid=edit-{id}]", "priority": "CRITICAL"},
+      {"component": "CartPage promo summary", "issue": "The UI shows the uncapped promo amount. Example: −320 ₽ and 'К оплате' 2 314 ₽, but the server capped the promo at the min_price floor (−234) and the order total was 1 900 ₽. The validate endpoint ignores the floor and the frontend does not cap it. validate should return a floor-capped discount (it can read the cart's Σ min_price × qty).", "selector": "[data-testid=checkout-promo-discount-line], [data-testid=checkout-total]", "priority": "HIGH"},
+      {"component": "CartPage delivery row", "issue": "Ignores the user's individual delivery_cost (user@demo.com has 0). The cart showed 500 ₽ delivery but the server charged 0. This is older than this iteration, but it adds to the gap between the cart total and the real total.", "selector": "[data-testid=delivery-fee-row]", "priority": "MEDIUM"},
+      {"component": "CartPage mixed toggle", "issue": "Turning mixed mode on and then off silently drops the applied promo, so the user must re-enter it. Acceptable, but consider showing a toast.", "selector": "[data-testid=mixed-payment-toggle]", "priority": "LOW"},
+      {"component": "DiscountsPromoTab product editor", "issue": "The wholesale tiers section only shows when 'Базовая скидка включена' is checked. Admins cannot set tiers-only discounts, although the list badge supports a 'тиры' state.", "selector": "[data-testid=editor-add-tier-btn]", "priority": "MEDIUM"}
+    ],
+    "integration_issues": [],
+    "design_issues": [
+      {"screen": "Промокоды list", "issues": ["The edit button uses the Save (floppy) icon instead of Pencil, which is confusing next to the Power and Trash icons", "The 'Действует до' fields in the promo form and the discount editor use the browser's native date picker (mm/dd/yyyy on an English locale) instead of the shadcn Calendar"]},
+      {"screen": "Product edit dialog", "issues": ["After the discount section was removed, the right column is mostly empty (just the Уценённый toggle), which leaves an unbalanced layout"]}
+    ]
+  },
+  "test_report_links": ["/app/backend/tests/test_promo_codes.py", "/app/test_reports/pytest/promo_codes.xml"],
+  "action_items": [
+    "CRITICAL: stop the Каталог product save from overwriting discount_* and discount_tiers with stale values (re-fetch on open, or leave discount fields out of the payload)",
+    "HIGH: make /api/promo-codes/validate return a floor-capped discount (Σ min_price×qty of the cart) so the cart total matches the order total",
+    "Add create-style validation to PUT /api/admin/promo-codes/{id}",
+    "Treat a date-only valid_until as valid through the end of that day",
+    "Leave cancelled orders out of the per_user_limit count and decrement used_count when a promo order is cancelled; don't spend the code when promo_code_amount=0; make the max_uses check atomic",
+    "Discount editor: don't reset promo_remaining_stock unless promo_allocated_stock changed; allow clearing discount_until and promo_allocated_stock",
+    "Show tiers even when the base discount is off; use a Pencil icon for promo edit; consider the shadcn Calendar",
+    "CartPage: account for user.delivery_cost when computing delivery"
+  ],
+  "critical_code_review_comments": [
+    "AdminPage.js is about 4000 lines; it should be split",
+    "routes/orders.py create_order is about 400 lines; promo and floor logic could move into a helper",
+    "validate_promo_code is shared by validate and create_order, which is good, but the floor cap lives only in create_order, so the preview and the actual charge differ",
+    "Promo is also sent on the crypto flow (CartPage line 279), which is fine because it is single-method, but untested"
+  ],
+  "updated_files": ["/app/backend/tests/test_promo_codes.py"],
+  "success_rate": {"backend": "87.5% (14/16)", "frontend": "85% (all requested flows work; 1 critical data-loss bug, 1 high display bug)"},
+  "seed_data_creation": "Temporary TEST_ products, TEST* promo codes and TESTUI15 were created and then deleted. Test orders for user@demo.com (full_name TEST_User / TEST_User Promo) were created and cancelled. user@demo.com's original cart item (8cd5b1c5..., qty 1) was restored. SAVE10 is untouched.",
+  "retest_needed": true,
+  "should_main_agent_self_test": false,
+  "context_for_next_testing_agent": "Run: pytest /app/backend/tests/test_promo_codes.py -p no:xdist -o addopts=''. Payment adjustments: card +10, cash −10, crypto −15. user@demo.com has individual_discount 10, delivery_cost 0 and a pending 12% cart discount request (not ours). To reproduce the stale overwrite: in admin, change a discount in the new tab, then in the same session open Каталог -> edit-{id} -> Сохранить and GET the product.",
+  "rca of the issue": "Stale overwrite: AdminPage fetches products once in fetchData; DiscountsPromoTab PUTs directly and never updates the parent state; handleSaveProduct sends ...editingProduct (all fields), so old discount values overwrite the new ones. UI promo mismatch: /promo-codes/validate computes the discount from goods_total only; create_order then caps it with sum_floors, which the UI never learns."
+}
