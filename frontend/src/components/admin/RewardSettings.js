@@ -18,13 +18,13 @@ const SYSTEMS = [
 
 export const RewardSettings = () => {
   const [settings, setSettings] = useState(null);
-  const [targets, setTargets] = useState({ categories: [], warehouses: [] });
+  const [targets, setTargets] = useState({ categories: [], warehouses: [], manufacturers: [] });
   const [saving, setSaving] = useState(false);
 
   useEffect(() => {
     axios.get(`${API}/admin/rewards/settings`).then((r) => setSettings(r.data)).catch(() => toast.error('Не удалось загрузить настройки вознаграждений'));
-    Promise.all([axios.get(`${API}/categories`), axios.get(`${API}/admin/warehouses`)])
-      .then(([c, w]) => setTargets({ categories: c.data || [], warehouses: w.data || [] }))
+    Promise.all([axios.get(`${API}/categories`), axios.get(`${API}/admin/warehouses`), axios.get(`${API}/products/filters`)])
+      .then(([c, w, f]) => setTargets({ categories: c.data || [], warehouses: w.data || [], manufacturers: (f.data.manufacturers || []).map((m) => ({ id: m, name: m })) }))
       .catch(() => {});
   }, []);
 

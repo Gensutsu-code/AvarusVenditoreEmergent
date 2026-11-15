@@ -629,12 +629,33 @@ async def manager_orders(user=Depends(get_current_user)):
     _manager(user)
     clients = {c["id"]: c for c in await db.users.find({"manager_id": user["id"], "role": "user"}, {"_id": 0, "id": 1, "name": 1, "email": 1}).to_list(2000)}
     orders = await db.orders.find({"$or": [{"manager_id": user["id"]}, {"user_id": {"$in": list(clients)}}]}, {"_id": 0}).sort("created_at", -1).to_list(1000)
+    from database import manager_commission_percent
+    cost_map, fallback = await _cost_maps(orders)
+    cur_pct = await manager_commission_percent(user["id"]) or 0
+    for o in orders:
+        items = o.get("items", [])
+        counted = o.get("manager_id") == user["id"] and o.get("status") != "cancelled"
+        raw = sum((i.get("price") or 0) * (i.get("quantity") or 0) for i in items)
+        delivery = 0 if o.get("delivery_points_used") else (o.get("delivery_fee") or 0)
+        k = max(0.0, (o.get("total") or 0) - delivery) / raw if raw > 0 else 0
+        pct = o.get("manager_commission_percent")
+        pct = cur_pct if pct is None else pct
+        total = 0.0
+        for i in items:
+            qty = i.get("quantity") or 0
+            cost = cost_map.get((o["id"], i.get("product_id")))
+            if cost is None:
+                cost = fallback.get(i.get("product_id"), 0) * qty
+            i["_commission"] = round(((i.get("price") or 0) * qty * k - cost) * pct / 100, 2) if counted else None
+            total += i["_commission"] or 0
+        o["_commission"] = round(max(0.0, total), 2) if counted else None
     return [{
+        "commission": o["_commission"],
         "id": o["id"], "created_at": o.get("created_at"), "status": o.get("status"), "total": o.get("total"), "paid": o.get("paid"),
         "payment_method": o.get("payment_method"), "client_name": (clients.get(o["user_id"]) or {}).get("name") or o.get("full_name"),
         "user_id": o["user_id"], "address": o.get("address"), "phone": o.get("phone"), "comment": o.get("comment"),
         "created_by_manager": bool(o.get("created_by_manager_id")),
-        "items": [{"name": i.get("name"), "article": i.get("article"), "quantity": i.get("quantity"), "price": i.get("price")} for i in o.get("items", [])],
+        "items": [{"name": i.get("name"), "article": i.get("article"), "quantity": i.get("quantity"), "price": i.get("price"), "commission": i["_commission"]} for i in o.get("items", [])],
     } for o in orders]
 
 
@@ -648,7 +669,13 @@ async def manager_products(search: str = "", in_stock: bool = False, user=Depend
         q["$or"] = [{"name": rx}, {"article": rx}, {"cross_articles": rx}, {"manufacturer": rx}]
     if in_stock:
         q["stock"] = {"$gt": 0}
-    return await db.products.find(q, PRODUCT_PUBLIC).sort("name", 1).to_list(300)
+    from database import manager_commission_percent
+    pct = await manager_commission_percent(user["id"]) or 0
+    products = await db.products.find(q, {**PRODUCT_PUBLIC, "purchase_price": 1}).sort("name", 1).to_list(300)
+    for p in products:
+        # manager's earning per unit at list price: his percent of (price - purchase cost)
+        p["commission"] = round(max(0.0, (p.get("price") or 0) - (p.pop("purchase_price", 0) or 0)) * pct / 100, 2)
+    return products
 
 
 class ManagerOrderItem(BaseModel):

@@ -50,10 +50,11 @@ export const ManagerOrdersTab = () => {
             <span className="text-xs text-slate-400">{new Date(o.created_at).toLocaleDateString('ru-RU')}</span>
             <span className="text-[11px] px-2 py-0.5 rounded-full bg-slate-100 text-slate-500">{STATUS[o.status] || o.status}</span>
             <span className="text-sm font-semibold text-slate-800 w-24 text-right">{money(o.total)}</span>
+            {o.commission != null && <span className="text-xs font-semibold text-emerald-600 w-28 text-right" data-testid={`manager-order-commission-${o.id}`}>ваш доход {money(o.commission)}</span>}
           </button>
           {open === o.id && (
             <div className="px-11 pb-3 text-sm text-slate-600 space-y-1">
-              {o.items.map((i, idx) => <div key={idx} className="flex gap-3"><span className="flex-1 truncate">{i.name} <span className="font-mono text-[11px] text-slate-400">{i.article}</span></span><span>{i.quantity} шт. × {money(i.price)}</span></div>)}
+              {o.items.map((i, idx) => <div key={idx} className="flex gap-3"><span className="flex-1 truncate">{i.name} <span className="font-mono text-[11px] text-slate-400">{i.article}</span></span><span>{i.quantity} шт. × {money(i.price)}</span>{i.commission != null && <span className="w-24 text-right font-semibold text-emerald-600" data-testid={`manager-order-${o.id}-item-${idx}-commission`}>+{money(i.commission)}</span>}</div>)}
               <p className="text-xs text-slate-400 pt-1">{o.address}{o.phone ? ` · ${o.phone}` : ''}{o.comment ? ` · ${o.comment}` : ''}</p>
             </div>
           )}
@@ -75,7 +76,7 @@ export const ManagerCatalogTab = ({ clients }) => {
   const load = useCallback(() => axios.get(`${API}/manager/products`, { params: { search, in_stock: inStock } }).then((r) => setProducts(r.data)).catch(err), [search, inStock]);
   useEffect(() => { const t = setTimeout(load, 300); return () => clearTimeout(t); }, [load]);
 
-  const add = (p) => setDraft((d) => (d.find((x) => x.id === p.id) ? d.map((x) => (x.id === p.id ? { ...x, quantity: Math.min(x.quantity + 1, p.stock) } : x)) : [...d, { id: p.id, name: p.name, article: p.article, price: p.price, stock: p.stock, quantity: 1 }]));
+  const add = (p) => setDraft((d) => (d.find((x) => x.id === p.id) ? d.map((x) => (x.id === p.id ? { ...x, quantity: Math.min(x.quantity + 1, p.stock) } : x)) : [...d, { id: p.id, name: p.name, article: p.article, price: p.price, stock: p.stock, commission: p.commission || 0, quantity: 1 }]));
   const qty = (id, delta) => setDraft((d) => d.map((x) => (x.id === id ? { ...x, quantity: Math.max(1, Math.min(x.stock, x.quantity + delta)) } : x)));
   const pickClient = (id) => { const c = clients.find((x) => x.id === id); setForm({ ...form, user_id: id, phone: c?.phone || form.phone }); };
   const submit = async () => {
@@ -109,6 +110,7 @@ export const ManagerCatalogTab = ({ clients }) => {
                 </div>
                 <span className={`text-xs font-semibold w-20 text-right ${p.stock > 0 ? 'text-emerald-600' : 'text-rose-500'}`}>{p.stock > 0 ? `${p.stock} шт.` : 'нет'}</span>
                 <span className="text-sm font-semibold text-slate-800 w-24 text-right">{money(p.price)}</span>
+                <span className="text-xs font-semibold text-emerald-600 w-24 text-right" title="Ваш заработок с одной штуки по цене прайса" data-testid={`manager-product-commission-${p.id}`}>+{money(p.commission)}</span>
                 <Button size="sm" onClick={() => add(p)} disabled={!(p.stock > 0)} className="bg-teal-500 hover:bg-teal-600 text-white" data-testid={`manager-add-product-${p.id}`}><Plus className="w-4 h-4" /></Button>
               </div>
             ))}
@@ -127,6 +129,7 @@ export const ManagerCatalogTab = ({ clients }) => {
           {draft.map((x) => (
             <div key={x.id} className="flex items-center gap-2 text-sm" data-testid={`manager-draft-${x.id}`}>
               <span className="flex-1 truncate text-slate-700">{x.name}</span>
+              <span className="text-xs font-semibold text-emerald-600 whitespace-nowrap" data-testid={`manager-draft-commission-${x.id}`}>+{money(x.commission * x.quantity)}</span>
               <button onClick={() => qty(x.id, -1)} className="p-1 rounded border border-slate-200"><Minus className="w-3 h-3" /></button>
               <span className="w-7 text-center font-semibold">{x.quantity}</span>
               <button onClick={() => qty(x.id, 1)} className="p-1 rounded border border-slate-200"><Plus className="w-3 h-3" /></button>
@@ -134,7 +137,7 @@ export const ManagerCatalogTab = ({ clients }) => {
             </div>
           ))}
         </div>
-        {draft.length > 0 && <p className="text-sm text-slate-500 mb-3">По прайсу: <b className="text-slate-800">{money(draft.reduce((s, x) => s + x.price * x.quantity, 0))}</b>. Итог со скидками и доставкой клиента посчитается при оформлении.</p>}
+        {draft.length > 0 && <p className="text-sm text-slate-500 mb-3">По прайсу: <b className="text-slate-800">{money(draft.reduce((s, x) => s + x.price * x.quantity, 0))}</b>. Итог со скидками и доставкой клиента посчитается при оформлении.<br />Ваш заработок по прайсу: <b className="text-emerald-600" data-testid="manager-draft-commission-total">{money(draft.reduce((s, x) => s + x.commission * x.quantity, 0))}</b> — скидки клиента его уменьшат.</p>}
         <div className="space-y-2">
           <select value={form.payment_method} onChange={(e) => setForm({ ...form, payment_method: e.target.value })} className={sel} data-testid="manager-order-payment">
             {Object.entries(PAY).map(([k, v]) => <option key={k} value={k}>{v}</option>)}

@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import axios from 'axios';
-import { Plus, Trash2, Package, FolderTree, Warehouse } from 'lucide-react';
+import { Plus, Trash2, Package, FolderTree, Warehouse, Tag } from 'lucide-react';
 import { toast } from 'sonner';
 import { Input } from '../ui/input';
 import { Button } from '../ui/button';
@@ -10,6 +10,7 @@ const TYPES = {
   product: { label: 'Товар', icon: Package },
   category: { label: 'Группа товаров', icon: FolderTree },
   warehouse: { label: 'Склад', icon: Warehouse },
+  manufacturer: { label: 'Бренд', icon: Tag },
 };
 const selectCls = 'h-9 rounded-xl border border-slate-200 bg-white px-3 text-sm text-slate-800';
 
@@ -53,7 +54,7 @@ export const RewardRulesEditor = ({ systemKey: k, rules, targets, rateLabel, onC
   const [type, setType] = useState('product');
   const [target, setTarget] = useState(null);
   const [percent, setPercent] = useState('');
-  const list = type === 'category' ? targets.categories : targets.warehouses;
+  const list = { category: targets.categories, warehouse: targets.warehouses, manufacturer: targets.manufacturers }[type] || [];
 
   const add = () => {
     if (!target) { toast.error('Выберите, к чему применить ставку'); return; }
@@ -65,8 +66,8 @@ export const RewardRulesEditor = ({ systemKey: k, rules, targets, rateLabel, onC
 
   return (
     <div data-testid={`reward-${k}-rules`}>
-      <h3 className="text-sm font-bold text-slate-800">Пониженные ставки</h3>
-      <p className="text-xs text-slate-500 mb-3">Для отдельных товаров, групп и складов. Если подходит несколько правил — применяется самая низкая ставка. 0% = не начислять.</p>
+      <h3 className="text-sm font-bold text-slate-800">Особые ставки</h3>
+      <p className="text-xs text-slate-500 mb-3">Пониженные — для отдельных товаров, групп и складов: из подходящих применяется самая низкая. Ставка бренда может быть и повышенной — она заменяет базовую и главнее остальных правил. 0% = не начислять.</p>
 
       <div className="grid grid-cols-1 md:grid-cols-[160px_1fr_130px_auto] gap-2 items-center p-3 rounded-xl bg-slate-50 border border-slate-200">
         <select value={type} onChange={(e) => { setType(e.target.value); setTarget(null); }} className={selectCls} data-testid={`reward-${k}-rule-type`}>

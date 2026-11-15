@@ -281,3 +281,8 @@ E-commerce platform for truck spare parts with a comprehensive admin panel. Russ
 - P1: print layout refinement for return document
 - P2: reward rules by manufacturer / client-specific rates; expiry of points/cashback; spend limit for points
 - P2: useEffect dependency warnings in old components
+
+## Manager earnings per product + brand reward rates (June 2026)
+- `/api/manager/products` returns `commission` (₽ per unit at list price = manager % × (price − purchase_price)); `/api/manager/orders` returns `commission` per item and per order (only orders counted for the manager, snapshot % from order). Shown in ManagerSales.js: catalog, order draft (per line + total), client orders list. Purchase price itself is still not returned.
+- Reward rules: new type `manufacturer` (brand, matched case-insensitively by product.manufacturer). Brand rate may be lower or higher and overrides base rate and all other rules. UI: RewardRulesEditor «Бренд».
+- Self-tested via curl + screenshot (no testing agent run). Note: standard manager commission in site settings is currently 0%, so earnings show 0 ₽ until a percent is set.

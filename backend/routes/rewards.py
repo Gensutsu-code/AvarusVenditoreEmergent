@@ -57,7 +57,7 @@ def _clean_system(key: str, raw: dict) -> dict:
         })
     out["tiers"].sort(key=lambda t: t["from"])
     for r in raw.get("rules") or []:
-        if r.get("type") not in ("product", "category", "warehouse") or not r.get("target_id"):
+        if r.get("type") not in ("product", "category", "warehouse", "manufacturer") or not r.get("target_id"):
             continue
         out["rules"].append({
             "id": r.get("id") or str(uuid.uuid4()),
@@ -116,6 +116,11 @@ def _item_rate(cfg: dict, base: float, item: dict, product: dict, has_promo_code
         or (item.get("cart_discount_percent") or 0) > 0
     ):
         return 0.0
+    brand = (product.get("manufacturer") or "").strip().lower()
+    for r in cfg["rules"]:
+        # a brand rate (lower or higher) overrides the base rate and every other rule
+        if r["type"] == "manufacturer" and brand and r["target_id"].strip().lower() == brand:
+            return r["percent"]
     warehouses = {k for k, v in (product.get("warehouse_stock") or {}).items() if (v or 0) > 0}
     rate = base
     for r in cfg["rules"]:
@@ -150,7 +155,7 @@ async def compute_order_reward(user: dict, items: list, goods_total: float, prom
     scale = (goods_total / lines_sum) if lines_sum > 0 else 1
     pids = [i.get("product_id") for i in items]
     products = await db.products.find(
-        {"id": {"$in": pids}}, {"_id": 0, "id": 1, "category_id": 1, "warehouse_stock": 1, "bonus_eligible": 1}
+        {"id": {"$in": pids}}, {"_id": 0, "id": 1, "category_id": 1, "warehouse_stock": 1, "bonus_eligible": 1, "manufacturer": 1}
     ).to_list(1000)
     pmap = {p["id"]: p for p in products}
     base = _base_rate(cfg, user.get("customer_status", "retail"), goods_total)
