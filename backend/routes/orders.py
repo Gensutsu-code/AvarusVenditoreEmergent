@@ -19,6 +19,8 @@ router = APIRouter(tags=["orders"])
 
 async def _restore_order_stock(order):
     """Restore stock for a cancelled/returned order. Uses per-warehouse allocations when available."""
+    from routes.rewards import refund_order_cashback
+    await refund_order_cashback(order)
     allocs = order.get("stock_allocations")
     if allocs:
         for a in allocs:
@@ -448,6 +450,7 @@ async def _compute_order_pricing(data, user, cart):
     # Pay delivery with bonus points (1 point = 1 ₽)
     pay_delivery_with_points = bool(getattr(data, 'pay_delivery_with_points', False))
     delivery_points_used = 0
+    cashback_used = 0.0
 
     if parts:
         # MIXED PAYMENT: amounts are in base-goods terms; each method's adjustment
@@ -525,15 +528,18 @@ async def _compute_order_pricing(data, user, cart):
             goods_total = max(0.0, round(goods_total - individual_discount_amount, 2))
         delivery_fee = delivery_price if (delivery_enabled and goods_total < min_free) else 0
         money_delivery = 0 if (pay_delivery_with_points and delivery_fee > 0) else delivery_fee
-        total = round(goods_total + money_delivery, 2)
-        ozon_base = goods_total
+        if float(getattr(data, 'use_cashback', 0) or 0) > 0:
+            from routes.rewards import cashback_spend_limit
+            cashback_used = await cashback_spend_limit(user, goods_total, float(data.use_cashback))
+        total = round(goods_total - cashback_used + money_delivery, 2)
+        ozon_base = round(goods_total - cashback_used, 2)
         if pay_with_balance:
             balance_to_deduct = total
         elif payment_method == "card":
             card_part = total
         elif payment_method == "cash":
             cash_part = total
-    return {"base_subtotal": base_subtotal, "sum_floors": sum_floors, "active_cart_discount": active_cart_discount, "balance_to_deduct": balance_to_deduct, "card_part": card_part, "cart_discount_amount": cart_discount_amount, "cart_discount_pct": cart_discount_pct, "cash_part": cash_part, "delivery_fee": delivery_fee, "delivery_points_used": delivery_points_used, "goods_total": goods_total, "individual_discount_amount": individual_discount_amount, "individual_discount_pct": individual_discount_pct, "is_deferral": is_deferral, "is_mixed": is_mixed, "items": items, "ozon_base": ozon_base, "paid_from_balance": paid_from_balance, "pay_delivery_with_points": pay_delivery_with_points, "pay_later": pay_later, "pay_with_balance": pay_with_balance, "payment_adjustment": payment_adjustment, "payment_adjustments": payment_adjustments, "payment_method": payment_method, "payment_parts_out": payment_parts_out, "products_map": products_map, "promo_code_amount": promo_code_amount, "promo_code_obj": promo_code_obj, "subtotal": subtotal, "total": total, "used_individual_price_product_ids": used_individual_price_product_ids}
+    return {"cashback_used": cashback_used, "base_subtotal": base_subtotal, "sum_floors": sum_floors, "active_cart_discount": active_cart_discount, "balance_to_deduct": balance_to_deduct, "card_part": card_part, "cart_discount_amount": cart_discount_amount, "cart_discount_pct": cart_discount_pct, "cash_part": cash_part, "delivery_fee": delivery_fee, "delivery_points_used": delivery_points_used, "goods_total": goods_total, "individual_discount_amount": individual_discount_amount, "individual_discount_pct": individual_discount_pct, "is_deferral": is_deferral, "is_mixed": is_mixed, "items": items, "ozon_base": ozon_base, "paid_from_balance": paid_from_balance, "pay_delivery_with_points": pay_delivery_with_points, "pay_later": pay_later, "pay_with_balance": pay_with_balance, "payment_adjustment": payment_adjustment, "payment_adjustments": payment_adjustments, "payment_method": payment_method, "payment_parts_out": payment_parts_out, "products_map": products_map, "promo_code_amount": promo_code_amount, "promo_code_obj": promo_code_obj, "subtotal": subtotal, "total": total, "used_individual_price_product_ids": used_individual_price_product_ids}
 
 
 class CartPreviewIn(BaseModel):
@@ -542,6 +548,7 @@ class CartPreviewIn(BaseModel):
     payment_parts: Optional[List[dict]] = None
     pay_delivery_with_points: Optional[bool] = False
     promo_code: Optional[str] = None
+    use_cashback: Optional[float] = 0
 
 
 @router.post("/cart/preview")
@@ -562,6 +569,7 @@ async def cart_preview(data: CartPreviewIn, user=Depends(get_current_user)):
         "delivery_fee": p["delivery_fee"],
         "delivery_paid_with_points": bool(p["pay_delivery_with_points"] and p["delivery_fee"] > 0),
         "total": p["total"],
+        "cashback_used": p["cashback_used"],
         "payment_parts": p["payment_parts_out"],
         "items": [{"product_id": i["product_id"], "price": i["price"], "quantity": i["quantity"]} for i in p["items"]],
     }
@@ -622,27 +630,12 @@ async def create_order(data: OrderCreate, user=Depends(get_current_user)):
             raise HTTPException(status_code=400, detail=f"Недостаточно баллов для оплаты доставки ({need} баллов)")
         delivery_points_used = need
 
-    # Ozon certificate: +500₽ per full 10 000₽ of (adjusted) goods
-    # Ozon certificate: configurable reward per tranche of (adjusted) goods
-    ozon_cfg = await db.settings.find_one({"key": "ozon_certificate_settings"})
-    ozon_vals = (ozon_cfg or {}).get("value", {})
-    ozon_enabled = ozon_vals.get("ozon_enabled", True)
-    ozon_step = max(1, int(ozon_vals.get("ozon_step", 10000) or 10000))
-    ozon_reward = max(0, int(ozon_vals.get("ozon_reward", 500) or 500))
-    ozon_certificate = (int(ozon_base // ozon_step) * ozon_reward) if ozon_enabled else 0
-
-    # Reward choice: 'points' (default, accrue bonus points on fulfillment) or 'ozon'
-    # (convert the cashback into an EXTRA Ozon certificate amount now — 2 points = 1 ₽,
-    # points floored to a multiple of 500 first).
-    reward_choice = (getattr(data, 'reward_choice', 'points') or 'points')
-    ozon_certificate_bonus = 0
-    from routes.bonus import _calc_bonus_eligible_total, calc_points_for_eligible
-    eligible_for_bonus = await _calc_bonus_eligible_total(items, goods_total)
-    reward_points = await calc_points_for_eligible(user["id"], eligible_for_bonus)
-    if reward_choice == 'ozon' and ozon_enabled:
-        rounded_points = (int(reward_points) // 500) * 500  # always round DOWN to 500
-        ozon_certificate_bonus = rounded_points // 2  # 2 баллов = 1 ₽
-        ozon_certificate += ozon_certificate_bonus
+    # Reward in the client's chosen system (points / Ozon certificate / cashback); accrued on fulfillment
+    from routes.rewards import compute_order_reward
+    cashback_used = pricing["cashback_used"]
+    reward = await compute_order_reward(user, items, ozon_base, promo_code_obj["code"] if promo_code_obj else None)
+    reward_system = reward["system"]
+    reward_points = reward["amount"] if reward_system == "points" else 0
 
     # Deferred card/crypto: order is placed now, payment due within an admin-defined window
     payment_due_date = None
@@ -731,6 +724,15 @@ async def create_order(data: OrderCreate, user=Depends(get_current_user)):
         order_payment_status = "unpaid"
 
     order_id = str(uuid.uuid4())
+    if cashback_used > 0:
+        res = await db.users.update_one({"id": user["id"], "cashback_balance": {"$gte": cashback_used}}, {"$inc": {"cashback_balance": -cashback_used}})
+        if not res.modified_count:
+            raise HTTPException(status_code=400, detail="Недостаточно кэшбэка на счёте")
+        await db.cashback_transactions.insert_one({
+            "id": str(uuid.uuid4()), "user_id": user["id"], "amount": -cashback_used, "type": "payment",
+            "description": f"Оплата заказа #{order_id[:8]}", "order_id": order_id,
+            "created_at": datetime.now(timezone.utc).isoformat(),
+        })
     order = {
         "id": order_id,
         "user_id": user["id"],
@@ -763,10 +765,14 @@ async def create_order(data: OrderCreate, user=Depends(get_current_user)):
         "card_receipt_url": None,
         "card_amount": round(card_part, 2) if has_card else None,
         "payment_parts": payment_parts_out,
-        "ozon_certificate": ozon_certificate,
+        "ozon_certificate": 0,
         "ozon_certificate_issued": False,
-        "ozon_certificate_bonus": ozon_certificate_bonus,
-        "reward_choice": reward_choice,
+        "reward_system": reward_system,
+        "reward_expected": reward["amount"],
+        "reward_rates": reward["rates"],
+        "reward_scale": reward["scale"],
+        "reward_round_to": reward["round_to"],
+        "cashback_used": cashback_used,
         "reward_points": int(reward_points),
         "region": user.get("region", "") or "",
         "manager_id": user.get("manager_id"),
@@ -830,8 +836,6 @@ async def create_order(data: OrderCreate, user=Depends(get_current_user)):
     await create_admin_activity(user["id"], user.get("name", ""), "order", f"Новый заказ #{order_id[:8]} на {total} ₽")
     await create_notification(user["id"], "order", "Заказ оформлен", f"Ваш заказ #{order_id[:8]} принят в обработку", "/orders")
     await notify_admin("new_order", "Новый заказ", f"Заказ #{order_id[:8]} от {user.get('name', user.get('email', ''))} на {total:.2f} ₽", "/admin/orders")
-    if ozon_certificate > 0:
-        await notify_admin("ozon_certificate", "Выдать сертификат Ozon", f"По заказу #{order_id[:8]} нужно выдать сертификат Ozon на {ozon_certificate} ₽", "/admin/orders")
     
     # Send Telegram notification about new order
     await send_telegram_order_notification(order, user)

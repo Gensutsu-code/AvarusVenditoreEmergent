@@ -88,7 +88,9 @@ export default function CartPage() {
   const [promoInfo, setPromoInfo] = useState(null); // { discount, message, code }
   const [promoChecking, setPromoChecking] = useState(false);
   const [payDeliveryWithPoints, setPayDeliveryWithPoints] = useState(false);
-  const [rewardChoice, setRewardChoice] = useState('points'); // 'points' | 'ozon'
+  const rewardChoice = 'points';
+  const [rewardInfo, setRewardInfo] = useState(null);
+  const [cashbackInput, setCashbackInput] = useState('');
 
   const cartTotal = cart.items.reduce((sum, item) => sum + item.price * item.quantity, 0);
 
@@ -111,6 +113,7 @@ export default function CartPage() {
     axios.get(`${API}/user/last-shipping`).then(r => setForm({ full_name: r.data.full_name || '', address: r.data.address || '', phone: r.data.phone || '', comment: '' })).catch(() => {});
     axios.get(`${API}/cart-discount-requests/my`).then(r => setCdReq((r.data || []).find(x => x.status === 'pending' || x.status === 'approved') || null)).catch(() => {});
     axios.get(`${API}/bonus/my-points`).then(r => setBonusPoints(r.data.total_points || 0)).catch(() => {});
+    axios.get(`${API}/rewards/me`).then(r => setRewardInfo(r.data)).catch(() => {});
   }, [user]);
 
   // ----- Totals -----
@@ -192,7 +195,13 @@ export default function CartPage() {
   const canPayDeliveryWithPoints = !mixedMode && deliveryFee > 0 && bonusPoints >= Math.round(deliveryFee);
   const deliveryPaidWithPoints = payDeliveryWithPoints && canPayDeliveryWithPoints;
   const moneyDelivery = deliveryPaidWithPoints ? 0 : deliveryFee;
-  const finalTotal = goodsAfterIndividual + moneyDelivery;
+  // Pay part of the goods with cashback (cashback system only, single-method payments)
+  const cashbackCfg = rewardInfo?.system === 'cashback' ? rewardInfo.config : null;
+  const cashbackMax = (cashbackCfg?.allow_pay && !mixedMode)
+    ? Math.max(0, Math.min(rewardInfo.cashback_balance || 0, Math.floor(goodsAfterIndividual * cashbackCfg.max_pay_percent) / 100))
+    : 0;
+  const cashbackApplied = Math.round(Math.max(0, Math.min(Number(cashbackInput) || 0, cashbackMax)) * 100) / 100;
+  const finalTotal = goodsAfterIndividual - cashbackApplied + moneyDelivery;
 
   // Whole order arrives when its slowest item arrives
   const orderEta = (() => {
@@ -256,18 +265,11 @@ export default function CartPage() {
   useEffect(() => {
     if (!cart.items.length) { setBonusPreview({ total_points: 0, programs: [] }); return undefined; }
     const t = setTimeout(() => {
-      axios.get(`${API}/bonus/cart-preview`, { params: { amount: goodsAfterIndividual } })
+      axios.get(`${API}/rewards/cart-preview`, { params: { amount: goodsAfterIndividual, promo_code: promoInfo?.code || undefined } })
         .then(r => setBonusPreview(r.data)).catch(() => {});
     }, 400);
     return () => clearTimeout(t);
-  }, [goodsAfterIndividual, cart.items.length]);
-
-  // Reset reward choice to points if the Ozon-certificate option is no longer available (< 500 pts)
-  useEffect(() => {
-    if ((bonusPreview?.total_points || 0) < 500 && rewardChoice === 'ozon') {
-      setRewardChoice('points');
-    }
-  }, [bonusPreview, rewardChoice]);
+  }, [goodsAfterIndividual, cart.items.length, promoInfo?.code]);
 
   // Keep promo valid as cart/payment changes; drop it in mixed mode
   useEffect(() => {
@@ -315,7 +317,7 @@ export default function CartPage() {
   // Expected bonus points for the current cart (fetched BEFORE the cart is cleared)
   const fetchExpectedPoints = async () => {
     try {
-      const r = await axios.get(`${API}/bonus/cart-preview`);
+      const r = await axios.get(`${API}/rewards/cart-preview`, { params: { amount: goodsAfterIndividual, promo_code: promoInfo?.code || undefined } });
       return Math.round(r.data?.total_points || 0);
     } catch {
       return 0;
@@ -329,7 +331,7 @@ export default function CartPage() {
     setShowCryptoModal(false);
     try {
       const expectedPts = await fetchExpectedPoints();
-      const res = await axios.post(`${API}/orders`, { ...form, payment_method: 'crypto', crypto_tx_hash: txHash, pay_delivery_with_points: deliveryPaidWithPoints, reward_choice: rewardChoice, promo_code: promoInfo?.code || undefined });
+      const res = await axios.post(`${API}/orders`, { ...form, payment_method: 'crypto', crypto_tx_hash: txHash, pay_delivery_with_points: deliveryPaidWithPoints, use_cashback: cashbackApplied, reward_choice: rewardChoice, promo_code: promoInfo?.code || undefined });
       setOrderId(res.data.id);
       await fetchCart();
       setCdReq(null);
@@ -386,7 +388,7 @@ export default function CartPage() {
         payment_method: payWithDeferral ? 'deferral' : (payWithBalance ? 'balance' : paymentMethod),
         pay_with_balance: payWithBalance,
         pay_later: showPayLater ? payLater : false,
-        pay_delivery_with_points: deliveryPaidWithPoints,
+        pay_delivery_with_points: deliveryPaidWithPoints, use_cashback: cashbackApplied,
         reward_choice: rewardChoice,
         promo_code: promoInfo?.code || undefined,
       });
@@ -505,53 +507,7 @@ export default function CartPage() {
         })()}
 
         {/* Ozon certificate progress (based on adjusted goods total) */}
-        <OzonCertificateBar total={goodsAfterIndividual} />
-
-        {/* Reward choice: bonus points vs extra Ozon certificate */}
-        {(bonusPreview?.total_points > 0) && (() => {
-          const pts = bonusPreview.total_points || 0;
-          const roundedPts = Math.floor(pts / 500) * 500;
-          const certBonus = Math.floor(roundedPts / 2);
-          const showOzon = pts >= 500;
-          return (
-            <div className="mt-3 rounded-2xl border border-slate-200 bg-white p-4" data-testid="reward-choice">
-              <p className="text-xs font-bold uppercase tracking-wide text-slate-400 mb-3">Как начислить вознаграждение за заказ</p>
-              <div className={`grid grid-cols-1 ${showOzon ? 'sm:grid-cols-2' : ''} gap-3`}>
-                <button
-                  type="button"
-                  onClick={() => setRewardChoice('points')}
-                  className={`text-left rounded-xl border-2 p-3 transition-all ${rewardChoice === 'points' ? 'border-emerald-500 bg-emerald-50' : 'border-slate-200 hover:border-slate-300'}`}
-                  data-testid="reward-choice-points"
-                >
-                  <div className="flex items-center justify-between">
-                    <span className="text-sm font-bold text-slate-800">Бонусные баллы</span>
-                    {rewardChoice === 'points' && <span className="w-5 h-5 rounded-full bg-emerald-500 text-white text-[10px] flex items-center justify-center">✓</span>}
-                  </div>
-                  <p className="text-lg font-black text-emerald-600 mt-1 tabular-nums">+{formatPrice(pts)} <span className="text-xs font-medium text-slate-400">баллов</span></p>
-                  <p className="text-[11px] text-slate-400 mt-0.5">Начислим на бонусный счёт</p>
-                </button>
-                {showOzon && (
-                  <button
-                    type="button"
-                    onClick={() => setRewardChoice('ozon')}
-                    className={`text-left rounded-xl border-2 p-3 transition-all ${rewardChoice === 'ozon' ? 'border-indigo-500 bg-indigo-50' : 'border-slate-200 hover:border-slate-300'}`}
-                    data-testid="reward-choice-ozon"
-                  >
-                    <div className="flex items-center justify-between">
-                      <span className="text-sm font-bold text-slate-800">К Ozon-сертификату</span>
-                      {rewardChoice === 'ozon' && <span className="w-5 h-5 rounded-full bg-indigo-500 text-white text-[10px] flex items-center justify-center">✓</span>}
-                    </div>
-                    <p className="text-lg font-black text-indigo-600 mt-1 tabular-nums">+{formatPrice(certBonus)} <span className="text-xs font-medium text-slate-400">₽ к сертификату</span></p>
-                    <p className="text-[11px] text-slate-400 mt-0.5">2 балла = 1 ₽, округление вниз до 500 баллов</p>
-                  </button>
-                )}
-              </div>
-              {!showOzon && (
-                <p className="text-[11px] text-slate-400 mt-2">Вариант «К Ozon-сертификату» доступен от 500 баллов за заказ.</p>
-              )}
-            </div>
-          );
-        })()}
+        <OzonCertificateBar total={Math.max(0, goodsAfterIndividual - cashbackApplied)} promoCode={promoInfo?.code} />
 
         <form onSubmit={handleSubmit} className="grid grid-cols-1 lg:grid-cols-3 gap-8 mt-2">
           {/* LEFT: Cart items + shipping + payment */}
@@ -845,6 +801,21 @@ export default function CartPage() {
                 )}
                 {canPayDeliveryWithPoints && (
                   <p className="text-[11px] text-slate-400" data-testid="bonus-points-balance">Доступно баллов: {formatPrice(bonusPoints)}</p>
+                )}
+                {cashbackMax > 0 && (
+                  <div className="p-2.5 rounded-lg bg-emerald-50 border border-emerald-200" data-testid="cashback-pay-block">
+                    <div className="flex items-center justify-between gap-2">
+                      <span className="text-xs font-medium text-emerald-700">Оплатить кэшбэком (доступно {formatPrice(cashbackMax)} ₽)</span>
+                      <button type="button" className="text-xs font-semibold text-emerald-700 hover:underline" onClick={() => setCashbackInput(String(cashbackMax))} data-testid="cashback-pay-max-btn">Списать всё</button>
+                    </div>
+                    <input type="number" min="0" step="0.01" max={cashbackMax} value={cashbackInput} onChange={(e) => setCashbackInput(e.target.value)} placeholder="0" className="mt-2 w-full h-9 rounded-lg border border-emerald-200 bg-white px-3 text-sm" data-testid="cashback-pay-input" />
+                  </div>
+                )}
+                {cashbackApplied > 0 && (
+                  <div className="flex justify-between text-sm font-medium text-emerald-600" data-testid="cashback-pay-line">
+                    <span>Оплата кэшбэком:</span>
+                    <span>−{formatPrice(cashbackApplied)} ₽</span>
+                  </div>
                 )}
                 {bonusPreview.total_points > 0 && (
                   <div className="flex justify-between text-sm" data-testid="cart-bonus-preview">

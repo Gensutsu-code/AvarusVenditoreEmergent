@@ -756,24 +756,29 @@ export default function OrdersPage() {
                               </div>
                             </div>
 
-                            {/* Reward for this order: bonus points or extra Ozon certificate */}
-                            {(order.reward_choice === 'ozon'
-                              ? (order.ozon_certificate_bonus > 0)
-                              : (order.reward_points > 0)) && (
-                              <div className="mt-2 flex items-center gap-2" data-testid={`order-reward-${order.id}`}>
-                                {order.reward_choice === 'ozon' ? (
-                                  <span className="inline-flex items-center gap-1.5 text-xs font-bold px-2.5 py-1 rounded-full bg-indigo-50 text-indigo-700 border border-indigo-200">
-                                    <Gift className="w-3.5 h-3.5" />
-                                    +{formatPrice(order.ozon_certificate_bonus)} ₽ к Ozon-сертификату
-                                  </span>
-                                ) : (
+                            {/* Reward for this order in the client's bonus system */}
+                            {(() => {
+                              const sys = order.reward_system || (order.reward_choice === 'ozon' ? 'legacy_ozon' : 'points');
+                              const done = (order.reward_accrued || 0) > 0;
+                              const label = {
+                                points: order.reward_points > 0 && `+${formatPrice(order.reward_points)} бонусных баллов`,
+                                legacy_ozon: order.ozon_certificate_bonus > 0 && `+${formatPrice(order.ozon_certificate_bonus)} ₽ к Ozon-сертификату`,
+                                ozon: (done || order.reward_expected > 0) && `Сертификат Ozon ${formatPrice(done ? order.reward_accrued : order.reward_expected)} ₽${done ? '' : ' после выполнения'}`,
+                                cashback: (done || order.reward_expected > 0) && `Кэшбэк +${formatPrice(done ? order.reward_accrued : order.reward_expected)} ₽${done ? '' : ' после выполнения'}`,
+                              }[sys];
+                              if (!label) return null;
+                              return (
+                                <div className="mt-2 flex items-center gap-2 flex-wrap" data-testid={`order-reward-${order.id}`}>
                                   <span className="inline-flex items-center gap-1.5 text-xs font-bold px-2.5 py-1 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200">
                                     <Gift className="w-3.5 h-3.5" />
-                                    +{formatPrice(order.reward_points)} бонусных баллов
+                                    {label}
                                   </span>
-                                )}
-                              </div>
-                            )}
+                                  {order.cashback_used > 0 && (
+                                    <span className="text-xs text-slate-500" data-testid={`order-cashback-used-${order.id}`}>Оплачено кэшбэком: {formatPrice(order.cashback_used)} ₽</span>
+                                  )}
+                                </div>
+                              );
+                            })()}
 
                             {order.payment_due_date && order.payment_status !== 'paid' && !['cancelled', 'completed', 'delivered'].includes(order.status) && !order.card_receipt_url && (() => {
                               const cd = formatCountdown(order.payment_due_date);

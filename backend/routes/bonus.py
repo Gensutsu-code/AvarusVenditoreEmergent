@@ -186,6 +186,9 @@ async def accrue_order_bonus(order: dict):
     else full quantity. Uses final item prices (after all discounts). Only the increment
     since the last accrual is added (tracked via order['bonus_accrued_base']), so partial
     then full fulfillment accrues correctly and never double-counts."""
+    if "reward_system" in order:
+        from routes.rewards import accrue_order_reward
+        return await accrue_order_reward(order)
     # If the customer chose to convert their reward into an Ozon certificate at checkout,
     # no bonus points are accrued for this order (the certificate was granted at placement).
     if order.get("reward_choice") == "ozon":
@@ -263,6 +266,8 @@ async def get_total_bonus_points(user_id: str) -> int:
 @router.get("/bonus/my-points")
 async def my_total_points(user=Depends(get_current_user)):
     """Total bonus points across enabled programs (used for delivery-with-points option)."""
+    if user.get("reward_system") != "points":
+        return {"total_points": 0}
     return {"total_points": await get_total_bonus_points(user["id"])}
 
 
@@ -394,6 +399,8 @@ async def recalculate_all_bonuses(user=Depends(get_current_user)):
 @router.get("/bonus/programs")
 async def get_user_bonus_programs(user=Depends(get_current_user)):
     """Get all bonus programs with user's progress"""
+    if user.get("reward_system") != "points":
+        return []
     programs = await get_all_bonus_programs()
     
     current_year = datetime.now(timezone.utc).year
@@ -467,6 +474,8 @@ async def redeem_prize(data: dict, user=Depends(get_current_user)):
     
     if not program_id or not prize_id:
         raise HTTPException(status_code=400, detail="Требуется program_id и prize_id")
+    if user.get("reward_system") != "points":
+        raise HTTPException(status_code=403, detail="Бонусные баллы недоступны для вашей бонусной системы")
 
     # Block prize redemption if user has overdue deferral debt
     _now = datetime.now(timezone.utc).isoformat()

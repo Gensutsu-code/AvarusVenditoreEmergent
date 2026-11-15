@@ -449,6 +449,8 @@ async def update_admin_order(order_id: str, data: AdminOrderUpdate, user=Depends
         # Restore stock when order is cancelled
         if new_status == "cancelled" and old_status != "cancelled":
             await restore_order_stock(original_order)
+            from routes.rewards import refund_order_cashback
+            await refund_order_cashback(original_order)
         
         status_labels = {
             "pending": "ожидает обработки",
@@ -514,7 +516,7 @@ async def update_order_status(order_id: str, status: str, user=Depends(get_curre
                     {"$set": {"active": False, "used_in_order_id": order_id}}
                 )
         # Accrue bonus points
-        await update_bonus_on_order_delivered(order["user_id"], order.get("total", 0), order.get("items", []), delivery_fee=order.get("delivery_fee", 0))
+        await update_bonus_on_order_delivered(order["user_id"], order.get("total", 0), order.get("items", []), delivery_fee=order.get("delivery_fee", 0), order_id=order_id)
     
     # Log for revert
     status_labels = {

@@ -31,7 +31,7 @@ import ResetPasswordPage from "./pages/ResetPasswordPage";
 import Footer from "./components/Footer";
 import FavoritesPage from "./pages/FavoritesPage";
 import OrdersPage from "./pages/OrdersPage";
-import BonusPage from "./pages/BonusPage";
+import RewardsPage from "./pages/RewardsPage";
 import NewsPage from "./pages/NewsPage";
 import ProductPage from "./pages/ProductPage";
 import NotificationsPage from "./pages/NotificationsPage";
@@ -171,7 +171,7 @@ function AppContent() {
           <Route path="/returns" element={<ClientReturnsPage />} />
           <Route path="/favorites" element={<FavoritesPage />} />
           <Route path="/orders" element={<OrdersPage />} />
-          <Route path="/bonus" element={<BonusPage />} />
+          <Route path="/bonus" element={<RewardsPage />} />
           <Route path="/news" element={<NewsPage />} />
           <Route path="/news/:newsId" element={<NewsPage />} />
           <Route path="/notifications" element={<NotificationsPage />} />

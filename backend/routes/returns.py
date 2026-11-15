@@ -133,6 +133,9 @@ async def create_return(data: dict, user=Depends(get_current_user)):
                 "contrib_pct": program.get("contribution_percent", 100),
             })
 
+    if order.get("reward_system", "points") != "points":
+        program_infos = []  # points are only taken back for orders rewarded with points
+
     # Per-program accumulator for total_bonus_deduction
     program_bonus_totals = {p["id"]: 0.0 for p in program_infos}
 
@@ -282,6 +285,9 @@ async def approve_return(return_id: str, data: dict = None, user=Depends(get_cur
                 "description": f"Возврат по заказу #{ret['order_id'][:8]} (удержание {fee_label})",
                 "created_at": datetime.now(timezone.utc).isoformat()
             })
+
+        from routes.rewards import deduct_return_cashback
+        await deduct_return_cashback(ret)
 
         # Deduct bonus points per-program (uses stored breakdown when available)
         bonus_deduction = ret.get("total_bonus_deduction", 0)

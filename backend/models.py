@@ -251,6 +251,7 @@ class OrderCreate(BaseModel):
     payment_parts: Optional[List[dict]] = None  # mixed payment: [{method, amount}], max 2, no deferral
     pay_delivery_with_points: Optional[bool] = False  # cover delivery fee with bonus points
     reward_choice: Optional[str] = "points"  # 'points' (accrue bonus points) or 'ozon' (extra Ozon certificate)
+    use_cashback: Optional[float] = 0  # cashback (₽) to spend on this order
     promo_code: Optional[str] = None  # cart-wide promo code (single-method payments only)
     vehicle_id: Optional[str] = None  # garage vehicle the parts are bought for
 
@@ -329,6 +330,10 @@ class OrderResponse(BaseModel):
     ozon_certificate_bonus: Optional[float] = None
     reward_choice: Optional[str] = None
     reward_points: Optional[int] = None
+    reward_system: Optional[str] = None
+    reward_expected: Optional[float] = None
+    reward_accrued: Optional[float] = None
+    cashback_used: Optional[float] = None
     individual_discount_percent: Optional[float] = None
     individual_discount_amount: Optional[float] = None
     cart_discount_percent: Optional[float] = None
