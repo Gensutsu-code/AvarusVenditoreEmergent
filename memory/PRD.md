@@ -212,6 +212,15 @@ E-commerce platform for truck spare parts with a comprehensive admin panel. Russ
 - **Календарь**: `components/DatePicker.js` (popover + calendar, ru) для всех «Действует до».
 - Не проверено кликами/полным прогоном: добавление в корзину из чата и передача менеджеру в UI (API проверены), полный прогон массовых описаний (проверены статус/права).
 
+### Iter 109 — статусы клиентов, условия, менеджеры (DONE — backend 25/25 + 29/29 регресс, UI — смоук)
+- **Статусы**: `customer_status` только `retail` / `wholesale` (миграция partner/opt/b2b → wholesale на старте). Новый клиент — retail.
+- **Стандартные условия** (`settings.status_conditions`, Настройки → «Условия по статусам»): скидка, доставка, отсрочка, лимит для retail/wholesale + % от прибыли для менеджеров. `database.effective_conditions` применяется в `get_current_user` (индивидуальные > стандартных), `effective_credit` — в отсрочке.
+- **Запрос индивидуальных условий**: `POST /api/conditions-requests`, `GET /api/my-conditions` (карточка «Мои условия» в /account); админ `GET/PUT /api/admin/conditions-requests` — одобрение делает клиента оптовым.
+- **Роль manager** (`routes/staff.py`): CRUD `/api/admin/staff` (soft delete, пароль только bcrypt), привязка `/api/admin/staff/{id}/clients`, статистика `/api/admin/staff/{id}/stats?period=`. В заказ пишется `manager_id` на момент оформления. Страница `/admin/staff`.
+- **Кабинет менеджера** `/manager`: статистика, клиенты + их индивидуальные условия, чаты своих клиентов (`/api/manager/*`).
+- Демо: manager@avarus.ru / manager123, к нему привязан user@demo.com с прошлыми заказами.
+- Не проверено: отправка ответа менеджером в чат и стандартные доставка/отсрочка по статусу (код есть, авто-проверки не было); UI проверен только на наличие элементов.
+
 ### P1 (Important)
 - Real Payment Gateway Integration (replace MOCKED YuKassa)
 - CartPage/ProductPage display mismatches (pre-existing): payment-method adjustment & tier preview not clamped to min_price in UI (server charges correct floor). Best fixed via a server-computed cart preview.

@@ -12,3 +12,8 @@
 ## Client (secondary, no completed orders)
 - **Email**: user@demo.com
 - **Password**: demo123
+
+## Manager (role: manager, created on the admin page /admin/staff)
+- **Email**: manager@avarus.ru
+- **Password**: manager123
+- Cabinet: /manager. Client user@demo.com is bound to this manager (past orders included).
