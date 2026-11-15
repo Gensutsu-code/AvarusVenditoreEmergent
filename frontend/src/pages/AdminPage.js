@@ -14,6 +14,7 @@ import { Textarea } from '../components/ui/textarea';
 import { Switch } from '../components/ui/switch';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '../components/ui/dialog';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '../components/ui/tabs';
+import { PaymentAdjustmentsSection } from '../components/admin/PaymentAdjustmentsSection';
 import RichTextEditor from '../components/RichTextEditor';
 import { useAuth } from '../context/AuthContext';
 import { useTheme } from '../context/ThemeContext';
@@ -2824,6 +2825,14 @@ export default function AdminPage() {
           <TabsContent value="promotions" className="p-6">
             <DiscountsPromoTab
               isDark={isDark}
+              paymentSlot={
+                <PaymentAdjustmentsSection
+                  isDark={isDark}
+                  paymentSettings={paymentSettings}
+                  setPaymentSettings={setPaymentSettings}
+                  onSave={handleSavePaymentSettings}
+                />
+              }
               bannerSlot={
                 <PromoTab
                   promoBanner={promoBanner}
@@ -3615,7 +3624,7 @@ export default function AdminPage() {
                       className="mt-1" data-testid="user-credit-limit-input" />
                   </div>
                   <p className="col-span-2 text-[11px] text-zinc-500 leading-snug" data-testid="user-conditions-hint">
-                    Индивидуальные условия важнее общих условий сайта. Лимит больше 0 сразу открывает клиенту оплату «Отсрочка» на указанное число дней; 0 — отсрочка выключена. Пустая стоимость доставки — как на сайте. Персональная скидка действует при оплате с баланса.
+                    Индивидуальные условия важнее общих условий сайта. Лимит больше 0 сразу открывает клиенту оплату «Отсрочка» на указанное число дней; 0 — отсрочка выключена. Пустая стоимость доставки — как на сайте. Персональная скидка действует при любом способе оплаты, но цена товара не опускается ниже минимальной.
                   </p>
                 </div>
               </div>

@@ -60,6 +60,15 @@ export function computeDiscount(product, quantity = 1) {
     return null;
   }
 
+  // Server never sells below min_price — show the same clamped price
+  const floor = Number(product.min_price);
+  if (floor > 0 && finalPrice < floor) {
+    finalPrice = Math.min(price, floor);
+    amount = price - finalPrice;
+    percent = price > 0 ? (amount / price) * 100 : 0;
+    if (amount <= 0) return null;
+  }
+
   return {
     active: true,
     type: dtype,
@@ -108,6 +117,12 @@ export function getQuantityTiers(product) {
         finalPrice = Math.max(0, price - amount);
         percent = price > 0 ? (amount / price) * 100 : 0;
       }
+      const floor = Number(product.min_price);
+      if (floor > 0 && finalPrice < floor) {
+        finalPrice = Math.min(price, floor);
+        amount = price - finalPrice;
+        percent = price > 0 ? (amount / price) * 100 : 0;
+      }
       return {
         minQty,
         type,
@@ -117,6 +132,7 @@ export function getQuantityTiers(product) {
         finalPrice: Math.round(finalPrice * 100) / 100,
       };
     })
+    .filter(t => t.amount > 0)
     .sort((a, b) => a.minQty - b.minQty);
 }
 
@@ -165,12 +181,11 @@ export function getCartUpsell(item) {
 
   for (const t of tiers) {
     if (Number(t.min_qty) <= qty) continue;
-    const unit = apply(base, t.type, t.value);
+    const floor = Number(item.min_price);
+    const unit = Math.max(apply(base, t.type, t.value), floor > 0 ? floor : 0);
     if (unit < current - 0.01) {
       const minQty = Number(t.min_qty);
-      const percent = t.type === 'percent'
-        ? Math.round(Number(t.value))
-        : (base > 0 ? Math.round(((base - unit) / base) * 100) : 0);
+      const percent = base > 0 ? Math.round(((base - unit) / base) * 100) : 0;
       return {
         minQty,
         need: minQty - qty,

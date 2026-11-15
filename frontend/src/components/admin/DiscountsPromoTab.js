@@ -4,7 +4,7 @@ import { toast } from 'sonner';
 import { Button } from '../ui/button';
 import { Input } from '../ui/input';
 import { Label } from '../ui/label';
-import { Percent, Ticket, Search, Save, Trash2, Plus, X, Tag, Loader2, Power, Pencil, ShoppingCart, Megaphone } from 'lucide-react';
+import { Percent, Ticket, Search, Save, Trash2, Plus, X, Tag, Loader2, Power, Pencil, ShoppingCart, Megaphone, CreditCard } from 'lucide-react';
 import { CartDiscountRequestsSection } from './CartDiscountRequestsSection';
 
 const API = `${process.env.REACT_APP_BACKEND_URL}/api`;
@@ -379,13 +379,14 @@ const ProductDiscountsSection = ({ isDark }) => {
 };
 
 // ===================== MAIN TAB =====================
-export default function DiscountsPromoTab({ isDark = false, bannerSlot = null }) {
+export default function DiscountsPromoTab({ isDark = false, bannerSlot = null, paymentSlot = null }) {
   const [sub, setSub] = useState('products');
 
   const tabs = [
     { id: 'products', label: 'Товарные скидки', icon: Percent },
     { id: 'promo', label: 'Промокоды', icon: Ticket },
     { id: 'cart', label: 'Скидки на корзину', icon: ShoppingCart },
+    ...(paymentSlot ? [{ id: 'payment', label: 'За способ оплаты', icon: CreditCard }] : []),
     ...(bannerSlot ? [{ id: 'banner', label: 'Акционный баннер', icon: Megaphone }] : []),
   ];
 
@@ -411,6 +412,7 @@ export default function DiscountsPromoTab({ isDark = false, bannerSlot = null })
       {sub === 'products' && <ProductDiscountsSection isDark={isDark} />}
       {sub === 'promo' && <PromoCodesSection isDark={isDark} />}
       {sub === 'cart' && <CartDiscountRequestsSection isDark={isDark} />}
+      {sub === 'payment' && paymentSlot}
       {sub === 'banner' && <div data-testid="promo-banner-section">{bannerSlot}</div>}
     </div>
   );

@@ -208,6 +208,7 @@ async def _build_cart(user):
                 "discount_until": product.get("discount_until"),
                 "discount_tiers": product.get("discount_tiers") or [],
                 "stock_regions": product.get("stock_regions") or [],
+                "min_price": product.get("min_price"),
             })
 
     try:
@@ -264,44 +265,9 @@ async def clear_cart(user=Depends(get_current_user)):
 
 # ==================== ORDERS ====================
 
-@router.post("/orders", response_model=OrderResponse)
-async def create_order(data: OrderCreate, user=Depends(get_current_user)):
-    cart = await db.carts.find_one({"user_id": user["id"]})
-    if not cart or not cart.get("items"):
-        raise HTTPException(status_code=400, detail="Cart is empty")
-
-    # Block new orders if user has overdue deferral debt
-    if await has_overdue_deferral(user["id"]):
-        raise HTTPException(status_code=403, detail="Есть просроченный долг по отсрочке. Погасите задолженность, чтобы оформлять новые заказы.")
-    
-    # Only payment method discounts are used
-    payment_settings = await db.settings.find_one({"key": "payment_settings"})
-    payment_adjustments = payment_settings.get("value", {}) if payment_settings else {}
-    payment_method = data.payment_method or "cash"
-    # Get payment adjustment (can be negative for discount or positive for surcharge)
-    if getattr(data, 'payment_parts', None):
-        payment_adjustment = 0  # mixed payment: no method surcharge/discount
-    else:
-        payment_adjustment = payment_adjustments.get(f"{payment_method}_adjustment", 0)
-    
-    product_ids = [item["product_id"] for item in cart["items"]]
-    products = await db.products.find({"id": {"$in": product_ids}}, {"_id": 0}).to_list(100)
-    products_map = {p["id"]: p for p in products}
-    
-    # Fetch active individual prices for this user
-    ind_prices = await db.individual_prices.find(
-        {"user_id": user["id"], "active": True, "product_id": {"$in": product_ids}},
-        {"_id": 0}
-    ).to_list(100)
-    ind_prices_map = {ip["product_id"]: ip["price"] for ip in ind_prices}
-    
-    # Active approved (unused) cart-wide discount — applies evenly per item, one-time
-    active_cart_discount = await db.cart_discount_requests.find_one(
-        {"user_id": user["id"], "status": "approved"}, {"_id": 0}
-    )
-    cart_discount_pct = float(active_cart_discount.get("admin_percent") or 0) if active_cart_discount else 0.0
+def _price_cart_lines(cart, products_map, ind_prices_map, cart_discount_pct, payment_adjustment):
+    """Per-item pricing shared by create_order and the cart quote (floor = min_price)."""
     cart_discount_amount = 0.0
-    
     items = []
     subtotal = 0
     sum_floors = 0.0  # Σ min_price × qty — hard floor the order total can never go below
@@ -370,6 +336,79 @@ async def create_order(data: OrderCreate, user=Depends(get_current_user)):
             }
             items.append(item_data)
             subtotal += final_price * cart_item["quantity"]
+    return items, round(subtotal, 2), sum_floors, used_individual_price_product_ids, cart_discount_amount
+
+
+async def _load_pricing_context(user, cart):
+    product_ids = [item["product_id"] for item in cart["items"]]
+    products = await db.products.find({"id": {"$in": product_ids}}, {"_id": 0}).to_list(1000)
+    ind_prices = await db.individual_prices.find(
+        {"user_id": user["id"], "active": True, "product_id": {"$in": product_ids}}, {"_id": 0}
+    ).to_list(1000)
+    cd = await db.cart_discount_requests.find_one({"user_id": user["id"], "status": "approved"}, {"_id": 0})
+    return {p["id"]: p for p in products}, {ip["product_id"]: ip["price"] for ip in ind_prices}, cd
+
+
+@router.get("/cart/quote")
+async def cart_quote(payment_method: str = "cash", user=Depends(get_current_user)):
+    """Goods total exactly as create_order would charge it for this payment method (before promo code / individual discount)."""
+    cart = await db.carts.find_one({"user_id": user["id"]})
+    if not cart or not cart.get("items"):
+        return {"payment_method": payment_method, "goods_total": 0, "sum_floors": 0, "items": []}
+    ps = await db.settings.find_one({"key": "payment_settings"})
+    adjustment = ((ps or {}).get("value", {}) or {}).get(f"{payment_method}_adjustment", 0) or 0
+    products_map, ind_prices_map, cd = await _load_pricing_context(user, cart)
+    cd_pct = float(cd.get("admin_percent") or 0) if cd else 0.0
+    items, subtotal, sum_floors, _, _ = _price_cart_lines(cart, products_map, ind_prices_map, cd_pct, adjustment)
+    return {
+        "payment_method": payment_method,
+        "goods_total": subtotal,
+        "sum_floors": round(sum_floors, 2),
+        "items": [{"product_id": i["product_id"], "price": i["price"], "quantity": i["quantity"]} for i in items],
+    }
+
+
+@router.post("/orders", response_model=OrderResponse)
+async def create_order(data: OrderCreate, user=Depends(get_current_user)):
+    cart = await db.carts.find_one({"user_id": user["id"]})
+    if not cart or not cart.get("items"):
+        raise HTTPException(status_code=400, detail="Cart is empty")
+
+    # Block new orders if user has overdue deferral debt
+    if await has_overdue_deferral(user["id"]):
+        raise HTTPException(status_code=403, detail="Есть просроченный долг по отсрочке. Погасите задолженность, чтобы оформлять новые заказы.")
+    
+    # Only payment method discounts are used
+    payment_settings = await db.settings.find_one({"key": "payment_settings"})
+    payment_adjustments = payment_settings.get("value", {}) if payment_settings else {}
+    payment_method = data.payment_method or "cash"
+    # Get payment adjustment (can be negative for discount or positive for surcharge)
+    if getattr(data, 'payment_parts', None):
+        payment_adjustment = 0  # mixed payment: no method surcharge/discount
+    else:
+        payment_adjustment = payment_adjustments.get(f"{payment_method}_adjustment", 0)
+    
+    product_ids = [item["product_id"] for item in cart["items"]]
+    products = await db.products.find({"id": {"$in": product_ids}}, {"_id": 0}).to_list(100)
+    products_map = {p["id"]: p for p in products}
+    
+    # Fetch active individual prices for this user
+    ind_prices = await db.individual_prices.find(
+        {"user_id": user["id"], "active": True, "product_id": {"$in": product_ids}},
+        {"_id": 0}
+    ).to_list(100)
+    ind_prices_map = {ip["product_id"]: ip["price"] for ip in ind_prices}
+    
+    # Active approved (unused) cart-wide discount — applies evenly per item, one-time
+    active_cart_discount = await db.cart_discount_requests.find_one(
+        {"user_id": user["id"], "status": "approved"}, {"_id": 0}
+    )
+    cart_discount_pct = float(active_cart_discount.get("admin_percent") or 0) if active_cart_discount else 0.0
+    cart_discount_amount = 0.0
+    
+    items, subtotal, sum_floors, used_individual_price_product_ids, cart_discount_amount = _price_cart_lines(
+        cart, products_map, ind_prices_map, cart_discount_pct, payment_adjustment)
+    price_multiplier = 1 + (payment_adjustment / 100) if payment_adjustment != 0 else 1
     
     # Base goods subtotal. For a single method this already includes the per-item
     # payment adjustment (price_multiplier); for mixed payment the multiplier is 1
@@ -447,6 +486,16 @@ async def create_order(data: OrderCreate, user=Depends(get_current_user)):
             adj = payment_adjustments.get(f"{m}_adjustment", 0) or 0
             charged.append([m, round(a * (1 + adj / 100), 2)])
         goods_total = round(sum(c for _, c in charged), 2)
+        # Never below the floor; the individual discount applies to every payment method
+        target = max(goods_total, round(sum_floors, 2))
+        if individual_discount_pct > 0:
+            individual_discount_amount = min(round(target * individual_discount_pct / 100, 2), max(0.0, round(target - sum_floors, 2)))
+            target = round(target - individual_discount_amount, 2)
+        if goods_total > 0 and abs(target - goods_total) > 0.005:
+            k = target / goods_total
+            charged = [[m, round(a * k, 2)] for m, a in charged]
+            charged[-1][1] = round(charged[-1][1] + target - sum(a for _, a in charged), 2)
+            goods_total = target
         delivery_fee = delivery_price if (delivery_enabled and goods_total < min_free) else 0
         money_delivery = 0 if (pay_delivery_with_points and delivery_fee > 0) else delivery_fee
         total = round(goods_total + money_delivery, 2)
@@ -477,7 +526,7 @@ async def create_order(data: OrderCreate, user=Depends(get_current_user)):
                 promo_code_amount = round(disc, 2)
                 goods_total = max(0.0, round(goods_total - promo_code_amount, 2))
         # Individual discount stacks on top of promos/tiers, ONLY for balance prepayment
-        if pay_with_balance and individual_discount_pct > 0:
+        if individual_discount_pct > 0:
             individual_discount_amount = round(goods_total * individual_discount_pct / 100, 2)
             individual_discount_amount = min(individual_discount_amount, max(0.0, round(goods_total - sum_floors, 2)))
             goods_total = max(0.0, round(goods_total - individual_discount_amount, 2))
@@ -617,7 +666,7 @@ async def create_order(data: OrderCreate, user=Depends(get_current_user)):
         "subtotal": round(subtotal, 2),
         "delivery_fee": delivery_fee,
         "payment_adjustment": payment_adjustment,
-        "individual_discount_percent": individual_discount_pct if (pay_with_balance and individual_discount_pct > 0) else 0,
+        "individual_discount_percent": individual_discount_pct if individual_discount_amount > 0 else 0,
         "individual_discount_amount": individual_discount_amount,
         "cart_discount_percent": cart_discount_pct if cart_discount_pct > 0 else 0,
         "cart_discount_amount": round(cart_discount_amount, 2),

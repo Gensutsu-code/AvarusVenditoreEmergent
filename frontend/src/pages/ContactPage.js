@@ -413,7 +413,7 @@ export default function ContactPage() {
                                       <span className="text-xs text-slate-400 line-through">{r.requested_discount}%</span>
                                     )}
                                   </div>
-                                  <p className="text-[11px] text-slate-400 mt-1">{r.status === 'offered' ? 'Предложенная скидка (при оплате с баланса)' : 'Скидка на все заказы'}</p>
+                                  <p className="text-[11px] text-slate-400 mt-1">{r.status === 'offered' ? 'Предложенная скидка (при любом способе оплаты)' : 'Скидка на все заказы'}</p>
                                 </div>
                                 <StatusBadge status={r.status} />
                               </div>

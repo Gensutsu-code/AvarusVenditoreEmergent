@@ -80,14 +80,8 @@ export const PaymentsTab = ({
                 />
               </div>
               <div>
-                <Label className={`text-xs ${isDark ? 'text-zinc-500' : 'text-zinc-500'}`}>Наценка/Скидка (%)</Label>
+                <Label className={`text-xs ${isDark ? 'text-zinc-500' : 'text-zinc-500'}`}>Наценка/Скидка — меняется во вкладке «Скидки и акции»</Label>
                 <div className="flex items-center gap-2 mt-1">
-                  <Input
-                    type="number"
-                    value={paymentSettings.card_adjustment || 0}
-                    onChange={(e) => setPaymentSettings({ ...paymentSettings, card_adjustment: parseFloat(e.target.value) || 0 })}
-                    className={`w-24 ${isDark ? 'bg-zinc-900/50 border-zinc-700 text-zinc-100' : ''}`}
-                  />
                   <span className={`text-sm ${isDark ? 'text-zinc-400' : 'text-zinc-500'}`}>
                     {(paymentSettings.card_adjustment || 0) > 0 ? '+' : ''}{paymentSettings.card_adjustment || 0}%
                   </span>
@@ -113,14 +107,8 @@ export const PaymentsTab = ({
                 />
               </div>
               <div>
-                <Label className={`text-xs ${isDark ? 'text-zinc-500' : 'text-zinc-500'}`}>Наценка/Скидка (%)</Label>
+                <Label className={`text-xs ${isDark ? 'text-zinc-500' : 'text-zinc-500'}`}>Наценка/Скидка — меняется во вкладке «Скидки и акции»</Label>
                 <div className="flex items-center gap-2 mt-1">
-                  <Input
-                    type="number"
-                    value={paymentSettings.cash_adjustment || 0}
-                    onChange={(e) => setPaymentSettings({ ...paymentSettings, cash_adjustment: parseFloat(e.target.value) || 0 })}
-                    className={`w-24 ${isDark ? 'bg-zinc-900/50 border-zinc-700 text-zinc-100' : ''}`}
-                  />
                   <span className={`text-sm ${isDark ? 'text-zinc-400' : 'text-zinc-500'}`}>
                     {(paymentSettings.cash_adjustment || 0) > 0 ? '+' : ''}{paymentSettings.cash_adjustment || 0}%
                   </span>
@@ -146,14 +134,8 @@ export const PaymentsTab = ({
                 />
               </div>
               <div>
-                <Label className={`text-xs ${isDark ? 'text-zinc-500' : 'text-zinc-500'}`}>Наценка/Скидка (%)</Label>
+                <Label className={`text-xs ${isDark ? 'text-zinc-500' : 'text-zinc-500'}`}>Наценка/Скидка — меняется во вкладке «Скидки и акции»</Label>
                 <div className="flex items-center gap-2 mt-1">
-                  <Input
-                    type="number"
-                    value={paymentSettings.crypto_adjustment || 0}
-                    onChange={(e) => setPaymentSettings({ ...paymentSettings, crypto_adjustment: parseFloat(e.target.value) || 0 })}
-                    className={`w-24 ${isDark ? 'bg-zinc-900/50 border-zinc-700 text-zinc-100' : ''}`}
-                  />
                   <span className={`text-sm ${isDark ? 'text-zinc-400' : 'text-zinc-500'}`}>
                     {(paymentSettings.crypto_adjustment || 0) > 0 ? '+' : ''}{paymentSettings.crypto_adjustment || 0}%
                   </span>
@@ -179,14 +161,8 @@ export const PaymentsTab = ({
                 />
               </div>
               <div>
-                <Label className={`text-xs ${isDark ? 'text-zinc-500' : 'text-zinc-500'}`}>Наценка/Скидка (%)</Label>
+                <Label className={`text-xs ${isDark ? 'text-zinc-500' : 'text-zinc-500'}`}>Наценка/Скидка — меняется во вкладке «Скидки и акции»</Label>
                 <div className="flex items-center gap-2 mt-1">
-                  <Input
-                    type="number"
-                    value={paymentSettings.balance_adjustment || 0}
-                    onChange={(e) => setPaymentSettings({ ...paymentSettings, balance_adjustment: parseFloat(e.target.value) || 0 })}
-                    className={`w-24 ${isDark ? 'bg-zinc-900/50 border-zinc-700 text-zinc-100' : ''}`}
-                  />
                   <span className={`text-sm ${isDark ? 'text-zinc-400' : 'text-zinc-500'}`}>
                     {(paymentSettings.balance_adjustment || 0) > 0 ? '+' : ''}{paymentSettings.balance_adjustment || 0}%
                   </span>

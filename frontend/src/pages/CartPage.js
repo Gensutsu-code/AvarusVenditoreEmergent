@@ -66,6 +66,7 @@ export default function CartPage() {
   const [payWithDeferral, setPayWithDeferral] = useState(false);
   const [payLater, setPayLater] = useState(false);
   const [mixedMode, setMixedMode] = useState(false);
+  const [quote, setQuote] = useState(null);
   const [mixedMethods, setMixedMethods] = useState([]); // up to 2 of: balance, card, cash
   const [mix1Amount, setMix1Amount] = useState('');
   const [form, setForm] = useState({ full_name: '', address: '', phone: '', comment: '' });
@@ -121,18 +122,34 @@ export default function CartPage() {
   const mixCharged1 = mixReady ? Math.round(a1 * (1 + getAdj(mixM1) / 100)) : 0;
   const mixCharged2 = mixReady ? Math.round(a2 * (1 + getAdj(mixM2) / 100)) : 0;
 
+  // Server quote: goods total for the chosen payment method with every item clamped to its minimum price
+  const quoteMethod = mixedMode ? 'none' : (payWithDeferral ? 'deferral' : (payWithBalance ? 'balance' : paymentMethod));
+  const cartSig = cart.items.map(i => `${i.product_id}:${i.quantity}:${i.price}`).join('|');
+  useEffect(() => {
+    if (!user || !cartSig) { setQuote(null); return undefined; }
+    let alive = true;
+    axios.get(`${API}/cart/quote?payment_method=${quoteMethod}`).then(r => { if (alive) setQuote(r.data); }).catch(() => {});
+    return () => { alive = false; };
+  }, [user, quoteMethod, cartSig]);
+  const quoteReady = !!quote && quote.payment_method === quoteMethod;
+  const sumFloors = quote?.sum_floors || 0;
+
+  const mixRaw = mixCharged1 + mixCharged2;
   const goodsTotal = mixReady
-    ? (mixCharged1 + mixCharged2)
-    : (mixedMode ? cartTotal : (singleAdj !== 0 ? Math.round(cartTotal * (1 + singleAdj / 100)) : cartTotal));
+    ? Math.max(mixRaw, Math.round(sumFloors))
+    : (mixedMode ? cartTotal : (quoteReady ? Math.round(quote.goods_total) : (singleAdj !== 0 ? Math.round(cartTotal * (1 + singleAdj / 100)) : cartTotal)));
 
   // Promo code (single-method only) — applied before individual discount, floor-guarded server-side
   const promoDiscount = (!mixedMode && promoInfo) ? Math.min(promoInfo.discount || 0, goodsTotal) : 0;
   const goodsAfterPromo = Math.max(0, goodsTotal - promoDiscount);
 
-  // Individual account-wide discount — ONLY when paying from balance (stacks on top of promos/adjustment)
-  const individualDiscountPct = (payWithBalance && !mixedMode && !payWithDeferral) ? (Number(user?.individual_discount) || 0) : 0;
-  const individualDiscountAmount = individualDiscountPct > 0 ? Math.round(goodsAfterPromo * individualDiscountPct / 100) : 0;
+  // Individual account-wide discount — any payment method, never below the sum of minimum prices
+  const individualDiscountPct = (!mixedMode || mixReady) ? (Number(user?.individual_discount) || 0) : 0;
+  const individualDiscountAmount = individualDiscountPct > 0
+    ? Math.min(Math.round(goodsAfterPromo * individualDiscountPct / 100), Math.max(0, Math.floor(goodsAfterPromo - sumFloors)))
+    : 0;
   const goodsAfterIndividual = Math.max(0, goodsAfterPromo - individualDiscountAmount);
+  const mixK = mixRaw > 0 ? goodsAfterIndividual / mixRaw : 1;
 
   const toggleMixedMethod = (m) => {
     if (!['balance', 'card', 'cash'].includes(m)) { toast.error('В смешанной оплате доступны: баланс, карта, наличные'); return; }
@@ -714,7 +731,7 @@ export default function CartPage() {
                           </div>
                           <div className="flex justify-between text-[11px] text-slate-400">
                             <span>к оплате этим способом</span>
-                            <span className="font-bold text-slate-600">{formatPrice(mixCharged1)} ₽</span>
+                            <span className="font-bold text-slate-600">{formatPrice(mixCharged1 * mixK)} ₽</span>
                           </div>
                         </div>
                         {/* Remainder part */}
@@ -729,7 +746,7 @@ export default function CartPage() {
                           </div>
                           <div className="flex justify-between text-[11px] text-slate-400">
                             <span>к оплате этим способом</span>
-                            <span className="font-bold text-slate-600">{formatPrice(mixCharged2)} ₽</span>
+                            <span className="font-bold text-slate-600">{formatPrice(mixCharged2 * mixK)} ₽</span>
                           </div>
                         </div>
                       </>
