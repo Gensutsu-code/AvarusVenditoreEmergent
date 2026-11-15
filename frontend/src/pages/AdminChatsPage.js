@@ -229,6 +229,19 @@ export default function AdminChatsPage() {
     finally { setProcessing(false); }
   };
 
+  const [aiDrafting, setAiDrafting] = useState(false);
+  const generateAiDraft = async () => {
+    if (!selectedChat || aiDrafting) return;
+    if (newMessage.trim() && !window.confirm('Заменить набранный текст черновиком от ИИ?')) return;
+    setAiDrafting(true);
+    try {
+      const res = await axios.post(`${API}/admin/ai/chat-draft`, { chat_id: selectedChat.id });
+      setNewMessage(res.data.draft || '');
+      toast.success('Черновик готов — проверьте и отправьте');
+    } catch (e) { toast.error(e.response?.data?.detail || 'Не удалось получить черновик'); }
+    finally { setAiDrafting(false); }
+  };
+
   const handleSendOffer = async (reqId) => {
     if (!offerPrice || Number(offerPrice) <= 0) {
       toast.error('Укажите цену предложения');
@@ -1173,9 +1186,22 @@ export default function AdminChatsPage() {
                     >
                       <Paperclip className="w-5 h-5" />
                     </Button>
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="sm"
+                      onClick={generateAiDraft}
+                      disabled={sending || aiDrafting}
+                      title="Черновик ответа от ИИ — вы сможете отредактировать его перед отправкой"
+                      className={isDark ? 'text-orange-400 hover:text-orange-300' : 'text-teal-600 hover:text-teal-700'}
+                      data-testid="ai-draft-btn"
+                    >
+                      {aiDrafting ? <Loader2 className="w-5 h-5 animate-spin" /> : <span className="text-xs font-bold">ИИ</span>}
+                    </Button>
                     <Input
                       value={newMessage}
                       onChange={(e) => setNewMessage(e.target.value)}
+                      data-testid="admin-chat-input"
                       placeholder="Напишите сообщение..."
                       className="flex-1 glass-input"
                       disabled={sending}

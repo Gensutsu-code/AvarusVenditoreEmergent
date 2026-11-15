@@ -1,7 +1,7 @@
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { ShoppingCart, User, Search, LogOut, Settings, Heart, Package, ClipboardList, Gift, Newspaper, Menu, X, MessageCircle, Bell, Wallet, RefreshCw, CreditCard, Wrench, MapPin, ChevronDown } from 'lucide-react';
 import { useRegion } from '../context/RegionContext';
-import { Map as MapIcon } from 'lucide-react';
+import { Map as MapIcon, Sparkles as AiIcon } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { useCart } from '../context/CartContext';
 import { Button } from './ui/button';
@@ -387,6 +387,9 @@ export const Header = () => {
                   compact={true}
                 />
               </div>
+              <Link to="/assistant" className="h-10 px-3 rounded-xl flex items-center gap-1.5 bg-white/95 border border-teal-200 text-teal-600 hover:border-teal-400 transition-colors duration-200 text-sm font-semibold whitespace-nowrap" title="ИИ-помощник по подбору запчастей" data-testid="ai-assistant-link">
+                <AiIcon className="w-4 h-4" /><span className="hidden xl:inline">ИИ-помощник</span>
+              </Link>
               <NavLink to="/parts-finder" data-testid="parts-finder-link" title="Подбор запчастей">
                 <motion.div 
                   className="h-10 px-3 rounded-xl flex items-center gap-1.5 bg-gradient-to-br from-teal-500 to-emerald-500 text-white hover:shadow-lg hover:shadow-teal-500/30 transition-all duration-300 font-semibold text-sm"
@@ -765,6 +768,7 @@ export const Header = () => {
                         <Search className="w-5 h-5" />
                         Каталог
                       </Link>
+                      <Link to="/assistant" onClick={() => setMobileMenuOpen(false)} className="flex items-center gap-3 p-3 rounded-xl text-teal-600 hover:bg-teal-50 font-medium" data-testid="ai-assistant-link-mobile"><AiIcon className="w-5 h-5" /><span>ИИ-помощник</span></Link>
                       <Link to="/parts-finder" onClick={() => setMobileMenuOpen(false)} className="flex items-center gap-3 p-3 rounded-xl text-teal-600 hover:bg-teal-50 font-medium" data-testid="parts-finder-link-mobile">
                         <Wrench className="w-5 h-5" />
                         Подбор запчастей
@@ -817,7 +821,8 @@ export const Header = () => {
                     <Search className="w-5 h-5" />
                     Каталог
                   </Link>
-                  <Link to="/parts-finder" onClick={() => setMobileMenuOpen(false)} className="flex items-center gap-3 p-3 rounded-xl text-teal-600 hover:bg-teal-50 font-medium" data-testid="parts-finder-link-mobile">
+                  <Link to="/assistant" onClick={() => setMobileMenuOpen(false)} className="flex items-center gap-3 p-3 rounded-xl text-teal-600 hover:bg-teal-50 font-medium" data-testid="ai-assistant-link-mobile"><AiIcon className="w-5 h-5" /><span>ИИ-помощник</span></Link>
+                      <Link to="/parts-finder" onClick={() => setMobileMenuOpen(false)} className="flex items-center gap-3 p-3 rounded-xl text-teal-600 hover:bg-teal-50 font-medium" data-testid="parts-finder-link-mobile">
                     <Wrench className="w-5 h-5" />
                     Подбор запчастей
                   </Link>

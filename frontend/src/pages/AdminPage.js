@@ -1126,6 +1126,23 @@ export default function AdminPage() {
   // Handler functions for refactored components
   
   // Payment settings handlers
+  const [aiDescLoading, setAiDescLoading] = useState(false);
+  const generateAiDescription = async () => {
+    if (!editingProduct?.name?.trim()) { toast.error('Сначала укажите название товара'); return; }
+    if (editingProduct.description?.trim() && !window.confirm('Заменить текущее описание текстом от ИИ?')) return;
+    setAiDescLoading(true);
+    try {
+      const res = await axios.post(`${API}/admin/ai/product-description`, {
+        name: editingProduct.name, article: editingProduct.article || '', manufacturer: editingProduct.manufacturer || '',
+        cross_articles: editingProduct.cross_articles || '',
+        category: categories.find((c) => c.id === editingProduct.category_id)?.name || '',
+      });
+      setEditingProduct((prev) => ({ ...prev, description: res.data.description }));
+      toast.success('Описание готово — проверьте текст перед сохранением');
+    } catch (err) { toast.error(err.response?.data?.detail || 'Не удалось получить описание'); }
+    finally { setAiDescLoading(false); }
+  };
+
   const handleSavePaymentSettings = async () => {
     try {
       await axios.put(`${API}/admin/payment-settings`, paymentSettings);
@@ -3188,7 +3205,12 @@ export default function AdminPage() {
               </div>
 
               <div>
-                <Label className="text-xs font-semibold uppercase text-teal-600">Описание</Label>
+                <div className="flex items-center justify-between gap-2">
+                  <Label className="text-xs font-semibold uppercase text-teal-600">Описание</Label>
+                  <Button type="button" variant="outline" size="sm" onClick={generateAiDescription} disabled={aiDescLoading} className="h-7 text-xs border-teal-200 text-teal-600 hover:bg-teal-50" data-testid="ai-generate-description-btn">
+                    {aiDescLoading ? 'Пишу…' : 'Написать с ИИ'}
+                  </Button>
+                </div>
                 <Textarea
                   value={editingProduct.description || ''}
                   onChange={(e) => setEditingProduct({ ...editingProduct, description: e.target.value })}

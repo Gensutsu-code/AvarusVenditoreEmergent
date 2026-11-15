@@ -28,6 +28,7 @@ from .action_logs import router as action_logs_router
 from .admin_carts import router as admin_carts_router
 from .returns import router as returns_router
 from .credit import router as credit_router
+from .ai import router as ai_router
 from .warehouse import router as warehouse_router
 from .invoices import router as invoices_router
 from .parts_finder import router as parts_finder_router
@@ -39,6 +40,7 @@ api_router = APIRouter(prefix="/api")
 
 # Include all sub-routers
 api_router.include_router(auth_router)
+api_router.include_router(ai_router)
 api_router.include_router(products_router)
 api_router.include_router(orders_router)
 api_router.include_router(admin_router)

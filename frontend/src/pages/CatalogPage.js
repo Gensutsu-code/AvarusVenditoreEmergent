@@ -645,6 +645,26 @@ export default function CatalogPage() {
     }
   };
 
+  const [aiSearching, setAiSearching] = useState(false);
+  const [aiSearchNote, setAiSearchNote] = useState('');
+  const runAiSearch = async () => {
+    if (!searchQuery || aiSearching) return;
+    setAiSearching(true);
+    setAiSearchNote('');
+    try {
+      const res = await axios.post(`${API}/ai/search`, { query: searchQuery });
+      const found = res.data.products || [];
+      if (!found.length) { setAiSearchNote(`${res.data.explanation || ''} В каталоге подходящих товаров не нашлось.`.trim()); return; }
+      setProducts(found);
+      setAlternatives([]);
+      const q = {};
+      found.forEach(p => { q[p.id] = 1; });
+      setQuantities(q);
+      toast.success(res.data.explanation || `Найдено товаров: ${found.length}`);
+    } catch (err) { toast.error(err.response?.data?.detail || 'Умный поиск временно недоступен'); }
+    finally { setAiSearching(false); }
+  };
+
   const handleSearch = (e) => {
     e.preventDefault();
     if (searchInput.trim()) {
@@ -1191,6 +1211,13 @@ export default function CatalogPage() {
                   <Button onClick={clearFilters} variant="outline" className="rounded-xl border-slate-300 text-slate-600 hover:bg-slate-100">
                     Сбросить фильтры
                   </Button>
+                  {user && searchQuery && (
+                    <Button onClick={runAiSearch} disabled={aiSearching} className="rounded-xl bg-gradient-to-r from-teal-500 to-emerald-500 text-white hover:from-teal-600 hover:to-emerald-600" data-testid="ai-search-btn">
+                      <Sparkles className="w-4 h-4 mr-2" />
+                      {aiSearching ? 'Ищу…' : 'Умный поиск: найти по описанию'}
+                    </Button>
+                  )}
+                  {aiSearchNote && <p className="text-sm text-slate-500 max-w-md" data-testid="ai-search-note">{aiSearchNote}</p>}
                   {user && (
                     <Button
                       onClick={() => setRequestModalOpen(true)}

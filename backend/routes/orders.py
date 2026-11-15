@@ -444,7 +444,7 @@ async def create_order(data: OrderCreate, user=Depends(get_current_user)):
     payment_parts_out = None
     balance_to_deduct = 0.0
 
-    # Individual (account-wide) discount — applies ONLY when paying from balance (single method)
+    # Individual (account-wide) discount — applies with every payment method, floor-guarded
     individual_discount_pct = float(user.get("individual_discount", 0) or 0)
     individual_discount_amount = 0.0
 
