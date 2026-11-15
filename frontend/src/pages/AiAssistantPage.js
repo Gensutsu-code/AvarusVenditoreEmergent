@@ -55,6 +55,7 @@ export default function AiAssistantPage() {
   const [guestLeft, setGuestLeft] = useState(null);
   const [handing, setHanding] = useState(false);
   const [handedOff, setHandedOff] = useState(false);
+  const [suggestHandoff, setSuggestHandoff] = useState(false);
 
   const addProduct = async (p) => {
     if (!user) { toast.info('Войдите в аккаунт, чтобы добавить товар в корзину'); navigate('/login'); return; }
@@ -124,7 +125,7 @@ export default function AiAssistantPage() {
           if (!chunk.startsWith('data: ')) return;
           const ev = JSON.parse(chunk.slice(6));
           if (ev.type === 'delta') patchLast((m) => ({ ...m, text: m.text + ev.text }));
-          else if (ev.type === 'done') { patchLast((m) => ({ ...m, pending: false, products: ev.products || [] })); if (typeof ev.guest_left === 'number') setGuestLeft(ev.guest_left); }
+          else if (ev.type === 'done') { patchLast((m) => ({ ...m, pending: false, products: ev.products || [] })); if (typeof ev.guest_left === 'number') setGuestLeft(ev.guest_left); setSuggestHandoff(!!ev.suggest_handoff); }
           else if (ev.type === 'error') throw new Error(ev.message);
         });
       }
@@ -153,7 +154,7 @@ export default function AiAssistantPage() {
             <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-teal-500 to-emerald-500 flex items-center justify-center shadow-lg shadow-teal-500/30"><Sparkles className="w-6 h-6 text-white" /></div>
             <div>
               <h1 className="text-2xl md:text-3xl font-bold text-slate-800">ИИ-помощник по запчастям</h1>
-              <p className="text-sm text-slate-500">Опишите, что нужно — помощник подберёт товары из нашего каталога. Это автоматический помощник, ответы стоит перепроверять.</p>
+              <p className="text-sm text-slate-500">Опишите, что нужно — помощник найдёт артикул детали в интернете, задаст уточняющие вопросы и проверит наличие в нашем каталоге. Это автоматический помощник, ответы стоит перепроверять.</p>
             </div>
           </div>
           {messages.length > 0 && (
@@ -210,8 +211,8 @@ export default function AiAssistantPage() {
               </Button>
             </form>
             {messages.some((m) => m.role === 'assistant' && m.text && !m.pending) && (
-              <div className="mt-3 flex flex-wrap items-center gap-2 text-sm text-slate-500">
-                <span>Помощник не помог?</span>
+              <div className={`mt-3 flex flex-wrap items-center gap-2 text-sm rounded-xl ${suggestHandoff && !handedOff ? 'bg-amber-50 border border-amber-200 text-amber-800 px-3 py-2.5' : 'text-slate-500'}`} data-testid={suggestHandoff ? 'ai-handoff-suggested' : 'ai-handoff-row'}>
+                <span>{suggestHandoff && !handedOff ? 'Помощник не смог подобрать деталь. Менеджер подберёт её вручную:' : 'Помощник не помог?'}</span>
                 <Button type="button" variant="outline" size="sm" onClick={handoff} disabled={handing || handedOff || busy} className="rounded-xl border-teal-200 text-teal-700 hover:bg-teal-50" data-testid="ai-handoff-btn">
                   {handing ? <Loader2 className="w-4 h-4 animate-spin mr-1.5" /> : <Headset className="w-4 h-4 mr-1.5" />}
                   {handedOff ? 'Передано менеджеру' : 'Передать диалог менеджеру'}

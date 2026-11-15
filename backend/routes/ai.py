@@ -68,13 +68,16 @@ PRODUCT_FIELDS = {"_id": 0, "id": 1, "name": 1, "article": 1, "manufacturer": 1,
                   "cross_articles": 1, "description": 1, "image_url": 1, "stock_regions": 1}
 
 ASSISTANT_SYSTEM = (
-    "Ты — консультант интернет-магазина запчастей для грузовиков. Отвечай по-русски, кратко и по делу. "
-    "К каждому вопросу тебе дают список товаров из каталога магазина, найденных по запросу. "
-    "Рекомендуй ТОЛЬКО товары из этого списка: указывай название, артикул и цену, отмечай наличие. "
-    "Никогда не выдумывай товары, артикулы, цены, наличие и применимость, которых нет в списке. "
-    "Если данных недостаточно — задай уточняющий вопрос (марка, модель, год, двигатель, VIN, номер детали). "
-    "Если подходящих товаров в списке нет — честно скажи об этом и предложи оставить заявку на товар "
-    "или написать менеджеру в разделе «Связь». Скидки и сроки доставки не обещай. Пиши простым текстом без markdown-разметки."
+    "Ты — консультант по подбору запчастей интернет-магазина запчастей для грузовиков и прицепов. Отвечай по-русски, кратко "
+    "и по делу, простым текстом без markdown. К каждому вопросу тебе дают: (1) результат поиска номеров детали в интернете "
+    "и (2) товары каталога магазина, найденные по запросу и по этим номерам. Порядок работы: "
+    "если данных клиента не хватает для точного подбора — задай 1–3 конкретных уточняющих вопроса (марка, модель, год, "
+    "двигатель, VIN, номер со старой детали) и не гадай. Если номера найдены — назови клиенту артикул: оригинальный номер и "
+    "аналоги с брендами, даже если такой детали нет в каталоге магазина. Затем проверь список каталога: если подходящий товар "
+    "есть — предложи его (название, артикул, цена, наличие); если в каталоге его нет — прямо скажи, что на сайте сейчас нет, "
+    "и предложи оставить заявку на товар. К покупке предлагай ТОЛЬКО товары из списка каталога. Никогда не выдумывай "
+    "номера, цены и наличие; номера бери только из результата поиска. Если подобрать деталь не удалось — честно скажи об "
+    "этом и предложи нажать кнопку «Передать диалог менеджеру» для ручного подбора. Скидки и сроки доставки не обещай."
 )
 
 
@@ -106,9 +109,48 @@ def _key():
     return key
 
 
-def _chat(system: str, session_id: str, history=None):
-    return LlmChat(api_key=_key(), session_id=session_id, system_message=system,
-                   initial_messages=history or None).with_model(*AI_MODEL)
+SEARCH_MODEL = ("gemini", "gemini-2.5-flash")  # internet search step: OpenAI web search is not available with the universal key
+
+
+def _chat(system: str, session_id: str, history=None, web: bool = False):
+    chat = LlmChat(api_key=_key(), session_id=session_id, system_message=system, initial_messages=history or None)
+    if web:
+        return chat.with_model(*SEARCH_MODEL).with_tools([{"googleSearch": {}}])
+    return chat.with_model(*AI_MODEL)
+
+
+LOOKUP_SYSTEM = (
+    "Ты — эксперт по подбору запчастей для грузовиков и прицепов. По диалогу с клиентом определи, какую деталь он ищет, "
+    "и найди в интернете её номера: оригинальный (OEM) номер и номера качественных аналогов (кроссы). Ищи в каталогах "
+    "производителей, кросс-базах и у поставщиков. Верни СТРОГО JSON без пояснений: "
+    '{"part_name": "", "articles": [{"number": "", "brand": "", "kind": "oem|analog"}], "confident": true, "missing": ""}. '
+    "articles — до 8 номеров, только те, что реально нашлись в источниках; ничего не выдумывай. confident=false, если данных "
+    "клиента не хватает для однозначного подбора или номера не подтверждаются; тогда в missing коротко напиши, что нужно "
+    "уточнить у клиента (марка, модель, год, двигатель, мост, VIN, номер со старой детали и т.п.)."
+)
+
+
+async def _lookup_part(dialog: str) -> dict:
+    """Internet search for part numbers; never raises — an empty result means 'not found'."""
+    empty = {"part_name": "", "articles": [], "confident": False, "missing": "", "ok": False}
+    parts = []
+    try:
+        async for ev in _chat(LOOKUP_SYSTEM, f"lookup-{uuid.uuid4()}", web=True).stream_message(UserMessage(text=dialog)):
+            if isinstance(ev, TextDelta):
+                parts.append(ev.content)
+            elif isinstance(ev, StreamDone):
+                break
+        m = re.search(r"\{.*\}", "".join(parts), re.DOTALL)
+        data = json.loads(m.group(0)) if m else {}
+    except Exception as e:
+        logger.error(f"AI part lookup failed: {e}")
+        return empty
+    articles = []
+    for a in (data.get("articles") or [])[:8]:
+        if isinstance(a, dict) and str(a.get("number") or "").strip():
+            articles.append({"number": str(a["number"]).strip()[:40], "brand": str(a.get("brand") or "")[:40], "kind": str(a.get("kind") or "")[:10]})
+    return {"part_name": str(data.get("part_name") or "")[:120], "articles": articles, "confident": bool(data.get("confident")),
+            "missing": str(data.get("missing") or "")[:300], "ok": True}
 
 
 async def _complete(system: str, prompt: str) -> str:
@@ -217,8 +259,11 @@ async def assistant_chat(data: AssistantMessage, request: Request, user=Depends(
     ).sort("created_at", 1).to_list(200)
     past = past[-12:]
     history = [{"role": m["role"], "content": m["text"]} for m in past]
+    dialog = "\n".join(f"{'Клиент' if m['role'] == 'user' else 'Консультант'}: {m['text'][:500]}" for m in past[-6:]) + f"\nКлиент: {text}"
+    lookup = await _lookup_part(dialog)
+    numbers = " ".join(a["number"] for a in lookup["articles"])
     prev_user = next((m["text"] for m in reversed(past) if m["role"] == "user"), "")
-    products = await _find_products(f"{text} {prev_user}")
+    products = await _find_products(f"{numbers} {lookup['part_name']} {text} {prev_user}")
 
     await db.ai_chat_messages.insert_one({
         "id": str(uuid.uuid4()), "session_id": data.session_id, "user_id": user["id"],
@@ -226,7 +271,8 @@ async def assistant_chat(data: AssistantMessage, request: Request, user=Depends(
     })
     prompt = (
         f"Вопрос клиента: {text}\n\n"
-        f"Товары каталога, найденные по запросу ({len(products)}):\n"
+        f"Результат поиска номеров в интернете: {json.dumps({k: lookup[k] for k in ('part_name', 'articles', 'confident', 'missing')}, ensure_ascii=False)}\n\n"
+        f"Товары каталога магазина ({len(products)}):\n"
         f"{json.dumps([_slim(p) for p in products], ensure_ascii=False)}"
     )
     cards = [_card(p) for p in products]
@@ -254,7 +300,10 @@ async def assistant_chat(data: AssistantMessage, request: Request, user=Depends(
             "role": "assistant", "text": answer, "products": mentioned,
             "created_at": datetime.now(timezone.utc).isoformat(),
         })
-        yield _sse({"type": "done", "products": mentioned, "guest_left": guest_left})
+        # nothing identified and nothing to ask the client -> offer a manager for manual selection
+        suggest_handoff = not lookup["articles"] and not mentioned and not lookup["missing"]
+        yield _sse({"type": "done", "products": mentioned, "guest_left": guest_left, "suggest_handoff": suggest_handoff,
+                    "found_articles": lookup["articles"]})
 
     return StreamingResponse(gen(), media_type="text/event-stream",
                              headers={"Cache-Control": "no-cache", "X-Accel-Buffering": "no"})

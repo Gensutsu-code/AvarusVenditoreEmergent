@@ -2,12 +2,13 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { Navigate } from 'react-router-dom';
 import axios from 'axios';
 import { toast } from 'sonner';
-import { BarChart3, Users, MessageCircle, Pencil, Send, Loader2 } from 'lucide-react';
+import { BarChart3, Users, MessageCircle, Pencil, Send, Loader2, ClipboardList, Boxes } from 'lucide-react';
 import { Button } from '../components/ui/button';
 import { Input } from '../components/ui/input';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '../components/ui/dialog';
 import { useAuth } from '../context/AuthContext';
 import { PeriodSwitch, ManagerStatsView, ConditionsFields, toConditionsPayload, money } from '../components/staff/ManagerStats';
+import { ClientStatsModal, ManagerOrdersTab, ManagerCatalogTab } from '../components/staff/ManagerSales';
 
 const API = `${process.env.REACT_APP_BACKEND_URL}/api`;
 const err = (e) => { const d = e.response?.data?.detail; toast.error(typeof d === 'string' ? d : 'Ошибка'); };
@@ -15,6 +16,7 @@ const err = (e) => { const d = e.response?.data?.detail; toast.error(typeof d ==
 const ClientsTab = () => {
   const [clients, setClients] = useState(null);
   const [edit, setEdit] = useState(null);
+  const [statsFor, setStatsFor] = useState(null);
   const [saving, setSaving] = useState(false);
   const load = useCallback(() => axios.get(`${API}/manager/clients`).then((r) => setClients(r.data)).catch(err), []);
   useEffect(() => { load(); }, [load]);
@@ -39,6 +41,7 @@ const ClientsTab = () => {
             <span>Отсрочка: <b>{c.effective.deferral_days} дн.</b></span>
             <span>Лимит в долг: <b>{money(c.effective.credit_limit)}</b></span>
           </div>
+          <Button size="sm" variant="outline" className="mt-3 mr-2" onClick={() => setStatsFor(c)} data-testid={`manager-client-stats-${c.id}`}><BarChart3 className="w-3.5 h-3.5 mr-1.5" />Статистика</Button>
           {c.pending_request ? (
             <p className="mt-3 text-xs rounded-lg bg-amber-50 text-amber-800 px-3 py-2" data-testid={`manager-request-pending-${c.id}`}>Запрос условий на рассмотрении у администратора</p>
           ) : (
@@ -48,6 +51,7 @@ const ClientsTab = () => {
           )}
         </div>
       ))}
+      <ClientStatsModal client={statsFor} onClose={() => setStatsFor(null)} />
       <Dialog open={!!edit} onOpenChange={(o) => !o && setEdit(null)}>
         <DialogContent className="rounded-2xl" data-testid="manager-conditions-modal">
           <DialogHeader><DialogTitle>Запрос условий: {edit?.name}</DialogTitle></DialogHeader>
@@ -130,21 +134,23 @@ export default function ManagerPage() {
   const [period, setPeriod] = useState('month');
   const [stats, setStats] = useState(null);
   const [pay, setPay] = useState(null);
+  const [myClients, setMyClients] = useState([]);
   const isManager = user?.role === 'manager';
   useEffect(() => {
     if (isManager) axios.get(`${API}/manager/overview`, { params: { period } }).then((r) => setStats(r.data)).catch(err);
   }, [isManager, period]);
 
+  useEffect(() => { if (isManager) axios.get(`${API}/manager/clients`).then((r) => setMyClients(r.data)).catch(() => {}); }, [isManager]);
   useEffect(() => { if (isManager) axios.get(`${API}/manager/payouts`).then((r) => setPay(r.data)).catch(() => {}); }, [isManager]);
 
   if (loading) return null;
   if (!isManager) return <Navigate to="/" replace />;
-  const tabs = [{ id: 'stats', label: 'Статистика', icon: BarChart3 }, { id: 'clients', label: 'Мои клиенты', icon: Users }, { id: 'chats', label: 'Чаты с клиентами', icon: MessageCircle }];
+  const tabs = [{ id: 'stats', label: 'Статистика', icon: BarChart3 }, { id: 'clients', label: 'Мои клиенты', icon: Users }, { id: 'orders', label: 'Заказы клиентов', icon: ClipboardList }, { id: 'catalog', label: 'Товары и новый заказ', icon: Boxes }, { id: 'chats', label: 'Чаты с клиентами', icon: MessageCircle }];
 
   return (
     <div className="min-h-screen" data-testid="manager-page">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <h1 className="text-2xl md:text-3xl font-bold text-slate-800">Кабинет менеджера</h1>
+        <h1 className="text-2xl md:text-3xl font-bold text-slate-800">Панель менеджера</h1>
         <p className="text-sm text-slate-500 mb-5">{user.name} · в статистику попадают заказы закреплённых за вами клиентов, кроме отменённых</p>
         <div className="flex flex-wrap items-center justify-between gap-3 mb-5">
           <div className="inline-flex flex-wrap gap-1 p-1 rounded-xl bg-slate-100">
@@ -165,6 +171,8 @@ export default function ManagerPage() {
         )}
         {tab === 'stats' && <ManagerStatsView stats={stats} />}
         {tab === 'clients' && <ClientsTab />}
+        {tab === 'orders' && <ManagerOrdersTab />}
+        {tab === 'catalog' && <ManagerCatalogTab clients={myClients} />}
         {tab === 'chats' && <ChatsTab />}
       </div>
     </div>

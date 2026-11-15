@@ -70,7 +70,9 @@ export default function CartPage() {
   const [preview, setPreview] = useState(null);
   const [mixedMethods, setMixedMethods] = useState([]); // up to 2 of: balance, card, cash
   const [mix1Amount, setMix1Amount] = useState('');
-  const [form, setForm] = useState({ full_name: '', address: '', phone: '', comment: '' });
+  const [form, setForm] = useState({ full_name: '', address: '', phone: '', comment: '', vehicle_id: '' });
+  const [vehicles, setVehicles] = useState([]);
+  useEffect(() => { if (user) axios.get(`${API}/garage/vehicles`).then(r => setVehicles(r.data || [])).catch(() => {}); }, [user]);
   const [agreedToTerms, setAgreedToTerms] = useState(true);
   const [showTermsModal, setShowTermsModal] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -624,6 +626,15 @@ export default function CartPage() {
                 <Label className="text-xs font-bold uppercase tracking-widest text-slate-500 mb-2 block">Телефон *</Label>
                 <Input type="tel" value={form.phone} onChange={(e) => setForm({ ...form, phone: e.target.value })} placeholder="+7 (___) ___-__-__" className="h-12 rounded-xl" required data-testid="checkout-phone" />
               </div>
+              {vehicles.length > 0 && (
+                <div>
+                  <Label className="text-xs font-bold uppercase tracking-widest text-slate-500 flex items-center gap-2 mb-2"><Truck className="w-4 h-4" />Для какой техники покупка</Label>
+                  <select value={form.vehicle_id} onChange={(e) => setForm({ ...form, vehicle_id: e.target.value })} className="w-full h-11 rounded-xl border border-slate-200 bg-white px-3 text-sm focus:outline-none focus:border-teal-400" data-testid="checkout-vehicle-select">
+                    <option value="">Не привязывать к технике</option>
+                    {vehicles.map(v => <option key={v.id} value={v.id}>{v.type === 'trailer' ? 'Прицеп' : 'Авто'}: {v.name} · {v.vin}</option>)}
+                  </select>
+                </div>
+              )}
               <div>
                 <Label className="text-xs font-bold uppercase tracking-widest text-slate-500 flex items-center gap-2 mb-2"><MessageSquare className="w-4 h-4" />Комментарий</Label>
                 <Textarea value={form.comment} onChange={(e) => setForm({ ...form, comment: e.target.value })} placeholder="Пожелания к доставке..." className="min-h-[70px] rounded-xl" data-testid="checkout-comment" />

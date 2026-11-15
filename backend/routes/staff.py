@@ -182,10 +182,12 @@ async def _cost_maps(orders):
     return cost_map, fallback
 
 
-async def _manager_stats(manager: dict, period: str, detailed: bool = True):
+async def _manager_stats(manager: dict, period: str, detailed: bool = True, client_id: Optional[str] = None):
     if period not in PERIOD_DAYS and period != "all":
         raise HTTPException(status_code=400, detail="Неизвестный период")
     query = {"manager_id": manager["id"], "status": {"$ne": "cancelled"}}
+    if client_id:
+        query["user_id"] = client_id
     if period != "all":
         query["created_at"] = {"$gte": (datetime.now(timezone.utc) - timedelta(days=PERIOD_DAYS[period])).isoformat()}
     orders = await db.orders.find(query, {"_id": 0}).sort("created_at", -1).to_list(5000)
@@ -605,3 +607,96 @@ async def manager_chat_send(chat_id: str, data: ChatText, user=Depends(get_curre
     await db.chats.update_one({"id": chat_id}, {"$set": {"updated_at": _now()}})
     await notify_user(chat["user_id"], "chat", "Ответ менеджера", data.text[:80], "/chat")
     return {"id": msg["id"]}
+
+
+# ==================== MANAGER SALES PANEL: client stats, orders, catalog, ordering for a client ====================
+
+PRODUCT_PUBLIC = {"_id": 0, "id": 1, "name": 1, "article": 1, "manufacturer": 1, "price": 1, "stock": 1, "stock_regions": 1,
+                  "image_url": 1, "cross_articles": 1, "discount_active": 1, "discount_type": 1, "discount_value": 1,
+                  "discount_until": 1, "discount_tiers": 1, "is_markdown": 1, "markdown_comment": 1}
+
+
+@router.get("/manager/clients/{user_id}/stats")
+async def manager_client_stats(user_id: str, period: str = "all", user=Depends(get_current_user)):
+    _manager(user)
+    await _own_client(user, user_id)
+    return await _manager_stats(user, period, client_id=user_id)
+
+
+@router.get("/manager/orders")
+async def manager_orders(user=Depends(get_current_user)):
+    """Orders of the manager's current clients plus orders already counted for him."""
+    _manager(user)
+    clients = {c["id"]: c for c in await db.users.find({"manager_id": user["id"], "role": "user"}, {"_id": 0, "id": 1, "name": 1, "email": 1}).to_list(2000)}
+    orders = await db.orders.find({"$or": [{"manager_id": user["id"]}, {"user_id": {"$in": list(clients)}}]}, {"_id": 0}).sort("created_at", -1).to_list(1000)
+    return [{
+        "id": o["id"], "created_at": o.get("created_at"), "status": o.get("status"), "total": o.get("total"), "paid": o.get("paid"),
+        "payment_method": o.get("payment_method"), "client_name": (clients.get(o["user_id"]) or {}).get("name") or o.get("full_name"),
+        "user_id": o["user_id"], "address": o.get("address"), "phone": o.get("phone"), "comment": o.get("comment"),
+        "created_by_manager": bool(o.get("created_by_manager_id")),
+        "items": [{"name": i.get("name"), "article": i.get("article"), "quantity": i.get("quantity"), "price": i.get("price")} for i in o.get("items", [])],
+    } for o in orders]
+
+
+@router.get("/manager/products")
+async def manager_products(search: str = "", in_stock: bool = False, user=Depends(get_current_user)):
+    """Catalog for managers: stock and selling prices, never purchase prices."""
+    _manager(user)
+    q = {}
+    if search.strip():
+        rx = {"$regex": re.escape(search.strip()), "$options": "i"}
+        q["$or"] = [{"name": rx}, {"article": rx}, {"cross_articles": rx}, {"manufacturer": rx}]
+    if in_stock:
+        q["stock"] = {"$gt": 0}
+    return await db.products.find(q, PRODUCT_PUBLIC).sort("name", 1).to_list(300)
+
+
+class ManagerOrderItem(BaseModel):
+    product_id: str
+    quantity: int = Field(ge=1, le=100000)
+
+
+class ManagerOrderIn(BaseModel):
+    items: list[ManagerOrderItem] = Field(min_length=1, max_length=200)
+    payment_method: str = "cash"  # cash | card | balance | deferral
+    full_name: str = Field(default="", max_length=200)
+    address: str = Field(min_length=1, max_length=500)
+    phone: str = Field(min_length=3, max_length=40)
+    comment: str = Field(default="", max_length=1000)
+
+
+@router.post("/manager/clients/{user_id}/orders")
+async def manager_create_order(user_id: str, data: ManagerOrderIn, user=Depends(get_current_user)):
+    """Places an order on behalf of the manager's client, on the client's own conditions and limits."""
+    _manager(user)
+    await _own_client(user, user_id)
+    if data.payment_method not in ("cash", "card", "balance", "deferral"):
+        raise HTTPException(status_code=400, detail="Недоступный способ оплаты")
+    from models import OrderCreate
+    from routes.orders import create_order
+    client = await db.users.find_one({"id": user_id}, {"_id": 0, "password": 0})
+    eff = effective_conditions(client, await get_status_conditions())
+    client.update({"customer_status": eff["customer_status"], "individual_discount": eff["discount"], "delivery_cost": eff["delivery_cost"]})
+    for it in data.items:
+        p = await db.products.find_one({"id": it.product_id}, {"_id": 0, "name": 1, "stock": 1})
+        if not p:
+            raise HTTPException(status_code=404, detail="Товар не найден")
+        if (p.get("stock") or 0) < it.quantity:
+            raise HTTPException(status_code=400, detail=f"Недостаточно на складе: {p.get('name')}")
+    payload = OrderCreate(
+        full_name=data.full_name.strip() or client.get("name", ""), address=data.address.strip(), phone=data.phone.strip(),
+        comment=data.comment.strip() or None, payment_method=data.payment_method,
+        pay_with_balance=data.payment_method == "balance", pay_later=data.payment_method == "card",
+    )
+    # the client's own cart is kept aside while the manager's order is being placed
+    saved = await db.carts.find_one({"user_id": user_id}, {"_id": 0, "items": 1})
+    await db.carts.update_one({"user_id": user_id}, {"$set": {"items": [i.model_dump() for i in data.items]}}, upsert=True)
+    try:
+        order = await create_order(payload, user=client)
+    finally:
+        await db.carts.update_one({"user_id": user_id}, {"$set": {"items": (saved or {}).get("items", [])}}, upsert=True)
+    order_id = order["id"] if isinstance(order, dict) else order.id
+    await db.orders.update_one({"id": order_id}, {"$set": {"created_by_manager_id": user["id"], "created_by_manager_name": user.get("name", "")}})
+    await notify_user(user_id, "order", "Заказ оформлен менеджером", f"Менеджер {user.get('name', '')} оформил для вас заказ #{order_id[:8]}", "/orders")
+    saved_order = await db.orders.find_one({"id": order_id}, {"_id": 0, "id": 1, "total": 1, "status": 1, "payment_method": 1})
+    return saved_order

@@ -8,6 +8,7 @@ import { Input } from '../components/ui/input';
 import { useAuth } from '../context/AuthContext';
 import { toast } from 'sonner';
 import { ProductRequestOffer } from '../components/ProductRequestOffer';
+import { MyManagerCard } from '../components/MyManagerCard';
 
 const API = `${process.env.REACT_APP_BACKEND_URL}/api`;
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
@@ -224,6 +225,7 @@ export default function ContactPage() {
             <p className="text-sm text-slate-500">Чат, запросы скидок, индивидуальных условий и отсрочки</p>
           </div>
         </div>
+        <MyManagerCard />
 
         {/* Tabs */}
         <div className="flex gap-2 mb-6 flex-wrap">

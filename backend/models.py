@@ -252,6 +252,7 @@ class OrderCreate(BaseModel):
     pay_delivery_with_points: Optional[bool] = False  # cover delivery fee with bonus points
     reward_choice: Optional[str] = "points"  # 'points' (accrue bonus points) or 'ozon' (extra Ozon certificate)
     promo_code: Optional[str] = None  # cart-wide promo code (single-method payments only)
+    vehicle_id: Optional[str] = None  # garage vehicle the parts are bought for
 
 class OrderItemUpdate(BaseModel):
     product_id: str

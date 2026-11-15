@@ -578,6 +578,10 @@ async def create_order(data: OrderCreate, user=Depends(get_current_user)):
     if await has_overdue_deferral(user["id"]):
         raise HTTPException(status_code=403, detail="Есть просроченный долг по отсрочке. Погасите задолженность, чтобы оформлять новые заказы.")
     
+    vehicle_id = None
+    if data.vehicle_id:
+        from routes.garage import own_vehicle
+        vehicle_id = (await own_vehicle(user["id"], data.vehicle_id))["id"]
     pricing = await _compute_order_pricing(data, user, cart)
     active_cart_discount = pricing["active_cart_discount"]
     balance_to_deduct = pricing["balance_to_deduct"]
@@ -766,6 +770,7 @@ async def create_order(data: OrderCreate, user=Depends(get_current_user)):
         "reward_points": int(reward_points),
         "region": user.get("region", "") or "",
         "manager_id": user.get("manager_id"),
+        "vehicle_id": vehicle_id,
         "manager_commission_percent": await manager_commission_percent(user.get("manager_id")),
         "created_at": datetime.now(timezone.utc).isoformat()
     }

@@ -48,6 +48,7 @@ import PartsFinderPage from "./pages/PartsFinderPage";
 import AiAssistantPage from "./pages/AiAssistantPage";
 import AdminStaffPage from "./pages/AdminStaffPage";
 import ManagerPage from "./pages/ManagerPage";
+import GaragePage from "./pages/GaragePage";
 
 const API = `${process.env.REACT_APP_BACKEND_URL}/api`;
 
@@ -160,6 +161,7 @@ function AppContent() {
           <Route path="/admin/returns" element={<AdminReturnsPage />} />
           <Route path="/admin/staff" element={<AdminStaffPage />} />
           <Route path="/manager" element={<ManagerPage />} />
+          <Route path="/garage" element={<GaragePage />} />
           <Route path="/admin/products" element={<AdminProductsPage />} />
           <Route path="/admin/credit" element={<AdminCreditPage />} />
           <Route path="/admin/warehouse" element={<Navigate to="/admin" replace />} />

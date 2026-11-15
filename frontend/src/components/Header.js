@@ -1,7 +1,7 @@
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { ShoppingCart, User, Search, LogOut, Settings, Heart, Package, ClipboardList, Gift, Newspaper, Menu, X, MessageCircle, Bell, Wallet, RefreshCw, CreditCard, Wrench, MapPin, ChevronDown } from 'lucide-react';
 import { useRegion } from '../context/RegionContext';
-import { Map as MapIcon, Sparkles as AiIcon, Users as StaffIcon, Briefcase as ManagerIcon } from 'lucide-react';
+import { Map as MapIcon, Sparkles as AiIcon, Users as StaffIcon, Briefcase as ManagerIcon, Warehouse as GarageIcon } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { useCart } from '../context/CartContext';
 import { Button } from './ui/button';
@@ -501,6 +501,9 @@ export const Header = () => {
                       </NavLink>
                       
                       {/* Заказы */}
+                      <Link to="/garage" data-testid="garage-link" title="Мой гараж" className="h-10 px-3 rounded-xl flex items-center gap-1.5 bg-white/95 border border-slate-200 text-slate-600 hover:border-teal-300 hover:text-teal-600 transition-colors duration-200 text-sm font-medium whitespace-nowrap">
+                        <GarageIcon className="w-4 h-4 text-teal-500" /><span className="hidden xl:inline">Гараж</span>
+                      </Link>
                       <Link to="/orders" data-testid="orders-link">
                         <motion.div 
                           className="flex items-center gap-2 px-3 py-2 rounded-xl cursor-pointer"
@@ -788,6 +791,7 @@ export const Header = () => {
                         <Wrench className="w-5 h-5" />
                         Подбор запчастей
                       </Link>
+                      <Link to="/garage" onClick={() => setMobileMenuOpen(false)} className="flex items-center gap-3 p-3 rounded-xl text-slate-600 hover:bg-slate-50" data-testid="garage-link-mobile"><GarageIcon className="w-5 h-5" /><span className="font-medium">Мой гараж</span></Link>
                       <Link to="/orders" onClick={() => setMobileMenuOpen(false)} className="flex items-center gap-3 p-3 rounded-xl text-slate-600 hover:bg-slate-50">
                         <Package className="w-5 h-5" />
                         Мои заказы

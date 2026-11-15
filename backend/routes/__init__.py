@@ -30,6 +30,7 @@ from .returns import router as returns_router
 from .credit import router as credit_router
 from .ai import router as ai_router
 from .staff import router as staff_router
+from .garage import router as garage_router
 from .warehouse import router as warehouse_router
 from .invoices import router as invoices_router
 from .parts_finder import router as parts_finder_router
@@ -43,6 +44,7 @@ api_router = APIRouter(prefix="/api")
 api_router.include_router(auth_router)
 api_router.include_router(ai_router)
 api_router.include_router(staff_router)
+api_router.include_router(garage_router)
 api_router.include_router(products_router)
 api_router.include_router(orders_router)
 api_router.include_router(admin_router)
