@@ -232,6 +232,13 @@ E-commerce platform for truck spare parts with a comprehensive admin panel. Russ
 - Выплата больше остатка → 400. `staff-chart` отдаёт `profit`, переключатель `chart-metric-*`. Фильтр `orders-manager-filter` в /admin/orders.
 - Тестовые менеджеры TEST_ удалены и отвязаны от заказов.
 
+### Iter 112 (DONE — backend 28/28, UI — смоук)
+- **Менеджер на странице связи**: `MyManagerCard` («Имя Ф.» + телефон / «Менеджер не назначен»).
+- **ИИ-подбор с интернетом**: `_lookup_part` (Gemini 2.5 Flash + googleSearch — веб-поиск OpenAI через универсальный ключ недоступен) → номера OEM/аналогов → поиск в каталоге → ответ GPT-5.4; `done.suggest_handoff`, `done.found_articles`.
+- **Гараж** (`routes/garage.py`, `/garage`): техника с VIN (17 симв.), `vehicle_id` в заказе (выбор в корзине `checkout-vehicle-select`), история запчастей и «купить снова», привязка старых заказов.
+- **Панель менеджера** `/manager`: статистика по клиенту, заказы клиентов, каталог без закупочных цен (`/api/manager/products`), оформление заказа за клиента (`POST /api/manager/clients/{id}/orders` — через create_order на условиях клиента, корзина клиента сохраняется).
+- Чаты менеджера — только свои клиенты; админ видит все.
+
 ### P1 (Important)
 - Real Payment Gateway Integration (replace MOCKED YuKassa)
 - CartPage/ProductPage display mismatches (pre-existing): payment-method adjustment & tier preview not clamped to min_price in UI (server charges correct floor). Best fixed via a server-computed cart preview.

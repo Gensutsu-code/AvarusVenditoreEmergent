@@ -125,7 +125,7 @@ export default function GaragePage() {
       </div>
 
       <Dialog open={!!form} onOpenChange={(o) => !o && setForm(null)}>
-        <DialogContent className="rounded-2xl" data-testid="garage-modal">
+        <DialogContent className="rounded-2xl" aria-describedby={undefined} data-testid="garage-modal">
           <DialogHeader><DialogTitle>{form?.id ? 'Редактировать технику' : 'Добавить технику'}</DialogTitle></DialogHeader>
           {form && (
             <div className="space-y-3">

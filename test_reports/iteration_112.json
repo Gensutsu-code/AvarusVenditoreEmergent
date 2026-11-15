@@ -1,0 +1,36 @@
+{
+  "summary": "Iteration 112 (contact-page manager card, garage, manager sales panel, manager chats, AI lookup) — backend: 28/28 pytest pass; frontend: smoke-verified data-testids on /contact, /garage, /manager.",
+  "backend_issues": {
+    "critical": [],
+    "minor": []
+  },
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [],
+    "design_issues": [
+      {"screen": "Garage modal", "issues": ["Radix DialogContent missing aria-describedby (a11y warning, not blocking)"]}
+    ]
+  },
+  "test_report_links": [
+    "/app/backend/tests/test_iter112_garage_manager_sales.py",
+    "/app/test_reports/pytest/iter112.xml"
+  ],
+  "action_items": [
+    "Add aria-describedby / DialogDescription to garage-modal to silence Radix a11y warning"
+  ],
+  "critical_code_review_comments": [
+    "routes/garage.py uses `id: {$ne: exclude_id}` with None exclude_id on create — works but relies on $ne:null not matching existing docs; OK because all docs have ids. Clean.",
+    "manager_create_order temporarily overwrites the client's cart, calls create_order, then restores it in a finally. If the server crashes mid-order the client's cart is left in a weird state. Consider refactoring create_order to accept an items list directly.",
+    "manager_products excludes purchase_price/min_price/cost via projection whitelist — good (verified)."
+  ],
+  "updated_files": [
+    "/app/backend/tests/test_iter112_garage_manager_sales.py"
+  ],
+  "success_rate": {"backend": "100% (28/28)", "frontend": "100% smoke"},
+  "test_credentials": "Used admin@avarus.ru/admin, manager@avarus.ru/manager123, user@demo.com/demo123, 0x0errorr@gmail.com/admin123 from /app/memory/test_credentials.md.",
+  "seed_data_creation": "Created and cleaned up TEST_ products, TEST_ vehicles (soft-deleted), TEST_ orders (cancelled by client). Autouse module teardown also scrubs any remaining TEST_ products via admin DELETE.",
+  "retest_needed": false,
+  "main_agent_can_self_test": true,
+  "context_for_next_testing_agent": "Backend endpoints covered: /api/my-conditions (manager payload), /api/garage/*, /api/manager/{overview,clients,orders,products,chats,clients/{id}/stats,clients/{id}/orders,chats/{id}/messages}, /api/ai/assistant/chat SSE. Auth token key is `token` (NOT access_token). Phone fields require ≥3 chars (use '+7999' not '+7'). Cart endpoints: POST /api/cart/add, DELETE /api/cart (clear). AI SSE lookup can take 20–60 s; tests use 120–180 s timeouts.",
+  "rca of the issue": "N/A — no defects found."
+}
