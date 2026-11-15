@@ -1,7 +1,7 @@
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { ShoppingCart, User, Search, LogOut, Settings, Heart, Package, ClipboardList, Gift, Newspaper, Menu, X, MessageCircle, Bell, Wallet, RefreshCw, CreditCard, Wrench, MapPin, ChevronDown } from 'lucide-react';
 import { useRegion } from '../context/RegionContext';
-import { Map as MapIcon, Sparkles as AiIcon } from 'lucide-react';
+import { Map as MapIcon, Sparkles as AiIcon, Users as StaffIcon, Briefcase as ManagerIcon } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { useCart } from '../context/CartContext';
 import { Button } from './ui/button';
@@ -387,6 +387,11 @@ export const Header = () => {
                   compact={true}
                 />
               </div>
+              {user.role === 'manager' && (
+                <Link to="/manager" className="h-10 px-3 rounded-xl flex items-center gap-1.5 bg-slate-900 text-white hover:bg-slate-700 transition-colors duration-200 text-sm font-semibold whitespace-nowrap" data-testid="manager-cabinet-link">
+                  <ManagerIcon className="w-4 h-4" /><span className="hidden lg:inline">Кабинет менеджера</span>
+                </Link>
+              )}
               <Link to="/assistant" className="h-10 px-3 rounded-xl flex items-center gap-1.5 bg-white/95 border border-teal-200 text-teal-600 hover:border-teal-400 transition-colors duration-200 text-sm font-semibold whitespace-nowrap" title="ИИ-помощник по подбору запчастей" data-testid="ai-assistant-link">
                 <AiIcon className="w-4 h-4" /><span className="hidden xl:inline">ИИ-помощник</span>
               </Link>
@@ -460,6 +465,12 @@ export const Header = () => {
                       <span className="flex items-center gap-2">
                         <RefreshCw className="w-4 h-4" />
                         Возвраты
+                      </span>
+                    </NavLink>
+                    <NavLink to="/admin/staff" data-testid="admin-staff-link">
+                      <span className="flex items-center gap-2">
+                        <StaffIcon className="w-4 h-4" />
+                        Сотрудники
                       </span>
                     </NavLink>
                     <NavLink to="/admin/credit" data-testid="admin-credit-link">
@@ -771,6 +782,7 @@ export const Header = () => {
                         <Search className="w-5 h-5" />
                         Каталог
                       </Link>
+                      {user?.role === 'manager' && <Link to="/manager" onClick={() => setMobileMenuOpen(false)} className="flex items-center gap-3 p-3 rounded-xl text-slate-800 hover:bg-slate-50 font-semibold" data-testid="manager-cabinet-link-mobile"><ManagerIcon className="w-5 h-5" /><span>Кабинет менеджера</span></Link>}
                       <Link to="/assistant" onClick={() => setMobileMenuOpen(false)} className="flex items-center gap-3 p-3 rounded-xl text-teal-600 hover:bg-teal-50 font-medium" data-testid="ai-assistant-link-mobile"><AiIcon className="w-5 h-5" /><span>ИИ-помощник</span></Link>
                       <Link to="/parts-finder" onClick={() => setMobileMenuOpen(false)} className="flex items-center gap-3 p-3 rounded-xl text-teal-600 hover:bg-teal-50 font-medium" data-testid="parts-finder-link-mobile">
                         <Wrench className="w-5 h-5" />

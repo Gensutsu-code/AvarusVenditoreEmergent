@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Send, Image, FileText, Truck, Bell, Upload, Download, FileSpreadsheet, Power, Code, Globe, Wrench } from 'lucide-react';
+import { StatusConditionsSettings } from './StatusConditionsSettings';
 import { motion } from 'framer-motion';
 import axios from 'axios';
 import { toast } from 'sonner';
@@ -658,6 +659,7 @@ export const SettingsTab = ({
   const [activeSubTab, setActiveSubTab] = useState('telegram');
 
   const subTabs = [
+    { id: 'conditions', label: 'Условия по статусам', icon: FileText },
     { id: 'telegram', label: 'Telegram', icon: Send },
     { id: 'delivery', label: 'Доставка', icon: Truck },
     { id: 'import', label: 'Импорт', icon: Upload },
@@ -750,6 +752,8 @@ export const SettingsTab = ({
           <FooterTab isDark={isDark} />
         </motion.div>
       )}
+
+      {activeSubTab === 'conditions' && <StatusConditionsSettings isDark={isDark} />}
 
       {/* Partners */}
       {activeSubTab === 'partners' && (

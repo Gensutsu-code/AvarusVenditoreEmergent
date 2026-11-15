@@ -125,6 +125,11 @@ async def lifespan(app: FastAPI):
         logger.error(f"Legacy stock migration failed: {e}")
 
     try:
+        await db.users.update_many({"customer_status": {"$in": ["partner", "opt", "b2b"]}}, {"$set": {"customer_status": "wholesale"}})
+    except Exception as e:
+        logger.error(f"Customer status migration failed: {e}")
+
+    try:
         await migrate_regions()
     except Exception as e:
         logger.error(f"Regions directory migration failed: {e}")

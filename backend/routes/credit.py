@@ -42,7 +42,8 @@ class ClientReject(BaseModel):
 
 
 async def _credit_summary(user_id: str):
-    u = await db.users.find_one({"id": user_id}, {"_id": 0, "credit_status": 1, "credit_limit": 1, "credit_term_days": 1})
+    from database import effective_credit
+    u = await effective_credit(user_id)
     status = (u or {}).get("credit_status", "none")
     limit = (u or {}).get("credit_limit", 0) or 0
     term_days = (u or {}).get("credit_term_days", 0) or 0

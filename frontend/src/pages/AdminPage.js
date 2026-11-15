@@ -3608,7 +3608,7 @@ export default function AdminPage() {
               </div>
 
               <div className="pt-3 mt-1 border-t border-zinc-200">
-                <p className="text-xs font-bold uppercase text-teal-600 mb-2">Индивидуальные условия (выше общих настроек сайта)</p>
+                <p className="text-xs font-bold uppercase text-teal-600 mb-2">Индивидуальные условия (выше стандартных условий статуса)</p>
                 <div className="grid grid-cols-2 gap-3">
                   <div>
                     <Label className="text-[11px] font-semibold text-zinc-500">Статус клиента</Label>
@@ -3618,9 +3618,8 @@ export default function AdminPage() {
                       className="mt-1 w-full h-10 px-3 border border-zinc-200 bg-white rounded-md text-sm"
                       data-testid="user-status-select"
                     >
-                      <option value="retail">Розница</option>
-                      <option value="opt">Опт</option>
-                      <option value="b2b">B2B</option>
+                      <option value="retail">Розничный клиент</option>
+                      <option value="wholesale">Оптовый клиент</option>
                     </select>
                   </div>
                   <div>

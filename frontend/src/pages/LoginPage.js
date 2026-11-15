@@ -24,9 +24,9 @@ export default function LoginPage() {
     setLoading(true);
     
     try {
-      await login(form.email, form.password);
+      const res = await login(form.email, form.password);
       toast.success('Добро пожаловать!');
-      navigate('/');
+      navigate(res?.user?.role === 'manager' ? '/manager' : '/');
     } catch (err) {
       toast.error('Неверный email или пароль');
     } finally {

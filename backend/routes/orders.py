@@ -652,7 +652,8 @@ async def create_order(data: OrderCreate, user=Depends(get_current_user)):
     deferral_due_date = None
     deferral_term = 0
     if is_deferral:
-        ucred = await db.users.find_one({"id": user["id"]}, {"_id": 0, "credit_status": 1, "credit_limit": 1, "credit_term_days": 1})
+        from database import effective_credit
+        ucred = await effective_credit(user["id"])
         if not ucred or ucred.get("credit_status") != "approved" or (ucred.get("credit_limit", 0) or 0) <= 0:
             raise HTTPException(status_code=400, detail="Отсрочка недоступна. Запросите кредитный лимит у администрации.")
         unpaid = await db.deferrals.find({"user_id": user["id"], "status": "unpaid"}, {"_id": 0, "amount": 1}).to_list(1000)
@@ -763,6 +764,7 @@ async def create_order(data: OrderCreate, user=Depends(get_current_user)):
         "reward_choice": reward_choice,
         "reward_points": int(reward_points),
         "region": user.get("region", "") or "",
+        "manager_id": user.get("manager_id"),
         "created_at": datetime.now(timezone.utc).isoformat()
     }
     

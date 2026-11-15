@@ -71,7 +71,7 @@ async def get_admin_users(user=Depends(get_current_user)):
     if user.get("role") != "admin":
         raise HTTPException(status_code=403, detail="Admin access required")
     
-    users = await db.users.find({}, {"_id": 0, "password": 0}).to_list(1000)
+    users = await db.users.find({"role": {"$ne": "manager"}}, {"_id": 0, "password": 0}).to_list(1000)
     
     for u in users:
         user_orders = await db.orders.find({"user_id": u["id"]}, {"_id": 0}).sort("created_at", -1).to_list(1000)
