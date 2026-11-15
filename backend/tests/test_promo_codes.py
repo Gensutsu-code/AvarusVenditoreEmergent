@@ -32,6 +32,9 @@ def client():
 
 @pytest.fixture(scope="module")
 def created():
+    c0 = _login(CLIENT)
+    orig = [(i["product_id"], i["quantity"]) for i in (c0.get(f"{API}/cart").json().get("items") or [])]
+    c0.delete(f"{API}/cart")  # validate floor-cap depends on cart contents
     data = {"codes": [], "products": [], "orders": []}
     yield data
     a = _login(ADMIN)
@@ -39,6 +42,8 @@ def created():
     for oid in data["orders"]:
         c.post(f"{API}/orders/{oid}/cancel")
     c.delete(f"{API}/cart")
+    for pid, q in orig:
+        c.post(f"{API}/cart/add", json={"product_id": pid, "quantity": q})
     for cid in data["codes"]:
         a.delete(f"{API}/admin/promo-codes/{cid}")
     for pid in data["products"]:

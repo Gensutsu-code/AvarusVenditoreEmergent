@@ -277,7 +277,9 @@ const ProductDiscountsSection = ({ isDark }) => {
                   </div>
                   {hasDisc && (
                     <span className="text-[10px] font-bold text-rose-600 bg-rose-50 px-2 py-0.5 rounded-md whitespace-nowrap">
-                      {p.discount_active ? (p.discount_type === 'amount' ? `−${fmt(p.discount_value)}₽` : `−${p.discount_value}%`) : 'тиры'}
+                      {(p.discount_active && Number(p.discount_value) > 0)
+                        ? (p.discount_type === 'amount' ? `−${fmt(p.discount_value)}₽` : `−${p.discount_value}%`)
+                        : 'тиры'}
                     </span>
                   )}
                   <Button size="sm" variant="outline" onClick={() => setEditing({ ...p, discount_type: p.discount_type || 'percent', _origAlloc: p.promo_allocated_stock ?? null })} className="flex-shrink-0 border-rose-200 text-rose-600 hover:bg-rose-50" data-testid={`edit-product-discount-${p.id}`}>

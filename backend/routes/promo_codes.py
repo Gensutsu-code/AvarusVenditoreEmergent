@@ -48,6 +48,8 @@ def _validate_code_fields(data):
         raise HTTPException(status_code=400, detail="Значение скидки должно быть больше 0")
     if data.type == "percent" and data.value > 100:
         raise HTTPException(status_code=400, detail="Процент не может быть больше 100")
+    if (data.min_order or 0) < 0 or (data.max_uses or 0) < 0 or (data.per_user_limit or 0) < 0:
+        raise HTTPException(status_code=400, detail="Лимиты не могут быть отрицательными")
     return code
 
 

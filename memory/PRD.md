@@ -177,13 +177,23 @@ E-commerce platform for truck spare parts with a comprehensive admin panel. Russ
 
 ## Prioritized Backlog
 
+### Unified «Скидки и акции» tab (DONE — iter_104, backend 27/28, all UI flows pass)
+- New admin tab `promotions` (label «Скидки и акции») = `DiscountsPromoTab.js`, two sub-tabs: product discount/tier editor + cart-wide promo codes.
+- Discount/promo fields REMOVED from product-card form; `handleSaveProduct` strips them so a catalog save never overwrites campaign data.
+- Promo codes backend `promo_codes.py`: CRUD (`/api/admin/promo-codes`), validate (`/api/promo-codes/validate`), percent/fixed, min_order, max_uses, per_user_limit, valid_until (date-only = end of day). Field validation incl. non-negative limits + duplicate guard.
+- Checkout (`CartPage.js`): promo input (testids promo-code-field / promo-code-apply-btn / checkout-promo-discount-line), sent in single-method & crypto payloads (not mixed). Order stores `promo_code` + `promo_code_amount`; `used_count` increments only when discount>0.
+- min_price floor enforced server-side across product discount + tier + individual price + approved cart discount + promo; validate endpoint floor-caps using cart Σ(min_price×qty).
+
 ### P1 (Important)
 - Real Payment Gateway Integration (replace MOCKED YuKassa)
+- CartPage/ProductPage display mismatches (pre-existing): cart ignores user's individual `delivery_cost`; payment-method adjustment & tier preview not clamped to min_price in UI (server charges correct floor). Best fixed via a server-computed cart preview.
 
 ### P2 (Enhancement)
-- Refactor AdminPage.js (4800+ lines), CatalogPage.js (1200+ lines), Header.js
+- Decrement promo `used_count` on order cancel; make max_uses check atomic (find_one_and_update)
+- Allow clearing `discount_until`/`promo_allocated_stock` to null from editor (update_product drops None)
+- shadcn Calendar for «Действует до» instead of native date input
+- Refactor AdminPage.js (~4000 lines), orders.create_order (~400 lines)
 - Unify save validation toasts (currently stacking when multiple fail)
-- Auto-cleanup expired discounts (cron) or admin filter "Active discounts only"
 - Persist `_ensure_new_status` flips to DB (currently mutation is Python-only)
 - Apply payment_method adjustment in `GET /api/cart` for consistency with `POST /api/orders`
 

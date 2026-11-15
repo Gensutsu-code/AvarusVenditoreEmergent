@@ -1,0 +1,41 @@
+{
+  "summary": "Retest of the iteration_103 fixes plus a regression run of the discount and promo flow. Backend: test_promo_codes.py passed 16/16 and the new test_promo_fixes_iter104.py passed 11/12, so 27 of 28 tests pass. Every requested fix is verified: (1) a Каталог save no longer wipes discount_*, discount_tiers or promo_* fields (checked by API and in the UI: set a tiers-only discount in Скидки и акции, renamed the product in Каталог and saved, then reopened the editor and the value, end date and tier were all still there); (2) validate now applies the min_price floor cap: on card, 1100×2 with a 15% code returns 300 (not 330), and the order recorded promo_code_amount=300; when the floor eats the whole discount, validate returns valid:false with 'Промокод не даёт скидку...'; (3) PUT validates percent>100, value<=0 and bad type, and rejects duplicate codes (404 for an unknown id); (4) a valid_until of today is still valid; (5) per_user_limit no longer counts cancelled orders; (6) an order whose promo is floored to 0 has promo_code=None and used_count stays 0; (7) a tiers-only discount saves (UI) and applies (cart price 900 at the tier qty); (8) promo_remaining_stock is no longer reset when promo_allocated_stock is not sent. Full UI lifecycle works: admin create, duplicate rejected, edit 500% rejected, edit, delete; client applies the code in the cart and sees the −300 line; the order stores TESTUI104P/300 and used_count went to 1. The combined product discount + tier + promo held at the floor exactly (2550 = 850×3). One small backend gap: negative limits are still accepted. There are also a few display mismatches between what the cart/product page shows and what the server charges.",
+  "backend_issues": {
+    "critical": [],
+    "minor": [
+      {"endpoint": "POST/PUT /api/admin/promo-codes", "issue": "_validate_code_fields does not check that the limits are non-negative. max_uses=-1, per_user_limit=-3 and min_order=-100 all return 200. The review request claimed this check was added. Harmless at runtime because <=0 is treated as unlimited, but invalid data is stored."},
+      {"endpoint": "order cancel", "issue": "Still open from iteration 103: cancelling a promo order does not decrement promo_codes.used_count, so max_uses gets used up by cancelled orders. The max_uses check plus $inc is still not atomic."}
+    ]
+  },
+  "frontend_issues": {
+    "ui_bugs": [
+      {"component": "CartPage delivery row", "issue": "Still open from iteration 103: the cart showed Доставка 500 ₽ and К оплате 2 400 ₽, but the server charged delivery_fee 0 and a total of 1 900 ₽ (user@demo.com has an individual delivery_cost). The UI uses delivery.delivery_price and ignores the user's delivery_cost.", "selector": "[data-testid=checkout-total]", "priority": "MEDIUM"},
+      {"component": "CartPage payment adjustment vs min_price", "issue": "With cash (−10%) on a product priced 1000 with min_price 950, the cart shows 900×2 (total 2 300 ₽ with delivery), but the server clamps each item to 950 (goods 1900). The cart under-states the total whenever a payment-method discount crosses the floor. The promo code part is handled correctly now (validate returns valid:false).", "selector": "[data-testid=checkout-total]", "priority": "MEDIUM"},
+      {"component": "ProductPage wholesale tiers", "issue": "The tier preview shows 'от 3 шт. −8% 920 ₽/шт' for price 1000 with min_price 950, but the server will charge 950. The preview ignores the floor.", "selector": "tier list on PDP", "priority": "LOW"},
+      {"component": "DiscountsPromoTab product list badge", "issue": "A tiers-only discount (discount_active=true, value 0) shows the badge '−0%'. It should show 'тиры' (or the best tier).", "selector": "[data-testid^=product-discount-item-]", "priority": "LOW"}
+    ],
+    "integration_issues": [],
+    "design_issues": [
+      {"screen": "Promo form / discount editor", "issues": ["'Действует до' still uses the native browser date picker (mm/dd/yyyy) instead of the shadcn Calendar"]}
+    ]
+  },
+  "test_report_links": ["/app/backend/tests/test_promo_fixes_iter104.py", "/app/backend/tests/test_promo_codes.py", "/app/test_reports/pytest/promo_iter104.xml"],
+  "action_items": [
+    "Add min_order>=0, max_uses>=0, per_user_limit>=0 checks to _validate_code_fields (promo_codes.py)",
+    "CartPage: use the user's individual delivery_cost for the delivery row, and clamp each item's adjusted price to min_price (or get these numbers from a server-computed cart preview) so 'К оплате' matches the order total",
+    "ProductPage tier preview: clamp the tier price to min_price (or have the server return a floor-safe tier price)",
+    "DiscountsPromoTab badge: show 'тиры' when discount_value is 0 and tiers exist",
+    "Optional: decrement used_count when a promo order is cancelled; make the max_uses check atomic (find_one_and_update with a used_count < max_uses filter)"
+  ],
+  "critical_code_review_comments": [
+    "validate_code trusts the goods_total sent by the client, while the floor comes from the server cart. A client can inflate goods_total to get a larger preview. It is display-only because create_order recomputes everything, but deriving goods_total on the server would remove all drift.",
+    "AdminPage.js is still about 4000 lines and orders.create_order is still about 400 lines; promo, floor and payment logic should move into helpers",
+    "update_product drops None values, so discount_until and promo_allocated_stock still cannot be cleared to 'без лимита' from the editor (from iteration 103, not re-addressed)"
+  ],
+  "updated_files": ["/app/backend/tests/test_promo_fixes_iter104.py (new)", "/app/backend/tests/test_promo_codes.py (fixture now snapshots and restores user@demo.com's cart and empties it before the validate tests, since validate now depends on cart contents)"],
+  "success_rate": {"backend": "96% (27/28)", "frontend": "95% (all requested flows pass; remaining issues are display mismatches in the cart and product page)"},
+  "seed_data_creation": "Temporary TEST_ products, TEST* promo codes and TESTUI104P/TESTUI104A were created and deleted by id. Test orders for user@demo.com (full_name 'TEST_User Promo104' / 'TEST_User UI104') were created and cancelled. user@demo.com's cart was restored to 8cd5b1c5... qty 1. SAVE10 was not touched (used_count 0).",
+  "retest_needed": false,
+  "should_main_agent_self_test": true,
+  "context_for_next_testing_agent": "Run each file on its own, without xdist, because both modify user@demo.com's cart: pytest tests/test_promo_codes.py -p no:xdist -o addopts=''; then the same command for tests/test_promo_fixes_iter104.py. Payment adjustments: card +10, cash −10, crypto −15. user@demo.com has individual_discount 10, an individual delivery_cost of 0 and a pending 12% cart discount request (not ours). Cart promo testids: promo-code-field, promo-code-apply-btn, promo-code-applied, promo-code-remove-btn, checkout-promo-discount-line, checkout-total. The admin tab is reached with get_by_role('tab', name='Скидки и акции'); the sub-tab is discounts-subtab-promo."
+}
