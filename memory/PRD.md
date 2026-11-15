@@ -294,3 +294,13 @@ E-commerce platform for truck spare parts with a comprehensive admin panel. Russ
 - Data of a disabled function is never deleted.
 - Functions without own settings panel (toggle + audience only): price_requests, product_requests, garage, chat, favorites, warehouses_map, promo_banner, admin_carts.
 - Tests: `backend/tests/test_iter114_site_features.py` (24/24), frontend 100%.
+
+## Parameters for garage / chat / favorites / banners / product requests (June 2026, iteration_115)
+- `routes/features.py`: `SETTINGS_DEFAULTS`, `fsettings(key)`, `GET /api/feature-settings`, `PUT /api/admin/feature-settings/{key}` (full replace, sanitized). Stored in `db.settings` key `feature_settings`. Frontend: `useFeatures().settings`, forms in `FeatureSettingsPanel.js` (`PARAM_FIELDS`, `ParamsForm`, `BannerManager`).
+- Garage: max_vehicles, allowed_types (truck/trailer/car/special, `lib/garageTypes.js`), checkout_mode off/optional/required (required only when client has vehicles; manager orders bypass via `manager_order` contextvar).
+- Chat: title/subtitle/greeting, guests_allowed (guest endpoints `/chat/guest/send|messages`, session id in localStorage `guest_chat_sid`), attachments_allowed (+ NEW `/chat/upload`, `/chat/send-media` via Cloudinary — were missing before), work hours + auto reply (max once per 3h per chat).
+- Favorites: max_items, notify_price_drop, notify_back_in_stock (`notify.notify_favorites_change`, hooked in product update and warehouse stock recalculation).
+- Product requests: show_out_of_stock, show_not_found, comment_required, offer_valid_days (`offer_expires_at`, status `expired`).
+- Promo banner: existing editor embedded in the card.
+- Tests: `backend/tests/test_iter115_feature_settings.py` (21/21). Manager test password was reset to manager123 (had drifted).
+- Still toggle-only (no own params): price_requests, warehouses_map, admin_carts.

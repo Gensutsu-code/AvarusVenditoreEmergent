@@ -1,0 +1,32 @@
+{
+  "summary": "Tested iter-115 feature-settings (garage, chat, favorites, product_requests) end-to-end. 20/20 backend pytest cases pass (TestManagerBypassRequired skipped: manager@avarus.ru/manager123 returns 401 in this env; user exists with role=manager but password hash does not match the spec). Frontend /admin/features opens all 4 param cards; data-testid naming feature-{key}-form / feature-{key}-form-save works; chat work_hours_* fields correctly appear only after enabling work_hours_enabled. Settings are restored to defaults after tests via PUT {}.",
+  "backend_issues": {
+    "critical": [],
+    "minor": [
+      {"endpoint": "/api/auth/login (manager@avarus.ru)", "issue": "Credentials in /app/memory/test_credentials.md (manager123) fail with 401 on the deployed env; user exists with role=manager. Manager-bypass test skipped as a result."}
+    ]
+  },
+  "frontend_issues": {"ui_bugs": [], "integration_issues": [], "design_issues": []},
+  "test_report_links": [
+    "/app/backend/tests/test_iter115_feature_settings.py",
+    "/app/test_reports/pytest/iter115.xml"
+  ],
+  "action_items": [
+    "Either (a) reset manager@avarus.ru password to manager123 to match test_credentials.md, or (b) update credentials file with the current manager password. Needed to re-enable the manager-bypass test for checkout_mode=required."
+  ],
+  "critical_code_review_comments": [
+    "routes/features.py PUT /admin/feature-settings/{key} replaces the entire settings object (undocumented fields fall back to defaults). UI must always POST the full object; FeatureSettingsPanel.ParamsForm appears to do so. Worth a code comment.",
+    "routes/features.py _cache TTL=2s is shared with iter-114 flag cache. Tests sleep 2.2s after each PUT; acceptable but slows the suite (~3.5 min for 21 tests).",
+    "routes/orders.py create_order reads vehicle_mode via fsettings('garage')['checkout_mode'] ONLY when is_on('garage', user) — correct. Manager bypass uses contextvars.ContextVar manager_order; verify it is set by /api/manager/clients/{user_id}/orders handler (not covered by my tests due to login skip).",
+    "routes/chat.py _post_client_message auto-reply uses `recent = datetime.now - 3h` but queries created_at>recent using ISO strings. ISO format sorting works for UTC-Zulu but if TZ formatting changes it could silently break the 3h de-dup. Consider storing a numeric last_auto_reply_at per chat.",
+    "notify.py notify_favorites_change: only triggers when PUT /api/products changes price/stock — PATCH via mass-edit endpoints and warehouse stock replenishment through routes/warehouse.py also wire it; good. However back-in-stock event is checked on single-product PUT only against the returned stock; multi-warehouse replenishment flow should be regression-tested.",
+    "routes/product_requests.py _expire_offers mutates documents on every GET — thundering-herd risk on a busy list. Not critical."
+  ],
+  "updated_files": ["/app/backend/tests/test_iter115_feature_settings.py"],
+  "success_rate": {"backend": "95% (20/21, 1 skipped due to env creds)", "frontend": "100% (admin UI smoke)"},
+  "test_credentials": "admin@avarus.ru/admin OK; user@demo.com/demo123 OK; manager@avarus.ru/manager123 FAILS (401) in deployed env",
+  "seed_data_creation": "Test created/cleaned vehicles prefixed TEST_ for user@demo.com; favorites cleared and restored; product prices restored; a couple of product-request records remain (status=offered/expired) — these are app data and were created legitimately by the client. Settings for garage/chat/favorites/product_requests restored to defaults via PUT {}.",
+  "retest_needed": false,
+  "should_main_agent_self_test": false,
+  "context_for_next_testing_agent": "test_iter115_feature_settings.py covers: public GET /feature-settings defaults; admin PUT auth/404/sanitization (bad checkout_mode/time/types)/replace-whole-object behavior; garage max_vehicles+allowed_types+edit-keeps-old-type; checkout_mode off vs required (client with vehicles); favorites max_items; favorites notify_price_drop (uses /api/my-notifications, not /api/notifications); product_requests comment_required/show_out_of_stock=false/show_not_found=false/offer_valid_days 5 vs 0; chat attachments disabled 403 on upload+send-media; guest 403 when disabled, full flow when enabled, sid validation. Manager-bypass test is skipped when manager login fails. Note: GET /api/favorites returns {items:[product-objects...]} so must use p['id']. Notifications are at /api/my-notifications."
+}
