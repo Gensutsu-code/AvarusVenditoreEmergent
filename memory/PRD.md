@@ -221,6 +221,12 @@ E-commerce platform for truck spare parts with a comprehensive admin panel. Russ
 - Демо: manager@avarus.ru / manager123, к нему привязан user@demo.com с прошлыми заказами.
 - Не проверено: отправка ответа менеджером в чат и стандартные доставка/отсрочка по статусу (код есть, авто-проверки не было); UI проверен только на наличие элементов.
 
+### Iter 110 (DONE — backend 14/14 + 25/25 регресс, UI — смоук)
+- Менеджер не меняет условия клиента сам: `POST /api/manager/clients/{id}/conditions-request` → админ одобряет в «Сотрудники → Запросы условий» (статус клиента при запросе менеджера не меняется). Прямой PUT удалён.
+- `GET /api/admin/orders` отдаёт `manager_name`; бейдж `order-manager-{id}` в /admin/orders.
+- Выплаты: коллекция `manager_payouts` (soft cancel), `GET/POST/DELETE /api/admin/staff/{id}/payouts`, `GET /api/manager/payouts`; колонка «К выплате», панель `PayoutsPanel`.
+- График: `GET /api/admin/staff-chart?months=`, `StaffSalesChart` (recharts) на /admin/staff.
+
 ### P1 (Important)
 - Real Payment Gateway Integration (replace MOCKED YuKassa)
 - CartPage/ProductPage display mismatches (pre-existing): payment-method adjustment & tier preview not clamped to min_price in UI (server charges correct floor). Best fixed via a server-computed cart preview.

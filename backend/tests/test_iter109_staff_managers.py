@@ -505,55 +505,38 @@ class TestManagerCabinet:
         own = next(c for c in clients if c["email"] == DEMO_CLIENT["email"])
         assert "effective" in own
 
-    def test_set_conditions_404_for_foreign(self, demo_manager, tracked):
-        # Create a foreign client not bound
-        _, cu, _, _ = _register_test_client("foreign")
-        tracked["client_ids"].append(cu["id"])
-        r = demo_manager.put(f"{API}/manager/clients/{cu['id']}/conditions", json={
-            "individual_discount": 5, "delivery_cost": None, "deferral_days": 0, "credit_limit": 0,
-        })
-        assert r.status_code == 404
-
-    def test_set_conditions_validation(self, demo_manager):
-        # demo manager → first find own client id
+    def test_direct_set_conditions_removed(self, demo_manager):
+        """The old direct-set endpoint must no longer exist."""
         clients = demo_manager.get(f"{API}/manager/clients").json()
         own = next((c for c in clients if c.get("email") == DEMO_CLIENT["email"]), None)
         if not own:
             pytest.skip("demo manager has no bound demo client")
         r = demo_manager.put(f"{API}/manager/clients/{own['id']}/conditions", json={
-            "individual_discount": 150, "delivery_cost": None, "deferral_days": 0, "credit_limit": 0,
+            "individual_discount": 5, "delivery_cost": None, "deferral_days": 0, "credit_limit": 0,
         })
-        assert r.status_code == 422
+        assert r.status_code in (404, 405)
 
-    def test_manager_sets_conditions_and_restores(self, admin, demo_manager):
+    def test_request_conditions_foreign_404(self, demo_manager, tracked):
+        _, cu, _, _ = _register_test_client("foreign")
+        tracked["client_ids"].append(cu["id"])
+        r = demo_manager.post(f"{API}/manager/clients/{cu['id']}/conditions-request", json={
+            "individual_discount": 5, "delivery_cost": None, "deferral_days": 0, "credit_limit": 0, "comment": "x",
+        })
+        assert r.status_code == 404
+
+    def test_request_conditions_validation(self, demo_manager):
         clients = demo_manager.get(f"{API}/manager/clients").json()
         own = next((c for c in clients if c.get("email") == DEMO_CLIENT["email"]), None)
         if not own:
             pytest.skip("demo manager has no bound demo client")
-        orig = {
-            "individual_discount": own.get("individual_discount") or 0,
-            "delivery_cost": own.get("delivery_cost"),
-            "deferral_days": own.get("deferral_days") or 0,
-            "credit_limit": own.get("credit_limit") or 0,
-        }
-        try:
-            r = demo_manager.put(f"{API}/manager/clients/{own['id']}/conditions", json={
-                "individual_discount": 17, "delivery_cost": 0, "deferral_days": 5, "credit_limit": 1000,
-            })
-            assert r.status_code == 200
-            # verify
-            cs, _ = _login(DEMO_CLIENT)
-            mc = cs.get(f"{API}/my-conditions").json()
-            assert mc["discount"] == 17
-        finally:
-            # restore demo client original conditions: individual_discount=10, delivery_cost=0, status=wholesale
-            admin.put(f"{API}/admin/users/{own['id']}", json={
-                "individual_discount": 10,
-                "delivery_cost": 0,
-                "deferral_days": orig["deferral_days"],
-                "credit_limit": orig["credit_limit"],
-                "customer_status": "wholesale",
-            })
+        r = demo_manager.post(f"{API}/manager/clients/{own['id']}/conditions-request", json={
+            "individual_discount": 150, "delivery_cost": None, "deferral_days": 0, "credit_limit": 0,
+        })
+        assert r.status_code == 422
+        r2 = demo_manager.post(f"{API}/manager/clients/{own['id']}/conditions-request", json={
+            "individual_discount": 5, "delivery_cost": -1, "deferral_days": 0, "credit_limit": 0,
+        })
+        assert r2.status_code == 422
 
     def test_chats_foreign_404(self, demo_manager):
         r = demo_manager.get(f"{API}/manager/chats/{uuid.uuid4().hex}/messages")
