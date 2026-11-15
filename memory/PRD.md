@@ -286,3 +286,11 @@ E-commerce platform for truck spare parts with a comprehensive admin panel. Russ
 - `/api/manager/products` returns `commission` (₽ per unit at list price = manager % × (price − purchase_price)); `/api/manager/orders` returns `commission` per item and per order (only orders counted for the manager, snapshot % from order). Shown in ManagerSales.js: catalog, order draft (per line + total), client orders list. Purchase price itself is still not returned.
 - Reward rules: new type `manufacturer` (brand, matched case-insensitively by product.manufacturer). Brand rate may be lower or higher and overrides base rate and all other rules. UI: RewardRulesEditor «Бренд».
 - Self-tested via curl + screenshot (no testing agent run). Note: standard manager commission in site settings is currently 0%, so earnings show 0 ₽ until a percent is set.
+
+## Site features page «Функционал сайта» (June 2026, iteration_114)
+- `/admin/features` (`AdminFeaturesPage`, header link «Функционал»): 19 switchable functions in 5 groups; toggle with confirmation dialog; card short description; click → dialog with full description, audience (all/retail/wholesale for page-type functions) and embedded settings (`FeatureSettingsPanel`: discounts, promo codes, cart discounts, rewards, credit/managers conditions, returns, parts finder, AI bulk descriptions, news, telegram).
+- Backend `routes/features.py`: flags in `db.settings` key `site_features`, cached; `is_on(key, user)`; middleware in `server.py` rejects client write requests of disabled functions (403); logic checks in orders (discounts, individual prices, cart discount, deferral), promo codes, rewards/bonus accrual, telegram sending; products hide discounts when off and product update keeps stored discount fields.
+- Frontend: `lib/siteFeatures.js` registry (routes, adminRoutes, hide selectors, texts), `FeaturesContext` (isOn/isEnabled, generated CSS hides links/elements site-wide, route guard in App.js redirects to `/` or `/admin`), AdminPage hides tabs of disabled functions.
+- Data of a disabled function is never deleted.
+- Functions without own settings panel (toggle + audience only): price_requests, product_requests, garage, chat, favorites, warehouses_map, promo_banner, admin_carts.
+- Tests: `backend/tests/test_iter114_site_features.py` (24/24), frontend 100%.

@@ -1,0 +1,22 @@
+{
+  "summary": "Tested the new 'Функционал сайта' (/admin/features) toggle system end-to-end: backend registry + admin PUT RBAC/validation, middleware enforcement of 12 OFF client write endpoints, discounts-OFF behavior on products+cart+admin-PUT preservation, promo_codes/rewards/credit OFF behaviors, audience='wholesale' via GET /api/features, and admin frontend UI (19 cards, feature-detail dialog, confirm dialog with cancel/apply, status toggles, audience select present, link hiding via display:none, direct URL /garage redirecting to /). 24/24 backend pytest cases pass. UI flows all work. All 20 features restored to enabled=true, audience=all at end.",
+  "backend_issues": {"critical": [], "minor": []},
+  "frontend_issues": {"ui_bugs": [], "integration_issues": [], "design_issues": []},
+  "test_report_links": [
+    "/app/backend/tests/test_iter114_site_features.py",
+    "/app/test_reports/pytest/iter114.xml"
+  ],
+  "action_items": [],
+  "critical_code_review_comments": [
+    "Audience filter is NOT enforced server-side on write endpoints: blocked_feature() in routes/features.py does not receive the user, so is_on() falls back to the no-user branch and only the 'enabled' flag is checked. Audience segregation is thus UI-only — a wholesale-only feature still accepts retail client POSTs when enabled=true. This matches current frontend-only enforcement as documented, but is a potential security/consistency gap if any audience is used as a business rule. Consider passing request.state.user into blocked_feature() for parity with is_on(key, user).",
+    "Feature flag cache is per-process (2s TTL). If backend runs multiple workers, a PUT force-refreshes only the serving worker; other workers may serve stale state for up to 2s. Acceptable under single-worker supervisor config but worth documenting.",
+    "GET /api/rewards/me and /api/rewards/cart-preview are not blocked by middleware when rewards OFF because they are GET or because POST path is intercepted only after a 403; verify in product that client receives system:null payload (currently blocked by middleware for POST cart-preview → 403, not a quiet null). UI should handle 403 or server should short-circuit with {system:null} for rewards-off POSTs per spec."
+  ],
+  "updated_files": ["/app/backend/tests/test_iter114_site_features.py"],
+  "success_rate": {"backend": "100% (24/24)", "frontend": "100%"},
+  "test_credentials": "admin@avarus.ru/admin, user@demo.com/demo123, manager@avarus.ru/manager123",
+  "seed_data_creation": "Test temporarily toggled per-feature flags and seeded an active 15%% discount on first product (cleared in finally). Autouse session fixture restores all 20 features to enabled=true, audience=all; verified empty via GET /api/features at end.",
+  "retest_needed": false,
+  "should_main_agent_self_test": false,
+  "context_for_next_testing_agent": "test_iter114_site_features.py covers registry, admin PUT auth/validation, parametrized OFF-blocks for 12 client-write prefixes, admin endpoints never blocked, discounts-OFF product/cart stripping + admin-PUT preserving discount fields, promo_codes/credit OFF order rejection, rewards-OFF payloads, and audience=wholesale GET state. UI coverage done via browser_automation. Feature cards expected: 19 shown in UI (partners hidden intentionally) + telegram card = 19 cards total. GET /api/features returns all 20 keys including partners. Cart API uses POST /api/cart/add and POST /api/cart/update (qty=0 to remove). Order payload requires items/payment_method/delivery_method/address/phone/full_name. Backend feature cache TTL = 2s; PUT force-refreshes."
+}
