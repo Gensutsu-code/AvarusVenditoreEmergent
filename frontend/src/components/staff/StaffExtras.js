@@ -16,15 +16,23 @@ const err = (e) => { const d = e.response?.data?.detail; toast.error(typeof d ==
 // Monthly goods revenue of every manager, side by side
 export const StaffSalesChart = () => {
   const [chart, setChart] = useState(null);
+  const [metric, setMetric] = useState('revenue');
   useEffect(() => { axios.get(`${API}/admin/staff-chart`, { params: { months: 12 } }).then((r) => setChart(r.data)).catch(() => {}); }, []);
   if (!chart || !chart.managers.length) return null;
   return (
     <div className="rounded-xl border border-slate-200 bg-white p-4 mt-5" data-testid="staff-sales-chart">
-      <p className="font-semibold text-slate-800">Продажи менеджеров по месяцам</p>
-      <p className="text-xs text-slate-400 mb-3">Сумма товаров в заказах клиентов менеджера за последние 12 месяцев, без отменённых заказов и доставки</p>
+      <div className="flex flex-wrap items-center justify-between gap-2">
+        <p className="font-semibold text-slate-800">{metric === 'revenue' ? 'Продажи' : 'Прибыль'} менеджеров по месяцам</p>
+        <div className="inline-flex gap-1 p-1 rounded-xl bg-slate-100" data-testid="chart-metric-switch">
+          {[['revenue', 'Продажи'], ['profit', 'Прибыль']].map(([id, label]) => (
+            <button key={id} onClick={() => setMetric(id)} className={`px-3 py-1 rounded-lg text-sm font-medium transition-colors ${metric === id ? 'bg-white text-teal-700 shadow-sm' : 'text-slate-500 hover:text-slate-700'}`} data-testid={`chart-metric-${id}`}>{label}</button>
+          ))}
+        </div>
+      </div>
+      <p className="text-xs text-slate-400 mb-3">{metric === 'revenue' ? 'Сумма товаров' : 'Сумма товаров минус закупочная стоимость'} в заказах клиентов менеджера за последние 12 месяцев, без отменённых заказов и доставки</p>
       <div className="h-80">
         <ResponsiveContainer width="100%" height="100%">
-          <BarChart data={chart.data} margin={{ top: 5, right: 10, left: 10, bottom: 0 }}>
+          <BarChart data={metric === 'revenue' ? chart.data : chart.profit} margin={{ top: 5, right: 10, left: 10, bottom: 0 }}>
             <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" vertical={false} />
             <XAxis dataKey="month" tickFormatter={monthLabel} tick={{ fontSize: 12, fill: '#64748b' }} />
             <YAxis tickFormatter={(v) => new Intl.NumberFormat('ru-RU', { notation: 'compact' }).format(v)} tick={{ fontSize: 12, fill: '#64748b' }} />
@@ -50,7 +58,7 @@ export const PayoutsPanel = ({ managerId }) => {
   const add = async () => {
     const amount = Number(form.amount);
     if (!amount || amount <= 0) { toast.error('Укажите сумму выплаты'); return; }
-    if (amount > data.balance && !window.confirm('Сумма больше остатка к выплате. Всё равно записать?')) return;
+    if (amount > data.balance + 0.005) { toast.error(`Выплата больше остатка к выплате (${money(Math.max(0, data.balance))})`); return; }
     setBusy(true);
     try { await axios.post(`${API}/admin/staff/${managerId}/payouts`, { amount, paid_at: form.paid_at || null, comment: form.comment }); toast.success('Выплата записана'); setForm({ amount: '', paid_at: '', comment: '' }); load(); }
     catch (e) { err(e); } finally { setBusy(false); }
@@ -69,7 +77,7 @@ export const PayoutsPanel = ({ managerId }) => {
         <div className="rounded-lg bg-amber-50 p-3"><p className="text-[11px] uppercase font-semibold text-amber-600">Осталось выплатить</p><p className="text-lg font-bold text-amber-700" data-testid="payouts-balance">{money(data.balance)}</p></div>
       </div>
       <div className="grid sm:grid-cols-4 gap-2 items-end">
-        <label className="text-[11px] font-semibold text-slate-500">Сумма, ₽<Input type="number" min="0" value={form.amount} onChange={(e) => setForm({ ...form, amount: e.target.value })} className="mt-1" data-testid="payout-amount-input" /></label>
+        <label className="text-[11px] font-semibold text-slate-500">Сумма, ₽<Input type="number" min="0" max={Math.max(0, data.balance)} value={form.amount} onChange={(e) => setForm({ ...form, amount: e.target.value })} className="mt-1" data-testid="payout-amount-input" /></label>
         <div className="text-[11px] font-semibold text-slate-500">Дата<DatePicker value={form.paid_at} onChange={(v) => setForm({ ...form, paid_at: v })} placeholder="Сегодня" disablePast={false} data-testid="payout-date" /></div>
         <label className="text-[11px] font-semibold text-slate-500">Комментарий<Input value={form.comment} onChange={(e) => setForm({ ...form, comment: e.target.value })} maxLength={300} className="mt-1" data-testid="payout-comment-input" /></label>
         <Button onClick={add} disabled={busy} className="bg-teal-500 hover:bg-teal-600 text-white" data-testid="payout-add-btn"><Plus className="w-4 h-4 mr-1" />Записать выплату</Button>

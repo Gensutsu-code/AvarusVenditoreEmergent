@@ -1,3 +1,4 @@
+from typing import Optional
 """Database connection and shared dependencies"""
 from motor.motor_asyncio import AsyncIOMotorClient
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
@@ -76,6 +77,18 @@ def effective_conditions(user: dict, sc: dict) -> dict:
         "deferral_days": term,
         "credit_individual": bool(ind_credit),
     }
+
+
+async def manager_commission_percent(manager_id) -> Optional[float]:
+    """Current commission percent of a manager: individual, else the standard one from site settings."""
+    if not manager_id:
+        return None
+    m = await db.users.find_one({"id": manager_id, "role": "manager"}, {"_id": 0, "commission_percent": 1})
+    if not m:
+        return None
+    if m.get("commission_percent") is not None:
+        return float(m["commission_percent"])
+    return float((await get_status_conditions())["manager"]["commission_percent"] or 0)
 
 
 async def effective_credit(user_id: str) -> dict:

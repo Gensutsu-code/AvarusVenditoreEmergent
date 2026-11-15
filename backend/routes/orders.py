@@ -7,6 +7,7 @@ from collections import defaultdict
 import uuid
 
 from database import db, get_current_user
+from database import manager_commission_percent
 from models import CartItem, OrderCreate, OrderResponse, FavoriteItem
 from notify import notify_user, notify_admin
 from routes.telegram import send_telegram_order_notification
@@ -765,6 +766,7 @@ async def create_order(data: OrderCreate, user=Depends(get_current_user)):
         "reward_points": int(reward_points),
         "region": user.get("region", "") or "",
         "manager_id": user.get("manager_id"),
+        "manager_commission_percent": await manager_commission_percent(user.get("manager_id")),
         "created_at": datetime.now(timezone.utc).isoformat()
     }
     
@@ -1589,6 +1591,8 @@ async def merge_orders(payload: dict, user: dict = Depends(get_current_user)):
         "paid": False,
         "created_at": datetime.now(timezone.utc).isoformat(),
         "merged_from": [o["id"] for o in orders_sorted],
+        "manager_id": newest.get("manager_id"),
+        "manager_commission_percent": newest.get("manager_commission_percent"),
     }
     await db.orders.insert_one(new_order)
     await db.orders.delete_many({"id": {"$in": order_ids}})

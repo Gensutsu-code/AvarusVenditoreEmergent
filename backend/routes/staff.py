@@ -169,13 +169,8 @@ async def decide_conditions_request(request_id: str, data: ConditionsDecisionIn,
 
 # ==================== STATISTICS ====================
 
-async def _manager_stats(manager: dict, period: str, detailed: bool = True):
-    if period not in PERIOD_DAYS and period != "all":
-        raise HTTPException(status_code=400, detail="Неизвестный период")
-    query = {"manager_id": manager["id"], "status": {"$ne": "cancelled"}}
-    if period != "all":
-        query["created_at"] = {"$gte": (datetime.now(timezone.utc) - timedelta(days=PERIOD_DAYS[period])).isoformat()}
-    orders = await db.orders.find(query, {"_id": 0}).sort("created_at", -1).to_list(5000)
+async def _cost_maps(orders):
+    """Real purchase cost per (order, product) from stock movements + purchase-price fallback per product."""
     order_ids = [o["id"] for o in orders]
     cost_map = {}
     if order_ids:
@@ -184,8 +179,24 @@ async def _manager_stats(manager: dict, period: str, detailed: bool = True):
             cost_map[key] = cost_map.get(key, 0) + (mv.get("total_cost") or 0)
     pids = list({i.get("product_id") for o in orders for i in o.get("items", [])})
     fallback = {p["id"]: p.get("purchase_price") or 0 for p in await db.products.find({"id": {"$in": pids}}, {"_id": 0, "id": 1, "purchase_price": 1}).to_list(len(pids) or 1)}
+    return cost_map, fallback
 
-    revenue = cost = 0.0
+
+async def _manager_stats(manager: dict, period: str, detailed: bool = True):
+    if period not in PERIOD_DAYS and period != "all":
+        raise HTTPException(status_code=400, detail="Неизвестный период")
+    query = {"manager_id": manager["id"], "status": {"$ne": "cancelled"}}
+    if period != "all":
+        query["created_at"] = {"$gte": (datetime.now(timezone.utc) - timedelta(days=PERIOD_DAYS[period])).isoformat()}
+    orders = await db.orders.find(query, {"_id": 0}).sort("created_at", -1).to_list(5000)
+    cost_map, fallback = await _cost_maps(orders)
+    sc = await get_status_conditions()
+    pct = manager.get("commission_percent")
+    individual = pct is not None
+    if not individual:
+        pct = sc["manager"]["commission_percent"]
+
+    revenue = cost = commission = 0.0
     by_client, by_product, order_rows = {}, {}, []
     for o in orders:
         items = o.get("items", [])
@@ -208,6 +219,9 @@ async def _manager_stats(manager: dict, period: str, detailed: bool = True):
             lines.append({"name": i.get("name"), "article": i.get("article"), "quantity": qty, "revenue": round(line_rev, 2), "profit": round(line_rev - line_cost, 2)})
         revenue += goods
         cost += o_cost
+        # the percent saved in the order at purchase time; older orders without it use the current one
+        o_pct = o.get("manager_commission_percent")
+        commission += (goods - o_cost) * (pct if o_pct is None else o_pct) / 100
         bc = by_client.setdefault(o["user_id"], {"user_id": o["user_id"], "name": o.get("full_name") or "", "orders": 0, "revenue": 0.0, "profit": 0.0})
         bc["orders"] += 1
         bc["revenue"] += goods
@@ -215,16 +229,11 @@ async def _manager_stats(manager: dict, period: str, detailed: bool = True):
         order_rows.append({"id": o["id"], "created_at": o.get("created_at"), "status": o.get("status"), "user_id": o["user_id"],
                            "revenue": round(goods, 2), "profit": round(goods - o_cost, 2), "items": lines})
 
-    sc = await get_status_conditions()
-    pct = manager.get("commission_percent")
-    individual = pct is not None
-    if not individual:
-        pct = sc["manager"]["commission_percent"]
     profit = revenue - cost
     result = {
         "period": period, "orders_count": len(orders), "clients_count": len(by_client),
         "revenue": round(revenue, 2), "cost": round(cost, 2), "profit": round(profit, 2),
-        "commission_percent": pct, "commission_individual": individual, "commission": round(max(0.0, profit) * pct / 100, 2),
+        "commission_percent": pct, "commission_individual": individual, "commission": round(max(0.0, commission), 2),
     }
     if detailed:
         names = {u["id"]: u for u in await db.users.find({"id": {"$in": list(by_client)}}, {"_id": 0, "id": 1, "name": 1, "email": 1}).to_list(len(by_client) or 1)}
@@ -374,7 +383,9 @@ async def staff_payouts(manager_id: str, user=Depends(get_current_user)):
 @router.post("/admin/staff/{manager_id}/payouts")
 async def add_payout(manager_id: str, data: PayoutIn, user=Depends(get_current_user)):
     _admin(user)
-    await _get_manager(manager_id)
+    balance = (await _payout_summary(await _get_manager(manager_id), with_list=False))["balance"]
+    if data.amount > balance + 0.005:
+        raise HTTPException(status_code=400, detail=f"Выплата больше остатка к выплате ({max(0.0, balance):.2f} ₽)")
     paid_at = (data.paid_at or _now())[:10]
     try:
         datetime.fromisoformat(paid_at)
@@ -417,16 +428,29 @@ async def staff_chart(months: int = 12, user=Depends(get_current_user)):
     managers = await db.users.find({"role": "manager", "deleted_at": None}, {"_id": 0, "id": 1, "name": 1}).sort("created_at", 1).to_list(500)
     ids = [mg["id"] for mg in managers]
     rows = {k: {"month": k, **{i: 0.0 for i in ids}} for k in keys}
-    async for o in db.orders.find(
+    profit_rows = {k: {"month": k, **{i: 0.0 for i in ids}} for k in keys}
+    orders = await db.orders.find(
         {"manager_id": {"$in": ids}, "status": {"$ne": "cancelled"}, "created_at": {"$gte": f"{keys[0]}-01"}},
-        {"_id": 0, "manager_id": 1, "created_at": 1, "total": 1, "delivery_fee": 1, "delivery_points_used": 1},
-    ):
-        row = rows.get(str(o.get("created_at"))[:7])
-        if row is not None:
-            delivery = 0 if o.get("delivery_points_used") else (o.get("delivery_fee") or 0)
-            row[o["manager_id"]] += max(0.0, (o.get("total") or 0) - delivery)
-    data = [{k: (round(v, 2) if k != "month" else v) for k, v in r.items()} for r in rows.values()]
-    return {"managers": managers, "data": data}
+        {"_id": 0, "id": 1, "manager_id": 1, "created_at": 1, "total": 1, "delivery_fee": 1, "delivery_points_used": 1,
+         "items.product_id": 1, "items.quantity": 1},
+    ).to_list(20000)
+    cost_map, fallback = await _cost_maps(orders)
+    for o in orders:
+        key = str(o.get("created_at"))[:7]
+        if key not in rows:
+            continue
+        delivery = 0 if o.get("delivery_points_used") else (o.get("delivery_fee") or 0)
+        goods = max(0.0, (o.get("total") or 0) - delivery)
+        o_cost = 0.0
+        for i in o.get("items", []):
+            line = cost_map.get((o["id"], i.get("product_id")))
+            o_cost += line if line is not None else fallback.get(i.get("product_id"), 0) * (i.get("quantity") or 0)
+        rows[key][o["manager_id"]] += goods
+        profit_rows[key][o["manager_id"]] += goods - o_cost
+
+    def _rounded(src):
+        return [{k: (round(v, 2) if k != "month" else v) for k, v in r.items()} for r in src.values()]
+    return {"managers": managers, "data": _rounded(rows), "profit": _rounded(profit_rows)}
 
 
 # ---- binding clients ----

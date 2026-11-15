@@ -33,6 +33,7 @@ export default function AdminOrdersPage() {
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
+  const [managerFilter, setManagerFilter] = useState('all');
   const [expandedOrders, setExpandedOrders] = useState({});
   const [editingOrderId, setEditingOrderId] = useState(null);
   const [editData, setEditData] = useState({});
@@ -352,8 +353,11 @@ export default function AdminOrdersPage() {
       order.full_name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
       order.phone?.includes(searchQuery);
     const matchesStatus = statusFilter === 'all' || order.status === statusFilter;
-    return matchesSearch && matchesStatus;
+    const matchesManager = managerFilter === 'all' || (managerFilter === 'none' ? !order.manager_id : order.manager_id === managerFilter);
+    return matchesSearch && matchesStatus && matchesManager;
   });
+  const orderManagers = [...new Map(orders.filter(o => o.manager_id && o.manager_name).map(o => [o.manager_id, o.manager_name])).entries()]
+    .sort((a, b) => a[1].localeCompare(b[1], 'ru'));
 
   const stats = {
     total: orders.length,
@@ -452,6 +456,11 @@ export default function AdminOrdersPage() {
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
               <Input placeholder="Поиск по номеру, имени, телефону..." value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} className="pl-10 rounded-xl border-slate-200 focus:border-teal-400" />
             </div>
+            <select value={managerFilter} onChange={(e) => setManagerFilter(e.target.value)} className="h-10 rounded-xl border border-slate-200 bg-white px-3 text-sm text-slate-700 focus:outline-none focus:border-teal-400" data-testid="orders-manager-filter">
+              <option value="all">Все менеджеры</option>
+              <option value="none">Без менеджера</option>
+              {orderManagers.map(([id, name]) => <option key={id} value={id}>{name}</option>)}
+            </select>
             <div className="flex gap-2 flex-wrap">
               <Button variant={statusFilter === 'all' ? 'default' : 'outline'} size="sm" onClick={() => setStatusFilter('all')} className={`rounded-xl ${statusFilter === 'all' ? 'bg-gradient-to-r from-teal-500 to-emerald-500 border-0' : 'border-slate-200'}`}>
                 Все
