@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import axios from 'axios';
-import { MessageCircle, X, Send, Paperclip, Image, Smile, FileText, Download, ZoomIn, ZoomOut, ChevronLeft, ChevronRight, Play, Check, CheckCheck } from 'lucide-react';
+import { MessageCircle, X, Send, Paperclip, Smile, FileText, Download, ZoomIn, ZoomOut, Play, Check, CheckCheck } from 'lucide-react';
 import { Button } from './ui/button';
 import { Input } from './ui/input';
 import { useAuth } from '../context/AuthContext';
@@ -29,10 +29,6 @@ const normalizeFileUrl = (fileUrl) => {
   return `${BACKEND_URL}${fileUrl}`;
 };
 
-// Check if URL is a Cloudinary video
-const isCloudinaryVideo = (url) => {
-  return url && url.includes('cloudinary.com') && url.includes('/video/');
-};
 
 // Check if URL is a Google Drive video (legacy support)
 const isGoogleDriveVideo = (url) => {

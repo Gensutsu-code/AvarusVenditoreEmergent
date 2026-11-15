@@ -1,7 +1,7 @@
 import axios from 'axios';
 import { useState, useRef } from 'react';
 import { motion } from 'framer-motion';
-import { Users, Plus, Pencil, Trash2, Save, Upload, Image, X, Gift, Award, ChevronDown, ChevronUp, Clock, Minus, TrendingUp } from 'lucide-react';
+import { Users, Plus, Pencil, Trash2, Save, Upload, X, Gift, Award, ChevronDown, ChevronUp, Clock, Minus, TrendingUp } from 'lucide-react';
 import { Button } from '../ui/button';
 import { Input } from '../ui/input';
 import { Label } from '../ui/label';
@@ -30,12 +30,9 @@ export default function BonusTab(props) {
     setPrizeRedemptions,
     pointsModal,
     setPointsModal,
-    ozonSettings,
-    setOzonSettings,
     bonusImageFileRef,
     bonusBannerFileRef,
     handleFileUpload,
-    handleSaveOzonSettings,
     users,
     uploading
   } = props;

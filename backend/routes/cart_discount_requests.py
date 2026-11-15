@@ -2,7 +2,6 @@
 admin approves with their own %, discount applies to the cart until one order is placed."""
 from fastapi import APIRouter, HTTPException, Depends
 from pydantic import BaseModel
-from typing import Optional
 from datetime import datetime, timezone
 import uuid
 

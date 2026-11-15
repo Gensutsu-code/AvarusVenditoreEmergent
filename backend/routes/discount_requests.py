@@ -1,7 +1,7 @@
 """Discount request routes for individual pricing"""
 from fastapi import APIRouter, HTTPException, Depends
 from pydantic import BaseModel
-from typing import Optional, List
+from typing import Optional
 from datetime import datetime, timezone
 import uuid
 

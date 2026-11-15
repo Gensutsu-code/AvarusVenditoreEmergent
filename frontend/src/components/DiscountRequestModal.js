@@ -2,7 +2,7 @@ import { useState, useRef } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from './ui/dialog';
 import { Button } from './ui/button';
 import { Textarea } from './ui/textarea';
-import { Tag, Upload, X, Send, Image, Loader2 } from 'lucide-react';
+import { Tag, X, Send, Image, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
 import axios from 'axios';
 

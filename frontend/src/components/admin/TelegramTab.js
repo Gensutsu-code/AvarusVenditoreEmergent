@@ -6,7 +6,6 @@ import { Switch } from '../ui/switch';
 import { Save, Send, RefreshCw, Bot, CheckCircle, XCircle, AlertCircle, Globe, MessageSquare, Webhook, Trash2 } from 'lucide-react';
 import axios from 'axios';
 import { toast } from 'sonner';
-import { motion } from 'framer-motion';
 
 const API = `${process.env.REACT_APP_BACKEND_URL}/api`;
 

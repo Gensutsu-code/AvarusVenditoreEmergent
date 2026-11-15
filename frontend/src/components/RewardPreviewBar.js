@@ -15,7 +15,7 @@ const VIEW = {
 };
 
 /** Reward the client will get for the current cart in their chosen bonus system. */
-export const OzonCertificateBar = ({ total = 0, compact = false, promoCode }) => {
+export const RewardPreviewBar = ({ total = 0, compact = false, promoCode }) => {
   const { user } = useAuth();
   const [data, setData] = useState(null);
 

@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import axios from 'axios';
-import { Wallet, Save, RefreshCw, ExternalLink, Check, AlertCircle, Copy, Settings } from 'lucide-react';
+import { Wallet, Save, RefreshCw, ExternalLink, AlertCircle, Copy, Settings } from 'lucide-react';
 import { Button } from '../ui/button';
 import { Input } from '../ui/input';
 import { Label } from '../ui/label';

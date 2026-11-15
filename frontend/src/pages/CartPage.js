@@ -16,7 +16,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { toast } from 'sonner';
 import { trackClick } from '../utils/tracker';
 import { getCartUpsell } from '../utils/productHelpers';
-import { OzonCertificateBar } from '../components/OzonCertificateBar';
+import { RewardPreviewBar } from '../components/RewardPreviewBar';
 import CryptoPaymentModal from '../components/CryptoPaymentModal';
 import { DeliveryBadge } from '../components/DeliveryBadge';
 import { useRegion } from '../context/RegionContext';
@@ -92,7 +92,6 @@ export default function CartPage() {
   const [promoInfo, setPromoInfo] = useState(null); // { discount, message, code }
   const [promoChecking, setPromoChecking] = useState(false);
   const [payDeliveryWithPoints, setPayDeliveryWithPoints] = useState(false);
-  const rewardChoice = 'points';
   const [rewardInfo, setRewardInfo] = useState(null);
   const [cashbackInput, setCashbackInput] = useState('');
 
@@ -335,13 +334,13 @@ export default function CartPage() {
     setShowCryptoModal(false);
     try {
       const expectedPts = await fetchExpectedPoints();
-      const res = await axios.post(`${API}/orders`, { ...form, payment_method: 'crypto', crypto_tx_hash: txHash, pay_delivery_with_points: deliveryPaidWithPoints, use_cashback: cashbackApplied, reward_choice: rewardChoice, promo_code: promoInfo?.code || undefined });
+      const res = await axios.post(`${API}/orders`, { ...form, payment_method: 'crypto', crypto_tx_hash: txHash, pay_delivery_with_points: deliveryPaidWithPoints, use_cashback: cashbackApplied, promo_code: promoInfo?.code || undefined });
       setOrderId(res.data.id);
       await fetchCart();
       setCdReq(null);
       clearPromo();
       refreshIndividualPrices();
-      if (rewardChoice === 'points') emitPointsEarned(expectedPts);
+      emitPointsEarned(expectedPts);
       toast.success('Заказ оплачен криптовалютой!');
       navigate('/orders');
     } catch (err) {
@@ -364,13 +363,12 @@ export default function CartPage() {
         const res = await axios.post(`${API}/orders`, {
           ...form,
           payment_parts: [{ method: mixM1, amount: a1 }, { method: mixM2, amount: a2 }],
-          reward_choice: rewardChoice,
         });
         setOrderId(res.data.id);
         await fetchCart();
         setCdReq(null);
         refreshIndividualPrices();
-        if (rewardChoice === 'points') emitPointsEarned(expectedPts);
+        emitPointsEarned(expectedPts);
         if (mixM1 === 'card' || mixM2 === 'card') {
           toast.success('Заказ создан! Завершите оплату картой в «Мои заказы»');
         } else {
@@ -394,7 +392,6 @@ export default function CartPage() {
         pay_with_balance: payWithBalance,
         pay_later: showPayLater ? payLater : false,
         pay_delivery_with_points: deliveryPaidWithPoints, use_cashback: cashbackApplied,
-        reward_choice: rewardChoice,
         promo_code: promoInfo?.code || undefined,
       });
       setOrderId(res.data.id);
@@ -402,7 +399,7 @@ export default function CartPage() {
       setCdReq(null);
       clearPromo();
       refreshIndividualPrices();
-      if (rewardChoice === 'points') emitPointsEarned(expectedPts);
+      emitPointsEarned(expectedPts);
 
       if (payWithDeferral) toast.success('Заказ оформлен в отсрочку!');
       else if (payWithBalance) toast.success('Заказ оплачен с баланса!');
@@ -511,8 +508,7 @@ export default function CartPage() {
           );
         })()}
 
-        {/* Ozon certificate progress (based on adjusted goods total) */}
-        <OzonCertificateBar total={Math.max(0, goodsAfterIndividual - cashbackApplied)} promoCode={promoInfo?.code} />
+        <RewardPreviewBar total={Math.max(0, goodsAfterIndividual - cashbackApplied)} promoCode={promoInfo?.code} />
 
         <form onSubmit={handleSubmit} className="grid grid-cols-1 lg:grid-cols-3 gap-8 mt-2">
           {/* LEFT: Cart items + shipping + payment */}

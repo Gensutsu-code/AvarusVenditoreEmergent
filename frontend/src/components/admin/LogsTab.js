@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
-import { ScrollText, Search, Filter, RotateCcw, ChevronLeft, ChevronRight, Clock, User, Shield, Activity, Trash2, AlertTriangle, CheckCircle, XCircle, Eye } from 'lucide-react';
+import { ScrollText, Search, RotateCcw, ChevronLeft, ChevronRight, Clock, Shield, Activity, Trash2, CheckCircle, XCircle, Eye } from 'lucide-react';
 import { Button } from '../ui/button';
 import { Input } from '../ui/input';
 import { motion, AnimatePresence } from 'framer-motion';

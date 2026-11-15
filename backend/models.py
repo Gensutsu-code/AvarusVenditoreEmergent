@@ -250,7 +250,6 @@ class OrderCreate(BaseModel):
     pay_later: Optional[bool] = False  # deferred card/crypto: place order now, pay within admin window
     payment_parts: Optional[List[dict]] = None  # mixed payment: [{method, amount}], max 2, no deferral
     pay_delivery_with_points: Optional[bool] = False  # cover delivery fee with bonus points
-    reward_choice: Optional[str] = "points"  # 'points' (accrue bonus points) or 'ozon' (extra Ozon certificate)
     use_cashback: Optional[float] = 0  # cashback (₽) to spend on this order
     promo_code: Optional[str] = None  # cart-wide promo code (single-method payments only)
     vehicle_id: Optional[str] = None  # garage vehicle the parts are bought for

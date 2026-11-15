@@ -2,7 +2,7 @@ import React, { useRef } from 'react';
 import { Button } from '../ui/button';
 import { Input } from '../ui/input';
 import { Label } from '../ui/label';
-import { Plus, Pencil, Trash2, Image, Upload, Save, X } from 'lucide-react';
+import { Plus, Pencil, Trash2, Image, Upload, Save } from 'lucide-react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '../ui/dialog';
 
 export default function PartnersTab({

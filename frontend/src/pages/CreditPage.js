@@ -3,7 +3,6 @@ import { useAuth } from '../context/AuthContext';
 import { useNavigate, Link } from 'react-router-dom';
 import { Button } from '../components/ui/button';
 import { Input } from '../components/ui/input';
-import { motion } from 'framer-motion';
 import { CreditCard, Clock, CheckCircle, XCircle, AlertTriangle, ArrowLeft, Wallet, Send, Loader2, Hourglass } from 'lucide-react';
 import { toast } from 'sonner';
 import axios from 'axios';

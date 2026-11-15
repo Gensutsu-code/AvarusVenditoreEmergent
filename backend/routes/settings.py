@@ -1,9 +1,8 @@
 """Settings routes (payments, promo banner, telegram)"""
 from fastapi import APIRouter, HTTPException, Depends
-from typing import Optional
 from datetime import datetime, timezone
 from database import db, get_current_user
-from models import PaymentMethodSettings, TelegramSettings, PromoBannerUpdate
+from models import TelegramSettings, PromoBannerUpdate
 
 router = APIRouter(tags=["settings"])
 
@@ -95,42 +94,6 @@ async def update_payment_settings(data: dict, user=Depends(get_current_user)):
         upsert=True
     )
     return {"success": True}
-
-
-# ==================== OZON CERTIFICATE SETTINGS ====================
-
-OZON_DEFAULTS = {
-    "ozon_enabled": True,
-    "ozon_step": 10000,   # ₽ of order goods per tranche
-    "ozon_reward": 500,   # ₽ certificate granted per tranche
-}
-
-@router.get("/ozon-settings")
-async def get_ozon_settings():
-    """Get Ozon certificate settings (public, used by cart bar)"""
-    settings = await db.settings.find_one({"key": "ozon_certificate_settings"})
-    if settings:
-        return {**OZON_DEFAULTS, **settings.get("value", {})}
-    return OZON_DEFAULTS
-
-
-@router.put("/admin/ozon-settings")
-async def update_ozon_settings(data: dict, user=Depends(get_current_user)):
-    if user.get("role") != "admin":
-        raise HTTPException(status_code=403, detail="Admin access required")
-    value = {
-        "ozon_enabled": bool(data.get("ozon_enabled", True)),
-        "ozon_step": max(1, int(data.get("ozon_step", 10000) or 10000)),
-        "ozon_reward": max(0, int(data.get("ozon_reward", 500) or 500)),
-    }
-    await db.settings.update_one(
-        {"key": "ozon_certificate_settings"},
-        {"$set": {"key": "ozon_certificate_settings", "value": value}},
-        upsert=True
-    )
-    return {"success": True, **value}
-
-
 
 
 # ==================== DELIVERY SETTINGS ====================

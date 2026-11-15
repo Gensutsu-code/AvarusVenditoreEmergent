@@ -1,9 +1,8 @@
 """Action Logs & Developer Mode routes for Absolute Control"""
-from fastapi import APIRouter, HTTPException, Depends, Query, Request
+from fastapi import APIRouter, HTTPException, Depends, Query
 from datetime import datetime, timezone
 from typing import Optional
 import uuid
-import json
 
 from database import db, get_current_user
 

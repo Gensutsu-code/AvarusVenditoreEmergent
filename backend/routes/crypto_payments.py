@@ -1,12 +1,10 @@
 """Advanced Crypto Payment System with direct wallet integration"""
 from fastapi import APIRouter, HTTPException, Depends
 from pydantic import BaseModel
-from typing import Optional
 from datetime import datetime, timezone
 import uuid
 import time
 import aiohttp
-import asyncio
 from web3 import Web3
 
 from database import db, get_current_user

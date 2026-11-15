@@ -3,7 +3,7 @@ import { Button } from '../ui/button';
 import { Input } from '../ui/input';
 import { Label } from '../ui/label';
 import { Textarea } from '../ui/textarea';
-import { Save, RotateCcw, Plus, Trash2, FileText } from 'lucide-react';
+import { Save, RotateCcw, Plus, Trash2 } from 'lucide-react';
 
 export default function TermsTab({
   termsSections = [],

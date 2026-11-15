@@ -1,10 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import axios from 'axios';
-import { 
-  Package, ChevronDown, ChevronUp, TrendingUp, ShoppingBag, 
-  Wallet, BarChart3, Star, CalendarDays, AlertTriangle, Check, XCircle, CreditCard, X, RefreshCw, Clock, Gift
-} from 'lucide-react';
+import { Package, ChevronDown, TrendingUp, ShoppingBag, Wallet, BarChart3, Star, CalendarDays, AlertTriangle, Check, XCircle, CreditCard, X, RefreshCw, Clock, Gift } from 'lucide-react';
 import { Button } from '../components/ui/button';
 import { useAuth } from '../context/AuthContext';
 import { motion, AnimatePresence } from 'framer-motion';

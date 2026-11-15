@@ -6,7 +6,6 @@ from datetime import datetime, timezone
 import uuid
 
 from database import db, get_current_user
-from notify import notify_admin
 
 router = APIRouter(tags=["warehouse"])
 

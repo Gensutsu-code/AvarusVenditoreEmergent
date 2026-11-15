@@ -1,11 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
-import { 
-  Gift, Award, Star, Trophy, TrendingUp, Clock, 
-  CheckCircle, Copy, History, ChevronDown, ChevronUp,
-  LayoutList, LayoutGrid
-} from 'lucide-react';
+import { Gift, Award, Star, Trophy, CheckCircle, Copy, History, ChevronDown, ChevronUp, LayoutList, LayoutGrid } from 'lucide-react';
 import { Button } from '../components/ui/button';
 import { useAuth } from '../context/AuthContext';
 import { useTheme } from '../context/ThemeContext';

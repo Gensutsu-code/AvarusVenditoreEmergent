@@ -1,11 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import axios from 'axios';
-import { 
-  Package, ShoppingCart, Truck, ArrowLeft, Minus, Plus, 
-  Heart, Share2, ChevronLeft, ChevronRight, Check, AlertCircle,
-  Tag, Layers, MapPin, Handshake
-} from 'lucide-react';
+import { Package, ShoppingCart, Truck, ArrowLeft, Minus, Plus, Share2, ChevronLeft, ChevronRight, Check, AlertCircle, Tag, Layers, MapPin, Handshake } from 'lucide-react';
 import { Button } from '../components/ui/button';
 import { useCart } from '../context/CartContext';
 import { useAuth } from '../context/AuthContext';

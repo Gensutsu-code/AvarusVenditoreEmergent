@@ -1,7 +1,7 @@
 import { useState, useMemo, useRef, useEffect } from 'react';
 import axios from 'axios';
 import { motion, AnimatePresence } from 'framer-motion';
-import { X, AlertTriangle, RefreshCw, ShieldCheck, Package, Camera, Upload, Trash2 } from 'lucide-react';
+import { X, AlertTriangle, RefreshCw, ShieldCheck, Package, Camera, Trash2 } from 'lucide-react';
 import { Button } from './ui/button';
 import { toast } from 'sonner';
 

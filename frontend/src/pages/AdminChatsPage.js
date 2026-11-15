@@ -1,18 +1,14 @@
 import { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
-import { 
-  MessageCircle, Send, Image, Paperclip, User, Clock, CheckCheck,
-  ChevronLeft, Search, X, Play, Tag, Check, XCircle, Loader2, Package,
-  Pin, Trash2, MoreVertical, ShoppingCart
-} from 'lucide-react';
+import { MessageCircle, Send, Paperclip, User, Clock, CheckCheck, Search, X, Play, Tag, Check, XCircle, Loader2, Package, Pin, Trash2, ShoppingCart } from 'lucide-react';
 import { Button } from '../components/ui/button';
 import { Input } from '../components/ui/input';
 import { Textarea } from '../components/ui/textarea';
 import { useAuth } from '../context/AuthContext';
 import { useTheme } from '../context/ThemeContext';
 import { toast } from 'sonner';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion } from 'framer-motion';
 
 const API = `${process.env.REACT_APP_BACKEND_URL}/api`;
 

@@ -4,7 +4,7 @@ import axios from 'axios';
 import { ShoppingCart, Truck, Trash2, ArrowRight, Package, CheckCircle } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useCart } from '../context/CartContext';
-import { OzonCertificateBar } from './OzonCertificateBar';
+import { RewardPreviewBar } from './RewardPreviewBar';
 
 const API = `${process.env.REACT_APP_BACKEND_URL}/api`;
 
@@ -117,7 +117,7 @@ export const MiniCart = () => {
               )}
 
               {/* Ozon certificate progress */}
-              <OzonCertificateBar total={cartTotal} compact />
+              <RewardPreviewBar total={cartTotal} compact />
 
               {/* Items */}
               <div className="max-h-72 overflow-y-auto divide-y divide-slate-100">

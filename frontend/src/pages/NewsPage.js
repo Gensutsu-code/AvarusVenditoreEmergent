@@ -7,30 +7,6 @@ import RichContent from '../components/RichContent';
 
 const API = `${process.env.REACT_APP_BACKEND_URL}/api`;
 
-// Function to make URLs in text clickable
-const linkifyText = (text) => {
-  if (!text) return '';
-  const urlRegex = /(https?:\/\/[^\s<]+)/g;
-  const parts = text.split(urlRegex);
-  
-  return parts.map((part, index) => {
-    if (part.match(urlRegex)) {
-      return (
-        <a 
-          key={index}
-          href={part}
-          target="_blank"
-          rel="noopener noreferrer"
-          className="text-teal-600 hover:text-teal-500 underline transition-colors"
-          onClick={(e) => e.stopPropagation()}
-        >
-          {part}
-        </a>
-      );
-    }
-    return part;
-  });
-};
 
 export default function NewsPage() {
   const [news, setNews] = useState([]);

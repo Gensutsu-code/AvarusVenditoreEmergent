@@ -1,13 +1,12 @@
 import { Link, useLocation, useNavigate } from 'react-router-dom';
-import { ShoppingCart, User, Search, LogOut, Settings, Heart, Package, ClipboardList, Gift, Newspaper, Menu, X, MessageCircle, Bell, Wallet, RefreshCw, CreditCard, Wrench, MapPin, ChevronDown } from 'lucide-react';
+import { ShoppingCart, User, Search, LogOut, Heart, Package, Gift, Newspaper, Menu, X, MessageCircle, Bell, Wallet, CreditCard, Wrench, MapPin, ChevronDown } from 'lucide-react';
 import { AdminDesktopNav, AdminMobileNav } from './admin/AdminNav';
 import { useRegion } from '../context/RegionContext';
-import { Map as MapIcon, Sparkles as AiIcon, Users as StaffIcon, Briefcase as ManagerIcon, Warehouse as GarageIcon } from 'lucide-react';
+import { Map as MapIcon, Sparkles as AiIcon, Briefcase as ManagerIcon, Warehouse as GarageIcon } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { useCart } from '../context/CartContext';
 import { Button } from './ui/button';
 import { AdminNotifications } from './AdminNotifications';
-import { HeaderPromoBanner } from './HeaderPromoBanner';
 import { SearchDropdown } from './SearchDropdown';
 import { MiniCart } from './MiniCart';
 import { useState, useRef, useEffect, useCallback } from 'react';

@@ -1,19 +1,14 @@
 import { useState, useEffect, useRef } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import axios from 'axios';
-import { motion, AnimatePresence } from 'framer-motion';
-import { 
-  Users, Package, ShoppingBag, TrendingUp, User,
-  Plus, Pencil, Trash2, Save, Eye, FolderOpen, Megaphone, Upload, Image,
-  MessageCircle, Send, BarChart3, Download, FileSpreadsheet, Pin, Tag, X, Copy, Gift, Award, ChevronDown, ChevronUp, Paperclip, Play, ZoomIn, ZoomOut, Settings, ChevronLeft, ChevronRight, CreditCard, FileText, Mail, Bell, Wallet, Clock, ScrollText, Code, Minus, RotateCcw, Merge, Truck, ListChecks, Warehouse, LayoutDashboard, Search
-} from 'lucide-react';
+import { motion } from 'framer-motion';
+import { Users, Package, ShoppingBag, User, Plus, Pencil, Trash2, Save, Eye, FolderOpen, Megaphone, Upload, MessageCircle, Send, BarChart3, Download, Pin, Tag, X, Copy, Gift, ChevronDown, ChevronUp, Paperclip, Play, ZoomIn, ZoomOut, Settings, CreditCard, FileText, ScrollText, RotateCcw, Merge, Truck, ListChecks, Warehouse, LayoutDashboard, Search } from 'lucide-react';
 import { Button } from '../components/ui/button';
 import { Input } from '../components/ui/input';
 import { Label } from '../components/ui/label';
 import { Textarea } from '../components/ui/textarea';
-import { Switch } from '../components/ui/switch';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '../components/ui/dialog';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '../components/ui/tabs';
+import { Tabs, TabsContent } from '../components/ui/tabs';
 import { PaymentAdjustmentsSection } from '../components/admin/PaymentAdjustmentsSection';
 import { AiBulkDescriptions } from '../components/admin/AiBulkDescriptions';
 import RichTextEditor from '../components/RichTextEditor';
@@ -41,7 +36,6 @@ import {
   BonusTab
 } from '../components/admin';
 import { useFeatures } from '../context/FeaturesContext';
-import CryptoSettingsTab from '../components/admin/CryptoSettingsTab';
 import AdminWarehousePage from './AdminWarehousePage';
 import AdminDashboard from '../components/admin/AdminDashboard';
 import AdminAnalyticsBar from '../components/admin/AdminAnalyticsBar';
@@ -162,46 +156,8 @@ export default function AdminPage() {
   // Theme
   const { isDark } = useTheme();
   
-  // Tab order state - New restructured order
   const defaultTabOrder = ['overview', 'products', 'warehouse', 'bonus', 'payments', 'crm', 'promotions', 'marketing', 'logs', 'settings'];
-  const [tabOrder, setTabOrder] = useState(() => {
-    const saved = localStorage.getItem('adminTabOrder');
-    if (saved) {
-      const order = JSON.parse(saved);
-      // Migrate old tabs to new structure
-      if (order.includes('orders') || order.includes('users')) {
-        return defaultTabOrder;
-      }
-      // Remove crypto from main tabs (moved to payments)
-      let filtered = order.filter(tab => tab !== 'crypto');
-      // Add logs tab if missing (migration)
-      if (!filtered.includes('logs')) {
-        const settingsIdx = filtered.indexOf('settings');
-        if (settingsIdx >= 0) filtered.splice(settingsIdx, 0, 'logs');
-        else filtered.push('logs');
-      }
-      // Add warehouse tab if missing (migration) — right after products
-      if (!filtered.includes('warehouse')) {
-        const prodIdx = filtered.indexOf('products');
-        if (prodIdx >= 0) filtered.splice(prodIdx + 1, 0, 'warehouse');
-        else filtered.unshift('warehouse');
-      }
-      // Add overview (dashboard) tab if missing (migration) — at the very front
-      if (!filtered.includes('overview')) {
-        filtered.unshift('overview');
-      }
-      // Add promotions (discounts & promo) tab if missing (migration) — after crm
-      if (!filtered.includes('promotions')) {
-        const crmIdx = filtered.indexOf('crm');
-        if (crmIdx >= 0) filtered.splice(crmIdx + 1, 0, 'promotions');
-        else filtered.push('promotions');
-      }
-      return filtered;
-    }
-    return defaultTabOrder;
-  });
   const [activeTab, setActiveTab] = useState(() => new URLSearchParams(window.location.search).get('tab') || 'overview');
-  const [editingTabOrder, setEditingTabOrder] = useState(false);
   
   // New states
   const [telegramSettings, setTelegramSettings] = useState({ enabled: false, bot_token: '', chat_id: '' });
@@ -211,7 +167,6 @@ export default function AdminPage() {
   const [newAdminMessage, setNewAdminMessage] = useState('');
   const [extendedStats, setExtendedStats] = useState(null);
   const [statsPeriod, setStatsPeriod] = useState('month');
-  const [importResult, setImportResult] = useState(null);
   
   // Lightbox states for admin chat
   const [adminLightboxImage, setAdminLightboxImage] = useState(null);
@@ -234,20 +189,6 @@ export default function AdminPage() {
   const [selectedProgramId, setSelectedProgramId] = useState(null);
   const [programUsers, setProgramUsers] = useState([]);
   const [bonusHistory, setBonusHistory] = useState([]);
-  const [ozonSettings, setOzonSettings] = useState({ ozon_enabled: true, ozon_step: 10000, ozon_reward: 500 });
-
-  useEffect(() => {
-    axios.get(`${API}/ozon-settings`).then(r => setOzonSettings(r.data)).catch(() => {});
-  }, []);
-
-  const handleSaveOzonSettings = async () => {
-    try {
-      await axios.put(`${API}/admin/ozon-settings`, ozonSettings);
-      toast.success('Настройки Ozon-сертификата сохранены');
-    } catch (e) {
-      toast.error(e.response?.data?.detail || 'Ошибка сохранения');
-    }
-  };
   
   // Bonus states
   const [prizeRedemptions, setPrizeRedemptions] = useState([]);
@@ -496,15 +437,6 @@ export default function AdminPage() {
     }
   };
 
-  const handleProductImageUpload = async (e) => {
-    const file = e.target.files?.[0];
-    if (file) {
-      const url = await handleFileUpload(file, 'product');
-      if (url) {
-        setEditingProduct({ ...editingProduct, image_url: url });
-      }
-    }
-  };
 
   const handleCategoryImageUpload = async (e) => {
     const file = e.target.files?.[0];
@@ -1007,82 +939,9 @@ export default function AdminPage() {
     }
   }, [statsPeriod, user, authLoading]);
 
-  // Import handlers
-  const handleImportProducts = async (e) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
 
-    setUploading(true);
-    setImportResult(null);
-    
-    try {
-      const formData = new FormData();
-      formData.append('file', file);
-      
-      const res = await axios.post(`${API}/admin/products/import-csv`, formData, {
-        headers: { 'Content-Type': 'multipart/form-data' }
-      });
-      
-      setImportResult(res.data);
-      toast.success(`Импортировано: ${res.data.imported}, Обновлено: ${res.data.updated}`);
-      // Refresh products list to show imported items
-      const productsRes = await axios.get(`${API}/products`);
-      setProducts(productsRes.data);
-    } catch (err) {
-      toast.error(err.response?.data?.detail || 'Ошибка импорта');
-    } finally {
-      setUploading(false);
-      if (importFileRef.current) importFileRef.current.value = '';
-    }
-  };
 
-  const handleExportProducts = async () => {
-    try {
-      const res = await axios.get(`${API}/admin/products/csv-export`, { responseType: 'blob' });
-      const url = window.URL.createObjectURL(new Blob([res.data]));
-      const link = document.createElement('a');
-      link.href = url;
-      link.setAttribute('download', 'products_export.csv');
-      document.body.appendChild(link);
-      link.click();
-      link.remove();
-      window.URL.revokeObjectURL(url);
-    } catch (err) {
-      toast.error('Ошибка экспорта');
-    }
-  };
 
-  const handleDownloadTemplate = async () => {
-    try {
-      const res = await axios.get(`${API}/admin/products/csv-template`, { responseType: 'blob' });
-      const url = window.URL.createObjectURL(new Blob([res.data]));
-      const link = document.createElement('a');
-      link.href = url;
-      link.setAttribute('download', 'products_template.csv');
-      document.body.appendChild(link);
-      link.click();
-      link.remove();
-      window.URL.revokeObjectURL(url);
-    } catch (err) {
-      toast.error('Ошибка скачивания шаблона');
-    }
-  };
-
-  const handleDownloadPrompt = async () => {
-    try {
-      const res = await axios.get(`${API}/admin/products/csv-prompt`, { responseType: 'blob' });
-      const url = window.URL.createObjectURL(new Blob([res.data]));
-      const link = document.createElement('a');
-      link.href = url;
-      link.setAttribute('download', 'chatgpt_prompt.txt');
-      document.body.appendChild(link);
-      link.click();
-      link.remove();
-      window.URL.revokeObjectURL(url);
-    } catch (err) {
-      toast.error('Ошибка скачивания промпта');
-    }
-  };
 
   // Order handlers
   const handleUpdateOrderStatus = async (orderId, status) => {
@@ -1114,23 +973,6 @@ export default function AdminPage() {
     { value: 'cancelled', label: 'Отменён', color: 'bg-red-100 text-red-800' }
   ];
 
-  const getCategoryName = (categoryId) => {
-    const cat = categories.find(c => c.id === categoryId);
-    return cat ? cat.name : '—';
-  };
-
-  // Tab management functions
-  const moveTab = (tabId, direction) => {
-    const currentIndex = tabOrder.indexOf(tabId);
-    const newIndex = direction === 'left' ? currentIndex - 1 : currentIndex + 1;
-    
-    if (newIndex < 0 || newIndex >= tabOrder.length) return;
-    
-    const newOrder = [...tabOrder];
-    [newOrder[currentIndex], newOrder[newIndex]] = [newOrder[newIndex], newOrder[currentIndex]];
-    setTabOrder(newOrder);
-    localStorage.setItem('adminTabOrder', JSON.stringify(newOrder));
-  };
 
   // Handler functions for refactored components
   
@@ -1304,19 +1146,13 @@ export default function AdminPage() {
     }
   };
 
-  const resetTabOrder = () => {
-    setTabOrder(defaultTabOrder);
-    localStorage.removeItem('adminTabOrder');
-    toast.success('Порядок вкладок сброшен');
-  };
-
   // Tab configuration - New restructured tabs
   // Tabs of switched-off site functions are not shown
   const tabFeatureOff = {
     bonus: !isFeatureEnabled('rewards'),
     promotions: !['discounts', 'promo_codes', 'cart_discounts'].some(isFeatureEnabled),
   };
-  const visibleTabs = tabOrder.filter((t) => !tabFeatureOff[t]);
+  const shownTab = tabFeatureOff[activeTab] ? 'overview' : activeTab;
   const tabConfig = {
     overview: { icon: LayoutDashboard, label: 'Обзор' },
     products: { icon: Package, label: 'Каталог', count: products.length },
@@ -1361,107 +1197,17 @@ export default function AdminPage() {
         <div className="flex items-center justify-between gap-3 mb-6">
           <h1 className={`text-xl sm:text-2xl md:text-3xl font-bold tracking-tight uppercase min-w-0 truncate ${isDark ? 'text-white' : 'text-zinc-900'}`}>
             <span className={`bg-gradient-to-r ${isDark ? 'from-orange-400 to-orange-600' : 'from-teal-500 to-emerald-500'} bg-clip-text text-transparent`}>
-              {tabConfig[activeTab]?.label || 'Панель администратора'}
+              {tabConfig[shownTab]?.label || 'Панель администратора'}
             </span>
           </h1>
 
         </div>
 
-        {/* Tab Order Editor */}
-        {editingTabOrder && (
-          <div className="mb-4 p-4 bg-teal-50 border border-teal-200 rounded-xl">
-            <div className="flex items-center justify-between mb-3">
-              <p className="text-sm font-medium text-teal-800">
-                Перетащите вкладки для изменения порядка или используйте стрелки
-              </p>
-              <Button variant="outline" size="sm" onClick={resetTabOrder}>
-                Сбросить
-              </Button>
-            </div>
-            <div className="flex flex-wrap gap-2">
-              {tabOrder.map((tabId, index) => {
-                const config = tabConfig[tabId];
-                const IconComponent = config.icon;
-                return (
-                  <div key={tabId} className="flex items-center gap-1 bg-white border border-teal-200 rounded-lg px-2 py-1.5">
-                    <button 
-                      onClick={() => moveTab(tabId, 'left')}
-                      disabled={index === 0}
-                      className="p-0.5 hover:bg-teal-100 rounded disabled:opacity-30"
-                    >
-                      <ChevronLeft className="w-4 h-4" />
-                    </button>
-                    <div className="flex items-center gap-1.5 px-2">
-                      <IconComponent className="w-3.5 h-3.5 text-teal-600" />
-                      <span className="text-xs font-medium">{config.label}</span>
-                    </div>
-                    <button 
-                      onClick={() => moveTab(tabId, 'right')}
-                      disabled={index === tabOrder.length - 1}
-                      className="p-0.5 hover:bg-teal-100 rounded disabled:opacity-30"
-                    >
-                      <ChevronRight className="w-4 h-4" />
-                    </button>
-                  </div>
-                );
-              })}
-            </div>
-          </div>
-        )}
-
         {/* Collapsible analytics KPI bar (between header and tabs) */}
         <AdminAnalyticsBar onNavigate={setActiveTab} />
 
         {/* Tabs - Dynamic Order with Full Width Distribution */}
-        <Tabs value={activeTab} onValueChange={setActiveTab} className={`rounded-xl border shadow-sm overflow-hidden ${isDark ? 'bg-zinc-900/60 border-zinc-800 backdrop-blur-xl' : 'bg-white border-zinc-200'}`}>
-          <div className="relative">
-            <div className="overflow-x-auto">
-              <TabsList className={`hidden w-full border-b rounded-none p-0 h-auto ${isDark ? 'border-zinc-800 bg-zinc-900/50' : 'border-zinc-200 bg-zinc-50'}`}>
-              {visibleTabs.map((tabId) => {
-                const config = tabConfig[tabId];
-                const IconComponent = config.icon;
-                const isActive = activeTab === tabId;
-                return (
-                  <TabsTrigger 
-                    key={tabId}
-                    value={tabId} 
-                    className={`flex-1 flex items-center justify-center gap-2 rounded-none border-b-2 px-4 py-3 text-sm font-medium whitespace-nowrap transition-all duration-300 ${
-                      isDark 
-                        ? isActive 
-                          ? 'bg-gradient-to-t from-teal-500/10 to-transparent border-teal-500 text-teal-400' 
-                          : 'border-transparent text-zinc-400 hover:text-zinc-200 hover:bg-zinc-800/50'
-                        : isActive 
-                          ? 'bg-gradient-to-t from-teal-500/10 to-transparent border-teal-500 text-teal-700' 
-                          : 'border-transparent text-zinc-500 hover:text-zinc-700 hover:bg-zinc-100/50'
-                    }`}
-                  >
-                    <IconComponent className={`w-4 h-4 ${isActive ? (isDark ? 'text-teal-400' : 'text-teal-600') : ''}`} />
-                    <span className="hidden sm:inline">{config.label}</span>
-                    {config.count !== undefined && (
-                      <span className={`text-[10px] px-2 py-0.5 rounded-full ${
-                        isDark 
-                          ? isActive ? 'bg-teal-500/20 text-teal-300' : 'bg-zinc-700 text-zinc-400'
-                          : isActive ? 'bg-teal-100 text-teal-700' : 'bg-zinc-200 text-zinc-500'
-                      }`}>
-                        {config.count}
-                      </span>
-                    )}
-                    {config.badge > 0 && (
-                      <span className="bg-red-500 text-white text-[10px] px-1.5 py-0.5 rounded-full animate-pulse">
-                        {config.badge}
-                      </span>
-                    )}
-                  </TabsTrigger>
-                );
-              })}
-            </TabsList>
-            </div>
-            {/* Mobile scroll affordance */}
-            <div className="sm:hidden pointer-events-none absolute right-0 top-0 bottom-0 w-8 flex items-center justify-end pr-1 bg-gradient-to-l from-white/90 dark:from-zinc-900/90 to-transparent">
-              <ChevronRight className="w-4 h-4 text-teal-500 animate-pulse" />
-            </div>
-          </div>
-
+        <Tabs value={shownTab} onValueChange={setActiveTab} className={`rounded-xl border shadow-sm overflow-hidden ${isDark ? 'bg-zinc-900/60 border-zinc-800 backdrop-blur-xl' : 'bg-white border-zinc-200'}`}>
           {/* Overview / Dashboard Tab */}
           <TabsContent value="overview" className="p-6">
             <AttentionBlock />
@@ -2629,12 +2375,9 @@ export default function AdminPage() {
             setPrizeRedemptions={setPrizeRedemptions}
             pointsModal={pointsModal}
             setPointsModal={setPointsModal}
-            ozonSettings={ozonSettings}
-            setOzonSettings={setOzonSettings}
             bonusImageFileRef={bonusImageFileRef}
             bonusBannerFileRef={bonusBannerFileRef}
             handleFileUpload={handleFileUpload}
-            handleSaveOzonSettings={handleSaveOzonSettings}
             users={users}
             uploading={uploading}
           />

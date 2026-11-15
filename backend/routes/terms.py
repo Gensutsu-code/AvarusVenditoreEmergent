@@ -1,7 +1,7 @@
 """Terms of Service routes - editable terms from admin panel"""
 from fastapi import APIRouter, HTTPException, Depends
 from pydantic import BaseModel
-from typing import List, Optional
+from typing import List
 from datetime import datetime, timezone
 
 from database import db, get_current_user

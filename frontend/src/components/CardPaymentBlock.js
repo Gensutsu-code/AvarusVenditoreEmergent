@@ -2,7 +2,6 @@ import { useState } from 'react';
 import axios from 'axios';
 import { toast } from 'sonner';
 import { CreditCard, QrCode, Upload, Loader2, CheckCircle, Clock, Copy } from 'lucide-react';
-import { Button } from './ui/button';
 
 const API = `${process.env.REACT_APP_BACKEND_URL}/api`;
 

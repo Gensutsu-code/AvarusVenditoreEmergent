@@ -84,7 +84,6 @@ async def check_expired_orders_task():
                 "payment_status": {"$in": ["awaiting_payment", "awaiting_confirmation", "unpaid"]}
             }).to_list(200)
 
-            import uuid as _uuid
             pay_cancelled = 0
             for order in due_expired:
                 await restore_order_stock(order)

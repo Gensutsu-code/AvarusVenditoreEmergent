@@ -1,10 +1,8 @@
-import React, { useState, useEffect } from 'react';
-import axios from 'axios';
-import { toast } from 'sonner';
+import React from 'react';
 import { Button } from '../ui/button';
 import { Input } from '../ui/input';
 import { Label } from '../ui/label';
-import { Save, CreditCard, Settings, Wallet, QrCode, Upload, Loader2 } from 'lucide-react';
+import { Save, CreditCard, Settings, Wallet } from 'lucide-react';
 
 export default function DiscountsTab({
   paymentSettings,

@@ -4,7 +4,7 @@ import axios from 'axios';
 import { Button } from '../components/ui/button';
 import { Input } from '../components/ui/input';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '../components/ui/dialog';
-import { Search, X, ShoppingCart, Package, Truck, Minus, Plus, ArrowRight, Heart, ChevronLeft, ChevronRight, Percent, Eye, Filter, MapPin, ArrowUpDown, Tag, Gift, Sparkles, Layers, Flame, LayoutGrid, Handshake } from 'lucide-react';
+import { Search, X, ShoppingCart, Package, Truck, Minus, Plus, ArrowRight, ChevronLeft, ChevronRight, Percent, Eye, Filter, MapPin, ArrowUpDown, Tag, Gift, Sparkles, Layers, Flame, LayoutGrid, Handshake } from 'lucide-react';
 import { useCart } from '../context/CartContext';
 import { Skeleton } from '../components/ui/skeleton';
 import { useAuth } from '../context/AuthContext';
@@ -668,14 +668,6 @@ export default function CatalogPage() {
     finally { setAiSearching(false); }
   };
 
-  const handleSearch = (e) => {
-    e.preventDefault();
-    if (searchInput.trim()) {
-      const params = new URLSearchParams();
-      params.set('search', searchInput.trim());
-      setSearchParams(params);
-    }
-  };
 
   const clearFilters = () => {
     setSearchInput('');

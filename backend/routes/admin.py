@@ -1,7 +1,6 @@
 """Admin routes for user and order management"""
 from fastapi import APIRouter, HTTPException, Depends, UploadFile, File
 from fastapi.responses import StreamingResponse
-from typing import List
 from datetime import datetime, timezone, timedelta
 from collections import defaultdict
 import uuid
@@ -754,7 +753,6 @@ async def get_admin_stats_extended(user=Depends(get_current_user)):
     total_revenue = result[0]["total_revenue"] if result else 0
     
     # Monthly stats
-    from datetime import timedelta
     now = datetime.now(timezone.utc)
     month_start = now.replace(day=1, hour=0, minute=0, second=0, microsecond=0)
     
