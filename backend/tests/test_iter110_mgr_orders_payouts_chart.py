@@ -411,37 +411,45 @@ class TestPayouts:
         unk = admin.post(f"{API}/admin/staff/{uuid.uuid4().hex}/payouts", json={"amount": 10})
         assert unk.status_code == 404
 
-        # successful create
+        # Iter111: payout cannot exceed balance (earned=30 here)
+        too_big = admin.post(f"{API}/admin/staff/{mgr['id']}/payouts", json={"amount": earned + 10, "comment": "TEST over"})
+        assert too_big.status_code == 400
+        assert "больше остатка" in too_big.json().get("detail", "")
+
+        # successful create (within balance)
         today = date.today().isoformat()
+        amt1 = 20.0
         add = admin.post(f"{API}/admin/staff/{mgr['id']}/payouts", json={
-            "amount": 50, "paid_at": today, "comment": "TEST payout 1",
+            "amount": amt1, "paid_at": today, "comment": "TEST payout 1",
         })
         assert add.status_code == 200, add.text
         pid = add.json()["id"]
         tracked["payout_ids"].append((mgr["id"], pid))
 
-        # another without paid_at (defaults today)
-        add2 = admin.post(f"{API}/admin/staff/{mgr['id']}/payouts", json={"amount": 20, "comment": "TEST payout 2"})
+        # another without paid_at (defaults today) - small, still within balance
+        amt2 = 5.0
+        add2 = admin.post(f"{API}/admin/staff/{mgr['id']}/payouts", json={"amount": amt2, "comment": "TEST payout 2"})
         assert add2.status_code == 200
         pid2 = add2.json()["id"]
         tracked["payout_ids"].append((mgr["id"], pid2))
 
+        paid_total = amt1 + amt2
         ps2 = admin.get(f"{API}/admin/staff/{mgr['id']}/payouts").json()
-        assert abs(ps2["paid"] - 70) < 0.01
-        assert abs(ps2["balance"] - (earned - 70)) < 0.01
+        assert abs(ps2["paid"] - paid_total) < 0.01
+        assert abs(ps2["balance"] - (earned - paid_total)) < 0.01
         assert any(p["id"] == pid for p in ps2["payouts"])
 
         # /admin/staff row payouts
         staff = admin.get(f"{API}/admin/staff").json()
         row = next(r for r in staff if r["id"] == mgr["id"])
-        assert "payouts" in row and abs(row["payouts"]["paid"] - 70) < 0.01
+        assert "payouts" in row and abs(row["payouts"]["paid"] - paid_total) < 0.01
 
         # cancel payout
         d = admin.delete(f"{API}/admin/staff/{mgr['id']}/payouts/{pid}")
         assert d.status_code == 200
         ps3 = admin.get(f"{API}/admin/staff/{mgr['id']}/payouts").json()
         assert all(p["id"] != pid for p in ps3["payouts"])
-        assert abs(ps3["paid"] - 20) < 0.01
+        assert abs(ps3["paid"] - amt2) < 0.01
         # second cancel -> 404
         d2 = admin.delete(f"{API}/admin/staff/{mgr['id']}/payouts/{pid}")
         assert d2.status_code == 404

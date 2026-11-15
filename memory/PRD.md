@@ -227,6 +227,11 @@ E-commerce platform for truck spare parts with a comprehensive admin panel. Russ
 - Выплаты: коллекция `manager_payouts` (soft cancel), `GET/POST/DELETE /api/admin/staff/{id}/payouts`, `GET /api/manager/payouts`; колонка «К выплате», панель `PayoutsPanel`.
 - График: `GET /api/admin/staff-chart?months=`, `StaffSalesChart` (recharts) на /admin/staff.
 
+### Iter 111 (DONE — backend 9/9 + 39/39 регресс, UI — смоук)
+- В заказ пишется `manager_commission_percent` (на момент оформления); `_manager_stats` считает вознаграждение по проценту заказа, заказы без него (старые / засчитанные при привязке) — по текущему проценту. Объединение заказов сохраняет менеджера.
+- Выплата больше остатка → 400. `staff-chart` отдаёт `profit`, переключатель `chart-metric-*`. Фильтр `orders-manager-filter` в /admin/orders.
+- Тестовые менеджеры TEST_ удалены и отвязаны от заказов.
+
 ### P1 (Important)
 - Real Payment Gateway Integration (replace MOCKED YuKassa)
 - CartPage/ProductPage display mismatches (pre-existing): payment-method adjustment & tier preview not clamped to min_price in UI (server charges correct floor). Best fixed via a server-computed cart preview.
