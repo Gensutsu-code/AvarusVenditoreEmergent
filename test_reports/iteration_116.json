@@ -1,0 +1,31 @@
+{
+  "summary": "Tested iter-116 admin header restructure (5 dropdown groups + pinned Orders/Chats + search + attention block) and manager role restrictions. Backend attention endpoint (/api/admin/attention): 9/9 pytest cases pass — admin returns all 10 keys as ints, manager/client/anon are blocked (403/401), disabled feature zeros the counter. Frontend desktop: admin-nav renders with 5 group triggers (sales/catalog/clients/marketing/system), hover opens admin-nav-menu-{id} with the exact admin-nav-item-{to} entries from the spec, click navigates to the right tab+sub and closes the menu. Badges rendered on pinned links and groups (admin-orders-link-badge=99+, admin-chats-link-badge=6, sales=2, clients=3, marketing=1). AttentionBlock renders on overview with real counts. Browser back/forward keeps ?tab= in sync. Admin search (admin-search-btn) opens dialog with filterable results; 'возвраты' returns Возвраты + Возвраты и гарантия. Old horizontal TabsList and 'Настроить вкладки' are hidden. Mobile burger reveals admin-mobile-nav with all 5 group headings and pinned links; clicking a mobile item navigates and closes the menu. Manager flow: login lands on /manager, manager-header exposes logo+manager-cabinet-link+ai-assistant-link+manager-profile-link+logout-button only, forbidden testids absent (catalog/cart/orders/garage/bonus/favorites/search/chat-widget), direct URLs /, /catalog, /cart, /orders, /garage, /bonus, /favorites, /news, /contact, /admin, /admin/orders all redirect to /manager (verified with proper waits for the React-Router Navigate), /assistant and /account load normally, no topup-btn on /account for manager, no footer. Client regression (user@demo.com): client header + cart/orders/garage/chat widget intact, no admin-nav leak.",
+  "backend_issues": {"critical": [], "minor": []},
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [],
+    "design_issues": [
+      {"screen": "CommandDialog (admin search)", "issues": ["Radix accessibility warning: DialogContent is missing a DialogTitle — add a VisuallyHidden title to CommandDialog for a11y."]}
+    ]
+  },
+  "test_report_links": [
+    "/app/backend/tests/test_iter116_admin_nav_attention.py",
+    "/app/test_reports/pytest/iter116.xml"
+  ],
+  "action_items": [
+    "Minor: wrap the admin CommandDialog in a VisuallyHidden <DialogTitle> to silence the Radix a11y console warning."
+  ],
+  "critical_code_review_comments": [
+    "routes/attention.py reads is_on(feature) at request time but is_on's cache TTL means feature-flag flips take up to 2s to be reflected in counts — acceptable; already covered by frontend 30s polling.",
+    "adminNav.js ADMIN_PINNED['chats'] badge sums chats+price_requests+product_requests, but AttentionBlock shows these as three separate rows. OK by spec, just note the pinned badge double-counts versus the overview grid.",
+    "AdminNav GroupMenu closes on route change via useEffect([location.pathname, location.search]). When hovering out before clicking an item the menu also closes via onMouseLeave which is good; however for keyboard-only users there is no focus trap / Enter handling — the button toggles open on click but items inside are not reachable without a mouse hover. Minor a11y note.",
+    "attention.py chats count: distinct chat_id of unread user messages — will double-count a chat even if admin already saw later message in same chat. Consider using latest message unread flag per chat."
+  ],
+  "updated_files": ["/app/backend/tests/test_iter116_admin_nav_attention.py"],
+  "success_rate": {"backend": "100% (9/9)", "frontend": "100% (all spec checks pass)"},
+  "test_credentials": "admin@avarus.ru/admin OK; manager@avarus.ru/manager123 OK (works in this env now); user@demo.com/demo123 OK",
+  "seed_data_creation": "Test flipped feature 'returns' off then back on to its previous enabled=true/audience=all during TestFeatureGating.test_disable_returns_zeroes_counter; no other data created. No collections dropped.",
+  "retest_needed": false,
+  "should_main_agent_self_test": false,
+  "context_for_next_testing_agent": "test_iter116_admin_nav_attention.py loads REACT_APP_BACKEND_URL via python-dotenv from /app/frontend/.env. It covers attention endpoint auth matrix, keys, non-negativity and feature-off zeroing (restores). Frontend test flow: login → /admin → hover admin-nav-group-{id} (400ms wait) → click admin-nav-item-{to} with force=True; browser back restores ?tab=. Mobile selector for burger is [data-testid=mobile-menu-btn] (not mobile-menu-toggle). Note that admin-features-link and admin-profile-link only mount while the Система dropdown is open."
+}

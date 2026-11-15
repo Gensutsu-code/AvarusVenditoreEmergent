@@ -304,3 +304,10 @@ E-commerce platform for truck spare parts with a comprehensive admin panel. Russ
 - Promo banner: existing editor embedded in the card.
 - Tests: `backend/tests/test_iter115_feature_settings.py` (21/21). Manager test password was reset to manager123 (had drifted).
 - Still toggle-only (no own params): price_requests, warehouses_map, admin_carts.
+
+## Manager-only panel + admin regrouping (June 2026, iteration_116)
+- Manager: dedicated header (`manager-header`: cabinet, AI assistant, profile, logout); App.js guard redirects every other path to /manager; no chat widget/footer/banner; /account hides balance card for manager.
+- Admin header (`components/admin/AdminNav.js`, registry `lib/adminNav.js`): pinned Заказы/Чаты + 5 dropdowns (Продажи, Каталог, Клиенты, Маркетинг, Система), badges from `GET /api/admin/attention` (`routes/attention.py`), Ctrl+K search (pages, settings sub-tabs, site functions via `/admin/features?open=key`), mobile grouped menu.
+- AdminPage: old tab bar + tab-order editor hidden; tab driven by `?tab=`; Settings/Marketing sub-tabs deep-linkable via `&sub=`; «Требует внимания» block on overview.
+- Duplicated settings intentionally kept in both places (user choice).
+- Tests: iteration_116 — backend 9/9, frontend 100%.
