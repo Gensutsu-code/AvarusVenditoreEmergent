@@ -12,6 +12,7 @@ from .chat import router as chat_router
 from .bonus import router as bonus_router
 from .rewards import router as rewards_router
 from .features import router as features_router
+from .attention import router as attention_router
 from .uploads import router as uploads_router
 from .partners import router as partners_router
 from .telegram import router as telegram_router
@@ -56,6 +57,7 @@ api_router.include_router(chat_router)
 api_router.include_router(bonus_router)
 api_router.include_router(rewards_router)
 api_router.include_router(features_router)
+api_router.include_router(attention_router)
 api_router.include_router(uploads_router)
 api_router.include_router(partners_router)
 api_router.include_router(telegram_router)

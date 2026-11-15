@@ -129,6 +129,13 @@ function AppContent() {
   const pageMaint = pageKey && maintenance.pages?.[pageKey];
   const isPageDown = pageMaint?.enabled && !isAdmin && !isProtectedRoute;
 
+  // Managers only have their cabinet, the AI assistant and their profile
+  const managerPaths = ['/manager', '/assistant', '/account'];
+  if (user?.role === 'manager' && !managerPaths.some((p) => location.pathname === p || location.pathname.startsWith(`${p}/`))) {
+    return <Navigate to="/manager" replace />;
+  }
+  const isManager = user?.role === 'manager';
+
   // Pages of a switched-off function send everyone back to the start page
   if (featuresLoaded && blockedFeature(location.pathname)) {
     return <Navigate to={location.pathname.startsWith('/admin') ? '/admin' : '/'} replace />;
@@ -191,9 +198,9 @@ function AppContent() {
         </AnimatePresence>
         )}
       </main>
-      {!isAdmin && <Footer />}
-      {!isAdmin && location.pathname !== '/contact' && isOn('promo_banner') && <FloatingPromoBanner />}
-      {!isAdmin && isOn('chat') && <ChatWidget />}
+      {!isAdmin && !isManager && <Footer />}
+      {!isAdmin && !isManager && location.pathname !== '/contact' && isOn('promo_banner') && <FloatingPromoBanner />}
+      {!isAdmin && !isManager && isOn('chat') && <ChatWidget />}
       <Toaster position="top-center" />
     </div>
   );

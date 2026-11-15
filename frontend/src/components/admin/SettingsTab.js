@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { Send, Image, FileText, Truck, Bell, Upload, Download, FileSpreadsheet, Power, Code, Globe, Wrench } from 'lucide-react';
 import { StatusConditionsSettings } from './StatusConditionsSettings';
 import { motion } from 'framer-motion';
@@ -656,7 +657,10 @@ export const SettingsTab = ({
   
   isDark = false
 }) => {
-  const [activeSubTab, setActiveSubTab] = useState('telegram');
+  const [searchParams] = useSearchParams();
+  const subParam = searchParams.get('sub');
+  const [activeSubTab, setActiveSubTab] = useState(subParam || 'telegram');
+  useEffect(() => { if (subParam) setActiveSubTab(subParam); }, [subParam]);
 
   const subTabs = [
     { id: 'conditions', label: 'Условия по статусам', icon: FileText },

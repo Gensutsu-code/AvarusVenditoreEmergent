@@ -1,5 +1,6 @@
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { ShoppingCart, User, Search, LogOut, Settings, Heart, Package, ClipboardList, Gift, Newspaper, Menu, X, MessageCircle, Bell, Wallet, RefreshCw, CreditCard, Wrench, MapPin, ChevronDown } from 'lucide-react';
+import { AdminDesktopNav, AdminMobileNav } from './admin/AdminNav';
 import { useRegion } from '../context/RegionContext';
 import { Map as MapIcon, Sparkles as AiIcon, Users as StaffIcon, Briefcase as ManagerIcon, Warehouse as GarageIcon } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
@@ -363,6 +364,28 @@ export const Header = () => {
     );
   };
 
+  // Managers work only in their cabinet, the AI assistant and their profile
+  if (user?.role === 'manager') {
+    const mLink = (to, label, Icon, testid) => (
+      <Link to={to} className={`h-10 px-3 rounded-xl flex items-center gap-1.5 text-sm font-semibold transition-colors duration-200 ${location.pathname.startsWith(to) ? 'bg-slate-900 text-white' : 'text-slate-600 hover:bg-slate-100'}`} data-testid={testid}>
+        <Icon className="w-4 h-4" /><span className="hidden sm:inline">{label}</span>
+      </Link>
+    );
+    return (
+      <header className="sticky top-0 z-50 backdrop-blur-xl border-b bg-white/70 border-cyan-200/50" data-testid="manager-header">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex items-center h-16 gap-2">
+          <Link to="/manager" className="mr-auto text-xl font-bold uppercase tracking-tight bg-gradient-to-r from-emerald-500 to-teal-600 bg-clip-text text-transparent" data-testid="logo-link">avopt.store</Link>
+          {mLink('/manager', 'Кабинет менеджера', ManagerIcon, 'manager-cabinet-link')}
+          {mLink('/assistant', 'ИИ-помощник', AiIcon, 'ai-assistant-link')}
+          {mLink('/account', 'Профиль', User, 'manager-profile-link')}
+          <button type="button" onClick={logout} className="p-2 rounded-xl text-slate-500 hover:text-red-500 hover:bg-red-100 transition-colors duration-200" title="Выйти" data-testid="logout-button">
+            <LogOut className="w-4 h-4" />
+          </button>
+        </div>
+      </header>
+    );
+  }
+
   return (
     <header className="sticky top-0 z-50 backdrop-blur-xl border-b bg-white/70 border-cyan-200/50" data-testid="header">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -420,84 +443,13 @@ export const Header = () => {
             </div>
           )}
           
-          {/* Admin indicator (only for admin) - center */}
-          {isAdmin && (
-            <div className="hidden md:block flex-1 text-center">
-              <span className="text-sm tracking-wide text-purple-500 font-medium">
-                Режим администратора
-              </span>
-            </div>
-          )}
-
           {/* Desktop Navigation */}
           <div className="hidden md:flex items-center gap-1 flex-1">
             {user ? (
               <>
                 {isAdmin ? (
                   /* Admin Navigation */
-                  <div className="flex items-center gap-1 ml-auto">
-                    <NavLink to="/admin" data-testid="admin-link">
-                      <span className="flex items-center gap-2 text-purple-500">
-                        <Settings className="w-4 h-4" />
-                        Панель
-                      </span>
-                    </NavLink>
-                    <AdminNotifications />
-                    <NavLink to="/admin/orders" data-testid="admin-orders-link">
-                      <span className="flex items-center gap-2">
-                        <ClipboardList className="w-4 h-4" />
-                        Заказы
-                      </span>
-                    </NavLink>
-                    <NavLink to="/admin/carts" data-testid="admin-carts-link">
-                      <span className="flex items-center gap-2">
-                        <ShoppingCart className="w-4 h-4" />
-                        Корзины
-                      </span>
-                    </NavLink>
-                    <NavLink to="/admin/chats" data-testid="admin-chats-link">
-                      <span className="flex items-center gap-2">
-                        <MessageCircle className="w-4 h-4" />
-                        Чаты
-                      </span>
-                    </NavLink>
-                    <NavLink to="/admin/returns" data-testid="admin-returns-link">
-                      <span className="flex items-center gap-2">
-                        <RefreshCw className="w-4 h-4" />
-                        Возвраты
-                      </span>
-                    </NavLink>
-                    <NavLink to="/admin/staff" data-testid="admin-staff-link">
-                      <span className="flex items-center gap-2">
-                        <StaffIcon className="w-4 h-4" />
-                        Сотрудники
-                      </span>
-                    </NavLink>
-                    <NavLink to="/admin/credit" data-testid="admin-credit-link">
-                      <span className="flex items-center gap-2">
-                        <CreditCard className="w-4 h-4" />
-                        Отсрочка
-                      </span>
-                    </NavLink>
-                    <NavLink to="/admin/features" data-testid="admin-features-link">
-                      <span className="flex items-center gap-2">
-                        <Settings className="w-4 h-4" />
-                        Функционал
-                      </span>
-                    </NavLink>
-                    <NavLink to="/admin/profile" data-testid="admin-profile-link">
-                      <User className="w-4 h-4" />
-                    </NavLink>
-                    <Button 
-                      variant="ghost" 
-                      size="sm" 
-                      onClick={logout}
-                      className="rounded-xl transition-all duration-300 text-slate-500 hover:text-red-500 hover:bg-red-100"
-                      data-testid="logout-button"
-                    >
-                      <LogOut className="w-4 h-4" />
-                    </Button>
-                  </div>
+                  <AdminDesktopNav onLogout={logout} notifications={<AdminNotifications />} />
                 ) : (
                   /* User Navigation - 4 icons evenly distributed with animations */
                   <>
@@ -763,32 +715,7 @@ export const Header = () => {
               {user ? (
                 <>
                   {isAdmin ? (
-                    <>
-                      <Link to="/admin" onClick={() => setMobileMenuOpen(false)} className="flex items-center gap-3 p-3 rounded-xl text-purple-500 hover:bg-purple-50">
-                        <Settings className="w-5 h-5" />
-                        Панель управления
-                      </Link>
-                      <Link to="/admin/features" onClick={() => setMobileMenuOpen(false)} className="flex items-center gap-3 p-3 rounded-xl text-slate-600 hover:bg-slate-50" data-testid="mobile-admin-features-link">
-                        <Settings className="w-5 h-5" />
-                        Функционал сайта
-                      </Link>
-                      <Link to="/admin/orders" onClick={() => setMobileMenuOpen(false)} className="flex items-center gap-3 p-3 rounded-xl text-slate-600 hover:bg-slate-50">
-                        <ClipboardList className="w-5 h-5" />
-                        Заказы
-                      </Link>
-                      <Link to="/admin/chats" onClick={() => setMobileMenuOpen(false)} className="flex items-center gap-3 p-3 rounded-xl text-slate-600 hover:bg-slate-50">
-                        <MessageCircle className="w-5 h-5" />
-                        Чаты
-                      </Link>
-                      <Link to="/admin/returns" onClick={() => setMobileMenuOpen(false)} className="flex items-center gap-3 p-3 rounded-xl text-slate-600 hover:bg-slate-50">
-                        <RefreshCw className="w-5 h-5" />
-                        Возвраты
-                      </Link>
-                      <Link to="/admin/credit" onClick={() => setMobileMenuOpen(false)} className="flex items-center gap-3 p-3 rounded-xl text-slate-600 hover:bg-slate-50">
-                        <CreditCard className="w-5 h-5" />
-                        Отсрочка
-                      </Link>
-                    </>
+                    <AdminMobileNav onNavigate={() => setMobileMenuOpen(false)} />
                   ) : (
                     <>
                       <Link to="/catalog" onClick={() => setMobileMenuOpen(false)} className="flex items-center gap-3 p-3 rounded-xl text-slate-600 hover:bg-slate-50">

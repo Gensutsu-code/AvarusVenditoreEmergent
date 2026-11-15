@@ -266,7 +266,7 @@ export default function AccountPage() {
 
         <div className="space-y-6">
           {/* Balance Card */}
-          {prepaymentSettings.prepayment_enabled !== false && (
+          {prepaymentSettings.prepayment_enabled !== false && user?.role !== 'manager' && (
             <motion.div 
               className="glass-card p-6 relative overflow-hidden"
               initial={{ opacity: 0, y: 20 }}

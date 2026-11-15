@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import axios from 'axios';
 import { toast } from 'sonner';
 import { motion } from 'framer-motion';
@@ -63,6 +63,12 @@ export default function AdminFeaturesPage() {
   const [opened, setOpened] = useState(null);
   const [confirm, setConfirm] = useState(null); // { feature, enabled }
   const [busy, setBusy] = useState(false);
+  const [searchParams] = useSearchParams();
+  const openParam = searchParams.get('open');
+  useEffect(() => {
+    const f = SITE_FEATURES.find((x) => x.key === openParam);
+    if (f) setOpened(f);
+  }, [openParam]);
 
   useEffect(() => {
     if (!loading && user?.role !== 'admin') navigate('/');

@@ -45,6 +45,7 @@ import CryptoSettingsTab from '../components/admin/CryptoSettingsTab';
 import AdminWarehousePage from './AdminWarehousePage';
 import AdminDashboard from '../components/admin/AdminDashboard';
 import AdminAnalyticsBar from '../components/admin/AdminAnalyticsBar';
+import { AttentionBlock } from '../components/admin/AdminNav';
 
 const API = `${process.env.REACT_APP_BACKEND_URL}/api`;
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
@@ -132,7 +133,7 @@ export default function AdminPage() {
   const { isEnabled: isFeatureEnabled } = useFeatures();
   const { user, loading: authLoading } = useAuth();
   const navigate = useNavigate();
-  const [searchParams] = useSearchParams();
+  const [searchParams, setSearchParams] = useSearchParams();
   const [stats, setStats] = useState(null);
   const [products, setProducts] = useState([]);
   const [categories, setCategories] = useState([]);
@@ -199,7 +200,7 @@ export default function AdminPage() {
     }
     return defaultTabOrder;
   });
-  const [activeTab, setActiveTab] = useState('overview');
+  const [activeTab, setActiveTab] = useState(() => new URLSearchParams(window.location.search).get('tab') || 'overview');
   const [editingTabOrder, setEditingTabOrder] = useState(false);
   
   // New states
@@ -348,11 +349,16 @@ export default function AdminPage() {
 
   // Handle tab from URL params (for notification clicks)
   useEffect(() => {
-    const tab = searchParams.get('tab');
-    if (tab && defaultTabOrder.includes(tab)) {
+    const tab = searchParams.get('tab') || 'overview';
+    if (defaultTabOrder.includes(tab)) {
       setActiveTab(tab);
     }
   }, [searchParams]);
+
+  // the header menu follows the URL, so tab switches made inside the page are written to it
+  useEffect(() => {
+    if ((searchParams.get('tab') || 'overview') !== activeTab) setSearchParams({ tab: activeTab }, { replace: true });
+  }, [activeTab]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const fetchData = async () => {
     setLoading(true);
@@ -1355,18 +1361,10 @@ export default function AdminPage() {
         <div className="flex items-center justify-between gap-3 mb-6">
           <h1 className={`text-xl sm:text-2xl md:text-3xl font-bold tracking-tight uppercase min-w-0 truncate ${isDark ? 'text-white' : 'text-zinc-900'}`}>
             <span className={`bg-gradient-to-r ${isDark ? 'from-orange-400 to-orange-600' : 'from-teal-500 to-emerald-500'} bg-clip-text text-transparent`}>
-              Панель администратора
+              {tabConfig[activeTab]?.label || 'Панель администратора'}
             </span>
           </h1>
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => setEditingTabOrder(!editingTabOrder)}
-            className={`flex-shrink-0 ${editingTabOrder ? 'bg-teal-100 border-teal-500' : ''} ${isDark ? 'border-zinc-700 text-zinc-300 hover:bg-zinc-800' : ''}`}
-          >
-            <Settings className="w-4 h-4 sm:mr-1" />
-            <span className="hidden sm:inline">{editingTabOrder ? 'Готово' : 'Настроить вкладки'}</span>
-          </Button>
+
         </div>
 
         {/* Tab Order Editor */}
@@ -1418,7 +1416,7 @@ export default function AdminPage() {
         <Tabs value={activeTab} onValueChange={setActiveTab} className={`rounded-xl border shadow-sm overflow-hidden ${isDark ? 'bg-zinc-900/60 border-zinc-800 backdrop-blur-xl' : 'bg-white border-zinc-200'}`}>
           <div className="relative">
             <div className="overflow-x-auto">
-              <TabsList className={`w-full flex border-b rounded-none p-0 h-auto ${isDark ? 'border-zinc-800 bg-zinc-900/50' : 'border-zinc-200 bg-zinc-50'}`}>
+              <TabsList className={`hidden w-full border-b rounded-none p-0 h-auto ${isDark ? 'border-zinc-800 bg-zinc-900/50' : 'border-zinc-200 bg-zinc-50'}`}>
               {visibleTabs.map((tabId) => {
                 const config = tabConfig[tabId];
                 const IconComponent = config.icon;
@@ -1466,6 +1464,7 @@ export default function AdminPage() {
 
           {/* Overview / Dashboard Tab */}
           <TabsContent value="overview" className="p-6">
+            <AttentionBlock />
             <AdminDashboard onNavigate={setActiveTab} />
           </TabsContent>
 

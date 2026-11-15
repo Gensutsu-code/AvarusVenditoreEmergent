@@ -1,4 +1,5 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { Megaphone, FileText, Mail } from 'lucide-react';
 import { motion } from 'framer-motion';
 
@@ -37,7 +38,10 @@ export const MarketingTab = ({
   
   isDark = false
 }) => {
-  const [activeSubTab, setActiveSubTab] = useState('promo');
+  const [searchParams] = useSearchParams();
+  const subParam = searchParams.get('sub');
+  const [activeSubTab, setActiveSubTab] = useState(subParam || 'promo');
+  useEffect(() => { if (subParam) setActiveSubTab(subParam); }, [subParam]);
 
   const subTabs = [
     { id: 'promo', label: 'Акции и баннер', icon: Megaphone },
