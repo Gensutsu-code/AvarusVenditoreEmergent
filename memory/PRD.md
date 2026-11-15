@@ -194,6 +194,14 @@ E-commerce platform for truck spare parts with a comprehensive admin panel. Russ
 - **Вкладка «Скидки и акции»**: добавлены подвкладки «Скидки на корзину» (заявки) и «Акционный баннер».
 - Не проверено кликами в UI: оформление заказа в отсрочку после настройки из карточки, скачивание акта кнопкой, фильтр «Срок доставки» (проверены API/наличие элементов).
 
+### ChatGPT (openai gpt-5.4, универсальный ключ Emergent, emergentintegrations 0.2.2) — DONE iter_107 (backend 15/15, 4 UI-сценария)
+- `routes/ai.py`: помощник `/assistant` (`POST /api/ai/assistant/chat` SSE, история в `ai_chat_messages`, сессии), умный поиск `POST /api/ai/search` (кнопка `ai-search-btn` при пустом результате каталога), описание товара `POST /api/admin/ai/product-description` (`ai-generate-description-btn`), черновик ответа `POST /api/admin/ai/chat-draft` (`ai-draft-btn`, не отправляется сам). Лимит 60 запросов/сутки на клиента (`ai_usage`). Все функции только для вошедших.
+
+### Минимальная цена и скидки (DONE iter_106, backend 13/13 + 28/28 регресс)
+- `GET /api/cart/quote?payment_method=` — сумма товаров как в заказе (общий `_price_cart_lines`); корзина и страница товара показывают цену с учётом min_price; заказ всегда оформляется, скидка урезается до пола.
+- Персональная скидка клиента действует при любом способе оплаты (вкл. смешанную и отсрочку).
+- Скидки/наценки за способ оплаты редактируются в «Скидки и акции» → «За способ оплаты»; в «Платежи» только просмотр.
+
 ### P1 (Important)
 - Real Payment Gateway Integration (replace MOCKED YuKassa)
 - CartPage/ProductPage display mismatches (pre-existing): payment-method adjustment & tier preview not clamped to min_price in UI (server charges correct floor). Best fixed via a server-computed cart preview.
