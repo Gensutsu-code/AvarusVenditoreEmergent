@@ -1,0 +1,26 @@
+{
+  "summary": "Iteration 119 regression: verified hook-dependency refactor (AuthContext/CartContext useCallback, refs in ChatWidget/OrdersPage/CatalogPage/ProductPage/BonusPage/AdminChatsPage/CRMTab/FavoritesButton/RelatedProducts), moved /api/rewards/cart-preview endpoint, new Garage-in-finder feature, and new admin mobile drawer. All backend and frontend regression checks passed. No page errors, no infinite request loops, no 'Cannot access ... before initialization' crashes.",
+  "backend_issues": {"critical": [], "minor": []},
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [],
+    "design_issues": []
+  },
+  "test_report_links": [
+    "/app/backend/tests/test_iter119_regression.py"
+  ],
+  "action_items": [],
+  "critical_code_review_comments": [
+    "Minor: pickVehicle in PartsFinderPage splits vehicle.name by first whitespace to derive brand/model. If a user enters a single-word name, model will be empty. Acceptable fallback behavior but worth documenting."
+  ],
+  "updated_files": [
+    "/app/backend/tests/test_iter119_regression.py"
+  ],
+  "success_rate": {"backend": "100% (8/8)", "frontend": "100%"},
+  "test_credentials": "Used credentials from /app/memory/test_credentials.md",
+  "seed_data_creation": "Created one TEST_ garage vehicle for user@demo.com (VIN WMA06XZZ7KP123456) and deleted it at end of test run.",
+  "retest_needed": false,
+  "main_agent_can_self_test": true,
+  "context_for_next_testing_agent": "Backend test file /app/backend/tests/test_iter119_regression.py covers moved /api/rewards/cart-preview endpoint + sanity (auth/me, cart, orders, products, bonus/programs). Hook refactor regression verified on desktop (1920x1080) and mobile (390x800). Parts-finder garage select works: picking a vehicle fills VIN/brand/model/year inputs. Admin mobile drawer: hamburger opens admin-mobile-drawer with the 5 collapsible groups (sales/catalog/clients/marketing/system), orders/chats top links, mobile-admin-logout; tapping a nav item navigates and closes drawer; no horizontal overflow. Session persistence + corrupt-token 401 logout verified. Network polling verified: /api/orders fired ~3x in 20s on /orders page (matches 15s interval, counter double-counted /orders and /orders/stats both containing substring).",
+  "rca of the issue": "N/A - no issues found."
+}

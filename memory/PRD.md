@@ -319,5 +319,11 @@ E-commerce platform for truck spare parts with a comprehensive admin panel. Russ
 - Client: `components/RegionWarehouses.js` — one dropdown (`region-selector`): region chips, warehouses of the region, link to `/warehouses?region=` (map page pre-filters). Warehouse part follows `warehouses_map` flag.
 - Tests: iteration_118 (frontend selectors/navigation 100%); live cart refresh self-verified in browser. Not click-tested: every single admin action, AI answer/finder search inside the hub, hub behaviour with functions switched off.
 
-### Deferred by user (June 2026)
-- Code-review fixes (circular import orders↔rewards, passwords in tests, hook deps, token in localStorage → cookies, admin password «admin», component splitting) — postponed until the user asks.
+
+## Garage in finder, mobile admin drawer, safe code-review fixes (June 2026, iteration_119)
+- Finder (`PartsFinderPage`): block `finder-garage-block` — select of garage vehicles fills VIN, year, brand (first word of vehicle name) and model (rest). Follows `garage` flag.
+- Mobile admin: `AdminMobileDrawer` (in `AdminSidebar.js`, shadcn Sheet from the left) replaces the dropdown list; old `AdminMobileNav` removed.
+- Code review, done: `GET /api/rewards/cart-preview` moved to `routes/orders.py` (no rewards→orders import); real account passwords removed from tests → `backend/tests/.env.test` (gitignored) loaded by `tests/conftest.py` together with `frontend/.env`; all 19 real `react-hooks/exhaustive-deps` warnings fixed (useCallback in Auth/Cart contexts, function refs elsewhere) — frontend compiles with 0 warnings; 22 empty catch blocks log errors; Header/SettingsTab take the token from auth context / axios defaults. Pylint found no possibly-undefined variables.
+- Code review, NOT done (would change site logic or is a large risky refactor): auth token from localStorage → httpOnly cookies (changes login, needs user decision), admin password «admin», splitting big components / complex functions, array-index keys.
+- Tests: iteration_119 — backend 8/8, frontend regression 100%.
+- Full backend suite after these changes: 482 passed, 26 failed, 11 skipped (26 min). The 26 failures are stale tests, not login/password related: old warehouse API without `warehouse_id` (test_iter76/79, test_warehouse_finance, test_warehouse_receipts_cogs), removed `/ozon-settings` endpoints (test_iter79), data-dependent ones (empty cart in test_iter105, overdue deferral of the test client, favorites limit in test_iter115). Backlog: update or delete them.
