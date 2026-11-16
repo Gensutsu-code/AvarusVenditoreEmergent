@@ -8,7 +8,7 @@ API = f"{BASE}/api"
 
 CLIENT = {"email": "user@demo.com", "password": os.environ["TEST_CLIENT_PASSWORD"]}
 ADMIN = {"email": "admin@avarus.ru", "password": os.environ["TEST_ADMIN_PASSWORD"]}
-MANAGER = {"email": "manager@avarus.ru", "password": os.environ["TEST_MANAGER_PASSWORD"]}
+MANAGER = {"email": os.environ["TEST_MANAGER_EMAIL"], "password": os.environ["TEST_MANAGER_PASSWORD"]}
 
 
 # ----- cookie auth ------

@@ -10,7 +10,7 @@ BASE_URL = os.environ.get("REACT_APP_BACKEND_URL", "").rstrip("/")
 API = f"{BASE_URL}/api"
 ADMIN = {"email": "admin@avarus.ru", "password": os.environ["TEST_ADMIN_PASSWORD"]}
 DEMO_CLIENT = {"email": "user@demo.com", "password": os.environ["TEST_CLIENT_PASSWORD"]}
-DEMO_MANAGER = {"email": "manager@avarus.ru", "password": os.environ["TEST_MANAGER_PASSWORD"]}
+DEMO_MANAGER = {"email": "manager@avarus.ru"}
 
 
 # ---------- helpers ----------
@@ -39,7 +39,8 @@ def demo_client():
 
 @pytest.fixture(scope="module")
 def demo_manager():
-    s, _ = _login(DEMO_MANAGER)
+    s = requests.Session()
+    s.headers.update({"Authorization": f"Bearer {os.environ['TEST_DEMO_MANAGER_TOKEN']}"})
     return s
 
 

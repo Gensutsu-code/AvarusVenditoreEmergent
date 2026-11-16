@@ -51,7 +51,7 @@ def user_h():
 
 @pytest.fixture(scope="session")
 def manager_h():
-    return {"Authorization": f"Bearer {_login('manager@avarus.ru', os.environ['TEST_MANAGER_PASSWORD'])}"}
+    return {"Authorization": f"Bearer {_login(os.environ['TEST_MANAGER_EMAIL'], os.environ['TEST_MANAGER_PASSWORD'])}"}
 
 
 def _toggle(admin_h, key, enabled=None, audience=None):

@@ -74,14 +74,25 @@ def test_product_page(world):
     assert requests.get(f"{API}/manager/products/nope", headers=world["manager"], timeout=20).status_code == 404
 
 
-def test_selection_goes_to_client_chat(world):
+def test_selection_appears_in_client_account(world):
     r = requests.post(f"{API}/manager/clients/{world['cid']}/selection", headers=world["manager"], timeout=20,
                       json={"items": [{"product_id": world["pid"], "quantity": 2}], "note": "TEST note"})
     assert r.status_code == 200, r.text
-    assert r.json() == {"sent": 1, "total": 1960.0}
-    chats = requests.get(f"{API}/manager/chats", headers=world["manager"], timeout=20).json()
-    chat = next(c for c in chats if c["user_id"] == world["cid"])
-    assert "Подборка для вас" in chat["last_text"]
+    sid = r.json()["id"]
+    assert (r.json()["sent"], r.json()["total"]) == (1, 1960.0)
+    mine = requests.get(f"{API}/my-selections", headers=world["client"], timeout=20).json()
+    s = next(x for x in mine if x["id"] == sid)
+    assert s["note"] == "TEST note" and s["manager_name"] == "TEST_ShowcaseMgr" and s["total"] == 1960.0
+    item = s["items"][0]
+    assert (item["product_id"], item["quantity"], item["price"], item["stock"]) == (world["pid"], 2, 980, 5)
+    assert "purchase_price" not in item and "commission" not in item
+    # other people do not see it and cannot remove it
+    assert all(x["id"] != sid for x in requests.get(f"{API}/my-selections", headers=world["manager"], timeout=20).json())
+    assert requests.delete(f"{API}/my-selections/{sid}", headers=world["manager"], timeout=20).status_code == 404
+    assert requests.post(f"{API}/manager/clients/someone-else/selection", headers=world["manager"], timeout=20,
+                         json={"items": [{"product_id": world["pid"], "quantity": 1}]}).status_code == 404
+    assert requests.delete(f"{API}/my-selections/{sid}", headers=world["client"], timeout=20).status_code == 200
+    assert all(x["id"] != sid for x in requests.get(f"{API}/my-selections", headers=world["client"], timeout=20).json())
 
 
 def test_tasks_crud_and_overdue(world):

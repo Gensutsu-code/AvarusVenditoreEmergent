@@ -14,7 +14,7 @@ BASE_URL = os.environ["REACT_APP_BACKEND_URL"].rstrip("/")
 API = f"{BASE_URL}/api"
 
 ADMIN = ("admin@avarus.ru", os.environ["TEST_ADMIN_PASSWORD"])
-MANAGER = ("manager@avarus.ru", os.environ["TEST_MANAGER_PASSWORD"])
+
 CLIENT = ("user@demo.com", os.environ["TEST_CLIENT_PASSWORD"])
 UNBOUND = ("0x0errorr@gmail.com", os.environ["TEST_CLIENT2_PASSWORD"])
 
@@ -36,7 +36,7 @@ def _hdr(t):
 def tokens():
     return {
         "admin": _login(*ADMIN),
-        "manager": _login(*MANAGER),
+        "manager": os.environ["TEST_DEMO_MANAGER_TOKEN"],
         "client": _login(*CLIENT),
         "unbound": _login(*UNBOUND),
     }

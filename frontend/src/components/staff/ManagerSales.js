@@ -123,7 +123,7 @@ export const ManagerCatalogTab = ({ clients }) => {
     setBusy(true);
     try {
       const r = await axios.post(`${API}/manager/clients/${form.user_id}/selection`, { items: draft.map((x) => ({ product_id: x.id, quantity: x.quantity })), note: form.comment });
-      toast.success(`Подборка из ${r.data.sent} поз. отправлена клиенту в чат`);
+      toast.success(`Подборка из ${r.data.sent} поз. отправлена клиенту в личный кабинет`);
     } catch (e) { err(e); } finally { setBusy(false); }
   };
   const sel = 'w-full h-10 rounded-md border border-slate-200 bg-white px-3 text-sm focus:outline-none focus:border-teal-400';
@@ -186,7 +186,7 @@ export const ManagerCatalogTab = ({ clients }) => {
           <Input value={form.phone} onChange={(e) => setForm({ ...form, phone: e.target.value })} placeholder="Телефон *" data-testid="manager-order-phone" />
           <Input value={form.comment} onChange={(e) => setForm({ ...form, comment: e.target.value })} placeholder="Комментарий" maxLength={1000} data-testid="manager-order-comment" />
           <Button onClick={submit} disabled={busy} className="w-full bg-teal-500 hover:bg-teal-600 text-white" data-testid="manager-order-submit">{busy ? 'Оформление…' : 'Оформить заказ'}</Button>
-          <Button onClick={sendSelection} disabled={busy} variant="outline" className="w-full" title="Клиент получит список товаров с его ценами в чате" data-testid="manager-send-selection"><Send className="w-4 h-4 mr-1.5" />Отправить подборку клиенту в чат</Button>
+          <Button onClick={sendSelection} disabled={busy} variant="outline" className="w-full" title="Клиент увидит список товаров со своими ценами в личном кабинете и сможет добавить их в корзину" data-testid="manager-send-selection"><Send className="w-4 h-4 mr-1.5" />Отправить подборку клиенту</Button>
         </div>
       </div>
     </div>

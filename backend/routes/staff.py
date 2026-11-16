@@ -667,9 +667,12 @@ async def _client_pricing(manager, client_id: str):
     """Personal discount percent and individual prices of one of the manager's clients."""
     if not client_id:
         return None, {}
-    client = await _own_client(manager, client_id)
+    return await _pricing_of(await _own_client(manager, client_id))
+
+
+async def _pricing_of(client: dict):
     discount = effective_conditions(client, await get_status_conditions())["discount"] or 0
-    prices = {p["product_id"]: p["price"] async for p in db.individual_prices.find({"user_id": client_id, "active": True}, {"_id": 0, "product_id": 1, "price": 1})}
+    prices = {p["product_id"]: p["price"] async for p in db.individual_prices.find({"user_id": client["id"], "active": True}, {"_id": 0, "product_id": 1, "price": 1})}
     return discount, prices
 
 
@@ -751,34 +754,53 @@ class SelectionIn(BaseModel):
 
 @router.post("/manager/clients/{user_id}/selection")
 async def send_selection(user_id: str, data: SelectionIn, user=Depends(get_current_user)):
-    """Sends a list of products with the client's prices to the client's chat."""
+    """Saves a list of products for the client: he sees it in his account with his own prices."""
     _manager(user)
-    client = await _own_client(user, user_id)
+    await _own_client(user, user_id)
     discount, ind_prices = await _client_pricing(user, user_id)
-    lines, total = [], 0.0
+    items, total = [], 0.0
     for it in data.items:
         p = await db.products.find_one({"id": it.get("product_id")}, SHOWCASE_FIELDS)
-        if not p:
+        if not p or any(x["product_id"] == p["id"] for x in items):
             continue
         qty = max(1, int(it.get("quantity") or 1))
-        p = _for_manager(p, 0, discount, ind_prices)
-        total += p["client_price"] * qty
-        stock = "в наличии" if (p.get("stock") or 0) > 0 else "под заказ"
-        lines.append(f"{len(lines) + 1}. {p.get('name', '')} (арт. {p.get('article', '')}) — {qty} шт. × {p['client_price']:,.2f} ₽, {stock}".replace(",", " "))
-    if not lines:
+        total += _for_manager(p, 0, discount, ind_prices)["client_price"] * qty
+        items.append({"product_id": p["id"], "quantity": qty})
+    if not items:
         raise HTTPException(status_code=404, detail="Товары не найдены")
-    text = "Подборка для вас:\n" + "\n".join(lines) + f"\nИтого: {total:,.2f} ₽".replace(",", " ") + (f"\n{data.note.strip()}" if data.note.strip() else "")
-    chat = await db.chats.find_one({"user_id": user_id}, {"_id": 0, "id": 1})
-    if not chat:
-        chat = {"id": str(uuid.uuid4()), "user_id": user_id, "user_name": client.get("name", ""), "user_email": client.get("email", ""), "created_at": _now(), "updated_at": _now()}
-        await db.chats.insert_one(dict(chat))
-    await db.chat_messages.insert_one({
-        "id": str(uuid.uuid4()), "chat_id": chat["id"], "user_id": user["id"], "user_name": user["name"], "text": text,
-        "sender_type": "admin", "sender_role": "manager", "message_type": "text", "created_at": _now(), "read": False, "edited": False,
-    })
-    await db.chats.update_one({"id": chat["id"]}, {"$set": {"updated_at": _now()}})
-    await notify_user(user_id, "chat", "Менеджер прислал подборку товаров", lines[0][:80], "/chat")
-    return {"sent": len(lines), "total": round(total, 2)}
+    doc = {"id": str(uuid.uuid4()), "user_id": user_id, "manager_id": user["id"], "manager_name": user.get("name", ""),
+           "note": data.note.strip(), "items": items, "created_at": _now(), "deleted_at": None}
+    await db.manager_selections.insert_one(dict(doc))
+    await notify_user(user_id, "selection", "Менеджер подготовил для вас подборку товаров", f"Позиций: {len(items)}", "/account")
+    return {"id": doc["id"], "sent": len(items), "total": round(total, 2)}
+
+
+@router.get("/my-selections")
+async def my_selections(user=Depends(get_current_user)):
+    """Client account: selections from his manager with today's prices and stock."""
+    discount, ind_prices = await _pricing_of(user)
+    out = []
+    async for s in db.manager_selections.find({"user_id": user["id"], "deleted_at": None}, {"_id": 0}).sort("created_at", -1).limit(50):
+        products = {p["id"]: p async for p in db.products.find({"id": {"$in": [i["product_id"] for i in s["items"]]}}, {**SHOWCASE_FIELDS, "manual_available": 1})}
+        items = []
+        for i in s["items"]:
+            p = products.get(i["product_id"])
+            if not p:
+                continue
+            p = _for_manager(p, 0, discount, ind_prices)
+            items.append({"product_id": p["id"], "name": p.get("name", ""), "article": p.get("article", ""), "manufacturer": p.get("manufacturer", ""),
+                          "image_url": p.get("image_url"), "quantity": i["quantity"], "price": p["client_price"], "stock": max(0, p.get("stock") or 0)})
+        out.append({"id": s["id"], "manager_name": s.get("manager_name", ""), "note": s.get("note", ""), "created_at": s["created_at"], "items": items,
+                    "total": round(sum(x["price"] * x["quantity"] for x in items), 2)})
+    return out
+
+
+@router.delete("/my-selections/{selection_id}")
+async def delete_my_selection(selection_id: str, user=Depends(get_current_user)):
+    res = await db.manager_selections.update_one({"id": selection_id, "user_id": user["id"], "deleted_at": None}, {"$set": {"deleted_at": _now()}})
+    if res.matched_count == 0:
+        raise HTTPException(status_code=404, detail="Подборка не найдена")
+    return {"success": True}
 
 
 # ==================== MANAGER TASKS & REMINDERS ====================

@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { MyConditionsCard } from '../components/MyConditionsCard';
+import { ManagerSelections } from '../components/ManagerSelections';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import { User, Mail, Lock, Phone, MapPin, Save, Eye, EyeOff, Camera, Trash2, MessageSquare, Wallet, CreditCard, Plus, History, Sparkles, Shield } from 'lucide-react';
@@ -263,6 +264,7 @@ export default function AccountPage() {
           </span>
         </motion.h1>
         {user?.role === 'user' && <MyConditionsCard isDark={isDark} />}
+        {user?.role === 'user' && <ManagerSelections isDark={isDark} />}
 
         <div className="space-y-6">
           {/* Balance Card */}

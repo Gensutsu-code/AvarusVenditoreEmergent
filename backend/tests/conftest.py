@@ -14,6 +14,18 @@ load_dotenv(Path(__file__).parents[1] / ".env")
 os.environ["TEST_ADMIN_PASSWORD"] = os.environ["ADMIN_PASSWORD"]
 
 
+def _demo_manager_token() -> str:
+    """The owner keeps the password of manager@avarus.ru to himself, so tests that need this account sign a token instead of logging in."""
+    import time
+    import jwt
+    from pymongo import MongoClient
+    manager = MongoClient(os.environ["MONGO_URL"])[os.environ["DB_NAME"]].users.find_one({"email": "manager@avarus.ru"}, {"id": 1})
+    return jwt.encode({"user_id": manager["id"], "exp": time.time() + 3600}, os.environ["JWT_SECRET"], algorithm="HS256")
+
+
+os.environ["TEST_DEMO_MANAGER_TOKEN"] = _demo_manager_token()
+
+
 def _api():
     return os.environ["REACT_APP_BACKEND_URL"].rstrip("/") + "/api"
 

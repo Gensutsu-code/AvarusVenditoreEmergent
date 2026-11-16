@@ -1,26 +1,33 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useSyncExternalStore } from 'react';
 
 const KEY = 'manager_draft';
-const read = () => { try { return JSON.parse(localStorage.getItem(KEY)) || {}; } catch { return {}; } };
+const read = () => { try { return { items: [], clientId: '', ...JSON.parse(localStorage.getItem(KEY)) }; } catch { return { items: [], clientId: '' }; } };
 
-// Order draft of a manager, shared by the showcase, the product page and the "new order" tab
+// One draft for the whole cabinet: showcase, product page, orders tab and "new order" tab see the same state
+let state = read();
+const listeners = new Set();
+const update = (fn) => {
+  state = fn(state);
+  localStorage.setItem(KEY, JSON.stringify(state));
+  listeners.forEach((l) => l());
+};
+const subscribe = (l) => { listeners.add(l); return () => listeners.delete(l); };
+
+const add = (p, quantity = 1) => update((s) => {
+  const max = Math.max(0, p.stock || 0);
+  const found = s.items.find((x) => x.id === p.id);
+  const items = found
+    ? s.items.map((x) => (x.id === p.id ? { ...x, stock: max, quantity: Math.min(x.quantity + quantity, max) } : x))
+    : [...s.items, { id: p.id, name: p.name, article: p.article, price: p.price, stock: max, commission: p.commission || 0, quantity: Math.min(quantity, max) }];
+  return { ...s, items };
+});
+const changeQty = (id, delta) => update((s) => ({ ...s, items: s.items.map((x) => (x.id === id ? { ...x, quantity: Math.max(1, Math.min(x.stock, x.quantity + delta)) } : x)) }));
+const remove = (id) => update((s) => ({ ...s, items: s.items.filter((x) => x.id !== id) }));
+const clear = () => update((s) => ({ ...s, items: [] }));
+const setClientId = (clientId) => update((s) => ({ ...s, clientId }));
+const replace = (items, clientId) => update(() => ({ items, clientId }));
+
 export const useManagerDraft = () => {
-  const [state, setState] = useState(() => ({ items: [], clientId: '', ...read() }));
-  useEffect(() => { localStorage.setItem(KEY, JSON.stringify(state)); }, [state]);
-
-  const add = useCallback((p, quantity = 1) => setState((s) => {
-    const max = Math.max(0, p.stock || 0);
-    const found = s.items.find((x) => x.id === p.id);
-    const items = found
-      ? s.items.map((x) => (x.id === p.id ? { ...x, stock: max, quantity: Math.min(x.quantity + quantity, max) } : x))
-      : [...s.items, { id: p.id, name: p.name, article: p.article, price: p.price, stock: max, commission: p.commission || 0, quantity: Math.min(quantity, max) }];
-    return { ...s, items };
-  }), []);
-  const changeQty = useCallback((id, delta) => setState((s) => ({ ...s, items: s.items.map((x) => (x.id === id ? { ...x, quantity: Math.max(1, Math.min(x.stock, x.quantity + delta)) } : x)) })), []);
-  const remove = useCallback((id) => setState((s) => ({ ...s, items: s.items.filter((x) => x.id !== id) })), []);
-  const clear = useCallback(() => setState((s) => ({ ...s, items: [] })), []);
-  const setClientId = useCallback((clientId) => setState((s) => ({ ...s, clientId })), []);
-  const replace = useCallback((items, clientId) => setState({ items, clientId }), []);
-
-  return { items: state.items, clientId: state.clientId, add, changeQty, remove, clear, setClientId, replace };
+  const s = useSyncExternalStore(subscribe, () => state);
+  return { items: s.items, clientId: s.clientId, add, changeQty, remove, clear, setClientId, replace };
 };
