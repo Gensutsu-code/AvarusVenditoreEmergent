@@ -387,8 +387,8 @@ export const Header = () => {
 
   return (
     <header className="sticky top-0 z-50 backdrop-blur-xl border-b bg-white/70 border-cyan-200/50" data-testid="header">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex items-center h-16 gap-6">
+      <div className="max-w-[1760px] mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="flex items-center h-16 gap-3">
           {/* Logo */}
           <Link to={isAdmin ? "/admin" : "/"} className="flex-shrink-0 group flex items-center min-h-[40px]" data-testid="logo-link">
             <motion.h1 
@@ -403,7 +403,7 @@ export const Header = () => {
           {/* Search Field - left edge, wider */}
           {user && !isAdmin && (
             <div className="hidden md:flex items-center gap-2">
-              <div className="w-72">
+              <div className="w-36 xl:w-48 min-[1700px]:w-64">
                 <SearchDropdown 
                   placeholder="Поиск..." 
                   compact={true}
@@ -415,7 +415,7 @@ export const Header = () => {
                 </Link>
               )}
               <Link to="/assistant" className="h-10 px-3 rounded-xl flex items-center gap-1.5 bg-white/95 border border-teal-200 text-teal-600 hover:border-teal-400 transition-colors duration-200 text-sm font-semibold whitespace-nowrap" title="ИИ-помощник по подбору запчастей" data-testid="ai-assistant-link">
-                <AiIcon className="w-4 h-4" /><span className="hidden xl:inline">ИИ-помощник</span>
+                <AiIcon className="w-4 h-4" /><span className="hidden min-[1700px]:inline">ИИ-помощник</span>
               </Link>
               <NavLink to="/parts-finder" data-testid="parts-finder-link" title="Подбор запчастей">
                 <motion.div 
@@ -437,7 +437,7 @@ export const Header = () => {
               </NavLink>
               <RegionSelector />
               <Link to="/warehouses" className="h-10 px-3 rounded-xl flex items-center gap-1.5 bg-white/95 border border-slate-200 text-slate-600 hover:border-teal-300 hover:text-teal-600 transition-colors duration-200 text-sm font-medium whitespace-nowrap" title="Склады и пункты выдачи на карте" data-testid="warehouses-map-link">
-                <MapIcon className="w-4 h-4 text-teal-500" /><span className="hidden xl:inline">Склады</span>
+                <MapIcon className="w-4 h-4 text-teal-500" /><span className="hidden min-[1700px]:inline">Склады</span>
               </Link>
             </div>
           )}
@@ -459,7 +459,7 @@ export const Header = () => {
                       
                       {/* Заказы */}
                       <Link to="/garage" data-testid="garage-link" title="Мой гараж" className="h-10 px-3 rounded-xl flex items-center gap-1.5 bg-white/95 border border-slate-200 text-slate-600 hover:border-teal-300 hover:text-teal-600 transition-colors duration-200 text-sm font-medium whitespace-nowrap">
-                        <GarageIcon className="w-4 h-4 text-teal-500" /><span className="hidden xl:inline">Гараж</span>
+                        <GarageIcon className="w-4 h-4 text-teal-500" /><span className="hidden min-[1700px]:inline">Гараж</span>
                       </Link>
                       <Link to="/orders" data-testid="orders-link">
                         <motion.div 
@@ -483,7 +483,7 @@ export const Header = () => {
                             <Package className="w-5 h-5" />
                           </motion.div>
                           <motion.span 
-                            className="hidden lg:inline text-sm font-medium"
+                            className="hidden xl:inline text-sm font-medium"
                             variants={{
                               rest: { color: "#475569" },
                               hover: { color: "#0d9488" }
@@ -570,7 +570,7 @@ export const Header = () => {
                             <Newspaper className="w-5 h-5" />
                           </motion.div>
                           <motion.span 
-                            className="hidden lg:inline text-sm font-medium"
+                            className="hidden xl:inline text-sm font-medium"
                             variants={{
                               rest: { color: "#475569" },
                               hover: { color: "#3b82f6" }
@@ -610,7 +610,7 @@ export const Header = () => {
                             )}
                           </motion.div>
                           <motion.span 
-                            className="hidden lg:inline text-sm font-medium"
+                            className="hidden xl:inline text-sm font-medium"
                             variants={{ rest: { color: "#475569" }, hover: { color: "#0d9488" } }}
                           >
                             Связь

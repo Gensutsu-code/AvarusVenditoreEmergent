@@ -51,6 +51,8 @@ export const FloatingPromoBanner = () => {
 
   return (
     <>
+      {/* on phones the floating banner would cover the page heading — reserve its height */}
+      {isExpanded && <div className="md:hidden h-16" aria-hidden="true" />}
       {/* Expanded banner - centered */}
       <AnimatePresence mode="wait">
         {isExpanded && (

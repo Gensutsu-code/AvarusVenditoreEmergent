@@ -144,6 +144,7 @@ function AppContent() {
   return (
     <div className={`min-h-screen flex flex-col ${isDark ? 'bg-zinc-950' : 'bg-gradient-to-br from-cyan-50 via-pink-50 to-cyan-50'}`}>
       <Header />
+      {!isAdmin && !isManager && location.pathname !== '/contact' && isOn('promo_banner') && <FloatingPromoBanner />}
       <main className="flex-1">
         {isPageDown ? (
           <PageMaintenanceBanner message={pageMaint.message} />
@@ -199,7 +200,6 @@ function AppContent() {
         )}
       </main>
       {!isAdmin && !isManager && <Footer />}
-      {!isAdmin && !isManager && location.pathname !== '/contact' && isOn('promo_banner') && <FloatingPromoBanner />}
       {!isAdmin && !isManager && isOn('chat') && <ChatWidget />}
       <Toaster position="top-center" />
     </div>

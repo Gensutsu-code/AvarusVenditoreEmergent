@@ -1,0 +1,44 @@
+{
+  "summary": "Iter-117 FULL AUDIT after cleanup. Backend: wrote tests/test_iter117_audit.py (33 tests, 100% pass) covering (a) removed endpoints /api/ozon-settings GET+PUT and /api/bonus/cart-preview return 404 as expected, (b) all 18 admin GET list endpoints referenced by UI (/api/products, /api/categories, /api/admin/orders|users|stats|chats|returns, /api/staff/managers, /api/admin/rewards/settings, /api/features, /api/feature-settings, /api/admin/attention, /api/admin/warehouses, /api/news, /api/promo-banner, /api/admin/product-requests|discount-requests|cart-discount-requests) return <500, (c) all 10 /api/settings/* subresources return <500, (d) rewards-settings shape OK. Frontend: ran a sweep in Chromium at 1366x900 and 390x800 of guest+client+admin+manager routes using domcontentloaded navigation with console+response listeners. All 10 guest routes, 10 admin ?tab=, 10 admin sub-pages, 11 admin settings sub-tabs, bonus inner tabs (5), and 15 client routes render WITHOUT a React error boundary, blank page, or any 4xx/5xx /api call. Manager /manager renders fine; admin redirect for client works. RewardPreviewBar component is still wired into CartPage.js (line 511) and now hits the surviving /api/rewards/cart-preview (verified HTTP 200). No frontend/backend code references the removed /api/bonus/cart-preview or /api/ozon-settings.",
+  "backend_issues": {
+    "critical": [],
+    "minor": [
+      {"endpoint": "/var/log/supervisor/backend.err.log", "issue": "Pre-existing fastapi.exceptions.ResponseValidationError traces (input=None, loc=('response',)) from earlier test runs (near line 7005/7087) — endpoint path not identifiable from stack. No repro during this audit run. Likely a handler returning None for a non-Optional response_model under a seldom-hit branch; worth a grep of @router.*response_model=.*/ in a quiet moment."}
+    ]
+  },
+  "frontend_issues": {
+    "ui_bugs": [
+      {"component": "PromoBannerBar (sticky bonus banner)", "issue": "On mobile (390x800) the sticky 'Бонусная система с кешбэком до 10%' banner is painted on top of the page heading area and clips the H1 'Заказы' on /orders (first ~6px of the title are hidden behind the banner). Same visual on /cart and /catalog where the banner overlaps the top of the content. Desktop is fine.", "selector": "promo-banner + page H1", "priority": "LOW"}
+    ],
+    "integration_issues": [
+      {"flow": "User activity tracker (utils/tracker.js)", "issue": "On first render after login the tracker occasionally fires POST /api/track before the Authorization header is attached and the backend returns 403. Harmless (tracker swallows the error, next flush works), but it shows up as a red request in every browser session. Guard with a 'token exists in memory, not just localStorage' check or delay the first flush until user context is loaded.", "affected_selectors": ["POST /api/track"]}
+    ],
+    "design_issues": [
+      {"screen": "Mobile 390px on /, /catalog, /cart, /orders", "issues": ["Sticky bonus banner overlaps content heading; reduce top offset or add equal top padding to <main>."]}
+    ]
+  },
+  "test_report_links": [
+    "/app/backend/tests/test_iter117_audit.py",
+    "/app/test_reports/pytest/iter117.xml"
+  ],
+  "action_items": [
+    "Move the sticky promo banner below the header or add padding-top equal to banner height to the main content so the H1 is not clipped on mobile.",
+    "Delay first /api/track flush until the AuthContext has hydrated (or check for token presence inside flush) to avoid the 403 seen on every fresh session.",
+    "Optional: grep backend for @router.* response_model=.* then verify every handler can't return None, to eliminate the leftover ResponseValidationError traces in backend.err.log."
+  ],
+  "critical_code_review_comments": [
+    "RewardPreviewBar / CartPage.js still call /api/rewards/cart-preview — the surviving endpoint. The legacy /api/bonus/cart-preview is confirmed removed (404). Good.",
+    "routes/analytics.py '/track' is role-agnostic (Depends(get_current_user)) — so the 403 we see from the frontend is purely a missing-Authorization race, not a backend bug.",
+    "Admin tabs overview/products/warehouse/bonus/payments/crm/promotions/marketing/logs/settings all render and emit zero console errors — cleanup did not leave dead imports.",
+    "Admin settings sub-tab 'import' renders and no network 4xx; UI controls weren't deep-clicked but handler cleanup didn't break mount.",
+    "Guest routes /, /catalog, /login, /register, /forgot-password, /news, /warehouses, /assistant, /parts-finder, /contact all clean (no console errors, no failed /api calls)."
+  ],
+  "updated_files": ["/app/backend/tests/test_iter117_audit.py"],
+  "success_rate": {"backend": "100% (33/33)", "frontend": "100% routes render; 1 mobile layout bug + 1 benign 403 race on /api/track"},
+  "test_credentials": "admin@avarus.ru/admin OK; user@demo.com/demo123 OK; manager@avarus.ru/manager123 OK",
+  "seed_data_creation": "No seed data created. No collections dropped. No accounts modified.",
+  "retest_needed": false,
+  "should_main_agent_self_test": true,
+  "context_for_next_testing_agent": "Audit test file /app/backend/tests/test_iter117_audit.py loads REACT_APP_BACKEND_URL from /app/frontend/.env, logs in admin+client, parametrises admin-list and settings endpoints, and asserts removed endpoints return 404. Login response uses key 'token' (NOT 'access_token'). Mobile banner-vs-H1 clip is reproducible at 390x800 on /orders. The /api/track 403 only appears on the very first render after login and self-heals on the next flush.",
+  "rca of the issue": "1) Mobile banner overlap: the promo banner is position:fixed/sticky at the top but the page layout doesn't reserve vertical space for it on sub-390px — H1 bounding_box shows y=18 which is behind the banner (banner occupies ~y=80-140). Fix: give <main> a padding-top equal to the banner height, or move the banner under the header. 2) /api/track 403: utils/tracker.js reads getToken() but is also called from early useEffects that run before the Authorization header is attached to axios; the fetch-based tracker uses its own header set from getToken(), which races with localStorage write on login. Guard first flush behind an isAuthenticated check."
+}
