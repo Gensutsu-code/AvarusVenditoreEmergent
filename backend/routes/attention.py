@@ -28,4 +28,6 @@ async def admin_attention(user=Depends(get_current_user)):
     for key, collection, query, feature in SOURCES:
         counts[key] = await db[collection].count_documents(query) if (not feature or is_on(feature)) else 0
     counts["chats"] = len(await db.chat_messages.distinct("chat_id", {"sender_type": "user", "read": False})) if is_on("chat") else 0
+    from routes.warehouse import low_stock_query, default_min_stock
+    counts["low_stock"] = await db.products.count_documents(low_stock_query(await default_min_stock()))
     return counts

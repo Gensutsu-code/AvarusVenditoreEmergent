@@ -534,6 +534,9 @@ async def create_product(data: ProductCreate, user=Depends(get_current_user)):
         **payload
     }
     await db.products.insert_one(product)
+    if product.get("stock"):
+        from routes.warehouse import set_total_stock
+        await set_total_stock(product_id, product["stock"], user.get("name", user.get("email", "")), "Начальный остаток при создании товара")
     gsync = await _global_stock_sync()
     return _apply_availability(_ensure_new_status(product), gsync)
 
@@ -568,9 +571,15 @@ async def update_product(product_id: str, data: ProductUpdate, user=Depends(get_
         update_data["promo_remaining_stock"] = update_data["promo_allocated_stock"]
 
     before = await db.products.find_one({"id": product_id}, {"_id": 0, "price": 1, "stock": 1})
-    result = await db.products.update_one({"id": product_id}, {"$set": update_data})
-    if result.matched_count == 0:
+    if not before:
         raise HTTPException(status_code=404, detail="Product not found")
+    # stock lives on warehouses: a number typed in the card is booked as an adjustment
+    new_stock = update_data.pop("stock", None)
+    if update_data:
+        await db.products.update_one({"id": product_id}, {"$set": update_data})
+    if new_stock is not None and new_stock != (before.get("stock") or 0):
+        from routes.warehouse import set_total_stock
+        await set_total_stock(product_id, new_stock, user.get("name", user.get("email", "")), "Изменение остатка в карточке товара")
     
     product = await db.products.find_one({"id": product_id}, {"_id": 0})
     from notify import notify_favorites_change
@@ -757,7 +766,9 @@ async def admin_bulk_products(payload: dict, user=Depends(get_current_user)):
     if action == "delete":
         if payload.get("apply_all") and not data.get("confirm_all"):
             raise HTTPException(status_code=400, detail="confirm_all required for delete-all")
+        ids = await db.products.distinct("id", match)
         res = await db.products.delete_many(match)
+        await db.stock_levels.delete_many({"product_id": {"$in": ids}})
         return {"success": True, "modified_count": res.deleted_count}
 
     if action == "set_fields":
@@ -771,6 +782,14 @@ async def admin_bulk_products(payload: dict, user=Depends(get_current_user)):
             set_data["new_until"] = None
         if set_data.get("discount_active") is True and set_data.get("discount_type") in (None, ""):
             set_data["discount_type"] = "percent"
+        new_stock = set_data.pop("stock", None)
+        if new_stock is not None:
+            from routes.warehouse import set_total_stock
+            ids = await db.products.distinct("id", match)
+            for pid in ids:
+                await set_total_stock(pid, new_stock, user.get("name", user.get("email", "")), "Массовое изменение остатка")
+            if not set_data:
+                return {"success": True, "modified_count": len(ids)}
         res = await db.products.update_many(match, {"$set": set_data})
         return {"success": True, "modified_count": res.modified_count}
 
@@ -871,14 +890,18 @@ async def import_products(file: UploadFile = File(...), user=Depends(get_current
                 "delivery_days": int(row.get('Срок доставки', '3') or '3'),
             }
             
+            from routes.warehouse import set_total_stock
+            new_stock = product_data.pop("stock")
             if existing:
                 await db.products.update_one({"article": article}, {"$set": product_data})
+                pid = existing["id"]
             else:
-                product_data["id"] = str(uuid.uuid4())
+                pid = product_data["id"] = str(uuid.uuid4())
                 product_data["image_url"] = ""
                 product_data["images"] = []
                 product_data["category_id"] = None
-                await db.products.insert_one(product_data)
+                await db.products.insert_one({**product_data, "stock": 0})
+            await set_total_stock(pid, new_stock, user.get("name", user.get("email", "")), "Импорт товаров из файла")
             
             imported += 1
         except Exception as e:

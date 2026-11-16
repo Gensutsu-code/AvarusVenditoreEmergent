@@ -26,7 +26,7 @@ def test_stock_has_reserved_and_available(admin_client):
     if data["items"]:
         it = data["items"][0]
         assert "reserved" in it and "available" in it
-        assert it["available"] == it["stock"] - it["reserved"]
+        assert it["available"] == it["stock"]  # goods of open orders are already taken off the stock
 
 
 def test_cogs_report_shape(admin_client):

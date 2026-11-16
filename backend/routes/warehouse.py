@@ -73,6 +73,51 @@ DEFAULT_DELIVERY_SETTINGS = {
 }
 
 
+async def stock_sync_enabled() -> bool:
+    doc = await db.settings.find_one({"key": "stock_sync_settings"})
+    return ((doc or {}).get("value") or {}).get("stock_sync_enabled", True)
+
+
+async def default_min_stock() -> int:
+    doc = await db.settings.find_one({"key": "warehouse_settings"})
+    return int(((doc or {}).get("value") or {}).get("default_min_stock", 5))
+
+
+def min_threshold(product: dict, default: int) -> int:
+    """Per-product minimum, else the shop default. 0 = the product is not tracked."""
+    ms = product.get("min_stock")
+    return default if ms is None else int(ms)
+
+
+def low_stock_query(default: int) -> dict:
+    own = {"min_stock": {"$gt": 0}, "$expr": {"$lte": ["$stock", "$min_stock"]}}
+    return {"$or": [own, {"min_stock": None, "stock": {"$lte": default}}]} if default > 0 else own
+
+
+async def default_warehouse_id() -> str:
+    wh = await db.warehouses.find_one({}, {"_id": 0, "id": 1}, sort=[("created_at", 1)])
+    if wh:
+        return wh["id"]
+    wh = {"id": str(uuid.uuid4()), "name": "Основной склад", "region": "Москва", "address": "", "created_at": datetime.now(timezone.utc).isoformat()}
+    await db.warehouses.insert_one(dict(wh))
+    return wh["id"]
+
+
+async def log_movement(product_id: str, mtype: str, quantity: int, stock_before: int, stock_after: int, by: str, **extra):
+    product = await db.products.find_one({"id": product_id}, {"_id": 0, "name": 1, "article": 1, "purchase_price": 1}) or {}
+    unit_cost = product.get("purchase_price", 0) or 0
+    await db.stock_movements.insert_one({
+        "id": str(uuid.uuid4()), "product_id": product_id,
+        "product_name": product.get("name", ""), "product_article": product.get("article", ""),
+        "type": mtype, "quantity": quantity, "delta": stock_after - stock_before,
+        "unit_cost": unit_cost, "total_cost": round(quantity * unit_cost, 2),
+        "supplier": "", "reason": "", "comment": "",
+        "stock_before": stock_before, "stock_after": stock_after,
+        "created_at": datetime.now(timezone.utc).isoformat(), "created_by": by,
+        **extra,
+    })
+
+
 async def recompute_product_stock(product_id: str):
     """product.stock = sum of per-warehouse quantities; product.stock_regions = regions with qty>0."""
     levels = await db.stock_levels.find({"product_id": product_id}, {"_id": 0, "warehouse_id": 1, "quantity": 1}).to_list(2000)
@@ -82,11 +127,16 @@ async def recompute_product_stock(product_id: str):
     if wh_ids:
         whs = await db.warehouses.find({"id": {"$in": wh_ids}}, {"_id": 0, "id": 1, "region": 1}).to_list(2000)
         regions = sorted({(w.get("region") or "").strip() for w in whs if (w.get("region") or "").strip()})
-    before = await db.products.find_one({"id": product_id}, {"_id": 0, "price": 1, "stock": 1, "name": 1})
+    before = await db.products.find_one({"id": product_id}, {"_id": 0, "price": 1, "stock": 1, "name": 1, "min_stock": 1})
     await db.products.update_one({"id": product_id}, {"$set": {"stock": total, "stock_regions": regions}})
     if before and (before.get("stock") or 0) <= 0 < total:
         from notify import notify_favorites_change
         await notify_favorites_change(product_id, before, {**before, "stock": total})
+    if before:
+        threshold = min_threshold(before, await default_min_stock())
+        if threshold > 0 and total <= threshold < (before.get("stock") or 0):
+            from notify import notify_admin
+            await notify_admin("low_stock", "Товар заканчивается", f"{before.get('name', '')}: осталось {total} шт. (минимум {threshold})", "/admin?tab=warehouse")
     return total
 
 
@@ -119,14 +169,72 @@ async def allocate_stock(product_id: str, qty: int, region: Optional[str] = None
         if remaining <= 0:
             break
         take = min(remaining, int(l["quantity"]))
-        await db.stock_levels.update_one(
-            {"product_id": product_id, "warehouse_id": l["warehouse_id"]},
+        res = await db.stock_levels.update_one(
+            {"product_id": product_id, "warehouse_id": l["warehouse_id"], "quantity": {"$gte": take}},
             {"$inc": {"quantity": -take}},
         )
+        if res.modified_count == 0:  # someone else took it meanwhile
+            continue
         allocations.append({"warehouse_id": l["warehouse_id"], "quantity": take})
         remaining -= take
+    if remaining > 0:
+        await restore_stock(product_id, allocations)
+        return None
     await recompute_product_stock(product_id)
     return allocations
+
+
+async def ensure_available(items):
+    """Selling only from stock: every {product_id, quantity} must be covered (when stock tracking is on)."""
+    if not await stock_sync_enabled():
+        return
+    for item in items:
+        p = await db.products.find_one({"id": item["product_id"]}, {"_id": 0, "name": 1, "stock": 1})
+        if not p:
+            continue
+        have = max(0, int(p.get("stock", 0) or 0))
+        if item["quantity"] > have:
+            detail = f"«{p.get('name', '')}»: в наличии только {have} шт." if have else f"«{p.get('name', '')}»: нет в наличии"
+            raise HTTPException(status_code=400, detail=detail)
+
+
+async def set_total_stock(product_id: str, new_total: int, by: str, comment: str):
+    """Stock typed in a product card / import: the difference goes to (or is taken from) warehouses."""
+    new_total = max(0, int(new_total or 0))
+    levels = await db.stock_levels.find({"product_id": product_id}, {"_id": 0, "quantity": 1}).to_list(2000)
+    current = sum(int(l.get("quantity", 0) or 0) for l in levels)
+    if new_total > current:
+        await add_stock(product_id, await default_warehouse_id(), new_total - current)
+    elif new_total < current:
+        await allocate_stock(product_id, current - new_total)
+    else:
+        await recompute_product_stock(product_id)
+        return
+    await log_movement(product_id, "adjustment", abs(new_total - current), current, new_total, by, comment=comment)
+
+
+async def find_stock_mismatches():
+    sums = {}
+    async for row in db.stock_levels.aggregate([{"$group": {"_id": "$product_id", "qty": {"$sum": "$quantity"}}}]):
+        sums[row["_id"]] = int(row.get("qty", 0) or 0)
+    items = []
+    async for p in db.products.find({}, {"_id": 0, "id": 1, "name": 1, "article": 1, "stock": 1}):
+        total = sums.pop(p["id"], 0)
+        if int(p.get("stock", 0) or 0) != total:
+            items.append({"product_id": p["id"], "name": p.get("name", ""), "article": p.get("article", ""), "stock": int(p.get("stock", 0) or 0), "warehouses_total": total})
+    return items, list(sums.keys())
+
+
+async def reconcile_all_stock(by: str = "Система"):
+    """The sum over warehouses is the truth: fix product totals, drop levels of deleted products."""
+    items, orphans = await find_stock_mismatches()
+    for m in items:
+        await recompute_product_stock(m["product_id"])
+        await log_movement(m["product_id"], "correction", abs(m["warehouses_total"] - m["stock"]), m["stock"], m["warehouses_total"], by,
+                           comment="Сверка остатков: общий остаток приведён к сумме по складам")
+    if orphans:
+        await db.stock_levels.delete_many({"product_id": {"$in": orphans}})
+    return len(items)
 
 
 async def restore_stock(product_id: str, allocations):
@@ -144,12 +252,18 @@ async def restore_order_stock(order):
     from routes.rewards import refund_order_cashback
     await refund_order_cashback(order)
     allocs = order.get("stock_allocations")
-    if allocs:
-        for a in allocs:
-            await restore_stock(a.get("product_id"), a.get("allocations", []))
-    else:
-        for item in order.get("items", []):
-            await db.products.update_one({"id": item.get("product_id")}, {"$inc": {"stock": item.get("quantity", 0)}})
+    if not allocs:  # orders placed before per-warehouse stock: goods go back to the main warehouse
+        wh_id = await default_warehouse_id()
+        allocs = [{"product_id": i.get("product_id"), "allocations": [{"warehouse_id": wh_id, "quantity": i.get("quantity", 0)}]} for i in order.get("items", [])]
+    for a in allocs:
+        product = await db.products.find_one({"id": a.get("product_id")}, {"_id": 0, "stock": 1})
+        qty = sum(int(x.get("quantity", 0) or 0) for x in a.get("allocations", []))
+        if not product or qty <= 0:
+            continue
+        await restore_stock(a["product_id"], a["allocations"])
+        before = int(product.get("stock", 0) or 0)
+        await log_movement(a["product_id"], "cancel", qty, before, before + qty, "Система",
+                           comment=f"Отмена заказа #{order.get('id', '')[:8]}", order_id=order.get("id"), warehouse_allocations=a["allocations"])
 
 
 async def migrate_legacy_stock():
@@ -158,12 +272,7 @@ async def migrate_legacy_stock():
     products = await db.products.find({"stock": {"$gt": 0}}, {"_id": 0, "id": 1, "stock": 1}).to_list(100000)
     if not products:
         return 0
-    # pick or create a default warehouse
-    default_wh = await db.warehouses.find_one({}, {"_id": 0, "id": 1}, sort=[("created_at", 1)])
-    if not default_wh:
-        default_wh = {"id": str(uuid.uuid4()), "name": "Основной склад", "region": "Москва", "address": "", "created_at": datetime.now(timezone.utc).isoformat()}
-        await db.warehouses.insert_one(dict(default_wh))
-    wh_id = default_wh["id"]
+    wh_id = await default_warehouse_id()
     migrated = 0
     for p in products:
         has_levels = await db.stock_levels.find_one({"product_id": p["id"]}, {"_id": 1})
@@ -426,6 +535,11 @@ async def transfer_stock(data: TransferIn, user=Depends(get_current_user)):
         have = await warehouse_qty(data.product_id, data.from_warehouse_id)
         raise HTTPException(status_code=400, detail=f"На складе-источнике только {have} шт.")
     await add_stock(data.product_id, data.to_warehouse_id, data.quantity)
+    names = {w["id"]: w.get("name", "") async for w in db.warehouses.find({"id": {"$in": [data.from_warehouse_id, data.to_warehouse_id]}}, {"_id": 0, "id": 1, "name": 1})}
+    total = int((await db.products.find_one({"id": data.product_id}, {"_id": 0, "stock": 1}) or {}).get("stock", 0) or 0)
+    await log_movement(data.product_id, "transfer", data.quantity, total, total, user.get("name", user.get("email", "")),
+                       comment=f"{names.get(data.from_warehouse_id, '')} → {names.get(data.to_warehouse_id, '')}",
+                       warehouse_id=data.from_warehouse_id, to_warehouse_id=data.to_warehouse_id)
     return {"success": True}
 
 
@@ -441,7 +555,7 @@ async def warehouse_stock(search: Optional[str] = None, low_stock: Optional[int]
         ]
     products = await db.products.find(q, {
         "_id": 0, "id": 1, "name": 1, "article": 1, "manufacturer": 1,
-        "stock": 1, "price": 1, "purchase_price": 1,
+        "stock": 1, "price": 1, "purchase_price": 1, "min_stock": 1,
     }).to_list(5000)
 
     reserved_map = await _reserved_by_product()
@@ -469,20 +583,21 @@ async def warehouse_stock(search: Optional[str] = None, low_stock: Optional[int]
     total_revenue = 0.0
     total_reserved = 0
     low_count = 0
-    threshold = low_stock if low_stock is not None else 5
+    default_min = low_stock if low_stock is not None else await default_min_stock()
     for p in products:
+        threshold = min_threshold(p, default_min)
         stock = p.get("stock", 0) or 0
         pp = p.get("purchase_price", 0) or 0
         price = p.get("price", 0) or 0
         reserved = reserved_map.get(p.get("id"), 0)
-        available = stock - reserved
+        available = stock  # goods of open orders are already taken off the stock when the order is placed
         cost_value = round(stock * pp, 2)
         revenue_value = round(stock * price, 2)
         total_units += stock
         total_cost += cost_value
         total_revenue += revenue_value
         total_reserved += reserved
-        is_low = stock <= threshold
+        is_low = threshold > 0 and stock <= threshold
         if is_low:
             low_count += 1
         wh_breakdown = levels_by_product.get(p.get("id"), [])
@@ -495,6 +610,8 @@ async def warehouse_stock(search: Optional[str] = None, low_stock: Optional[int]
             "stock_revenue_value": revenue_value,
             "margin": round(price - pp, 2),
             "is_low": is_low,
+            "min_stock": p.get("min_stock"),
+            "threshold": threshold,
             "warehouses": wh_breakdown,
             "regions": sorted({w["region"] for w in wh_breakdown if w.get("region")}),
         })
@@ -510,9 +627,114 @@ async def warehouse_stock(search: Optional[str] = None, low_stock: Optional[int]
             "potential_profit": round(total_revenue - total_cost, 2),
             "total_reserved": total_reserved,
             "low_stock_count": low_count,
-            "low_stock_threshold": threshold,
+            "low_stock_threshold": default_min,
         },
     }
+
+
+class MinStockIn(BaseModel):
+    product_ids: List[str]
+    min_stock: Optional[int] = None  # None = use the shop default, 0 = do not track
+
+
+@router.put("/admin/warehouse/min-stock")
+async def set_min_stock(data: MinStockIn, user=Depends(get_current_user)):
+    await _ensure_admin(user)
+    if data.min_stock is not None and data.min_stock < 0:
+        raise HTTPException(status_code=400, detail="Минимальный остаток не может быть отрицательным")
+    res = await db.products.update_many({"id": {"$in": data.product_ids}}, {"$set": {"min_stock": data.min_stock}})
+    return {"modified": res.matched_count}
+
+
+@router.put("/admin/warehouse/settings")
+async def update_warehouse_settings(data: dict, user=Depends(get_current_user)):
+    await _ensure_admin(user)
+    try:
+        value = int(data.get("default_min_stock"))
+    except (TypeError, ValueError):
+        raise HTTPException(status_code=400, detail="Укажите число")
+    if value < 0:
+        raise HTTPException(status_code=400, detail="Минимальный остаток не может быть отрицательным")
+    await db.settings.update_one({"key": "warehouse_settings"}, {"$set": {"value": {"default_min_stock": value}}}, upsert=True)
+    return {"default_min_stock": value}
+
+
+@router.get("/admin/warehouse/reconcile")
+async def stock_mismatches(user=Depends(get_current_user)):
+    await _ensure_admin(user)
+    items, orphans = await find_stock_mismatches()
+    return {"items": items, "orphan_levels": len(orphans)}
+
+
+@router.post("/admin/warehouse/reconcile")
+async def fix_stock_mismatches(user=Depends(get_current_user)):
+    await _ensure_admin(user)
+    return {"fixed": await reconcile_all_stock(user.get("name", user.get("email", "")))}
+
+
+# --- Inventory (stock count) ---
+
+class InventoryIn(BaseModel):
+    warehouse_id: str
+    comment: Optional[str] = ""
+    items: List[dict]  # [{product_id, actual}]
+
+
+@router.post("/admin/warehouse/inventory")
+async def create_inventory(data: InventoryIn, user=Depends(get_current_user)):
+    await _ensure_admin(user)
+    wh = await db.warehouses.find_one({"id": data.warehouse_id}, {"_id": 0, "id": 1, "name": 1, "region": 1})
+    if not wh:
+        raise HTTPException(status_code=404, detail="Склад не найден")
+    counted = {}
+    for it in data.items:
+        try:
+            actual = int(it.get("actual"))
+        except (TypeError, ValueError):
+            continue
+        if actual < 0:
+            raise HTTPException(status_code=400, detail="Фактическое количество не может быть отрицательным")
+        counted[it.get("product_id")] = actual
+    if not counted:
+        raise HTTPException(status_code=400, detail="Введите фактическое количество хотя бы по одному товару")
+
+    by = user.get("name", user.get("email", ""))
+    number = f"И-{await db.stock_inventories.count_documents({}) + 1:06d}"
+    inventory_id = str(uuid.uuid4())
+    lines, surplus, shortage, cost_diff = [], 0, 0, 0.0
+    for pid, actual in counted.items():
+        product = await db.products.find_one({"id": pid}, {"_id": 0, "name": 1, "article": 1, "stock": 1, "purchase_price": 1})
+        if not product:
+            continue
+        expected = await warehouse_qty(pid, data.warehouse_id)
+        diff = actual - expected
+        if diff:
+            total_before = int(product.get("stock", 0) or 0)
+            await add_stock(pid, data.warehouse_id, diff)
+            await log_movement(pid, "inventory", abs(diff), total_before, total_before + diff, by,
+                               comment=f"Инвентаризация {number}: {'излишек' if diff > 0 else 'недостача'}",
+                               inventory_id=inventory_id, warehouse_id=wh["id"], warehouse_name=wh.get("name", ""), warehouse_region=wh.get("region", ""))
+        surplus += max(diff, 0)
+        shortage += max(-diff, 0)
+        cost_diff += diff * (product.get("purchase_price", 0) or 0)
+        lines.append({"product_id": pid, "product_name": product.get("name", ""), "product_article": product.get("article", ""),
+                      "expected": expected, "actual": actual, "diff": diff})
+    if not lines:
+        raise HTTPException(status_code=404, detail="Товары не найдены")
+    doc = {
+        "id": inventory_id, "number": number, "warehouse_id": wh["id"], "warehouse_name": wh.get("name", ""),
+        "comment": (data.comment or "").strip()[:300], "items": lines, "positions": len(lines),
+        "surplus": surplus, "shortage": shortage, "cost_diff": round(cost_diff, 2),
+        "created_at": datetime.now(timezone.utc).isoformat(), "created_by": by,
+    }
+    await db.stock_inventories.insert_one(dict(doc))
+    return doc
+
+
+@router.get("/admin/warehouse/inventory")
+async def list_inventories(limit: int = 100, user=Depends(get_current_user)):
+    await _ensure_admin(user)
+    return await db.stock_inventories.find({}, {"_id": 0}).sort("created_at", -1).to_list(limit)
 
 
 # --- Movements ---

@@ -327,7 +327,7 @@ export const Header = () => {
   // Managers work only in their cabinet, the AI assistant and their profile
   if (user?.role === 'manager') {
     const mLink = (to, label, Icon, testid) => (
-      <Link to={to} className={`h-10 px-3 rounded-xl flex items-center gap-1.5 text-sm font-semibold transition-colors duration-200 ${location.pathname.startsWith(to) ? 'bg-slate-900 text-white' : 'text-slate-600 hover:bg-slate-100'}`} data-testid={testid}>
+      <Link to={to} className={`h-10 px-3 rounded-xl flex items-center gap-1.5 text-sm font-semibold transition-colors duration-200 ${(to === '/manager' ? location.pathname === to : location.pathname.startsWith(to)) ? 'bg-slate-900 text-white' : 'text-slate-600 hover:bg-slate-100'}`} data-testid={testid}>
         <Icon className="w-4 h-4" /><span className="hidden sm:inline">{label}</span>
       </Link>
     );
@@ -336,6 +336,7 @@ export const Header = () => {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex items-center h-16 gap-2">
           <Link to="/manager" className="mr-auto text-xl font-bold uppercase tracking-tight bg-gradient-to-r from-emerald-500 to-teal-600 bg-clip-text text-transparent" data-testid="logo-link">avopt.store</Link>
           {mLink('/manager', 'Кабинет менеджера', ManagerIcon, 'manager-cabinet-link')}
+          {mLink('/manager/showcase', 'Витрина', Package, 'manager-showcase-header-link')}
           {isOn('ai_assistant') && mLink('/parts', 'ИИ-помощник', AiIcon, 'parts-hub-link')}
           {mLink('/account', 'Профиль', User, 'manager-profile-link')}
           <button type="button" onClick={logout} className="p-2 rounded-xl text-slate-500 hover:text-red-500 hover:bg-red-100 transition-colors duration-200" title="Выйти" data-testid="logout-button">

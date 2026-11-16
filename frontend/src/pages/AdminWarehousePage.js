@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import { motion } from 'framer-motion';
-import { Warehouse, Package, TrendingUp, TrendingDown, Wallet, AlertTriangle, Plus, Minus, ArrowDownCircle, ArrowUpCircle, ShoppingCart, Trash2, Loader2, Coins, MapPin, Pencil, ArrowRightLeft } from 'lucide-react';
+import { Warehouse, Package, TrendingUp, TrendingDown, Wallet, AlertTriangle, Plus, Minus, ArrowDownCircle, ArrowUpCircle, ShoppingCart, Trash2, Loader2, Coins, MapPin, Pencil, ArrowRightLeft, ClipboardCheck, RotateCcw, Scale } from 'lucide-react';
 import { Button } from '../components/ui/button';
 import { Input } from '../components/ui/input';
 import { Dialog, DialogContent, DialogTitle, DialogDescription } from '../components/ui/dialog';
@@ -10,6 +10,9 @@ import { useAuth } from '../context/AuthContext';
 import { toast } from 'sonner';
 import { RegionsPanel } from '../components/admin/RegionsPanel';
 import { LocationPicker } from '../components/WarehouseMap';
+import { InventoryTab } from '../components/admin/InventoryTab';
+import { StockControl } from '../components/admin/StockControl';
+import { useLive } from '../lib/live';
 
 const API = `${process.env.REACT_APP_BACKEND_URL}/api`;
 const fmt = (p) => new Intl.NumberFormat('ru-RU').format(Math.round(p || 0));
@@ -18,6 +21,7 @@ const TABS = [
   { id: 'stock', label: 'Остатки' },
   { id: 'warehouses', label: 'Склады' },
   { id: 'receipts', label: 'Приёмки' },
+  { id: 'inventory', label: 'Инвентаризация' },
   { id: 'movements', label: 'Движения' },
   { id: 'cogs', label: 'Прибыль' },
   { id: 'delivery', label: 'Доставка' },
@@ -38,7 +42,16 @@ const MV = {
   receipt: { label: 'Приход', color: 'text-emerald-600 bg-emerald-50', icon: ArrowDownCircle, sign: '+' },
   writeoff: { label: 'Списание', color: 'text-rose-600 bg-rose-50', icon: ArrowUpCircle, sign: '−' },
   sale: { label: 'Продажа', color: 'text-indigo-600 bg-indigo-50', icon: ShoppingCart, sign: '−' },
+  transfer: { label: 'Перемещение', color: 'text-blue-600 bg-blue-50', icon: ArrowRightLeft, sign: '' },
+  inventory: { label: 'Инвентаризация', color: 'text-amber-600 bg-amber-50', icon: ClipboardCheck },
+  adjustment: { label: 'Корректировка', color: 'text-slate-600 bg-slate-100', icon: Pencil },
+  correction: { label: 'Сверка', color: 'text-slate-600 bg-slate-100', icon: Scale },
+  return: { label: 'Возврат', color: 'text-teal-600 bg-teal-50', icon: RotateCcw, sign: '+' },
+  cancel: { label: 'Отмена заказа', color: 'text-teal-600 bg-teal-50', icon: RotateCcw, sign: '+' },
 };
+const MV_FILTERS = [{ id: '', label: 'Все' }, { id: 'receipt', label: 'Приход' }, { id: 'writeoff', label: 'Списание' }, { id: 'sale', label: 'Продажи' }, { id: 'transfer', label: 'Перемещения' }, { id: 'inventory', label: 'Инвентаризация' }, { id: 'return', label: 'Возвраты' }, { id: 'cancel', label: 'Отмены' }, { id: 'adjustment', label: 'Корректировки' }];
+// direction of a movement: explicit sign of its type, else the sign of the stock change
+const mvSign = (m) => { const c = MV[m.type] || {}; if (c.sign !== undefined) return c.sign; return (m.delta ?? 0) >= 0 ? '+' : '−'; };
 
 const firstOfMonth = () => { const d = new Date(); return new Date(d.getFullYear(), d.getMonth(), 1).toISOString().slice(0, 10); };
 const today = () => new Date().toISOString().slice(0, 10);
@@ -53,6 +66,7 @@ export default function AdminWarehousePage({ embedded = false }) {
   const [search, setSearch] = useState('');
   const [whSort, setWhSort] = useState('name');
   const [whHideOOS, setWhHideOOS] = useState(false);
+  const [onlyLow, setOnlyLow] = useState(false);
   const [movements, setMovements] = useState([]);
   const [mvFilter, setMvFilter] = useState('');
   const [finance, setFinance] = useState(null);
@@ -225,6 +239,17 @@ export default function AdminWarehousePage({ embedded = false }) {
     // eslint-disable-next-line
   }, [user, authLoading, navigate]);
 
+  useLive(() => { fetchStock().catch(() => {}); fetchMovements().catch(() => {}); }, 15000, !loading);
+
+  const saveMinStock = async (it, raw) => {
+    const value = raw === '' ? null : Number(raw);
+    if (value === (it.min_stock ?? null)) return;
+    try {
+      await axios.put(`${API}/admin/warehouse/min-stock`, { product_ids: [it.id], min_stock: value });
+      toast.success(value === null ? 'Используется минимум по умолчанию' : 'Минимальный остаток сохранён');
+    } catch (e) { toast.error(e.response?.data?.detail || 'Ошибка'); }
+  };
+
   const toggleGlobalSync = async () => {
     const next = !globalSync;
     setGlobalSync(next);
@@ -250,7 +275,7 @@ export default function AdminWarehousePage({ embedded = false }) {
 
   const toggleSelect = (id) => setSelected((s) => s.includes(id) ? s.filter(x => x !== id) : [...s, id]);
   const displayedStockItems = [...(stockData.items || [])]
-    .filter(it => !whHideOOS || it.stock > 0)
+    .filter(it => (!whHideOOS || it.stock > 0) && (!onlyLow || it.is_low))
     .sort((a, b) => {
       switch (whSort) {
         case 'stock': return (b.stock || 0) - (a.stock || 0);
@@ -355,13 +380,14 @@ export default function AdminWarehousePage({ embedded = false }) {
                     <span className={`inline-block h-6 w-6 transform rounded-full bg-white shadow-md transition-transform duration-200 ${globalSync ? 'translate-x-9' : 'translate-x-1'}`} />
                   </button>
                 </div>
+                <StockControl defaultMin={s.low_stock_threshold} onChanged={() => fetchStock()} />
                 <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3 mb-6">
                   <div className="bg-white rounded-2xl p-4 shadow-sm" data-testid="wh-stat-units"><div className="flex items-center gap-2 mb-1"><Package className="w-4 h-4 text-slate-400" /><p className="text-xs text-slate-500">Единиц на складе</p></div><p className="text-xl font-bold text-slate-800">{fmt(s.total_units)}</p></div>
-                  <div className="bg-white rounded-2xl p-4 shadow-sm" data-testid="wh-stat-reserved"><div className="flex items-center gap-2 mb-1"><ShoppingCart className="w-4 h-4 text-indigo-400" /><p className="text-xs text-slate-500">В резерве (неоплач.)</p></div><p className="text-xl font-bold text-indigo-600">{fmt(s.total_reserved)}</p></div>
+                  <div className="bg-white rounded-2xl p-4 shadow-sm" data-testid="wh-stat-reserved"><div className="flex items-center gap-2 mb-1"><ShoppingCart className="w-4 h-4 text-indigo-400" /><p className="text-xs text-slate-500" title="Товары неоплаченных заказов. Они уже сняты с остатка при оформлении заказа.">В неоплаченных заказах</p></div><p className="text-xl font-bold text-indigo-600">{fmt(s.total_reserved)}</p></div>
                   <div className="bg-white rounded-2xl p-4 shadow-sm"><div className="flex items-center gap-2 mb-1"><Coins className="w-4 h-4 text-slate-400" /><p className="text-xs text-slate-500">Стоимость (закупка)</p></div><p className="text-xl font-bold text-slate-800">{fmt(s.total_cost_value)} ₽</p></div>
                   <div className="bg-white rounded-2xl p-4 shadow-sm"><div className="flex items-center gap-2 mb-1"><TrendingUp className="w-4 h-4 text-slate-400" /><p className="text-xs text-slate-500">Потенц. выручка</p></div><p className="text-xl font-bold text-slate-800">{fmt(s.total_revenue_value)} ₽</p></div>
                   <div className="bg-gradient-to-br from-emerald-500 to-teal-600 text-white rounded-2xl p-4 shadow-sm" data-testid="wh-stat-profit"><div className="flex items-center gap-2 mb-1"><Wallet className="w-4 h-4 opacity-80" /><p className="text-xs opacity-80">Потенц. прибыль</p></div><p className="text-xl font-bold">{fmt(s.potential_profit)} ₽</p></div>
-                  <div className="bg-white rounded-2xl p-4 shadow-sm"><div className="flex items-center gap-2 mb-1"><AlertTriangle className="w-4 h-4 text-rose-400" /><p className="text-xs text-slate-500">Мало на складе (≤{s.low_stock_threshold})</p></div><p className="text-xl font-bold text-rose-600">{fmt(s.low_stock_count)}</p></div>
+                  <div className="bg-white rounded-2xl p-4 shadow-sm"><div className="flex items-center gap-2 mb-1"><AlertTriangle className="w-4 h-4 text-rose-400" /><p className="text-xs text-slate-500">Пора заказать</p></div><p className="text-xl font-bold text-rose-600" data-testid="wh-stat-low">{fmt(s.low_stock_count)}</p></div>
                 </div>
 
                 <div className="flex gap-2 mb-4 flex-wrap items-center">
@@ -389,6 +415,15 @@ export default function AdminWarehousePage({ embedded = false }) {
                   >
                     {whHideOOS ? 'Показать все' : 'Скрыть нет в наличии'}
                   </button>
+                  <button
+                    onClick={() => setOnlyLow(v => !v)}
+                    className={`px-3 h-10 rounded-xl text-sm font-medium border transition-colors duration-200 ${
+                      onlyLow ? 'bg-rose-500 text-white border-rose-500' : 'bg-white text-slate-600 border-slate-200 hover:border-rose-300'
+                    }`}
+                    data-testid="wh-only-low"
+                  >
+                    Пора заказать{s.low_stock_count > 0 ? ` (${s.low_stock_count})` : ''}
+                  </button>
                 </div>
 
                 {/* Bulk operations bar */}
@@ -411,8 +446,8 @@ export default function AdminWarehousePage({ embedded = false }) {
                           <th className="px-3 py-3 w-8"><input type="checkbox" checked={allVisibleSelected} onChange={toggleSelectAll} className="accent-amber-500" data-testid="wh-select-all" /></th>
                           <th className="text-left px-4 py-3 font-medium">Товар</th>
                           <th className="text-right px-4 py-3 font-medium">Остаток</th>
-                          <th className="text-right px-4 py-3 font-medium">Резерв</th>
-                          <th className="text-right px-4 py-3 font-medium">Доступно</th>
+                          <th className="text-right px-4 py-3 font-medium" title="Минимальный остаток. Пусто — по умолчанию, 0 — не отслеживать">Минимум</th>
+                          <th className="text-right px-4 py-3 font-medium" title="В неоплаченных заказах, уже снято с остатка">В заказах</th>
                           <th className="text-right px-4 py-3 font-medium">Закуп.</th>
                           <th className="text-right px-4 py-3 font-medium">Продажа</th>
                           <th className="text-right px-4 py-3 font-medium">Маржа</th>
@@ -438,8 +473,8 @@ export default function AdminWarehousePage({ embedded = false }) {
                               )}
                             </td>
                             <td className="px-4 py-3 text-right"><span className={`font-bold ${it.is_low ? 'text-rose-600' : 'text-slate-800'}`}>{it.stock}</span>{it.is_low && <AlertTriangle className="w-3.5 h-3.5 text-rose-400 inline ml-1" />}</td>
+                            <td className="px-4 py-3 text-right"><Input key={`${it.id}-${it.min_stock ?? 'd'}`} type="number" min="0" defaultValue={it.min_stock ?? ''} placeholder={String(s.low_stock_threshold ?? '')} onBlur={async (e) => { await saveMinStock(it, e.target.value); }} onKeyDown={(e) => e.key === 'Enter' && e.target.blur()} className="rounded-lg h-8 w-20 ml-auto text-right" data-testid={`wh-min-${it.id}`} /></td>
                             <td className="px-4 py-3 text-right">{it.reserved > 0 ? <span className="font-medium text-indigo-600" data-testid={`wh-reserved-${it.id}`}>{it.reserved}</span> : <span className="text-slate-300">—</span>}</td>
-                            <td className="px-4 py-3 text-right"><span className={`font-semibold ${it.available < 0 ? 'text-rose-600' : 'text-slate-700'}`}>{it.available}</span></td>
                             <td className="px-4 py-3 text-right text-slate-600 whitespace-nowrap">{fmt(it.purchase_price)} ₽</td>
                             <td className="px-4 py-3 text-right text-slate-600 whitespace-nowrap">{fmt(it.price)} ₽</td>
                             <td className={`px-4 py-3 text-right font-medium whitespace-nowrap ${it.margin >= 0 ? 'text-emerald-600' : 'text-rose-600'}`}>{fmt(it.margin)} ₽</td>
@@ -460,11 +495,13 @@ export default function AdminWarehousePage({ embedded = false }) {
               </>
             )}
 
+            {tab === 'inventory' && <InventoryTab warehouses={warehouses} items={stockData.items || []} onDone={() => { fetchStock(); fetchMovements(); }} />}
+
             {/* MOVEMENTS TAB */}
             {tab === 'movements' && (
               <>
                 <div className="flex gap-2 mb-4 flex-wrap">
-                  {[{ id: '', label: 'Все' }, { id: 'receipt', label: 'Приход' }, { id: 'writeoff', label: 'Списание' }, { id: 'sale', label: 'Продажи' }].map(f => (
+                  {MV_FILTERS.map(f => (
                     <button key={f.id} onClick={() => { setMvFilter(f.id); fetchMovements(f.id); }}
                       className={`px-3 py-1.5 rounded-lg text-sm transition-all ${mvFilter === f.id ? 'bg-amber-500 text-white' : 'bg-white text-slate-600 hover:bg-slate-100'}`}
                       data-testid={`mv-filter-${f.id || 'all'}`}>{f.label}</button>
@@ -481,11 +518,11 @@ export default function AdminWarehousePage({ embedded = false }) {
                           <div className={`w-9 h-9 rounded-lg flex items-center justify-center ${cfg.color}`}><Icon className="w-5 h-5" /></div>
                           <div>
                             <p className="font-medium text-slate-800 text-sm">{m.product_name} <span className="text-xs text-slate-400">{m.product_article}</span></p>
-                            <p className="text-xs text-slate-400">{String(m.created_at).slice(0, 16).replace('T', ' ')}{m.supplier ? ` · ${m.supplier}` : ''}{m.reason ? ` · ${m.reason}` : ''}{m.comment ? ` · ${m.comment}` : ''}</p>
+                            <p className="text-xs text-slate-400">{cfg.label} · {String(m.created_at).slice(0, 16).replace('T', ' ')}{m.warehouse_name ? ` · ${m.warehouse_name}` : ''}{m.supplier ? ` · ${m.supplier}` : ''}{m.reason ? ` · ${m.reason}` : ''}{m.comment ? ` · ${m.comment}` : ''}</p>
                           </div>
                         </div>
                         <div className="text-right">
-                          <p className={`font-bold ${m.type === 'receipt' ? 'text-emerald-600' : 'text-rose-600'}`}>{cfg.sign}{m.quantity} шт.</p>
+                          <p className={`font-bold ${mvSign(m) === '+' ? 'text-emerald-600' : mvSign(m) === '−' ? 'text-rose-600' : 'text-blue-600'}`}>{mvSign(m)}{m.quantity} шт.</p>
                           <p className="text-xs text-slate-400">{m.stock_before} → {m.stock_after}{m.total_cost ? ` · ${fmt(m.total_cost)} ₽` : ''}</p>
                         </div>
                       </div>

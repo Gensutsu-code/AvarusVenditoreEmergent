@@ -1,5 +1,6 @@
 import { createContext, useContext, useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import axios from 'axios';
+import { toast } from 'sonner';
 import { useAuth } from './AuthContext';
 
 const CartContext = createContext(null);
@@ -55,6 +56,7 @@ export const CartProvider = ({ children }) => {
       return true;
     } catch (err) {
       console.error('Failed to add to cart', err);
+      if (err.response?.status === 400 && err.response.data?.detail) toast.error(err.response.data.detail);
       return false;
     }
   }, [token, fetchCart]);
@@ -103,6 +105,7 @@ export const CartProvider = ({ children }) => {
         }
       } catch (err) {
         console.error('Failed to update cart', err);
+        if (err.response?.status === 400 && err.response.data?.detail) toast.error(err.response.data.detail);
         // Revert on error
         fetchCart();
       }

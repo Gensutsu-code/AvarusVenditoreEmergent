@@ -655,27 +655,182 @@ async def manager_orders(user=Depends(get_current_user)):
         "payment_method": o.get("payment_method"), "client_name": (clients.get(o["user_id"]) or {}).get("name") or o.get("full_name"),
         "user_id": o["user_id"], "address": o.get("address"), "phone": o.get("phone"), "comment": o.get("comment"),
         "created_by_manager": bool(o.get("created_by_manager_id")),
-        "items": [{"name": i.get("name"), "article": i.get("article"), "quantity": i.get("quantity"), "price": i.get("price"), "commission": i["_commission"]} for i in o.get("items", [])],
+        "items": [{"product_id": i.get("product_id"), "name": i.get("name"), "article": i.get("article"), "quantity": i.get("quantity"), "price": i.get("price"), "commission": i["_commission"]} for i in o.get("items", [])],
     } for o in orders]
 
 
+SHOWCASE_FIELDS = {**PRODUCT_PUBLIC, "purchase_price": 1, "min_price": 1, "category_id": 1, "discount_label": 1, "delivery_days": 1, "created_at": 1}
+SHOWCASE_SORT = {"name": ("name", 1), "price_asc": ("price", 1), "price_desc": ("price", -1), "stock": ("stock", -1), "new": ("created_at", -1)}
+
+
+async def _client_pricing(manager, client_id: str):
+    """Personal discount percent and individual prices of one of the manager's clients."""
+    if not client_id:
+        return None, {}
+    client = await _own_client(manager, client_id)
+    discount = effective_conditions(client, await get_status_conditions())["discount"] or 0
+    prices = {p["product_id"]: p["price"] async for p in db.individual_prices.find({"user_id": client_id, "active": True}, {"_id": 0, "product_id": 1, "price": 1})}
+    return discount, prices
+
+
+def _for_manager(p: dict, pct: float, discount, ind_prices: dict) -> dict:
+    """Adds what the manager may see: promo price, his commission per unit, price for the chosen client. Never the purchase price."""
+    from routes.orders import compute_promo_discount
+    cost = p.pop("purchase_price", 0) or 0
+    price = p.get("price") or 0
+    promo_price, _, promo_on = compute_promo_discount(p, price, 1)
+    p["promo_price"] = round(promo_price, 2) if promo_on else None
+    p["commission"] = round(max(0.0, price - cost) * pct / 100, 2)
+    if discount is not None:
+        base = ind_prices.get(p["id"], price)
+        after_promo, _, on = compute_promo_discount(p, base, 1)
+        client_price = (after_promo if on else base) * (1 - discount / 100)
+        p["client_price"] = round(max(client_price, p.get("min_price") or 0), 2)
+        p["client_individual"] = p["id"] in ind_prices
+    return p
+
+
 @router.get("/manager/products")
-async def manager_products(search: str = "", in_stock: bool = False, user=Depends(get_current_user)):
+async def manager_products(search: str = "", in_stock: bool = False, category_id: str = "", manufacturer: str = "", sort: str = "name",
+                           client_id: str = "", ids: str = "", user=Depends(get_current_user)):
     """Catalog for managers: stock and selling prices, never purchase prices."""
     _manager(user)
     q = {}
-    if search.strip():
-        rx = {"$regex": re.escape(search.strip()), "$options": "i"}
-        q["$or"] = [{"name": rx}, {"article": rx}, {"cross_articles": rx}, {"manufacturer": rx}]
+    words = search.strip().split()
+    if words:  # every word must be found in the name, article, cross numbers or manufacturer
+        q["$and"] = [{"$or": [{f: {"$regex": re.escape(w), "$options": "i"}} for f in ("name", "article", "cross_articles", "manufacturer")]} for w in words]
     if in_stock:
         q["stock"] = {"$gt": 0}
+    if category_id:
+        q["category_id"] = category_id
+    if manufacturer:
+        q["manufacturer"] = manufacturer
+    if ids:
+        q["id"] = {"$in": ids.split(",")}
     from database import manager_commission_percent
     pct = await manager_commission_percent(user["id"]) or 0
-    products = await db.products.find(q, {**PRODUCT_PUBLIC, "purchase_price": 1}).sort("name", 1).to_list(300)
-    for p in products:
-        # manager's earning per unit at list price: his percent of (price - purchase cost)
-        p["commission"] = round(max(0.0, (p.get("price") or 0) - (p.pop("purchase_price", 0) or 0)) * pct / 100, 2)
+    discount, ind_prices = await _client_pricing(user, client_id)
+    field, direction = SHOWCASE_SORT.get(sort, SHOWCASE_SORT["name"])
+    products = await db.products.find(q, SHOWCASE_FIELDS).sort(field, direction).to_list(500)
+    products = [_for_manager(p, pct, discount, ind_prices) for p in products]
+    if sort == "commission":
+        products.sort(key=lambda p: -p["commission"])
     return products
+
+
+@router.get("/manager/products/filters")
+async def manager_product_filters(user=Depends(get_current_user)):
+    _manager(user)
+    used = set(await db.products.distinct("category_id"))
+    categories = [c for c in await db.categories.find({}, {"_id": 0, "id": 1, "name": 1}).sort("name", 1).to_list(1000) if c["id"] in used]
+    return {"categories": categories, "manufacturers": sorted(m for m in await db.products.distinct("manufacturer") if m)}
+
+
+@router.get("/manager/products/{product_id}")
+async def manager_product(product_id: str, client_id: str = "", user=Depends(get_current_user)):
+    """Product page for a manager: description, photos, cross numbers, stock per warehouse."""
+    _manager(user)
+    p = await db.products.find_one({"id": product_id}, {**SHOWCASE_FIELDS, "description": 1, "images": 1, "is_original": 1, "has_guarantee": 1})
+    if not p:
+        raise HTTPException(status_code=404, detail="Товар не найден")
+    from database import manager_commission_percent
+    discount, ind_prices = await _client_pricing(user, client_id)
+    p = _for_manager(p, await manager_commission_percent(user["id"]) or 0, discount, ind_prices)
+    levels = await db.stock_levels.find({"product_id": product_id, "quantity": {"$gt": 0}}, {"_id": 0, "warehouse_id": 1, "quantity": 1}).to_list(500)
+    whs = {w["id"]: w async for w in db.warehouses.find({"id": {"$in": [l["warehouse_id"] for l in levels]}}, {"_id": 0, "id": 1, "name": 1, "region": 1})}
+    p["warehouses"] = [{"name": whs[l["warehouse_id"]].get("name", ""), "region": whs[l["warehouse_id"]].get("region", ""), "quantity": l["quantity"]} for l in levels if l["warehouse_id"] in whs]
+    category = await db.categories.find_one({"id": p.get("category_id")}, {"_id": 0, "name": 1}) if p.get("category_id") else None
+    p["category_name"] = (category or {}).get("name", "")
+    return p
+
+
+class SelectionIn(BaseModel):
+    items: list[dict] = Field(min_length=1, max_length=50)  # [{product_id, quantity}]
+    note: str = Field(default="", max_length=500)
+
+
+@router.post("/manager/clients/{user_id}/selection")
+async def send_selection(user_id: str, data: SelectionIn, user=Depends(get_current_user)):
+    """Sends a list of products with the client's prices to the client's chat."""
+    _manager(user)
+    client = await _own_client(user, user_id)
+    discount, ind_prices = await _client_pricing(user, user_id)
+    lines, total = [], 0.0
+    for it in data.items:
+        p = await db.products.find_one({"id": it.get("product_id")}, SHOWCASE_FIELDS)
+        if not p:
+            continue
+        qty = max(1, int(it.get("quantity") or 1))
+        p = _for_manager(p, 0, discount, ind_prices)
+        total += p["client_price"] * qty
+        stock = "в наличии" if (p.get("stock") or 0) > 0 else "под заказ"
+        lines.append(f"{len(lines) + 1}. {p.get('name', '')} (арт. {p.get('article', '')}) — {qty} шт. × {p['client_price']:,.2f} ₽, {stock}".replace(",", " "))
+    if not lines:
+        raise HTTPException(status_code=404, detail="Товары не найдены")
+    text = "Подборка для вас:\n" + "\n".join(lines) + f"\nИтого: {total:,.2f} ₽".replace(",", " ") + (f"\n{data.note.strip()}" if data.note.strip() else "")
+    chat = await db.chats.find_one({"user_id": user_id}, {"_id": 0, "id": 1})
+    if not chat:
+        chat = {"id": str(uuid.uuid4()), "user_id": user_id, "user_name": client.get("name", ""), "user_email": client.get("email", ""), "created_at": _now(), "updated_at": _now()}
+        await db.chats.insert_one(dict(chat))
+    await db.chat_messages.insert_one({
+        "id": str(uuid.uuid4()), "chat_id": chat["id"], "user_id": user["id"], "user_name": user["name"], "text": text,
+        "sender_type": "admin", "sender_role": "manager", "message_type": "text", "created_at": _now(), "read": False, "edited": False,
+    })
+    await db.chats.update_one({"id": chat["id"]}, {"$set": {"updated_at": _now()}})
+    await notify_user(user_id, "chat", "Менеджер прислал подборку товаров", lines[0][:80], "/chat")
+    return {"sent": len(lines), "total": round(total, 2)}
+
+
+# ==================== MANAGER TASKS & REMINDERS ====================
+
+class TaskIn(BaseModel):
+    text: str = Field(min_length=1, max_length=500)
+    due_date: Optional[str] = None  # YYYY-MM-DD
+    client_id: Optional[str] = None
+    done: bool = False
+
+
+async def _task_doc(manager, data: TaskIn) -> dict:
+    client = await _own_client(manager, data.client_id) if data.client_id else None
+    return {"text": data.text.strip(), "due_date": (data.due_date or "")[:10] or None, "client_id": data.client_id or None,
+            "client_name": (client or {}).get("name", ""), "done": data.done}
+
+
+@router.get("/manager/tasks")
+async def manager_tasks(user=Depends(get_current_user)):
+    _manager(user)
+    tasks = await db.manager_tasks.find({"manager_id": user["id"]}, {"_id": 0}).to_list(1000)
+    today = datetime.now(timezone.utc).date().isoformat()
+    for t in tasks:
+        t["overdue"] = bool(not t.get("done") and t.get("due_date") and t["due_date"] < today)
+    tasks.sort(key=lambda t: (t.get("done", False), t.get("due_date") or "9999", t.get("created_at", "")))
+    return tasks
+
+
+@router.post("/manager/tasks")
+async def create_manager_task(data: TaskIn, user=Depends(get_current_user)):
+    _manager(user)
+    task = {"id": str(uuid.uuid4()), "manager_id": user["id"], "created_at": _now(), **await _task_doc(user, data)}
+    await db.manager_tasks.insert_one(dict(task))
+    return task
+
+
+@router.put("/manager/tasks/{task_id}")
+async def update_manager_task(task_id: str, data: TaskIn, user=Depends(get_current_user)):
+    _manager(user)
+    res = await db.manager_tasks.update_one({"id": task_id, "manager_id": user["id"]}, {"$set": await _task_doc(user, data)})
+    if res.matched_count == 0:
+        raise HTTPException(status_code=404, detail="Задача не найдена")
+    return {"success": True}
+
+
+@router.delete("/manager/tasks/{task_id}")
+async def delete_manager_task(task_id: str, user=Depends(get_current_user)):
+    _manager(user)
+    res = await db.manager_tasks.delete_one({"id": task_id, "manager_id": user["id"]})
+    if res.deleted_count == 0:
+        raise HTTPException(status_code=404, detail="Задача не найдена")
+    return {"success": True}
 
 
 class ManagerOrderItem(BaseModel):

@@ -27,6 +27,12 @@ export default function AdminReturnsPage() {
   const [actionModal, setActionModal] = useState(null); // { return, action: "approve" | "reject" }
   const [comment, setComment] = useState('');
   const [submitting, setSubmitting] = useState(false);
+  const [warehouses, setWarehouses] = useState([]);
+  const [restockTo, setRestockTo] = useState(''); // '' = warehouse the order was shipped from, 'none' = do not restock
+
+  useEffect(() => {
+    if (user?.role === 'admin') axios.get(`${API}/admin/warehouses`).then((r) => setWarehouses(r.data || [])).catch(() => {});
+  }, [user]);
 
   useEffect(() => {
     if (authLoading) return;
@@ -56,13 +62,14 @@ export default function AdminReturnsPage() {
       const endpoint = actionModal.action === 'approve' ? 'approve' : 'reject';
       await axios.put(
         `${API}/admin/returns/${actionModal.return.id}/${endpoint}`,
-        { comment: comment.trim() }
+        { comment: comment.trim(), restock: restockTo !== 'none', warehouse_id: restockTo && restockTo !== 'none' ? restockTo : null }
       );
       toast.success(
         actionModal.action === 'approve' ? 'Возврат одобрен' : 'Возврат отклонён'
       );
       setActionModal(null);
       setComment('');
+      setRestockTo('');
       fetchReturns();
     } catch (e) {
       toast.error(e.response?.data?.detail || 'Ошибка');
@@ -291,6 +298,11 @@ export default function AdminReturnsPage() {
                       </div>
                     )}
 
+                    {ret.restocked?.length > 0 && (
+                      <p className="mb-4 text-sm text-teal-700" data-testid={`return-restocked-${ret.id}`}>
+                        Возвращено на склад: {ret.restocked.map((r) => `${r.quantity} шт. → ${r.warehouse_name}`).join(', ')}
+                      </p>
+                    )}
                     {ret.admin_comment && (
                       <div className="mb-4 p-3 bg-amber-50 rounded-xl border border-amber-100">
                         <p className="text-xs text-amber-600 mb-1">Комментарий администратора</p>
@@ -409,6 +421,16 @@ export default function AdminReturnsPage() {
               </div>
 
               <div className="p-5">
+                {actionModal.action === 'approve' && actionModal.return.type === 'return' && (
+                  <div className="mb-4">
+                    <label className="block text-sm font-medium text-slate-600 mb-2">Вернуть товар на склад</label>
+                    <select value={restockTo} onChange={(e) => setRestockTo(e.target.value)} className="w-full h-10 px-3 border border-slate-200 rounded-xl bg-white text-sm focus:outline-none focus:border-teal-400" data-testid="return-restock-select">
+                      <option value="">На склад, с которого отгружен заказ</option>
+                      {warehouses.map((w) => <option key={w.id} value={w.id}>{w.name} — {w.region}</option>)}
+                      <option value="none">Не возвращать на склад (брак, утиль)</option>
+                    </select>
+                  </div>
+                )}
                 <label className="block text-sm font-medium text-slate-600 mb-2">
                   Комментарий {actionModal.action === 'reject' && <span className="text-rose-500">*</span>}
                 </label>

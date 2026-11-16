@@ -10,7 +10,7 @@ from motor.motor_asyncio import AsyncIOMotorClient
 from dotenv import load_dotenv
 from pathlib import Path
 from contextlib import asynccontextmanager
-from routes.warehouse import restore_order_stock, migrate_legacy_stock, migrate_regions
+from routes.warehouse import restore_order_stock, migrate_legacy_stock, migrate_regions, reconcile_all_stock
 import os
 from urllib.parse import urlparse
 from database import request_token, AUTH_COOKIE
@@ -134,6 +134,9 @@ async def lifespan(app: FastAPI):
         migrated = await migrate_legacy_stock()
         if migrated:
             logger.info(f"Legacy stock migrated to warehouses for {migrated} products")
+        fixed = await reconcile_all_stock()
+        if fixed:
+            logger.info(f"Stock totals aligned with warehouses for {fixed} products")
     except Exception as e:
         logger.error(f"Legacy stock migration failed: {e}")
 

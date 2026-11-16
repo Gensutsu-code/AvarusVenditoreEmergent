@@ -1156,7 +1156,14 @@ async def import_products_csv(file: UploadFile = File(...), user=Depends(get_cur
                 new_products.append(p)
         
         if new_products:
+            from routes.warehouse import set_total_stock
+            stocks = {p["id"]: p["stock"] for p in new_products}
+            for p in new_products:
+                p["stock"] = 0
             await db.products.insert_many(new_products)
+            for pid, qty in stocks.items():
+                if qty > 0:
+                    await set_total_stock(pid, qty, user.get("name", user.get("email", "")), "Импорт товаров из файла")
             imported = len(new_products)
     
     return {

@@ -42,3 +42,24 @@ def temp_products(_admin_headers):
     yield ids
     for pid in ids:
         requests.delete(f"{_api()}/products/{pid}", headers=_admin_headers, timeout=20)
+
+
+TOP_UP = 60
+
+
+@pytest.fixture(scope="session", autouse=True)
+def stock_for_orders(_admin_headers, warehouse_id):
+    """Goods are sold only from stock, so order tests need something to sell: every product gets a temporary
+    receipt that is written off again after the run (both visible in stock movements)."""
+    api = _api()
+    low = [p["id"] for p in requests.get(f"{api}/products", timeout=30).json() if (p.get("stock") or 0) < TOP_UP]
+    body = {"warehouse_id": warehouse_id, "quantity": TOP_UP, "comment": "Автотесты: временный запас"}
+    if low:
+        requests.post(f"{api}/admin/warehouse/movements/bulk", headers=_admin_headers, json={**body, "product_ids": low, "type": "receipt"}, timeout=120)
+    yield
+    rows = {i["id"]: i for i in requests.get(f"{api}/admin/warehouse/stock", headers=_admin_headers, timeout=60).json()["items"]} if low else {}
+    for pid in low:
+        here = next((w["quantity"] for w in rows.get(pid, {}).get("warehouses", []) if w["warehouse_id"] == warehouse_id), 0)
+        if here > 0:  # tests may have sold a part of the top-up
+            requests.post(f"{api}/admin/warehouse/movement", headers=_admin_headers, timeout=30,
+                          json={"product_id": pid, "warehouse_id": warehouse_id, "type": "writeoff", "quantity": min(TOP_UP, here), "comment": "Автотесты: временный запас"})

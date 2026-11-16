@@ -18,7 +18,7 @@ export const ADMIN_GROUPS = [
   ] },
   { id: 'catalog', label: 'Каталог', items: [
     { label: 'Товары и категории', to: '/admin?tab=products', icon: Package, keywords: 'каталог цены' },
-    { label: 'Склад', to: '/admin?tab=warehouse', icon: Warehouse, keywords: 'остатки приход регионы' },
+    { label: 'Склад', to: '/admin?tab=warehouse', icon: Warehouse, counts: ['low_stock'], keywords: 'остатки приход регионы инвентаризация сверка минимальный остаток' },
     { label: 'Импорт товаров', to: '/admin?tab=settings&sub=import', icon: Upload, keywords: 'csv загрузка прайс' },
   ] },
   { id: 'clients', label: 'Клиенты', items: [
@@ -67,6 +67,7 @@ export const ATTENTION_ITEMS = [
   { key: 'conditions_requests', label: 'Заявки на смену условий', to: '/admin/staff' },
   { key: 'cashback_withdrawals', label: 'Вывод кэшбэка', to: '/admin?tab=bonus' },
   { key: 'prize_redemptions', label: 'Заявки на призы', to: '/admin?tab=bonus' },
+  { key: 'low_stock', label: 'Товары заканчиваются', to: '/admin?tab=warehouse' },
 ];
 
 export const sumCounts = (counts, keys = []) => keys.reduce((s, k) => s + (counts?.[k] || 0), 0);

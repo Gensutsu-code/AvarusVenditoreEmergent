@@ -1,14 +1,15 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { Navigate } from 'react-router-dom';
+import { Navigate, Link, useSearchParams } from 'react-router-dom';
 import axios from 'axios';
 import { toast } from 'sonner';
-import { BarChart3, Users, MessageCircle, Pencil, Send, Loader2, ClipboardList, Boxes } from 'lucide-react';
+import { BarChart3, Users, MessageCircle, Pencil, Send, Loader2, ClipboardList, Boxes, ListTodo, Store } from 'lucide-react';
 import { Button } from '../components/ui/button';
 import { Input } from '../components/ui/input';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '../components/ui/dialog';
 import { useAuth } from '../context/AuthContext';
 import { PeriodSwitch, ManagerStatsView, ConditionsFields, toConditionsPayload, money } from '../components/staff/ManagerStats';
 import { ClientStatsModal, ManagerOrdersTab, ManagerCatalogTab } from '../components/staff/ManagerSales';
+import { ManagerTasksTab } from '../components/staff/ManagerTasks';
 
 const API = `${process.env.REACT_APP_BACKEND_URL}/api`;
 const err = (e) => { const d = e.response?.data?.detail; toast.error(typeof d === 'string' ? d : 'Ошибка'); };
@@ -130,7 +131,10 @@ const ChatsTab = () => {
 
 export default function ManagerPage() {
   const { user, loading } = useAuth();
-  const [tab, setTab] = useState('stats');
+  const [params] = useSearchParams();
+  const [tab, setTab] = useState(params.get('tab') || 'stats');
+  const [overdue, setOverdue] = useState(0);
+  const countOverdue = useCallback((tasks) => setOverdue(tasks.filter((t) => t.overdue).length), []);
   const [period, setPeriod] = useState('month');
   const [stats, setStats] = useState(null);
   const [pay, setPay] = useState(null);
@@ -143,9 +147,11 @@ export default function ManagerPage() {
   useEffect(() => { if (isManager) axios.get(`${API}/manager/clients`).then((r) => setMyClients(r.data)).catch(() => {}); }, [isManager]);
   useEffect(() => { if (isManager) axios.get(`${API}/manager/payouts`).then((r) => setPay(r.data)).catch(() => {}); }, [isManager]);
 
+  useEffect(() => { if (isManager) axios.get(`${API}/manager/tasks`).then((r) => countOverdue(r.data)).catch(() => {}); }, [isManager, countOverdue]);
+
   if (loading) return null;
   if (!isManager) return <Navigate to="/" replace />;
-  const tabs = [{ id: 'stats', label: 'Статистика', icon: BarChart3 }, { id: 'clients', label: 'Мои клиенты', icon: Users }, { id: 'orders', label: 'Заказы клиентов', icon: ClipboardList }, { id: 'catalog', label: 'Товары и новый заказ', icon: Boxes }, { id: 'chats', label: 'Чаты с клиентами', icon: MessageCircle }];
+  const tabs = [{ id: 'stats', label: 'Статистика', icon: BarChart3 }, { id: 'clients', label: 'Мои клиенты', icon: Users }, { id: 'orders', label: 'Заказы клиентов', icon: ClipboardList }, { id: 'catalog', label: 'Товары и новый заказ', icon: Boxes }, { id: 'chats', label: 'Чаты с клиентами', icon: MessageCircle }, { id: 'tasks', label: 'Задачи', icon: ListTodo }];
 
   return (
     <div className="min-h-screen" data-testid="manager-page">
@@ -157,8 +163,10 @@ export default function ManagerPage() {
             {tabs.map((t) => (
               <button key={t.id} onClick={() => setTab(t.id)} className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${tab === t.id ? 'bg-white text-teal-700 shadow-sm' : 'text-slate-500 hover:text-slate-700'}`} data-testid={`manager-tab-${t.id}`}>
                 <t.icon className="w-4 h-4" />{t.label}
+                {t.id === 'tasks' && overdue > 0 && <span className="min-w-[18px] h-[18px] px-1 rounded-full bg-rose-500 text-white text-[10px] font-bold flex items-center justify-center" data-testid="manager-tasks-overdue">{overdue}</span>}
               </button>
             ))}
+            <Link to="/manager/showcase" className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-semibold text-white bg-teal-500 hover:bg-teal-600 transition-colors" data-testid="manager-showcase-link"><Store className="w-4 h-4" />Витрина</Link>
           </div>
           {tab === 'stats' && <PeriodSwitch value={period} onChange={setPeriod} />}
         </div>
@@ -171,7 +179,8 @@ export default function ManagerPage() {
         )}
         {tab === 'stats' && <ManagerStatsView stats={stats} />}
         {tab === 'clients' && <ClientsTab />}
-        {tab === 'orders' && <ManagerOrdersTab />}
+        {tab === 'orders' && <ManagerOrdersTab onRepeat={() => setTab('catalog')} />}
+        {tab === 'tasks' && <ManagerTasksTab clients={myClients} onChanged={countOverdue} />}
         {tab === 'catalog' && <ManagerCatalogTab clients={myClients} />}
         {tab === 'chats' && <ChatsTab />}
       </div>

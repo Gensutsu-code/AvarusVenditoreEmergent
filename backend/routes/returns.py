@@ -260,6 +260,9 @@ async def approve_return(return_id: str, data: dict = None, user=Depends(get_cur
         raise HTTPException(status_code=400, detail="Return already processed")
 
     comment = (data or {}).get("comment", "")
+    chosen = (data or {}).get("warehouse_id")
+    if chosen and not await db.warehouses.find_one({"id": chosen}, {"_id": 1}):
+        raise HTTPException(status_code=404, detail="Склад не найден")
     fee_pct = ret.get("fee_percent", 10)
     fee_label = f"{fee_pct:g}%"
 
@@ -267,6 +270,28 @@ async def approve_return(return_id: str, data: dict = None, user=Depends(get_cur
         {"id": return_id},
         {"$set": {"status": "approved", "admin_comment": comment, "updated_at": datetime.now(timezone.utc).isoformat()}}
     )
+
+    if ret["type"] == "return" and (data or {}).get("restock", True):
+        from routes.warehouse import add_stock, log_movement, default_warehouse_id
+        order = await db.orders.find_one({"id": ret["order_id"]}, {"_id": 0, "stock_allocations": 1}) or {}
+        shipped_from = {a["product_id"]: a["allocations"][0]["warehouse_id"] for a in order.get("stock_allocations") or [] if a.get("allocations")}
+        restocked = []
+        for item in ret.get("items", []):
+            product = await db.products.find_one({"id": item.get("product_id")}, {"_id": 0, "stock": 1})
+            qty = int(item.get("quantity", 0) or 0)
+            if not product or qty <= 0:
+                continue
+            wh_id = chosen or shipped_from.get(item["product_id"])
+            wh = await db.warehouses.find_one({"id": wh_id}, {"_id": 0, "id": 1, "name": 1, "region": 1}) if wh_id else None
+            if not wh:
+                wh = await db.warehouses.find_one({"id": await default_warehouse_id()}, {"_id": 0, "id": 1, "name": 1, "region": 1})
+            before = int(product.get("stock", 0) or 0)
+            await add_stock(item["product_id"], wh["id"], qty)
+            await log_movement(item["product_id"], "return", qty, before, before + qty, user.get("name", user.get("email", "")),
+                               comment=f"Возврат по заказу #{ret['order_id'][:8]}", return_id=return_id, order_id=ret["order_id"],
+                               warehouse_id=wh["id"], warehouse_name=wh.get("name", ""), warehouse_region=wh.get("region", ""))
+            restocked.append({"product_id": item["product_id"], "quantity": qty, "warehouse_id": wh["id"], "warehouse_name": wh.get("name", "")})
+        await db.returns.update_one({"id": return_id}, {"$set": {"restocked": restocked}})
 
     if ret["type"] == "return":
         # Credit refund to user balance

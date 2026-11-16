@@ -13,7 +13,7 @@ from models import CartItem, OrderCreate, OrderResponse, FavoriteItem
 from notify import notify_user, notify_admin
 from routes.telegram import send_telegram_order_notification
 from routes.credit import has_overdue_deferral
-from routes.warehouse import allocate_stock, restore_stock
+from routes.warehouse import allocate_stock, restore_order_stock, ensure_available, low_stock_query, default_min_stock
 
 router = APIRouter(tags=["orders"])
 
@@ -22,20 +22,7 @@ router = APIRouter(tags=["orders"])
 manager_order = contextvars.ContextVar("manager_order", default=False)
 
 
-async def _restore_order_stock(order):
-    """Restore stock for a cancelled/returned order. Uses per-warehouse allocations when available."""
-    from routes.rewards import refund_order_cashback
-    await refund_order_cashback(order)
-    allocs = order.get("stock_allocations")
-    if allocs:
-        for a in allocs:
-            await restore_stock(a.get("product_id"), a.get("allocations", []))
-    else:
-        for item in order.get("items", []):
-            await db.products.update_one(
-                {"id": item.get("product_id")},
-                {"$inc": {"stock": item.get("quantity", 0)}}
-            )
+_restore_order_stock = restore_order_stock
 
 
 def compute_promo_discount(product: dict, base_price: float, quantity: int = 1) -> tuple:
@@ -237,6 +224,8 @@ async def _build_cart(user):
 @router.post("/cart/add")
 async def add_to_cart(item: CartItem, user=Depends(get_current_user)):
     cart = await db.carts.find_one({"user_id": user["id"]})
+    in_cart = next((i["quantity"] for i in (cart or {}).get("items", []) if i["product_id"] == item.product_id), 0)
+    await ensure_available([{"product_id": item.product_id, "quantity": in_cart + item.quantity}])
     if not cart:
         await db.carts.insert_one({"user_id": user["id"], "items": [item.model_dump()]})
     else:
@@ -253,6 +242,7 @@ async def add_to_cart(item: CartItem, user=Depends(get_current_user)):
 
 @router.post("/cart/update")
 async def update_cart_item(item: CartItem, user=Depends(get_current_user)):
+    await ensure_available([item.model_dump()])
     cart = await db.carts.find_one({"user_id": user["id"]})
     if cart:
         items = cart.get("items", [])
@@ -601,6 +591,7 @@ async def create_order(data: OrderCreate, user=Depends(get_current_user)):
     cart = await db.carts.find_one({"user_id": user["id"]})
     if not cart or not cart.get("items"):
         raise HTTPException(status_code=400, detail="Cart is empty")
+    await ensure_available(cart["items"])
 
     # Block new orders if user has overdue deferral debt
     if await has_overdue_deferral(user["id"]):
@@ -1141,9 +1132,9 @@ async def get_admin_dashboard(user=Depends(get_current_user)):
         p["revenue"] = round(p["revenue"], 2)
 
     # Low stock products (<= threshold)
-    threshold = 5
+    threshold = await default_min_stock()
     low_docs = await db.products.find(
-        {"stock": {"$lte": threshold}}, {"_id": 0, "id": 1, "name": 1, "article": 1, "stock": 1}
+        low_stock_query(threshold), {"_id": 0, "id": 1, "name": 1, "article": 1, "stock": 1}
     ).sort("stock", 1).limit(12).to_list(12)
     low_stock = [{"id": d.get("id"), "name": d.get("name", ""), "article": d.get("article", ""), "stock": d.get("stock", 0)} for d in low_docs]
 

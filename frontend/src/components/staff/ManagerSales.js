@@ -1,7 +1,9 @@
 import { useCallback, useEffect, useState } from 'react';
 import axios from 'axios';
 import { toast } from 'sonner';
-import { Search, Plus, Minus, Trash2, Loader2, ChevronDown, ChevronRight, Package } from 'lucide-react';
+import { Link } from 'react-router-dom';
+import { Search, Plus, Minus, Trash2, Loader2, ChevronDown, ChevronRight, Package, RotateCcw, Send } from 'lucide-react';
+import { useManagerDraft } from '../../lib/managerDraft';
 import { Button } from '../ui/button';
 import { Input } from '../ui/input';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '../ui/dialog';
@@ -32,9 +34,27 @@ export const ClientStatsModal = ({ client, onClose }) => {
 };
 
 // Orders of the manager's clients
-export const ManagerOrdersTab = () => {
+export const ManagerOrdersTab = ({ onRepeat }) => {
   const [orders, setOrders] = useState(null);
   const [open, setOpen] = useState(null);
+  const draft = useManagerDraft();
+  // Puts the goods of an old order into the new-order draft with today's prices and stock
+  const repeat = async (o) => {
+    try {
+      const ids = o.items.map((i) => i.product_id).filter(Boolean);
+      const r = ids.length ? await axios.get(`${API}/manager/products`, { params: { ids: ids.join(',') } }) : { data: [] };
+      const live = Object.fromEntries(r.data.map((p) => [p.id, p]));
+      const items = o.items.filter((i) => (live[i.product_id]?.stock || 0) > 0).map((i) => {
+        const p = live[i.product_id];
+        return { id: p.id, name: p.name, article: p.article, price: p.price, stock: p.stock, commission: p.commission || 0, quantity: Math.min(i.quantity, p.stock) };
+      });
+      if (!items.length) { toast.error('Товаров этого заказа сейчас нет в наличии'); return; }
+      draft.replace(items, o.user_id);
+      const short = items.length < o.items.length || items.some((x, n) => x.quantity < o.items.find((i) => i.product_id === x.id).quantity);
+      toast.success(short ? 'Заказ перенесён частично: части товаров не хватает на складе' : 'Товары перенесены в новый заказ');
+      onRepeat();
+    } catch (e) { err(e); }
+  };
   useEffect(() => { axios.get(`${API}/manager/orders`).then((r) => setOrders(r.data)).catch(err); }, []);
   if (!orders) return <Spinner />;
   if (!orders.length) return <div className="rounded-xl border border-dashed border-slate-300 p-12 text-center text-slate-400" data-testid="manager-orders-empty">У ваших клиентов пока нет заказов</div>;
@@ -56,6 +76,7 @@ export const ManagerOrdersTab = () => {
             <div className="px-11 pb-3 text-sm text-slate-600 space-y-1">
               {o.items.map((i, idx) => <div key={idx} className="flex gap-3"><span className="flex-1 truncate">{i.name} <span className="font-mono text-[11px] text-slate-400">{i.article}</span></span><span>{i.quantity} шт. × {money(i.price)}</span>{i.commission != null && <span className="w-24 text-right font-semibold text-emerald-600" data-testid={`manager-order-${o.id}-item-${idx}-commission`}>+{money(i.commission)}</span>}</div>)}
               <p className="text-xs text-slate-400 pt-1">{o.address}{o.phone ? ` · ${o.phone}` : ''}{o.comment ? ` · ${o.comment}` : ''}</p>
+              <Button size="sm" variant="outline" onClick={() => repeat(o)} className="mt-2" data-testid={`manager-order-repeat-${o.id}`}><RotateCcw className="w-3.5 h-3.5 mr-1.5" />Повторить заказ</Button>
             </div>
           )}
         </div>
@@ -69,15 +90,21 @@ export const ManagerCatalogTab = ({ clients }) => {
   const [search, setSearch] = useState('');
   const [inStock, setInStock] = useState(true);
   const [products, setProducts] = useState(null);
-  const [draft, setDraft] = useState([]);
-  const [form, setForm] = useState({ user_id: '', payment_method: 'cash', address: '', phone: '', comment: '' });
+  const [sort, setSort] = useState('name');
+  const shared = useManagerDraft();
+  const draft = shared.items;
+  const [fields, setFields] = useState({ payment_method: 'cash', address: '', phone: '', comment: '' });
+  // the chosen client lives in the shared draft, so the showcase shows prices for the same client
+  const user_id = clients.some((c) => c.id === shared.clientId) ? shared.clientId : '';
+  const form = { ...fields, user_id };
+  const setForm = ({ user_id: uid, ...rest }) => { setFields(rest); if (uid !== user_id) shared.setClientId(uid); };
   const [busy, setBusy] = useState(false);
 
-  const load = useCallback(() => axios.get(`${API}/manager/products`, { params: { search, in_stock: inStock } }).then((r) => setProducts(r.data)).catch(err), [search, inStock]);
+  const load = useCallback(() => axios.get(`${API}/manager/products`, { params: { search, in_stock: inStock, sort, client_id: user_id } }).then((r) => setProducts(r.data)).catch(err), [search, inStock, sort, user_id]);
   useEffect(() => { const t = setTimeout(load, 300); return () => clearTimeout(t); }, [load]);
 
-  const add = (p) => setDraft((d) => (d.find((x) => x.id === p.id) ? d.map((x) => (x.id === p.id ? { ...x, quantity: Math.min(x.quantity + 1, p.stock) } : x)) : [...d, { id: p.id, name: p.name, article: p.article, price: p.price, stock: p.stock, commission: p.commission || 0, quantity: 1 }]));
-  const qty = (id, delta) => setDraft((d) => d.map((x) => (x.id === id ? { ...x, quantity: Math.max(1, Math.min(x.stock, x.quantity + delta)) } : x)));
+  const add = (p) => shared.add(p);
+  const qty = shared.changeQty;
   const pickClient = (id) => { const c = clients.find((x) => x.id === id); setForm({ ...form, user_id: id, phone: c?.phone || form.phone }); };
   const submit = async () => {
     if (!form.user_id) { toast.error('Выберите клиента'); return; }
@@ -87,7 +114,16 @@ export const ManagerCatalogTab = ({ clients }) => {
     try {
       const r = await axios.post(`${API}/manager/clients/${form.user_id}/orders`, { items: draft.map((x) => ({ product_id: x.id, quantity: x.quantity })), payment_method: form.payment_method, address: form.address, phone: form.phone, comment: form.comment });
       toast.success(`Заказ #${r.data.id.slice(0, 8)} оформлен на ${money(r.data.total)}`);
-      setDraft([]); load();
+      shared.clear(); load();
+    } catch (e) { err(e); } finally { setBusy(false); }
+  };
+  const sendSelection = async () => {
+    if (!form.user_id) { toast.error('Выберите клиента'); return; }
+    if (!draft.length) { toast.error('Добавьте товары'); return; }
+    setBusy(true);
+    try {
+      const r = await axios.post(`${API}/manager/clients/${form.user_id}/selection`, { items: draft.map((x) => ({ product_id: x.id, quantity: x.quantity })), note: form.comment });
+      toast.success(`Подборка из ${r.data.sent} поз. отправлена клиенту в чат`);
     } catch (e) { err(e); } finally { setBusy(false); }
   };
   const sel = 'w-full h-10 rounded-md border border-slate-200 bg-white px-3 text-sm focus:outline-none focus:border-teal-400';
@@ -98,6 +134,10 @@ export const ManagerCatalogTab = ({ clients }) => {
         <div className="flex flex-wrap items-center gap-3 mb-3">
           <div className="relative flex-1 min-w-[220px]"><Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" /><Input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Название, артикул, кросс-номер, производитель" className="pl-9" data-testid="manager-product-search" /></div>
           <label className="flex items-center gap-2 text-sm text-slate-600 cursor-pointer"><input type="checkbox" checked={inStock} onChange={(e) => setInStock(e.target.checked)} className="w-4 h-4 accent-teal-500" data-testid="manager-in-stock-toggle" />Только в наличии</label>
+          <select value={sort} onChange={(e) => setSort(e.target.value)} className="h-10 rounded-md border border-slate-200 bg-white px-3 text-sm" data-testid="manager-product-sort">
+            <option value="name">По названию</option><option value="price_asc">Сначала дешёвые</option><option value="price_desc">Сначала дорогие</option><option value="stock">Больше в наличии</option><option value="commission">Больше мой доход</option>
+          </select>
+          <Link to="/manager/showcase" className="text-sm font-semibold text-teal-600 hover:underline" data-testid="manager-open-showcase">Открыть витрину</Link>
         </div>
         {!products ? <Spinner /> : products.length === 0 ? <p className="py-10 text-center text-slate-400">Товары не найдены</p> : (
           <div className="rounded-xl border border-slate-200 bg-white divide-y divide-slate-100 max-h-[640px] overflow-y-auto" data-testid="manager-products">
@@ -109,7 +149,7 @@ export const ManagerCatalogTab = ({ clients }) => {
                   <p className="text-[11px] text-slate-400"><span className="font-mono">{p.article}</span>{p.manufacturer ? ` · ${p.manufacturer}` : ''}{(p.stock_regions || []).length ? ` · ${p.stock_regions.join(', ')}` : ''}</p>
                 </div>
                 <span className={`text-xs font-semibold w-20 text-right ${p.stock > 0 ? 'text-emerald-600' : 'text-rose-500'}`}>{p.stock > 0 ? `${p.stock} шт.` : 'нет'}</span>
-                <span className="text-sm font-semibold text-slate-800 w-24 text-right">{money(p.price)}</span>
+                <span className="text-sm font-semibold text-slate-800 w-28 text-right">{money(p.promo_price ?? p.price)}{p.client_price != null && <span className="block text-[11px] font-semibold text-teal-700" data-testid={`manager-product-client-price-${p.id}`}>клиенту {money(p.client_price)}</span>}</span>
                 <span className="text-xs font-semibold text-emerald-600 w-24 text-right" title="Ваш заработок с одной штуки по цене прайса" data-testid={`manager-product-commission-${p.id}`}>+{money(p.commission)}</span>
                 <Button size="sm" onClick={() => add(p)} disabled={!(p.stock > 0)} className="bg-teal-500 hover:bg-teal-600 text-white" data-testid={`manager-add-product-${p.id}`}><Plus className="w-4 h-4" /></Button>
               </div>
@@ -133,7 +173,7 @@ export const ManagerCatalogTab = ({ clients }) => {
               <button onClick={() => qty(x.id, -1)} className="p-1 rounded border border-slate-200"><Minus className="w-3 h-3" /></button>
               <span className="w-7 text-center font-semibold">{x.quantity}</span>
               <button onClick={() => qty(x.id, 1)} className="p-1 rounded border border-slate-200"><Plus className="w-3 h-3" /></button>
-              <button onClick={() => setDraft((d) => d.filter((y) => y.id !== x.id))} className="p-1 text-slate-400 hover:text-rose-500"><Trash2 className="w-3.5 h-3.5" /></button>
+              <button onClick={() => shared.remove(x.id)} className="p-1 text-slate-400 hover:text-rose-500"><Trash2 className="w-3.5 h-3.5" /></button>
             </div>
           ))}
         </div>
@@ -146,6 +186,7 @@ export const ManagerCatalogTab = ({ clients }) => {
           <Input value={form.phone} onChange={(e) => setForm({ ...form, phone: e.target.value })} placeholder="Телефон *" data-testid="manager-order-phone" />
           <Input value={form.comment} onChange={(e) => setForm({ ...form, comment: e.target.value })} placeholder="Комментарий" maxLength={1000} data-testid="manager-order-comment" />
           <Button onClick={submit} disabled={busy} className="w-full bg-teal-500 hover:bg-teal-600 text-white" data-testid="manager-order-submit">{busy ? 'Оформление…' : 'Оформить заказ'}</Button>
+          <Button onClick={sendSelection} disabled={busy} variant="outline" className="w-full" title="Клиент получит список товаров с его ценами в чате" data-testid="manager-send-selection"><Send className="w-4 h-4 mr-1.5" />Отправить подборку клиенту в чат</Button>
         </div>
       </div>
     </div>

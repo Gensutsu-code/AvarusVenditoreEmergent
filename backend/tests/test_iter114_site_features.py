@@ -41,17 +41,17 @@ def _login(email, password):
 
 @pytest.fixture(scope="session")
 def admin_h():
-    return {"Authorization": f"Bearer {_login('admin@avarus.ru', 'admin')}"}
+    return {"Authorization": f"Bearer {_login('admin@avarus.ru', os.environ['TEST_ADMIN_PASSWORD'])}"}
 
 
 @pytest.fixture(scope="session")
 def user_h():
-    return {"Authorization": f"Bearer {_login('user@demo.com', 'demo123')}"}
+    return {"Authorization": f"Bearer {_login('user@demo.com', os.environ['TEST_CLIENT_PASSWORD'])}"}
 
 
 @pytest.fixture(scope="session")
 def manager_h():
-    return {"Authorization": f"Bearer {_login('manager@avarus.ru', 'manager123')}"}
+    return {"Authorization": f"Bearer {_login('manager@avarus.ru', os.environ['TEST_MANAGER_PASSWORD'])}"}
 
 
 def _toggle(admin_h, key, enabled=None, audience=None):
