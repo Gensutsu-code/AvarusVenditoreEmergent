@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
+import { useLive } from '../lib/live';
 import { motion, AnimatePresence } from 'framer-motion';
 import { RefreshCw, ShieldCheck, Package, Check, X, Clock, CheckCircle, XCircle, FileText } from 'lucide-react';
 import { Button } from '../components/ui/button';
@@ -34,9 +35,8 @@ export default function AdminReturnsPage() {
       return;
     }
     fetchReturns();
-    const interval = setInterval(fetchReturns, 10000);
-    return () => clearInterval(interval);
   }, [user, authLoading, navigate]);
+  useLive(() => fetchReturns(), 10000, user?.role === 'admin');
 
   const fetchReturns = async () => {
     try {

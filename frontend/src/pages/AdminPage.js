@@ -306,13 +306,23 @@ export default function AdminPage() {
   const refreshLive = async () => {
     if (!loadedOnceRef.current) return;
     try {
-      const [statsRes, usersRes, ordersRes, programsRes, redemptionsRes] = await Promise.all([
+      const [statsRes, usersRes, ordersRes, programsRes, redemptionsRes, productsRes, categoriesRes, historyRes, partnersRes, newsRes] = await Promise.all([
         axios.get(`${API}/admin/stats`),
         axios.get(`${API}/admin/users`),
         axios.get(`${API}/admin/orders`),
         axios.get(`${API}/admin/bonus/programs`),
         axios.get(`${API}/admin/prize-redemptions`),
+        axios.get(`${API}/products`),
+        axios.get(`${API}/categories`),
+        axios.get(`${API}/admin/bonus/history`),
+        axios.get(`${API}/partners`),
+        axios.get(`${API}/admin/news`),
       ]);
+      setProducts(productsRes.data);
+      setCategories(categoriesRes.data);
+      setBonusHistory(historyRes.data.history || []);
+      setPartners(partnersRes.data || []);
+      setNewsList(newsRes.data || []);
       setStats(statsRes.data);
       setUsers(usersRes.data);
       setOrders(ordersRes.data);

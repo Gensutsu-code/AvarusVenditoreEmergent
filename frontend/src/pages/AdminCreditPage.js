@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
+import { useLive } from '../lib/live';
 import { motion } from 'framer-motion';
 import { CreditCard, Clock, CheckCircle, AlertTriangle, Check, X, Wallet, Users, Loader2, Pencil, Send } from 'lucide-react';
 import { Button } from '../components/ui/button';
@@ -56,9 +57,8 @@ export default function AdminCreditPage() {
     if (authLoading) return;
     if (!user || user.role !== 'admin') { navigate('/login'); return; }
     fetchAll();
-    const i = setInterval(fetchAll, 10000);
-    return () => clearInterval(i);
   }, [user, authLoading, navigate]);
+  useLive(fetchAll, 10000, user?.role === 'admin');
 
   const openApprove = (request) => {
     setApproveModal({ request });

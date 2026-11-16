@@ -311,3 +311,13 @@ E-commerce platform for truck spare parts with a comprehensive admin panel. Russ
 - AdminPage: old tab bar + tab-order editor hidden; tab driven by `?tab=`; Settings/Marketing sub-tabs deep-linkable via `&sub=`; «Требует внимания» block on overview.
 - Duplicated settings intentionally kept in both places (user choice).
 - Tests: iteration_116 — backend 9/9, frontend 100%.
+
+## Admin panel page with sidebar, live refresh, merged client functions (June 2026, iteration_118)
+- Admin header: Заказы, Чаты, «Админ панель» (`admin-panel-link` → /admin), search, notifications, logout. The 5 groups (Продажи, Каталог, Клиенты, Маркетинг, Система) moved to a left sidebar `components/admin/AdminSidebar.js` shown by App.js on every /admin* page except /admin/orders and /admin/chats. Registry still `lib/adminNav.js`; mobile keeps the grouped menu.
+- Real time: `lib/live.js` `useLive(fn, ms, enabled)` — polling (10–30s, paused in hidden tab) + refresh ~0.4s after any non-GET axios response. Used by attention counters, AdminPage (`refreshLive`: stats, users, orders, bonus, products, categories, partners, news — settings forms are NOT polled so edits are not overwritten), carts, returns, credit, staff, conditions requests, cashback withdrawals, cart discount requests, dashboard. AdminPage/AdminCartsPage no longer blank the page with a loader after the first load.
+- Client: `/parts` (`PartsHubPage`) = AI assistant + parts finder with mode switch (`?mode=ai|params`, both stay mounted); /assistant and /parts-finder redirect there; modes follow feature flags `ai_assistant` / `parts_finder`; manager sees AI only. One header button `parts-hub-link`.
+- Client: `components/RegionWarehouses.js` — one dropdown (`region-selector`): region chips, warehouses of the region, link to `/warehouses?region=` (map page pre-filters). Warehouse part follows `warehouses_map` flag.
+- Tests: iteration_118 (frontend selectors/navigation 100%); live cart refresh self-verified in browser. Not click-tested: every single admin action, AI answer/finder search inside the hub, hub behaviour with functions switched off.
+
+### Deferred by user (June 2026)
+- Code-review fixes (circular import orders↔rewards, passwords in tests, hook deps, token in localStorage → cookies, admin password «admin», component splitting) — postponed until the user asks.

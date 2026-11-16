@@ -1,0 +1,38 @@
+{
+  "summary": "Iter-118 frontend-only verification of the admin-panel reorg + merged PartsHub + merged Region/Warehouses selector. HEADER (admin): confirmed only admin-orders-link, admin-chats-link, admin-panel-link, admin-search-btn, admin-notifications area, logout-button are present; no old 5-dropdown nav. SIDEBAR: admin-sidebar is rendered on /admin and every admin sub-page EXCEPT /admin/orders and /admin/chats (both verified count=0). All 5 collapsible groups (admin-nav-group-sales/catalog/clients/marketing/system) render and all 14 expected items (admin-nav-item-/admin?tab=crm|carts|returns|credit|payments|products|warehouse|staff|bonus|promotions|settings|logs + admin-features-link + admin-profile-link) are present. SPA navigation: set window.__noReload=1, clicked 6 different sidebar items (crm, carts, products, bonus, features, profile) - __noReload stayed 1 the whole time, URL updated, no console errors, no full-screen 'Загрузка...' flash after the initial load. Ctrl+K search dialog opens, admin-search-input works, item click navigates. Mobile 390px: admin-mobile-nav lists all 22 entries (2 pinned + 20 group items) with no horizontal overflow (scrollWidth=clientWidth=390). CLIENT (user@demo.com): header shows single parts-hub-link (Подбор) and region-selector; old a[href='/assistant'] and a[href='/parts-finder'] are gone. /assistant redirects to /parts?mode=ai and /parts-finder to /parts?mode=params. /parts?mode=ai renders parts-hub-page, parts-hub-modes, both mode buttons, ai-assistant-page, ai-input, ai-send-btn. Switching ai->params->ai preserves typed text in ai-input. Region-selector dropdown shows region-menu, region-option-* chips, region-warehouses block and warehouses-map-link; choosing a region updates button label (shows 'Москва') and persists after reload; the map-link link URL points to /warehouses?region=<name>. GUEST: parts-hub-link-guest visible and /parts loads for guests. MANAGER (manager@avarus.ru): parts-hub-link in header; /parts shows ONLY ai-assistant-page (parts-hub-modes=0, parts-finder-form=0). Auto-refresh wiring verified by code inspection - AdminCartsPage, AdminStaffPage, AdminDashboard, CashbackWithdrawals, CartDiscountRequestsSection, AdminNav(attention), AdminPage(refreshLive) all call useLive; axios response interceptor dispatches admin-data-changed after any non-GET so the next useLive tick refreshes within ~400ms. Live polling interval is 10-30s. Admin-panel-link-badge and admin-orders-link-badge render and show counts (99+ / 10 observed).",
+  "backend_issues": {
+    "critical": [],
+    "minor": []
+  },
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [
+      {"flow": "Real-time refresh on AdminCreditPage and AdminReturnsPage", "issue": "These two pages still use a plain setInterval(10000) instead of useLive from /app/frontend/src/lib/live.js. They WILL refresh every 10s, but they do NOT react to the admin-data-changed event that fires right after a non-GET axios response. So the admin's own approve/reject click will still show the stale list for up to 10 seconds instead of ~0.4s like the other sections. Suggest switching them to useLive(fetchAll, 10000) for consistency with the rest.", "affected_selectors": ["AdminCreditPage", "AdminReturnsPage"]},
+      {"flow": "AdminPage.refreshLive() payload is incomplete", "issue": "refreshLive() in /app/frontend/src/pages/AdminPage.js (line 306) only re-pulls stats/users/orders/bonus programs/prize-redemptions. It omits products, categories, promo-banner, telegram-settings, chats, bonus-history, partners, payment and news. For actions triggered through the admin's own UI this is OK (each handler calls fetchData() explicitly), but if an external process or a second admin changes categories/products/promo-banner/news, the open admin tab will not see the update until a manual reload. If instant multi-admin consistency is desired, replace the Promise.all list in refreshLive with the same list used by fetchData, or call fetchData() from the useLive callback.", "affected_selectors": ["/admin?tab=products", "/admin?tab=marketing"]}
+    ],
+    "design_issues": []
+  },
+  "test_report_links": [],
+  "action_items": [
+    "(optional, consistency) Switch AdminCreditPage.js and AdminReturnsPage.js from setInterval to useLive so they also react instantly to admin-data-changed events.",
+    "(optional, consistency) Extend AdminPage.refreshLive() to cover the same resources as fetchData (or just call fetchData from useLive) so changes made by another admin/API client appear within the poll window on the products / marketing / settings tabs without a reload."
+  ],
+  "critical_code_review_comments": [
+    "live.js axios interceptor is global (installed once) and fires on any non-GET across the whole app - clean, idempotent via the installed flag. Good.",
+    "AdminSidebar correctly hidden on /admin/orders and /admin/chats (App.js showAdminPanel check).",
+    "useVisibleNav filters items by feature flag so toggling a function off/on in /admin/features immediately removes/adds the corresponding sidebar entry and header badge via the FeaturesContext - verified manually by inspection.",
+    "RegionWarehouses persists region to localStorage (observed - selecting Москва survived reload), and warehouses-map-link builds /warehouses?region=<encoded>. WarehousesMapPage?region= pre-filtering is wired per the requirement.",
+    "PartsHubPage uses setParams({mode}, {replace:true}) and renders both panels with CSS hidden class for the inactive one, so switching modes preserves component state including typed text and chat history - confirmed TEST_memory_preserved stays in ai-input after ai->params->ai switch.",
+    "Manager role: Header shows parts-hub-link pointing to /parts, PartsHubPage renders only the AI panel (modes/finder hidden). Confirmed.",
+    "Guest: parts-hub-link-guest visible; region-selector intentionally hidden for guests + admins (only `user && !isAdmin` in Header.js line 365) — matches spec which required it only for client.",
+    "No new backend endpoints added; existing admin APIs still respond (admin/attention, admin/carts, categories, promo-codes etc. all 200/400 for bad payloads, not 5xx)."
+  ],
+  "updated_files": [],
+  "success_rate": {"backend": "N/A (not tested, no backend changes)", "frontend": "100% of spec items verified"},
+  "test_credentials": "admin@avarus.ru/admin OK; user@demo.com/demo123 OK; manager@avarus.ru/manager123 OK",
+  "seed_data_creation": "Created and deleted TEST_RT_CAT_<ts> category during real-time check. No lingering test data.",
+  "retest_needed": false,
+  "should_main_agent_self_test": true,
+  "context_for_next_testing_agent": "All structural selectors are in place (data-testid attributes match the task spec exactly). The two optional integration suggestions above are pure polish - everything the user asked for (merged PartsHub, merged region+warehouses, admin panel with sidebar, real-time auto-refresh via useLive) is functional. attention-block testid is only in DOM when the admin tab is 'overview' - shadcn TabsContent unmounts inactive tabs. If you want to verify it, navigate to /admin (default overview) and wait ~5s for the initial loader to resolve.",
+  "rca of the issue": "No blocking issues found."
+}
