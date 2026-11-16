@@ -354,3 +354,13 @@ E-commerce platform for truck spare parts with a comprehensive admin panel. Russ
 - Backend (`routes/staff.py`): `GET /manager/products` (+category_id, manufacturer, sort, client_id, ids), `GET /manager/products/filters`, `GET /manager/products/{id}`, `POST /manager/clients/{id}/selection` (posts the list with client prices to the client's chat), `GET/POST/PUT/DELETE /manager/tasks` (collection `manager_tasks`). Client price = individual price or list price → promo → personal discount, not below `min_price` (approximation of order pricing).
 - Shared order draft `lib/managerDraft.js` (localStorage `manager_draft`: items + clientId) used by showcase, product page and tab «Товары и новый заказ»; «Повторить заказ» in the orders tab; tab «Задачи» with overdue badge.
 - Tests: `tests/test_iter122_manager_showcase.py` (temp manager/client/product).
+
+## Selection in client account, test manager, manager tests repaired (June 2026, iteration_122 report)
+- «Подборка для клиента» no longer goes to chat: `POST /api/manager/clients/{id}/selection` saves a doc in `manager_selections` ({id, user_id, manager_id, manager_name, note, items[{product_id, quantity}], created_at, deleted_at}) and notifies the client (link /account).
+- Client: `GET /api/my-selections` (live name/stock + client price), `DELETE /api/my-selections/{id}` (soft). UI `components/ManagerSelections.js` on /account: add one / add all to cart, delete.
+- Repeat order (moves goods to manager draft) and draft persistence verified in UI (iteration_122: 8/8 flows).
+- Tests: persistent test manager test.manager@avarus.ru + bound client test.client@avarus.ru (see test_credentials.md); login tests use it. Tests that need the owner's manager@avarus.ru sign a token in `tests/conftest.py` (`TEST_DEMO_MANAGER_TOKEN`) — his password is never needed or changed.
+
+### Backlog
+- P1: postponed code-review items (split BonusTab / CRMTab / AdminChatsPage, complex functions in admin.py / documents.py, index keys)
+- P2: manager sees whether the client opened / ordered from a selection; brute-force lockout on login; remove `users.password_plain`
