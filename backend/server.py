@@ -110,6 +110,18 @@ async def check_expired_orders_task():
             await asyncio.sleep(60)  # Wait 1 minute on error before retrying
 
 
+async def sync_admin_password():
+    """Applies ADMIN_PASSWORD once per value, so a later change made in the profile is not overwritten."""
+    from database import hash_password, verify_password
+    password = os.environ["ADMIN_PASSWORD"]
+    marker = await db.settings.find_one({"_id": "admin_password_sync"})
+    if marker and verify_password(password, marker["applied"]):
+        return
+    await db.users.update_one({"email": "admin@avarus.ru"}, {"$set": {"password": hash_password(password)}, "$unset": {"password_plain": "", "plain_password": ""}})
+    await db.settings.update_one({"_id": "admin_password_sync"}, {"$set": {"applied": hash_password(password)}}, upsert=True)
+    logger.info("Admin password updated from ADMIN_PASSWORD")
+
+
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     """Application lifespan manager - starts background tasks"""
@@ -129,6 +141,11 @@ async def lifespan(app: FastAPI):
         await db.users.update_many({"customer_status": {"$in": ["partner", "opt", "b2b"]}}, {"$set": {"customer_status": "wholesale"}})
     except Exception as e:
         logger.error(f"Customer status migration failed: {e}")
+
+    try:
+        await sync_admin_password()
+    except Exception as e:
+        logger.error(f"Admin password sync failed: {e}")
 
     try:
         await migrate_regions()

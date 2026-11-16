@@ -2,7 +2,7 @@
 
 ## Admin
 - **Email**: admin@avarus.ru
-- **Password**: admin
+- **Password**: value of the secret `ADMIN_PASSWORD` (env var, read it with `os.environ["ADMIN_PASSWORD"]`; never print it). The old password `admin` no longer works.
 - **Role**: admin
 
 ## Client (with completed orders, has bonus points, used for return tests)
@@ -21,8 +21,9 @@
 ## Passwords for backend autotests
 Tests no longer contain passwords. They read them from `/app/backend/tests/.env.test` (loaded by `tests/conftest.py`, the file is NOT committed to git). If the file is missing, recreate it:
 ```
-TEST_ADMIN_PASSWORD=<admin@avarus.ru password>
 TEST_CLIENT_PASSWORD=<user@demo.com password>
 TEST_CLIENT2_PASSWORD=<0x0errorr@gmail.com password>
 TEST_MANAGER_PASSWORD=<manager@avarus.ru password>
 ```
+
+The admin password for tests is taken from `ADMIN_PASSWORD` automatically by `tests/conftest.py`.

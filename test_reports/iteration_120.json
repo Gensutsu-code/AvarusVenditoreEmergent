@@ -1,0 +1,30 @@
+{
+  "summary": "Iter 120 verified cookie-based auth, CSRF origin guard, Garage brand/model split, and Garage->Finder 'Подобрать запчасть' flow. 13/13 backend pytest cases passed (new file test_iter120_cookie_garage.py). Frontend end-to-end flows passed for client/admin/manager: cookie login sets httpOnly+Secure+SameSite=None, localStorage.token stays null, document.cookie does NOT expose access_token, session survives reload and new tab in the same context, register immediately logs the user in, legacy localStorage.token is silently removed by the frontend, all three role logouts clear the cookie and protected pages redirect to /login. Corrupt access_token cookie does NOT cause an infinite /auth/me or /auth/logout loop (only 2 /me requests observed, 0 /logout). Garage modal exposes separate garage-brand-input and garage-model-input; saving without brand is blocked and shows the error modal; saving brand MAN + model 'TGX 18.440' produces card titled 'MAN TGX 18.440'; edit modal pre-fills brand/model correctly. 'Подобрать запчасть' button on the vehicle card routes to /parts?mode=params&vehicle=<id> and pre-fills finder-vin, finder-brand, finder-model, finder-year. Legacy name-only vehicle creation still works via API (DAF XF 105).",
+  "backend_issues": {"critical": [], "minor": []},
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [],
+    "design_issues": []
+  },
+  "test_report_links": [
+    "/app/backend/tests/test_iter120_cookie_garage.py"
+  ],
+  "action_items": [],
+  "critical_code_review_comments": [
+    "clear_auth_cookie uses delete_cookie with SameSite=None; browsers also need Secure for SameSite=None delete - currently passed (secure=True). OK.",
+    "cookie_origin_guard only runs when the request carries the cookie AND has no Authorization header; this is correct but the check 'authorization not in request.headers' is case-sensitive on raw header name - FastAPI lower-cases header names, so this works, but a direct dict lookup in Starlette is already lower-case-safe. No issue.",
+    "GET /api/auth/me returns 403 when no credentials and 401 when invalid credentials, which matches /app/auth_testing.md.",
+    "Corrupt cookie leaves the user in a logged-out UI state but the stale garbage cookie is NOT auto-cleared by the frontend (next /auth/me still returns 401 until the user manually logs in/out). Low-impact but worth noting - frontend could POST /auth/logout on 401 to clean the stale cookie proactively."
+  ],
+  "updated_files": [
+    "/app/backend/tests/test_iter120_cookie_garage.py",
+    "/app/test_reports/iteration_120.json"
+  ],
+  "success_rate": {"backend": "100% (13/13)", "frontend": "100%"},
+  "test_credentials": "Used /app/memory/test_credentials.md (admin@avarus.ru/admin, user@demo.com/demo123, manager@avarus.ru/manager123). No passwords changed.",
+  "seed_data_creation": "Created and deleted: garage vehicle VIN WMA06XZZ7KP654321 for user@demo.com; one TEST_<ts>@test.local registration (removed via admin). Found and removed leftover TEST_ users from prior iterations (TEST_pf_regular@example.com, TEST_user_b4743c51@test.com, TEST_user_52e55749@test.com). No real user data touched.",
+  "retest_needed": false,
+  "main_agent_can_self_test": true,
+  "context_for_next_testing_agent": "Cookie auth, CSRF origin guard and garage brand/model are all live and green. Backend regression coverage: /app/backend/tests/test_iter120_cookie_garage.py (13 cases). Known UX nuance (not a bug): with a corrupt access_token cookie, the backend returns 401 and the UI falls back to guest mode, but the stale cookie remains in the browser until the next successful login/logout - we observed only 2 /auth/me calls and 0 /auth/logout calls, so there's no loop. 'Подобрать запчасть' buttons on garage cards are hidden if admin disables the parts-finder feature on /admin/features (not re-tested here; we did not toggle that switch).",
+  "rca of the issue": "N/A - no issues."
+}

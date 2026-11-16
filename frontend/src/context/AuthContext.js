@@ -24,6 +24,7 @@ export const AuthProvider = ({ children }) => {
       setUser(res.data);
     } catch (err) {
       setUser(null);
+      if (err.response?.status === 401) axios.post(`${API}/auth/logout`).catch(() => {});
     } finally {
       setLoading(false);
     }
