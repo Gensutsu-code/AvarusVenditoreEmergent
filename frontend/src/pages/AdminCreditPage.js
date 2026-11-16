@@ -56,7 +56,7 @@ export default function AdminCreditPage() {
     if (authLoading) return;
     if (!user || user.role !== 'admin') { navigate('/login'); return; }
     fetchAll();
-    const i = setInterval(fetchAll, 30000);
+    const i = setInterval(fetchAll, 10000);
     return () => clearInterval(i);
   }, [user, authLoading, navigate]);
 

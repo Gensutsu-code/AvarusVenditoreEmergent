@@ -1,8 +1,9 @@
 import { Link, useLocation, useNavigate } from 'react-router-dom';
-import { ShoppingCart, User, Search, LogOut, Heart, Package, Gift, Newspaper, Menu, X, MessageCircle, Bell, Wallet, CreditCard, Wrench, MapPin, ChevronDown } from 'lucide-react';
+import { ShoppingCart, User, Search, LogOut, Heart, Package, Gift, Newspaper, Menu, X, MessageCircle, Bell, Wallet, CreditCard } from 'lucide-react';
 import { AdminDesktopNav, AdminMobileNav } from './admin/AdminNav';
-import { useRegion } from '../context/RegionContext';
-import { Map as MapIcon, Sparkles as AiIcon, Briefcase as ManagerIcon, Warehouse as GarageIcon } from 'lucide-react';
+import { RegionWarehouses } from './RegionWarehouses';
+import { useFeatures } from '../context/FeaturesContext';
+import { Sparkles as AiIcon, Briefcase as ManagerIcon, Warehouse as GarageIcon } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { useCart } from '../context/CartContext';
 import { Button } from './ui/button';
@@ -14,48 +15,6 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { toast } from 'sonner';
 import axios from 'axios';
 import { playNotificationSound, showPushNotification, requestNotificationPermission } from '../utils/notifications';
-
-// Region selector (client region for delivery estimates)
-const RegionSelector = () => {
-  const { region, setRegion, regions } = useRegion();
-  const [open, setOpen] = useState(false);
-  const ref = useRef(null);
-  useEffect(() => {
-    const h = (e) => { if (ref.current && !ref.current.contains(e.target)) setOpen(false); };
-    document.addEventListener('mousedown', h);
-    return () => document.removeEventListener('mousedown', h);
-  }, []);
-  if (!regions || regions.length === 0) return null;
-  return (
-    <div className="relative" ref={ref}>
-      <button
-        onClick={() => setOpen(o => !o)}
-        className="h-10 px-3 rounded-xl flex items-center gap-1.5 bg-white/95 border border-slate-200 text-slate-600 hover:border-teal-300 hover:text-teal-600 transition-all duration-200 text-sm font-medium max-w-[180px]"
-        data-testid="region-selector"
-        title="Ваш регион для расчёта доставки"
-      >
-        <MapPin className="w-4 h-4 text-teal-500 flex-shrink-0" />
-        <span className="truncate">{region || 'Выберите регион'}</span>
-        <ChevronDown className="w-3.5 h-3.5 flex-shrink-0 opacity-60" />
-      </button>
-      {open && (
-        <div className="absolute left-0 mt-1 w-56 bg-white border border-slate-200 rounded-xl shadow-xl z-50 py-1 max-h-72 overflow-y-auto" data-testid="region-menu">
-          {regions.map((r) => (
-            <button
-              key={r}
-              onClick={() => { setRegion(r); setOpen(false); }}
-              className={`w-full text-left px-4 py-2 text-sm flex items-center gap-2 hover:bg-teal-50 ${region === r ? 'text-teal-600 font-semibold bg-teal-50/50' : 'text-slate-600'}`}
-              data-testid={`region-option-${r}`}
-            >
-              <MapPin className="w-3.5 h-3.5 opacity-60" /> {r}
-            </button>
-          ))}
-        </div>
-      )}
-    </div>
-  );
-};
-
 
 // Expandable Profile Menu Component
 const ExpandableProfileMenu = ({ onLogout, unreadCount = 0 }) => {
@@ -212,6 +171,8 @@ const ExpandableProfileMenu = ({ onLogout, unreadCount = 0 }) => {
 export const Header = () => {
   const { user, logout } = useAuth();
   const { cartCount } = useCart();
+  const { isOn } = useFeatures();
+  const showPartsHub = isOn('ai_assistant') || isOn('parts_finder');
   const location = useLocation();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [notificationCount, setNotificationCount] = useState(0);
@@ -375,7 +336,7 @@ export const Header = () => {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex items-center h-16 gap-2">
           <Link to="/manager" className="mr-auto text-xl font-bold uppercase tracking-tight bg-gradient-to-r from-emerald-500 to-teal-600 bg-clip-text text-transparent" data-testid="logo-link">avopt.store</Link>
           {mLink('/manager', 'Кабинет менеджера', ManagerIcon, 'manager-cabinet-link')}
-          {mLink('/assistant', 'ИИ-помощник', AiIcon, 'ai-assistant-link')}
+          {isOn('ai_assistant') && mLink('/parts', 'ИИ-помощник', AiIcon, 'parts-hub-link')}
           {mLink('/account', 'Профиль', User, 'manager-profile-link')}
           <button type="button" onClick={logout} className="p-2 rounded-xl text-slate-500 hover:text-red-500 hover:bg-red-100 transition-colors duration-200" title="Выйти" data-testid="logout-button">
             <LogOut className="w-4 h-4" />
@@ -414,18 +375,11 @@ export const Header = () => {
                   <ManagerIcon className="w-4 h-4" /><span className="hidden lg:inline">Кабинет менеджера</span>
                 </Link>
               )}
-              <Link to="/assistant" className="h-10 px-3 rounded-xl flex items-center gap-1.5 bg-white/95 border border-teal-200 text-teal-600 hover:border-teal-400 transition-colors duration-200 text-sm font-semibold whitespace-nowrap" title="ИИ-помощник по подбору запчастей" data-testid="ai-assistant-link">
-                <AiIcon className="w-4 h-4" /><span className="hidden min-[1700px]:inline">ИИ-помощник</span>
-              </Link>
-              <NavLink to="/parts-finder" data-testid="parts-finder-link" title="Подбор запчастей">
-                <motion.div 
-                  className="h-10 px-3 rounded-xl flex items-center gap-1.5 bg-gradient-to-br from-teal-500 to-emerald-500 text-white hover:shadow-lg hover:shadow-teal-500/30 transition-all duration-300 font-semibold text-sm"
-                  whileHover={{ scale: 1.05 }}
-                  whileTap={{ scale: 0.95 }}
-                >
-                  <Wrench className="w-4 h-4" /> Подбор
-                </motion.div>
-              </NavLink>
+              {showPartsHub && (
+                <Link to="/parts" className="h-10 px-3 rounded-xl flex items-center gap-1.5 bg-gradient-to-br from-teal-500 to-emerald-500 text-white hover:shadow-lg hover:shadow-teal-500/30 transition-shadow duration-300 font-semibold text-sm whitespace-nowrap" title="Подбор запчастей: ИИ-помощник и подбор по параметрам" data-testid="parts-hub-link">
+                  <AiIcon className="w-4 h-4" /> Подбор
+                </Link>
+              )}
               <NavLink to="/catalog" data-testid="search-page-link">
                 <motion.div 
                   className="w-10 h-10 rounded-xl flex items-center justify-center bg-gradient-to-br from-teal-50 to-emerald-50 text-teal-600 border-2 border-teal-200 hover:border-teal-400 hover:shadow-lg hover:shadow-teal-500/20 transition-all duration-300"
@@ -435,10 +389,7 @@ export const Header = () => {
                   <Search className="w-5 h-5" />
                 </motion.div>
               </NavLink>
-              <RegionSelector />
-              <Link to="/warehouses" className="h-10 px-3 rounded-xl flex items-center gap-1.5 bg-white/95 border border-slate-200 text-slate-600 hover:border-teal-300 hover:text-teal-600 transition-colors duration-200 text-sm font-medium whitespace-nowrap" title="Склады и пункты выдачи на карте" data-testid="warehouses-map-link">
-                <MapIcon className="w-4 h-4 text-teal-500" /><span className="hidden min-[1700px]:inline">Склады</span>
-              </Link>
+              <RegionWarehouses />
             </div>
           )}
           
@@ -655,9 +606,11 @@ export const Header = () => {
               </>
             ) : (
               <div className="flex items-center gap-2 ml-auto">
-                <Link to="/assistant" className="h-10 px-3 rounded-xl flex items-center gap-1.5 bg-white/95 border border-teal-200 text-teal-600 hover:border-teal-400 transition-colors duration-200 text-sm font-semibold whitespace-nowrap" title="ИИ-помощник по подбору запчастей" data-testid="ai-assistant-link-guest">
-                  <AiIcon className="w-4 h-4" /><span className="hidden sm:inline">ИИ-помощник</span>
-                </Link>
+                {showPartsHub && (
+                  <Link to="/parts" className="h-10 px-3 rounded-xl flex items-center gap-1.5 bg-white/95 border border-teal-200 text-teal-600 hover:border-teal-400 transition-colors duration-200 text-sm font-semibold whitespace-nowrap" title="Подбор запчастей: ИИ-помощник и подбор по параметрам" data-testid="parts-hub-link-guest">
+                    <AiIcon className="w-4 h-4" /><span className="hidden sm:inline">Подбор запчастей</span>
+                  </Link>
+                )}
                 <Link to="/login" data-testid="login-link">
                   <motion.div whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}>
                     <Button className="font-bold uppercase tracking-wide rounded-xl shadow-lg shadow-teal-500/30 transition-all duration-300 bg-gradient-to-r from-teal-500 to-emerald-500 hover:from-teal-600 hover:to-emerald-600 text-white">
@@ -705,10 +658,7 @@ export const Header = () => {
             <div className="p-4 space-y-2">
               {user && !isAdmin && (
                 <>
-                <div className="pb-2 mb-1 border-b border-slate-100"><RegionSelector /></div>
-                <Link to="/warehouses" onClick={() => setMobileMenuOpen(false)} className="flex items-center gap-3 p-3 rounded-xl text-slate-600 hover:bg-slate-50" data-testid="warehouses-map-link-mobile">
-                  <MapIcon className="w-5 h-5 text-teal-500" /><span className="font-medium">Склады на карте</span>
-                </Link>
+                <div className="pb-2 mb-1 border-b border-slate-100"><RegionWarehouses onNavigate={() => setMobileMenuOpen(false)} /></div>
                 </>
               )}
               {user ? (
@@ -722,11 +672,7 @@ export const Header = () => {
                         Каталог
                       </Link>
                       {user?.role === 'manager' && <Link to="/manager" onClick={() => setMobileMenuOpen(false)} className="flex items-center gap-3 p-3 rounded-xl text-slate-800 hover:bg-slate-50 font-semibold" data-testid="manager-cabinet-link-mobile"><ManagerIcon className="w-5 h-5" /><span>Кабинет менеджера</span></Link>}
-                      <Link to="/assistant" onClick={() => setMobileMenuOpen(false)} className="flex items-center gap-3 p-3 rounded-xl text-teal-600 hover:bg-teal-50 font-medium" data-testid="ai-assistant-link-mobile"><AiIcon className="w-5 h-5" /><span>ИИ-помощник</span></Link>
-                      <Link to="/parts-finder" onClick={() => setMobileMenuOpen(false)} className="flex items-center gap-3 p-3 rounded-xl text-teal-600 hover:bg-teal-50 font-medium" data-testid="parts-finder-link-mobile">
-                        <Wrench className="w-5 h-5" />
-                        Подбор запчастей
-                      </Link>
+                      {showPartsHub && <Link to="/parts" onClick={() => setMobileMenuOpen(false)} className="flex items-center gap-3 p-3 rounded-xl text-teal-600 hover:bg-teal-50 font-medium" data-testid="parts-hub-link-mobile"><AiIcon className="w-5 h-5" /><span>Подбор запчастей</span></Link>}
                       <Link to="/garage" onClick={() => setMobileMenuOpen(false)} className="flex items-center gap-3 p-3 rounded-xl text-slate-600 hover:bg-slate-50" data-testid="garage-link-mobile"><GarageIcon className="w-5 h-5" /><span className="font-medium">Мой гараж</span></Link>
                       <Link to="/orders" onClick={() => setMobileMenuOpen(false)} className="flex items-center gap-3 p-3 rounded-xl text-slate-600 hover:bg-slate-50">
                         <Package className="w-5 h-5" />
@@ -776,11 +722,7 @@ export const Header = () => {
                     <Search className="w-5 h-5" />
                     Каталог
                   </Link>
-                  <Link to="/assistant" onClick={() => setMobileMenuOpen(false)} className="flex items-center gap-3 p-3 rounded-xl text-teal-600 hover:bg-teal-50 font-medium" data-testid="ai-assistant-link-mobile"><AiIcon className="w-5 h-5" /><span>ИИ-помощник</span></Link>
-                      <Link to="/parts-finder" onClick={() => setMobileMenuOpen(false)} className="flex items-center gap-3 p-3 rounded-xl text-teal-600 hover:bg-teal-50 font-medium" data-testid="parts-finder-link-mobile">
-                    <Wrench className="w-5 h-5" />
-                    Подбор запчастей
-                  </Link>
+                  {showPartsHub && <Link to="/parts" onClick={() => setMobileMenuOpen(false)} className="flex items-center gap-3 p-3 rounded-xl text-teal-600 hover:bg-teal-50 font-medium" data-testid="parts-hub-link-mobile"><AiIcon className="w-5 h-5" /><span>Подбор запчастей</span></Link>}
                   <Link to="/news" onClick={() => setMobileMenuOpen(false)} className="flex items-center gap-3 p-3 rounded-xl text-slate-600 hover:bg-slate-50">
                     <Newspaper className="w-5 h-5" />
                     Новости

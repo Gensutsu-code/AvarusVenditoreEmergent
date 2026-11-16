@@ -46,11 +46,11 @@ import CreditPage from "./pages/CreditPage";
 import AdminCreditPage from "./pages/AdminCreditPage";
 import ContactPage from "./pages/ContactPage";
 import WarehousesMapPage from "./pages/WarehousesMapPage";
-import PartsFinderPage from "./pages/PartsFinderPage";
-import AiAssistantPage from "./pages/AiAssistantPage";
 import AdminStaffPage from "./pages/AdminStaffPage";
 import ManagerPage from "./pages/ManagerPage";
 import GaragePage from "./pages/GaragePage";
+import PartsHubPage from "./pages/PartsHubPage";
+import { AdminSidebar } from "./components/admin/AdminSidebar";
 
 const API = `${process.env.REACT_APP_BACKEND_URL}/api`;
 
@@ -130,11 +130,12 @@ function AppContent() {
   const isPageDown = pageMaint?.enabled && !isAdmin && !isProtectedRoute;
 
   // Managers only have their cabinet, the AI assistant and their profile
-  const managerPaths = ['/manager', '/assistant', '/account'];
+  const managerPaths = ['/manager', '/parts', '/assistant', '/account'];
   if (user?.role === 'manager' && !managerPaths.some((p) => location.pathname === p || location.pathname.startsWith(`${p}/`))) {
     return <Navigate to="/manager" replace />;
   }
   const isManager = user?.role === 'manager';
+  const showAdminPanel = isAdmin && location.pathname.startsWith('/admin') && !['/admin/orders', '/admin/chats'].includes(location.pathname);
 
   // Pages of a switched-off function send everyone back to the start page
   if (featuresLoaded && blockedFeature(location.pathname)) {
@@ -145,7 +146,9 @@ function AppContent() {
     <div className={`min-h-screen flex flex-col ${isDark ? 'bg-zinc-950' : 'bg-gradient-to-br from-cyan-50 via-pink-50 to-cyan-50'}`}>
       <Header />
       {!isAdmin && !isManager && location.pathname !== '/contact' && isOn('promo_banner') && <FloatingPromoBanner />}
-      <main className="flex-1">
+      <main className="flex-1 md:flex">
+        {showAdminPanel && <AdminSidebar />}
+        <div className="flex-1 min-w-0">
         {isPageDown ? (
           <PageMaintenanceBanner message={pageMaint.message} />
         ) : (
@@ -160,8 +163,9 @@ function AppContent() {
           <Routes location={location}>
           <Route path="/" element={<HomePage />} />
           <Route path="/catalog" element={<CatalogPage />} />
-          <Route path="/parts-finder" element={<PartsFinderPage />} />
-          <Route path="/assistant" element={<AiAssistantPage />} />
+          <Route path="/parts" element={<PartsHubPage />} />
+          <Route path="/parts-finder" element={<Navigate to="/parts?mode=params" replace />} />
+          <Route path="/assistant" element={<Navigate to="/parts?mode=ai" replace />} />
           <Route path="/cart" element={<CartPage />} />
           <Route path="/checkout" element={<Navigate to="/cart" replace />} />
           <Route path="/login" element={<LoginPage />} />
@@ -198,6 +202,7 @@ function AppContent() {
           </motion.div>
         </AnimatePresence>
         )}
+        </div>
       </main>
       {!isAdmin && !isManager && <Footer />}
       {!isAdmin && !isManager && isOn('chat') && <ChatWidget />}

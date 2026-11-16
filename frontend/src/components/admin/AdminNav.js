@@ -1,7 +1,8 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import axios from 'axios';
-import { ChevronDown, Search, LogOut, AlertCircle, ArrowRight, CheckCircle2 } from 'lucide-react';
+import { Search, LogOut, AlertCircle, ArrowRight, CheckCircle2, LayoutGrid } from 'lucide-react';
+import { useLive } from '../../lib/live';
 import { useFeatures } from '../../context/FeaturesContext';
 import { CommandDialog, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from '../ui/command';
 import { ADMIN_PINNED, ADMIN_GROUPS, ADMIN_SEARCH_EXTRA, ATTENTION_ITEMS, sumCounts, isNavActive } from '../../lib/adminNav';
@@ -14,9 +15,8 @@ export const useAdminAttention = () => {
   useEffect(() => {
     const load = () => axios.get(`${API}/admin/attention`).then((r) => setCounts(r.data || {})).catch(() => {});
     load();
-    const t = setInterval(load, 30000);
-    return () => clearInterval(t);
   }, []);
+  useLive(() => axios.get(`${API}/admin/attention`).then((r) => setCounts(r.data || {})).catch(() => {}), 10000);
   return counts;
 };
 
@@ -26,7 +26,7 @@ const Badge = ({ n, testid }) => (n > 0 ? (
   </span>
 ) : null);
 
-const useVisibleNav = () => {
+export const useVisibleNav = () => {
   const { isEnabled } = useFeatures();
   return useMemo(() => {
     const ok = (i) => !i.feature || isEnabled(i.feature);
@@ -78,43 +78,12 @@ const AdminSearch = ({ groups, pinned }) => {
 
 const linkCls = (active) => `px-3 py-2 rounded-xl text-sm font-medium flex items-center gap-1.5 transition-colors duration-200 ${active ? 'bg-teal-50 text-teal-700' : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900'}`;
 
-const GroupMenu = ({ group, counts, location }) => {
-  const [open, setOpen] = useState(false);
-  const active = group.items.some((i) => isNavActive(location, i.to));
-  const total = group.items.reduce((s, i) => s + sumCounts(counts, i.counts), 0);
-  useEffect(() => { setOpen(false); }, [location.pathname, location.search]);
-  return (
-    <div className="relative" onMouseEnter={() => setOpen(true)} onMouseLeave={() => setOpen(false)}>
-      <button type="button" onClick={() => setOpen((v) => !v)} className={linkCls(active)} aria-expanded={open} data-testid={`admin-nav-group-${group.id}`}>
-        {group.label}
-        <Badge n={total} testid={`admin-nav-group-badge-${group.id}`} />
-        <ChevronDown className={`w-3.5 h-3.5 transition-transform duration-200 ${open ? 'rotate-180' : ''}`} />
-      </button>
-      {open && (
-        <div className="absolute right-0 top-full pt-2 z-50" data-testid={`admin-nav-menu-${group.id}`}>
-          <div className="w-64 p-1.5 rounded-2xl bg-white border border-slate-200 shadow-xl">
-            {group.items.map((i) => {
-              const Icon = i.icon;
-              const on = isNavActive(location, i.to);
-              return (
-                <Link key={i.to} to={i.to} className={`flex items-center gap-2.5 px-3 py-2.5 rounded-xl text-sm transition-colors duration-200 ${on ? 'bg-teal-50 text-teal-700 font-semibold' : 'text-slate-700 hover:bg-slate-50'}`} data-testid={i.testid || `admin-nav-item-${i.to}`}>
-                  <Icon className="w-4 h-4 text-slate-400" />
-                  <span className="flex-1">{i.label}</span>
-                  <Badge n={sumCounts(counts, i.counts)} />
-                </Link>
-              );
-            })}
-          </div>
-        </div>
-      )}
-    </div>
-  );
-};
-
 export const AdminDesktopNav = ({ onLogout, notifications }) => {
   const location = useLocation();
   const counts = useAdminAttention();
   const { pinned, groups } = useVisibleNav();
+  const inPanel = location.pathname.startsWith('/admin') && !pinned.some((i) => location.pathname === i.to);
+  const panelCount = groups.reduce((s, g) => s + g.items.reduce((n, i) => n + sumCounts(counts, i.counts), 0), 0);
   return (
     <div className="flex items-center gap-1 ml-auto" data-testid="admin-nav">
       {pinned.map((i) => {
@@ -126,7 +95,9 @@ export const AdminDesktopNav = ({ onLogout, notifications }) => {
         );
       })}
       <span className="w-px h-6 bg-slate-200 mx-1" />
-      {groups.map((g) => <GroupMenu key={g.id} group={g} counts={counts} location={location} />)}
+      <Link to="/admin" className={linkCls(inPanel)} data-testid="admin-panel-link">
+        <LayoutGrid className="w-4 h-4" />Админ панель<Badge n={panelCount} testid="admin-panel-link-badge" />
+      </Link>
       <span className="w-px h-6 bg-slate-200 mx-1" />
       <AdminSearch groups={groups} pinned={pinned} />
       {notifications}

@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import axios from 'axios';
+import { useLive } from '../../lib/live';
 import { toast } from 'sonner';
 import { ShoppingCart, Check, XCircle, Loader2 } from 'lucide-react';
 import { Button } from '../ui/button';
@@ -31,6 +32,7 @@ export const CartDiscountRequestsSection = ({ isDark = false }) => {
     finally { setLoading(false); }
   }, []);
   useEffect(() => { load(); }, [load]);
+  useLive(load, 10000);
 
   const act = async (fn, okMsg) => {
     setProcessing(true);

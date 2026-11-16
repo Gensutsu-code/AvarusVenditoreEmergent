@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import axios from 'axios';
+import { useLive } from '../lib/live';
 import { motion } from 'framer-motion';
 import { Users, Package, ShoppingBag, User, Plus, Pencil, Trash2, Save, Eye, FolderOpen, Megaphone, Upload, MessageCircle, Send, BarChart3, Download, Pin, Tag, X, Copy, Gift, ChevronDown, ChevronUp, Paperclip, Play, ZoomIn, ZoomOut, Settings, CreditCard, FileText, ScrollText, RotateCcw, Merge, Truck, ListChecks, Warehouse, LayoutDashboard, Search } from 'lucide-react';
 import { Button } from '../components/ui/button';
@@ -301,8 +302,28 @@ export default function AdminPage() {
     if ((searchParams.get('tab') || 'overview') !== activeTab) setSearchParams({ tab: activeTab }, { replace: true });
   }, [activeTab]); // eslint-disable-line react-hooks/exhaustive-deps
 
+  const loadedOnceRef = useRef(false);
+  const refreshLive = async () => {
+    if (!loadedOnceRef.current) return;
+    try {
+      const [statsRes, usersRes, ordersRes, programsRes, redemptionsRes] = await Promise.all([
+        axios.get(`${API}/admin/stats`),
+        axios.get(`${API}/admin/users`),
+        axios.get(`${API}/admin/orders`),
+        axios.get(`${API}/admin/bonus/programs`),
+        axios.get(`${API}/admin/prize-redemptions`),
+      ]);
+      setStats(statsRes.data);
+      setUsers(usersRes.data);
+      setOrders(ordersRes.data);
+      setBonusPrograms(Array.isArray(programsRes.data) ? programsRes.data : programsRes.data.programs || []);
+      setPrizeRedemptions(redemptionsRes.data?.redemptions || []);
+    } catch (err) { /* next tick retries */ }
+  };
+  useLive(refreshLive, 15000, user?.role === 'admin');
+
   const fetchData = async () => {
-    setLoading(true);
+    if (!loadedOnceRef.current) setLoading(true);
     try {
       const [statsRes, productsRes, categoriesRes, usersRes, ordersRes, bannerRes, telegramRes, chatsRes, bonusProgramsRes, bonusHistoryRes, partnersRes, prizeRedemptionsRes, paymentRes, newsRes] = await Promise.all([
         axios.get(`${API}/admin/stats`),
@@ -351,6 +372,7 @@ export default function AdminPage() {
       console.error('Failed to fetch admin data', err);
       toast.error('Ошибка загрузки данных');
     } finally {
+      loadedOnceRef.current = true;
       setLoading(false);
     }
   };

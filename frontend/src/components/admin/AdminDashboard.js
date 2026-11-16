@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
+import { useLive } from '../../lib/live';
 import { motion } from 'framer-motion';
 import { TrendingUp, ShoppingBag, Clock, PackageX, AlertTriangle, CreditCard, Wallet, ArrowRight, BarChart3 } from 'lucide-react';
 
@@ -42,6 +43,7 @@ export default function AdminDashboard({ onNavigate }) {
       .finally(() => { if (mounted) setLoading(false); });
     return () => { mounted = false; };
   }, []);
+  useLive(() => axios.get(`${API}/admin/dashboard`).then((r) => setData(r.data)).catch(() => {}), 30000);
 
   if (loading) {
     return (

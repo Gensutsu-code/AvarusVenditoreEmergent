@@ -11,7 +11,7 @@ export default function WarehousesMapPage() {
   const { region, setRegion } = useRegion();
   const [warehouses, setWarehouses] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [filter, setFilter] = useState('');
+  const [filter, setFilter] = useState(() => new URLSearchParams(window.location.search).get('region') || '');
   const [activeId, setActiveId] = useState(null);
 
   useEffect(() => {

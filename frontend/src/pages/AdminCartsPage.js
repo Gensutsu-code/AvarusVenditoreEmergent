@@ -7,6 +7,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { ShoppingCart, ChevronDown, ChevronUp, Trash2, Plus, Minus, Search, Package, User, X, Edit3, Check } from 'lucide-react';
 import { toast } from 'sonner';
 import axios from 'axios';
+import { useLive } from '../lib/live';
 
 const API = process.env.REACT_APP_BACKEND_URL + '/api';
 
@@ -37,9 +38,10 @@ export default function AdminCartsPage() {
     fetchCarts();
   }, [user, authLoading, navigate]);
 
+  useLive(() => axios.get(`${API}/admin/carts`).then((r) => setCarts(r.data.carts || [])).catch(() => {}), 10000, user?.role === 'admin');
+
   const fetchCarts = async () => {
     try {
-      setLoading(true);
       const res = await axios.get(`${API}/admin/carts`);
       setCarts(res.data.carts || []);
     } catch (err) {

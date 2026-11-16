@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import axios from 'axios';
+import { useLive } from '../../lib/live';
 import { toast } from 'sonner';
 import { Button } from '../ui/button';
 
@@ -18,6 +19,7 @@ export const CashbackWithdrawals = () => {
     axios.get(`${API}/admin/rewards/withdrawals`).then((r) => setItems(r.data.withdrawals || [])).catch(() => {});
   }, []);
   useEffect(() => { load(); }, [load]);
+  useLive(load, 10000);
 
   const update = async (w, status) => {
     try {

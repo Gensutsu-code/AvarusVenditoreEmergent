@@ -34,7 +34,7 @@ export default function AdminReturnsPage() {
       return;
     }
     fetchReturns();
-    const interval = setInterval(fetchReturns, 30000);
+    const interval = setInterval(fetchReturns, 10000);
     return () => clearInterval(interval);
   }, [user, authLoading, navigate]);
 

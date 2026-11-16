@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import { Navigate } from 'react-router-dom';
 import axios from 'axios';
+import { useLive } from '../lib/live';
 import { toast } from 'sonner';
 import { Users, Plus, Pencil, Trash2, ArrowLeft, UserPlus, UserMinus, Search, Check, XCircle, Loader2, Inbox } from 'lucide-react';
 import { Button } from '../components/ui/button';
@@ -129,6 +130,7 @@ const ConditionsRequests = () => {
   const [busy, setBusy] = useState(false);
   const load = useCallback(() => axios.get(`${API}/admin/conditions-requests`).then((r) => setItems(r.data)).catch(err), []);
   useEffect(() => { load(); }, [load]);
+  useLive(load, 10000);
   const valueOf = (r) => edits[r.id] || { individual_discount: r.discount, delivery_cost: r.delivery_cost ?? null, deferral_days: r.deferral_days, credit_limit: r.credit_limit };
   const decide = async (r, action) => {
     setBusy(true);
@@ -180,6 +182,7 @@ export default function AdminStaffPage() {
 
   const load = useCallback(() => axios.get(`${API}/admin/staff`, { params: { period } }).then((r) => setStaff(r.data)).catch(err), [period]);
   useEffect(() => { if (user?.role === 'admin') load(); }, [user, load]);
+  useLive(load, 15000, user?.role === 'admin');
 
   if (loading) return null;
   if (!user || user.role !== 'admin') return <Navigate to="/" replace />;
