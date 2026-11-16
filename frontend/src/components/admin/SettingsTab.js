@@ -22,17 +22,13 @@ const DeliveryTab = ({ isDark }) => {
   const [saving, setSaving] = useState(false);
 
   useEffect(() => {
-    axios.get(`${API}/admin/delivery-settings`, {
-      headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
-    }).then(r => setSettings(r.data)).catch(() => {});
+    axios.get(`${API}/admin/delivery-settings`).then(r => setSettings(r.data)).catch(() => {});
   }, []);
 
   const save = async () => {
     setSaving(true);
     try {
-      await axios.put(`${API}/admin/delivery-settings`, settings, {
-        headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
-      });
+      await axios.put(`${API}/admin/delivery-settings`, settings);
       toast.success('Настройки доставки сохранены');
     } catch { toast.error('Ошибка сохранения'); }
     finally { setSaving(false); }

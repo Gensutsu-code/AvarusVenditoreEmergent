@@ -16,9 +16,9 @@ if not BASE_URL:
         pass
 
 ADMIN_EMAIL = "admin@avarus.ru"
-ADMIN_PASSWORD = "admin"
+ADMIN_PASSWORD = os.environ["TEST_ADMIN_PASSWORD"]
 USER_EMAIL = "user@demo.com"
-USER_PASSWORD = "demo123"
+USER_PASSWORD = os.environ["TEST_CLIENT_PASSWORD"]
 
 
 def _login(email, password):

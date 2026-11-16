@@ -89,7 +89,7 @@ export default function ContactPage() {
       const res = await axios.get(`${API}/chat/messages`);
       setMessages(res.data.messages || []);
       axios.post(`${API}/chat/mark-read`).catch(() => {});
-    } catch {}
+    } catch (err) { console.error(err); }
   }, []);
 
   const fetchRequests = useCallback(async () => {
@@ -108,7 +108,7 @@ export default function ContactPage() {
       setProdReqs(pr.data || []);
       setIndPrices(ip.data || []);
       setCartDiscReqs(cd.data || []);
-    } catch {}
+    } catch (err) { console.error(err); }
   }, []);
 
   useEffect(() => {

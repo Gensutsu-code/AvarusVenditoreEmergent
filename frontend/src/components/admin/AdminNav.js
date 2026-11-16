@@ -108,31 +108,6 @@ export const AdminDesktopNav = ({ onLogout, notifications }) => {
   );
 };
 
-export const AdminMobileNav = ({ onNavigate }) => {
-  const location = useLocation();
-  const counts = useAdminAttention();
-  const { pinned, groups } = useVisibleNav();
-  const row = (i) => {
-    const Icon = i.icon;
-    return (
-      <Link key={i.to} to={i.to} onClick={onNavigate} className={`flex items-center gap-3 p-3 rounded-xl ${isNavActive(location, i.to) ? 'bg-teal-50 text-teal-700' : 'text-slate-600 hover:bg-slate-50'}`} data-testid={`mobile-admin-nav-${i.to}`}>
-        <Icon className="w-5 h-5" /><span className="flex-1">{i.label}</span><Badge n={sumCounts(counts, i.counts)} />
-      </Link>
-    );
-  };
-  return (
-    <div data-testid="admin-mobile-nav">
-      {pinned.map(row)}
-      {groups.map((g) => (
-        <div key={g.id}>
-          <p className="px-3 pt-4 pb-1 text-[11px] font-bold uppercase tracking-widest text-slate-400">{g.label}</p>
-          {g.items.map(row)}
-        </div>
-      ))}
-    </div>
-  );
-};
-
 export const AttentionBlock = () => {
   const counts = useAdminAttention();
   const items = ATTENTION_ITEMS.filter((i) => (counts[i.key] || 0) > 0);

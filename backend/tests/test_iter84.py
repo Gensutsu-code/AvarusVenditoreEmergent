@@ -17,12 +17,12 @@ def _login(email, password):
 
 @pytest.fixture(scope="module")
 def admin_token():
-    return _login("admin@avarus.ru", "admin")
+    return _login("admin@avarus.ru", os.environ["TEST_ADMIN_PASSWORD"])
 
 
 @pytest.fixture(scope="module")
 def client_token():
-    return _login("user@demo.com", "demo123")
+    return _login("user@demo.com", os.environ["TEST_CLIENT_PASSWORD"])
 
 
 def _h(tok):

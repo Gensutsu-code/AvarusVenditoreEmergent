@@ -21,9 +21,9 @@ def _read_env_url():
 BASE = _read_env_url().rstrip("/")
 API = f"{BASE}/api"
 
-ADMIN = {"email": "admin@avarus.ru", "password": "admin"}
-CLIENT1 = {"email": "user@demo.com", "password": "demo123"}
-CLIENT2 = {"email": "0x0errorr@gmail.com", "password": "admin123"}
+ADMIN = {"email": "admin@avarus.ru", "password": os.environ["TEST_ADMIN_PASSWORD"]}
+CLIENT1 = {"email": "user@demo.com", "password": os.environ["TEST_CLIENT_PASSWORD"]}
+CLIENT2 = {"email": "0x0errorr@gmail.com", "password": os.environ["TEST_CLIENT2_PASSWORD"]}
 
 
 def login(creds):

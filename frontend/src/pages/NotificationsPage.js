@@ -72,7 +72,7 @@ export default function NotificationsPage() {
         prev.map(n => n.id === notifId ? { ...n, read: true } : n)
       );
       setUnreadCount(prev => Math.max(0, prev - 1));
-    } catch (err) {}
+    } catch (err) { console.error(err); }
   };
 
   const markAllRead = async () => {
@@ -80,7 +80,7 @@ export default function NotificationsPage() {
       await axios.put(`${API}/my-notifications/read-all`);
       setNotifications(prev => prev.map(n => ({ ...n, read: true })));
       setUnreadCount(0);
-    } catch (err) {}
+    } catch (err) { console.error(err); }
   };
 
   const handleNotificationClick = (notif) => {

@@ -17,7 +17,7 @@ BASE = os.environ["REACT_APP_BACKEND_URL"].rstrip("/")
 @pytest.fixture(scope="module")
 def admin_token():
     r = requests.post(f"{BASE}/api/auth/login",
-                      json={"email": "admin@avarus.ru", "password": "admin"},
+                      json={"email": "admin@avarus.ru", "password": os.environ["TEST_ADMIN_PASSWORD"]},
                       timeout=15)
     assert r.status_code == 200, r.text
     return r.json()["token"]
@@ -31,7 +31,7 @@ def admin_h(admin_token):
 @pytest.fixture(scope="module")
 def client_token():
     r = requests.post(f"{BASE}/api/auth/login",
-                      json={"email": "user@demo.com", "password": "demo123"},
+                      json={"email": "user@demo.com", "password": os.environ["TEST_CLIENT_PASSWORD"]},
                       timeout=15)
     assert r.status_code == 200, r.text
     return r.json()["token"]

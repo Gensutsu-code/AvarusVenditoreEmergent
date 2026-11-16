@@ -175,23 +175,24 @@ export const ChatWidget = () => {
   const shouldAutoScrollRef = useRef(true);
   const fileInputRef = useRef(null);
 
+  const fetchMessagesRef = useRef(null);
   useEffect(() => {
     if (canChat && isOpen) {
-      fetchMessages();
+      fetchMessagesRef.current();
       if (user) markAsRead();
     }
-  }, [user, canChat, isOpen]);
+  }, [user, canChat, isOpen, fetchMessagesRef]);
 
   useEffect(() => {
     if (canChat) {
       if (user) fetchUnreadCount();
       const interval = setInterval(() => {
         if (user) fetchUnreadCount();
-        if (isOpen) fetchMessages();
+        if (isOpen) fetchMessagesRef.current();
       }, 2000); // Poll every 2 seconds for real-time feel
       return () => clearInterval(interval);
     }
-  }, [user, canChat, isOpen]);
+  }, [user, canChat, isOpen, fetchMessagesRef]);
 
   useEffect(() => {
     if (shouldAutoScrollRef.current) scrollToBottom();
@@ -225,6 +226,7 @@ export const ChatWidget = () => {
       console.error('Failed to fetch messages', err);
     }
   };
+  fetchMessagesRef.current = fetchMessages;
 
   const fetchUnreadCount = async () => {
     try {

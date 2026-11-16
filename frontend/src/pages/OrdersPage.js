@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import { Package, ChevronDown, TrendingUp, ShoppingBag, Wallet, BarChart3, Star, CalendarDays, AlertTriangle, Check, XCircle, CreditCard, X, RefreshCw, Clock, Gift } from 'lucide-react';
@@ -55,18 +55,19 @@ export default function OrdersPage() {
   const [productOffers, setProductOffers] = useState([]);
   const [periodFilter, setPeriodFilter] = useState('month'); // week | month | year | all (default last month)
 
+  const fetchDataRef = useRef(null);
   useEffect(() => {
     if (authLoading) return;
     if (!user) {
       navigate('/login');
       return;
     }
-    fetchData();
+    fetchDataRef.current();
     fetchProductOffers();
     axios.get(`${API}/return-settings`).then((r) => setReturnSettings(r.data)).catch(() => {});
     // Request notification permission
     requestNotificationPermission();
-  }, [user, authLoading, navigate]);
+  }, [user, authLoading, navigate, fetchDataRef]);
 
   // Compute return-window eligibility for a completed order
   const getReturnWindow = (order) => {
@@ -84,15 +85,15 @@ export default function OrdersPage() {
   // Poll for order updates
   useEffect(() => {
     if (!user) return;
-    const interval = setInterval(fetchData, 15000);
+    const interval = setInterval(() => fetchDataRef.current(), 15000);
     return () => clearInterval(interval);
-  }, [user]);
+  }, [user, fetchDataRef]);
 
   const fetchProductOffers = async () => {
     try {
       const res = await axios.get(`${API}/product-requests/my`);
       setProductOffers((res.data || []).filter(r => r.status === 'offered'));
-    } catch {}
+    } catch (err) { console.error(err); }
   };
 
   const fetchData = async () => {
@@ -129,6 +130,7 @@ export default function OrdersPage() {
       setLoading(false);
     }
   };
+  fetchDataRef.current = fetchData;
 
   const handleAcceptChanges = async (orderId) => {
     try {

@@ -8,9 +8,9 @@ load_dotenv('/app/frontend/.env')
 BASE_URL = os.environ.get('REACT_APP_BACKEND_URL').rstrip('/')
 API = f"{BASE_URL}/api"
 
-ADMIN = {"email": "admin@avarus.ru", "password": "admin"}
-MANAGER = {"email": "manager@avarus.ru", "password": "manager123"}
-CLIENT = {"email": "user@demo.com", "password": "demo123"}
+ADMIN = {"email": "admin@avarus.ru", "password": os.environ["TEST_ADMIN_PASSWORD"]}
+MANAGER = {"email": "manager@avarus.ru", "password": os.environ["TEST_MANAGER_PASSWORD"]}
+CLIENT = {"email": "user@demo.com", "password": os.environ["TEST_CLIENT_PASSWORD"]}
 
 ATTENTION_KEYS = [
     "orders", "returns", "price_requests", "cart_discounts", "product_requests",

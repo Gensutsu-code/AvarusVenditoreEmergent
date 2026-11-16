@@ -29,7 +29,7 @@ def admin_token():
     """Get admin authentication token"""
     response = requests.post(f"{BASE_URL}/api/auth/login", json={
         "email": "admin@avarus.ru",
-        "password": "admin"
+        "password": os.environ["TEST_ADMIN_PASSWORD"]
     })
     assert response.status_code == 200, f"Admin login failed: {response.text}"
     return response.json()["token"]
@@ -40,7 +40,7 @@ def client_token():
     """Get client authentication token"""
     response = requests.post(f"{BASE_URL}/api/auth/login", json={
         "email": "user@demo.com",
-        "password": "demo123"
+        "password": os.environ["TEST_CLIENT_PASSWORD"]
     })
     assert response.status_code == 200, f"Client login failed: {response.text}"
     return response.json()["token"]

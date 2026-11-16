@@ -44,7 +44,7 @@ export default function AdminNotificationsPage() {
       const res = await axios.get(`${API}/admin/notifications`);
       setNotifications(res.data.notifications || []);
       setUnreadCount(res.data.unread_count || 0);
-    } catch (err) {} finally { setLoading(false); }
+    } catch (err) { console.error(err); } finally { setLoading(false); }
   }, []);
 
   useEffect(() => {
@@ -60,7 +60,7 @@ export default function AdminNotificationsPage() {
       await axios.put(`${API}/admin/notifications/${notifId}/read`);
       setNotifications(prev => prev.map(n => n.id === notifId ? { ...n, read: true } : n));
       setUnreadCount(prev => Math.max(0, prev - 1));
-    } catch (err) {}
+    } catch (err) { console.error(err); }
   };
 
   const markAllRead = async () => {
@@ -68,7 +68,7 @@ export default function AdminNotificationsPage() {
       await axios.post(`${API}/admin/notifications/mark-read`);
       setNotifications(prev => prev.map(n => ({ ...n, read: true })));
       setUnreadCount(0);
-    } catch (err) {}
+    } catch (err) { console.error(err); }
   };
 
   const handleClick = (notif) => {

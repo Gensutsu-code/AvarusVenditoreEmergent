@@ -13,9 +13,9 @@ BASE_URL = os.environ.get('REACT_APP_BACKEND_URL', '').rstrip('/')
 
 # Test credentials
 ADMIN_EMAIL = "admin@avarus.ru"
-ADMIN_PASSWORD = "admin"
+ADMIN_PASSWORD = os.environ["TEST_ADMIN_PASSWORD"]
 TEST_USER_EMAIL = "user@demo.com"
-TEST_USER_PASSWORD = "demo123"
+TEST_USER_PASSWORD = os.environ["TEST_CLIENT_PASSWORD"]
 
 
 class TestAdminAuth:

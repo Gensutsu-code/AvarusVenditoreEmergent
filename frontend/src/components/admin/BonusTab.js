@@ -449,7 +449,7 @@ export default function BonusTab(props) {
                                     try {
                                       const res = await axios.get(`${API}/admin/bonus/programs`);
                                       setBonusPrograms(res.data || []);
-                                    } catch (e) {}
+                                    } catch (err) { console.error(err); }
                                   } catch (err) { toast.error('Ошибка'); }
                                 }} data-testid={`reject-oos-prize-${redemption.id}`}>
                                   Нет в наличии

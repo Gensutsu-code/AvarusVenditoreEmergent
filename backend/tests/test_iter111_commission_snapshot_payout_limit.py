@@ -18,7 +18,7 @@ API = f"{BASE_URL}/api"
 MONGO_URL = os.environ.get("MONGO_URL")
 DB_NAME = os.environ.get("DB_NAME")
 
-ADMIN = {"email": "admin@avarus.ru", "password": "admin"}
+ADMIN = {"email": "admin@avarus.ru", "password": os.environ["TEST_ADMIN_PASSWORD"]}
 
 
 # -------- helpers --------

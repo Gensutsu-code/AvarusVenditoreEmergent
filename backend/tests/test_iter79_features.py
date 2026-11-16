@@ -15,8 +15,8 @@ def _load_frontend_env():
 
 BASE_URL = (os.environ.get("REACT_APP_BACKEND_URL") or _load_frontend_env() or "").rstrip("/")
 assert BASE_URL, "REACT_APP_BACKEND_URL not set"
-ADMIN = {"email": "admin@avarus.ru", "password": "admin"}
-CLIENT = {"email": "user@demo.com", "password": "demo123"}
+ADMIN = {"email": "admin@avarus.ru", "password": os.environ["TEST_ADMIN_PASSWORD"]}
+CLIENT = {"email": "user@demo.com", "password": os.environ["TEST_CLIENT_PASSWORD"]}
 
 
 def _login(creds):

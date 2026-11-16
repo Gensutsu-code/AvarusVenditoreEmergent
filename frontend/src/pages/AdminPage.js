@@ -124,6 +124,8 @@ const AdminVideoLightbox = ({ src, onClose }) => {
   );
 };
 
+const defaultTabOrder = ['overview', 'products', 'warehouse', 'bonus', 'payments', 'crm', 'promotions', 'marketing', 'logs', 'settings'];
+
 export default function AdminPage() {
   const { isEnabled: isFeatureEnabled } = useFeatures();
   const { user, loading: authLoading } = useAuth();
@@ -157,7 +159,6 @@ export default function AdminPage() {
   // Theme
   const { isDark } = useTheme();
   
-  const defaultTabOrder = ['overview', 'products', 'warehouse', 'bonus', 'payments', 'crm', 'promotions', 'marketing', 'logs', 'settings'];
   const [activeTab, setActiveTab] = useState(() => new URLSearchParams(window.location.search).get('tab') || 'overview');
   
   // New states
@@ -369,15 +370,15 @@ export default function AdminPage() {
       });
       setNewsList(newsRes.data || []);
       // Fetch crypto wallets separately
-      try { const cw = await axios.get(`${API}/admin/crypto-wallets`); setCryptoWallets(cw.data); } catch(e) {}
+      try { const cw = await axios.get(`${API}/admin/crypto-wallets`); setCryptoWallets(cw.data); } catch (err) { console.error(err); }
       // Fetch categories display columns_count
-      try { const cd = await axios.get(`${API}/categories/display-settings`); setCategoriesColumns(cd.data?.columns_count || 4); } catch(e) {}
+      try { const cd = await axios.get(`${API}/categories/display-settings`); setCategoriesColumns(cd.data?.columns_count || 4); } catch (err) { console.error(err); }
       // Fetch terms of service
-      try { const termsRes = await axios.get(`${API}/admin/terms`); setTermsSections(termsRes.data.sections || []); } catch(e) {}
+      try { const termsRes = await axios.get(`${API}/admin/terms`); setTermsSections(termsRes.data.sections || []); } catch (err) { console.error(err); }
       // Fetch notification settings
-      try { const notifRes = await axios.get(`${API}/admin/notification-settings`); setNotificationSettings(notifRes.data); } catch(e) {}
+      try { const notifRes = await axios.get(`${API}/admin/notification-settings`); setNotificationSettings(notifRes.data); } catch (err) { console.error(err); }
       // Fetch prepayment settings
-      try { const prepayRes = await axios.get(`${API}/admin/prepayment-settings`); setPrepaymentSettings(prepayRes.data); } catch(e) {}
+      try { const prepayRes = await axios.get(`${API}/admin/prepayment-settings`); setPrepaymentSettings(prepayRes.data); } catch (err) { console.error(err); }
     } catch (err) {
       console.error('Failed to fetch admin data', err);
       toast.error('Ошибка загрузки данных');

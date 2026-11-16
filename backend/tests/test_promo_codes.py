@@ -7,8 +7,8 @@ import requests
 
 BASE_URL = os.environ.get('REACT_APP_BACKEND_URL').rstrip('/')
 API = f"{BASE_URL}/api"
-ADMIN = {"email": "admin@avarus.ru", "password": "admin"}
-CLIENT = {"email": "user@demo.com", "password": "demo123"}
+ADMIN = {"email": "admin@avarus.ru", "password": os.environ["TEST_ADMIN_PASSWORD"]}
+CLIENT = {"email": "user@demo.com", "password": os.environ["TEST_CLIENT_PASSWORD"]}
 
 
 def _login(creds):

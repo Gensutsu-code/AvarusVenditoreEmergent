@@ -36,12 +36,12 @@ def _login(email, password):
 
 @pytest.fixture(scope="session")
 def admin_tok():
-    return _login("admin@avarus.ru", "admin")
+    return _login("admin@avarus.ru", os.environ["TEST_ADMIN_PASSWORD"])
 
 
 @pytest.fixture(scope="session")
 def user_tok():
-    return _login("user@demo.com", "demo123")
+    return _login("user@demo.com", os.environ["TEST_CLIENT_PASSWORD"])
 
 
 @pytest.fixture(scope="session")

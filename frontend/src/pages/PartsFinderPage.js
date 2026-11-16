@@ -2,12 +2,14 @@ import { useState, useEffect, useCallback } from 'react';
 import { Link } from 'react-router-dom';
 import axios from 'axios';
 import { motion } from 'framer-motion';
-import { Search, Wrench, Sparkles, Info, Loader2, ArrowRight, Package, Lock, Crown, Wallet, Coins, CheckCircle2, History, Clock } from 'lucide-react';
+import { Warehouse as GarageIcon, Search, Wrench, Sparkles, Info, Loader2, ArrowRight, Package, Lock, Crown, Wallet, Coins, CheckCircle2, History, Clock } from 'lucide-react';
 import { toast } from 'sonner';
 import { Button } from '../components/ui/button';
 import { Input } from '../components/ui/input';
 import { Label } from '../components/ui/label';
 import { useAuth } from '../context/AuthContext';
+import { useFeatures } from '../context/FeaturesContext';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../components/ui/select';
 
 const API = `${process.env.REACT_APP_BACKEND_URL}/api`;
 
@@ -39,7 +41,26 @@ export default function PartsFinderPage() {
   const [busy, setBusy] = useState(false);
   const [history, setHistory] = useState([]);
 
+  const { isOn } = useFeatures();
+  const garageOn = isOn('garage');
+  const [vehicles, setVehicles] = useState([]);
+  const [vehicleId, setVehicleId] = useState('');
+
   const update = (k, v) => setForm((f) => ({ ...f, [k]: v }));
+
+  useEffect(() => {
+    if (!user || !garageOn) { setVehicles([]); return; }
+    axios.get(`${API}/garage/vehicles`).then((r) => setVehicles(r.data || [])).catch(() => setVehicles([]));
+  }, [user, garageOn]);
+
+  // Vehicle name is free text ("MAN TGA 18.440"): first word goes to the brand, the rest to the model
+  const pickVehicle = (id) => {
+    setVehicleId(id);
+    const v = vehicles.find((x) => x.id === id);
+    if (!v) return;
+    const [brand = '', ...rest] = (v.name || '').trim().split(/\s+/);
+    setForm((f) => ({ ...f, vin: v.vin || '', brand, model: rest.join(' '), year: v.year ? String(v.year) : '' }));
+  };
 
   const fetchAccess = useCallback(async () => {
     if (!user) return;
@@ -200,6 +221,23 @@ export default function PartsFinderPage() {
         {user && (
           <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.05 }}
             className="bg-white rounded-2xl border border-slate-200 shadow-sm p-5 sm:p-6" data-testid="parts-finder-form">
+            {garageOn && (
+              <div className="mb-5 pb-5 border-b border-slate-100" data-testid="finder-garage-block">
+                <Label className="text-xs text-slate-600 flex items-center gap-1.5"><GarageIcon className="w-3.5 h-3.5 text-teal-500" />Машина из гаража</Label>
+                {vehicles.length > 0 ? (
+                  <Select value={vehicleId} onValueChange={pickVehicle}>
+                    <SelectTrigger className="mt-1 sm:max-w-md" data-testid="finder-garage-select"><SelectValue placeholder="Выберите машину — марка, модель и VIN подставятся сами" /></SelectTrigger>
+                    <SelectContent>
+                      {vehicles.map((v) => (
+                        <SelectItem key={v.id} value={v.id} data-testid={`finder-garage-option-${v.id}`}>{v.name}{v.plate ? ` · ${v.plate}` : ''} · {v.vin}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                ) : (
+                  <p className="mt-1 text-sm text-slate-500" data-testid="finder-garage-empty">В гараже пока нет техники. <Link to="/garage" className="font-semibold text-teal-600 underline">Добавить машину</Link></p>
+                )}
+              </div>
+            )}
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
               {FIELDS.map((f) => (
                 <div key={f.key}>

@@ -13,9 +13,9 @@ import requests
 BASE_URL = os.environ.get("REACT_APP_BACKEND_URL").rstrip("/")
 
 ADMIN_EMAIL = "admin@avarus.ru"
-ADMIN_PASSWORD = "admin"
+ADMIN_PASSWORD = os.environ["TEST_ADMIN_PASSWORD"]
 CLIENT_EMAIL = "user@demo.com"
-CLIENT_PASSWORD = "demo123"
+CLIENT_PASSWORD = os.environ["TEST_CLIENT_PASSWORD"]
 
 
 def _login(email, password):

@@ -1,6 +1,7 @@
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { ShoppingCart, User, Search, LogOut, Heart, Package, Gift, Newspaper, Menu, X, MessageCircle, Bell, Wallet, CreditCard } from 'lucide-react';
-import { AdminDesktopNav, AdminMobileNav } from './admin/AdminNav';
+import { AdminDesktopNav } from './admin/AdminNav';
+import { AdminMobileDrawer } from './admin/AdminSidebar';
 import { RegionWarehouses } from './RegionWarehouses';
 import { useFeatures } from '../context/FeaturesContext';
 import { Sparkles as AiIcon, Briefcase as ManagerIcon, Warehouse as GarageIcon } from 'lucide-react';
@@ -169,7 +170,7 @@ const ExpandableProfileMenu = ({ onLogout, unreadCount = 0 }) => {
 };
 
 export const Header = () => {
-  const { user, logout } = useAuth();
+  const { user, logout, token } = useAuth();
   const { cartCount } = useCart();
   const { isOn } = useFeatures();
   const showPartsHub = isOn('ai_assistant') || isOn('parts_finder');
@@ -223,7 +224,6 @@ export const Header = () => {
   const fetchUserData = useCallback(async () => {
     if (!user || isAdmin) return;
     try {
-      const token = localStorage.getItem('token');
       const headers = { 'Authorization': `Bearer ${token}` };
 
       // Always fetch balance regardless of notification settings
@@ -290,8 +290,8 @@ export const Header = () => {
         }
       }
       lastSeenCountRef.current = newCount;
-    } catch (err) {}
-  }, [user, isAdmin]);
+    } catch (err) { console.error(err); }
+  }, [user, isAdmin, token]);
 
   useEffect(() => {
     if (user && !isAdmin) {
@@ -647,8 +647,9 @@ export const Header = () => {
       </div>
 
       {/* Mobile Menu */}
+      {isAdmin && <AdminMobileDrawer open={mobileMenuOpen} onOpenChange={setMobileMenuOpen} onLogout={logout} />}
       <AnimatePresence>
-        {mobileMenuOpen && (
+        {mobileMenuOpen && !isAdmin && (
           <motion.div
             initial={{ opacity: 0, height: 0 }}
             animate={{ opacity: 1, height: 'auto' }}
@@ -663,9 +664,7 @@ export const Header = () => {
               )}
               {user ? (
                 <>
-                  {isAdmin ? (
-                    <AdminMobileNav onNavigate={() => setMobileMenuOpen(false)} />
-                  ) : (
+                  {(
                     <>
                       <Link to="/catalog" onClick={() => setMobileMenuOpen(false)} className="flex items-center gap-3 p-3 rounded-xl text-slate-600 hover:bg-slate-50">
                         <Search className="w-5 h-5" />

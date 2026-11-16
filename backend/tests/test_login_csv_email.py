@@ -18,7 +18,7 @@ class TestLogin:
         """Test admin login with credentials admin@avarus.ru / admin"""
         response = requests.post(f"{BASE_URL}/api/auth/login", json={
             "email": "admin@avarus.ru",
-            "password": "admin"
+            "password": os.environ["TEST_ADMIN_PASSWORD"]
         })
         assert response.status_code == 200, f"Admin login failed: {response.status_code} - {response.text}"
         data = response.json()
@@ -32,7 +32,7 @@ class TestLogin:
         """Test client login with credentials user@demo.com / demo123"""
         response = requests.post(f"{BASE_URL}/api/auth/login", json={
             "email": "user@demo.com",
-            "password": "demo123"
+            "password": os.environ["TEST_CLIENT_PASSWORD"]
         })
         assert response.status_code == 200, f"Client login failed: {response.status_code} - {response.text}"
         data = response.json()
@@ -60,7 +60,7 @@ class TestCSVEndpoints:
         """Get admin token for authenticated requests"""
         response = requests.post(f"{BASE_URL}/api/auth/login", json={
             "email": "admin@avarus.ru",
-            "password": "admin"
+            "password": os.environ["TEST_ADMIN_PASSWORD"]
         })
         assert response.status_code == 200, "Admin login failed"
         return response.json()["token"]
@@ -181,7 +181,7 @@ class TestEmailNotifications:
         """Get admin token for authenticated requests"""
         response = requests.post(f"{BASE_URL}/api/auth/login", json={
             "email": "admin@avarus.ru",
-            "password": "admin"
+            "password": os.environ["TEST_ADMIN_PASSWORD"]
         })
         assert response.status_code == 200, "Admin login failed"
         return response.json()["token"]
@@ -258,7 +258,7 @@ class TestAdminPanelAccess:
         """Get admin token for authenticated requests"""
         response = requests.post(f"{BASE_URL}/api/auth/login", json={
             "email": "admin@avarus.ru",
-            "password": "admin"
+            "password": os.environ["TEST_ADMIN_PASSWORD"]
         })
         assert response.status_code == 200, "Admin login failed"
         return response.json()["token"]

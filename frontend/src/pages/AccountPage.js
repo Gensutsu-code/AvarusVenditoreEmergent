@@ -74,28 +74,28 @@ export default function AccountPage() {
     try {
       const res = await axios.get(`${API}/user/balance`);
       setBalance(res.data.balance || 0);
-    } catch (err) {}
+    } catch (err) { console.error(err); }
   };
 
   const fetchBalanceHistory = async () => {
     try {
       const res = await axios.get(`${API}/user/balance/history`);
       setBalanceHistory(res.data.transactions || []);
-    } catch (err) {}
+    } catch (err) { console.error(err); }
   };
 
   const fetchPrepaymentSettings = async () => {
     try {
       const res = await axios.get(`${API}/prepayment-settings`);
       setPrepaymentSettings(res.data);
-    } catch (err) {}
+    } catch (err) { console.error(err); }
   };
 
   const fetchCryptoWallets = async () => {
     try {
       const res = await axios.get(`${API}/crypto-wallets`);
       setCryptoWallets(res.data);
-    } catch (err) {}
+    } catch (err) { console.error(err); }
   };
 
   const handleTopup = async () => {

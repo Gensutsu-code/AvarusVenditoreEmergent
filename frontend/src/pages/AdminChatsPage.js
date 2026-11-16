@@ -86,18 +86,19 @@ export default function AdminChatsPage() {
   }, [user, authLoading, navigate]);
 
   // Polling for new messages
+  const fetchMessagesRef = useRef(null);
   useEffect(() => {
     if (!user || user.role !== 'admin') return;
     
     const interval = setInterval(() => {
       fetchChats();
       if (selectedChat) {
-        fetchMessages(selectedChat.id, false);
+        fetchMessagesRef.current(selectedChat.id, false);
       }
     }, 5000);
     
     return () => clearInterval(interval);
-  }, [user, selectedChat]);
+  }, [user, selectedChat, fetchMessagesRef]);
 
   // Scroll to bottom when messages change
   useEffect(() => {
@@ -305,6 +306,7 @@ export default function AdminChatsPage() {
       if (showLoading) setLoading(false);
     }
   };
+  fetchMessagesRef.current = fetchMessages;
 
   const selectChat = (chat) => {
     setSelectedChat(chat);

@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import { Package, ShoppingCart, Truck, ArrowLeft, Minus, Plus, Share2, ChevronLeft, ChevronRight, Check, AlertCircle, Tag, Layers, MapPin, Handshake } from 'lucide-react';
@@ -37,12 +37,14 @@ export default function ProductPage() {
   const [requestOpen, setRequestOpen] = useState(false);
   const requestsCfg = useFeatures().settings.product_requests || {};
 
+  const fetchProductRef = useRef(null);
+  const fetchRelatedProductsRef = useRef(null);
   useEffect(() => {
     if (id) {
-      fetchProduct();
-      fetchRelatedProducts();
+      fetchProductRef.current();
+      fetchRelatedProductsRef.current();
     }
-  }, [id]);
+  }, [id, fetchProductRef, fetchRelatedProductsRef]);
 
   // Fetch individual price for this product
 
@@ -59,6 +61,7 @@ export default function ProductPage() {
       setLoading(false);
     }
   };
+  fetchProductRef.current = fetchProduct;
 
   const fetchRelatedProducts = async () => {
     try {
@@ -68,6 +71,7 @@ export default function ProductPage() {
       console.error('Failed to fetch related products', err);
     }
   };
+  fetchRelatedProductsRef.current = fetchRelatedProducts;
 
   const handleAddToCart = async () => {
     if (!user) {

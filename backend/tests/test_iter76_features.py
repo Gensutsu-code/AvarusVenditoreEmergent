@@ -14,9 +14,9 @@ BASE_URL = os.environ.get("REACT_APP_BACKEND_URL", "https://order-merge-fulfill.
 API = f"{BASE_URL}/api"
 
 ADMIN_EMAIL = "admin@avarus.ru"
-ADMIN_PASS = "admin"
+ADMIN_PASS = os.environ["TEST_ADMIN_PASSWORD"]
 CLIENT_EMAIL = "0x0errorr@gmail.com"
-CLIENT_PASS = "admin123"
+CLIENT_PASS = os.environ["TEST_CLIENT2_PASSWORD"]
 
 MONGO_URL = "mongodb://localhost:27017"
 DB_NAME = "test_database"

@@ -13,9 +13,9 @@ BASE_URL = os.environ.get("REACT_APP_BACKEND_URL", "https://order-merge-fulfill.
 API = f"{BASE_URL}/api"
 
 ADMIN_EMAIL = "admin@avarus.ru"
-ADMIN_PASSWORD = "admin"
+ADMIN_PASSWORD = os.environ["TEST_ADMIN_PASSWORD"]
 CLIENT_EMAIL = "0x0errorr@gmail.com"
-CLIENT_PASSWORD = "admin123"
+CLIENT_PASSWORD = os.environ["TEST_CLIENT2_PASSWORD"]
 
 PHOTO_URL = "https://example.com/test_photo.jpg"
 

@@ -21,7 +21,7 @@ def admin_token():
     """Get admin token for authenticated requests"""
     response = requests.post(f"{BASE_URL}/api/auth/login", json={
         "email": "admin@avarus.ru",
-        "password": "admin"
+        "password": os.environ["TEST_ADMIN_PASSWORD"]
     })
     if response.status_code == 200:
         return response.json().get("token")
@@ -32,7 +32,7 @@ def client_token():
     """Get client token for non-admin requests"""
     response = requests.post(f"{BASE_URL}/api/auth/login", json={
         "email": "user@demo.com",
-        "password": "demo123"
+        "password": os.environ["TEST_CLIENT_PASSWORD"]
     })
     if response.status_code == 200:
         return response.json().get("token")

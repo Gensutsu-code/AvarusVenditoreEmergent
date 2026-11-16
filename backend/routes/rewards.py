@@ -325,30 +325,6 @@ async def choose_reward_system(data: dict, user=Depends(get_current_user)):
     return {"success": True, "system": system}
 
 
-@router.get("/rewards/cart-preview")
-async def reward_cart_preview(amount: float = None, promo_code: str = None, user=Depends(get_current_user)):
-    """Expected reward for the current cart in the client's system. `amount` = goods total actually charged."""
-    from routes.orders import _build_cart
-    from routes.features import is_on
-    settings = await get_reward_settings()
-    system = active_system(user, settings)
-    base = {"system": system, "amount": 0, "total_points": 0, "programs": [],
-            "needs_choice": is_on("rewards", user) and user.get("reward_system") not in SYSTEMS and any(settings[k]["enabled"] for k in SYSTEMS)}
-    if not system:
-        return base
-    cart = await _build_cart(user)
-    items = cart.get("items", [])
-    if not items:
-        return base
-    lines_sum = sum((i.get("price", 0) or 0) * (i.get("quantity", 0) or 0) for i in items)
-    goods_total = amount if (amount is not None and amount > 0) else lines_sum
-    r = await compute_order_reward(user, items, goods_total, promo_code)
-    base.update({"amount": r["amount"], "base_percent": r.get("base_percent"),
-                 "min_order": settings[system]["min_order"],
-                 "total_points": int(r["amount"]) if system == "points" else 0})
-    return base
-
-
 @router.post("/rewards/cashback/withdraw")
 async def request_cashback_withdrawal(data: dict, user=Depends(get_current_user)):
     settings = await get_reward_settings()

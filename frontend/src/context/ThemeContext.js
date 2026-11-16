@@ -1,4 +1,4 @@
-import { createContext, useContext, useEffect, useMemo } from 'react';
+import { createContext, useContext, useEffect } from 'react';
 
 const ThemeContext = createContext();
 
@@ -10,11 +10,10 @@ export const useTheme = () => {
   return context;
 };
 
+// Always light theme; toggles are no-ops kept for compatibility
+const VALUE = { theme: 'light', setTheme: () => {}, toggleTheme: () => {}, isDark: false, isLight: true };
+
 export const ThemeProvider = ({ children }) => {
-  // Always light theme
-  const theme = 'light';
-  const isDark = false;
-  const isLight = true;
 
   useEffect(() => {
     // Ensure light theme is applied
@@ -23,15 +22,5 @@ export const ThemeProvider = ({ children }) => {
     localStorage.setItem('theme', 'light');
   }, []);
 
-  // No-op toggle for compatibility
-  const toggleTheme = () => {};
-  const setTheme = () => {};
-
-  // Memoize — value is effectively constant; no need to recreate every render.
-  const value = useMemo(
-    () => ({ theme, setTheme, toggleTheme, isDark, isLight }),
-    []
-  );
-
-  return <ThemeContext.Provider value={value}>{children}</ThemeContext.Provider>;
+  return <ThemeContext.Provider value={VALUE}>{children}</ThemeContext.Provider>;
 };

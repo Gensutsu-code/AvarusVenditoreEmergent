@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import { Gift, Award, Star, Trophy, CheckCircle, Copy, History, ChevronDown, ChevronUp, LayoutList, LayoutGrid } from 'lucide-react';
@@ -108,14 +108,15 @@ export default function BonusPage() {
     try { localStorage.setItem('bonus_hero_theme', key); } catch { /* ignore */ }
   };
 
+  const fetchBonusDataRef = useRef(null);
   useEffect(() => {
     if (authLoading) return;
     if (!user) {
       navigate('/login');
       return;
     }
-    fetchBonusData();
-  }, [user, authLoading, navigate]);
+    fetchBonusDataRef.current();
+  }, [user, authLoading, navigate, fetchBonusDataRef]);
 
   const fetchBonusData = async () => {
     try {
@@ -129,6 +130,7 @@ export default function BonusPage() {
       setLoading(false);
     }
   };
+  fetchBonusDataRef.current = fetchBonusData;
 
   // Detects when the points balance grew since the last visit and fires a "+N баллов" wow animation
   const detectPointsGain = (programs) => {

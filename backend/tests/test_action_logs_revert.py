@@ -12,7 +12,7 @@ BASE_URL = os.environ.get('REACT_APP_BACKEND_URL', '').rstrip('/')
 
 # Test data
 ADMIN_EMAIL = "admin@avarus.ru"
-ADMIN_PASSWORD = "admin"
+ADMIN_PASSWORD = os.environ["TEST_ADMIN_PASSWORD"]
 BONUS_PROGRAM_ID = "cd173bac-1752-405a-b0fd-d2c75a529af6"
 TEST_USER_EMAIL = "test@example.com"
 

@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import axios from 'axios';
 import { Package, ShoppingCart } from 'lucide-react';
 import { Button } from './ui/button';
@@ -15,11 +15,12 @@ export const RelatedProducts = ({ productId, onSelectProduct }) => {
   const { addToCart } = useCart();
   const { user } = useAuth();
 
+  const fetchRelatedRef = useRef(null);
   useEffect(() => {
     if (productId) {
-      fetchRelated();
+      fetchRelatedRef.current();
     }
-  }, [productId]);
+  }, [productId, fetchRelatedRef]);
 
   const fetchRelated = async () => {
     setLoading(true);
@@ -32,6 +33,7 @@ export const RelatedProducts = ({ productId, onSelectProduct }) => {
       setLoading(false);
     }
   };
+  fetchRelatedRef.current = fetchRelated;
 
   const handleAddToCart = async (e, product) => {
     e.stopPropagation();

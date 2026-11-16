@@ -143,7 +143,7 @@ class TestMaintenanceModeIntegration:
         # The maintenance blocking is done on frontend, not backend APIs
         response = api_client.post(
             f"{BASE_URL}/api/auth/login",
-            json={"email": "admin@avarus.ru", "password": "admin"}
+            json={"email": "admin@avarus.ru", "password": os.environ["TEST_ADMIN_PASSWORD"]}
         )
         assert response.status_code == 200
         assert "token" in response.json()
@@ -164,7 +164,7 @@ def admin_token(api_client):
     """Get admin authentication token"""
     response = api_client.post(
         f"{BASE_URL}/api/auth/login",
-        json={"email": "admin@avarus.ru", "password": "admin"}
+        json={"email": "admin@avarus.ru", "password": os.environ["TEST_ADMIN_PASSWORD"]}
     )
     if response.status_code == 200:
         token = response.json().get("token")
@@ -178,7 +178,7 @@ def client_token(api_client):
     """Get client (non-admin) authentication token"""
     response = api_client.post(
         f"{BASE_URL}/api/auth/login",
-        json={"email": "user@demo.com", "password": "demo123"}
+        json={"email": "user@demo.com", "password": os.environ["TEST_CLIENT_PASSWORD"]}
     )
     if response.status_code == 200:
         token = response.json().get("token")

@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import axios from 'axios';
 import { Heart } from 'lucide-react';
 import { Button } from './ui/button';
@@ -14,11 +14,12 @@ export const FavoritesButton = ({ productId, className = '', size = 'default', s
   const [isFavorite, setIsFavorite] = useState(false);
   const [loading, setLoading] = useState(false);
 
+  const checkFavoriteRef = useRef(null);
   useEffect(() => {
     if (user && productId) {
-      checkFavorite();
+      checkFavoriteRef.current();
     }
-  }, [user, productId]);
+  }, [user, productId, checkFavoriteRef]);
 
   const checkFavorite = async () => {
     try {
@@ -28,6 +29,7 @@ export const FavoritesButton = ({ productId, className = '', size = 'default', s
       console.error('Failed to check favorite', err);
     }
   };
+  checkFavoriteRef.current = checkFavorite;
 
   const toggleFavorite = async (e) => {
     e.preventDefault();

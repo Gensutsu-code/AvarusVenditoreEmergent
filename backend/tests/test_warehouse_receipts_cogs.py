@@ -10,7 +10,7 @@ API = f"{BASE_URL}/api"
 @pytest.fixture(scope="module")
 def admin_client():
     s = requests.Session()
-    r = s.post(f"{API}/auth/login", json={"email": "admin@avarus.ru", "password": "admin"})
+    r = s.post(f"{API}/auth/login", json={"email": "admin@avarus.ru", "password": os.environ["TEST_ADMIN_PASSWORD"]})
     assert r.status_code == 200, r.text
     token = r.json().get("access_token") or r.json().get("token")
     s.headers.update({"Authorization": f"Bearer {token}"})

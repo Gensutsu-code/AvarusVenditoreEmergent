@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useSearchParams, Link } from 'react-router-dom';
 import axios from 'axios';
 import { Button } from '../components/ui/button';
@@ -532,14 +532,15 @@ export default function CatalogPage() {
     fetchFilterOptions();
   }, []);
 
+  const fetchProductsRef = useRef(null);
   useEffect(() => {
     if (searchQuery || categoryId) {
-      fetchProducts();
+      fetchProductsRef.current();
     } else {
       setProducts([]);
       setAlternatives([]);
     }
-  }, [searchQuery, categoryId]);
+  }, [searchQuery, categoryId, fetchProductsRef]);
 
   const fetchCategories = async () => {
     try {
@@ -647,6 +648,7 @@ export default function CatalogPage() {
       setLoading(false);
     }
   };
+  fetchProductsRef.current = fetchProducts;
 
   const [aiSearching, setAiSearching] = useState(false);
   const [aiSearchNote, setAiSearchNote] = useState('');
@@ -695,6 +697,8 @@ export default function CatalogPage() {
       default: return null;
     }
   };
+  const getSortFnRef = useRef(null);
+  getSortFnRef.current = getSortFn;
 
   const selectCategory = (catId) => {
     const params = new URLSearchParams();
@@ -763,12 +767,12 @@ export default function CatalogPage() {
   // Re-sort on sortBy change (client-side)
   useEffect(() => {
     if (!filters.sortBy) return;
-    const sortFn = getSortFn(filters.sortBy);
+    const sortFn = getSortFnRef.current(filters.sortBy);
     if (sortFn) {
       setProducts(prev => [...prev].sort(sortFn));
       setAlternatives(prev => [...prev].sort(sortFn));
     }
-  }, [filters.sortBy]);
+  }, [filters.sortBy, getSortFnRef]);
 
   return (
     <div className="min-h-screen" data-testid="catalog-page">

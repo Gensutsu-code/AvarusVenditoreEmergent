@@ -17,9 +17,9 @@ import pytest
 
 BASE_URL = os.environ.get("REACT_APP_BACKEND_URL").rstrip("/")
 ADMIN_EMAIL = "admin@avarus.ru"
-ADMIN_PASSWORD = "admin"
+ADMIN_PASSWORD = os.environ["TEST_ADMIN_PASSWORD"]
 CLIENT_EMAIL = "0x0errorr@gmail.com"
-CLIENT_PASSWORD = "admin123"
+CLIENT_PASSWORD = os.environ["TEST_CLIENT2_PASSWORD"]
 
 
 def _login(email, password):

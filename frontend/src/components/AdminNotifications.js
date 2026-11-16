@@ -71,7 +71,7 @@ export const AdminNotifications = () => {
             showPushNotification('AVOPT.STORE — Админ', latest.message || 'Новое уведомление', { tag: 'admin-notif' });
           }
         }
-      } catch (err) {}
+      } catch (err) { console.error(err); }
     };
     fetchNotifications();
     const interval = setInterval(fetchNotifications, 4000);
@@ -92,7 +92,7 @@ export const AdminNotifications = () => {
       await axios.put(`${API}/admin/notifications/${id}/read`);
       setNotifList(prev => prev.map(n => n.id === id ? { ...n, read: true } : n));
       setUnreadCount(prev => Math.max(0, prev - 1));
-    } catch {}
+    } catch (err) { console.error(err); }
   };
 
   const handleMarkAllRead = async (e) => {
@@ -101,7 +101,7 @@ export const AdminNotifications = () => {
       await axios.post(`${API}/admin/notifications/mark-read`);
       setNotifList(prev => prev.map(n => ({ ...n, read: true })));
       setUnreadCount(0);
-    } catch {}
+    } catch (err) { console.error(err); }
   };
 
   return (

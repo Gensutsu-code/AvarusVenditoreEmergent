@@ -23,7 +23,7 @@ class TestAdminCarts:
         """Login as admin and get token"""
         response = requests.post(f"{BASE_URL}/api/auth/login", json={
             "email": "admin@avarus.ru",
-            "password": "admin"
+            "password": os.environ["TEST_ADMIN_PASSWORD"]
         })
         assert response.status_code == 200, f"Admin login failed: {response.text}"
         return response.json()["token"]
@@ -41,7 +41,7 @@ class TestAdminCarts:
         """Login as client and get token"""
         response = requests.post(f"{BASE_URL}/api/auth/login", json={
             "email": "user@demo.com",
-            "password": "demo123"
+            "password": os.environ["TEST_CLIENT_PASSWORD"]
         })
         # If user doesn't exist, skip tests requiring client
         if response.status_code != 200:

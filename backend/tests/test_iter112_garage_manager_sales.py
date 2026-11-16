@@ -13,10 +13,10 @@ load_dotenv("/app/frontend/.env")
 BASE_URL = os.environ["REACT_APP_BACKEND_URL"].rstrip("/")
 API = f"{BASE_URL}/api"
 
-ADMIN = ("admin@avarus.ru", "admin")
-MANAGER = ("manager@avarus.ru", "manager123")
-CLIENT = ("user@demo.com", "demo123")
-UNBOUND = ("0x0errorr@gmail.com", "admin123")
+ADMIN = ("admin@avarus.ru", os.environ["TEST_ADMIN_PASSWORD"])
+MANAGER = ("manager@avarus.ru", os.environ["TEST_MANAGER_PASSWORD"])
+CLIENT = ("user@demo.com", os.environ["TEST_CLIENT_PASSWORD"])
+UNBOUND = ("0x0errorr@gmail.com", os.environ["TEST_CLIENT2_PASSWORD"])
 
 VALID_VIN = "1HGCM82633A004352"  # 17 chars, no I/O/Q
 

@@ -10,9 +10,9 @@ import requests
 
 BASE_URL = os.environ.get("REACT_APP_BACKEND_URL", "").rstrip("/")
 API = f"{BASE_URL}/api"
-ADMIN = {"email": "admin@avarus.ru", "password": "admin"}
-DEMO_CLIENT = {"email": "user@demo.com", "password": "demo123"}
-DEMO_MANAGER = {"email": "manager@avarus.ru", "password": "manager123"}
+ADMIN = {"email": "admin@avarus.ru", "password": os.environ["TEST_ADMIN_PASSWORD"]}
+DEMO_CLIENT = {"email": "user@demo.com", "password": os.environ["TEST_CLIENT_PASSWORD"]}
+DEMO_MANAGER = {"email": "manager@avarus.ru", "password": os.environ["TEST_MANAGER_PASSWORD"]}
 
 
 # -------- helpers --------

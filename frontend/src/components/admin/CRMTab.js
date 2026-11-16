@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { Users, BarChart3, TrendingUp, Calendar, UserCheck, Pencil, Trash2, ChevronDown, User, ShoppingBag, Package, Clock, DollarSign, Target, RefreshCw, Activity, ShieldOff, ShieldCheck, Plus, Minus, X } from 'lucide-react';
 import { Button } from '../../components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../../components/ui/select';
@@ -32,11 +32,12 @@ export const CRMTab = ({
   const [balanceSubmitting, setBalanceSubmitting] = useState(false);
 
   // Fetch analytics data
+  const fetchAnalyticsRef = useRef(null);
   useEffect(() => {
     if (activeSubTab === 'analytics') {
-      fetchAnalytics();
+      fetchAnalyticsRef.current();
     }
-  }, [activeSubTab, statsPeriod]);
+  }, [activeSubTab, statsPeriod, fetchAnalyticsRef]);
 
   const fetchAnalytics = async () => {
     setLoadingAnalytics(true);
@@ -49,6 +50,7 @@ export const CRMTab = ({
       setLoadingAnalytics(false);
     }
   };
+  fetchAnalyticsRef.current = fetchAnalytics;
 
   const subTabs = [
     { id: 'clients', label: 'Клиенты', icon: Users },

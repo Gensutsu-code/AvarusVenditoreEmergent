@@ -13,14 +13,6 @@ export const CartProvider = ({ children }) => {
   const pendingUpdates = useRef({});
   const debounceTimers = useRef({});
 
-  useEffect(() => {
-    if (user && token) {
-      fetchCart();
-    } else {
-      setCart({ items: [] });
-    }
-  }, [user, token]);
-
   // Cleanup all pending timers on unmount to prevent ref leaks that confuse
   // third-party DOM walkers (e.g., PostHog session recorder) during navigation
   useEffect(() => {
@@ -33,7 +25,7 @@ export const CartProvider = ({ children }) => {
     };
   }, []);
 
-  const fetchCart = async () => {
+  const fetchCart = useCallback(async () => {
     if (!token) return;
     setLoading(true);
     try {
@@ -44,9 +36,17 @@ export const CartProvider = ({ children }) => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [token]);
 
-  const addToCart = async (productId, quantity = 1) => {
+  useEffect(() => {
+    if (user && token) {
+      fetchCart();
+    } else {
+      setCart({ items: [] });
+    }
+  }, [user, token, fetchCart]);
+
+  const addToCart = useCallback(async (productId, quantity = 1) => {
     if (!token) return false;
     try {
       await axios.post(`${API}/cart/add`, { product_id: productId, quantity });
@@ -56,7 +56,7 @@ export const CartProvider = ({ children }) => {
       console.error('Failed to add to cart', err);
       return false;
     }
-  };
+  }, [token, fetchCart]);
 
   // Optimistic update with debounce for API call
   const updateQuantity = useCallback((productId, quantity) => {
@@ -106,9 +106,9 @@ export const CartProvider = ({ children }) => {
         fetchCart();
       }
     }, 300);
-  }, [token]);
+  }, [token, fetchCart]);
 
-  const removeFromCart = async (productId) => {
+  const removeFromCart = useCallback(async (productId) => {
     if (!token) return;
     
     // Optimistic removal
@@ -130,9 +130,9 @@ export const CartProvider = ({ children }) => {
       console.error('Failed to remove from cart', err);
       fetchCart();
     }
-  };
+  }, [token, fetchCart]);
 
-  const clearCart = async () => {
+  const clearCart = useCallback(async () => {
     if (!token) return;
     
     // Clear all pending
@@ -148,7 +148,7 @@ export const CartProvider = ({ children }) => {
       console.error('Failed to clear cart', err);
       fetchCart();
     }
-  };
+  }, [token, fetchCart]);
 
   const cartTotal = cart.items.reduce((sum, item) => sum + item.price * item.quantity, 0);
   const cartCount = cart.items.reduce((sum, item) => sum + item.quantity, 0);
@@ -168,7 +168,7 @@ export const CartProvider = ({ children }) => {
       cartTotal,
       cartCount,
     }),
-    [cart, loading, updateQuantity, cartTotal, cartCount]
+    [cart, loading, addToCart, updateQuantity, removeFromCart, clearCart, fetchCart, cartTotal, cartCount]
   );
 
   return <CartContext.Provider value={value}>{children}</CartContext.Provider>;
