@@ -1,20 +1,21 @@
 import { createContext, useContext, useState, useEffect, useMemo, useCallback } from 'react';
 import axios from 'axios';
+import { setTrackerAuth } from '../utils/tracker';
 
 const AuthContext = createContext(null);
 
 const API = `${process.env.REACT_APP_BACKEND_URL}/api`;
 
+// The session lives in an httpOnly cookie set by the server; scripts never see the token
+axios.defaults.withCredentials = true;
+
 export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
-  const [token, setToken] = useState(localStorage.getItem('token'));
   const [loading, setLoading] = useState(true);
 
   const logout = useCallback(() => {
-    localStorage.removeItem('token');
-    setToken(null);
     setUser(null);
-    delete axios.defaults.headers.common['Authorization'];
+    axios.post(`${API}/auth/logout`).catch(() => {});
   }, []);
 
   const fetchUser = useCallback(async () => {
@@ -22,39 +23,34 @@ export const AuthProvider = ({ children }) => {
       const res = await axios.get(`${API}/auth/me`);
       setUser(res.data);
     } catch (err) {
-      logout();
+      setUser(null);
     } finally {
       setLoading(false);
     }
-  }, [logout]);
+  }, []);
 
   useEffect(() => {
-    if (token) {
-      axios.defaults.headers.common['Authorization'] = `Bearer ${token}`;
-      fetchUser();
-    } else {
-      setLoading(false);
-    }
-  }, [token, fetchUser]);
+    localStorage.removeItem('token');
+    fetchUser();
+  }, [fetchUser]);
 
-  // Intercept 401 responses to auto-logout on invalid/expired tokens
+  useEffect(() => { setTrackerAuth(!!user); }, [user]);
+
+  // Intercept 401 responses to auto-logout on invalid/expired sessions
   useEffect(() => {
     const interceptor = axios.interceptors.response.use(
       (response) => response,
       (error) => {
-        if (error.response?.status === 401 && token) {
+        if (error.response?.status === 401 && user) {
           logout();
         }
         return Promise.reject(error);
       }
     );
     return () => axios.interceptors.response.eject(interceptor);
-  }, [token, logout]);
+  }, [user, logout]);
 
   const startSession = useCallback((data) => {
-    localStorage.setItem('token', data.token);
-    axios.defaults.headers.common['Authorization'] = `Bearer ${data.token}`;
-    setToken(data.token);
     setUser(data.user);
     return data;
   }, []);
@@ -64,19 +60,24 @@ export const AuthProvider = ({ children }) => {
   const register = useCallback(async (data) => startSession((await axios.post(`${API}/auth/register`, data)).data), [startSession]);
 
   const refreshUser = useCallback(async () => {
-    if (token) {
+    if (user) {
       await fetchUser();
     }
-  }, [token, fetchUser]);
+  }, [user, fetchUser]);
 
-  // Memoize so context value identity is stable across renders — prevents
-  // third-party DOM/fiber walkers from re-traversing closures every render.
+  // Memoize so context value has a stable reference — avoids re-rendering all consumers on every parent render.
   const value = useMemo(
-    () => ({ user, token, loading, login, register, logout, refreshUser }),
-    [user, token, loading, login, register, logout, refreshUser]
+    () => ({ user, loading, login, register, logout, refreshUser }),
+    [user, loading, login, register, logout, refreshUser]
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 };
 
-export const useAuth = () => useContext(AuthContext);
+export const useAuth = () => {
+  const context = useContext(AuthContext);
+  if (!context) {
+    throw new Error('useAuth must be used within AuthProvider');
+  }
+  return context;
+};

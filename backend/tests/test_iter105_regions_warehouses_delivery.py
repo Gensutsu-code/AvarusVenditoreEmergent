@@ -171,6 +171,14 @@ class TestPublicWarehouses:
 
 # --- CART DELIVERY & INDIVIDUAL DELIVERY COST ---
 class TestCartDelivery:
+    @pytest.fixture(autouse=True)
+    def cart_item(self, client):
+        """Delivery cost is only calculated for a cart with goods."""
+        pid = next(p["id"] for p in client.get(f"{API}/products").json() if (p.get("stock") or 0) > 0)
+        client.post(f"{API}/cart/add", json={"product_id": pid, "quantity": 1})
+        yield
+        client.delete(f"{API}/cart/{pid}")
+
     def test_get_cart_includes_stock_regions_and_delivery_cost(self, client):
         r = client.get(f"{API}/cart")
         assert r.status_code == 200

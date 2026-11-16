@@ -2,7 +2,7 @@ from typing import Optional
 """Database connection and shared dependencies"""
 from motor.motor_asyncio import AsyncIOMotorClient
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
-from fastapi import HTTPException, Depends
+from fastapi import HTTPException, Depends, Request, Response
 from dotenv import load_dotenv
 from pathlib import Path
 import os
@@ -23,7 +23,27 @@ if not JWT_SECRET:
     raise ValueError("JWT_SECRET environment variable is required")
 JWT_ALGORITHM = "HS256"
 
-security = HTTPBearer()
+security = HTTPBearer(auto_error=False)
+AUTH_COOKIE = "access_token"
+TOKEN_TTL = 86400 * 7  # 7 days
+
+
+def request_token(request: Request, credentials: Optional[HTTPAuthorizationCredentials] = None) -> Optional[str]:
+    """Explicit Bearer header (API clients) wins, browsers use the httpOnly cookie."""
+    if credentials:
+        return credentials.credentials
+    header = request.headers.get("authorization", "")
+    if header.startswith("Bearer "):
+        return header[7:]
+    return request.cookies.get(AUTH_COOKIE)
+
+
+def set_auth_cookie(response: Response, token: str):
+    response.set_cookie(key=AUTH_COOKIE, value=token, httponly=True, secure=True, samesite="none", max_age=TOKEN_TTL, path="/")
+
+
+def clear_auth_cookie(response: Response):
+    response.delete_cookie(key=AUTH_COOKIE, httponly=True, secure=True, samesite="none", path="/")
 
 # Auth helpers
 def hash_password(password: str) -> str:
@@ -36,7 +56,7 @@ def create_token(user_id: str) -> str:
     from datetime import datetime, timezone
     payload = {
         "user_id": user_id,
-        "exp": datetime.now(timezone.utc).timestamp() + 86400 * 7  # 7 days
+        "exp": datetime.now(timezone.utc).timestamp() + TOKEN_TTL
     }
     return jwt.encode(payload, JWT_SECRET, algorithm=JWT_ALGORITHM)
 
@@ -98,9 +118,12 @@ async def effective_credit(user_id: str) -> dict:
     return {"credit_status": status, "credit_limit": eff["credit_limit"], "credit_term_days": eff["deferral_days"]}
 
 
-async def get_current_user(credentials: HTTPAuthorizationCredentials = Depends(security)):
+async def get_current_user(request: Request, credentials: Optional[HTTPAuthorizationCredentials] = Depends(security)):
+    token = request_token(request, credentials)
+    if not token:
+        raise HTTPException(status_code=403, detail="Not authenticated")
     try:
-        payload = jwt.decode(credentials.credentials, JWT_SECRET, algorithms=[JWT_ALGORITHM])
+        payload = jwt.decode(token, JWT_SECRET, algorithms=[JWT_ALGORITHM])
         user_id = payload.get("user_id")
         user = await db.users.find_one({"id": user_id}, {"_id": 0, "password": 0})
         if not user:

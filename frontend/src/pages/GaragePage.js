@@ -2,7 +2,7 @@ import { useCallback, useEffect, useState } from 'react';
 import { Link, Navigate } from 'react-router-dom';
 import axios from 'axios';
 import { toast } from 'sonner';
-import { Truck, Container, Plus, Pencil, Trash2, ShoppingCart, Package, Loader2, History } from 'lucide-react';
+import { Truck, Container, Plus, Pencil, Trash2, ShoppingCart, Package, Loader2, History, Search } from 'lucide-react';
 import { Button } from '../components/ui/button';
 import { Input } from '../components/ui/input';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '../components/ui/dialog';
@@ -15,13 +15,20 @@ const API = `${process.env.REACT_APP_BACKEND_URL}/api`;
 const money = (n) => `${new Intl.NumberFormat('ru-RU').format(Math.round(Number(n) || 0))} ₽`;
 const date = (d) => (d ? new Date(d).toLocaleDateString('ru-RU') : '');
 const err = (e) => { const d = e.response?.data?.detail; toast.error(typeof d === 'string' ? d : 'Проверьте заполнение полей'); };
-const empty = { type: 'truck', name: '', vin: '', year: '', plate: '', note: '' };
+const empty = { type: 'truck', brand: '', model: '', vin: '', year: '', plate: '', note: '' };
+// Vehicles saved before brand/model were separate keep everything in the name: first word is the brand
+const splitName = (v) => {
+  if (v.brand) return { brand: v.brand, model: v.model || '' };
+  const [brand = '', ...rest] = (v.name || '').trim().split(/\s+/);
+  return { brand, model: rest.join(' ') };
+};
 
 export default function GaragePage() {
   const { user, loading } = useAuth();
   const { addToCart } = useCart();
   const [data, setData] = useState(null);
-  const garageCfg = useFeatures().settings.garage || {};
+  const { settings, isOn } = useFeatures();
+  const garageCfg = settings.garage || {};
   const allowedTypes = garageCfg.allowed_types || ['truck', 'trailer'];
   const maxVehicles = garageCfg.max_vehicles || 0;
   const limitReached = maxVehicles > 0 && (data?.vehicles.length || 0) >= maxVehicles;
@@ -34,8 +41,10 @@ export default function GaragePage() {
   if (!user) return <Navigate to="/login" replace />;
 
   const save = async () => {
-    const payload = { ...form, vin: form.vin.trim().toUpperCase(), year: form.year ? parseInt(form.year, 10) : null };
-    if (!payload.name.trim()) { toast.error('Укажите марку и модель'); return; }
+    const brand = form.brand.trim();
+    const model = form.model.trim();
+    const payload = { ...form, brand, model, name: `${brand} ${model}`.trim(), vin: form.vin.trim().toUpperCase(), year: form.year ? parseInt(form.year, 10) : null };
+    if (!brand) { toast.error('Укажите марку'); return; }
     if (payload.vin.length !== 17) { toast.error('VIN должен содержать 17 символов'); return; }
     setSaving(true);
     try {
@@ -81,7 +90,12 @@ export default function GaragePage() {
                       <p className="text-sm text-slate-500">VIN: <span className="font-mono text-slate-700" data-testid={`garage-vin-${v.id}`}>{v.vin}</span>{v.year ? ` · ${v.year} г.` : ''}{v.plate ? ` · ${v.plate}` : ''}</p>
                       {v.note && <p className="text-xs text-slate-400 mt-0.5">{v.note}</p>}
                     </div>
-                    <button onClick={() => setForm({ ...empty, ...v, year: v.year || '' })} className="p-2 text-slate-400 hover:text-teal-600" title="Редактировать" data-testid={`garage-edit-${v.id}`}><Pencil className="w-4 h-4" /></button>
+                    {isOn('parts_finder') && (
+                      <Link to={`/parts?mode=params&vehicle=${v.id}`} className="h-9 px-3 rounded-xl flex items-center gap-1.5 bg-teal-50 text-teal-700 text-sm font-semibold hover:bg-teal-100 transition-colors duration-200" data-testid={`garage-find-parts-${v.id}`}>
+                        <Search className="w-4 h-4" />Подобрать запчасть
+                      </Link>
+                    )}
+                    <button onClick={() => setForm({ ...empty, ...v, ...splitName(v), year: v.year || '' })} className="p-2 text-slate-400 hover:text-teal-600" title="Редактировать" data-testid={`garage-edit-${v.id}`}><Pencil className="w-4 h-4" /></button>
                     <button onClick={() => remove(v)} className="p-2 text-slate-400 hover:text-rose-500" title="Удалить" data-testid={`garage-delete-${v.id}`}><Trash2 className="w-4 h-4" /></button>
                   </div>
                   <p className="mt-4 mb-2 text-sm font-semibold text-slate-700 flex items-center gap-1.5"><History className="w-4 h-4 text-teal-500" />Купленные запчасти ({v.parts.length})</p>
@@ -140,7 +154,10 @@ export default function GaragePage() {
                   <button key={id} type="button" onClick={() => setForm({ ...form, type: id })} className={`h-10 rounded-xl border text-sm font-medium transition-colors ${form.type === id ? 'border-teal-500 bg-teal-50 text-teal-700' : 'border-slate-200 text-slate-600'}`} data-testid={`garage-type-${id}`}>{label}</button>
                 ))}
               </div>
-              <div><label className={lbl}>Марка и модель *</label><Input {...f('name')} placeholder="DAF XF 105" maxLength={120} data-testid="garage-name-input" /></div>
+              <div className="grid grid-cols-2 gap-3">
+                <div><label className={lbl}>Марка *</label><Input {...f('brand')} placeholder="DAF" maxLength={60} data-testid="garage-brand-input" /></div>
+                <div><label className={lbl}>Модель</label><Input {...f('model')} placeholder="XF 105" maxLength={60} data-testid="garage-model-input" /></div>
+              </div>
               <div><label className={lbl}>VIN-код * (17 символов)</label><Input value={form.vin} onChange={(e) => setForm({ ...form, vin: e.target.value.toUpperCase().replace(/\s/g, '') })} placeholder="XLRTE47MS0E123456" maxLength={17} className="font-mono" data-testid="garage-vin-input" /><p className="text-[11px] text-slate-400 mt-1">{form.vin.length}/17</p></div>
               <div className="grid grid-cols-2 gap-3">
                 <div><label className={lbl}>Год выпуска</label><Input type="number" min="1950" max="2100" {...f('year')} data-testid="garage-year-input" /></div>

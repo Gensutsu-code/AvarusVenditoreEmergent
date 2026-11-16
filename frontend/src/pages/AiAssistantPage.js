@@ -48,7 +48,7 @@ const ProductChips = ({ products, onAdd, added }) => (
 );
 
 export default function AiAssistantPage() {
-  const { user, token } = useAuth();
+  const { user } = useAuth();
   const { addToCart } = useCart();
   const navigate = useNavigate();
   const [added, setAdded] = useState([]);
@@ -105,7 +105,8 @@ export default function AiAssistantPage() {
     try {
       const res = await fetch(`${API}/ai/assistant/chat`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json', ...(user && token ? { Authorization: `Bearer ${token}` } : {}) },
+        credentials: 'include',
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ session_id: sessionId, message: msg }),
       });
       if (!res.ok || !res.body) {

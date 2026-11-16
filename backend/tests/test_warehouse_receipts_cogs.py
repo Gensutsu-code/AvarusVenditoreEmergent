@@ -45,16 +45,10 @@ def test_receipts_list(admin_client):
     assert isinstance(r.json(), list)
 
 
-def test_create_receipt_increments_stock(admin_client):
-    # find a product
-    r = admin_client.get(f"{API}/admin/warehouse/stock")
-    items = r.json()["items"]
-    assert items, "no products"
-    p = items[0]
-    stock_before = p["stock"]
-    pid = p["id"]
-
+def test_create_receipt_increments_stock(admin_client, warehouse_id, temp_products):
+    pid = temp_products[0]
     payload = {
+        "warehouse_id": warehouse_id,
         "supplier": "TEST_supplier",
         "comment": "TEST auto pytest",
         "date": "2026-01-15T12:00:00+00:00",
@@ -67,12 +61,9 @@ def test_create_receipt_increments_stock(admin_client):
     assert doc["total_units"] == 3
     assert doc["positions"] == 1
 
-    # verify stock increased
-    r2 = admin_client.get(f"{API}/admin/warehouse/stock", params={"search": p.get("article") or p.get("name")})
-    matches = [i for i in r2.json()["items"] if i["id"] == pid]
-    assert matches
-    assert matches[0]["stock"] == stock_before + 3
-    assert matches[0]["purchase_price"] == 111.5
+    product = admin_client.get(f"{API}/products/{pid}").json()
+    assert product["stock"] == 3
+    assert product["purchase_price"] == 111.5
 
     # detail endpoint returns items
     r3 = admin_client.get(f"{API}/admin/warehouse/receipts/{doc['id']}")

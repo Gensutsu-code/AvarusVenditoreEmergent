@@ -1434,7 +1434,7 @@ async def add_to_favorites(item: FavoriteItem, user=Depends(get_current_user)):
     from routes.features import fsettings
     limit = fsettings("favorites")["max_items"]
     current = (favorites or {}).get("items", [])
-    if limit and item.product_id not in current and len(current) >= limit:
+    if limit and item.product_id not in current and await db.products.count_documents({"id": {"$in": current}}) >= limit:
         raise HTTPException(status_code=400, detail=f"В избранном может быть не больше {limit} товаров")
     if not favorites:
         await db.favorites.insert_one({"user_id": user["id"], "items": [item.product_id]})

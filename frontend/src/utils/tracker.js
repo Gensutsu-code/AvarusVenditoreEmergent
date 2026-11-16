@@ -8,7 +8,9 @@ let currentPage = null;
 let pageEnteredAt = null;
 let fingerprintSent = false;
 
-const getToken = () => localStorage.getItem('token');
+let authed = false;
+export const setTrackerAuth = (value) => { authed = value; };
+const getToken = () => authed;
 
 const getFingerprint = () => {
   if (fingerprintSent) return null;
@@ -72,7 +74,8 @@ const flush = async () => {
   try {
     await fetch(`${API}/api/track`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+      credentials: 'include',
+      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ events: batch, fingerprint })
     });
   } catch (err) {

@@ -170,7 +170,7 @@ const ExpandableProfileMenu = ({ onLogout, unreadCount = 0 }) => {
 };
 
 export const Header = () => {
-  const { user, logout, token } = useAuth();
+  const { user, logout } = useAuth();
   const { cartCount } = useCart();
   const { isOn } = useFeatures();
   const showPartsHub = isOn('ai_assistant') || isOn('parts_finder');
@@ -224,23 +224,23 @@ export const Header = () => {
   const fetchUserData = useCallback(async () => {
     if (!user || isAdmin) return;
     try {
-      const headers = { 'Authorization': `Bearer ${token}` };
+      const opts = { credentials: 'include' };
 
       // Always fetch balance regardless of notification settings
-      const balanceRes = await fetch(`${process.env.REACT_APP_BACKEND_URL}/api/user/balance`, { headers });
+      const balanceRes = await fetch(`${process.env.REACT_APP_BACKEND_URL}/api/user/balance`, opts);
       const balanceData = await balanceRes.json();
       setUserBalance(balanceData.balance ?? 0);
 
       // Credit (deferral) info
       try {
-        const creditRes = await fetch(`${process.env.REACT_APP_BACKEND_URL}/api/credit/my`, { headers });
+        const creditRes = await fetch(`${process.env.REACT_APP_BACKEND_URL}/api/credit/my`, opts);
         const creditData = await creditRes.json();
         setCreditInfo(creditData && creditData.status === 'approved' ? creditData : null);
       } catch (e) { /* ignore */ }
 
       // Chat unread count (for "Связь" badge)
       try {
-        const chatRes = await fetch(`${process.env.REACT_APP_BACKEND_URL}/api/chat/unread-count`, { headers });
+        const chatRes = await fetch(`${process.env.REACT_APP_BACKEND_URL}/api/chat/unread-count`, opts);
         const chatData = await chatRes.json();
         setChatUnread(chatData.count || 0);
       } catch (e) { /* ignore */ }
@@ -251,7 +251,7 @@ export const Header = () => {
         return;
       }
 
-      const notifRes = await fetch(`${process.env.REACT_APP_BACKEND_URL}/api/my-notifications`, { headers });
+      const notifRes = await fetch(`${process.env.REACT_APP_BACKEND_URL}/api/my-notifications`, opts);
       const notifData = await notifRes.json();
       const newCount = notifData.unread_count || 0;
       setNotificationCount(newCount);
@@ -291,7 +291,7 @@ export const Header = () => {
       }
       lastSeenCountRef.current = newCount;
     } catch (err) { console.error(err); }
-  }, [user, isAdmin, token]);
+  }, [user, isAdmin]);
 
   useEffect(() => {
     if (user && !isAdmin) {

@@ -11,12 +11,13 @@ from database import db, get_current_user
 
 router = APIRouter(tags=["garage"])
 VIN_RE = re.compile(r"^[A-HJ-NPR-Z0-9]{17}$")
-VEHICLE_FIELDS = ("type", "name", "vin", "year", "plate", "note")
 
 
 class VehicleIn(BaseModel):
     type: str = "truck"  # 'truck' | 'trailer'
-    name: str = Field(min_length=1, max_length=120)
+    name: str = Field(default="", max_length=120)
+    brand: str = Field(default="", max_length=60)
+    model: str = Field(default="", max_length=60)
     vin: str = Field(min_length=17, max_length=17)
     year: Optional[int] = Field(default=None, ge=1950, le=2100)
     plate: str = Field(default="", max_length=20)
@@ -47,7 +48,11 @@ async def _clean(user_id: str, data: VehicleIn, exclude_id: Optional[str] = None
         raise HTTPException(status_code=400, detail="VIN: 17 символов, латинские буквы (кроме I, O, Q) и цифры")
     if await db.garage_vehicles.find_one({"user_id": user_id, "vin": vin, "deleted_at": None, "id": {"$ne": exclude_id}}):
         raise HTTPException(status_code=400, detail="Авто с таким VIN уже есть в гараже")
-    return {"type": data.type, "name": data.name.strip(), "vin": vin, "year": data.year,
+    brand, model = data.brand.strip(), data.model.strip()
+    name = f"{brand} {model}".strip() if brand else data.name.strip()
+    if not name:
+        raise HTTPException(status_code=400, detail="Укажите марку техники")
+    return {"type": data.type, "name": name, "brand": brand, "model": model, "vin": vin, "year": data.year,
             "plate": data.plate.strip().upper(), "note": data.note.strip()}
 
 

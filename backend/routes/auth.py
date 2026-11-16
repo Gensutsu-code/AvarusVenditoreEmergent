@@ -1,10 +1,10 @@
 """Authentication routes"""
-from fastapi import APIRouter, HTTPException, Depends
+from fastapi import APIRouter, HTTPException, Depends, Response
 from datetime import datetime, timezone
 import uuid
 import bcrypt
 
-from database import db, get_current_user, hash_password, verify_password, create_token
+from database import db, get_current_user, hash_password, verify_password, create_token, set_auth_cookie, clear_auth_cookie
 from models import UserRegister, UserLogin, UserResponse, UserProfileUpdate
 from notify import notify_admin
 
@@ -27,7 +27,7 @@ async def create_admin_activity(user_id: str, user_name: str, activity_type: str
 
 
 @router.post("/register")
-async def register(data: UserRegister):
+async def register(data: UserRegister, response: Response):
     existing = await db.users.find_one({"email": data.email})
     if existing:
         raise HTTPException(status_code=400, detail="Email already registered")
@@ -51,6 +51,7 @@ async def register(data: UserRegister):
     await db.carts.insert_one({"user_id": user_id, "items": []})
     
     token = create_token(user_id)
+    set_auth_cookie(response, token)
     
     # Log admin activity
     await create_admin_activity(user_id, data.name, "registration", f"Новый пользователь: {data.email}")
@@ -72,7 +73,7 @@ async def register(data: UserRegister):
 
 
 @router.post("/login")
-async def login(data: UserLogin):
+async def login(data: UserLogin, response: Response):
     user = await db.users.find_one({"email": data.email})
     if not user or not verify_password(data.password, user["password"]):
         raise HTTPException(status_code=401, detail="Invalid credentials")
@@ -81,6 +82,7 @@ async def login(data: UserLogin):
         raise HTTPException(status_code=401, detail="Invalid credentials")
     
     token = create_token(user["id"])
+    set_auth_cookie(response, token)
     return {
         "token": token, 
         "user": {
@@ -94,6 +96,12 @@ async def login(data: UserLogin):
             "avatar_url": user.get("avatar_url")
         }
     }
+
+
+@router.post("/logout")
+async def logout(response: Response):
+    clear_auth_cookie(response)
+    return {"success": True}
 
 
 @router.get("/me", response_model=UserResponse)

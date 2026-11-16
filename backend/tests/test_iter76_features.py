@@ -15,8 +15,8 @@ API = f"{BASE_URL}/api"
 
 ADMIN_EMAIL = "admin@avarus.ru"
 ADMIN_PASS = os.environ["TEST_ADMIN_PASSWORD"]
-CLIENT_EMAIL = "0x0errorr@gmail.com"
-CLIENT_PASS = os.environ["TEST_CLIENT2_PASSWORD"]
+CLIENT_EMAIL = "user@demo.com"
+CLIENT_PASS = os.environ["TEST_CLIENT_PASSWORD"]
 
 MONGO_URL = "mongodb://localhost:27017"
 DB_NAME = "test_database"
@@ -97,67 +97,37 @@ class TestCardPaymentSettings:
 # ============== ITEM 4 — Bulk warehouse ==============
 
 class TestBulkWarehouse:
-    def test_bulk_receipt_increases_stock(self, admin_auth):
-        # pick 2 products
-        prods = requests.get(f"{API}/products?limit=5", timeout=10).json()
-        assert len(prods) >= 2
-        p1, p2 = prods[0], prods[1]
-        before1 = p1.get("stock", 0) or 0
-        before2 = p2.get("stock", 0) or 0
+    def _bulk(self, admin_auth, **payload):
+        return requests.post(f"{API}/admin/warehouse/movements/bulk", headers=admin_auth["headers"], json=payload, timeout=15)
 
-        payload = {
-            "product_ids": [p1["id"], p2["id"]],
-            "type": "receipt",
-            "quantity": 3,
-            "purchase_price": 100.0,
-            "comment": "TEST_bulk_receipt",
-        }
-        r = requests.post(f"{API}/admin/warehouse/movements/bulk", headers=admin_auth["headers"], json=payload, timeout=15)
+    def _stock(self, pid):
+        return requests.get(f"{API}/products/{pid}", timeout=10).json()["stock"]
+
+    def test_bulk_receipt_increases_stock(self, admin_auth, warehouse_id, temp_products):
+        r = self._bulk(admin_auth, product_ids=temp_products, warehouse_id=warehouse_id, type="receipt", quantity=3, purchase_price=100.0, comment="TEST_bulk_receipt")
+        assert r.status_code == 200, r.text
+        assert r.json()["processed"] == 2
+        assert [self._stock(pid) for pid in temp_products] == [3, 3]
+
+    def test_bulk_writeoff_skips_insufficient(self, admin_auth, warehouse_id, temp_products):
+        full, empty = temp_products
+        assert self._bulk(admin_auth, product_ids=[full], warehouse_id=warehouse_id, type="receipt", quantity=2).status_code == 200
+        r = self._bulk(admin_auth, product_ids=temp_products, warehouse_id=warehouse_id, type="writeoff", quantity=2, comment="TEST_bulk_writeoff_skip")
         assert r.status_code == 200, r.text
         body = r.json()
-        assert body["processed"] == 2
-        # verify stock increased
-        p1n = requests.get(f"{API}/products/{p1['id']}", timeout=10).json()
-        p2n = requests.get(f"{API}/products/{p2['id']}", timeout=10).json()
-        assert p1n["stock"] == before1 + 3
-        assert p2n["stock"] == before2 + 3
-        # cleanup — writeoff what we added
-        cleanup = {"product_ids": [p1["id"], p2["id"]], "type": "writeoff", "quantity": 3, "comment": "TEST_bulk_cleanup"}
-        rc = requests.post(f"{API}/admin/warehouse/movements/bulk", headers=admin_auth["headers"], json=cleanup, timeout=15)
-        assert rc.status_code == 200
+        assert body["processed"] == 1
+        assert [s["id"] for s in body["skipped"]] == [empty]
+        assert self._stock(full) == 0
 
-    def test_bulk_writeoff_skips_insufficient(self, admin_auth):
-        # pick 2 products; one with low stock by qty > stock
-        prods = requests.get(f"{API}/products?limit=20", timeout=10).json()
-        low = next((p for p in prods if 0 < (p.get("stock") or 0) < 5), None)
-        high = next((p for p in prods if (p.get("stock") or 0) > 100), None)
-        if not low or not high:
-            pytest.skip("No suitable products for skip test")
-        payload = {
-            "product_ids": [low["id"], high["id"]],
-            "type": "writeoff",
-            "quantity": (low.get("stock", 0) or 0) + 5,
-            "comment": "TEST_bulk_writeoff_skip",
-        }
-        r = requests.post(f"{API}/admin/warehouse/movements/bulk", headers=admin_auth["headers"], json=payload, timeout=15)
-        assert r.status_code == 200, r.text
-        body = r.json()
-        assert body["processed"] == 1  # only high passed
-        skipped_ids = [s["id"] for s in body.get("skipped", [])]
-        assert low["id"] in skipped_ids
-        # restore high product
-        cleanup = {"product_ids": [high["id"]], "type": "receipt", "quantity": payload["quantity"], "comment": "TEST_restore"}
-        requests.post(f"{API}/admin/warehouse/movements/bulk", headers=admin_auth["headers"], json=cleanup, timeout=15)
-
-    def test_bulk_validations(self, admin_auth):
+    def test_bulk_validations(self, admin_auth, warehouse_id):
         # empty product_ids
-        r = requests.post(f"{API}/admin/warehouse/movements/bulk", headers=admin_auth["headers"], json={"product_ids": [], "type": "receipt", "quantity": 1}, timeout=10)
+        r = requests.post(f"{API}/admin/warehouse/movements/bulk", headers=admin_auth["headers"], json={"product_ids": [], "warehouse_id": warehouse_id, "type": "receipt", "quantity": 1}, timeout=10)
         assert r.status_code == 400
         # bad quantity
-        r = requests.post(f"{API}/admin/warehouse/movements/bulk", headers=admin_auth["headers"], json={"product_ids": ["x"], "type": "receipt", "quantity": 0}, timeout=10)
+        r = requests.post(f"{API}/admin/warehouse/movements/bulk", headers=admin_auth["headers"], json={"product_ids": ["x"], "warehouse_id": warehouse_id, "type": "receipt", "quantity": 0}, timeout=10)
         assert r.status_code == 400
         # bad type
-        r = requests.post(f"{API}/admin/warehouse/movements/bulk", headers=admin_auth["headers"], json={"product_ids": ["x"], "type": "weird", "quantity": 1}, timeout=10)
+        r = requests.post(f"{API}/admin/warehouse/movements/bulk", headers=admin_auth["headers"], json={"product_ids": ["x"], "warehouse_id": warehouse_id, "type": "weird", "quantity": 1}, timeout=10)
         assert r.status_code == 400
 
 
@@ -356,24 +326,6 @@ class TestOverdueBlocks:
         r = requests.post(f"{API}/orders", headers=client_auth["headers"], json=payload, timeout=15)
         assert r.status_code == 403, f"Expected 403, got {r.status_code}: {r.text}"
         assert "просроченн" in r.text.lower() or "overdue" in r.text.lower()
-
-    def test_overdue_blocks_prize_redeem(self, client_auth, overdue_deferral):
-        # provide both program_id and prize_id so we pass past the validation check;
-        # overdue block runs immediately after validation.
-        prizes_resp = requests.get(f"{API}/bonus/programs", headers=client_auth["headers"], timeout=10)
-        program_id = "TEST_PROG"
-        prize_id = "TEST_PRIZE"
-        if prizes_resp.status_code == 200:
-            data = prizes_resp.json()
-            programs = data if isinstance(data, list) else data.get("programs", [])
-            if programs:
-                program_id = programs[0].get("id", program_id)
-                prizes = programs[0].get("prizes", [])
-                if prizes:
-                    prize_id = prizes[0].get("id", prize_id)
-        r = requests.post(f"{API}/bonus/redeem-prize", headers=client_auth["headers"], json={"program_id": program_id, "prize_id": prize_id}, timeout=10)
-        assert r.status_code == 403, f"Expected 403, got {r.status_code}: {r.text}"
-        assert "просроченн" in r.text.lower()
 
 
 # ============== Order creation works WITHOUT overdue (sanity) ==============

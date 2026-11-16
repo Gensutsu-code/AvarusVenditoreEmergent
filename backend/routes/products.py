@@ -587,6 +587,7 @@ async def delete_product(product_id: str, user=Depends(get_current_user)):
     result = await db.products.delete_one({"id": product_id})
     if result.deleted_count == 0:
         raise HTTPException(status_code=404, detail="Product not found")
+    await db.stock_levels.delete_many({"product_id": product_id})
     return {"message": "Product deleted"}
 
 

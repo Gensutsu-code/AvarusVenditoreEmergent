@@ -18,8 +18,8 @@ import pytest
 BASE_URL = os.environ.get("REACT_APP_BACKEND_URL").rstrip("/")
 ADMIN_EMAIL = "admin@avarus.ru"
 ADMIN_PASSWORD = os.environ["TEST_ADMIN_PASSWORD"]
-CLIENT_EMAIL = "0x0errorr@gmail.com"
-CLIENT_PASSWORD = os.environ["TEST_CLIENT2_PASSWORD"]
+CLIENT_EMAIL = "user@demo.com"
+CLIENT_PASSWORD = os.environ["TEST_CLIENT_PASSWORD"]
 
 
 def _login(email, password):
@@ -81,8 +81,8 @@ class TestStock:
 # ---------- Movements ----------
 
 class TestMovements:
-    def test_receipt_updates_stock_and_purchase_price(self, admin_headers, test_product):
-        body = {"product_id": test_product, "type": "receipt", "quantity": 5,
+    def test_receipt_updates_stock_and_purchase_price(self, admin_headers, test_product, warehouse_id):
+        body = {"product_id": test_product, "warehouse_id": warehouse_id, "type": "receipt", "quantity": 5,
                 "purchase_price": 250, "supplier": "TEST_supplier"}
         r = requests.post(f"{BASE_URL}/api/admin/warehouse/movement", json=body, headers=admin_headers)
         assert r.status_code == 200, r.text
@@ -99,8 +99,8 @@ class TestMovements:
         assert prod["stock"] == 5
         assert prod["purchase_price"] == 250
 
-    def test_writeoff_decrements_stock(self, admin_headers, test_product):
-        body = {"product_id": test_product, "type": "writeoff", "quantity": 2, "reason": "TEST_damaged"}
+    def test_writeoff_decrements_stock(self, admin_headers, test_product, warehouse_id):
+        body = {"product_id": test_product, "warehouse_id": warehouse_id, "type": "writeoff", "quantity": 2, "reason": "TEST_damaged"}
         r = requests.post(f"{BASE_URL}/api/admin/warehouse/movement", json=body, headers=admin_headers)
         assert r.status_code == 200, r.text
         mv = r.json()
@@ -108,20 +108,20 @@ class TestMovements:
         assert mv["stock_before"] == 5
         assert mv["stock_after"] == 3
 
-    def test_writeoff_overflow_blocked(self, admin_headers, test_product):
-        body = {"product_id": test_product, "type": "writeoff", "quantity": 9999}
+    def test_writeoff_overflow_blocked(self, admin_headers, test_product, warehouse_id):
+        body = {"product_id": test_product, "warehouse_id": warehouse_id, "type": "writeoff", "quantity": 9999}
         r = requests.post(f"{BASE_URL}/api/admin/warehouse/movement", json=body, headers=admin_headers)
         assert r.status_code == 400
         # stock unchanged
         prod = requests.get(f"{BASE_URL}/api/products/{test_product}").json()
         assert prod["stock"] == 3
 
-    def test_invalid_type_and_qty(self, admin_headers, test_product):
+    def test_invalid_type_and_qty(self, admin_headers, test_product, warehouse_id):
         r = requests.post(f"{BASE_URL}/api/admin/warehouse/movement", json={
-            "product_id": test_product, "type": "garbage", "quantity": 1}, headers=admin_headers)
+            "product_id": test_product, "warehouse_id": warehouse_id, "type": "garbage", "quantity": 1}, headers=admin_headers)
         assert r.status_code == 400
         r = requests.post(f"{BASE_URL}/api/admin/warehouse/movement", json={
-            "product_id": test_product, "type": "receipt", "quantity": 0}, headers=admin_headers)
+            "product_id": test_product, "warehouse_id": warehouse_id, "type": "receipt", "quantity": 0}, headers=admin_headers)
         assert r.status_code == 400
 
     def test_list_movements_with_filter(self, admin_headers, test_product):

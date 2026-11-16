@@ -9,7 +9,8 @@ const API = `${process.env.REACT_APP_BACKEND_URL}/api`;
 export const CartProvider = ({ children }) => {
   const [cart, setCart] = useState({ items: [] });
   const [loading, setLoading] = useState(false);
-  const { user, token } = useAuth();
+  const { user } = useAuth();
+  const token = !!user;
   const pendingUpdates = useRef({});
   const debounceTimers = useRef({});
 

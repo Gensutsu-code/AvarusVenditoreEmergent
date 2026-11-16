@@ -48,18 +48,26 @@ export default function PartsFinderPage() {
 
   const update = (k, v) => setForm((f) => ({ ...f, [k]: v }));
 
+  // Older vehicles keep brand and model together in the name: first word is the brand
+  const applyVehicle = (v) => {
+    const [first = '', ...rest] = (v.name || '').trim().split(/\s+/);
+    setVehicleId(v.id);
+    setForm((f) => ({ ...f, vin: v.vin || '', brand: v.brand || first, model: v.brand ? (v.model || '') : rest.join(' '), year: v.year ? String(v.year) : '' }));
+  };
+
   useEffect(() => {
     if (!user || !garageOn) { setVehicles([]); return; }
-    axios.get(`${API}/garage/vehicles`).then((r) => setVehicles(r.data || [])).catch(() => setVehicles([]));
+    axios.get(`${API}/garage/vehicles`).then((r) => {
+      const list = r.data || [];
+      setVehicles(list);
+      const preset = list.find((v) => v.id === new URLSearchParams(window.location.search).get('vehicle'));
+      if (preset) applyVehicle(preset);
+    }).catch(() => setVehicles([]));
   }, [user, garageOn]);
 
-  // Vehicle name is free text ("MAN TGA 18.440"): first word goes to the brand, the rest to the model
   const pickVehicle = (id) => {
-    setVehicleId(id);
     const v = vehicles.find((x) => x.id === id);
-    if (!v) return;
-    const [brand = '', ...rest] = (v.name || '').trim().split(/\s+/);
-    setForm((f) => ({ ...f, vin: v.vin || '', brand, model: rest.join(' '), year: v.year ? String(v.year) : '' }));
+    if (v) applyVehicle(v);
   };
 
   const fetchAccess = useCallback(async () => {

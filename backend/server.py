@@ -12,6 +12,8 @@ from pathlib import Path
 from contextlib import asynccontextmanager
 from routes.warehouse import restore_order_stock, migrate_legacy_stock, migrate_regions
 import os
+from urllib.parse import urlparse
+from database import request_token, AUTH_COOKIE
 import logging
 import asyncio
 import time
@@ -217,9 +219,8 @@ class ActionLoggingMiddleware(BaseHTTPMiddleware):
         user_id = None
         user_name = None
         user_role = None
-        auth_header = request.headers.get("authorization", "")
-        if auth_header.startswith("Bearer "):
-            token = auth_header[7:]
+        token = request_token(request)
+        if token:
             try:
                 payload = jwt.decode(token, JWT_SECRET, algorithms=["HS256"])
                 uid = payload.get("user_id")
@@ -302,6 +303,26 @@ async def root():
     return {"message": "Heavy Vehicle Parts Store API", "version": "2.0"}
 
 app.include_router(api_health_router)
+
+def _trusted_hosts(request: Request) -> set:
+    hosts = {request.headers.get("host", "")}
+    hosts.update(h.strip() for h in request.headers.get("x-forwarded-host", "").split(","))
+    for origin in [os.environ.get("FRONTEND_URL", ""), *os.environ.get("CORS_ORIGINS", "").split(",")]:
+        hosts.add(urlparse(origin.strip()).netloc)
+    hosts.discard("")
+    return hosts
+
+
+@app.middleware("http")
+async def cookie_origin_guard(request: Request, call_next):
+    """The login cookie is only honoured for requests coming from the site itself (CSRF protection)."""
+    origin = request.headers.get("origin")
+    if origin and AUTH_COOKIE in request.cookies and "authorization" not in request.headers \
+            and urlparse(origin).netloc not in _trusted_hosts(request):
+        from fastapi.responses import JSONResponse
+        return JSONResponse(status_code=403, content={"detail": "Запрос с постороннего сайта отклонён"})
+    return await call_next(request)
+
 
 # CORS middleware
 app.add_middleware(

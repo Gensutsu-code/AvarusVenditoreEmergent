@@ -15,7 +15,7 @@ from fastapi.responses import StreamingResponse
 from pydantic import BaseModel, Field
 from emergentintegrations.llm.chat import LlmChat, UserMessage, TextDelta, StreamDone
 
-from database import db, get_current_user, JWT_SECRET, JWT_ALGORITHM
+from database import db, get_current_user, JWT_SECRET, JWT_ALGORITHM, request_token
 from notify import notify_admin
 
 router = APIRouter(tags=["ai"])
@@ -28,11 +28,12 @@ GUEST_TOTAL_DAILY_LIMIT = 300  # all guests together per day — protects the AI
 optional_security = HTTPBearer(auto_error=False)
 
 
-async def get_optional_user(credentials: Optional[HTTPAuthorizationCredentials] = Depends(optional_security)):
-    if not credentials:
+async def get_optional_user(request: Request, credentials: Optional[HTTPAuthorizationCredentials] = Depends(optional_security)):
+    token = request_token(request, credentials)
+    if not token:
         return None
     try:
-        payload = jwt.decode(credentials.credentials, JWT_SECRET, algorithms=[JWT_ALGORITHM])
+        payload = jwt.decode(token, JWT_SECRET, algorithms=[JWT_ALGORITHM])
     except jwt.PyJWTError:
         return None
     user = await db.users.find_one({"id": payload.get("user_id")}, {"_id": 0, "password": 0})
