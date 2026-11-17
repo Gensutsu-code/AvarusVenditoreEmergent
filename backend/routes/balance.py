@@ -380,3 +380,70 @@ async def admin_debit_balance(user_id: str, body: AdminBalanceAdjust, user=Depen
         "new_balance": new_balance,
         "transaction_id": transaction_id,
     }
+
+
+# ==================== ORDER REFUNDS ====================
+
+def order_paid_amount(order: dict) -> float:
+    """Money really received for the order: balance part + confirmed card / crypto / repaid deferral."""
+    from_balance = float(order.get("paid_from_balance") or 0)
+    if order.get("payment_status") != "paid":
+        return round(from_balance, 2)
+    if order.get("payment_method") == "mixed" and order.get("card_amount"):
+        return round(from_balance + float(order["card_amount"]), 2)
+    total = order.get("previous_total") if order.get("awaiting_confirmation") and order.get("previous_total") is not None else order.get("total")
+    return round(max(float(total or 0), from_balance), 2)
+
+
+def unshipped_refund_target(order: dict, items: list) -> float:
+    """Part of the received money that covers goods which were not shipped."""
+    goods = sum(float(i.get("price") or 0) * int(i.get("quantity") or 0) for i in items)
+    unshipped = sum(float(i.get("price") or 0) * (int(i.get("quantity") or 0) - int(i.get("quantity_fulfilled") or 0)) for i in items)
+    total = float(order.get("total") or 0)
+    scale = min(1.0, max(0.0, total - float(order.get("delivery_fee") or 0)) / goods) if goods > 0 else 0.0
+    return max(0.0, round(order_paid_amount(order) - (total - unshipped * scale), 2))
+
+
+async def settle_order_refund(order: dict, target: float, description: str) -> float:
+    """Brings the amount refunded for the order to `target`, once: the difference goes to (or is taken from) the client's balance."""
+    fresh = await db.orders.find_one({"id": order["id"]}, {"_id": 0, "refunded_amount": 1}) or {}
+    old = round(float(fresh.get("refunded_amount") or 0), 2)
+    target = round(max(0.0, target), 2)
+    delta = round(target - old, 2)
+    if delta == 0:
+        return 0.0
+    claimed = await db.orders.update_one(
+        {"id": order["id"], "refunded_amount": {"$in": [None, 0]} if old == 0 else old},
+        {"$set": {"refunded_amount": target}},
+    )
+    if claimed.modified_count == 0:
+        return 0.0
+    if delta < 0:
+        charged = await db.users.update_one({"id": order["user_id"], "balance": {"$gte": -delta}}, {"$inc": {"balance": delta}})
+        if charged.modified_count == 0:
+            await db.orders.update_one({"id": order["id"], "refunded_amount": target}, {"$set": {"refunded_amount": old}})
+            raise HTTPException(status_code=400, detail=f"На балансе клиента недостаточно средств для догрузки: нужно {-delta:.2f} ₽")
+    else:
+        await db.users.update_one({"id": order["user_id"]}, {"$inc": {"balance": delta}})
+    await db.balance_transactions.insert_one({
+        "id": str(uuid.uuid4()),
+        "user_id": order["user_id"],
+        "type": "refund" if delta > 0 else "payment",
+        "amount": delta,
+        "method": "balance",
+        "status": "completed",
+        "order_id": order["id"],
+        "created_at": datetime.now(timezone.utc).isoformat(),
+        "description": description,
+    })
+    return delta
+
+
+async def refund_cancelled_order(order: dict, notify: bool = True) -> float:
+    """Any cancellation returns the received money to the client's balance (shipped goods stay paid)."""
+    shipped = order.get("status") == "partially_fulfilled" and any(int(i.get("quantity_fulfilled") or 0) > 0 for i in order.get("items", []))
+    target = unshipped_refund_target(order, order.get("items", [])) if shipped else order_paid_amount(order)
+    refunded = await settle_order_refund(order, target, f"Возврат за отменённый заказ #{order['id'][:8]}")
+    if refunded > 0 and notify:
+        await notify_user(order["user_id"], "balance", "Возврат на баланс", f"За отменённый заказ #{order['id'][:8]} на баланс возвращено {refunded:.2f} ₽", "/account")
+    return refunded

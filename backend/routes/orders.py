@@ -13,7 +13,8 @@ from models import CartItem, OrderCreate, OrderResponse, FavoriteItem
 from notify import notify_user, notify_admin
 from routes.telegram import send_telegram_order_notification
 from routes.credit import has_overdue_deferral
-from routes.warehouse import allocate_stock, restore_stock, stock_sync_enabled, restore_order_stock, ensure_available, low_stock_query, default_min_stock
+from routes.balance import refund_cancelled_order, settle_order_refund, unshipped_refund_target
+from routes.warehouse import allocate_stock, restore_stock, stock_sync_enabled, restore_order_stock, ensure_available, settle_fulfilment_stock, low_stock_query, default_min_stock
 
 router = APIRouter(tags=["orders"])
 
@@ -1004,6 +1005,7 @@ async def check_expired_orders(user=Depends(get_current_user)):
         if claimed.modified_count == 0:
             continue
         await _restore_order_stock(order)
+        await refund_cancelled_order(order)
         
         # Notify user
         await create_notification(
@@ -1381,26 +1383,7 @@ async def cancel_order_by_customer(order_id: str, user=Depends(get_current_user)
     # Restore stock
     await _restore_order_stock(order)
     
-    # Refund to balance if order was paid (not cash)
-    refund_amount = 0
-    payment_method = order.get("payment_method", "cash")
-    is_paid = order.get("paid", False)
-    paid_from_balance = order.get("paid_from_balance", 0)
-    
-    if is_paid and payment_method != "cash":
-        # Use previous_total if awaiting confirmation, otherwise use total
-        refund_amount = order.get("previous_total", order.get("total", 0)) if is_awaiting else order.get("total", 0)
-        if refund_amount > 0:
-            await db.users.update_one(
-                {"id": user["id"]},
-                {"$inc": {"balance": refund_amount}}
-            )
-    elif paid_from_balance > 0:
-        refund_amount = paid_from_balance
-        await db.users.update_one(
-            {"id": user["id"]},
-            {"$inc": {"balance": refund_amount}}
-        )
+    refund_amount = await refund_cancelled_order(order, notify=False)
     
     await db.orders.update_one(
         {"id": order_id},
@@ -1623,6 +1606,8 @@ async def merge_orders(payload: dict, user: dict = Depends(get_current_user)):
                 merged[pid] = {**it, "quantity_fulfilled": 0}
 
     merged_items = list(merged.values())
+    if any(o.get("shipped_allocations") or float(o.get("refunded_amount") or 0) > 0 for o in orders):
+        raise HTTPException(status_code=400, detail="Заказ с частичной отгрузкой нельзя объединить: неотгруженный остаток уже возвращён на склад")
     new_total = round(sum(float(o.get("total") or 0) for o in orders), 2)
     goods_total = round(sum(float(o.get("original_total") or o.get("total") or 0) for o in orders), 2)
     stock_by_product: dict = {}
@@ -1705,6 +1690,8 @@ async def fulfill_order_partial(order_id: str, payload: dict, user: dict = Depen
     order = await db.orders.find_one({"id": order_id}, {"_id": 0})
     if not order:
         raise HTTPException(status_code=404, detail="Order not found")
+    if order.get("status") == "cancelled":
+        raise HTTPException(status_code=400, detail="Заказ отменён: отгрузка невозможна")
 
     fulfill_map = {it.get("product_id"): int(it.get("quantity_fulfilled", 0)) for it in items_payload}
     updated_items = []
@@ -1740,6 +1727,17 @@ async def fulfill_order_partial(order_id: str, payload: dict, user: dict = Depen
     if new_status == "completed" and order.get("status") != "completed":
         set_data["completed_at"] = datetime.now(timezone.utc).isoformat()
 
+    # Unshipped goods go back to stock and their paid part back to the client's balance (and the other way round on a later top-up shipment)
+    partial = any_fulfilled and not all_fulfilled
+    refund_before = float(order.get("refunded_amount") or 0)
+    refund_label = f"Частичная отгрузка заказа #{order_id[:8]}"
+    refunded = await settle_order_refund(order, unshipped_refund_target(order, updated_items) if partial else 0, refund_label)
+    try:
+        set_data.update(await settle_fulfilment_stock(order, updated_items, partial, user.get("name") or user.get("email", "")))
+    except HTTPException:
+        await settle_order_refund(order, refund_before, refund_label)
+        raise
+
     await db.orders.update_one(
         {"id": order_id},
         {"$set": set_data},
@@ -1762,9 +1760,13 @@ async def fulfill_order_partial(order_id: str, payload: dict, user: dict = Depen
             fulfilled_count = sum(int(it.get("quantity_fulfilled", 0)) for it in updated_items)
             total_count = sum(int(it.get("quantity", 0)) for it in updated_items)
             msg = f"По заказу #{order_id[:8]} отгружено {fulfilled_count} из {total_count} позиций. Сумма к оплате: {int(fulfilled_total)} ₽"
+        if refunded > 0:
+            msg += f". На ваш баланс возвращено {refunded:.2f} ₽ за неотгруженный товар"
+        elif refunded < 0:
+            msg += f". С вашего баланса списано {-refunded:.2f} ₽ за дополнительно отгруженный товар"
         await notify_user(user_id, "order", title, msg, f"/orders/{order_id}")
 
-    return {"success": True, "status": new_status, "fulfilled_total": fulfilled_total, "items": updated_items}
+    return {"success": True, "status": new_status, "fulfilled_total": fulfilled_total, "items": updated_items, "refunded": refunded}
 
 
 @router.get("/rewards/cart-preview")

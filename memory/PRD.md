@@ -388,3 +388,9 @@ Owner decisions: the third-party card gateway is removed for good (do not offer 
 - P2: single role dependency instead of ~190 inline checks; N+1 queries and pagination; split create_order & other complex functions; split AdminPage/BonusTab/CRMTab/AdminChatsPage (compare with baseline screenshots)
 - P2: API for Android (refresh tokens, /api/v1, unified errors, push)
 - P3: remove unused ui files/packages/variables after checking production logs
+
+## Refunds on cancellation and partial shipment (June 2026)
+- `routes/balance.py`: `order_paid_amount`, `unshipped_refund_target`, `settle_order_refund` (cumulative `orders.refunded_amount`, atomic claim, `balance_transactions` type refund/payment with `order_id`), `refund_cancelled_order` — called from every cancellation path (client, admin status change x2, expiry x3). Shipped goods stay paid.
+- `PATCH /api/admin/orders/{id}/fulfill`: `settle_fulfilment_stock` (warehouse.py) returns unshipped units to stock (order gets `stock_settled`, `shipped_allocations`, empty `stock_allocations`); the paid part goes to the balance. Raising shipped qty later takes goods from stock and money from balance again (400 if either is missing). Cancelled orders cannot be fulfilled; orders with released remainder cannot be merged.
+- Tests: `backend/tests/test_iter124_refunds.py`.
+- Not covered: unpaid deferral debt is not closed when its order is cancelled; deleting an order and moving a cancelled order back to an active status do no money/stock settlement.

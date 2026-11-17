@@ -12,6 +12,7 @@ from database import db, get_current_user, hash_password
 from models import AdminUserCreate, AdminUserUpdate, AdminOrderUpdate
 from routes.bonus import update_bonus_on_order_delivered
 from routes.warehouse import restore_order_stock
+from routes.balance import refund_cancelled_order
 from routes.action_logs import log_action
 
 router = APIRouter(prefix="/admin", tags=["admin"])
@@ -450,6 +451,7 @@ async def update_admin_order(order_id: str, data: AdminOrderUpdate, user=Depends
             await restore_order_stock(original_order)
             from routes.rewards import refund_order_cashback
             await refund_order_cashback(original_order)
+            await refund_cancelled_order(original_order)
         
         status_labels = {
             "pending": "ожидает обработки",
@@ -503,6 +505,7 @@ async def update_order_status(order_id: str, status: str, user=Depends(get_curre
     # Restore stock if cancelling
     if status == "cancelled" and old_status != "cancelled":
         await restore_order_stock(order)
+        await refund_cancelled_order(order)
     
     await db.orders.update_one({"id": order_id}, {"$set": {"status": status, "previous_status": old_status, **({"completed_at": datetime.now(timezone.utc).isoformat()} if status == "completed" and old_status != "completed" else {})}})
     

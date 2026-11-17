@@ -327,6 +327,8 @@ export default function AdminOrdersPage() {
           ? 'Заказ полностью выполнен'
           : `Частичная отгрузка сохранена (${formatPrice(res.data.fulfilled_total)} ₽)`
       );
+      if (res.data.refunded > 0) toast.info(`Клиенту возвращено на баланс ${formatPrice(res.data.refunded)} ₽, неотгруженный товар вернулся на склад`);
+      if (res.data.refunded < 0) toast.info(`С баланса клиента списано ${formatPrice(-res.data.refunded)} ₽ за догрузку`);
       setFulfillModal(null);
       await fetchOrders();
     } catch (err) {

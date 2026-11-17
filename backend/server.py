@@ -11,6 +11,7 @@ from dotenv import load_dotenv
 from pathlib import Path
 from contextlib import asynccontextmanager
 from routes.warehouse import restore_order_stock, migrate_legacy_stock, migrate_regions, reconcile_all_stock
+from routes.balance import refund_cancelled_order
 import os
 from urllib.parse import urlparse
 from database import request_token, AUTH_COOKIE
@@ -56,6 +57,7 @@ async def check_expired_orders_task():
             for order in expired_orders:
                 # Restore stock (per-warehouse when allocations exist)
                 await restore_order_stock(order)
+                await refund_cancelled_order(order)
                 
                 # Cancel the order
                 await db.orders.update_one(
@@ -89,6 +91,7 @@ async def check_expired_orders_task():
             pay_cancelled = 0
             for order in due_expired:
                 await restore_order_stock(order)
+                await refund_cancelled_order(order)
                 await db.orders.update_one(
                     {"id": order["id"]},
                     {"$set": {

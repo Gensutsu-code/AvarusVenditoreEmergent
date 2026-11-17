@@ -253,7 +253,7 @@ async def restore_order_stock(order):
     from routes.rewards import refund_order_cashback
     await refund_order_cashback(order)
     allocs = order.get("stock_allocations")
-    if not allocs:  # orders placed before per-warehouse stock: goods go back to the main warehouse
+    if not allocs and not order.get("stock_settled"):  # orders placed before per-warehouse stock: goods go back to the main warehouse
         wh_id = await default_warehouse_id()
         allocs = [{"product_id": i.get("product_id"), "allocations": [{"warehouse_id": wh_id, "quantity": i.get("quantity", 0)}]} for i in order.get("items", [])]
     for a in allocs:
@@ -265,6 +265,68 @@ async def restore_order_stock(order):
         before = int(product.get("stock", 0) or 0)
         await log_movement(a["product_id"], "cancel", qty, before, before + qty, "Система",
                            comment=f"Отмена заказа #{order.get('id', '')[:8]}", order_id=order.get("id"), warehouse_allocations=a["allocations"])
+
+
+def _take_units(allocations: list, qty: int) -> list:
+    """Removes qty units from the end of an allocation list and returns them."""
+    taken = []
+    while qty > 0 and allocations:
+        last = allocations[-1]
+        n = min(qty, int(last.get("quantity", 0) or 0))
+        taken.append({"warehouse_id": last["warehouse_id"], "quantity": n})
+        last["quantity"] = int(last.get("quantity", 0) or 0) - n
+        if last["quantity"] <= 0:
+            allocations.pop()
+        qty -= n
+    return taken
+
+
+async def settle_fulfilment_stock(order: dict, items: list, partial: bool, by: str) -> dict:
+    """Partial shipment: the order keeps only shipped goods, the rest goes back to the shelves.
+    A later change of shipped quantities takes goods from stock again (or returns them)."""
+    held: dict = {}
+    for key in ("stock_allocations", "shipped_allocations"):
+        for entry in (order.get(key) or []):
+            held.setdefault(entry["product_id"], []).extend(dict(a) for a in (entry.get("allocations") or []))
+    if not held and not order.get("stock_settled"):
+        wh_id = await default_warehouse_id()
+        held = {i["product_id"]: [{"warehouse_id": wh_id, "quantity": int(i.get("quantity", 0) or 0)}] for i in order.get("items", [])}
+    wanted = {i["product_id"]: int(i.get("quantity_fulfilled") or 0) if partial else int(i.get("quantity") or 0) for i in items}
+    have = {pid: sum(int(a.get("quantity", 0) or 0) for a in held.get(pid, [])) for pid in wanted}
+    label = f"заказу #{order['id'][:8]}"
+    client = await db.users.find_one({"id": order.get("user_id")}, {"_id": 0, "region": 1}) or {}
+    strict = await stock_sync_enabled()
+
+    taken = []
+    for pid, qty in wanted.items():
+        need = qty - have[pid]
+        if need <= 0:
+            continue
+        product = await db.products.find_one({"id": pid}, {"_id": 0, "stock": 1, "name": 1}) or {}
+        allocations = await allocate_stock(pid, need, client.get("region") or "")
+        if allocations is None:
+            if not strict:
+                continue
+            for done_pid, done in taken:
+                await restore_stock(done_pid, done)
+            raise HTTPException(status_code=400, detail=f"«{product.get('name', '')}»: на складе недостаточно товара для догрузки ({need} шт.)")
+        taken.append((pid, allocations))
+        held.setdefault(pid, []).extend(allocations)
+        before = int(product.get("stock", 0) or 0)
+        await log_movement(pid, "sale", need, before, before - need, by, comment=f"Догрузка по {label}", order_id=order["id"], warehouse_allocations=allocations)
+
+    for pid, qty in wanted.items():
+        extra = have[pid] - qty
+        if extra <= 0:
+            continue
+        released = _take_units(held[pid], extra)
+        product = await db.products.find_one({"id": pid}, {"_id": 0, "stock": 1}) or {}
+        await restore_stock(pid, released)
+        before = int(product.get("stock", 0) or 0)
+        await log_movement(pid, "cancel", extra, before, before + extra, by, comment=f"Возврат неотгруженного остатка по {label}", order_id=order["id"], warehouse_allocations=released)
+
+    allocs = [{"product_id": pid, "allocations": a} for pid, a in held.items() if a]
+    return {"stock_allocations": [] if partial else allocs, "shipped_allocations": allocs if partial else [], "stock_settled": True}
 
 
 async def migrate_legacy_stock():
