@@ -153,22 +153,20 @@ CARD_PAY_DEFAULTS = {
 
 
 @router.get("/card-payment-settings")
-async def get_card_payment_settings():
-    """Client-facing: payment mode + global requisites (if global mode)."""
+async def get_card_payment_settings(user=Depends(get_current_user)):
+    """Admin template of card requisites; clients get requisites only when the admin issues them."""
+    if user.get("role") != "admin":
+        return {"mode": "per_order"}
     s = await db.settings.find_one({"key": "card_payment_settings"})
-    val = {**CARD_PAY_DEFAULTS, **((s or {}).get("value", {}))}
-    return val
+    return {**CARD_PAY_DEFAULTS, **((s or {}).get("value", {})), "mode": "per_order"}
 
 
 @router.put("/admin/card-payment-settings")
 async def update_card_payment_settings(data: dict, user=Depends(get_current_user)):
     if user.get("role") != "admin":
         raise HTTPException(status_code=403, detail="Admin access required")
-    mode = data.get("mode", "global")
-    if mode not in ("global", "per_order"):
-        mode = "global"
     val = {
-        "mode": mode,
+        "mode": "per_order",
         "card_number": str(data.get("card_number", ""))[:64],
         "recipient_name": str(data.get("recipient_name", ""))[:128],
         "bank": str(data.get("bank", ""))[:128],

@@ -1,5 +1,6 @@
 """Products and Categories routes"""
-from fastapi import APIRouter, HTTPException, Depends, UploadFile, File
+import re
+from fastapi import APIRouter, HTTPException, Depends, UploadFile, File, Query
 from fastapi.responses import StreamingResponse
 from typing import List, Optional
 from pydantic import BaseModel
@@ -361,17 +362,17 @@ async def get_products(
     price_min: Optional[float] = None,
     price_max: Optional[float] = None,
     virtual_category: Optional[str] = None,  # "assortment" | "new" | "discounted"
-    limit: int = 1000,
-    skip: int = 0
+    limit: int = Query(1000, ge=1, le=1000),
+    skip: int = Query(0, ge=0)
 ):
     query = {}
     if search:
         query["$or"] = [
-            {"name": {"$regex": search, "$options": "i"}},
-            {"article": {"$regex": search, "$options": "i"}},
-            {"cross_articles": {"$regex": search, "$options": "i"}},
-            {"manufacturer": {"$regex": search, "$options": "i"}},
-            {"description": {"$regex": search, "$options": "i"}}
+            {"name": {"$regex": re.escape(search), "$options": "i"}},
+            {"article": {"$regex": re.escape(search), "$options": "i"}},
+            {"cross_articles": {"$regex": re.escape(search), "$options": "i"}},
+            {"manufacturer": {"$regex": re.escape(search), "$options": "i"}},
+            {"description": {"$regex": re.escape(search), "$options": "i"}}
         ]
     if category_id:
         query["category_id"] = category_id
@@ -434,9 +435,9 @@ async def search_products_autocomplete(q: str, limit: int = 8):
     
     query = {
         "$or": [
-            {"name": {"$regex": q, "$options": "i"}},
-            {"article": {"$regex": q, "$options": "i"}},
-            {"cross_articles": {"$regex": q, "$options": "i"}}
+            {"name": {"$regex": re.escape(q), "$options": "i"}},
+            {"article": {"$regex": re.escape(q), "$options": "i"}},
+            {"cross_articles": {"$regex": re.escape(q), "$options": "i"}}
         ]
     }
     
@@ -454,7 +455,7 @@ async def search_products_with_alternatives(search: str, limit: int = 50):
     search_upper = search.upper().strip()
     
     exact_match = await db.products.find_one(
-        {"article": {"$regex": f"^{search}$", "$options": "i"}},
+        {"article": {"$regex": f"^{re.escape(search)}$", "$options": "i"}},
         {"_id": 0}
     )
     
@@ -462,15 +463,15 @@ async def search_products_with_alternatives(search: str, limit: int = 50):
     if search_upper:
         alt_query = {
             "$and": [
-                {"cross_articles": {"$regex": search, "$options": "i"}},
-                {"article": {"$not": {"$regex": f"^{search}$", "$options": "i"}}}
+                {"cross_articles": {"$regex": re.escape(search), "$options": "i"}},
+                {"article": {"$not": {"$regex": f"^{re.escape(search)}$", "$options": "i"}}}
             ]
         }
         alternatives = await db.products.find(alt_query, {"_id": 0}).limit(limit).to_list(limit)
     
     name_matches = []
     if not exact_match:
-        name_query = {"name": {"$regex": search, "$options": "i"}}
+        name_query = {"name": {"$regex": re.escape(search), "$options": "i"}}
         name_matches = await db.products.find(name_query, {"_id": 0}).limit(limit).to_list(limit)
 
     gsync = await _global_stock_sync()
@@ -609,11 +610,11 @@ def _build_admin_query(search, category_id, manufacturer, in_stock, discounted):
     query = {}
     if search:
         query["$or"] = [
-            {"name": {"$regex": search, "$options": "i"}},
-            {"article": {"$regex": search, "$options": "i"}},
-            {"cross_articles": {"$regex": search, "$options": "i"}},
-            {"manufacturer": {"$regex": search, "$options": "i"}},
-            {"description": {"$regex": search, "$options": "i"}},
+            {"name": {"$regex": re.escape(search), "$options": "i"}},
+            {"article": {"$regex": re.escape(search), "$options": "i"}},
+            {"cross_articles": {"$regex": re.escape(search), "$options": "i"}},
+            {"manufacturer": {"$regex": re.escape(search), "$options": "i"}},
+            {"description": {"$regex": re.escape(search), "$options": "i"}},
         ]
     if category_id:
         query["category_id"] = category_id

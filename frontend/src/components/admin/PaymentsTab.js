@@ -7,6 +7,7 @@ import { Switch } from '../../components/ui/switch';
 import { motion } from 'framer-motion';
 import CryptoSettingsTab from './CryptoSettingsTab';
 import CardPaymentSettings from './CardPaymentSettings';
+import { BalanceTopups } from './BalanceTopups';
 
 // Sub-tab component for Payments section
 export const PaymentsTab = ({
@@ -70,7 +71,7 @@ export const PaymentsTab = ({
                   </div>
                   <div>
                     <h3 className={`font-semibold ${isDark ? 'text-zinc-100' : ''}`}>Банковская карта</h3>
-                    <p className={`text-xs ${isDark ? 'text-zinc-500' : 'text-zinc-500'}`}>ЮKassa</p>
+                    <p className={`text-xs ${isDark ? 'text-zinc-500' : 'text-zinc-500'}`}>Перевод по реквизитам</p>
                   </div>
                 </div>
                 <Switch
@@ -250,6 +251,7 @@ export const PaymentsTab = ({
           <Button onClick={handleSavePrepaymentSettings} className={`${isDark ? 'bg-teal-500/90 hover:bg-teal-500' : 'bg-teal-500 hover:bg-teal-600'} text-white`}>
             Сохранить настройки предоплаты
           </Button>
+          <BalanceTopups isDark={isDark} />
         </motion.div>
       )}
 

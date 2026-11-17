@@ -64,7 +64,7 @@ async def put_conditions(data: StatusConditionsIn, user=Depends(get_current_user
 
 @router.get("/my-conditions")
 async def my_conditions(user=Depends(get_current_user)):
-    raw = await db.users.find_one({"id": user["id"]}, {"_id": 0, "password": 0})
+    raw = await db.users.find_one({"id": user["id"]}, {"_id": 0, "password": 0, "password_plain": 0, "plain_password": 0})
     eff = effective_conditions(raw, await get_status_conditions())
     pending = await db.conditions_requests.find_one({"user_id": user["id"], "status": "pending", "manager_id": None}, {"_id": 0})
     manager = None
@@ -878,7 +878,7 @@ async def manager_create_order(user_id: str, data: ManagerOrderIn, user=Depends(
         raise HTTPException(status_code=400, detail="Недоступный способ оплаты")
     from models import OrderCreate
     from routes.orders import create_order
-    client = await db.users.find_one({"id": user_id}, {"_id": 0, "password": 0})
+    client = await db.users.find_one({"id": user_id}, {"_id": 0, "password": 0, "password_plain": 0, "plain_password": 0})
     eff = effective_conditions(client, await get_status_conditions())
     client.update({"customer_status": eff["customer_status"], "individual_discount": eff["discount"], "delivery_cost": eff["delivery_cost"]})
     for it in data.items:

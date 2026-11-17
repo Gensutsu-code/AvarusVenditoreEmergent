@@ -110,6 +110,41 @@ async def check_expired_orders_task():
             await asyncio.sleep(60)  # Wait 1 minute on error before retrying
 
 
+INDEXES = {
+    "users": ["id", "email", "role", "manager_id"],
+    "products": ["id", "article", "category_id"],
+    "orders": ["id", "user_id", "status", "created_at", "manager_id"],
+    "carts": ["user_id"],
+    "notifications": ["user_id", "created_at"],
+    "stock_levels": ["product_id", "warehouse_id"],
+    "stock_movements": ["product_id", "order_id", "created_at"],
+    "balance_transactions": ["id", "user_id", "status"],
+    "cashback_transactions": ["user_id"],
+    "crypto_payments": ["id", "order_id"],
+    "chats": ["id", "user_id"],
+    "chat_messages": ["chat_id"],
+    "action_logs": ["created_at"],
+    "activities": ["created_at"],
+    "user_analytics": ["user_id"],
+    "individual_prices": ["user_id"],
+    "favorites": ["user_id"],
+    "garage_vehicles": ["user_id"],
+    "returns": ["user_id", "order_id"],
+    "deferrals": ["user_id", "status"],
+    "manager_selections": ["user_id"],
+    "manager_tasks": ["manager_id"],
+    "password_resets": ["token"],
+}
+
+
+async def ensure_indexes():
+    for collection, fields in INDEXES.items():
+        for field in fields:
+            await db[collection].create_index(field)
+    # one blockchain transfer pays one order
+    await db.crypto_payments.create_index("tx_hash", unique=True, partialFilterExpression={"tx_hash": {"$type": "string"}})
+
+
 async def sync_admin_password():
     """Applies ADMIN_PASSWORD once per value, so a later change made in the profile is not overwritten."""
     from database import hash_password, verify_password
@@ -144,6 +179,11 @@ async def lifespan(app: FastAPI):
         await db.users.update_many({"customer_status": {"$in": ["partner", "opt", "b2b"]}}, {"$set": {"customer_status": "wholesale"}})
     except Exception as e:
         logger.error(f"Customer status migration failed: {e}")
+
+    try:
+        await ensure_indexes()
+    except Exception as e:
+        logger.error(f"Index creation failed: {e}")
 
     try:
         await sync_admin_password()

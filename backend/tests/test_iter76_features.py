@@ -66,32 +66,19 @@ def some_product():
 # ============== ITEM 3a — Admin card-payment-settings ==============
 
 class TestCardPaymentSettings:
-    def test_get_card_payment_settings_public(self):
-        r = requests.get(f"{API}/card-payment-settings", timeout=10)
-        assert r.status_code == 200
-        body = r.json()
-        assert "mode" in body
-        assert body["mode"] in ("global", "per_order")
-        assert "card_number" in body
+    def test_requisites_template_is_admin_only(self, admin_auth, client_auth):
+        assert requests.get(f"{API}/card-payment-settings", timeout=10).status_code in (401, 403)
+        assert requests.get(f"{API}/card-payment-settings", headers=client_auth["headers"], timeout=10).json() == {"mode": "per_order"}
+        body = requests.get(f"{API}/card-payment-settings", headers=admin_auth["headers"], timeout=10).json()
+        assert body["mode"] == "per_order" and "card_number" in body
 
-    def test_update_card_payment_settings(self, admin_auth):
-        # Ensure we can write (and restore at end)
-        original = requests.get(f"{API}/card-payment-settings", timeout=10).json()
-        payload = {
-            "mode": "global",
-            "card_number": "2200 1234 5678 9010",
-            "recipient_name": "ООО Авопт",
-            "bank": "Тинькофф",
-            "comment": "Укажите номер заказа",
-            "qr_url": original.get("qr_url") or "https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=avopt-pay",
-        }
+    def test_mode_is_always_manual(self, admin_auth):
+        payload = {"mode": "global", "card_number": "2200 1234 5678 9010", "recipient_name": "ООО Авопт", "bank": "Тинькофф", "comment": "Укажите номер заказа", "qr_url": ""}
         r = requests.put(f"{API}/admin/card-payment-settings", headers=admin_auth["headers"], json=payload, timeout=10)
         assert r.status_code == 200, r.text
-        # verify persistence
-        r2 = requests.get(f"{API}/card-payment-settings", timeout=10).json()
-        assert r2["mode"] == "global"
+        r2 = requests.get(f"{API}/card-payment-settings", headers=admin_auth["headers"], timeout=10).json()
+        assert r2["mode"] == "per_order"
         assert r2["card_number"] == payload["card_number"]
-        assert r2["recipient_name"] == payload["recipient_name"]
 
 
 # ============== ITEM 4 — Bulk warehouse ==============
@@ -151,42 +138,6 @@ def _add_to_cart_and_order(client_auth, product, payment_method="card", payment_
     return r
 
 
-class TestManualCardGlobal:
-    def test_full_card_flow_global(self, admin_auth, client_auth, some_product):
-        # ensure mode=global
-        requests.put(f"{API}/admin/card-payment-settings", headers=admin_auth["headers"], json={"mode": "global", "card_number": "2200 1234 5678 9010", "recipient_name": "ООО Авопт", "bank": "Тинькофф", "comment": "Укажите номер заказа", "qr_url": "https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=avopt-pay"}, timeout=10)
-        r = _add_to_cart_and_order(client_auth, some_product, payment_method="card")
-        assert r.status_code == 200, r.text
-        order = r.json()
-        oid = order["id"]
-        # In global mode card_requisites should be set already, card_status awaiting_payment
-        assert order.get("card_status") in ("awaiting_payment", "receipt_uploaded"), f"got {order.get('card_status')}"
-        assert order.get("card_requisites"), "card_requisites missing in global mode"
-        assert order["card_requisites"]["card_number"]
-
-        # client uploads receipt
-        r2 = requests.post(f"{API}/orders/{oid}/card/upload-receipt", headers=client_auth["headers"], json={"receipt_url": "https://example.com/receipt.jpg"}, timeout=10)
-        assert r2.status_code == 200, r2.text
-        # verify status via admin orders list (admin endpoint)
-        all_o = requests.get(f"{API}/admin/orders", headers=admin_auth["headers"], timeout=10).json()
-        if isinstance(all_o, dict):
-            all_o = all_o.get("orders", all_o.get("items", []))
-        o2 = next((o for o in all_o if o.get("id") == oid), None)
-        assert o2 and o2.get("card_status") == "receipt_uploaded"
-
-        # admin confirms
-        r3 = requests.post(f"{API}/orders/{oid}/card/confirm", headers=admin_auth["headers"], timeout=10)
-        assert r3.status_code == 200, r3.text
-        # verify
-        all_orders = requests.get(f"{API}/admin/orders", headers=admin_auth["headers"], timeout=10).json()
-        if isinstance(all_orders, dict):
-            all_orders = all_orders.get("orders", all_orders.get("items", []))
-        found = next((o for o in all_orders if o["id"] == oid), None)
-        assert found
-        assert found.get("payment_status") == "paid"
-        assert found.get("card_status") == "confirmed"
-
-
 # ============== ITEM 3b — per_order mode ==============
 
 class TestManualCardPerOrder:
@@ -199,7 +150,8 @@ class TestManualCardPerOrder:
             order = r.json()
             oid = order["id"]
             # In per_order: card_status = awaiting_requisites, no requisites yet
-            assert order.get("card_status") in ("awaiting_requisites", "pending"), f"per_order: got {order.get('card_status')}"
+            assert order.get("card_status") == "awaiting_requisites", f"got {order.get('card_status')}"
+            assert not order.get("card_requisites"), "requisites must not be shown before the admin issues them"
 
             # admin issues requisites
             r2 = requests.post(f"{API}/orders/{oid}/card/issue-requisites", headers=admin_auth["headers"], json={"card_number": "5555 6666 7777 8888", "recipient_name": "ИП Тест", "bank": "Сбер", "comment": "ord", "qr_url": ""}, timeout=10)

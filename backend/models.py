@@ -421,11 +421,6 @@ class PartnerBrand(BaseModel):
 
 # ==================== PAYMENT MODELS ====================
 
-class YuKassaPaymentCreate(BaseModel):
-    order_id: str
-    amount: float
-    return_url: str
-
 class CryptoPaymentCreate(BaseModel):
     order_id: str
     chain: str

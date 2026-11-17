@@ -1,4 +1,5 @@
 """Action Logs & Developer Mode routes for Absolute Control"""
+import re
 from fastapi import APIRouter, HTTPException, Depends, Query
 from datetime import datetime, timezone
 from typing import Optional
@@ -97,14 +98,14 @@ async def get_action_logs(
     if user_id:
         query["user_id"] = user_id
     if action:
-        query["action"] = {"$regex": action, "$options": "i"}
+        query["action"] = {"$regex": re.escape(action), "$options": "i"}
     if method:
         query["method"] = method.upper()
     if search:
         query["$or"] = [
-            {"action": {"$regex": search, "$options": "i"}},
-            {"path": {"$regex": search, "$options": "i"}},
-            {"user_name": {"$regex": search, "$options": "i"}},
+            {"action": {"$regex": re.escape(search), "$options": "i"}},
+            {"path": {"$regex": re.escape(search), "$options": "i"}},
+            {"user_name": {"$regex": re.escape(search), "$options": "i"}},
         ]
     if date_from:
         query.setdefault("created_at", {})["$gte"] = date_from

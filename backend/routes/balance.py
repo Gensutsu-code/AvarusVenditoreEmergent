@@ -1,9 +1,10 @@
 """User balance and prepayment routes"""
 from fastapi import APIRouter, HTTPException, Depends
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 from typing import Optional
 from datetime import datetime, timezone
 import uuid
+import math
 
 from database import db, get_current_user
 from notify import notify_user
@@ -57,160 +58,147 @@ async def get_balance_history(user=Depends(get_current_user), limit: int = 50):
     return {"transactions": transactions}
 
 
-# Topup balance (mock mode)
+MAX_PENDING_TOPUPS = 5
+
+
+async def _pending_topup(transaction_id: str) -> dict:
+    t = await db.balance_transactions.find_one({"id": transaction_id, "type": "topup", "status": "pending"}, {"_id": 0})
+    if not t:
+        raise HTTPException(status_code=404, detail="Заявка не найдена или уже обработана")
+    return t
+
+
 @router.post("/user/balance/topup")
 async def topup_balance(data: TopupRequest, user=Depends(get_current_user)):
-    """Top up user balance (mock mode - instant success)"""
-    
-    # Get prepayment settings
-    settings = await db.settings.find_one({"type": "prepayment_settings"}, {"_id": 0})
-    min_amount = settings.get("min_topup_amount", 500) if settings else 500
-    max_amount = settings.get("max_topup_amount", 100000) if settings else 100000
-    prepayment_enabled = settings.get("prepayment_enabled", True) if settings else True
-    
-    if not prepayment_enabled:
+    """Creates a top-up request. The balance grows only after the admin confirms that the money has arrived."""
+    settings = await db.settings.find_one({"type": "prepayment_settings"}, {"_id": 0}) or {}
+    min_amount = settings.get("min_topup_amount", 500)
+    max_amount = settings.get("max_topup_amount", 100000)
+    if not settings.get("prepayment_enabled", True):
         raise HTTPException(status_code=400, detail="Предоплата временно отключена")
-    
-    if data.amount < min_amount:
+    if not math.isfinite(data.amount) or data.amount < min_amount:
         raise HTTPException(status_code=400, detail=f"Минимальная сумма пополнения: {min_amount}₽")
-    
     if data.amount > max_amount:
         raise HTTPException(status_code=400, detail=f"Максимальная сумма пополнения: {max_amount}₽")
-    
-    # Create transaction record
-    transaction_id = str(uuid.uuid4())
-    now = datetime.now(timezone.utc).isoformat()
-    
-    # For crypto, check if tx_hash provided
-    if data.method == "crypto":
-        if not data.tx_hash:
-            # Create pending transaction waiting for tx_hash
-            transaction = {
-                "id": transaction_id,
-                "user_id": user["id"],
-                "type": "topup",
-                "amount": data.amount,
-                "method": f"crypto_{data.crypto_chain or 'eth'}",
-                "status": "pending",
-                "created_at": now,
-                "description": f"Пополнение криптовалютой ({data.crypto_chain or 'ETH'})"
-            }
-            await db.balance_transactions.insert_one(transaction)
-            
-            # Get crypto wallet address
-            wallets = await db.settings.find_one({"type": "crypto_wallets"}, {"_id": 0})
-            wallet_key = f"{data.crypto_chain or 'eth'}_address"
-            wallet_address = wallets.get(wallet_key, "") if wallets else ""
-            
-            return {
-                "transaction_id": transaction_id,
-                "status": "pending",
-                "wallet_address": wallet_address,
-                "message": f"Переведите {data.amount}₽ в эквиваленте на кошелёк и укажите hash транзакции"
-            }
-        else:
-            # Crypto with tx_hash - mark as completed (mock mode)
-            transaction = {
-                "id": transaction_id,
-                "user_id": user["id"],
-                "type": "topup",
-                "amount": data.amount,
-                "method": f"crypto_{data.crypto_chain or 'eth'}",
-                "tx_hash": data.tx_hash,
-                "status": "completed",
-                "created_at": now,
-                "description": f"Пополнение криптовалютой ({data.crypto_chain or 'ETH'})"
-            }
-    else:
-        # Card payment - instant success in mock mode
-        transaction = {
-            "id": transaction_id,
-            "user_id": user["id"],
-            "type": "topup",
-            "amount": data.amount,
-            "method": "card",
-            "status": "completed",
-            "created_at": now,
-            "description": "Пополнение картой"
-        }
-    
-    # Save transaction
-    await db.balance_transactions.insert_one(transaction)
-    
-    # Update user balance
-    await db.users.update_one(
-        {"id": user["id"]},
-        {"$inc": {"balance": data.amount}}
-    )
-    
-    # Get new balance
-    user_data = await db.users.find_one({"id": user["id"]}, {"_id": 0, "balance": 1})
-    new_balance = user_data.get("balance", 0)
-    
-    # Notify admin about topup
+    if data.method not in ("card", "crypto"):
+        raise HTTPException(status_code=400, detail="Неизвестный способ пополнения")
+    if await db.balance_transactions.count_documents({"user_id": user["id"], "type": "topup", "status": "pending"}) >= MAX_PENDING_TOPUPS:
+        raise HTTPException(status_code=400, detail="У вас уже есть необработанные заявки на пополнение. Дождитесь их подтверждения.")
+
+    is_crypto = data.method == "crypto"
+    chain = (data.crypto_chain or "eth").lower()
+    wallet_address = ""
+    if is_crypto:
+        wallets = ((await db.settings.find_one({"key": "crypto_wallets"}, {"_id": 0})) or {}).get("value", {})
+        wallet_address = wallets.get(f"{chain}_address", "")
+    transaction = {
+        "id": str(uuid.uuid4()),
+        "user_id": user["id"],
+        "type": "topup",
+        "amount": round(data.amount, 2),
+        "method": f"crypto_{chain}" if is_crypto else "card",
+        "status": "pending",
+        "tx_hash": (data.tx_hash or "").strip()[:128] or None if is_crypto else None,
+        "requisites": None,
+        "created_at": datetime.now(timezone.utc).isoformat(),
+        "description": f"Пополнение криптовалютой ({chain.upper()})" if is_crypto else "Пополнение картой",
+    }
+    await db.balance_transactions.insert_one(dict(transaction))
     await db.notifications.insert_one({
         "id": str(uuid.uuid4()),
         "user_id": "ADMIN",
         "type": "balance_topup",
-        "title": "Пополнение баланса",
-        "message": f"Клиент {user.get('name') or user.get('email')} пополнил баланс на {data.amount}₽",
+        "title": "Заявка на пополнение баланса",
+        "message": f"Клиент {user.get('name') or user.get('email')} хочет пополнить баланс на {transaction['amount']}₽ ({'криптовалюта' if is_crypto else 'карта'})",
         "link": "/admin",
         "read": False,
         "created_at": datetime.now(timezone.utc).isoformat()
     })
-    
     return {
-        "transaction_id": transaction_id,
-        "status": "completed",
-        "amount": data.amount,
-        "new_balance": new_balance,
-        "message": f"Баланс успешно пополнен на {data.amount}₽"
+        "transaction_id": transaction["id"],
+        "status": "pending",
+        "amount": transaction["amount"],
+        "wallet_address": wallet_address,
+        "message": "Заявка создана. Переведите средства на указанный адрес — баланс пополнится после подтверждения администратором."
+        if is_crypto else "Заявка создана. Реквизиты для перевода придут в уведомлении и появятся в истории баланса.",
     }
 
 
-# Confirm crypto transaction (submit tx_hash)
 @router.post("/user/balance/confirm-crypto")
 async def confirm_crypto_topup(transaction_id: str, tx_hash: str, user=Depends(get_current_user)):
-    """Confirm crypto topup with transaction hash"""
-    
-    # Find pending transaction
-    transaction = await db.balance_transactions.find_one({
-        "id": transaction_id,
-        "user_id": user["id"],
-        "status": "pending"
-    })
-    
-    if not transaction:
-        raise HTTPException(status_code=404, detail="Транзакция не найдена или уже обработана")
-    
-    # Update transaction (mock mode - instant success)
-    await db.balance_transactions.update_one(
-        {"id": transaction_id},
-        {
-            "$set": {
-                "status": "completed",
-                "tx_hash": tx_hash,
-                "completed_at": datetime.now(timezone.utc).isoformat()
-            }
-        }
+    """The client attaches the transaction hash to his request; the admin still confirms it."""
+    t = await _pending_topup(transaction_id)
+    if t["user_id"] != user["id"]:
+        raise HTTPException(status_code=404, detail="Заявка не найдена или уже обработана")
+    await db.balance_transactions.update_one({"id": transaction_id, "status": "pending"}, {"$set": {"tx_hash": tx_hash.strip()[:128]}})
+    return {"status": "pending", "amount": t["amount"], "message": "Номер транзакции сохранён. Баланс пополнится после подтверждения администратором."}
+
+
+class TopupRequisites(BaseModel):
+    card_number: str = Field(default="", max_length=64)
+    recipient_name: str = Field(default="", max_length=128)
+    bank: str = Field(default="", max_length=128)
+    comment: str = Field(default="", max_length=512)
+    qr_url: str = Field(default="", max_length=1024)
+
+
+def _admin(user):
+    if user.get("role") != "admin":
+        raise HTTPException(status_code=403, detail="Admin access required")
+
+
+@router.get("/admin/balance-topups")
+async def admin_topup_requests(user=Depends(get_current_user)):
+    _admin(user)
+    items = await db.balance_transactions.find({"type": "topup", "status": "pending"}, {"_id": 0}).sort("created_at", -1).to_list(200)
+    users = {u["id"]: u async for u in db.users.find({"id": {"$in": [t["user_id"] for t in items]}}, {"_id": 0, "id": 1, "name": 1, "email": 1})}
+    for t in items:
+        t["user_name"] = users.get(t["user_id"], {}).get("name", "")
+        t["user_email"] = users.get(t["user_id"], {}).get("email", "")
+    return items
+
+
+@router.post("/admin/balance-topups/{transaction_id}/requisites")
+async def admin_topup_requisites(transaction_id: str, data: TopupRequisites, user=Depends(get_current_user)):
+    _admin(user)
+    t = await _pending_topup(transaction_id)
+    if t["method"] != "card":
+        raise HTTPException(status_code=400, detail="Реквизиты выдаются только для пополнения картой")
+    if not data.card_number.strip() and not data.qr_url.strip():
+        raise HTTPException(status_code=400, detail="Укажите номер карты или QR-код")
+    await db.balance_transactions.update_one({"id": transaction_id, "status": "pending"}, {"$set": {"requisites": data.model_dump(), "requisites_at": datetime.now(timezone.utc).isoformat()}})
+    await notify_user(t["user_id"], "balance", "Реквизиты для пополнения баланса", f"Выданы реквизиты для перевода {t['amount']}₽. Откройте историю баланса.", "/account")
+    return {"success": True}
+
+
+@router.post("/admin/balance-topups/{transaction_id}/confirm")
+async def admin_topup_confirm(transaction_id: str, user=Depends(get_current_user)):
+    _admin(user)
+    t = await _pending_topup(transaction_id)
+    now = datetime.now(timezone.utc).isoformat()
+    claimed = await db.balance_transactions.update_one(
+        {"id": transaction_id, "status": "pending"},
+        {"$set": {"status": "completed", "completed_at": now, "confirmed_by": user["id"]}},
     )
-    
-    # Update user balance
-    await db.users.update_one(
-        {"id": user["id"]},
-        {"$inc": {"balance": transaction["amount"]}}
+    if claimed.modified_count == 0:
+        raise HTTPException(status_code=404, detail="Заявка не найдена или уже обработана")
+    await db.users.update_one({"id": t["user_id"]}, {"$inc": {"balance": t["amount"]}})
+    await notify_user(t["user_id"], "balance", "Баланс пополнен", f"На ваш баланс зачислено {t['amount']}₽", "/account")
+    return {"success": True}
+
+
+@router.post("/admin/balance-topups/{transaction_id}/reject")
+async def admin_topup_reject(transaction_id: str, user=Depends(get_current_user)):
+    _admin(user)
+    t = await _pending_topup(transaction_id)
+    claimed = await db.balance_transactions.update_one(
+        {"id": transaction_id, "status": "pending"},
+        {"$set": {"status": "failed", "completed_at": datetime.now(timezone.utc).isoformat(), "confirmed_by": user["id"]}},
     )
-    
-    # Get new balance
-    user_data = await db.users.find_one({"id": user["id"]}, {"_id": 0, "balance": 1})
-    new_balance = user_data.get("balance", 0)
-    
-    return {
-        "status": "completed",
-        "amount": transaction["amount"],
-        "new_balance": new_balance,
-        "message": f"Баланс успешно пополнен на {transaction['amount']}₽"
-    }
+    if claimed.modified_count == 0:
+        raise HTTPException(status_code=404, detail="Заявка не найдена или уже обработана")
+    await notify_user(t["user_id"], "balance", "Заявка на пополнение отклонена", f"Заявка на пополнение баланса на {t['amount']}₽ отклонена", "/account")
+    return {"success": True}
 
 
 # Get prepayment settings (public)

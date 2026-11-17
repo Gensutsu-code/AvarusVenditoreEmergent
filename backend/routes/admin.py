@@ -198,7 +198,6 @@ async def create_admin_user(data: AdminUserCreate, user=Depends(get_current_user
         "id": user_id,
         "email": data.email,
         "password": hash_password(data.password),
-        "password_plain": data.password,
         "name": data.name,
         "phone": data.phone,
         "address": data.address,
@@ -243,14 +242,15 @@ async def update_admin_user(user_id: str, data: AdminUserUpdate, user=Depends(ge
         if existing:
             raise HTTPException(status_code=400, detail="Пользователь с таким email уже существует")
     
+    change = {"$set": update_data}
     if "password" in update_data:
-        update_data["password_plain"] = update_data["password"]
         update_data["password"] = hash_password(update_data["password"])
+        change["$unset"] = {"password_plain": "", "plain_password": ""}
     
     if not update_data:
         raise HTTPException(status_code=400, detail="No data to update")
     
-    result = await db.users.update_one({"id": user_id}, {"$set": update_data})
+    result = await db.users.update_one({"id": user_id}, change)
     if result.matched_count == 0:
         raise HTTPException(status_code=404, detail="User not found")
     
@@ -720,7 +720,6 @@ async def create_admin_user_direct(data: AdminUserCreate, user=Depends(get_curre
         "id": user_id,
         "email": data.email,
         "password": hash_password(data.password),
-        "password_plain": data.password,
         "name": data.name,
         "phone": data.phone,
         "address": data.address,

@@ -240,7 +240,6 @@ E-commerce platform for truck spare parts with a comprehensive admin panel. Russ
 - Чаты менеджера — только свои клиенты; админ видит все.
 
 ### P1 (Important)
-- Real Payment Gateway Integration (replace MOCKED YuKassa)
 - CartPage/ProductPage display mismatches (pre-existing): payment-method adjustment & tier preview not clamped to min_price in UI (server charges correct floor). Best fixed via a server-computed cart preview.
 - Ссылка на карту складов для гостей (сейчас в шапке только для вошедших клиентов).
 - Индивидуальная скидка клиента действует только при оплате с баланса (решение iter 94) — уточнить у пользователя, нужна ли на все способы оплаты.
@@ -260,7 +259,6 @@ E-commerce platform for truck spare parts with a comprehensive admin panel. Russ
 - Smart sorting
 
 ## Key Notes
-- YuKassa card payments MOCKED
 - Admin must /start Telegram bot to activate notifications
 - Russian UI
 - Returns: 10% fee, per-program bonus deduction; photos required (min 1)

@@ -1,5 +1,6 @@
 """Authentication routes"""
-from fastapi import APIRouter, HTTPException, Depends, Response
+from fastapi import APIRouter, HTTPException, Depends, Response, Request
+import time
 from datetime import datetime, timezone
 import uuid
 import bcrypt
@@ -37,7 +38,6 @@ async def register(data: UserRegister, response: Response):
         "id": user_id,
         "email": data.email,
         "password": hash_password(data.password),
-        "password_plain": data.password,
         "name": data.name,
         "phone": data.phone,
         "address": data.address,
@@ -72,11 +72,29 @@ async def register(data: UserRegister, response: Response):
     }
 
 
+LOGIN_MAX_FAILS, LOGIN_MAX_FAILS_PER_EMAIL, LOGIN_WINDOW = 10, 50, 900
+_login_fails: dict = {}
+
+
+def _recent_fails(key: str) -> list:
+    fresh = [t for t in _login_fails.get(key, []) if time.time() - t < LOGIN_WINDOW]
+    _login_fails[key] = fresh
+    return fresh
+
+
 @router.post("/login")
-async def login(data: UserLogin, response: Response):
+async def login(data: UserLogin, response: Response, request: Request):
+    email = data.email.strip().lower()
+    ip = request.headers.get("x-forwarded-for", "").split(",")[0].strip() or (request.client.host if request.client else "")
+    by_ip, by_email = _recent_fails(f"{email}|{ip}"), _recent_fails(email)
+    if len(by_ip) >= LOGIN_MAX_FAILS or len(by_email) >= LOGIN_MAX_FAILS_PER_EMAIL:
+        raise HTTPException(status_code=429, detail="Слишком много попыток входа. Попробуйте через 15 минут.")
     user = await db.users.find_one({"email": data.email})
     if not user or not verify_password(data.password, user["password"]):
+        by_ip.append(time.time())
+        by_email.append(time.time())
         raise HTTPException(status_code=401, detail="Invalid credentials")
+    _login_fails.pop(f"{email}|{ip}", None)
     
     if user.get("blocked"):
         raise HTTPException(status_code=401, detail="Invalid credentials")
@@ -160,12 +178,14 @@ async def update_profile(data: UserProfileUpdate, user=Depends(get_current_user)
             bcrypt.gensalt()
         ).decode('utf-8')
         update_data["password"] = new_hashed
-        update_data["password_plain"] = data.new_password
     
     if not update_data:
         raise HTTPException(status_code=400, detail="Нет данных для обновления")
     
-    await db.users.update_one({"id": user["id"]}, {"$set": update_data})
+    change = {"$set": update_data}
+    if "password" in update_data:
+        change["$unset"] = {"password_plain": "", "plain_password": ""}
+    await db.users.update_one({"id": user["id"]}, change)
     
     updated_user = await db.users.find_one(
         {"id": user["id"]}, 
@@ -239,7 +259,7 @@ async def reset_password(data: dict):
     hashed = bcrypt.hashpw(new_password.encode('utf-8'), bcrypt.gensalt()).decode('utf-8')
     await db.users.update_one(
         {"id": reset["user_id"]},
-        {"$set": {"password": hashed, "password_plain": new_password}}
+        {"$set": {"password": hashed}, "$unset": {"password_plain": "", "plain_password": ""}}
     )
     await db.password_resets.delete_one({"token": token})
     return {"message": "Пароль успешно изменён"}

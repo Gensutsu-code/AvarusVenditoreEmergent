@@ -447,6 +447,13 @@ async def verify_crypto_payment(data: CryptoPaymentVerify, user=Depends(get_curr
     
     if payment.get("status") == "completed":
         return {"status": "already_completed", "verified": True}
+
+    tx_hash = (data.tx_hash or "").strip().lower()
+    reused = await db.crypto_payments.find_one({"tx_hash": {"$in": [tx_hash, data.tx_hash]}, "id": {"$ne": data.payment_id}}, {"_id": 0, "id": 1}) \
+        or await db.orders.find_one({"crypto_tx_hash": {"$in": [tx_hash, data.tx_hash]}, "id": {"$ne": payment["order_id"]}}, {"_id": 0, "id": 1}) \
+        or await db.balance_transactions.find_one({"tx_hash": {"$in": [tx_hash, data.tx_hash]}}, {"_id": 0, "id": 1})
+    if reused:
+        raise HTTPException(status_code=400, detail="Эта транзакция уже использована для другой оплаты")
     
     # Verify the transaction on blockchain
     chain = payment["chain"]
@@ -469,11 +476,21 @@ async def verify_crypto_payment(data: CryptoPaymentVerify, user=Depends(get_curr
         now = datetime.now(timezone.utc).isoformat()
         
         # Update payment
+        from pymongo.errors import DuplicateKeyError
+        try:
+            claimed = await db.crypto_payments.update_one(
+                {"id": data.payment_id, "status": {"$ne": "completed"}},
+                {"$set": {"tx_hash": tx_hash}},
+            )
+        except DuplicateKeyError:
+            raise HTTPException(status_code=400, detail="Эта транзакция уже использована для другой оплаты") from None
+        if claimed.matched_count == 0:
+            return {"status": "already_completed", "verified": True}
         await db.crypto_payments.update_one(
             {"id": data.payment_id},
             {"$set": {
                 "status": "completed",
-                "tx_hash": data.tx_hash,
+                "tx_hash": tx_hash,
                 "verified_at": now,
                 "verified_amount": result["amount"],
                 "from_address": result.get("from", ""),

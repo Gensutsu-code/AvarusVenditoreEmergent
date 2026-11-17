@@ -1,4 +1,5 @@
 """Warehouse & accounting routes: stock, movements (receipt/writeoff), finance."""
+import re
 from fastapi import APIRouter, HTTPException, Depends
 from pydantic import BaseModel
 from typing import Optional, List
@@ -549,9 +550,9 @@ async def warehouse_stock(search: Optional[str] = None, low_stock: Optional[int]
     q = {}
     if search:
         q["$or"] = [
-            {"name": {"$regex": search, "$options": "i"}},
-            {"article": {"$regex": search, "$options": "i"}},
-            {"manufacturer": {"$regex": search, "$options": "i"}},
+            {"name": {"$regex": re.escape(search), "$options": "i"}},
+            {"article": {"$regex": re.escape(search), "$options": "i"}},
+            {"manufacturer": {"$regex": re.escape(search), "$options": "i"}},
         ]
     products = await db.products.find(q, {
         "_id": 0, "id": 1, "name": 1, "article": 1, "manufacturer": 1,

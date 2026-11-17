@@ -1,5 +1,5 @@
 import "@/App.css";
-import { useEffect, useState } from "react";
+import { lazy, Suspense, useEffect, useState } from "react";
 import { BrowserRouter, Routes, Route, useLocation, Navigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import { Toaster } from "./components/ui/sonner";
@@ -21,37 +21,40 @@ import CartPage from "./pages/CartPage";
 import LoginPage from "./pages/LoginPage";
 import RegisterPage from "./pages/RegisterPage";
 import AccountPage from "./pages/AccountPage";
-import AdminPage from "./pages/AdminPage";
-import AdminProfilePage from "./pages/AdminProfilePage";
-import AdminOrdersPage from "./pages/AdminOrdersPage";
-import AdminChatsPage from "./pages/AdminChatsPage";
-import AdminCartsPage from "./pages/AdminCartsPage";
 import ForgotPasswordPage from "./pages/ForgotPasswordPage";
 import ResetPasswordPage from "./pages/ResetPasswordPage";
 import Footer from "./components/Footer";
 import FavoritesPage from "./pages/FavoritesPage";
 import OrdersPage from "./pages/OrdersPage";
 import RewardsPage from "./pages/RewardsPage";
-import AdminFeaturesPage from "./pages/AdminFeaturesPage";
 import { FeaturesProvider, useFeatures } from "./context/FeaturesContext";
 import NewsPage from "./pages/NewsPage";
 import ProductPage from "./pages/ProductPage";
 import NotificationsPage from "./pages/NotificationsPage";
-import AdminNotificationsPage from "./pages/AdminNotificationsPage";
 import MaintenancePage from "./pages/MaintenancePage";
 import ClientReturnsPage from "./pages/ClientReturnsPage";
-import AdminReturnsPage from "./pages/AdminReturnsPage";
-import AdminProductsPage from "./pages/AdminProductsPage";
 import CreditPage from "./pages/CreditPage";
-import AdminCreditPage from "./pages/AdminCreditPage";
 import ContactPage from "./pages/ContactPage";
-import WarehousesMapPage from "./pages/WarehousesMapPage";
-import AdminStaffPage from "./pages/AdminStaffPage";
-import ManagerPage from "./pages/ManagerPage";
 import GaragePage from "./pages/GaragePage";
 import PartsHubPage from "./pages/PartsHubPage";
-import ManagerShowcasePage, { ManagerProductPage } from "./pages/ManagerShowcasePage";
 import { AdminSidebar } from "./components/admin/AdminSidebar";
+
+// Staff cabinets are downloaded only by staff
+const AdminPage = lazy(() => import("./pages/AdminPage"));
+const AdminProfilePage = lazy(() => import("./pages/AdminProfilePage"));
+const AdminOrdersPage = lazy(() => import("./pages/AdminOrdersPage"));
+const AdminChatsPage = lazy(() => import("./pages/AdminChatsPage"));
+const AdminCartsPage = lazy(() => import("./pages/AdminCartsPage"));
+const AdminFeaturesPage = lazy(() => import("./pages/AdminFeaturesPage"));
+const AdminNotificationsPage = lazy(() => import("./pages/AdminNotificationsPage"));
+const AdminReturnsPage = lazy(() => import("./pages/AdminReturnsPage"));
+const AdminProductsPage = lazy(() => import("./pages/AdminProductsPage"));
+const AdminCreditPage = lazy(() => import("./pages/AdminCreditPage"));
+const AdminStaffPage = lazy(() => import("./pages/AdminStaffPage"));
+const ManagerPage = lazy(() => import("./pages/ManagerPage"));
+const WarehousesMapPage = lazy(() => import("./pages/WarehousesMapPage"));
+const ManagerShowcasePage = lazy(() => import("./pages/ManagerShowcasePage"));
+const ManagerProductPage = lazy(() => import("./pages/ManagerShowcasePage").then((m) => ({ default: m.ManagerProductPage })));
 
 const API = `${process.env.REACT_APP_BACKEND_URL}/api`;
 
@@ -161,6 +164,7 @@ function AppContent() {
             exit={{ opacity: 0, y: -8 }}
             transition={{ duration: 0.22, ease: 'easeOut' }}
           >
+          <Suspense fallback={null}>
           <Routes location={location}>
           <Route path="/" element={<HomePage />} />
           <Route path="/catalog" element={<CatalogPage />} />
@@ -202,6 +206,7 @@ function AppContent() {
           <Route path="/admin/notifications" element={<AdminNotificationsPage />} />
           <Route path="/product/:id" element={<ProductPage />} />
         </Routes>
+          </Suspense>
           </motion.div>
         </AnimatePresence>
         )}

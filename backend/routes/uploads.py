@@ -6,12 +6,21 @@ from database import db, get_current_user
 from cloudinary_service import upload_to_cloudinary
 
 router = APIRouter(tags=["uploads"])
+
+BLOCKED_EXTENSIONS = (".html", ".htm", ".xhtml", ".svg", ".js", ".mjs", ".php", ".exe", ".bat", ".cmd", ".sh", ".msi", ".jar", ".apk", ".scr")
+
+
+def ensure_safe_upload(filename: str):
+    if (filename or "").lower().strip().endswith(BLOCKED_EXTENSIONS):
+        raise HTTPException(status_code=400, detail="Этот тип файла загружать нельзя")
+
 logger = logging.getLogger(__name__)
 
 
 @router.post("/upload")
 async def upload_file(file: UploadFile = File(...), user=Depends(get_current_user)):
     """Upload file to Cloudinary"""
+    ensure_safe_upload(file.filename)
     content = await file.read()
     
     if len(content) > 20 * 1024 * 1024:  # 20MB limit

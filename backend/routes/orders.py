@@ -13,7 +13,7 @@ from models import CartItem, OrderCreate, OrderResponse, FavoriteItem
 from notify import notify_user, notify_admin
 from routes.telegram import send_telegram_order_notification
 from routes.credit import has_overdue_deferral
-from routes.warehouse import allocate_stock, restore_order_stock, ensure_available, low_stock_query, default_min_stock
+from routes.warehouse import allocate_stock, restore_stock, stock_sync_enabled, restore_order_stock, ensure_available, low_stock_query, default_min_stock
 
 router = APIRouter(tags=["orders"])
 
@@ -586,225 +586,237 @@ async def cart_preview(data: CartPreviewIn, user=Depends(get_current_user)):
 
 
 
+async def _release_cart_stock(cart_items, reserved):
+    for it, allocations in zip(cart_items, reserved):
+        if allocations:
+            await restore_stock(it["product_id"], allocations)
+
+
+async def _reserve_cart_stock(cart_items, region: str) -> list:
+    """Takes the goods off the shelves first: an order is never created (or charged) for goods that are gone."""
+    strict = await stock_sync_enabled()
+    reserved = []
+    for it in cart_items:
+        allocations = await allocate_stock(it["product_id"], it["quantity"], region)
+        if allocations is None and strict:
+            await _release_cart_stock(cart_items, reserved)
+            raise HTTPException(status_code=400, detail="Товар только что закончился на складе. Обновите корзину и попробуйте снова.")
+        reserved.append(allocations)
+    return reserved
+
+
 @router.post("/orders", response_model=OrderResponse)
 async def create_order(data: OrderCreate, user=Depends(get_current_user)):
     cart = await db.carts.find_one({"user_id": user["id"]})
     if not cart or not cart.get("items"):
         raise HTTPException(status_code=400, detail="Cart is empty")
     await ensure_available(cart["items"])
+    reserved = await _reserve_cart_stock(cart["items"], user.get("region", "") or "")
+    try:
 
-    # Block new orders if user has overdue deferral debt
-    if await has_overdue_deferral(user["id"]):
-        raise HTTPException(status_code=403, detail="Есть просроченный долг по отсрочке. Погасите задолженность, чтобы оформлять новые заказы.")
+        # Block new orders if user has overdue deferral debt
+        if await has_overdue_deferral(user["id"]):
+            raise HTTPException(status_code=403, detail="Есть просроченный долг по отсрочке. Погасите задолженность, чтобы оформлять новые заказы.")
     
-    vehicle_id = None
-    from routes.features import is_on as _f_on, fsettings as _f_settings
-    vehicle_mode = _f_settings("garage")["checkout_mode"] if _f_on("garage", user) else "off"
-    if data.vehicle_id and vehicle_mode != "off":
-        from routes.garage import own_vehicle
-        vehicle_id = (await own_vehicle(user["id"], data.vehicle_id))["id"]
-    elif vehicle_mode == "required" and not manager_order.get() \
-            and await db.garage_vehicles.count_documents({"user_id": user["id"], "deleted_at": None}) > 0:
-        raise HTTPException(status_code=400, detail="Укажите, для какой техники из гаража эта покупка")
-    pricing = await _compute_order_pricing(data, user, cart)
-    active_cart_discount = pricing["active_cart_discount"]
-    balance_to_deduct = pricing["balance_to_deduct"]
-    card_part = pricing["card_part"]
-    cart_discount_amount = pricing["cart_discount_amount"]
-    cart_discount_pct = pricing["cart_discount_pct"]
-    cash_part = pricing["cash_part"]
-    delivery_fee = pricing["delivery_fee"]
-    delivery_points_used = pricing["delivery_points_used"]
-    goods_total = pricing["goods_total"]
-    individual_discount_amount = pricing["individual_discount_amount"]
-    individual_discount_pct = pricing["individual_discount_pct"]
-    is_deferral = pricing["is_deferral"]
-    is_mixed = pricing["is_mixed"]
-    items = pricing["items"]
-    ozon_base = pricing["ozon_base"]
-    paid_from_balance = pricing["paid_from_balance"]
-    pay_delivery_with_points = pricing["pay_delivery_with_points"]
-    pay_later = pricing["pay_later"]
-    pay_with_balance = pricing["pay_with_balance"]
-    payment_adjustment = pricing["payment_adjustment"]
-    payment_adjustments = pricing["payment_adjustments"]
-    payment_method = pricing["payment_method"]
-    payment_parts_out = pricing["payment_parts_out"]
-    products_map = pricing["products_map"]
-    promo_code_amount = pricing["promo_code_amount"]
-    promo_code_obj = pricing["promo_code_obj"]
-    subtotal = pricing["subtotal"]
-    total = pricing["total"]
-    used_individual_price_product_ids = pricing["used_individual_price_product_ids"]
+        vehicle_id = None
+        from routes.features import is_on as _f_on, fsettings as _f_settings
+        vehicle_mode = _f_settings("garage")["checkout_mode"] if _f_on("garage", user) else "off"
+        if data.vehicle_id and vehicle_mode != "off":
+            from routes.garage import own_vehicle
+            vehicle_id = (await own_vehicle(user["id"], data.vehicle_id))["id"]
+        elif vehicle_mode == "required" and not manager_order.get() \
+                and await db.garage_vehicles.count_documents({"user_id": user["id"], "deleted_at": None}) > 0:
+            raise HTTPException(status_code=400, detail="Укажите, для какой техники из гаража эта покупка")
+        pricing = await _compute_order_pricing(data, user, cart)
+        active_cart_discount = pricing["active_cart_discount"]
+        balance_to_deduct = pricing["balance_to_deduct"]
+        card_part = pricing["card_part"]
+        cart_discount_amount = pricing["cart_discount_amount"]
+        cart_discount_pct = pricing["cart_discount_pct"]
+        cash_part = pricing["cash_part"]
+        delivery_fee = pricing["delivery_fee"]
+        delivery_points_used = pricing["delivery_points_used"]
+        goods_total = pricing["goods_total"]
+        individual_discount_amount = pricing["individual_discount_amount"]
+        individual_discount_pct = pricing["individual_discount_pct"]
+        is_deferral = pricing["is_deferral"]
+        is_mixed = pricing["is_mixed"]
+        items = pricing["items"]
+        ozon_base = pricing["ozon_base"]
+        paid_from_balance = pricing["paid_from_balance"]
+        pay_delivery_with_points = pricing["pay_delivery_with_points"]
+        pay_later = pricing["pay_later"]
+        pay_with_balance = pricing["pay_with_balance"]
+        payment_adjustment = pricing["payment_adjustment"]
+        payment_adjustments = pricing["payment_adjustments"]
+        payment_method = pricing["payment_method"]
+        payment_parts_out = pricing["payment_parts_out"]
+        products_map = pricing["products_map"]
+        promo_code_amount = pricing["promo_code_amount"]
+        promo_code_obj = pricing["promo_code_obj"]
+        subtotal = pricing["subtotal"]
+        total = pricing["total"]
+        used_individual_price_product_ids = pricing["used_individual_price_product_ids"]
 
-    # Deduct bonus points for delivery if requested
-    if pay_delivery_with_points and delivery_fee > 0:
-        from routes.bonus import spend_bonus_points
-        need = int(round(delivery_fee))
-        ok = await spend_bonus_points(user["id"], need)
-        if not ok:
-            raise HTTPException(status_code=400, detail=f"Недостаточно баллов для оплаты доставки ({need} баллов)")
-        delivery_points_used = need
+        # Deduct bonus points for delivery if requested
+        if pay_delivery_with_points and delivery_fee > 0:
+            from routes.bonus import spend_bonus_points
+            need = int(round(delivery_fee))
+            ok = await spend_bonus_points(user["id"], need)
+            if not ok:
+                raise HTTPException(status_code=400, detail=f"Недостаточно баллов для оплаты доставки ({need} баллов)")
+            delivery_points_used = need
 
-    # Reward in the client's chosen system (points / Ozon certificate / cashback); accrued on fulfillment
-    from routes.rewards import compute_order_reward
-    cashback_used = pricing["cashback_used"]
-    reward = await compute_order_reward(user, items, ozon_base, promo_code_obj["code"] if promo_code_obj else None)
-    reward_system = reward["system"]
-    reward_points = reward["amount"] if reward_system == "points" else 0
+        # Reward in the client's chosen system (points / Ozon certificate / cashback); accrued on fulfillment
+        from routes.rewards import compute_order_reward
+        cashback_used = pricing["cashback_used"]
+        reward = await compute_order_reward(user, items, ozon_base, promo_code_obj["code"] if promo_code_obj else None)
+        reward_system = reward["system"]
+        reward_points = reward["amount"] if reward_system == "points" else 0
 
-    # Deferred card/crypto: order is placed now, payment due within an admin-defined window
-    payment_due_date = None
-    if pay_later and not is_deferral and not pay_with_balance and not is_mixed and payment_method in ("card", "crypto"):
-        try:
-            window_hours = int(payment_adjustments.get("deferred_payment_hours", 24) or 24)
-        except (TypeError, ValueError):
-            window_hours = 24
-        payment_due_date = (datetime.now(timezone.utc) + timedelta(hours=window_hours)).isoformat()
+        # Deferred card/crypto: order is placed now, payment due within an admin-defined window
+        payment_due_date = None
+        if pay_later and not is_deferral and not pay_with_balance and not is_mixed and payment_method in ("card", "crypto"):
+            try:
+                window_hours = int(payment_adjustments.get("deferred_payment_hours", 24) or 24)
+            except (TypeError, ValueError):
+                window_hours = 24
+            payment_due_date = (datetime.now(timezone.utc) + timedelta(hours=window_hours)).isoformat()
 
-    # Deferred payment (отсрочка): validate approved credit limit & availability
-    deferral_due_date = None
-    deferral_term = 0
-    if is_deferral:
-        from database import effective_credit
-        ucred = await effective_credit(user["id"])
-        if not ucred or ucred.get("credit_status") != "approved" or (ucred.get("credit_limit", 0) or 0) <= 0:
-            raise HTTPException(status_code=400, detail="Отсрочка недоступна. Запросите кредитный лимит у администрации.")
-        unpaid = await db.deferrals.find({"user_id": user["id"], "status": "unpaid"}, {"_id": 0, "amount": 1}).to_list(1000)
-        debt = sum(d.get("amount", 0) for d in unpaid)
-        available = (ucred.get("credit_limit", 0) or 0) - debt
-        if total > available:
-            raise HTTPException(status_code=400, detail=f"Превышен лимит отсрочки. Доступно: {available:.0f} ₽, сумма заказа: {total:.0f} ₽")
-        deferral_term = int(ucred.get("credit_term_days", 30) or 30)
-        deferral_due_date = (datetime.now(timezone.utc) + timedelta(days=deferral_term)).isoformat()
+        # Deferred payment (отсрочка): validate approved credit limit & availability
+        deferral_due_date = None
+        deferral_term = 0
+        if is_deferral:
+            from database import effective_credit
+            ucred = await effective_credit(user["id"])
+            if not ucred or ucred.get("credit_status") != "approved" or (ucred.get("credit_limit", 0) or 0) <= 0:
+                raise HTTPException(status_code=400, detail="Отсрочка недоступна. Запросите кредитный лимит у администрации.")
+            unpaid = await db.deferrals.find({"user_id": user["id"], "status": "unpaid"}, {"_id": 0, "amount": 1}).to_list(1000)
+            debt = sum(d.get("amount", 0) for d in unpaid)
+            available = (ucred.get("credit_limit", 0) or 0) - debt
+            if total > available:
+                raise HTTPException(status_code=400, detail=f"Превышен лимит отсрочки. Доступно: {available:.0f} ₽, сумма заказа: {total:.0f} ₽")
+            deferral_term = int(ucred.get("credit_term_days", 30) or 30)
+            deferral_due_date = (datetime.now(timezone.utc) + timedelta(days=deferral_term)).isoformat()
 
-    # Deduct balance if needed (full or partial)
-    if balance_to_deduct > 0:
-        user_data = await db.users.find_one({"id": user["id"]}, {"_id": 0, "balance": 1})
-        user_balance = user_data.get("balance", 0) if user_data else 0
-        if user_balance < balance_to_deduct:
-            raise HTTPException(status_code=400, detail=f"Недостаточно средств на балансе. Баланс: {user_balance}₽, требуется: {balance_to_deduct}₽")
-        await db.users.update_one({"id": user["id"]}, {"$inc": {"balance": -balance_to_deduct}})
-        paid_from_balance = balance_to_deduct
-        balance_transaction = {
-            "id": str(uuid.uuid4()),
-            "user_id": user["id"],
-            "type": "payment",
-            "amount": -balance_to_deduct,
-            "method": "balance",
-            "status": "completed",
-            "created_at": datetime.now(timezone.utc).isoformat(),
-            "description": "Оплата заказа"
-        }
-        await db.balance_transactions.insert_one(balance_transaction)
-
-    # Card payment flow init
-    has_card = card_part > 0
-    card_status = None
-    card_requisites = None
-    if has_card:
-        cp_settings = await db.settings.find_one({"key": "card_payment_settings"})
-        cp = (cp_settings or {}).get("value", {})
-        if cp.get("mode") == "per_order":
-            card_status = "awaiting_requisites"
-        else:
-            card_status = "awaiting_payment"
-            card_requisites = {
-                "card_number": cp.get("card_number", ""),
-                "recipient_name": cp.get("recipient_name", ""),
-                "bank": cp.get("bank", ""),
-                "comment": cp.get("comment", ""),
-                "qr_url": cp.get("qr_url", ""),
+        # Deduct balance if needed (full or partial)
+        if balance_to_deduct > 0:
+            charged = await db.users.update_one({"id": user["id"], "balance": {"$gte": balance_to_deduct}}, {"$inc": {"balance": -balance_to_deduct}})
+            if charged.modified_count == 0:
+                user_data = await db.users.find_one({"id": user["id"]}, {"_id": 0, "balance": 1})
+                user_balance = user_data.get("balance", 0) if user_data else 0
+                raise HTTPException(status_code=400, detail=f"Недостаточно средств на балансе. Баланс: {user_balance}₽, требуется: {balance_to_deduct}₽")
+            paid_from_balance = balance_to_deduct
+            balance_transaction = {
+                "id": str(uuid.uuid4()),
+                "user_id": user["id"],
+                "type": "payment",
+                "amount": -balance_to_deduct,
+                "method": "balance",
+                "status": "completed",
+                "created_at": datetime.now(timezone.utc).isoformat(),
+                "description": "Оплата заказа"
             }
+            await db.balance_transactions.insert_one(balance_transaction)
 
-    # Effective order payment_method label
-    if is_mixed:
-        order_payment_method = "mixed"
-    elif pay_with_balance or (balance_to_deduct >= total and total > 0):
-        order_payment_method = "balance"
-    else:
-        order_payment_method = payment_method
+        # Card payment flow init
+        has_card = card_part > 0
+        card_status = None
+        card_requisites = None
+        if has_card:
+            card_status = "awaiting_requisites"
 
-    # Compute payment_status
-    if is_deferral:
-        order_payment_status = "deferred"
-    elif has_card:
-        order_payment_status = "awaiting_confirmation"
-    elif payment_method == "crypto" and payment_due_date and paid_from_balance < total:
-        order_payment_status = "awaiting_payment"
-    elif cash_part > 0:
-        order_payment_status = "unpaid"
-    elif paid_from_balance >= total and total > 0:
-        order_payment_status = "paid"
-    else:
-        order_payment_status = "unpaid"
+        # Effective order payment_method label
+        if is_mixed:
+            order_payment_method = "mixed"
+        elif pay_with_balance or (balance_to_deduct >= total and total > 0):
+            order_payment_method = "balance"
+        else:
+            order_payment_method = payment_method
 
-    order_id = str(uuid.uuid4())
-    if cashback_used > 0:
-        res = await db.users.update_one({"id": user["id"], "cashback_balance": {"$gte": cashback_used}}, {"$inc": {"cashback_balance": -cashback_used}})
-        if not res.modified_count:
-            raise HTTPException(status_code=400, detail="Недостаточно кэшбэка на счёте")
-        await db.cashback_transactions.insert_one({
-            "id": str(uuid.uuid4()), "user_id": user["id"], "amount": -cashback_used, "type": "payment",
-            "description": f"Оплата заказа #{order_id[:8]}", "order_id": order_id,
-            "created_at": datetime.now(timezone.utc).isoformat(),
-        })
-    order = {
-        "id": order_id,
-        "user_id": user["id"],
-        "items": items,
-        "total": total,
-        "subtotal": round(subtotal, 2),
-        "delivery_fee": delivery_fee,
-        "payment_adjustment": payment_adjustment,
-        "individual_discount_percent": individual_discount_pct if individual_discount_amount > 0 else 0,
-        "individual_discount_amount": individual_discount_amount,
-        "cart_discount_percent": cart_discount_pct if cart_discount_pct > 0 else 0,
-        "cart_discount_amount": round(cart_discount_amount, 2),
-        "promo_code": promo_code_obj["code"] if promo_code_obj else None,
-        "promo_code_amount": round(promo_code_amount, 2),
-        "delivery_paid_with_points": bool(delivery_points_used > 0),
-        "delivery_points_used": delivery_points_used,
-        "status": "pending",
-        "full_name": data.full_name,
-        "address": data.address,
-        "phone": data.phone,
-        "comment": data.comment,
-        "payment_method": order_payment_method,
-        "paid_from_balance": paid_from_balance,
-        "is_deferral": is_deferral,
-        "deferral_due_date": deferral_due_date,
-        "payment_due_date": payment_due_date,
-        "payment_status": order_payment_status,
-        "card_status": card_status,
-        "card_requisites": card_requisites,
-        "card_receipt_url": None,
-        "card_amount": round(card_part, 2) if has_card else None,
-        "payment_parts": payment_parts_out,
-        "ozon_certificate": 0,
-        "ozon_certificate_issued": False,
-        "reward_system": reward_system,
-        "reward_expected": reward["amount"],
-        "reward_rates": reward["rates"],
-        "reward_scale": reward["scale"],
-        "reward_round_to": reward["round_to"],
-        "cashback_used": cashback_used,
-        "reward_points": int(reward_points),
-        "region": user.get("region", "") or "",
-        "manager_id": user.get("manager_id"),
-        "vehicle_id": vehicle_id,
-        "manager_commission_percent": await manager_commission_percent(user.get("manager_id")),
-        "created_at": datetime.now(timezone.utc).isoformat()
-    }
+        # Compute payment_status
+        if is_deferral:
+            order_payment_status = "deferred"
+        elif has_card:
+            order_payment_status = "awaiting_confirmation"
+        elif payment_method == "crypto" and payment_due_date and paid_from_balance < total:
+            order_payment_status = "awaiting_payment"
+        elif cash_part > 0:
+            order_payment_status = "unpaid"
+        elif paid_from_balance >= total and total > 0:
+            order_payment_status = "paid"
+        else:
+            order_payment_status = "unpaid"
+
+        order_id = str(uuid.uuid4())
+        if cashback_used > 0:
+            res = await db.users.update_one({"id": user["id"], "cashback_balance": {"$gte": cashback_used}}, {"$inc": {"cashback_balance": -cashback_used}})
+            if not res.modified_count:
+                raise HTTPException(status_code=400, detail="Недостаточно кэшбэка на счёте")
+            await db.cashback_transactions.insert_one({
+                "id": str(uuid.uuid4()), "user_id": user["id"], "amount": -cashback_used, "type": "payment",
+                "description": f"Оплата заказа #{order_id[:8]}", "order_id": order_id,
+                "created_at": datetime.now(timezone.utc).isoformat(),
+            })
+        order = {
+            "id": order_id,
+            "user_id": user["id"],
+            "items": items,
+            "total": total,
+            "subtotal": round(subtotal, 2),
+            "delivery_fee": delivery_fee,
+            "payment_adjustment": payment_adjustment,
+            "individual_discount_percent": individual_discount_pct if individual_discount_amount > 0 else 0,
+            "individual_discount_amount": individual_discount_amount,
+            "cart_discount_percent": cart_discount_pct if cart_discount_pct > 0 else 0,
+            "cart_discount_amount": round(cart_discount_amount, 2),
+            "promo_code": promo_code_obj["code"] if promo_code_obj else None,
+            "promo_code_amount": round(promo_code_amount, 2),
+            "delivery_paid_with_points": bool(delivery_points_used > 0),
+            "delivery_points_used": delivery_points_used,
+            "status": "pending",
+            "full_name": data.full_name,
+            "address": data.address,
+            "phone": data.phone,
+            "comment": data.comment,
+            "payment_method": order_payment_method,
+            "paid_from_balance": paid_from_balance,
+            "is_deferral": is_deferral,
+            "deferral_due_date": deferral_due_date,
+            "payment_due_date": payment_due_date,
+            "payment_status": order_payment_status,
+            "card_status": card_status,
+            "card_requisites": card_requisites,
+            "card_receipt_url": None,
+            "card_amount": round(card_part, 2) if has_card else None,
+            "payment_parts": payment_parts_out,
+            "ozon_certificate": 0,
+            "ozon_certificate_issued": False,
+            "reward_system": reward_system,
+            "reward_expected": reward["amount"],
+            "reward_rates": reward["rates"],
+            "reward_scale": reward["scale"],
+            "reward_round_to": reward["round_to"],
+            "cashback_used": cashback_used,
+            "reward_points": int(reward_points),
+            "region": user.get("region", "") or "",
+            "manager_id": user.get("manager_id"),
+            "vehicle_id": vehicle_id,
+            "manager_commission_percent": await manager_commission_percent(user.get("manager_id")),
+            "created_at": datetime.now(timezone.utc).isoformat()
+        }
     
-    # Link balance transaction to order
-    if paid_from_balance > 0:
-        await db.balance_transactions.update_one(
-            {"id": balance_transaction["id"]},
-            {"$set": {"order_id": order_id}}
-        )
+        # Link balance transaction to order
+        if paid_from_balance > 0:
+            await db.balance_transactions.update_one(
+                {"id": balance_transaction["id"]},
+                {"$set": {"order_id": order_id}}
+            )
     
-    await db.orders.insert_one(order)
+        await db.orders.insert_one(order)
+    except BaseException:
+        await _release_cart_stock(cart["items"], reserved)
+        raise
 
     # Consume the one-time cart-wide discount (used up by this order)
     if cart_discount_pct > 0 and active_cart_discount:
@@ -860,15 +872,14 @@ async def create_order(data: OrderCreate, user=Depends(get_current_user)):
     order_price_map = {it.get("product_id"): it.get("price", 0) for it in items}
     order_region = user.get("region", "") or ""
     order_allocations = []  # [{product_id, allocations:[{warehouse_id, quantity}]}]
-    for cart_item in cart["items"]:
+    for cart_item, allocations in zip(cart["items"], reserved):
         prod = await db.products.find_one(
             {"id": cart_item["product_id"]},
             {"_id": 0, "name": 1, "article": 1, "stock": 1, "purchase_price": 1}
         )
         if not prod:
             continue
-        stock_before = prod.get("stock", 0) or 0
-        allocations = await allocate_stock(cart_item["product_id"], cart_item["quantity"], order_region)
+        stock_before = (prod.get("stock", 0) or 0) + (cart_item["quantity"] if allocations is not None else 0)
         if allocations is not None:
             order_allocations.append({"product_id": cart_item["product_id"], "allocations": allocations})
             unit_cost = prod.get("purchase_price", 0) or 0
@@ -966,8 +977,10 @@ async def confirm_card_payment(order_id: str, user=Depends(get_current_user)):
 
 
 @router.get("/orders/check-expired")
-async def check_expired_orders():
+async def check_expired_orders(user=Depends(get_current_user)):
     """Check and cancel orders with expired confirmation time"""
+    if user.get("role") != "admin":
+        raise HTTPException(status_code=403, detail="Admin access required")
     now = datetime.now(timezone.utc).isoformat()
     
     # Find orders awaiting confirmation with expired time
@@ -978,19 +991,19 @@ async def check_expired_orders():
     
     cancelled_count = 0
     for order in expired_orders:
-        # Restore stock
-        await _restore_order_stock(order)
-        
-        # Cancel order
-        await db.orders.update_one(
-            {"id": order["id"]},
+        claimed = await db.orders.update_one(
+            {"id": order["id"], "awaiting_confirmation": True, "status": {"$ne": "cancelled"}},
             {"$set": {
                 "status": "cancelled",
+                "awaiting_confirmation": False,
                 "cancelled_by": "system",
                 "cancelled_reason": "Изменения не подтверждены в течение 24 часов",
                 "cancelled_at": now
             }}
         )
+        if claimed.modified_count == 0:
+            continue
+        await _restore_order_stock(order)
         
         # Notify user
         await create_notification(
@@ -1358,6 +1371,13 @@ async def cancel_order_by_customer(order_id: str, user=Depends(get_current_user)
             if hours_passed > 24:
                 raise HTTPException(status_code=400, detail="Время для отмены заказа истекло (24 часа)")
     
+    claimed = await db.orders.update_one(
+        {"id": order_id, "user_id": user["id"], "status": {"$nin": ["completed", "cancelled"]}},
+        {"$set": {"status": "cancelled"}},
+    )
+    if claimed.modified_count == 0:
+        raise HTTPException(status_code=400, detail="Заказ нельзя отменить")
+
     # Restore stock
     await _restore_order_stock(order)
     
@@ -1603,15 +1623,28 @@ async def merge_orders(payload: dict, user: dict = Depends(get_current_user)):
                 merged[pid] = {**it, "quantity_fulfilled": 0}
 
     merged_items = list(merged.values())
-    new_total = sum(float(it.get("price", 0)) * int(it.get("quantity", 0)) for it in merged_items)
+    new_total = round(sum(float(o.get("total") or 0) for o in orders), 2)
+    goods_total = round(sum(float(o.get("original_total") or o.get("total") or 0) for o in orders), 2)
+    stock_by_product: dict = {}
+    for o in orders_sorted:
+        for entry in (o.get("stock_allocations") or []):
+            stock_by_product.setdefault(entry["product_id"], []).extend(entry.get("allocations") or [])
+    all_paid = all(o.get("payment_status") == "paid" for o in orders)
 
     new_order = {
         "id": str(uuid.uuid4()),
         "user_id": newest["user_id"],
         "items": merged_items,
         "total": new_total,
-        "original_total": new_total,
+        "original_total": goods_total,
         "order_discount_percent": 0,
+        "paid_from_balance": round(sum(float(o.get("paid_from_balance") or 0) for o in orders), 2),
+        "cashback_used": round(sum(float(o.get("cashback_used") or 0) for o in orders), 2),
+        "delivery_fee": round(sum(float(o.get("delivery_fee") or 0) for o in orders), 2),
+        "payment_status": "paid" if all_paid else newest.get("payment_status"),
+        "card_status": newest.get("card_status"),
+        "card_requisites": newest.get("card_requisites"),
+        "stock_allocations": [{"product_id": pid, "allocations": a} for pid, a in stock_by_product.items()],
         "status": "pending",
         "full_name": newest.get("full_name"),
         "address": newest.get("address"),
@@ -1625,6 +1658,9 @@ async def merge_orders(payload: dict, user: dict = Depends(get_current_user)):
         "manager_commission_percent": newest.get("manager_commission_percent"),
     }
     await db.orders.insert_one(new_order)
+    await db.merged_orders_archive.insert_many([{**o, "merged_into": new_order["id"]} for o in orders])
+    for coll in (db.deferrals, db.balance_transactions, db.stock_movements, db.crypto_payments):
+        await coll.update_many({"order_id": {"$in": order_ids}}, {"$set": {"order_id": new_order["id"]}})
     await db.orders.delete_many({"id": {"$in": order_ids}})
 
     # Notify the user

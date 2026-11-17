@@ -125,7 +125,7 @@ async def get_current_user(request: Request, credentials: Optional[HTTPAuthoriza
     try:
         payload = jwt.decode(token, JWT_SECRET, algorithms=[JWT_ALGORITHM])
         user_id = payload.get("user_id")
-        user = await db.users.find_one({"id": user_id}, {"_id": 0, "password": 0})
+        user = await db.users.find_one({"id": user_id}, {"_id": 0, "password": 0, "password_plain": 0, "plain_password": 0})
         if not user:
             raise HTTPException(status_code=401, detail="User not found")
         if user.get("blocked"):

@@ -6,6 +6,9 @@ from datetime import datetime, timezone
 import uuid
 import httpx
 import os
+import re
+import hmac
+import hashlib
 import logging
 
 from database import db, get_current_user
@@ -14,6 +17,10 @@ router = APIRouter(tags=["telegram"])
 logger = logging.getLogger(__name__)
 
 TELEGRAM_CHAT_BOT_TOKEN = os.environ.get('TELEGRAM_CHAT_BOT_TOKEN')
+
+
+def _webhook_secret() -> str:
+    return hashlib.sha256(f"{os.environ['JWT_SECRET']}:{TELEGRAM_CHAT_BOT_TOKEN}".encode()).hexdigest()
 
 
 def _public_base_url(request: Request) -> str:
@@ -184,14 +191,19 @@ async def test_telegram_notification(user=Depends(get_current_user)):
 # ==================== TELEGRAM CHAT BOT WEBHOOK ====================
 
 @router.post("/telegram/chat-webhook")
-async def telegram_chat_webhook(update: TelegramUpdate):
+async def telegram_chat_webhook(update: TelegramUpdate, request: Request):
     """Webhook for Telegram chat bot - receives admin replies"""
+    if not hmac.compare_digest(request.headers.get("x-telegram-bot-api-secret-token", ""), _webhook_secret()):
+        raise HTTPException(status_code=403, detail="Forbidden")
     if not update.message:
         return {"ok": True}
     
     message = update.message
     chat_id_tg = str(message.get("chat", {}).get("id", ""))
     text = message.get("text", "")
+    bound = ((await db.telegram_chat_settings.find_one({"setting_type": "chat_bot"}, {"_id": 0, "admin_chat_id": 1})) or {}).get("admin_chat_id")
+    if bound and str(bound) != chat_id_tg:
+        return {"ok": True}
     
     # Check for /reply command
     if text.startswith("/reply "):
@@ -202,7 +214,7 @@ async def telegram_chat_webhook(update: TelegramUpdate):
             
             chat = await db.chats.find_one({"id": website_chat_id})
             if not chat:
-                chat = await db.chats.find_one({"id": {"$regex": f"^{website_chat_id}"}})
+                chat = await db.chats.find_one({"id": {"$regex": f"^{re.escape(website_chat_id)}"}})
             
             if chat:
                 msg_id = str(uuid.uuid4())
@@ -343,7 +355,7 @@ async def setup_telegram_chat_webhook(request: Request, user=Depends(get_current
             
             res = await client.post(
                 f"https://api.telegram.org/bot{TELEGRAM_CHAT_BOT_TOKEN}/setWebhook",
-                json={"url": webhook_url}
+                json={"url": webhook_url, "secret_token": _webhook_secret()}
             )
             result = res.json()
             

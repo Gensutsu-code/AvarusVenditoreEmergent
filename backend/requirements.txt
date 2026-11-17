@@ -154,5 +154,4 @@ web3==7.14.1
 websockets==15.0.1
 wrapt==2.1.1
 yarl==1.22.0
-yookassa==3.10.0
 zipp==3.23.0

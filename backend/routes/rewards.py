@@ -1,4 +1,5 @@
 """Reward systems: bonus points, Ozon certificates, cashback — settings, accrual, client choice"""
+import re
 from fastapi import APIRouter, HTTPException, Depends
 from datetime import datetime, timezone
 import uuid
@@ -387,7 +388,7 @@ async def admin_reward_users(search: str = "", user=Depends(get_current_user)):
     _admin(user)
     query = {"role": {"$nin": ["admin", "manager"]}}
     if search:
-        query["$or"] = [{"name": {"$regex": search, "$options": "i"}}, {"email": {"$regex": search, "$options": "i"}}]
+        query["$or"] = [{"name": {"$regex": re.escape(search), "$options": "i"}}, {"email": {"$regex": re.escape(search), "$options": "i"}}]
     users = await db.users.find(
         query, {"_id": 0, "id": 1, "name": 1, "email": 1, "customer_status": 1, "reward_system": 1, "cashback_balance": 1}
     ).sort("name", 1).to_list(300)

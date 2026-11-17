@@ -108,7 +108,7 @@ export default function DiscountsTab({
             
             <div className={`p-4 rounded-lg border ${paymentSettings.card_enabled !== false ? 'bg-blue-50 border-blue-100' : 'bg-red-50 border-red-200'}`}>
               <div className="flex items-center justify-between mb-3">
-                <Label className="text-xs font-bold uppercase text-blue-600">Карта (ЮKassa)</Label>
+                <Label className="text-xs font-bold uppercase text-blue-600">Карта (перевод)</Label>
                 <label className="relative inline-flex items-center cursor-pointer">
                   <input type="checkbox" className="sr-only peer" 
                     checked={paymentSettings.card_enabled !== false}

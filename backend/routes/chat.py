@@ -173,6 +173,8 @@ def _require_attachments():
 async def upload_chat_file(file: UploadFile = File(...), user=Depends(get_current_user)):
     _require_attachments()
     from cloudinary_service import upload_to_cloudinary
+    from routes.uploads import ensure_safe_upload
+    ensure_safe_upload(file.filename)
     content = await file.read()
     if len(content) > 20 * 1024 * 1024:
         raise HTTPException(status_code=400, detail="Файл слишком большой (максимум 20 МБ)")

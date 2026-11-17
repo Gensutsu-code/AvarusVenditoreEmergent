@@ -42,16 +42,17 @@ export default function NotificationsPage() {
   const [unreadCount, setUnreadCount] = useState(0);
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState('all'); // all, unread
-  const { user } = useAuth();
+  const { user, loading: authLoading } = useAuth();
   const navigate = useNavigate();
 
   useEffect(() => {
+    if (authLoading) return;
     if (!user) {
       navigate('/login');
       return;
     }
     fetchNotifications();
-  }, [user, navigate]);
+  }, [user, authLoading, navigate]);
 
   const fetchNotifications = async () => {
     try {

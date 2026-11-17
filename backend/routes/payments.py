@@ -1,21 +1,14 @@
-"""Payment routes - YooKassa and Crypto"""
-from fastapi import APIRouter, HTTPException, Depends, Request
+"""Payment routes - crypto"""
+from fastapi import APIRouter, HTTPException, Depends
 from pydantic import BaseModel
 from datetime import datetime, timezone
 import uuid
-import os
 import logging
 
 from database import db, get_current_user
 
 router = APIRouter(tags=["payments"])
 logger = logging.getLogger(__name__)
-
-
-class YuKassaPaymentCreate(BaseModel):
-    order_id: str
-    amount: float
-    return_url: str
 
 
 class CryptoPaymentCreate(BaseModel):
@@ -63,114 +56,16 @@ async def create_admin_activity(user_id: str, user_name: str, activity_type: str
     await db.activities.insert_one(activity)
 
 
-# ==================== YOOKASSA ====================
-
-@router.post("/payments/yookassa/create")
-async def create_yookassa_payment(data: YuKassaPaymentCreate, user=Depends(get_current_user)):
-    """Create a YuKassa payment for card payment"""
-    shop_id = os.environ.get("YOOKASSA_SHOP_ID")
-    secret_key = os.environ.get("YOOKASSA_SECRET_KEY")
-    
-    if not shop_id or not secret_key:
-        raise HTTPException(status_code=503, detail="ЮKassa не настроена. Обратитесь к администратору.")
-    
-    from yookassa import Configuration, Payment as YKPayment
-    Configuration.configure(account_id=shop_id, secret_key=secret_key)
-    
-    order = await db.orders.find_one({"id": data.order_id}, {"_id": 0})
-    if not order:
-        raise HTTPException(status_code=404, detail="Заказ не найден")
-    
-    try:
-        payment = YKPayment.create({
-            "amount": {"value": str(data.amount), "currency": "RUB"},
-            "confirmation": {"type": "redirect", "return_url": data.return_url},
-            "capture": True,
-            "description": f"Оплата заказа #{data.order_id[:8]}",
-            "metadata": {"order_id": data.order_id}
-        }, idempotence_key=str(uuid.uuid4()))
-        
-        await db.orders.update_one(
-            {"id": data.order_id},
-            {"$set": {
-                "yookassa_payment_id": payment.id,
-                "payment_status": "pending"
-            }}
-        )
-        
-        confirmation_url = payment.confirmation.confirmation_url if hasattr(payment.confirmation, 'confirmation_url') else None
-        return {"payment_id": payment.id, "confirmation_url": confirmation_url}
-    except Exception as e:
-        raise HTTPException(status_code=400, detail=str(e))
-
-
-@router.post("/payments/yookassa/webhook")
-async def yookassa_webhook(request: Request):
-    """Handle YuKassa webhook notifications"""
-    import json
-    body = await request.body()
-    payload = json.loads(body)
-    
-    event = payload.get("event")
-    payment_data = payload.get("object", {})
-    order_id = payment_data.get("metadata", {}).get("order_id")
-    
-    if event == "payment.succeeded" and order_id:
-        await db.orders.update_one(
-            {"id": order_id},
-            {"$set": {"payment_status": "paid", "status": "processing"}}
-        )
-        order = await db.orders.find_one({"id": order_id}, {"_id": 0})
-        if order:
-            await create_notification(order["user_id"], "order", "Оплата получена", f"Заказ #{order_id[:8]} оплачен картой", "/orders")
-    elif event == "payment.canceled" and order_id:
-        await db.orders.update_one(
-            {"id": order_id},
-            {"$set": {"payment_status": "cancelled"}}
-        )
-    
-    return {"status": "ok"}
-
-
-@router.get("/payments/yookassa/check/{order_id}")
-async def check_yookassa_payment(order_id: str, user=Depends(get_current_user)):
-    """Check YuKassa payment status"""
-    order = await db.orders.find_one({"id": order_id}, {"_id": 0})
-    if not order:
-        raise HTTPException(status_code=404, detail="Заказ не найден")
-    
-    payment_id = order.get("yookassa_payment_id")
-    if not payment_id:
-        return {"status": "no_payment"}
-    
-    shop_id = os.environ.get("YOOKASSA_SHOP_ID")
-    secret_key = os.environ.get("YOOKASSA_SECRET_KEY")
-    
-    if shop_id and secret_key:
-        from yookassa import Configuration, Payment as YKPayment
-        Configuration.configure(account_id=shop_id, secret_key=secret_key)
-        try:
-            payment = YKPayment.find_one(payment_id)
-            if payment.status == "succeeded" and order.get("payment_status") != "paid":
-                await db.orders.update_one(
-                    {"id": order_id},
-                    {"$set": {"payment_status": "paid", "status": "processing"}}
-                )
-            return {"status": payment.status, "paid": payment.paid}
-        except Exception:
-            pass
-    
-    return {"status": order.get("payment_status", "pending")}
-
-
 # ==================== CRYPTO ====================
 
 @router.post("/payments/crypto/submit")
 async def submit_crypto_payment(data: CryptoPaymentCreate, user=Depends(get_current_user)):
     """Submit a crypto payment transaction hash for verification"""
-    order = await db.orders.find_one({"id": data.order_id}, {"_id": 0})
+    order = await db.orders.find_one({"id": data.order_id, "user_id": user["id"]}, {"_id": 0})
     if not order:
         raise HTTPException(status_code=404, detail="Заказ не найден")
+    if order.get("payment_status") == "paid" or order.get("status") in ("cancelled", "completed"):
+        raise HTTPException(status_code=400, detail="По этому заказу оплата не ожидается")
     
     await db.orders.update_one(
         {"id": data.order_id},

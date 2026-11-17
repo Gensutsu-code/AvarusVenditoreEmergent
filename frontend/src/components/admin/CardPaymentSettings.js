@@ -9,7 +9,7 @@ import { Save, CreditCard, QrCode, Upload, Loader2 } from 'lucide-react';
 const API = `${process.env.REACT_APP_BACKEND_URL}/api`;
 
 export default function CardPaymentSettings() {
-  const [cfg, setCfg] = useState({ mode: 'global', card_number: '', recipient_name: '', bank: '', comment: '', qr_url: '' });
+  const [cfg, setCfg] = useState({ mode: 'per_order', card_number: '', recipient_name: '', bank: '', comment: '', qr_url: '' });
   const [saving, setSaving] = useState(false);
   const [uploading, setUploading] = useState(false);
 
@@ -43,19 +43,7 @@ export default function CardPaymentSettings() {
         <CreditCard className="w-5 h-5 text-blue-500" />
         Ручная оплата на карту
       </h3>
-      <p className="text-sm text-zinc-500">Реквизиты для перевода и режим выдачи. Клиент переводит, загружает чек, админ подтверждает.</p>
-
-      <div>
-        <Label className="text-xs font-bold uppercase text-zinc-500">Режим выдачи реквизитов</Label>
-        <div className="mt-2 flex gap-2">
-          {[{ id: 'global', label: 'Общие реквизиты' }, { id: 'per_order', label: 'Индивидуально на заказ' }].map(o => (
-            <button key={o.id} type="button" onClick={() => setCfg({ ...cfg, mode: o.id })}
-              className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-all ${cfg.mode === o.id ? 'bg-blue-500 text-white' : 'bg-zinc-100 text-zinc-600 hover:bg-zinc-200'}`}
-              data-testid={`card-mode-${o.id}`}>{o.label}</button>
-          ))}
-        </div>
-        <p className="text-[11px] text-zinc-400 mt-1">{cfg.mode === 'global' ? 'Клиент сразу видит реквизиты ниже.' : 'Реквизиты выдаются вручную для каждого заказа в разделе Заказы.'}</p>
-      </div>
+      <p className="text-sm text-zinc-500">Реквизиты выдаются вручную по каждому заказу в разделе «Заказы». Клиент переводит, загружает чек, администратор подтверждает. Ниже — ваш шаблон реквизитов, клиенты его не видят.</p>
 
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
         <div><Label className="text-xs font-bold uppercase text-zinc-500">Номер карты</Label><Input value={cfg.card_number || ''} onChange={e => setCfg({ ...cfg, card_number: e.target.value })} placeholder="2200 0000 0000 0000" className="mt-1 font-mono" data-testid="card-number-input" /></div>

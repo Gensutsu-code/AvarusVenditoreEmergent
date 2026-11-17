@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { MyConditionsCard } from '../components/MyConditionsCard';
 import { ManagerSelections } from '../components/ManagerSelections';
+import { TopupStatus } from '../components/TopupStatus';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import { User, Mail, Lock, Phone, MapPin, Save, Eye, EyeOff, Camera, Trash2, MessageSquare, Wallet, CreditCard, Plus, History, Sparkles, Shield } from 'lucide-react';
@@ -118,15 +119,11 @@ export default function AccountPage() {
         crypto_chain: topupMethod === 'crypto' ? cryptoChain : null
       });
       
-      if (res.data.status === 'completed') {
-        toast.success(res.data.message);
-        window.__lastToastTime = Date.now();
-        setBalance(res.data.new_balance);
-        setShowTopupModal(false);
-        setTopupAmount('');
-      } else if (res.data.status === 'pending') {
-        toast.info(`Переведите средства на адрес и подтвердите транзакцию`);
-      }
+      toast.success(res.data.message);
+      window.__lastToastTime = Date.now();
+      setShowTopupModal(false);
+      setTopupAmount('');
+      fetchBalanceHistory();
     } catch (err) {
       toast.error(err.response?.data?.detail || 'Ошибка пополнения');
     } finally {
@@ -630,7 +627,7 @@ export default function AccountPage() {
                 >
                   <CreditCard className={`w-6 h-6 ${topupMethod === 'card' ? 'text-teal-500' : 'text-slate-400'}`} />
                   <span className={`text-sm font-medium ${topupMethod === 'card' ? 'text-teal-600' : 'text-slate-500'}`}>Карта</span>
-                  <span className="text-xs text-slate-400">Моментально</span>
+                  <span className="text-xs text-slate-400">По реквизитам</span>
                 </motion.button>
                 <motion.button
                   onClick={() => setTopupMethod('crypto')}
@@ -752,9 +749,10 @@ export default function AccountPage() {
                         <p className="text-xs text-slate-500">
                           {new Date(tx.created_at).toLocaleString('ru-RU')}
                         </p>
+                        <TopupStatus tx={tx} />
                       </div>
                     </div>
-                    <div className={`font-bold text-lg ${tx.amount > 0 ? 'text-green-500' : 'text-red-500'}`}>
+                    <div className={`font-bold text-lg ${tx.status === 'pending' || tx.status === 'failed' ? 'text-slate-400' : tx.amount > 0 ? 'text-green-500' : 'text-red-500'}`}>
                       {tx.amount > 0 ? '+' : ''}{tx.amount.toLocaleString('ru-RU')}₽
                     </div>
                   </motion.div>
