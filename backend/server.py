@@ -141,6 +141,8 @@ async def ensure_indexes():
     for collection, fields in INDEXES.items():
         for field in fields:
             await db[collection].create_index(field)
+    await db.login_attempts.create_index("key")
+    await db.login_attempts.create_index("at", expireAfterSeconds=3600)
     # one blockchain transfer pays one order
     await db.crypto_payments.create_index("tx_hash", unique=True, partialFilterExpression={"tx_hash": {"$type": "string"}})
 
@@ -336,7 +338,9 @@ async def site_features_middleware(request: Request, call_next):
         await refresh_features()
         if blocked_feature(request.url.path, request.method):
             return JSONResponse(status_code=403, content={"detail": "Эта функция сейчас отключена"})
-    return await call_next(request)
+    response = await call_next(request)
+    response.headers.setdefault("X-Content-Type-Options", "nosniff")
+    return response
 
 
 # Health check endpoints

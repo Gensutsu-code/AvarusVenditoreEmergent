@@ -1,7 +1,6 @@
 """Authentication routes"""
 from fastapi import APIRouter, HTTPException, Depends, Response, Request
-import time
-from datetime import datetime, timezone
+from datetime import datetime, timezone, timedelta
 import uuid
 import bcrypt
 
@@ -73,28 +72,25 @@ async def register(data: UserRegister, response: Response):
 
 
 LOGIN_MAX_FAILS, LOGIN_MAX_FAILS_PER_EMAIL, LOGIN_WINDOW = 10, 50, 900
-_login_fails: dict = {}
 
 
-def _recent_fails(key: str) -> list:
-    fresh = [t for t in _login_fails.get(key, []) if time.time() - t < LOGIN_WINDOW]
-    _login_fails[key] = fresh
-    return fresh
+async def _recent_fails(key: str) -> int:
+    since = datetime.now(timezone.utc) - timedelta(seconds=LOGIN_WINDOW)
+    return await db.login_attempts.count_documents({"key": key, "at": {"$gt": since}})
 
 
 @router.post("/login")
 async def login(data: UserLogin, response: Response, request: Request):
     email = data.email.strip().lower()
     ip = request.headers.get("x-forwarded-for", "").split(",")[0].strip() or (request.client.host if request.client else "")
-    by_ip, by_email = _recent_fails(f"{email}|{ip}"), _recent_fails(email)
-    if len(by_ip) >= LOGIN_MAX_FAILS or len(by_email) >= LOGIN_MAX_FAILS_PER_EMAIL:
+    if await _recent_fails(f"{email}|{ip}") >= LOGIN_MAX_FAILS or await _recent_fails(email) >= LOGIN_MAX_FAILS_PER_EMAIL:
         raise HTTPException(status_code=429, detail="Слишком много попыток входа. Попробуйте через 15 минут.")
     user = await db.users.find_one({"email": data.email})
     if not user or not verify_password(data.password, user["password"]):
-        by_ip.append(time.time())
-        by_email.append(time.time())
+        now = datetime.now(timezone.utc)
+        await db.login_attempts.insert_many([{"key": f"{email}|{ip}", "at": now}, {"key": email, "at": now}])
         raise HTTPException(status_code=401, detail="Invalid credentials")
-    _login_fails.pop(f"{email}|{ip}", None)
+    await db.login_attempts.delete_many({"key": f"{email}|{ip}"})
     
     if user.get("blocked"):
         raise HTTPException(status_code=401, detail="Invalid credentials")
@@ -207,6 +203,9 @@ async def forgot_password(data: dict):
     if not email:
         raise HTTPException(status_code=400, detail="Email обязателен")
 
+    if await _recent_fails(f"reset|{email}") >= 5:
+        raise HTTPException(status_code=429, detail="Слишком много запросов. Попробуйте через 15 минут.")
+    await db.login_attempts.insert_one({"key": f"reset|{email}", "at": datetime.now(timezone.utc)})
     user = await db.users.find_one({"email": email})
     # Always return success to prevent email enumeration
     if not user:

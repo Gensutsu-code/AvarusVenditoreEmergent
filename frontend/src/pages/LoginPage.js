@@ -28,7 +28,7 @@ export default function LoginPage() {
       toast.success('Добро пожаловать!');
       navigate(res?.user?.role === 'manager' ? '/manager' : '/');
     } catch (err) {
-      toast.error('Неверный email или пароль');
+      toast.error(err?.response?.status === 429 ? err.response.data.detail : 'Неверный email или пароль');
     } finally {
       setLoading(false);
     }

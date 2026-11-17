@@ -258,8 +258,8 @@ class TestCreateUserWithPasswordPlain:
         })
         return response.json()["token"]
     
-    def test_create_user_stores_password_plain(self, admin_token):
-        """POST /api/admin/users should store password_plain"""
+    def test_create_user_does_not_store_readable_password(self, admin_token):
+        """POST /api/admin/users keeps only the password hash"""
         import uuid
         test_email = f"test_pwd_{uuid.uuid4().hex[:8]}@test.com"
         test_password = "TestPass123"
@@ -288,10 +288,9 @@ class TestCreateUserWithPasswordPlain:
         
         created = next((u for u in users if u["id"] == user_id), None)
         assert created, "Created user not found in list"
-        assert created.get("password_plain") == test_password, \
-            f"password_plain should be '{test_password}', got '{created.get('password_plain')}'"
-        
-        print(f"PASS: Created user has password_plain='{created.get('password_plain')}'")
+        assert not created.get("password_plain"), "readable password must not be stored"
+        login = requests.post(f"{BASE_URL}/api/auth/login", json={"email": created["email"], "password": test_password})
+        assert login.status_code == 200
         
         # Cleanup - delete test user
         requests.delete(

@@ -34,3 +34,8 @@ The admin password for tests is taken from `ADMIN_PASSWORD` automatically by `te
 ## Owner's manager account manager@avarus.ru — password unknown, do NOT reset it
 The owner sets this password himself. Tests that need this very account (its bound client user@demo.com) use a signed token
 `TEST_DEMO_MANAGER_TOKEN` made in `backend/tests/conftest.py`; they never log in with a password.
+
+## Notes after the audit fixes (June 2026)
+- Login is limited: 10 wrong passwords per e-mail+IP in 15 minutes -> HTTP 429. Never brute-force real accounts in tests; use a non-existing e-mail to test the limit.
+- Admin password is only in the environment (`ADMIN_PASSWORD`), never in files. For browser tests without the password: sign a JWT `{user_id: <admin id>, exp}` with `JWT_SECRET` (HS256) and set it as cookie `access_token` (see backend/tests/conftest.py for the same trick).
+- Balance top-up never credits by itself: an admin must confirm the request in admin -> payments -> «Предоплата».

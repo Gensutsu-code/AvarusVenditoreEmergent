@@ -136,3 +136,27 @@ def test_passwords_are_not_kept_readable_and_login_is_limited(world):
     email = f"nobody_{world['sfx']}@example.com"
     codes = [requests.post(f"{API}/auth/login", json={"email": email, "password": "wrong"}, timeout=20).status_code for _ in range(12)]
     assert codes[:10] == [401] * 10 and codes[-1] == 429
+
+
+def test_merge_keeps_money_and_stock_links(world):
+    admin, client = world["admin"], world["client"]
+    requests.put(f"{API}/products/{world['pid']}", headers=admin, json={"stock": 3}, timeout=20)
+    if _stock(world) != 3:  # stock is kept per warehouse: top it up through a receipt-free movement
+        pytest.skip("cannot set stock for the temp product through the product API")
+    ids, totals = [], []
+    for _ in range(2):
+        requests.delete(f"{API}/cart/clear", headers=client, timeout=20)
+        requests.post(f"{API}/cart/add", headers=client, json={"product_id": world["pid"], "quantity": 1}, timeout=20)
+        r = requests.post(f"{API}/orders", headers=client, json=ORDER, timeout=30)
+        assert r.status_code == 200, r.text
+        ids.append(r.json()["id"])
+        totals.append(r.json()["total"])
+    before = _stock(world)
+    r = requests.post(f"{API}/admin/orders/merge", headers=admin, json={"order_ids": ids}, timeout=30)
+    assert r.status_code == 200, r.text
+    merged = r.json()["order"]
+    assert merged["total"] == round(sum(totals), 2)
+    assert sum(a["quantity"] for e in merged["stock_allocations"] for a in e["allocations"]) == 2
+    assert merged["items"][0]["quantity"] == 2 and _stock(world) == before
+    assert requests.post(f"{API}/orders/{merged['id']}/cancel", headers=client, timeout=30).status_code == 200
+    assert _stock(world) == before + 2

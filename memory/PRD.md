@@ -362,3 +362,29 @@ E-commerce platform for truck spare parts with a comprehensive admin panel. Russ
 ### Backlog
 - P1: postponed code-review items (split BonusTab / CRMTab / AdminChatsPage, complex functions in admin.py / documents.py, index keys)
 - P2: manager sees whether the client opened / ordered from a selection; brute-force lockout on login; remove `users.password_plain`
+
+## Audit + fixes in preview (June 2026) — full report: /app/memory/AUDIT_REPORT.md
+Owner decisions: the third-party card gateway is removed for good (do not offer it again); card payment = requisites issued by hand by the admin; production (Beget) must not be touched; fixes go to preview only.
+- Balance top-up is a request (`balance_transactions` status pending -> completed/failed): `POST /api/user/balance/topup`, admin `GET /api/admin/balance-topups`, `POST .../{id}/requisites|confirm|reject`. UI: `components/admin/BalanceTopups.js` (admin payments -> «Предоплата»), `components/TopupStatus.js` (client balance history).
+- Card order payment: `card_status` always starts as `awaiting_requisites`; `/api/card-payment-settings` is an admin-only template, mode is always `per_order`.
+- create_order reserves stock first (`_reserve_cart_stock`) and releases it if the order is not created; customer cancel and expired-order cancel are atomic; `/api/orders/check-expired` is admin-only.
+- merge_orders keeps money/discount/stock fields, re-links related docs, archives originals in `merged_orders_archive`.
+- Crypto: a tx hash pays one order (check + unique partial index); `/payments/crypto/submit` checks ownership.
+- Telegram chat webhook requires Telegram secret token (webhook must be re-installed from the admin Telegram tab after deploy); commands only from the bound admin chat.
+- Passwords: no new plaintext copies (`password_plain` is not written, unset on change). Existing stored values untouched — owner decision pending.
+- Login limit (Mongo `login_attempts`, TTL): 10 fails / 15 min per e-mail+IP, 50 per e-mail; forgot-password 5 / 15 min.
+- Search text escaped in all `$regex`; upload deny-list; indexes created at startup (`ensure_indexes` in server.py); staff pages lazy-loaded in App.js; NotificationsPage waits for auth.
+- Dependencies: axios 1.21, react-router-dom 7.18; python-multipart, PyJWT, requests, urllib3, aiohttp, pymongo 4.6.3, pillow and others bumped.
+- Baseline screenshots for visual regression: /app/test_reports/baseline/ (56 files).
+
+### Pending owner decisions
+- Purge stored plaintext passwords and hide them in admin UI?
+- Auto-refund to balance when a card/crypto-paid order is cancelled?
+- Auto-restock of the unshipped remainder on partial fulfilment?
+- Case-insensitive e-mail on login/registration?
+
+### Backlog after the audit
+- P1: FastAPI/Starlette upgrade with full regression; isolated test DB
+- P2: single role dependency instead of ~190 inline checks; N+1 queries and pagination; split create_order & other complex functions; split AdminPage/BonusTab/CRMTab/AdminChatsPage (compare with baseline screenshots)
+- P2: API for Android (refresh tokens, /api/v1, unified errors, push)
+- P3: remove unused ui files/packages/variables after checking production logs

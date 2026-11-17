@@ -470,6 +470,13 @@ async def redeem_prize(data: dict, user=Depends(get_current_user)):
 
     if current_points < points_cost:
         raise HTTPException(status_code=400, detail="Недостаточно баллов")
+    if points_cost > 0:
+        taken = await db.bonus_progress.update_one(
+            {"user_id": user["id"], "program_id": program_id, "current_amount": {"$gte": points_cost}},
+            {"$inc": {"current_amount": -points_cost}},
+        )
+        if taken.modified_count == 0:
+            raise HTTPException(status_code=400, detail="Недостаточно баллов")
 
     options_suffix = (" — " + ", ".join(f"{o['group_name']}: {o['choice_label']}" for o in options_detail)) if options_detail else ""
 
@@ -503,10 +510,6 @@ async def redeem_prize(data: dict, user=Depends(get_current_user)):
     })
 
     new_points = current_points - points_cost
-    await db.bonus_progress.update_one(
-        {"user_id": user["id"], "program_id": program_id},
-        {"$set": {"current_amount": new_points}}
-    )
     
     if prize.get("quantity", -1) > 0:
         prizes = program.get("prizes", [])
