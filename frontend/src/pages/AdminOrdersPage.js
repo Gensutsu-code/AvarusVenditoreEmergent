@@ -1,7 +1,7 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
-import { Package, Search, Pencil, Trash2, Save, X, Clock, CheckCircle, XCircle, ChevronDown, User, Phone, MapPin, Calendar, CreditCard, RefreshCw, AlertTriangle, Check, RotateCcw, Plus, GitMerge, PackageCheck, CircleDashed, Gift, FileSpreadsheet } from 'lucide-react';
+import { Package, Search, Pencil, Trash2, Save, X, Clock, CheckCircle, XCircle, ChevronDown, ChevronLeft, ChevronRight, User, Phone, MapPin, Calendar, CreditCard, RefreshCw, AlertTriangle, Check, RotateCcw, Plus, GitMerge, PackageCheck, CircleDashed, Gift, FileSpreadsheet } from 'lucide-react';
 import { Button } from '../components/ui/button';
 import { Input } from '../components/ui/input';
 import { useAuth } from '../context/AuthContext';
@@ -27,8 +27,15 @@ export default function AdminOrdersPage() {
   const [orders, setOrders] = useState([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
+  const [debouncedSearch, setDebouncedSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
   const [managerFilter, setManagerFilter] = useState('all');
+  const [page, setPage] = useState(1);
+  const PAGE_SIZE = 50;
+  const [total, setTotal] = useState(0);
+  const [statusCounts, setStatusCounts] = useState({});
+  const [totalRevenue, setTotalRevenue] = useState(0);
+  const [managersList, setManagersList] = useState([]);
   const [expandedOrders, setExpandedOrders] = useState({});
   const [editingOrderId, setEditingOrderId] = useState(null);
   const [editData, setEditData] = useState({});
@@ -42,6 +49,17 @@ export default function AdminOrdersPage() {
   const [fulfillModal, setFulfillModal] = useState(null); // { order, draft: [{product_id, name, quantity, quantity_fulfilled, price}] }
   const [fulfilling, setFulfilling] = useState(false);
 
+  // Debounce the search box so every keystroke doesn't trigger a server request
+  useEffect(() => {
+    const t = setTimeout(() => setDebouncedSearch(searchQuery), 350);
+    return () => clearTimeout(t);
+  }, [searchQuery]);
+
+  // Reset to page 1 whenever a filter changes
+  useEffect(() => {
+    setPage(1);
+  }, [debouncedSearch, statusFilter, managerFilter]);
+
   useEffect(() => {
     if (authLoading) return;
     if (!user) {
@@ -52,25 +70,42 @@ export default function AdminOrdersPage() {
       navigate('/');
       return;
     }
-    fetchOrders();
   }, [user, authLoading, navigate]);
 
-  useEffect(() => {
-    if (!user || user.role !== 'admin') return;
-    const interval = setInterval(fetchOrders, 10000);
-    return () => clearInterval(interval);
-  }, [user]);
-
-  const fetchOrders = async () => {
+  const fetchOrders = useCallback(async () => {
     try {
-      const res = await axios.get(`${API}/admin/orders`);
-      setOrders(res.data);
+      const params = { page, page_size: PAGE_SIZE };
+      if (debouncedSearch) params.search = debouncedSearch;
+      if (statusFilter !== 'all') params.status = statusFilter;
+      if (managerFilter !== 'all') params.manager_id = managerFilter;
+      const res = await axios.get(`${API}/admin/orders`, { params });
+      setOrders(res.data.items || []);
+      setTotal(res.data.total || 0);
+      setStatusCounts(res.data.status_counts || {});
+      setTotalRevenue(res.data.total_revenue || 0);
+      setManagersList(res.data.managers || []);
     } catch (err) {
       console.error('Failed to fetch orders', err);
     } finally {
       setLoading(false);
     }
-  };
+  }, [page, debouncedSearch, statusFilter, managerFilter]);
+
+  // Keep the latest fetchOrders in a ref so the 10s poll always uses fresh filters/page
+  // without re-creating the interval on every filter change.
+  const fetchOrdersRef = useRef(fetchOrders);
+  useEffect(() => { fetchOrdersRef.current = fetchOrders; }, [fetchOrders]);
+
+  useEffect(() => {
+    if (!user || user.role !== 'admin') return;
+    fetchOrders();
+  }, [user, fetchOrders]);
+
+  useEffect(() => {
+    if (!user || user.role !== 'admin') return;
+    const interval = setInterval(() => fetchOrdersRef.current(), 10000);
+    return () => clearInterval(interval);
+  }, [user]);
 
   const formatPrice = (price) => new Intl.NumberFormat('ru-RU').format(price);
   const formatDate = (dateStr) => {
@@ -343,26 +378,19 @@ export default function AdminOrdersPage() {
     setExpandedOrders(prev => ({ ...prev, [orderId]: !prev[orderId] }));
   };
 
-  const filteredOrders = orders.filter(order => {
-    const matchesSearch = searchQuery === '' || 
-      order.id?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      order.customer_name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      order.full_name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      order.phone?.includes(searchQuery);
-    const matchesStatus = statusFilter === 'all' || order.status === statusFilter;
-    const matchesManager = managerFilter === 'all' || (managerFilter === 'none' ? !order.manager_id : order.manager_id === managerFilter);
-    return matchesSearch && matchesStatus && matchesManager;
-  });
-  const orderManagers = [...new Map(orders.filter(o => o.manager_id && o.manager_name).map(o => [o.manager_id, o.manager_name])).entries()]
-    .sort((a, b) => a[1].localeCompare(b[1], 'ru'));
+  // Filtering/search now happens server-side (see fetchOrders) — `orders` is already just
+  // the current, filtered page.
+  const filteredOrders = orders;
+  const orderManagers = managersList.map((m) => [m.id, m.name]);
 
   const stats = {
-    total: orders.length,
-    pending: orders.filter(o => o.status === 'pending').length,
-    processing: orders.filter(o => o.status === 'processing').length,
-    completed: orders.filter(o => o.status === 'completed').length,
-    totalRevenue: orders.filter(o => o.status === 'completed').reduce((sum, o) => sum + o.total, 0)
+    total,
+    pending: statusCounts.pending || 0,
+    processing: statusCounts.processing || 0,
+    completed: statusCounts.completed || 0,
+    totalRevenue
   };
+  const totalPages = Math.max(1, Math.ceil(total / PAGE_SIZE));
 
   if (authLoading || loading) {
     return (
@@ -388,7 +416,7 @@ export default function AdminOrdersPage() {
               <h1 className="text-2xl md:text-3xl font-bold tracking-tight uppercase bg-gradient-to-r from-teal-600 to-emerald-600 bg-clip-text text-transparent">
                 Управление заказами
               </h1>
-              <p className="text-sm text-slate-500">Всего {orders.length} заказов</p>
+              <p className="text-sm text-slate-500">Всего {total} заказов</p>
             </div>
           </div>
           <Button variant="outline" size="sm" onClick={fetchOrders} className="border-teal-200 text-teal-600 hover:bg-teal-50 hover:border-teal-300 rounded-xl">
@@ -788,6 +816,31 @@ export default function AdminOrdersPage() {
             )}
           </AnimatePresence>
         </div>
+
+        {/* Pagination */}
+        {total > PAGE_SIZE && (
+          <div className="flex items-center justify-center gap-3 mt-6" data-testid="orders-pagination">
+            <Button
+              variant="outline" size="sm" disabled={page <= 1}
+              onClick={() => setPage(p => Math.max(1, p - 1))}
+              className="rounded-xl border-slate-200"
+              data-testid="orders-page-prev"
+            >
+              <ChevronLeft className="w-4 h-4 mr-1" /> Назад
+            </Button>
+            <span className="text-sm text-slate-500" data-testid="orders-page-info">
+              Стр. {page} из {totalPages}
+            </span>
+            <Button
+              variant="outline" size="sm" disabled={page >= totalPages}
+              onClick={() => setPage(p => Math.min(totalPages, p + 1))}
+              className="rounded-xl border-slate-200"
+              data-testid="orders-page-next"
+            >
+              Далее <ChevronRight className="w-4 h-4 ml-1" />
+            </Button>
+          </div>
+        )}
       </div>
 
       {/* ───── Sticky bar: Merge selected orders ───── */}

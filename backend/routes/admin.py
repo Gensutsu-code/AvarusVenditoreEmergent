@@ -7,6 +7,7 @@ import uuid
 import asyncio
 import csv
 import io
+import re
 
 from database import db, get_current_user, hash_password
 from models import AdminUserCreate, AdminUserUpdate, AdminOrderUpdate
@@ -73,8 +74,18 @@ async def get_admin_users(user=Depends(get_current_user)):
     
     users = await db.users.find({"role": {"$ne": "manager"}}, {"_id": 0, "password": 0}).to_list(1000)
     
+    # One query for every user's orders instead of one query per user (was 315 round-trips
+    # to the database on every admin/users load — the main cause of the slow admin panel).
+    user_ids = [u["id"] for u in users]
+    all_orders = await db.orders.find(
+        {"user_id": {"$in": user_ids}}, {"_id": 0}
+    ).sort("created_at", -1).to_list(100000)
+    orders_by_user = defaultdict(list)
+    for o in all_orders:
+        orders_by_user[o.get("user_id")].append(o)
+
     for u in users:
-        user_orders = await db.orders.find({"user_id": u["id"]}, {"_id": 0}).sort("created_at", -1).to_list(1000)
+        user_orders = orders_by_user.get(u["id"], [])
         
         # Basic stats
         u["orders_count"] = len(user_orders)
@@ -324,34 +335,96 @@ async def toggle_block_user(user_id: str, user=Depends(get_current_user)):
 # ==================== ORDER MANAGEMENT ====================
 
 @router.get("/orders")
-async def get_admin_orders(user=Depends(get_current_user)):
+async def get_admin_orders(
+    page: int = None, page_size: int = None, search: str = None, status: str = None,
+    manager_id: str = None, user=Depends(get_current_user)
+):
     if user.get("role") != "admin":
         raise HTTPException(status_code=403, detail="Admin access required")
-    
-    orders = await db.orders.find({}, {"_id": 0}).sort("created_at", -1).to_list(1000)
-    
-    # Enrich orders with user data
+
+    if page_size is None:
+        # Backward-compatible path: a caller that doesn't ask for pagination (e.g. the admin
+        # dashboard overview) still gets the full flat list exactly as before.
+        orders = await db.orders.find({}, {"_id": 0}).sort("created_at", -1).to_list(1000)
+        user_ids = list(set(o.get("user_id") for o in orders if o.get("user_id")))
+        manager_ids = list({o["manager_id"] for o in orders if o.get("manager_id")})
+        users_data = {}
+        lookup_ids = list({*user_ids, *manager_ids})
+        if lookup_ids:
+            async for u in db.users.find({"id": {"$in": lookup_ids}}, {"_id": 0, "id": 1, "name": 1, "email": 1}):
+                users_data[u["id"]] = u
+        for order in orders:
+            m = users_data.get(order.get("manager_id"))
+            order["manager_name"] = m.get("name") if m else None
+            cu = users_data.get(order.get("user_id"))
+            if cu:
+                order["customer_name"] = cu.get("name") or cu.get("email", "")
+                order["customer_email"] = cu.get("email", "")
+        return orders
+
+    page = max(1, page or 1)
+    page_size = max(1, min(page_size, 200))
+
+    query = {}
+    if status and status != "all":
+        query["status"] = status
+    if manager_id and manager_id != "all":
+        query["manager_id"] = None if manager_id == "none" else manager_id
+    if search:
+        rx = {"$regex": re.escape(search.strip()), "$options": "i"}
+        query["$or"] = [{"id": rx}, {"full_name": rx}, {"phone": rx}]
+
+    # The page of orders, the total count for pagination, the per-status counts/revenue for
+    # the filter tabs, and the manager list for the filter dropdown are all independent of
+    # each other, so fetch them concurrently instead of one slow round-trip after another —
+    # this (plus real pagination instead of loading all 800+ orders every time) is the fix
+    # for the admin panel being slow to load.
+    orders_cursor = db.orders.find(query, {"_id": 0}).sort("created_at", -1).skip((page - 1) * page_size).limit(page_size).to_list(page_size)
+    count_task = db.orders.count_documents(query)
+    status_agg_task = db.orders.aggregate([
+        {"$group": {"_id": "$status", "count": {"$sum": 1}, "revenue": {"$sum": "$total"}}}
+    ]).to_list(10)
+    manager_ids_task = db.orders.distinct("manager_id", {"manager_id": {"$ne": None}})
+
+    orders, total, status_rows, all_manager_ids = await asyncio.gather(
+        orders_cursor, count_task, status_agg_task, manager_ids_task
+    )
+
+    status_counts = {}
+    total_revenue = 0
+    for row in status_rows:
+        status_counts[row["_id"] or "pending"] = row["count"]
+        if row["_id"] == "completed":
+            total_revenue = row["revenue"]
+
+    # Enrich just this page with customer/manager names (same as before)
     user_ids = list(set(o.get("user_id") for o in orders if o.get("user_id")))
+    page_manager_ids = list({o["manager_id"] for o in orders if o.get("manager_id")})
+    lookup_ids = list({*user_ids, *page_manager_ids, *all_manager_ids})
     users_data = {}
-    if user_ids:
-        users_cursor = db.users.find({"id": {"$in": user_ids}}, {"_id": 0, "id": 1, "name": 1, "email": 1})
-        async for u in users_cursor:
+    if lookup_ids:
+        async for u in db.users.find({"id": {"$in": lookup_ids}}, {"_id": 0, "id": 1, "name": 1, "email": 1}):
             users_data[u["id"]] = u
-    
-    manager_ids = list({o["manager_id"] for o in orders if o.get("manager_id")})
-    managers = {}
-    if manager_ids:
-        async for m in db.users.find({"id": {"$in": manager_ids}}, {"_id": 0, "id": 1, "name": 1}):
-            managers[m["id"]] = m.get("name", "")
 
     for order in orders:
-        order["manager_name"] = managers.get(order.get("manager_id"))
-        uid = order.get("user_id")
-        if uid and uid in users_data:
-            order["customer_name"] = users_data[uid].get("name") or users_data[uid].get("email", "")
-            order["customer_email"] = users_data[uid].get("email", "")
-    
-    return orders
+        m = users_data.get(order.get("manager_id"))
+        order["manager_name"] = m.get("name") if m else None
+        cu = users_data.get(order.get("user_id"))
+        if cu:
+            order["customer_name"] = cu.get("name") or cu.get("email", "")
+            order["customer_email"] = cu.get("email", "")
+
+    managers = [{"id": mid, "name": users_data[mid].get("name", "")} for mid in all_manager_ids if mid in users_data]
+
+    return {
+        "items": orders,
+        "total": total,
+        "page": page,
+        "page_size": page_size,
+        "status_counts": status_counts,
+        "total_revenue": total_revenue,
+        "managers": managers,
+    }
 
 
 @router.put("/orders/{order_id}")
