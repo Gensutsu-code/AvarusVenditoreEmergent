@@ -402,8 +402,9 @@ async def update_admin_order(order_id: str, data: AdminOrderUpdate, user=Depends
         if set(original_items.keys()) - new_keys:
             quantity_changed = True
         
-        # Calculate new total (without discount logic)
-        total = 0
+        # Calculate new total (goods, keeping the order's existing delivery fee — promo/cashback/
+        # discount amounts already baked into per-item prices are not recomputed here)
+        total = float(original_order.get("delivery_fee") or 0)
         for item in update_data["items"]:
             item_price = item.get("price", 0)
             item_qty = item.get("quantity", 1)
@@ -429,9 +430,9 @@ async def update_admin_order(order_id: str, data: AdminOrderUpdate, user=Depends
         # Save previous data for comparison
         update_data["previous_items"] = original_order.get("items", [])
         update_data["previous_total"] = original_order.get("total", 0)
-        # Recalculate total from items
-        new_total = sum(item.get("price", 0) * item.get("quantity", 0) for item in update_data["items"])
-        update_data["total"] = new_total
+        # Recalculate total from items, keeping the existing delivery fee
+        new_total = float(original_order.get("delivery_fee") or 0) + sum(item.get("price", 0) * item.get("quantity", 0) for item in update_data["items"])
+        update_data["total"] = round(new_total, 2)
 
     # Reconcile stock reservations with the new quantities right away (B09): a bump takes the
     # extra units from the shelf (400 if not enough), a cut releases the excess immediately —
@@ -587,11 +588,14 @@ async def rollback_order_status(order_id: str, user=Depends(get_current_user)):
     rollback_map = {
         "completed": "processing",
         "processing": "pending",
-        "cancelled": "pending",
     }
     current = order.get("status")
     prev = rollback_map.get(current)
     if not prev:
+        # Resuming a cancelled order is intentionally blocked: its stock, refund and (for
+        # deferrals) debt were already released/settled by the cancellation and cannot be
+        # safely un-done here without re-reserving stock, clawing back the refund and
+        # re-opening the deferral debt (B06/B22). Create a new order instead.
         raise HTTPException(status_code=400, detail="Невозможно откатить этот статус")
 
     await db.orders.update_one({"id": order_id}, {"$set": {"status": prev, "previous_status": current}})

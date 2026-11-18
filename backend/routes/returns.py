@@ -81,7 +81,8 @@ async def create_return(data: dict, user=Depends(get_current_user)):
     # a partially-fulfilled order must not let a return be claimed on the unshipped part, B13)
     for item in items:
         pid = item.get("product_id")
-        qty_requested = int(item.get("quantity", 1) or 1)
+        raw_qty = item.get("quantity", 1)
+        qty_requested = int(raw_qty) if raw_qty is not None else 1
         if qty_requested <= 0:
             raise HTTPException(status_code=400, detail="Количество к возврату должно быть положительным")
         order_item = next((oi for oi in order.get("items", []) if oi.get("product_id") == pid), None)
@@ -152,7 +153,8 @@ async def create_return(data: dict, user=Depends(get_current_user)):
 
         order_shipped = order_item.get("quantity_fulfilled")
         order_shipped = int(order_shipped) if order_shipped is not None else int(order_item.get("quantity", 1) or 1)
-        qty = min(int(item.get("quantity", 1) or 1), order_shipped)
+        raw_qty = item.get("quantity", 1)
+        qty = min(int(raw_qty) if raw_qty is not None else 1, order_shipped)
         item_total = order_item.get("price", 0) * qty
 
         if return_type == "return":

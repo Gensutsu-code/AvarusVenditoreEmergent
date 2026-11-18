@@ -45,7 +45,15 @@ async def sync_deferral_debt(order: dict, items: Optional[list] = None):
     if not d:
         return
     use_items = items if items is not None else order.get("items", [])
-    target = 0.0 if order.get("status") == "cancelled" else deferral_debt_target(order, use_items)
+    # Mirror refund_cancelled_order's convention: delivery is only kept/owed once something was
+    # actually shipped. A full cancel with nothing ever shipped releases the debt entirely,
+    # including delivery; a partial shipment then cancelling the rest still owes the shipped
+    # value + delivery (previously this branch ignored quantity_fulfilled entirely on cancel).
+    any_shipped = any(int(i.get("quantity_fulfilled") or 0) > 0 for i in use_items)
+    if order.get("status") == "cancelled" and not any_shipped:
+        target = 0.0
+    else:
+        target = deferral_debt_target(order, use_items)
     target = round(max(0.0, target), 2)
     if target <= 0:
         await db.deferrals.update_one(

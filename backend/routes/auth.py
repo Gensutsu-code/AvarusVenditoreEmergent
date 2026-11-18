@@ -191,7 +191,9 @@ async def update_profile(data: UserProfileUpdate, response: Response, user=Depen
         {"_id": 0, "password": 0, "password_hash": 0, "password_plain": 0, "plain_password": 0}
     )
     if "password" in update_data:
-        new_token = create_token(user["id"], (user.get("auth_version", 0) or 0) + 1)
+        # Use the freshly-read value (not user[...] + 1) so a concurrent password change
+        # cannot make this token carry a now-stale auth_version and log itself out.
+        new_token = create_token(user["id"], updated_user.get("auth_version", 0) or 0)
         set_auth_cookie(response, new_token)
     return updated_user
 
