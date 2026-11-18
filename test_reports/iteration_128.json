@@ -1,0 +1,23 @@
+{
+  "summary": "Final retest of the admin-panel-performance plaintext-password fix: PASS. The PUT /api/admin/users/{id} response no longer includes password/password_plain/plain_password/password_hash, even for a simulated legacy TEST user that has both plaintext fields set in the DB. GET /admin/users and /admin/users/{id}/details are also clean. The delete_admin_user action_logs before_state has no password keys (checked in the DB for a deleted TEST user that had plain_password set). Backend: 27/27 pytest passed (iter129 new + iter128 + iter127 regression). UI: the Users tab card, the detail panel and the edit modal show no plaintext password; the password input starts empty; editing name/phone and saving persists after a reload, and the login password stays the same. When an admin sets a new password, the old cookie and Bearer token get 401, the old password gets 401 and the new one gets 200 (bcrypt $2b$). /admin/orders: pagination (page 1 to 2 of 18), search and global stats look fine with no page errors. One MINOR cosmetic leftover: CRMTab.js (separate file, not AdminPage.js) still has 2 password_plain render spots. One of them shows an empty 'Пароль: —' row in the CRM expanded card. No data leaks, because the backend strips the field.",
+  "backend_issues": {"critical": [], "minor": []},
+  "frontend_issues": {
+    "ui_bugs": [
+      {"component": "components/admin/CRMTab.js expanded user card", "issue": "Dead 'Пароль:' row is still rendered (lines ~297-302, data-testid user-detail-password-{id}) and always shows '—', because the backend no longer sends password_plain. The conditional badge at lines ~208-212 (user-password-{id}) is also dead code. No leak, cosmetic/dead-code only.", "selector": "[data-testid^='user-detail-password-']", "priority": "LOW"}
+    ],
+    "integration_issues": [],
+    "design_issues": []
+  },
+  "test_report_links": ["/app/backend/tests/test_iter129_admin_final.py", "/app/backend/tests/test_iter128_admin_retest.py", "/app/backend/tests/test_iter127_admin_perf_pagination.py", "/app/test_reports/pytest/pytest_iter129.xml"],
+  "action_items": ["(Optional, LOW) Remove the 2 leftover password_plain render blocks in frontend/src/components/admin/CRMTab.js (lines ~208-212 badge and ~297-302 'Пароль:' row)."],
+  "critical_code_review_comments": [
+    "admin.py update_admin_user: the projection now excludes all 4 password keys. The $unset of the plaintext fields only runs when the password changes, so legacy plaintext values stay in the DB for users whose password was never reset. They are never exposed, but a one-time cleanup migration could be considered (owner decision, not run by tester).",
+    "CRMTab.js still references user.password_plain (see ui_bugs)."
+  ],
+  "updated_files": ["/app/backend/tests/test_iter129_admin_final.py"],
+  "success_rate": {"backend": "100% (27/27)", "frontend": "100% functional; 1 LOW cosmetic leftover"},
+  "seed_data_creation": "Created and deleted by exact id: 3 TEST users (test_iter129_*@example.com x2 from pytest, test_iter129ui_66dd64@example.com for UI). No seed/real data modified. Note: many older TEST_* users from previous iterations are still in the DB (not created by this run, left untouched).",
+  "retest_needed": false,
+  "should_main_agent_self_test": true,
+  "context_for_next_testing_agent": "Run: cd /app/backend && python -m pytest tests/test_iter129_admin_final.py tests/test_iter128_admin_retest.py tests/test_iter127_admin_perf_pagination.py --noconftest -p no:xdist. For browser tests, admin auth is a cookie access_token = database.create_token(admin_id, admin.auth_version). The token must include auth_version, otherwise the session is rejected. The rollback-hidden-for-cancelled check this round was light only: search for f15ee199 returned the cancelled order and the collapsed row has no rollback button. The order was not expanded."
+}
