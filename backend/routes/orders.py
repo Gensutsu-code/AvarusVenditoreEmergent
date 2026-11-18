@@ -7,7 +7,7 @@ from datetime import datetime, timezone, timedelta
 from collections import defaultdict
 import uuid
 
-from database import db, get_current_user
+from database import db, get_current_user, client
 from database import manager_commission_percent
 from models import CartItem, OrderCreate, OrderResponse, FavoriteItem
 from notify import notify_user, notify_admin
@@ -1600,9 +1600,20 @@ async def merge_orders(payload: dict, user: dict = Depends(get_current_user)):
         raise HTTPException(status_code=400, detail="Orders belong to different users")
 
     completed_statuses = {"completed", "выполнен", "delivered"}
+    cancelled_statuses = {"cancelled", "отменён"}
     for o in orders:
-        if (o.get("status") or "").lower() in completed_statuses:
+        st = (o.get("status") or "").lower()
+        if st in completed_statuses:
             raise HTTPException(status_code=400, detail=f"Order {o['id']} is already completed")
+        if st in cancelled_statuses:
+            raise HTTPException(status_code=400, detail=f"Заказ {o['id'][:8]} отменён и не может быть объединён")
+        # An in-flight card/crypto payment is tied to a specific requisites/amount — merging
+        # would silently drop it (only the newest order's payment fields survive the merge),
+        # orphaning money the client may have already sent (B04).
+        if o.get("card_status") in ("awaiting_payment", "receipt_uploaded"):
+            raise HTTPException(status_code=400, detail=f"Заказ {o['id'][:8]}: дождитесь подтверждения оплаты картой перед объединением")
+        if o.get("payment_status") in ("awaiting_payment", "awaiting_confirmation"):
+            raise HTTPException(status_code=400, detail=f"Заказ {o['id'][:8]}: дождитесь завершения текущего платежа перед объединением")
 
     # Sort by created_at desc → newest first
     def _ts(o):
@@ -1662,11 +1673,16 @@ async def merge_orders(payload: dict, user: dict = Depends(get_current_user)):
         "manager_id": newest.get("manager_id"),
         "manager_commission_percent": newest.get("manager_commission_percent"),
     }
-    await db.orders.insert_one(new_order)
-    await db.merged_orders_archive.insert_many([{**o, "merged_into": new_order["id"]} for o in orders])
-    for coll in (db.deferrals, db.balance_transactions, db.stock_movements, db.crypto_payments):
-        await coll.update_many({"order_id": {"$in": order_ids}}, {"$set": {"order_id": new_order["id"]}})
-    await db.orders.delete_many({"id": {"$in": order_ids}})
+    # Atomic: if the process dies mid-merge, either everything above lands (new order, links,
+    # archive, delete of the originals) or nothing does — never a half-merged duplicate state (B05).
+    async with await client.start_session() as txn:
+        async with txn.start_transaction():
+            await db.orders.insert_one(new_order, session=txn)
+            await db.merged_orders_archive.insert_many([{**o, "merged_into": new_order["id"]} for o in orders], session=txn)
+            for coll in (db.deferrals, db.balance_transactions, db.stock_movements, db.crypto_payments):
+                await coll.update_many({"order_id": {"$in": order_ids}}, {"$set": {"order_id": new_order["id"]}}, session=txn)
+            # Narrowly filtered to exactly the order_ids the admin picked for this merge (explicit action).
+            await db.orders.delete_many({"id": {"$in": order_ids}}, session=txn)
 
     # Notify the user
     await notify_user(

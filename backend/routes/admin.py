@@ -11,7 +11,7 @@ import io
 from database import db, get_current_user, hash_password
 from models import AdminUserCreate, AdminUserUpdate, AdminOrderUpdate
 from routes.bonus import update_bonus_on_order_delivered
-from routes.warehouse import restore_order_stock
+from routes.warehouse import restore_order_stock, settle_fulfilment_stock
 from routes.balance import refund_cancelled_order
 from routes.action_logs import log_action
 
@@ -395,6 +395,12 @@ async def update_admin_order(order_id: str, data: AdminOrderUpdate, user=Depends
                 price_changed = True
             if original_item.get("quantity") != new_item.get("quantity"):
                 quantity_changed = True
+
+        # A line removed outright (present before, missing from the new list) is also a
+        # quantity change — otherwise its reserved stock would never get reconciled/released.
+        new_keys = {it.get("product_id", it.get("article")) for it in update_data["items"]}
+        if set(original_items.keys()) - new_keys:
+            quantity_changed = True
         
         # Calculate new total (without discount logic)
         total = 0
@@ -426,6 +432,16 @@ async def update_admin_order(order_id: str, data: AdminOrderUpdate, user=Depends
         # Recalculate total from items
         new_total = sum(item.get("price", 0) * item.get("quantity", 0) for item in update_data["items"])
         update_data["total"] = new_total
+
+    # Reconcile stock reservations with the new quantities right away (B09): a bump takes the
+    # extra units from the shelf (400 if not enough), a cut releases the excess immediately —
+    # instead of leaving the order's items out of sync with what is actually held in reserve.
+    if quantity_changed and original_order.get("status") not in ("completed", "cancelled"):
+        present_ids = {it.get("product_id") for it in update_data["items"]}
+        recon_items = list(update_data["items"]) + [
+            {**oi, "quantity": 0} for oi in original_order.get("items", []) if oi.get("product_id") not in present_ids
+        ]
+        update_data.update(await settle_fulfilment_stock(original_order, recon_items, False, user.get("name") or user.get("email", "")))
     
     if not update_data:
         raise HTTPException(status_code=400, detail="No data to update")
