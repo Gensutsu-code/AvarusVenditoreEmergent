@@ -1,5 +1,5 @@
 """Pydantic models for the API"""
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 from typing import List, Optional, Dict, Any
 
 # ==================== USER MODELS ====================
@@ -37,6 +37,15 @@ class UserProfileUpdate(BaseModel):
     address_comment: Optional[str] = None
     current_password: Optional[str] = None
     new_password: Optional[str] = None
+
+class ForgotPasswordRequest(BaseModel):
+    email: str = Field(min_length=3, max_length=200)
+
+class ResetPasswordRequest(BaseModel):
+    # Strict string type: a dict/list/number payload is rejected by Pydantic before it ever
+    # reaches the database query, closing the NoSQL-injection-style bypass (SEC-01).
+    token: str = Field(min_length=10, max_length=128)
+    password: str = Field(min_length=6, max_length=128)
 
 # ==================== ADMIN USER MODELS ====================
 
@@ -215,7 +224,7 @@ class CategoryReorder(BaseModel):
 
 class CartItem(BaseModel):
     product_id: str
-    quantity: int
+    quantity: int = Field(gt=0, le=100000)
 
 class CartItemResponse(BaseModel):
     product_id: str

@@ -336,7 +336,11 @@ async def update_manager(manager_id: str, data: ManagerUpdate, user=Depends(get_
         if len(data.password) < 6:
             raise HTTPException(status_code=400, detail="Пароль должен быть не короче 6 символов")
         upd["password"] = hash_password(data.password)
-    await db.users.update_one({"id": manager_id}, {"$set": upd})
+    change = {"$set": upd}
+    if data.password:
+        # Revoke the manager's existing sessions after an admin-set password change (SEC-04).
+        change["$inc"] = {"auth_version": 1}
+    await db.users.update_one({"id": manager_id}, change)
     return _public_manager(await _get_manager(manager_id))
 
 

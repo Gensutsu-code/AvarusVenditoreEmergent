@@ -249,7 +249,17 @@ async def restore_stock(product_id: str, allocations):
 
 
 async def restore_order_stock(order):
-    """Restore stock for a cancelled/returned order (per-warehouse when allocations exist)."""
+    """Restore stock for a cancelled/returned order (per-warehouse when allocations exist).
+    Idempotent: a repeated call for the same order (e.g. rollback-then-cancel-again, or
+    cancel-then-delete) is a no-op instead of crediting the stock a second time (B06)."""
+    order_id = order.get("id")
+    if order_id:
+        claimed = await db.orders.update_one(
+            {"id": order_id, "stock_restored_at": {"$exists": False}},
+            {"$set": {"stock_restored_at": datetime.now(timezone.utc).isoformat()}},
+        )
+        if claimed.modified_count == 0:
+            return
     from routes.rewards import refund_order_cashback
     await refund_order_cashback(order)
     allocs = order.get("stock_allocations")

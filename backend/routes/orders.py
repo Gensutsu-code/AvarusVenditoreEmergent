@@ -12,7 +12,7 @@ from database import manager_commission_percent
 from models import CartItem, OrderCreate, OrderResponse, FavoriteItem
 from notify import notify_user, notify_admin
 from routes.telegram import send_telegram_order_notification
-from routes.credit import has_overdue_deferral
+from routes.credit import has_overdue_deferral, sync_deferral_debt
 from routes.balance import refund_cancelled_order, settle_order_refund, unshipped_refund_target
 from routes.warehouse import allocate_stock, restore_stock, stock_sync_enabled, restore_order_stock, ensure_available, settle_fulfilment_stock, low_stock_query, default_min_stock
 
@@ -151,14 +151,14 @@ async def _build_cart(user):
     if not product_ids:
         return {"items": []}
     
-    products = await db.products.find({"id": {"$in": product_ids}}, {"_id": 0}).to_list(100)
+    products = await db.products.find({"id": {"$in": product_ids}}, {"_id": 0}).to_list(len(product_ids))
     products_map = {p["id"]: p for p in products}
     
     # Fetch active individual prices for this user
     ind_prices = await db.individual_prices.find(
         {"user_id": user["id"], "active": True, "product_id": {"$in": product_ids}},
         {"_id": 0}
-    ).to_list(100)
+    ).to_list(len(product_ids))
     ind_prices_map = {ip["product_id"]: ip["price"] for ip in ind_prices}
     from routes.features import is_on as _feature_on
     if not _feature_on("price_requests"):
@@ -388,14 +388,14 @@ async def _compute_order_pricing(data, user, cart):
         payment_adjustment = payment_adjustments.get(f"{payment_method}_adjustment", 0)
     
     product_ids = [item["product_id"] for item in cart["items"]]
-    products = await db.products.find({"id": {"$in": product_ids}}, {"_id": 0}).to_list(100)
+    products = await db.products.find({"id": {"$in": product_ids}}, {"_id": 0}).to_list(len(product_ids))
     products_map = {p["id"]: p for p in products}
     
     # Fetch active individual prices for this user
     ind_prices = await db.individual_prices.find(
         {"user_id": user["id"], "active": True, "product_id": {"$in": product_ids}},
         {"_id": 0}
-    ).to_list(100)
+    ).to_list(len(product_ids))
     ind_prices_map = {ip["product_id"]: ip["price"] for ip in ind_prices}
     from routes.features import is_on as _feature_on
     if not _feature_on("price_requests"):
@@ -1006,6 +1006,7 @@ async def check_expired_orders(user=Depends(get_current_user)):
             continue
         await _restore_order_stock(order)
         await refund_cancelled_order(order)
+        await sync_deferral_debt({**order, "status": "cancelled"})
         
         # Notify user
         await create_notification(
@@ -1306,22 +1307,40 @@ async def pay_additional_amount(order_id: str, payment_data: dict, user=Depends(
     
     # Handle different payment methods
     if payment_method == "balance":
-        current_user = await db.users.find_one({"id": user["id"]}, {"_id": 0})
-        user_balance = current_user.get("balance", 0)
-        
-        if user_balance < additional_amount:
-            raise HTTPException(status_code=400, detail="Недостаточно средств на балансе")
-        
-        # Deduct from balance
-        await db.users.update_one(
-            {"id": user["id"]},
+        # Atomically claim the pending surcharge before touching the balance, so a repeated
+        # or concurrent call for the same order cannot deduct the amount twice (B19).
+        claimed = await db.orders.find_one_and_update(
+            {"id": order_id, "user_id": user["id"], "awaiting_additional_payment": True},
+            {"$set": {"awaiting_additional_payment": False}},
+        )
+        if not claimed:
+            raise HTTPException(status_code=400, detail="No additional payment required")
+        additional_amount = claimed.get("additional_payment_amount", 0)
+
+        charged = await db.users.update_one(
+            {"id": user["id"], "balance": {"$gte": additional_amount}},
             {"$inc": {"balance": -additional_amount}}
         )
-        
+        if charged.modified_count == 0:
+            # Could not charge: release the claim so the customer can retry or pick another method.
+            await db.orders.update_one({"id": order_id}, {"$set": {"awaiting_additional_payment": True}})
+            raise HTTPException(status_code=400, detail="Недостаточно средств на балансе")
+
+        await db.balance_transactions.insert_one({
+            "id": str(uuid.uuid4()),
+            "user_id": user["id"],
+            "type": "payment",
+            "amount": -additional_amount,
+            "method": "balance",
+            "status": "completed",
+            "order_id": order_id,
+            "created_at": datetime.now(timezone.utc).isoformat(),
+            "description": f"Доплата по заказу #{order_id[:8]}",
+        })
+
         await db.orders.update_one(
             {"id": order_id},
             {"$set": {
-                "awaiting_additional_payment": False,
                 "awaiting_confirmation": False,
                 "has_changes": False,
                 "changes_accepted": True,
@@ -1384,6 +1403,7 @@ async def cancel_order_by_customer(order_id: str, user=Depends(get_current_user)
     await _restore_order_stock(order)
     
     refund_amount = await refund_cancelled_order(order, notify=False)
+    await sync_deferral_debt({**order, "status": "cancelled"})
     
     await db.orders.update_one(
         {"id": order_id},
@@ -1418,7 +1438,7 @@ async def get_favorites(user=Depends(get_current_user)):
     if not product_ids:
         return {"items": []}
     
-    products = await db.products.find({"id": {"$in": product_ids}}, {"_id": 0}).to_list(100)
+    products = await db.products.find({"id": {"$in": product_ids}}, {"_id": 0}).to_list(len(product_ids))
     return {"items": products}
 
 
@@ -1748,6 +1768,7 @@ async def fulfill_order_partial(order_id: str, payload: dict, user: dict = Depen
     from routes.bonus import accrue_order_bonus
     merged_order = {**order, "items": updated_items, "status": new_status}
     await accrue_order_bonus(merged_order)
+    await sync_deferral_debt(merged_order, updated_items)
 
     # Notify user
     user_id = order.get("user_id")

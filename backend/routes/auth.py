@@ -49,7 +49,7 @@ async def register(data: UserRegister, response: Response):
     # Create empty cart
     await db.carts.insert_one({"user_id": user_id, "items": []})
     
-    token = create_token(user_id)
+    token = create_token(user_id, 0)
     set_auth_cookie(response, token)
     
     # Log admin activity
@@ -95,7 +95,7 @@ async def login(data: UserLogin, response: Response, request: Request):
     if user.get("blocked"):
         raise HTTPException(status_code=401, detail="Invalid credentials")
     
-    token = create_token(user["id"])
+    token = create_token(user["id"], user.get("auth_version", 0))
     set_auth_cookie(response, token)
     return {
         "token": token, 
@@ -124,7 +124,7 @@ async def get_me(user=Depends(get_current_user)):
 
 
 @router.put("/profile")
-async def update_profile(data: UserProfileUpdate, user=Depends(get_current_user)):
+async def update_profile(data: UserProfileUpdate, response: Response, user=Depends(get_current_user)):
     update_data = {}
     
     if data.name is not None:
@@ -180,26 +180,34 @@ async def update_profile(data: UserProfileUpdate, user=Depends(get_current_user)
     
     change = {"$set": update_data}
     if "password" in update_data:
+        # Revoke any other active sessions (SEC-04): bump auth_version, then immediately
+        # reissue a fresh cookie for *this* session so the current browser stays signed in.
         change["$unset"] = {"password_plain": "", "plain_password": ""}
+        change["$inc"] = {"auth_version": 1}
     await db.users.update_one({"id": user["id"]}, change)
-    
+
     updated_user = await db.users.find_one(
         {"id": user["id"]}, 
         {"_id": 0, "password": 0, "password_hash": 0, "password_plain": 0, "plain_password": 0}
     )
+    if "password" in update_data:
+        new_token = create_token(user["id"], (user.get("auth_version", 0) or 0) + 1)
+        set_auth_cookie(response, new_token)
     return updated_user
 
 
 import secrets
+import hashlib
 import os
 from routes.notifications import send_email
+from models import ForgotPasswordRequest, ResetPasswordRequest
 
 FRONTEND_URL = os.environ.get("FRONTEND_URL", "")
 
 
 @router.post("/forgot-password")
-async def forgot_password(data: dict):
-    email = data.get("email", "").strip().lower()
+async def forgot_password(data: ForgotPasswordRequest):
+    email = data.email.strip().lower()
     if not email:
         raise HTTPException(status_code=400, detail="Email обязателен")
 
@@ -212,11 +220,14 @@ async def forgot_password(data: dict):
         return {"message": "Если email зарегистрирован, вы получите письмо"}
 
     token = secrets.token_urlsafe(32)
+    # Only a hash of the token is stored server-side; the raw token exists only in the
+    # one-time email link, so a database read alone cannot be used to reset a password (SEC-01).
+    token_hash = hashlib.sha256(token.encode()).hexdigest()
     await db.password_resets.update_one(
         {"user_id": user["id"]},
         {"$set": {
             "user_id": user["id"],
-            "token": token,
+            "token_hash": token_hash,
             "created_at": datetime.now(timezone.utc).isoformat()
         }},
         upsert=True
@@ -236,29 +247,30 @@ async def forgot_password(data: dict):
 
 
 @router.post("/reset-password")
-async def reset_password(data: dict):
-    token = data.get("token", "")
-    new_password = data.get("password", "")
-    if not token or not new_password:
-        raise HTTPException(status_code=400, detail="Токен и пароль обязательны")
-    if len(new_password) < 6:
-        raise HTTPException(status_code=400, detail="Пароль минимум 6 символов")
+async def reset_password(data: ResetPasswordRequest):
+    token_hash = hashlib.sha256(data.token.encode()).hexdigest()
 
-    reset = await db.password_resets.find_one({"token": token})
+    # Atomically fetch-and-delete: a token can be consumed at most once, even if two
+    # requests race with the exact same link (single-use guarantee for SEC-01).
+    reset = await db.password_resets.find_one_and_delete({"token_hash": token_hash})
     if not reset:
         raise HTTPException(status_code=400, detail="Недействительная ссылка")
 
-    # Check expiration (1 hour)
+    # Check expiration (1 hour) - the record is already deleted above, so an expired
+    # link cannot be retried.
     from datetime import timedelta
     created = datetime.fromisoformat(reset["created_at"])
     if datetime.now(timezone.utc) - created > timedelta(hours=1):
-        await db.password_resets.delete_one({"token": token})
         raise HTTPException(status_code=400, detail="Ссылка истекла")
 
-    hashed = bcrypt.hashpw(new_password.encode('utf-8'), bcrypt.gensalt()).decode('utf-8')
+    hashed = bcrypt.hashpw(data.password.encode('utf-8'), bcrypt.gensalt()).decode('utf-8')
     await db.users.update_one(
         {"id": reset["user_id"]},
-        {"$set": {"password": hashed}, "$unset": {"password_plain": "", "plain_password": ""}}
+        {
+            "$set": {"password": hashed},
+            "$unset": {"password_plain": "", "plain_password": ""},
+            # Revoke every existing session for this account after a password reset (SEC-04).
+            "$inc": {"auth_version": 1},
+        }
     )
-    await db.password_resets.delete_one({"token": token})
     return {"message": "Пароль успешно изменён"}

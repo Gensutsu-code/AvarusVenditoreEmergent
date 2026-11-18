@@ -52,10 +52,11 @@ def hash_password(password: str) -> str:
 def verify_password(password: str, hashed: str) -> bool:
     return bcrypt.checkpw(password.encode(), hashed.encode())
 
-def create_token(user_id: str) -> str:
+def create_token(user_id: str, auth_version: int = 0) -> str:
     from datetime import datetime, timezone
     payload = {
         "user_id": user_id,
+        "auth_version": auth_version,
         "exp": datetime.now(timezone.utc).timestamp() + TOKEN_TTL
     }
     return jwt.encode(payload, JWT_SECRET, algorithm=JWT_ALGORITHM)
@@ -129,6 +130,10 @@ async def get_current_user(request: Request, credentials: Optional[HTTPAuthoriza
         if not user:
             raise HTTPException(status_code=401, detail="User not found")
         if user.get("blocked"):
+            raise HTTPException(status_code=401, detail="Invalid token")
+        # Session revocation: a password change bumps the user's auth_version, so any
+        # older token (e.g. stolen/leaked) stops being accepted immediately (SEC-04).
+        if payload.get("auth_version", 0) != user.get("auth_version", 0):
             raise HTTPException(status_code=401, detail="Invalid token")
         # Set defaults for new fields
         if user.get("role", "user") == "user":

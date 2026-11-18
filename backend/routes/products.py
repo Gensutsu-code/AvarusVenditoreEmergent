@@ -59,6 +59,16 @@ def _apply_availability(product: dict, global_sync: bool) -> dict:
     return product
 
 
+def _public_product(product: dict) -> dict:
+    """Strip the internal cost field before a product reaches an unauthenticated or
+    non-staff visitor (SEC-02). min_price stays: the storefront already clamps and charges
+    at that floor, so it is not confidential; purchase_price (supplier cost / margin) is."""
+    if not product:
+        return product
+    product.pop("purchase_price", None)
+    return product
+
+
 # ==================== CATEGORIES ====================
 
 @router.get("/categories", response_model=List[CategoryResponse])
@@ -206,7 +216,7 @@ async def get_popular_products(limit: int = 6):
         products.extend(extras)
 
     gsync = await _global_stock_sync()
-    return [_apply_availability(p, gsync) for p in products]
+    return [_public_product(_apply_availability(p, gsync)) for p in products]
 
 
 
@@ -424,7 +434,7 @@ async def get_products(
 
     products = await db.products.find(query, {"_id": 0}).sort([("created_at", -1), ("id", 1)]).skip(skip).limit(min(limit, 1000)).to_list(min(limit, 1000))
     gsync = await _global_stock_sync()
-    return [_apply_availability(_ensure_new_status(p), gsync) for p in products]
+    return [_public_product(_apply_availability(_ensure_new_status(p), gsync)) for p in products]
 
 
 @router.get("/products/search")
@@ -443,7 +453,7 @@ async def search_products_autocomplete(q: str, limit: int = 8):
     
     products = await db.products.find(query, {"_id": 0}).limit(min(limit, 20)).to_list(20)
     gsync = await _global_stock_sync()
-    return {"products": [_apply_availability(p, gsync) for p in products]}
+    return {"products": [_public_product(_apply_availability(p, gsync)) for p in products]}
 
 
 @router.get("/products/search-with-alternatives")
@@ -477,8 +487,8 @@ async def search_products_with_alternatives(search: str, limit: int = 50):
     gsync = await _global_stock_sync()
     exact_out = [exact_match] if exact_match else name_matches
     return {
-        "exact": [_apply_availability(p, gsync) for p in exact_out],
-        "alternatives": [_apply_availability(p, gsync) for p in alternatives]
+        "exact": [_public_product(_apply_availability(p, gsync)) for p in exact_out],
+        "alternatives": [_public_product(_apply_availability(p, gsync)) for p in alternatives]
     }
 
 
@@ -498,7 +508,7 @@ async def get_product(product_id: str):
     if not product:
         raise HTTPException(status_code=404, detail="Product not found")
     gsync = await _global_stock_sync()
-    return _apply_availability(_ensure_new_status(product), gsync)
+    return _public_product(_apply_availability(_ensure_new_status(product), gsync))
 
 
 @router.post("/products", response_model=ProductResponse)
@@ -843,7 +853,7 @@ async def get_related_products(product_id: str, limit: int = 4):
         additional = await db.products.find(additional_query, {"_id": 0}).limit(limit - len(related)).to_list(limit)
         related.extend(additional)
     
-    return related
+    return [_public_product(r) for r in related]
 
 
 

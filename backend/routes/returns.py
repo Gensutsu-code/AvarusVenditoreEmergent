@@ -77,14 +77,19 @@ async def create_return(data: dict, user=Depends(get_current_user)):
             pid = ri.get("product_id")
             already_returned[pid] = already_returned.get(pid, 0) + (ri.get("quantity", 0) or 0)
 
-    # Compute available quantities
+    # Compute available quantities (capped at what was actually shipped, not just ordered —
+    # a partially-fulfilled order must not let a return be claimed on the unshipped part, B13)
     for item in items:
         pid = item.get("product_id")
-        qty_requested = item.get("quantity", 1) or 1
+        qty_requested = int(item.get("quantity", 1) or 1)
+        if qty_requested <= 0:
+            raise HTTPException(status_code=400, detail="Количество к возврату должно быть положительным")
         order_item = next((oi for oi in order.get("items", []) if oi.get("product_id") == pid), None)
         if not order_item:
             continue
-        max_qty = (order_item.get("quantity", 1) or 1) - already_returned.get(pid, 0)
+        shipped_qty = order_item.get("quantity_fulfilled")
+        shipped_qty = int(shipped_qty) if shipped_qty is not None else int(order_item.get("quantity", 1) or 1)
+        max_qty = shipped_qty - already_returned.get(pid, 0)
         if qty_requested > max_qty:
             name = order_item.get("name", pid)
             if max_qty <= 0:
@@ -145,7 +150,9 @@ async def create_return(data: dict, user=Depends(get_current_user)):
         if not order_item:
             continue
 
-        qty = min(item.get("quantity", 1), order_item.get("quantity", 1))
+        order_shipped = order_item.get("quantity_fulfilled")
+        order_shipped = int(order_shipped) if order_shipped is not None else int(order_item.get("quantity", 1) or 1)
+        qty = min(int(item.get("quantity", 1) or 1), order_shipped)
         item_total = order_item.get("price", 0) * qty
 
         if return_type == "return":
@@ -266,10 +273,14 @@ async def approve_return(return_id: str, data: dict = None, user=Depends(get_cur
     fee_pct = ret.get("fee_percent", 10)
     fee_label = f"{fee_pct:g}%"
 
-    await db.returns.update_one(
-        {"id": return_id},
+    # Atomic claim: only one concurrent/duplicate approval request can flip pending->approved,
+    # so the restock + balance credit below can never be applied twice for the same return (B15).
+    claimed = await db.returns.update_one(
+        {"id": return_id, "status": "pending"},
         {"$set": {"status": "approved", "admin_comment": comment, "updated_at": datetime.now(timezone.utc).isoformat()}}
     )
+    if claimed.modified_count == 0:
+        raise HTTPException(status_code=400, detail="Return already processed")
 
     if ret["type"] == "return" and (data or {}).get("restock", True):
         from routes.warehouse import add_stock, log_movement, default_warehouse_id
@@ -382,10 +393,12 @@ async def reject_return(return_id: str, data: dict = None, user=Depends(get_curr
 
     comment = (data or {}).get("comment", "")
 
-    await db.returns.update_one(
-        {"id": return_id},
+    claimed = await db.returns.update_one(
+        {"id": return_id, "status": "pending"},
         {"$set": {"status": "rejected", "admin_comment": comment, "updated_at": datetime.now(timezone.utc).isoformat()}}
     )
+    if claimed.modified_count == 0:
+        raise HTTPException(status_code=400, detail="Return already processed")
 
     type_label = "возврат" if ret["type"] == "return" else "возврат по гарантии"
     await notify_user(

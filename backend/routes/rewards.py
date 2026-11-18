@@ -200,24 +200,37 @@ async def accrue_order_reward(order: dict):
         dq = int(it.get("quantity_fulfilled", it.get("quantity", 0)) or 0)
         weighted += (it.get("price", 0) or 0) * dq * scale * (rates.get(it.get("product_id"), 0) or 0) / 100
     weighted = round(weighted, 2)
-    already = order.get("reward_accrued_base", 0) or 0
+
+    oid = order["id"]
+    # Re-read the persisted base and atomically claim the increment, so a concurrent or
+    # duplicate accrual call for the same order (e.g. two near-simultaneous fulfillments)
+    # cannot award the points/cashback/certificate twice (B16).
+    fresh = await db.orders.find_one({"id": oid}, {"_id": 0, "reward_accrued_base": 1, "reward_accrued": 1, "ozon_certificate": 1}) or {}
+    already = round(float(fresh.get("reward_accrued_base") or 0), 2)
     delta = round(weighted - already, 2)
     if delta <= 0:
         return 0
-    user_id, oid = order.get("user_id"), order["id"]
-    update = {"reward_accrued_base": weighted}
+    claimed = await db.orders.update_one(
+        {"id": oid, "reward_accrued_base": {"$in": [None, 0]} if already == 0 else already},
+        {"$set": {"reward_accrued_base": weighted}},
+    )
+    if claimed.modified_count == 0:
+        return 0
+
+    user_id = order.get("user_id")
+    update = {}
     if system == "points":
         from routes.bonus import _accrue_points
         accrued = await _accrue_points(user_id, delta)
     elif system == "cashback":
         accrued = delta
         await adjust_cashback(user_id, delta, "accrual", f"Кэшбэк за заказ #{oid[:8]}", oid)
-        update["reward_accrued"] = round((order.get("reward_accrued", 0) or 0) + delta, 2)
+        update["reward_accrued"] = round((fresh.get("reward_accrued", 0) or 0) + delta, 2)
         await notify_user(user_id, "bonus", "Начислен кэшбэк", f"Вам начислен кэшбэк {delta:.2f} ₽ за заказ #{oid[:8]}", "/bonus")
     else:
         round_to = max(1, int(order.get("reward_round_to", 1) or 1))
         cert = int(weighted // round_to) * round_to
-        accrued = cert - (order.get("ozon_certificate", 0) or 0)
+        accrued = cert - (fresh.get("ozon_certificate", 0) or 0)
         if accrued > 0:
             update["ozon_certificate"] = cert
             update["reward_accrued"] = cert
@@ -228,7 +241,8 @@ async def accrue_order_reward(order: dict):
                 "link": "/admin/orders", "read": False, "created_at": _now(),
             })
             await notify_user(user_id, "bonus", "Сертификат Ozon", f"За заказ #{oid[:8]} вам положен сертификат Ozon на {cert} ₽. Менеджер свяжется с вами.", "/bonus")
-    await db.orders.update_one({"id": oid}, {"$set": update})
+    if update:
+        await db.orders.update_one({"id": oid}, {"$set": update})
     return accrued
 
 

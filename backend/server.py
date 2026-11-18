@@ -157,7 +157,7 @@ async def sync_admin_password():
     marker = await db.settings.find_one({"_id": "admin_password_sync"})
     if marker and verify_password(password, marker["applied"]):
         return
-    await db.users.update_one({"email": "admin@avarus.ru"}, {"$set": {"password": hash_password(password)}, "$unset": {"password_plain": "", "plain_password": ""}})
+    await db.users.update_one({"email": "admin@avarus.ru"}, {"$set": {"password": hash_password(password)}, "$unset": {"password_plain": "", "plain_password": ""}, "$inc": {"auth_version": 1}})
     await db.settings.update_one({"_id": "admin_password_sync"}, {"$set": {"applied": hash_password(password)}}, upsert=True)
     logger.info("Admin password updated from ADMIN_PASSWORD")
 

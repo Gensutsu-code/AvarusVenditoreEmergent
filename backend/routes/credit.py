@@ -22,6 +22,40 @@ async def has_overdue_deferral(user_id: str) -> bool:
     return doc is not None
 
 
+def deferral_debt_target(order: dict, items: list) -> float:
+    """Legit remaining deferral debt for an order: the money value of goods actually shipped
+    (quantity_fulfilled) plus delivery (unless it was paid with points). Quantity that was
+    never shipped, or that was cancelled as the remainder, is not owed."""
+    goods = sum(float(i.get("price") or 0) * int(i.get("quantity") or 0) for i in items)
+    shipped_goods = sum(float(i.get("price") or 0) * int(i.get("quantity_fulfilled") or 0) for i in items)
+    total = float(order.get("total") or 0)
+    delivery = 0.0 if order.get("delivery_paid_with_points") else float(order.get("delivery_fee") or 0)
+    scale = min(1.0, max(0.0, total - delivery) / goods) if goods > 0 else 0.0
+    return round(shipped_goods * scale + delivery, 2)
+
+
+async def sync_deferral_debt(order: dict, items: Optional[list] = None):
+    """Keep an order's deferral debt entry in line with what was actually shipped/cancelled
+    (B22): a fully cancelled, never-shipped deferral releases the whole debt and frees up the
+    client's credit limit; a partially shipped one before cancelling the rest is reduced to
+    the value actually shipped instead of staying at the full original amount."""
+    if not order.get("is_deferral"):
+        return
+    d = await db.deferrals.find_one({"order_id": order["id"], "status": "unpaid"}, {"_id": 0})
+    if not d:
+        return
+    use_items = items if items is not None else order.get("items", [])
+    target = 0.0 if order.get("status") == "cancelled" else deferral_debt_target(order, use_items)
+    target = round(max(0.0, target), 2)
+    if target <= 0:
+        await db.deferrals.update_one(
+            {"id": d["id"], "status": "unpaid"},
+            {"$set": {"status": "cancelled", "amount": 0, "cancelled_at": datetime.now(timezone.utc).isoformat()}},
+        )
+    elif abs(target - float(d.get("amount") or 0)) > 0.005:
+        await db.deferrals.update_one({"id": d["id"], "status": "unpaid"}, {"$set": {"amount": target}})
+
+
 class CreditRequestCreate(BaseModel):
     requested_limit: float
     message: str = ""

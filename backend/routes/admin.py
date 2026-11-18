@@ -247,6 +247,8 @@ async def update_admin_user(user_id: str, data: AdminUserUpdate, user=Depends(ge
     if "password" in update_data:
         update_data["password"] = hash_password(update_data["password"])
         change["$unset"] = {"password_plain": "", "plain_password": ""}
+        # Revoke the user's existing sessions when an admin sets a new password (SEC-04).
+        change["$inc"] = {"auth_version": 1}
     
     if not update_data:
         raise HTTPException(status_code=400, detail="No data to update")
@@ -452,6 +454,8 @@ async def update_admin_order(order_id: str, data: AdminOrderUpdate, user=Depends
             from routes.rewards import refund_order_cashback
             await refund_order_cashback(original_order)
             await refund_cancelled_order(original_order)
+            from routes.credit import sync_deferral_debt
+            await sync_deferral_debt({**original_order, "status": "cancelled"})
         
         status_labels = {
             "pending": "ожидает обработки",
@@ -506,6 +510,8 @@ async def update_order_status(order_id: str, status: str, user=Depends(get_curre
     if status == "cancelled" and old_status != "cancelled":
         await restore_order_stock(order)
         await refund_cancelled_order(order)
+        from routes.credit import sync_deferral_debt
+        await sync_deferral_debt({**order, "status": "cancelled"})
     
     await db.orders.update_one({"id": order_id}, {"$set": {"status": status, "previous_status": old_status, **({"completed_at": datetime.now(timezone.utc).isoformat()} if status == "completed" and old_status != "completed" else {})}})
     
