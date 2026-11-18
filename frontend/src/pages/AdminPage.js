@@ -607,7 +607,7 @@ export default function AdminPage() {
 
   const openEditUser = (u) => {
     setIsNewUser(false);
-    setEditingUser({ ...u, password: u.password_plain || '', deferral_days: u.credit_term_days ?? u.deferral_days ?? null });
+    setEditingUser({ ...u, password: '', deferral_days: u.credit_term_days ?? u.deferral_days ?? null });
   };
 
   const handleSaveUser = async () => {
@@ -1800,11 +1800,6 @@ export default function AdminPage() {
                           </span>
                         </div>
                         <p className="text-sm text-zinc-500">{u.email}</p>
-                        {u.password_plain && (
-                          <p className="text-xs font-mono text-zinc-600 bg-zinc-100 inline-block px-2 py-0.5 rounded mt-0.5" data-testid={`user-password-preview-${u.id}`}>
-                            Пароль: {u.password_plain}
-                          </p>
-                        )}
                       </div>
                     </div>
                     
@@ -1874,12 +1869,6 @@ export default function AdminPage() {
                               <div className="flex justify-between">
                                 <span className="text-zinc-500">Email:</span>
                                 <span className="font-medium">{userDetails.user.email}</span>
-                              </div>
-                              <div className="flex justify-between" data-testid="user-detail-password">
-                                <span className="text-zinc-500">Пароль:</span>
-                                <span className="font-mono bg-zinc-100 px-2 py-0.5 rounded text-xs select-all">
-                                  {userDetails.user.password_plain || '—'}
-                                </span>
                               </div>
                               <div className="flex justify-between">
                                 <span className="text-zinc-500">Телефон:</span>
@@ -3335,11 +3324,6 @@ export default function AdminPage() {
                   className="mt-1 font-mono"
                   data-testid="user-password-input"
                 />
-                {!isNewUser && editingUser.password_plain && (
-                  <p className="text-xs text-zinc-500 mt-1">
-                    Текущий пароль: <span className="font-mono font-semibold">{editingUser.password_plain}</span>
-                  </p>
-                )}
               </div>
 
               <div>

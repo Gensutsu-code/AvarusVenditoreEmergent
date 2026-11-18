@@ -275,7 +275,10 @@ async def update_admin_user(user_id: str, data: AdminUserUpdate, user=Depends(ge
     if result.matched_count == 0:
         raise HTTPException(status_code=404, detail="User not found")
     
-    updated_user = await db.users.find_one({"id": user_id}, {"_id": 0, "password": 0})
+    updated_user = await db.users.find_one(
+        {"id": user_id},
+        {"_id": 0, "password": 0, "password_plain": 0, "plain_password": 0, "password_hash": 0}
+    )
     return updated_user
 
 
@@ -292,7 +295,7 @@ async def delete_admin_user(user_id: str, user=Depends(get_current_user)):
         raise HTTPException(status_code=404, detail="User not found")
     
     # Remove password from log for security
-    log_state = {k: v for k, v in target.items() if k not in ("password", "password_plain", "password_hash")}
+    log_state = {k: v for k, v in target.items() if k not in ("password", "password_plain", "plain_password", "password_hash")}
     
     result = await db.users.delete_one({"id": user_id})
     if result.deleted_count == 0:

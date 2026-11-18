@@ -82,7 +82,6 @@ class AdminUserResponse(BaseModel):
     address_comment: Optional[str] = None
     customer_status: str = "retail"
     individual_discount: float = 0
-    password_plain: Optional[str] = None
     created_at: Optional[str] = None
     total_orders: int = 0
     total_spent: float = 0
