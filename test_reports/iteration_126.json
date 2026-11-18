@@ -1,0 +1,49 @@
+{
+  "summary": "Admin performance fix + server-side pagination on the orders page. Backend: 15/15 pytest pass (tests/test_iter127_admin_perf_pagination.py, run with --noconftest; they only read data). /admin/users has the same fields, and the stats of the 5 users with the most orders match the DB exactly (orders_count, total_spent, total_items, recent_orders, first/last dates). The legacy flat /admin/orders still works with enrichment. The paginated path is correct: totals, status_counts sum, completed revenue, deduplicated managers, non-overlapping pages, a full walk of 868 orders with no duplicates, the status/manager/manager=none/search/combined filters, regex-safe search, bounds clamping and auth. Timings over 4 runs: /admin/users 0.58-1.15s, /admin/orders?page=1&page_size=50 0.57-0.81s, legacy /admin/orders 1.1-1.3s (1.4MB). Frontend /admin/orders: pagination info, Prev/Next and disabled states work (page 1 of 18 through 18 of 18). The 10s poll keeps the current page and filters. Debounced search, the Cancelled tab (resets to page 1), the manager dropdown, expand, edit qty, partial fulfill, cancel, merge of 2 orders, delete, and rollback of a cancelled order (blocked with a 400 error toast) all work. One real race condition was found and reproduced (stale response replaces the filtered result). The /admin dashboard Overview and CRM tabs load correctly, but the Overview takes about 7s with 79 API calls, and many of them are fired 3-6 times.",
+  "backend_issues": {
+    "critical": [],
+    "minor": [
+      {"endpoint": "GET /api/admin/orders (no params, legacy)", "issue": "Still capped at .to_list(1000). The DB has 868-872 orders now, so after about 130 more orders the dashboard Overview will silently drop the oldest ones. Any stats that AdminPage.js computes client-side from this list will then be wrong. This cap existed before, but it is about to bite."},
+      {"endpoint": "GET /api/admin/orders?page_size=..", "issue": "Search only covers id, full_name and phone. The old client-side search also matched customer_name (the account name/email shown on the order card), so searching by account name or email no longer finds orders. Small regression."},
+      {"endpoint": "GET /api/admin/orders?page_size=..", "issue": "status_counts and total_revenue are global (they ignore the search/manager/status filters), while total is filtered. This mismatch shows in the UI (see design issue)."},
+      {"endpoint": "GET /api/admin/orders?page_size=..", "issue": "Sort is created_at only, with no tie-breaker. No duplicate timestamps exist today, but sorting by (created_at desc, id desc) would make skip/limit paging deterministic."},
+      {"endpoint": "GET /api/admin/users", "issue": "SECURITY, pre-existing and not part of this change: the response includes the plaintext field password_plain for 20 users, and the CRM tab shows it as 'Пароль: admin123'. The projection excludes only 'password'. Add password_plain, plain_password and password_hash to the exclusion, and drop the UI display."}
+    ]
+  },
+  "frontend_issues": {
+    "ui_bugs": [
+      {"component": "AdminOrdersPage fetchOrders", "issue": "Race condition, reproduced. When a filter changes while the user is on page N>1, two requests fire: first (page=N, new filter) and then (page=1, new filter), because the page-reset effect and the fetch effect both run in the same commit. Responses are applied in arrival order, with no request id or AbortController. If the stale page=N response arrives last, the list shows 'Заказы не найдены' and the pagination disappears, even though there are matches. In my test, with the page=2 response delayed by 3s, the 2 matching orders were shown and then wiped out. It also doubles the server load on every filter change. Fix: keep a request counter or AbortController and ignore stale responses. Better, reset the page inside the filter setters (setStatusFilter(v); setPage(1)) instead of in a separate effect.", "selector": "input[placeholder^='Поиск по номеру'], [data-testid=orders-page-info]", "priority": "MEDIUM"},
+      {"component": "AdminOrdersPage local mutations", "issue": "Status change, delete and merge only patch the local array. total, status_counts and the 'Всего N заказов' header stay stale until the next 10s poll. When the list is filtered by status, an order whose status was just changed stays in the wrong tab. Calling fetchOrders() after these actions would fix it.", "selector": "[data-testid^=cancel-order-], [data-testid^=delete-order-]", "priority": "LOW"},
+      {"component": "AdminOrdersPage initial load", "issue": "The first page loads twice: GET /admin/orders?page=1&page_size=50 is requested 2 times on mount.", "selector": "n/a", "priority": "LOW"}
+    ],
+    "integration_issues": [
+      {"flow": "Admin dashboard /admin Overview load", "issue": "Unchanged page, but it is still the main cause of the slowness the owner reported. It takes about 7.4s to finish loading and makes 79 API calls. /admin/attention is fired 6 times; /admin/orders (legacy, 1.4MB), /admin/users and /admin/stats/extended are each fired 3 times; cart, promo-banner and bonus/programs are each fired 2 times. Individual calls took 2-6s because they all run at once. Remove the duplicate fetches (effects re-running on user/tab changes) and stop loading the full order list on Overview.", "affected_selectors": ["AdminPage.js lines ~313, ~344 axios.get(`${API}/admin/orders`)"]}
+    ],
+    "design_issues": [
+      {"screen": "/admin/orders stats cards", "issues": ["The 'ВСЕГО' card and the 'Всего N заказов' header follow the active filter (4 when searching, 365 on the Cancelled tab). The Ожидают, В обработке, Доставлено and Выручка cards stay global (416/11/73). This mix is confusing: either all cards should be global, or all should be filtered.", "The manager filter dropdown lists about 130 entries, almost all of them TEST_* managers (TEST_StatMgr, TEST_PayoutLim, ...) left over from earlier test runs in the live DB. Earlier test suites leaked manager accounts and orders. This is test-data pollution, not a code bug, but the owner sees it."]}
+    ]
+  },
+  "test_report_links": ["/app/backend/tests/test_iter127_admin_perf_pagination.py", "/app/test_reports/pytest/iter127.xml"],
+  "action_items": [
+    "Fix the stale-response race in AdminOrdersPage.fetchOrders: use a request sequence or AbortController, and reset the page together with each filter change instead of in a separate effect, which also removes the double request.",
+    "Call fetchOrders() after status change, delete and merge so that total, status counts and filtered lists stay correct.",
+    "Make the stats cards consistent: either compute total globally (sum of status_counts) or make all cards follow the filter.",
+    "Add customer name and email to the server-side search: look up matching user ids from db.users and add {'user_id': {'$in': ids}} to the $or.",
+    "Legacy /admin/orders is capped at 1000 rows and the DB is at about 870. Move the dashboard Overview to aggregated stats or paginated data, or raise or remove the cap.",
+    "The /admin dashboard makes 79 API calls with 3-6x duplicate fetches of attention, orders, users and stats. Deduplicate them; this is the remaining slowness.",
+    "SECURITY: exclude password_plain and plain_password from GET /api/admin/users, and remove the 'Пароль:' display in the CRM list in AdminPage.js (~line 1803).",
+    "Optional: add id as a secondary sort key for deterministic pagination."
+  ],
+  "critical_code_review_comments": [
+    "admin.py get_admin_orders: the page-reset race and the double fetch are frontend issues. On the backend, the asyncio.gather of the page, count, status aggregation and distinct managers is correct, and re.escape protects the regex search.",
+    "admin.py get_admin_users: the N+1 fix is correct. The $in query uses to_list(100000), so all orders of every user are loaded into memory (about 868 now). It is fine for now, but a $group aggregation would scale better.",
+    "managers list = distinct manager_id over all orders. The live DB has about 130 of them, mostly test leftovers.",
+    "The rollback button is still rendered (enabled) for cancelled orders. Clicking it gives a 400 'Невозможно откатить этот статус' error toast. It would be cleaner to hide it for cancelled orders."
+  ],
+  "updated_files": ["/app/frontend/src/pages/AdminOrdersPage.js (added data-testid delete-order-${order.id} to the icon-only delete button)", "/app/backend/tests/test_iter127_admin_perf_pagination.py (new)"],
+  "success_rate": {"backend": "100% (15/15)", "frontend": "~90% (all requested flows work; 1 reproducible race condition, plus stale counters after local actions)"},
+  "seed_data_creation": "I created 1 TEST_UIPerf client, 1 TEST_UIPerf product and 4 orders for the UI action tests. Everything was removed by exact id: 2 orders were consumed by the merge, 1 was deleted through the UI, and the remaining 2 orders, the product and the user were deleted by id. No other data was touched.",
+  "retest_needed": true,
+  "should_main_agent_self_test": true,
+  "context_for_next_testing_agent": "Run the backend tests with: cd /app/backend && python -m pytest tests/test_iter127_admin_perf_pagination.py --noconftest -p no:xdist. They are read-only, and --noconftest skips the session stock top-up. In browser_automation the admin password is available as os.environ['ADMIN_PASSWORD'] (it is not in backend/.env). Order rows render data-testid=order-status-actions-* only when expanded. To reproduce the race, go to page 2, use page.route to delay URLs containing page=2&search=, then type a search."
+}

@@ -72,7 +72,10 @@ async def get_admin_users(user=Depends(get_current_user)):
     if user.get("role") != "admin":
         raise HTTPException(status_code=403, detail="Admin access required")
     
-    users = await db.users.find({"role": {"$ne": "manager"}}, {"_id": 0, "password": 0}).to_list(1000)
+    users = await db.users.find(
+        {"role": {"$ne": "manager"}},
+        {"_id": 0, "password": 0, "password_plain": 0, "plain_password": 0, "password_hash": 0}
+    ).to_list(1000)
     
     # One query for every user's orders instead of one query per user (was 315 round-trips
     # to the database on every admin/users load — the main cause of the slow admin panel).
@@ -142,6 +145,10 @@ async def get_admin_user_details(user_id: str, user=Depends(get_current_user)):
         del target_user["password"]
     if "password_hash" in target_user:
         del target_user["password_hash"]
+    if "password_plain" in target_user:
+        del target_user["password_plain"]
+    if "plain_password" in target_user:
+        del target_user["plain_password"]
     
     user_orders = await db.orders.find({"user_id": user_id}, {"_id": 0}).sort("created_at", -1).to_list(1000)
     
@@ -345,7 +352,7 @@ async def get_admin_orders(
     if page_size is None:
         # Backward-compatible path: a caller that doesn't ask for pagination (e.g. the admin
         # dashboard overview) still gets the full flat list exactly as before.
-        orders = await db.orders.find({}, {"_id": 0}).sort("created_at", -1).to_list(1000)
+        orders = await db.orders.find({}, {"_id": 0}).sort("created_at", -1).to_list(5000)
         user_ids = list(set(o.get("user_id") for o in orders if o.get("user_id")))
         manager_ids = list({o["manager_id"] for o in orders if o.get("manager_id")})
         users_data = {}
@@ -371,15 +378,22 @@ async def get_admin_orders(
     if manager_id and manager_id != "all":
         query["manager_id"] = None if manager_id == "none" else manager_id
     if search:
-        rx = {"$regex": re.escape(search.strip()), "$options": "i"}
-        query["$or"] = [{"id": rx}, {"full_name": rx}, {"phone": rx}]
+        term = search.strip()
+        rx = {"$regex": re.escape(term), "$options": "i"}
+        # Also match by the client's account name/email, not just the order's own
+        # full_name/phone — searching "Иванов" or an email used to work (client-side) too.
+        matched_user_ids = await db.users.distinct("id", {"$or": [{"name": rx}, {"email": rx}]})
+        or_clause = [{"id": rx}, {"full_name": rx}, {"phone": rx}]
+        if matched_user_ids:
+            or_clause.append({"user_id": {"$in": matched_user_ids}})
+        query["$or"] = or_clause
 
     # The page of orders, the total count for pagination, the per-status counts/revenue for
     # the filter tabs, and the manager list for the filter dropdown are all independent of
     # each other, so fetch them concurrently instead of one slow round-trip after another —
     # this (plus real pagination instead of loading all 800+ orders every time) is the fix
     # for the admin panel being slow to load.
-    orders_cursor = db.orders.find(query, {"_id": 0}).sort("created_at", -1).skip((page - 1) * page_size).limit(page_size).to_list(page_size)
+    orders_cursor = db.orders.find(query, {"_id": 0}).sort([("created_at", -1), ("id", -1)]).skip((page - 1) * page_size).limit(page_size).to_list(page_size)
     count_task = db.orders.count_documents(query)
     status_agg_task = db.orders.aggregate([
         {"$group": {"_id": "$status", "count": {"$sum": 1}, "revenue": {"$sum": "$total"}}}

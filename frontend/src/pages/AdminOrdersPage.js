@@ -49,16 +49,18 @@ export default function AdminOrdersPage() {
   const [fulfillModal, setFulfillModal] = useState(null); // { order, draft: [{product_id, name, quantity, quantity_fulfilled, price}] }
   const [fulfilling, setFulfilling] = useState(false);
 
-  // Debounce the search box so every keystroke doesn't trigger a server request
+  // Debounce the search box so every keystroke doesn't trigger a server request. Reset to
+  // page 1 in the SAME state update as the debounced value (not a separate effect) so the
+  // fetch effect below only ever fires once per change instead of once-at-old-page then
+  // again-at-page-1 — that double fire was a real race where the stale, first response
+  // could arrive last and wipe out the correct, filtered result.
   useEffect(() => {
-    const t = setTimeout(() => setDebouncedSearch(searchQuery), 350);
+    const t = setTimeout(() => {
+      setDebouncedSearch(searchQuery);
+      setPage(1);
+    }, 350);
     return () => clearTimeout(t);
   }, [searchQuery]);
-
-  // Reset to page 1 whenever a filter changes
-  useEffect(() => {
-    setPage(1);
-  }, [debouncedSearch, statusFilter, managerFilter]);
 
   useEffect(() => {
     if (authLoading) return;
@@ -72,13 +74,18 @@ export default function AdminOrdersPage() {
     }
   }, [user, authLoading, navigate]);
 
+  // Guards against an older, slower request's response overwriting a newer one.
+  const requestSeqRef = useRef(0);
+
   const fetchOrders = useCallback(async () => {
+    const seq = ++requestSeqRef.current;
     try {
       const params = { page, page_size: PAGE_SIZE };
       if (debouncedSearch) params.search = debouncedSearch;
       if (statusFilter !== 'all') params.status = statusFilter;
       if (managerFilter !== 'all') params.manager_id = managerFilter;
       const res = await axios.get(`${API}/admin/orders`, { params });
+      if (seq !== requestSeqRef.current) return; // a newer request has since been fired
       setOrders(res.data.items || []);
       setTotal(res.data.total || 0);
       setStatusCounts(res.data.status_counts || {});
@@ -87,7 +94,7 @@ export default function AdminOrdersPage() {
     } catch (err) {
       console.error('Failed to fetch orders', err);
     } finally {
-      setLoading(false);
+      if (seq === requestSeqRef.current) setLoading(false);
     }
   }, [page, debouncedSearch, statusFilter, managerFilter]);
 
@@ -122,6 +129,7 @@ export default function AdminOrdersPage() {
     try {
       await axios.put(`${API}/admin/orders/${orderId}`, { status: newStatus });
       setOrders(prev => prev.map(o => o.id === orderId ? { ...o, status: newStatus } : o));
+      fetchOrders(); // refresh counts/revenue/total now that a status actually changed
       toast.success('Статус обновлён');
     } catch (err) {
       toast.error('Ошибка обновления статуса');
@@ -172,6 +180,7 @@ export default function AdminOrdersPage() {
     try {
       await axios.delete(`${API}/admin/orders/${orderId}`);
       setOrders(prev => prev.filter(o => o.id !== orderId));
+      fetchOrders(); // refresh counts/total/page now that an order is actually gone
       toast.success('Заказ удалён');
     } catch (err) {
       toast.error('Ошибка удаления');
@@ -383,14 +392,19 @@ export default function AdminOrdersPage() {
   const filteredOrders = orders;
   const orderManagers = managersList.map((m) => [m.id, m.name]);
 
+  // The "Всего" card and header always show the grand total across all orders (matching the
+  // other cards, which are also global), not the currently filtered count — `total` itself
+  // is kept separate and only used to drive pagination for whatever is currently filtered.
+  const grandTotal = Object.values(statusCounts).reduce((a, b) => a + b, 0);
   const stats = {
-    total,
+    total: grandTotal,
     pending: statusCounts.pending || 0,
     processing: statusCounts.processing || 0,
     completed: statusCounts.completed || 0,
     totalRevenue
   };
   const totalPages = Math.max(1, Math.ceil(total / PAGE_SIZE));
+
 
   if (authLoading || loading) {
     return (
@@ -416,7 +430,7 @@ export default function AdminOrdersPage() {
               <h1 className="text-2xl md:text-3xl font-bold tracking-tight uppercase bg-gradient-to-r from-teal-600 to-emerald-600 bg-clip-text text-transparent">
                 Управление заказами
               </h1>
-              <p className="text-sm text-slate-500">Всего {total} заказов</p>
+              <p className="text-sm text-slate-500">Всего {grandTotal} заказов{total !== grandTotal ? ` (найдено: ${total})` : ''}</p>
             </div>
           </div>
           <Button variant="outline" size="sm" onClick={fetchOrders} className="border-teal-200 text-teal-600 hover:bg-teal-50 hover:border-teal-300 rounded-xl">
@@ -481,17 +495,17 @@ export default function AdminOrdersPage() {
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
               <Input placeholder="Поиск по номеру, имени, телефону..." value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} className="pl-10 rounded-xl border-slate-200 focus:border-teal-400" />
             </div>
-            <select value={managerFilter} onChange={(e) => setManagerFilter(e.target.value)} className="h-10 rounded-xl border border-slate-200 bg-white px-3 text-sm text-slate-700 focus:outline-none focus:border-teal-400" data-testid="orders-manager-filter">
+            <select value={managerFilter} onChange={(e) => { setManagerFilter(e.target.value); setPage(1); }} className="h-10 rounded-xl border border-slate-200 bg-white px-3 text-sm text-slate-700 focus:outline-none focus:border-teal-400" data-testid="orders-manager-filter">
               <option value="all">Все менеджеры</option>
               <option value="none">Без менеджера</option>
               {orderManagers.map(([id, name]) => <option key={id} value={id}>{name}</option>)}
             </select>
             <div className="flex gap-2 flex-wrap">
-              <Button variant={statusFilter === 'all' ? 'default' : 'outline'} size="sm" onClick={() => setStatusFilter('all')} className={`rounded-xl ${statusFilter === 'all' ? 'bg-gradient-to-r from-teal-500 to-emerald-500 border-0' : 'border-slate-200'}`}>
+              <Button variant={statusFilter === 'all' ? 'default' : 'outline'} size="sm" onClick={() => { setStatusFilter('all'); setPage(1); }} className={`rounded-xl ${statusFilter === 'all' ? 'bg-gradient-to-r from-teal-500 to-emerald-500 border-0' : 'border-slate-200'}`}>
                 Все
               </Button>
               {ORDER_STATUSES.map(status => (
-                <Button key={status.value} variant={statusFilter === status.value ? 'default' : 'outline'} size="sm" onClick={() => setStatusFilter(status.value)} className={`rounded-xl ${statusFilter === status.value ? status.color : 'border-slate-200'}`}>
+                <Button key={status.value} variant={statusFilter === status.value ? 'default' : 'outline'} size="sm" onClick={() => { setStatusFilter(status.value); setPage(1); }} className={`rounded-xl ${statusFilter === status.value ? status.color : 'border-slate-200'}`}>
                   {status.label}
                 </Button>
               ))}
@@ -783,7 +797,7 @@ export default function AdminOrdersPage() {
                                       <PackageCheck className="w-4 h-4 mr-1" /> Отгрузить
                                     </Button>
                                   )}
-                                  {['completed', 'processing', 'cancelled', 'partially_fulfilled'].includes(order.status) && (
+                                  {['completed', 'processing'].includes(order.status) && (
                                     <Button variant="outline" size="sm" onClick={() => handleRollbackStatus(order.id)} className="rounded-xl text-amber-500 border-amber-200 hover:bg-amber-50" data-testid={`rollback-order-${order.id}`} title="Откатить статус">
                                       <RotateCcw className="w-4 h-4 mr-1" /> Откатить
                                     </Button>
@@ -799,7 +813,7 @@ export default function AdminOrdersPage() {
                                   <Button variant="outline" size="sm" onClick={() => downloadReturnDoc(order.id)} className="rounded-xl border-amber-200 text-amber-600 hover:bg-amber-50" data-testid={`download-return-doc-${order.id}`} title="Скачать акт возврата в Word для печати">
                                     <FileSpreadsheet className="w-4 h-4 mr-1" /> Документ на возврат
                                   </Button>
-                                  <Button variant="outline" size="sm" className="rounded-xl text-rose-500 border-rose-200 hover:bg-rose-50" onClick={() => handleDeleteOrder(order.id)}>
+                                  <Button variant="outline" size="sm" className="rounded-xl text-rose-500 border-rose-200 hover:bg-rose-50" onClick={() => handleDeleteOrder(order.id)} data-testid={`delete-order-${order.id}`}>
                                     <Trash2 className="w-4 h-4" />
                                   </Button>
                                 </div>
