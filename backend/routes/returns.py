@@ -82,7 +82,10 @@ async def create_return(data: dict, user=Depends(get_current_user)):
     for item in items:
         pid = item.get("product_id")
         raw_qty = item.get("quantity", 1)
-        qty_requested = int(raw_qty) if raw_qty is not None else 1
+        try:
+            qty_requested = int(raw_qty) if raw_qty is not None else 1
+        except (TypeError, ValueError):
+            raise HTTPException(status_code=400, detail="Некорректное количество к возврату")
         if qty_requested <= 0:
             raise HTTPException(status_code=400, detail="Количество к возврату должно быть положительным")
         order_item = next((oi for oi in order.get("items", []) if oi.get("product_id") == pid), None)

@@ -183,8 +183,10 @@ class TestStockRestore:
         assert _stock(pid) == s0 - 2
         st = lambda: requests.put(f"{API}/admin/orders/{o['id']}/status", headers=world["admin"], params={"status": "cancelled"}, timeout=30)
         assert st().status_code == 200 and _stock(pid) == s0
-        assert requests.put(f"{API}/admin/orders/{o['id']}/rollback-status", headers=world["admin"], timeout=20).json()["status"] == "pending"
-        assert st().status_code == 200 and _stock(pid) == s0
+        # iter126: rollback from cancelled is now blocked (400); a repeated cancel must not re-credit stock
+        assert requests.put(f"{API}/admin/orders/{o['id']}/rollback-status", headers=world["admin"], timeout=20).status_code == 400
+        st()
+        assert _stock(pid) == s0
         assert requests.delete(f"{API}/admin/orders/{o['id']}", headers=world["admin"], timeout=20).status_code == 200
         world["orders"].remove(o["id"])
         assert _stock(pid) == s0
@@ -400,8 +402,7 @@ class TestRollbackThenShip:
         o = _order(world, [(pid, 2)])
         requests.put(f"{API}/admin/orders/{o['id']}/status", headers=world["admin"], params={"status": "cancelled"}, timeout=30)
         assert _stock(pid) == s0
-        assert requests.put(f"{API}/admin/orders/{o['id']}/rollback-status", headers=world["admin"], timeout=20).status_code == 200
-        r = _fulfil(world, o["id"], [(pid, 2)])
-        assert r.status_code in (200, 400)
-        if r.status_code == 200:
-            assert _stock(pid) == s0 - 2, f"shipped 2 units of a rolled-back order but stock is {_stock(pid)} (was {s0}): phantom stock"
+        # iter126: fixed by blocking rollback from cancelled entirely
+        r = requests.put(f"{API}/admin/orders/{o['id']}/rollback-status", headers=world["admin"], timeout=20)
+        assert r.status_code == 400 and r.json()["detail"] == "Невозможно откатить этот статус"
+        assert _admin_order(world, o["id"])["status"] == "cancelled" and _stock(pid) == s0
